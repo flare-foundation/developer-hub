@@ -5,7 +5,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 const config: Config = {
   title: 'Flare Developer Hub',
   tagline: 'The decentralized origin for Flare builders. Written by builders, for builders.',
-  favicon: 'img/favicon.ico', // TODO: This should be an ICO file
+  favicon: '/img/favicon.ico', // TODO: This should be an ICO file
 
   // Set the production url of your site here
   url: 'https://your-docusaurus-site.example.com',
@@ -39,12 +39,9 @@ const config: Config = {
         },
         blog: {
           showReadingTime: true,
-          // Please change this to your repo.
-          // Remove this to remove the "edit this page" links.
-          editUrl:
-            'https://github.com/dineshpinto/developer-hub/tree/main/packages/create-docusaurus/templates/shared/',
           feedOptions: {
             type: 'all',
+            copyright: `Copyright © Flare Networks ${new Date().getFullYear()}.`,
           },
           blogDescription: 'Guides',
           blogSidebarCount: 'ALL',
@@ -72,9 +69,9 @@ const config: Config = {
       items: [
         {
           type: 'docSidebar',
-          sidebarId: 'networkSidebar',
+          sidebarId: 'flareSidebar',
           position: 'left',
-          label: 'Network',
+          label: 'Flare',
         },
         {
           type: 'docSidebar',
@@ -87,6 +84,12 @@ const config: Config = {
           sidebarId: 'fdcSidebar',
           position: 'left',
           label: 'FDC',
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'fassetsSidebar',
+          position: 'left',
+          label: 'FAssets',
         },
         {to: '/blog', label: 'Guides', position: 'left'},
         {
@@ -103,8 +106,20 @@ const config: Config = {
           title: 'Learn',
           items: [
             {
-              label: 'Flare Network',
-              to: '/docs/network/intro',
+              label: 'Flare',
+              to: '/docs/flare/intro',
+            },
+            {
+              label: 'FTSO',
+              to: '/docs/ftso/intro',
+            },
+            {
+              label: 'FDC',
+              to: '/docs/fdc/intro',
+            },
+            {
+              label: 'FAssets',
+              to: '/docs/fassets/intro',
             },
           ],
         },
@@ -112,8 +127,8 @@ const config: Config = {
           title: 'Community',
           items: [
             {
-              label: 'Twitter',
-              href: 'https://twitter.com/FlareNetworks',
+              label: 'X',
+              href: 'https://x.com/FlareNetworks',
             },
             {
               label: 'Telegram',
@@ -140,6 +155,14 @@ const config: Config = {
               label: 'GitHub',
               href: 'https://github.com/facebook/docusaurus',
             },
+            {
+              label: 'YouTube',
+              href: 'https://www.youtube.com/channel/UCDyqyTWHYMWY5ie6xOCgG0w',
+            },
+            {
+              label: 'Medium',
+              href: 'https://medium.com/flarenetwork',
+            }
           ],
         },
         {
