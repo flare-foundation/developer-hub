@@ -17,7 +17,6 @@ Running an observer node is optional. However, submitting transactions through y
 - Public nodes are usually rate-limited (the amount of requests they accept per second is restricted). Your own node does not have such restriction.
 - The time savings described above allow [FTSO data providers](glossary.md#data_provider) to submit their data a few seconds later, thus having more time to gather data before submitting.
 
-
 ## Hardware recommendations
 
 - CPU: 8 cores, or more
@@ -51,6 +50,7 @@ cd ../coreth
 go test ./... # coreth unit tests
 cd ../avalanchego
 ```
+
 :::
 
 ## Run the Node
@@ -58,7 +58,7 @@ cd ../avalanchego
 This is the minimum command to quickly get your node up and running.
 To understand each parameter read the following step before launching the node.
 
-``` bash
+```bash
 ./build/avalanchego --network-id=flare --http-host= --bootstrap-ips="$(curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeIP" }' -H 'content-type:application/json;' https://flare.flare.network/ext/info | jq -r ".result.ip")" --bootstrap-ids="$(curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeID" }' -H 'content-type:application/json;' https://flare.flare.network/ext/info | jq -r ".result.nodeID")"
 ```
 
@@ -84,52 +84,49 @@ These are some of the most relevant command line parameters you can use.
 You can read about all of them in the [Avalanche documentation](https://docs.avax.network/nodes/maintain/avalanchego-config-flags).
 
 - [`--bootstrap-ips`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--bootstrap-ips-string),
-    [`--bootstrap-ids`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--bootstrap-ids-string):
-    IP address and node ID of the peer used to connect to the rest of the network for bootstrapping.
+  [`--bootstrap-ids`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--bootstrap-ids-string):
+  IP address and node ID of the peer used to connect to the rest of the network for bootstrapping.
 
-    You can use Flare's public nodes for this, as shown in the quick start command given above:
+  You can use Flare's public nodes for this, as shown in the quick start command given above:
 
+  Peer's IP address:
 
-    Peer's IP address:
+  ```bash
+  curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeIP" }' -H 'content-type:application/json;' https://flare.flare.network/ext/info | jq -r ".result.ip"
+  ```
 
-    ``` bash
-    curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeIP" }' -H 'content-type:application/json;' https://flare.flare.network/ext/info | jq -r ".result.ip"
-    ```
+  Peer's node ID:
 
-    Peer's node ID:
+  ```bash
+  curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeID" }' -H 'content-type:application/json;' https://flare.flare.network/ext/info | jq -r ".result.nodeID"
+  ```
 
-    ``` bash
-    curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeID" }' -H 'content-type:application/json;' https://flare.flare.network/ext/info | jq -r ".result.nodeID"
-    ```
-
-
-    Remember that you need to whitelist your node's IP address or your queries will always be answered with 403 error codes.
+  Remember that you need to whitelist your node's IP address or your queries will always be answered with 403 error codes.
 
 - [`--http-host`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--http-host-string):
-    Use `--http-host=` (empty) to allow connections from other machines.
-    Otherwise, only connections from `localhost` are accepted.
+  Use `--http-host=` (empty) to allow connections from other machines.
+  Otherwise, only connections from `localhost` are accepted.
 
 - [`--http-port`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--http-port-int):
-    The port through which the node will listen to API requests.
-    The default value is `9650`.
+  The port through which the node will listen to API requests.
+  The default value is `9650`.
 
 - [`--staking-port`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--staking-port-int):
-    The port through which the network peers will connect to this node externally.
-    Having this port accessible from the internet is required for correct node operation.
-    The default value is `9651`.
+  The port through which the network peers will connect to this node externally.
+  Having this port accessible from the internet is required for correct node operation.
+  The default value is `9651`.
 
 - [`--db-dir`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--db-dir-string-file-path):
-    Directory where the database is stored.
-    Make sure to use a disk with enough space as recommended in the [Hardware prerequisites](#prerequisites) section.
-    It defaults to `~/.avalanchego/db` on Flare and Coston2, and to `~/.flare/db` on Songbird and Coston.
+  Directory where the database is stored.
+  Make sure to use a disk with enough space as recommended in the [Hardware prerequisites](#prerequisites) section.
+  It defaults to `~/.avalanchego/db` on Flare and Coston2, and to `~/.flare/db` on Songbird and Coston.
 
-
-    For example, you can use this option to store the database on an external drive.
+  For example, you can use this option to store the database on an external drive.
 
 - [`--chain-config-dir`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--chain-config-dir-string):
-    Optional JSON configuration file, in case you want to use lots of non-default values.
+  Optional JSON configuration file, in case you want to use lots of non-default values.
 
-    :::note Sample configuration file for observer nodes
+  :::note Sample configuration file for observer nodes
 
         These are the most common configuration options, put them in `<chain-config-dir>/C/config.json`.
 
@@ -158,7 +155,8 @@ You can read about all of them in the [Avalanche documentation](https://docs.ava
             "log-level": "info"
         }
         ```
-    :::
+
+  :::
 
 ### Archival nodes
 
@@ -174,15 +172,15 @@ Use the following solutions to ensure your node stays healthy:
 - Remember that when your node has less than 16 peers, your node will not work correctly.
   To retrieve the number of connected peers, run the following command and find the line that contains `connectedPeers`:
 
-    ```bash
-    curl http://127.0.0.1:9650/ext/health | jq
-    ```
+  ```bash
+  curl http://127.0.0.1:9650/ext/health | jq
+  ```
 
-    To automate the process, use:
+  To automate the process, use:
 
-    ```bash
-    curl -s http://127.0.0.1:9650/ext/health | jq -r ".checks.network.message.connectedPeers"
-    ```
+  ```bash
+  curl -s http://127.0.0.1:9650/ext/health | jq -r ".checks.network.message.connectedPeers"
+  ```
 
 - If your node does not sync after a long time and abruptly stops working, ensure the database location has sufficient disk space, and remember the database size might change a lot during bootstrapping.
 - If you receive unusual messages after you make submissions or when transactions are reverted, your node might not be connected correctly.
@@ -190,8 +188,8 @@ Use the following solutions to ensure your node stays healthy:
 - If you receive this error related to `GetAcceptedFrontier` during bootstrapping, your node was disconnected during bootstrapping.
 - Restart the node.
 
-    ```text
-    failed to send GetAcceptedFrontier(MtF8bVH241hetCQJgsKEdKyJBs8vhp1BC, 11111111111111111111111111111111LpoYY, NUMBER)
-    ```
+  ```text
+  failed to send GetAcceptedFrontier(MtF8bVH241hetCQJgsKEdKyJBs8vhp1BC, 11111111111111111111111111111111LpoYY, NUMBER)
+  ```
 
 * If you sync your node, but it stays unhealthy for no discernible reason, restart the node.
