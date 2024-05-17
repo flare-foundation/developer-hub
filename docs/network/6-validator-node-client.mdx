@@ -4,3 +4,104 @@ slug: validator-node-client
 ---
 
 # Validator Node Client
+
+## What is a Validator Node?
+
+A validator node is a server that fulfills a critical role in securing the network. It is responsible for validating transactions and blocks, and participating in the consensus process.
+
+To become a validator on Flare, you must stake native tokens and be associated with an FTSO data provider. The performance of the data provider has an impact on the validation rewards. Each validator can be associated with only one FTSO provider, and each data provider can be associated with up to 4 validators. The staking cap on each validator's rewards is 5% of the total staked funds on the network.
+
+## Why run a Validator Node?
+
+Running a validator node is a way to secure the network and earn rewards. Validators are responsible for validating transactions and blocks, and participating in the consensus process. Validators are rewarded with native tokens for their work.
+
+## Hardware recommendations
+
+The hardware recommendations below are provided as a guide. Node operators are encouraged to do their own performance testing.
+
+- CPU: 8 cores, or more
+- RAM: 16 GB, or more
+- Disk: 2 TB NVME SSD, or better
+
+## Prerequisites
+
+Validator nodes run the same software as regular Observer nodes, read up on deploying an [Observer node](observer-node-client) for more information. 
+
+:::note
+The following instructions only apply to the Flare network. Validators on the Songbird Canary network are managed by the Flare Foundation.
+:::
+
+## Configure the node
+
+### Recommended security measures
+
+- Ensure port 9650 is not externally reachable
+- Disallow password authentication over SSH
+- Don't run any non-validator services on the same IP
+
+### Optional (but suggested) security measures
+
+- Disallow any ICMP traffic.
+- Have the machine **firewalled**. Only the ports required for validator operation should be open (i.e. only the staking port, which defaults to 9651). If you use a virtual server, use only its web interface for management and close the SSH port. If the SSH port must be open, it should ideally be restricted to a private IP (i.e. only accessible through VPN) or only temporarily open to the operator's office/home static IP or a bastion SSH VM that can be turned off between use.
+- The node should **only act as a validator**, and not accept RPC API calls. You should deploy a separate observer node for tasks requiring RPC API access. Additionally, this observer node can point to your validator for peering and bootstrapping.
+- The validator should only enable the minimum set of [EVM](glossary.md#evm) APIs by adding this line to the config file:
+
+```json
+"eth-apis": [
+    "web3"
+]
+```
+
+### Example configuration
+
+```json
+{
+    "snowman-api-enabled": false,
+    "coreth-admin-api-enabled": false,
+    "coreth-admin-api-dir": "",
+    "eth-apis": [
+        "web3"
+    ],
+    "continuous-profiler-dir": "",
+    "continuous-profiler-frequency": 900000000000,
+    "continuous-profiler-max-files": 5,
+    "rpc-gas-cap": 50000000,
+    "rpc-tx-fee-cap": 100,
+    "preimages-enabled": false,
+    "pruning-enabled": true,
+    "snapshot-async": true,
+    "snapshot-verification-enabled": false,
+    "metrics-enabled": true,
+    "metrics-expensive-enabled": false,
+    "local-txs-enabled": false,
+    "api-max-duration": 30000000000,
+    "ws-cpu-refill-rate": 0,
+    "ws-cpu-max-stored": 0,
+    "api-max-blocks-per-request": 30,
+    "allow-unfinalized-queries": false,
+    "allow-unprotected-txs": false,
+    "keystore-directory": "",
+    "keystore-external-signer": "",
+    "keystore-insecure-unlock-allowed": false,
+    "remote-tx-gossip-only-enabled": false,
+    "tx-regossip-frequency": 60000000000,
+    "tx-regossip-max-size": 15,
+    "log-level": "info",
+    "offline-pruning-enabled": false,
+    "offline-pruning-bloom-filter-size": 512,
+    "offline-pruning-data-directory": ""
+}
+```
+
+## Run the node
+
+:::note Preregistered validator keys
+
+Some users have received preregistered validator keys, this is, the keys required to deploy a node which has already been registered as a validator.
+
+If that is your case, you just need to add these parameters to the launch command line:
+
+```bash
+--staking-tls-cert-file=<NODE_CRT_PATH> --staking-tls-key-file=<NODE_KEY_PATH>
+```
+:::
