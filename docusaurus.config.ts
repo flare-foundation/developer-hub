@@ -55,8 +55,9 @@ const config: Config = {
   ],
 
   themeConfig: {
-    // Replace with your project's social card
-    image: 'img/docusaurus-social-card.jpg',
+    image: 'img/flare_tbfd_pink.jpg',
+    defaultMode: 'light',
+    respectPrefersColorScheme: true,
     navbar: {
       title: 'Developer Hub',
       hideOnScroll: true,
@@ -100,29 +101,14 @@ const config: Config = {
       ],
     },
     footer: {
-      style: 'dark',
+      style: 'light',
+      logo: {
+        alt: 'Flare Logo',
+        src: 'img/flare_tbfd_light.svg',
+        srcDark: 'img/flare_tbfd_dark.svg',
+        width: 300
+      },
       links: [
-        {
-          title: 'Learn',
-          items: [
-            {
-              label: 'Flare',
-              to: '/docs/flare/intro',
-            },
-            {
-              label: 'FTSO',
-              to: '/docs/ftso/intro',
-            },
-            {
-              label: 'FDC',
-              to: '/docs/fdc/intro',
-            },
-            {
-              label: 'FAssets',
-              to: '/docs/fassets/intro',
-            },
-          ],
-        },
         {
           title: 'Community',
           items: [
@@ -148,10 +134,6 @@ const config: Config = {
           title: 'More',
           items: [
             {
-              label: 'Guides',
-              to: '/blog',
-            },
-            {
               label: 'GitHub',
               href: 'https://github.com/facebook/docusaurus',
             },
@@ -162,14 +144,7 @@ const config: Config = {
             {
               label: 'Medium',
               href: 'https://medium.com/flarenetwork',
-            }
-          ],
-        },
-        {
-          title: 'Legal',
-          // Please don't remove the privacy and terms, it's a legal
-          // requirement.
-          items: [
+            },
             {
               label: 'Terms & Privacy',
               href: 'https://flare.network/privacy-policy/',
@@ -177,11 +152,12 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Copyright © Flare Networks ${new Date().getFullYear()}. Built with Docusaurus.`,
+      copyright: `Copyright © Flare Networks ${new Date().getFullYear()}.`,
     },
     prism: {
-      theme: prismThemes.github,
-      darkTheme: prismThemes.dracula,
+      additionalLanguages: ['solidity', 'bash', 'json', 'toml'],
+      theme: prismThemes.oneLight,
+      darkTheme: prismThemes.oneDark,
     },
   } satisfies Preset.ThemeConfig,
 };
