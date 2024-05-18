@@ -13,7 +13,7 @@ const FeatureList: FeatureItem[] = [
     title: "FTSO",
     Svg: require("@site/static/img/FTSO.svg").default,
     description: (
-      <>Secure, low-latency source of real-time data feeds on Flare</>
+      <>High-integrity, low latency data feeds on Flare</>
     ),
   },
   {
