@@ -156,7 +156,7 @@ const config: Config = {
     },
     prism: {
       additionalLanguages: ['solidity', 'bash', 'json', 'toml'],
-      theme: prismThemes.oneLight,
+      theme: prismThemes.oneDark,
       darkTheme: prismThemes.oneDark,
     },
   } satisfies Preset.ThemeConfig,
