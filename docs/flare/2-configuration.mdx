@@ -22,11 +22,12 @@ Flare supports EVM versions up to London. Learn how to set the EVM version for y
 :::
 
 <Tabs>
-  <TabItem value="flare" label="Flare" default>
+  <TabItem value="flare" label="Flare Mainnet" default>
     |               |                                                |
     |---------------|------------------------------------------------|
     | Chain ID      | 14                                             |
-    | Currency  | `FLR`                                          |
+    | Gas token  | `FLR`                                          |
+    | Gas token decimals  | 18                                          |
     | RPCs          | [Chainlist](https://chainlist.org/chain/14)    |
     | Explorers     | [Flarescan](https://flarescan.com), [Flare Explorer](https://flare-explorer.flare.network) |
 
@@ -35,17 +36,19 @@ Flare supports EVM versions up to London. Learn how to set the EVM version for y
     |               |                                                              |
     |---------------|--------------------------------------------------------------|
     | Chain ID      | 114                                                          |
-    | Currency  | `C2FLR`                                                       |
+    | Gas token  | `C2FLR`                                                       |
+    | Gas token decimals  | 18                                          |
     | RPCs          | [Chainlist](https://chainlist.org/chain/114)                 |
     | Explorers     | [Coston2 Explorer](https://coston2-explorer.flare.network) |
 
   </TabItem>
-    <TabItem value="songbird" label="Songbird">
+    <TabItem value="songbird" label="Songbird Canary">
     |               |                                                                 |
     |---------------|--------------------------------------------------------------------------------------------------|
-    | Chain ID      | 19                                                 |
-    | Currency  | `SGB`                                                                                            |
-    | RPCs          | [Chainlist](https://chainlist.org/chain/19)                                                      |
+    | Chain ID | 19 |
+    | Gas token  | `SGB` |
+    | Gas token decimals  | 18                                          |
+    | RPCs | [Chainlist](https://chainlist.org/chain/19)     |
     | Explorers     | [Songbird Flarescan](https://songbird.flarescan.com), [Songbird Explorer](https://songbird-explorer.flare.network)  |
 
   </TabItem>
@@ -53,7 +56,8 @@ Flare supports EVM versions up to London. Learn how to set the EVM version for y
     |               |                                                            |
     |---------------|------------------------------------------------------------|
     | Chain ID      | 16                                                         |
-    | Currency  | `CFLR`                                                     |
+    | Gas token  | `CFLR`                                                     |
+    | Gas token decimals  | 18                                          |
     | RPCs          | [Chainlist](https://chainlist.org/chain/16)                |
     | Explorers     | [Coston Explorer](https://coston-explorer.flare.network) |
 
@@ -61,13 +65,26 @@ Flare supports EVM versions up to London. Learn how to set the EVM version for y
 
 </Tabs>
 
-## What are the different networks?
+## What are the different networks
 
 - **Flare** is the main network
 - **Coston2** is the test network for Flare
 - **Songbird** is the canary network for testing before deploying to Flare
 - **Coston** is the test network for Songbird
 
-There are two possible development tracks for any feature, shown in the diagram below:
+All the four networks are permissionless. The most common development tracks are:
 
-![Development tracks](img/development-tracks.png)
+1. Coston2 Testnet → Flare Mainnet
+2. Coston Testnet → Songbird Canary  → Flare Mainnet
+
+## How are transaction fees calculated
+
+Flare supports [EIP-2718](https://eips.ethereum.org/EIPS/eip-2718) style typed transactions. The transaction fee is calculated based on the type of transaction.
+ 
+- **Type0** (Legacy) - The transaction fee is calculated as `gasUsed * gasPrice`
+- **Type2** (EIP-1559) - The transaction fee is calculated as `maxFeePerGas * gas`, where `maxFeePerGas`  is distributed between the base fee and the priority fee. The base fee is adjusted according to the block production rate. Both the base and priority fees are burned.
+
+## Time to finality
+
+Flare uses [Snowman++ consensus](https://github.com/ava-labs/avalanchego/blob/v1.6.0-fuji/vms/proposervm/README.md), which offers a finality time of ≈2 seconds.
+

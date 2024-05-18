@@ -19,7 +19,7 @@ const FeatureList: FeatureItem[] = [
   {
     title: "FDC",
     Svg: require("@site/static/img/DATACONNECTOR.svg").default,
-    description: <>Verifiable, tamper-proof data for real-world assets on Flare</>,
+    description: <>Verifiable, tamper-proof Web2 and Web3 data for real-world applications on Flare</>,
   },
   {
     title: "FAssets",

@@ -5,11 +5,11 @@ slug: observer-nodes
 
 # Observer Nodes
 
-## What is an Observer Node?
+## What is an Observer Node
 
 An observer node is a node that observes the network and submits transactions. Unlike [validator nodes](validator-nodes), which provide state consensus and add blocks, observer nodes remain outside the network and have no effect on consensus or blocks.
 
-## Why run an Observer Node?
+## Why run an Observer Node
 
 Running an observer node is optional. However, submitting transactions through your own node offers a number of benefits:
 
@@ -17,21 +17,28 @@ Running an observer node is optional. However, submitting transactions through y
 - Public nodes are usually rate-limited (the amount of requests they accept per second is restricted). Your own node does not have such restriction.
 - The time savings described above allow FTSO data providers to submit their data a few seconds later, thus having more time to gather data before submitting.
 
-## Hardware recommendations
-
-- CPU: 8 cores, or more
-- RAM: 16 GB, or more
-- Disk: 500 GB NVMe SSD, or better
-
 ## Prerequisites
 
 :::note
 Enabling pruning is recommended for observer nodes, as they do not need to keep the whole history of the blockchain. In some cases, pruning can save up to 60% of disk space.
 :::
 
-## Configure the node
+### Hardware recommendations
 
-Clone the [go-flare](https://github.com/flare-foundation/go-flare) repository and run the `build.sh` script:
+- CPU: 8 cores, or more
+- RAM: 16 GB, or more
+- Disk: 500 GB PCIe Gen 3 NVMe SSD, or better
+
+### Docker
+
+Docker Hub contains container images for all releases at [flare-foundation/go-flare](https://hub.docker.com/r/flarefoundation/go-flare).
+
+
+## Deploying an Observer Node
+
+### Configure the node
+
+Clone the repository at [flare-foundation/go-flare](https://github.com/flare-foundation/go-flare) and run the `build.sh` script:
 
 ```bash
 git clone https://github.com/flare-foundation/go-flare.git
@@ -39,7 +46,7 @@ cd go-flare/avalanchego
 ./scripts/build.sh
 ```
 
-The resulting executable will be `build/avalanchego`.
+The resulting executable will be stored in `build/avalanchego`.
 
 :::note
 You can verify the installation by running:
@@ -53,7 +60,7 @@ cd ../avalanchego
 
 :::
 
-## Run the Node
+### Run the Node
 
 This is the minimum command to quickly get your node up and running.
 To understand each parameter read the following step before launching the node.
@@ -62,9 +69,9 @@ To understand each parameter read the following step before launching the node.
 ./build/avalanchego --network-id=flare --http-host= --bootstrap-ips="$(curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeIP" }' -H 'content-type:application/json;' https://flare.flare.network/ext/info | jq -r ".result.ip")" --bootstrap-ids="$(curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeID" }' -H 'content-type:application/json;' https://flare.flare.network/ext/info | jq -r ".result.nodeID")"
 ```
 
-After a lot of log messages the node should start **synchronizing** with the network, which might take anywhere from a few hours to a few days depending on network speed and machine specs.
+After a lot of log messages the node should start synchronizing with the network, which might take anywhere from a few hours to a few days depending on network speed and machine specs.
 
-Node syncing can be stopped at any time using `Ctrl-C`. Use the same command as before to restart the node syncing. Synchronization will resume where it left if it is interrupted.
+Node syncing can be stopped at any time. Use the same command as before to resume the node syncing from where it left off.
 
 You will know your node is fully booted and accepting transactions when the output of this command:
 
@@ -75,12 +82,12 @@ curl http://127.0.0.1:9650/ext/health
 Contains the field `"healthy" : true` in the returned JSON object.
 
 :::note
-If the node gets stuck during bootstrap (it takes far longer than the estimates given above), try to add the parameter `--bootstrap-retry-enabled=false`.
+If the node gets stuck during bootstrap (it takes far longer than the estimates given above), try adding the parameter `--bootstrap-retry-enabled=false`.
 :::
 
-## Additional Configuration
+### Additional configuration
 
-These are some of the most relevant command line parameters you can use.
+These are some of the most relevant CLI parameters you can use.
 You can read about all of them in the [Avalanche documentation](https://docs.avax.network/nodes/maintain/avalanchego-config-flags).
 
 - [`--bootstrap-ips`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--bootstrap-ips-string),
@@ -160,9 +167,7 @@ You can read about all of them in the [Avalanche documentation](https://docs.ava
 
 ### Archival nodes
 
-An archival node keeps the whole history of the blockchain, instead of pruning old transactions which is the default setting.
-Use the [`pruning-enabled`](https://docs.avax.network/nodes/maintain/chain-config-flags#pruning-enabled-boolean) configuration setting to control whether your node performs pruning or not.
-Archival nodes have significantly increased disk requirements.
+An archival node keeps the whole history of the blockchain, instead of pruning old transactions. Set `"pruning-enabled": false` in the configuration file to disable pruning. Note that archival nodes require significantly more disk space than standard observer nodes.
 
 ## Node maintainance
 
