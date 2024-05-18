@@ -60,7 +60,7 @@ const config: Config = {
     respectPrefersColorScheme: true,
     navbar: {
       title: 'Developer Hub',
-      hideOnScroll: true,
+      hideOnScroll: false,
       logo: {
         alt: 'Flare Icon',
         src: 'img/flare_icon.svg',
