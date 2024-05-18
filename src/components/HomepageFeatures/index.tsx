@@ -13,18 +13,18 @@ const FeatureList: FeatureItem[] = [
     title: "FTSO",
     Svg: require("@site/static/img/FTSO.svg").default,
     description: (
-      <>Decentralized, secure and reliable source of real-world data feeds on Flare.</>
+      <>Secure, low-latency source of real-time data feeds on Flare</>
     ),
   },
   {
     title: "FDC",
     Svg: require("@site/static/img/DATACONNECTOR.svg").default,
-    description: <>Verifiable, tamper-proof Web2 and Web3 data on Flare.</>,
+    description: <>Verifiable, tamper-proof data for real-world assets on Flare</>,
   },
   {
     title: "FAssets",
     Svg: require("@site/static/img/FASSETS.svg").default,
-    description: <>Flare's trust-minimized data bridge to Bitcoin.</>,
+    description: <>Trust minimized, decentralized data bridge connecting Bitcoin and Flare</>,
   },
 ];
 
