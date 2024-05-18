@@ -13,7 +13,7 @@ const FeatureList: FeatureItem[] = [
     title: "FTSO",
     Svg: require("@site/static/img/FTSO.svg").default,
     description: (
-      <>High-integrity, low latency data feeds on Flare</>
+      <>High-integrity, low-latency data feeds for decentralized applications on Flare</>
     ),
   },
   {
@@ -24,7 +24,7 @@ const FeatureList: FeatureItem[] = [
   {
     title: "FAssets",
     Svg: require("@site/static/img/FASSETS.svg").default,
-    description: <>Trust minimized, decentralized data bridge connecting Bitcoin and Flare</>,
+    description: <>Trust minimized, decentralized data bridge for connecting Bitcoin to Flare</>,
   },
 ];
 
