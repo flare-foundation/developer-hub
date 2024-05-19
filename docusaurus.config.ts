@@ -73,7 +73,7 @@ const config: Config = {
           type: "docSidebar",
           sidebarId: "networkSidebar",
           position: "left",
-          label: "Network",
+          label: "Flare ☀️",
         },
         {
           type: "docSidebar",
