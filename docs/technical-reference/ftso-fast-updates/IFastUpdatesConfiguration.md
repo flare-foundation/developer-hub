@@ -1,0 +1,114 @@
+# IFastUpdatesConfiguration
+
+## Event FeedAdded
+
+Event emitted when a feed is added.
+
+```solidity
+event FeedAdded(bytes21 feedId, uint32 rewardBandValue, uint24 inflationShare, uint256 index)
+```
+
+## Event FeedUpdated
+
+Event emitted when a feed is updated.
+
+```solidity
+event FeedUpdated(bytes21 feedId, uint32 rewardBandValue, uint24 inflationShare, uint256 index)
+```
+
+## Event FeedRemoved
+
+Event emitted when a feed is removed.
+
+```solidity
+event FeedRemoved(bytes21 feedId, uint256 index)
+```
+
+## Fn getFeedIndex
+
+Returns the index of a feed.
+
+```solidity
+function getFeedIndex(bytes21 _feedId) external view returns (uint256 _index)
+```
+
+Params:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| `_feedId` | `bytes21` | The feed id. |
+
+Returns:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| `_index` | `uint256` | The index of the feed. |
+
+## Fn getFeedId
+
+Returns the feed id at a given index. Removed (unused) feed index will return bytes21(0).
+
+```solidity
+function getFeedId(uint256 _index) external view returns (bytes21 _feedId)
+```
+
+Params:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| `_index` | `uint256` | The index. |
+
+Returns:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| `_feedId` | `bytes21` | The feed id. |
+
+## Fn getFeedIds
+
+Returns all feed ids. For removed (unused) feed indices, the feed id will be bytes21(0).
+
+```solidity
+function getFeedIds() external view returns (bytes21[])
+```
+
+## Fn getNumberOfFeeds
+
+Returns the number of feeds, including removed ones.
+
+```solidity
+function getNumberOfFeeds() external view returns (uint256)
+```
+
+## Fn getFeedConfigurations
+
+Returns the feed configurations, including removed ones.
+
+```solidity
+function getFeedConfigurations() external view returns (struct IFastUpdatesConfiguration.FeedConfiguration[])
+```
+
+## Fn getFeedConfigurationsBytes
+
+Returns the feed configurations in bytes format, including removed ones.
+
+```solidity
+function getFeedConfigurationsBytes() external view returns (bytes _feedIds, bytes _rewardBandValues, bytes _inflationShares)
+```
+
+Returns:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| `_feedIds` | `bytes` | The feed ids - multiple of 21 (one feedId is bytes21). |
+| `_rewardBandValues` | `bytes` | The reward band values - multiple of 4 (uint32). |
+| `_inflationShares` | `bytes` | The inflation shares - multiple of 3 (uint24). |
+
+## Fn getUnusedIndices
+
+Returns the unused indices - indices of removed feeds.
+
+```solidity
+function getUnusedIndices() external view returns (uint256[])
+```
+

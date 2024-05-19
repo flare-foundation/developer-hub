@@ -1,0 +1,120 @@
+# IFastUpdater
+
+## Event FastUpdateFeedsSubmitted
+
+Event emitted when a new set of updates is submitted.
+
+```solidity
+event FastUpdateFeedsSubmitted(address signingPolicyAddress)
+```
+
+## Event FastUpdateFeedReset
+
+Event emitted when a feed is added or reset.
+
+```solidity
+event FastUpdateFeedReset(uint256 votingRoundId, uint256 index, bytes21 id, uint256 value, int8 decimals)
+```
+
+## Event FastUpdateFeedRemoved
+
+Event emitted when a feed is removed.
+
+```solidity
+event FastUpdateFeedRemoved(uint256 index)
+```
+
+## Event FastUpdateFeeds
+
+Event emitted at the start of a new voting epoch - current feeds' values and decimals.
+
+```solidity
+event FastUpdateFeeds(uint256 votingEpochId, uint256[] feeds, int8[] decimals)
+```
+
+## Fn submitUpdates
+
+The entry point for providers to submit an update transaction.
+
+```solidity
+function submitUpdates(struct IFastUpdater.FastUpdates _updates) external
+```
+
+Params:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| `_updates` | `struct IFastUpdater.FastUpdates` | Data of an update transaction, which in addition to the actual list of updates, includes the sortition credential proving the provider's eligibility to make updates in the also-included sortition round, as well as a signature allowing a single registered provider to submit from multiple EVM accounts. |
+
+## Fn fetchAllCurrentFeeds
+
+Public access to the stored data of all feeds.
+
+```solidity
+function fetchAllCurrentFeeds() external view returns (bytes21[] _feedIds, uint256[] _feeds, int8[] _decimals)
+```
+
+Returns:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| `_feedIds` | `bytes21[]` | The list of feed ids. |
+| `_feeds` | `uint256[]` | The list of feeds. |
+| `_decimals` | `int8[]` | The list of decimal places for feeds. |
+
+## Fn fetchCurrentFeeds
+
+Public access to the stored data of each feed, allowing controlled batch access to the lengthy complete data.
+Feeds should be sorted for better performance.
+
+```solidity
+function fetchCurrentFeeds(uint256[] _indices) external view returns (uint256[] _feeds, int8[] _decimals)
+```
+
+Params:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| `_indices` | `uint256[]` | Index numbers of the feeds for which data should be returned, corresponding to `feedIds` in the `FastUpdatesConfiguration` contract. |
+
+Returns:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| `_feeds` | `uint256[]` | The list of data for the requested feeds, in the same order as the feed indices were given (which may not be their sorted order). |
+| `_decimals` | `int8[]` | The list of decimal places for the requested feeds, in the same order as the feed indices were given (which may not be their sorted order). |
+
+## Fn currentScoreCutoff
+
+Informational getter concerning the eligibility criterion for being chosen by sortition.
+
+```solidity
+function currentScoreCutoff() external view returns (uint256 _cutoff)
+```
+
+Returns:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| `_cutoff` | `uint256` | The upper endpoint of the acceptable range of "scores" that providers generate for sortition. A score below the cutoff indicates eligibility to submit updates in the present sortition round. |
+
+## Fn currentSortitionWeight
+
+Informational getter concerning a provider's likelihood of being chosen by sortition.
+
+```solidity
+function currentSortitionWeight(address _signingPolicyAddress) external view returns (uint256 _weight)
+```
+
+Params:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| `_signingPolicyAddress` | `address` | The signing policy address of the specified provider. This is different from the sender of an update transaction, due to the signature included in the `FastUpdates` type. |
+
+Returns:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| `_weight` | `uint256` | The specified provider's weight for sortition purposes. This is derived from the provider's delegation weight for the FTSO, but rescaled against a fixed number of "virtual providers", indicating how many potential updates a single provider may make in a sortition round. |
+
