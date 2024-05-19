@@ -89,7 +89,7 @@ const config: Config = {
         },
         { to: "/blog", label: "Guides", position: "left" },
         {
-          href: "https://github.com/dineshpinto/developer-hub",
+          href: "https://github.com/flare-foundation/",
           label: "GitHub",
           position: "right",
         },
@@ -130,7 +130,7 @@ const config: Config = {
           items: [
             {
               label: "GitHub",
-              href: "https://github.com/facebook/docusaurus",
+              href: "https://github.com/flare-foundation/",
             },
             {
               label: "YouTube",
