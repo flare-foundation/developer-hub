@@ -63,7 +63,7 @@ function Feature({ title, Svg, description, link }: FeatureItem) {
 function FeatureCard({ title, Svg, description, link }: FeatureItem) {
   return (
     <div className={clsx("col col--4")}>
-      <div className="card margin--sm padding--sm">
+      <div className="card margin--sm padding--md">
         <div className="text--center">
           <Svg className={styles.featureSvg} role="img" />
         </div>
