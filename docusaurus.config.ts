@@ -70,27 +70,9 @@ const config: Config = {
       items: [
         {
           type: 'docSidebar',
-          sidebarId: 'flareSidebar',
+          sidebarId: 'docsSidebar',
           position: 'left',
-          label: 'Flare',
-        },
-        {
-          type: 'docSidebar',
-          sidebarId: 'ftsoSidebar',
-          position: 'left',
-          label: 'FTSO',
-        },
-        {
-          type: 'docSidebar',
-          sidebarId: 'fdcSidebar',
-          position: 'left',
-          label: 'FDC',
-        },
-        {
-          type: 'docSidebar',
-          sidebarId: 'fassetsSidebar',
-          position: 'left',
-          label: 'FAssets',
+          label: 'Docs',
         },
         {to: '/blog', label: 'Guides', position: 'left'},
         {

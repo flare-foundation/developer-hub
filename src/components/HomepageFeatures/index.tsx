@@ -20,7 +20,7 @@ const FeatureList: FeatureItem[] = [
         Flare
       </>
     ),
-    link: "docs/ftso/intro",
+    link: "docs/ftso/fast-updates/intro",
   },
   {
     title: "FDC",
@@ -73,7 +73,7 @@ function FeatureCard({ title, Svg, description, link }: FeatureItem) {
           <div className="card__footer">
             <div className={styles.buttons}>
               <Link
-                className="button button--outline button--secondary button--md"
+                className="button button--outline button--primary button--md"
                 to={link}
               >
                 Learn More
