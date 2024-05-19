@@ -63,22 +63,20 @@ function Feature({ title, Svg, description, link }: FeatureItem) {
 function FeatureCard({ title, Svg, description, link }: FeatureItem) {
   return (
     <div className={clsx("col col--4")}>
-      <div className="card">
+      <div className="card margin--sm padding-bottom--sm">
         <div className="text--center">
           <Svg className={styles.featureSvg} role="img" />
         </div>
-        <div className="text--center padding-horiz--md padding-verti --md">
+        <div className="text--center">
           <Heading as="h3">{title}</Heading>
           <p>{description}</p>
-          <div className="card__footer">
-            <div className={styles.buttons}>
-              <Link
-                className="button button--outline button--primary button--md"
-                to={link}
-              >
-                Learn More
-              </Link>
-            </div>
+          <div className={styles.buttons}>
+            <Link
+              className="button button--outline button--primary button--md"
+              to={link}
+            >
+              Learn More
+            </Link>
           </div>
         </div>
       </div>
