@@ -38,7 +38,7 @@ const FeatureList: FeatureItem[] = [
     Svg: require("@site/static/img/FASSETS.svg").default,
     description: (
       <>
-        Trust minimized, decentralized data bridge for connecting Bitcoin to
+        Trust-minimized, decentralized data bridge for connecting Bitcoin to
         Flare
       </>
     ),
