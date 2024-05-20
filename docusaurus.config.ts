@@ -39,6 +39,8 @@ const config: Config = {
           // Please change this to your repo.
         },
         blog: {
+          path: "guides",
+          routeBasePath: "guides",
           showReadingTime: true,
           feedOptions: {
             type: "all",
@@ -87,7 +89,7 @@ const config: Config = {
           position: "left",
           label: "Technical Reference",
         },
-        { to: "/blog", label: "Guides", position: "left" },
+        { to: "/guides", label: "Guides", position: "left" },
         {
           href: "https://github.com/flare-foundation/",
           label: "GitHub",
