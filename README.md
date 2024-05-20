@@ -22,47 +22,19 @@ This command starts a local development server and opens up a browser window. Mo
 
 ## Autogenerate Solidity docs
 
-In the root directory of `developer-hub`
-
-```bash
-git clone --depth 1 https://github.com/flare-foundation/flare-smart-contracts-v2
-cd flare-smart-contracts-v2
-```
-
-If there is a difference in node versions between the two projects, you can use `nvm` to switch between them.  `flare-smart-contracts-v2` uses `node 18` and `developer-hub` uses `node 20`.
+Note that `flare-smart-contracts-v2` uses `node 18` and `developer-hub` uses `node 20`. You can use `nvm` to switch between them.
 
 ```bash
 nvm use 18
-````
+```
 
-Compile the contracts
+Execute the shell script to pull the smart contracts repo, generate the docs, and copy them to `developer-hub/docs/technical-reference/contracts`.
 
 ```bash
-yarn
-yarn add solidity-docgen
+cd docgen
+chmod +x generate-solidity-docs.sh
+./generate-solidity-docs.sh
 ```
-
-Add to `flare-smart-contracts-v2/hardhat.config.ts`
-
-```typescript
-import 'solidity-docgen';
-
-export default {
-  ...
-  docgen: {
-    pages: "files",
-    templates: "../handlebar_templates"
-  },
-};
-```
-
-Generate the docs
-
-```bash
-yarn hardhat docgen
-```
-
-Copy the relevant generated `.md` files from `flare-smart-contracts-v2/docs` to `developer-hub/docs/technical-reference/`.
 
 Once complete, you can switch node version back to the `developer-hub` project
 
