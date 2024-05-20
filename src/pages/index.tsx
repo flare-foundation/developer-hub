@@ -21,7 +21,7 @@ function HomepageHeader() {
             className="button button--primary button--lg"
             to="docs/flare/intro"
           >
-            Start building →
+            Start Building →
           </Link>
         </div>
       </div>
