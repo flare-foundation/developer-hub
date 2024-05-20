@@ -1,4 +1,6 @@
+// @ts-ignore
 import { HelperOptions, Utils } from "handlebars";
+// @ts-ignore
 import { DocItemWithContext } from "solidity-docgen/src/site";
 import {
   ContractDefinition,
@@ -10,6 +12,7 @@ import {
   StructDefinition,
   UserDefinedValueTypeDefinition,
   VariableDeclaration,
+  // @ts-ignore
 } from "solidity-ast";
 
 const flareRepoURL =
@@ -151,7 +154,7 @@ export function pretty_signature(this: DocItemWithContext): string | undefined {
         res.push(m.modifierName.name);
       });
       if (returns.length > 0) {
-        res.push(`returns (\n${returns.map(formatVariable).join(",\n")})`);
+        res.push(`returns (\n${returns.map(formatVariable).join(",\n")}\n)`);
       }
       return res.join(" ").replace("\n\n", "\n") + ";";
     }
