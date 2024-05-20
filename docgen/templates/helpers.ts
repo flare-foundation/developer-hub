@@ -12,8 +12,10 @@ import {
   VariableDeclaration,
 } from "solidity-ast";
 
-const flareRepoURL = "https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main";
-const openzeppelinRepoURL = "https://github.com/OpenZeppelin/openzeppelin-contracts/tree/release-v3.4";
+const flareRepoURL =
+  "https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main";
+const openzeppelinRepoURL =
+  "https://github.com/OpenZeppelin/openzeppelin-contracts/tree/release-v3.4";
 
 var globalContractTable = new Set<String>();
 var globalEnumTable = new Map<string, string>();
@@ -41,7 +43,11 @@ export function h(hsublevel: number | HelperOptions, opts?: HelperOptions) {
  */
 export function hsection(opts: HelperOptions): string;
 export function hsection(hsublevel: number, opts: HelperOptions): string;
-export function hsection(this: unknown, hsublevel: number | HelperOptions, opts?: HelperOptions) {
+export function hsection(
+  this: unknown,
+  hsublevel: number | HelperOptions,
+  opts?: HelperOptions,
+) {
   let hlevel;
   ({ hlevel, opts } = getHLevel(hsublevel, opts));
   opts.data = Utils.createFrame(opts.data);
@@ -73,28 +79,45 @@ export function trim(text: string) {
 /**
  * Checks if the item has the given nodeType (Will only work for DocItems).
  */
-export function ifIsNodeType(this: unknown, nodeTypeName: string, opts: HelperOptions) {
-  let fn = (this as DocItemWithContext).nodeType == nodeTypeName ? opts.fn : opts.inverse;
+export function ifIsNodeType(
+  this: unknown,
+  nodeTypeName: string,
+  opts: HelperOptions,
+) {
+  let fn =
+    (this as DocItemWithContext).nodeType == nodeTypeName
+      ? opts.fn
+      : opts.inverse;
   if (fn) return fn(this as unknown, opts);
 }
 
 /**
  * Counts the number of items of the given nodeType (Will only work for Contracts).
  */
-export function ifHasContent(this: unknown, nodeTypeName: string, opts: HelperOptions) {
-  const count = (this as ContractDefinition).nodes.reduce((accumulator, obj) => {
-    if (obj.nodeType == nodeTypeName) {
-      return accumulator + 1;
-    }
-    return accumulator;
-  }, 0);
+export function ifHasContent(
+  this: unknown,
+  nodeTypeName: string,
+  opts: HelperOptions,
+) {
+  const count = (this as ContractDefinition).nodes.reduce(
+    (accumulator, obj) => {
+      if (obj.nodeType == nodeTypeName) {
+        return accumulator + 1;
+      }
+      return accumulator;
+    },
+    0,
+  );
 
   let fn = count > 0 ? opts.fn : opts.inverse;
   if (fn) return fn(this as unknown, opts);
 }
 
 function formatVariable(v: VariableDeclaration): string {
-  return "    " + [v.typeName?.typeDescriptions.typeString!].concat(v.name || []).join(" ");
+  return (
+    "    " +
+    [v.typeName?.typeDescriptions.typeString!].concat(v.name || []).join(" ")
+  );
 }
 
 /**
@@ -110,15 +133,21 @@ export function pretty_signature(this: DocItemWithContext): string | undefined {
       const { kind, name } = this;
       const params = this.parameters.parameters;
       const returns = this.returnParameters.parameters;
-      const head = kind === "function" || kind === "freeFunction" ? [kind, name].join(" ") : kind;
-      let res = [`${head}(\n${params.map(formatVariable).join(",\n")}\n)`, this.visibility];
+      const head =
+        kind === "function" || kind === "freeFunction"
+          ? [kind, name].join(" ")
+          : kind;
+      let res = [
+        `${head}(\n${params.map(formatVariable).join(",\n")}\n)`,
+        this.visibility,
+      ];
       if (this.stateMutability !== "nonpayable") {
         res.push(this.stateMutability);
       }
       if (this.virtual) {
         res.push("virtual");
       }
-      this.modifiers.forEach(m => {
+      this.modifiers.forEach((m) => {
         res.push(m.modifierName.name);
       });
       if (returns.length > 0) {
@@ -129,7 +158,10 @@ export function pretty_signature(this: DocItemWithContext): string | undefined {
 
     case "EventDefinition": {
       const params = this.parameters.parameters;
-      return `event ${this.name}(\n${params.map(formatVariable).join(",\n")}\n)`.replace("\n\n", "\n");
+      return `event ${this.name}(\n${params.map(formatVariable).join(",\n")}\n)`.replace(
+        "\n\n",
+        "\n",
+      );
     }
 
     case "ErrorDefinition": {
@@ -170,9 +202,16 @@ function createGlobalSymbolTables(ctx: DocItemWithContext) {
   }
 }
 
-export function linkify(this: DocItemWithContext, text?: string, joinLines?: boolean) {
+export function linkify(
+  this: DocItemWithContext,
+  text?: string,
+  joinLines?: boolean,
+) {
   createGlobalSymbolTables(this);
-  const contract = this.nodeType === "ContractDefinition" ? this : this.__item_context?.contract;
+  const contract =
+    this.nodeType === "ContractDefinition"
+      ? this
+      : this.__item_context?.contract;
   let ret = text || "";
   if (contract && typeof text === "string") {
     // Cleanup non-markdown syntax
@@ -190,7 +229,9 @@ export function linkify(this: DocItemWithContext, text?: string, joinLines?: boo
 export function allItems(this: DocItemWithContext, nodeTypeName: string) {
   if (this.nodeType == "ContractDefinition") {
     const { deref } = this.__item_context.build;
-    const allParents = this.linearizedBaseContracts.map(deref("ContractDefinition"));
+    const allParents = this.linearizedBaseContracts.map(
+      deref("ContractDefinition"),
+    );
     let items: (
       | EnumDefinition
       | ErrorDefinition
@@ -201,13 +242,15 @@ export function allItems(this: DocItemWithContext, nodeTypeName: string) {
       | UserDefinedValueTypeDefinition
       | VariableDeclaration
     )[] = [];
-    allParents.forEach(p => {
-      p.nodes.forEach(n => {
+    allParents.forEach((p) => {
+      p.nodes.forEach((n) => {
         // Filter out other types
-        if (n.nodeType == "UsingForDirective" || n.nodeType != nodeTypeName) return;
+        if (n.nodeType == "UsingForDirective" || n.nodeType != nodeTypeName)
+          return;
         // Filter out private fields
         if (
-          (n.nodeType == "VariableDeclaration" || n.nodeType == "FunctionDefinition") &&
+          (n.nodeType == "VariableDeclaration" ||
+            n.nodeType == "FunctionDefinition") &&
           n.visibility != "public" &&
           n.visibility != "external"
         )
@@ -216,10 +259,18 @@ export function allItems(this: DocItemWithContext, nodeTypeName: string) {
         // If this item already exists do not add it again.
         // linearizedBaseContracts returned the children first and then the parents, so if the item
         // already exists it means that it is an override, and we want to keep those (if they had any docs).
-        const prev = items.find(i => {
-          if (i.nodeType != "FunctionDefinition" || n.nodeType != "FunctionDefinition") return i.name == n.name;
+        const prev = items.find((i) => {
+          if (
+            i.nodeType != "FunctionDefinition" ||
+            n.nodeType != "FunctionDefinition"
+          )
+            return i.name == n.name;
           // For functions, compare their selectors (if any), as we want to keep all overloads.
-          if (i.functionSelector == undefined && n.functionSelector == undefined) return i.name == n.name;
+          if (
+            i.functionSelector == undefined &&
+            n.functionSelector == undefined
+          )
+            return i.name == n.name;
           return i.functionSelector == n.functionSelector;
         });
         const prevDocs =
@@ -249,14 +300,18 @@ export function ifHasParents(this: DocItemWithContext, opts: HelperOptions) {
 }
 
 function RepoURLfromPath(path: string): string {
-  if (path.startsWith("@openzeppelin")) return path.replace("@openzeppelin", openzeppelinRepoURL);
+  if (path.startsWith("@openzeppelin"))
+    return path.replace("@openzeppelin", openzeppelinRepoURL);
   else return flareRepoURL + "/" + path;
 }
 
 export function parentContractName(this: DocItemWithContext) {
   if (this.__item_context.contract) {
     const { deref } = this.__item_context.build;
-    const contract = deref("ContractDefinition", this.__item_context.contract?.id);
+    const contract = deref(
+      "ContractDefinition",
+      this.__item_context.contract?.id,
+    );
     return contract.name;
   }
 }
@@ -264,7 +319,10 @@ export function parentContractName(this: DocItemWithContext) {
 export function parentContractLinks(this: DocItemWithContext) {
   if (this.__item_context.contract) {
     const { deref } = this.__item_context.build;
-    const contract = deref("ContractDefinition", this.__item_context.contract?.id);
+    const contract = deref(
+      "ContractDefinition",
+      this.__item_context.contract?.id,
+    );
     const scope = deref("SourceUnit", contract.scope);
     return `[Source](${RepoURLfromPath(scope.absolutePath)})`;
   }
@@ -273,10 +331,15 @@ export function parentContractLinks(this: DocItemWithContext) {
 export function parents(this: DocItemWithContext) {
   if (this.nodeType != "ContractDefinition") return;
   const { deref } = this.__item_context.build;
-  const parents = this.baseContracts.map(is => deref("InheritanceSpecifier", is.id));
+  const parents = this.baseContracts.map((is) =>
+    deref("InheritanceSpecifier", is.id),
+  );
   return parents
-    .map(is => {
-      const parent = deref("ContractDefinition", is.baseName.referencedDeclaration);
+    .map((is) => {
+      const parent = deref(
+        "ContractDefinition",
+        is.baseName.referencedDeclaration,
+      );
       const scope = deref("SourceUnit", parent.scope);
       if (scope.absolutePath.startsWith("@")) return is.baseName.name;
       return `[${is.baseName.name}](./${is.baseName.name}.md)`;
@@ -287,7 +350,10 @@ export function parents(this: DocItemWithContext) {
 export function enumDocs(this: DocItemWithContext): string | undefined {
   if (this.__item_context.contract) {
     const { deref } = this.__item_context.build;
-    const contract = deref("ContractDefinition", this.__item_context.contract?.id);
+    const contract = deref(
+      "ContractDefinition",
+      this.__item_context.contract?.id,
+    );
     return globalEnumTable.get(`${contract.name}.${this.name}`);
   }
 }
