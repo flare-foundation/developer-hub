@@ -53,7 +53,8 @@ function getConfirmedMerkleRoot(
     uint256 _protocolId,
     uint256 _votingRoundId
 ) external view returns (
-    bytes32 _merkleRoot);
+    bytes32 _merkleRoot
+);
 ```
 
 | Parameters       | Type      | Description          |
@@ -74,7 +75,8 @@ function getRandomNumber(
 ) external view returns (
     uint256 _randomNumber,
     bool _isSecureRandom,
-    uint256 _randomTimestamp);
+    uint256 _randomTimestamp
+);
 ```
 
 | Returns            | Type      | Description                                         |
@@ -91,7 +93,8 @@ Returns the voting round id for given timestamp.
 function getVotingRoundId(
     uint256 _timestamp
 ) external view returns (
-    uint256 _votingRoundId);
+    uint256 _votingRoundId
+);
 ```
 
 | Parameters   | Type      | Description    |
@@ -110,7 +113,8 @@ Returns last initialized reward epoch data.
 function lastInitializedRewardEpochData(
 ) external view returns (
     uint32 _lastInitializedRewardEpoch,
-    uint32 _startingVotingRoundIdForLastInitializedRewardEpoch);
+    uint32 _startingVotingRoundIdForLastInitializedRewardEpoch
+);
 ```
 
 | Returns                                               | Type     | Description                      |
@@ -127,7 +131,8 @@ function merkleRoots(
     uint256 _protocolId,
     uint256 _votingRoundId
 ) external view returns (
-    bytes32 _merkleRoot);
+    bytes32 _merkleRoot
+);
 ```
 
 | Parameters       | Type      | Description          |
@@ -166,7 +171,8 @@ Returns the start voting round id for given reward epoch id.
 function startingVotingRoundIds(
     uint256 _rewardEpochId
 ) external view returns (
-    uint256 _startingVotingRoundId);
+    uint256 _startingVotingRoundId
+);
 ```
 
 | Parameters       | Type      | Description          |
@@ -185,7 +191,8 @@ Returns the signing policy hash for given reward epoch id.
 function toSigningPolicyHash(
     uint256 _rewardEpochId
 ) external view returns (
-    bytes32 _signingPolicyHash);
+    bytes32 _signingPolicyHash
+);
 ```
 
 | Parameters       | Type      | Description          |

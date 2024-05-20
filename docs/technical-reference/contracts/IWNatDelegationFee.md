@@ -29,7 +29,8 @@ The default fee percentage value.
 ```solidity
 function defaultFeePercentageBIPS(
 ) external view returns (
-    uint16);
+    uint16
+);
 ```
 
 ### feePercentageUpdateOffset
@@ -39,7 +40,8 @@ The offset in reward epochs for the fee percentage value to become effective.
 ```solidity
 function feePercentageUpdateOffset(
 ) external view returns (
-    uint24);
+    uint24
+);
 ```
 
 ### getVoterCurrentFeePercentage
@@ -50,7 +52,8 @@ Returns the current fee percentage of `_voter`.
 function getVoterCurrentFeePercentage(
     address _voter
 ) external view returns (
-    uint16);
+    uint16
+);
 ```
 
 | Parameters | Type      | Description    |
@@ -66,7 +69,8 @@ function getVoterFeePercentage(
     address _voter,
     uint256 _rewardEpochId
 ) external view returns (
-    uint16);
+    uint16
+);
 ```
 
 | Parameters       | Type      | Description                                                                                                                |
@@ -84,7 +88,8 @@ function getVoterScheduledFeePercentageChanges(
 ) external view returns (
     uint256[] _feePercentageBIPS,
     uint256[] _validFromEpochId,
-    bool[] _fixed);
+    bool[] _fixed
+);
 ```
 
 | Parameters | Type      | Description    |
@@ -105,7 +110,8 @@ Allows voter to set (or update last) fee percentage.
 function setVoterFeePercentage(
     uint16 _feePercentageBIPS
 ) external returns (
-    uint256);
+    uint256
+);
 ```
 
 | Parameters           | Type     | Description                                 |

@@ -61,7 +61,8 @@ Mininal rewards offer value (in wei).
 ```solidity
 function minimalRewardsOfferValueWei(
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 ### offerRewards

@@ -87,7 +87,8 @@ Indicates if the contract is active - claims are enabled.
 ```solidity
 function active(
 ) external view returns (
-    bool);
+    bool
+);
 ```
 
 ### autoClaim
@@ -124,7 +125,8 @@ function claim(
     bool _wrap,
     struct IRewardManager.RewardClaimWithProof[] _proofs
 ) external returns (
-    uint256 _rewardAmountWei);
+    uint256 _rewardAmountWei
+);
 ```
 
 | Parameters       | Type                                           | Description                                                                 |
@@ -146,7 +148,8 @@ Get the current cleanup block number.
 ```solidity
 function cleanupBlockNumber(
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 | Returns | Type      | Description                             |
@@ -160,7 +163,8 @@ The first reward epoch id that was claimable.
 ```solidity
 function firstClaimableRewardEpochId(
 ) external view returns (
-    uint24);
+    uint24
+);
 ```
 
 ### getCurrentRewardEpochId
@@ -170,7 +174,8 @@ Returns current reward epoch id.
 ```solidity
 function getCurrentRewardEpochId(
 ) external view returns (
-    uint24);
+    uint24
+);
 ```
 
 ### getInitialRewardEpochId
@@ -180,7 +185,8 @@ Returns initial reward epoch id.
 ```solidity
 function getInitialRewardEpochId(
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 ### getNextClaimableRewardEpochId
@@ -191,7 +197,8 @@ Returns the next claimable reward epoch for a reward owner.
 function getNextClaimableRewardEpochId(
     address _rewardOwner
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 | Parameters     | Type      | Description                           |
@@ -205,7 +212,8 @@ Returns the reward epoch id that will expire next once a new reward epoch starts
 ```solidity
 function getRewardEpochIdToExpireNext(
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 ### getRewardEpochIdsWithClaimableRewards
@@ -216,7 +224,8 @@ Returns the start and the end of the reward epoch range for which the reward is 
 function getRewardEpochIdsWithClaimableRewards(
 ) external view returns (
     uint24 _startEpochId,
-    uint24 _endEpochId);
+    uint24 _endEpochId
+);
 ```
 
 | Returns         | Type     | Description                                      |
@@ -236,7 +245,8 @@ function getRewardEpochTotals(
     uint256 _totalInflationRewardsWei,
     uint256 _initialisedRewardsWei,
     uint256 _claimedRewardsWei,
-    uint256 _burnedRewardsWei);
+    uint256 _burnedRewardsWei
+);
 ```
 
 | Parameters       | Type     | Description      |
@@ -259,7 +269,8 @@ Returns the state of rewards for a given address for all unclaimed reward epochs
 function getStateOfRewards(
     address _rewardOwner
 ) external view returns (
-    struct IRewardManager.RewardState[][] _rewardStates);
+    struct IRewardManager.RewardState[][] _rewardStates
+);
 ```
 
 | Parameters     | Type      | Description                  |
@@ -279,7 +290,8 @@ function getStateOfRewardsAt(
     address _rewardOwner,
     uint24 _rewardEpochId
 ) external view returns (
-    struct IRewardManager.RewardState[] _rewardStates);
+    struct IRewardManager.RewardState[] _rewardStates
+);
 ```
 
 | Parameters       | Type      | Description                  |
@@ -301,7 +313,8 @@ function getTotals(
     uint256 _totalRewardsWei,
     uint256 _totalInflationRewardsWei,
     uint256 _totalClaimedWei,
-    uint256 _totalBurnedWei);
+    uint256 _totalBurnedWei
+);
 ```
 
 | Returns                     | Type      | Description                    |
@@ -321,7 +334,8 @@ function getUnclaimedRewardState(
     uint24 _rewardEpochId,
     enum IRewardManager.ClaimType _claimType
 ) external view returns (
-    struct IRewardManager.UnclaimedRewardState _state);
+    struct IRewardManager.UnclaimedRewardState _state
+);
 ```
 
 | Parameters       | Type                            | Description                          |
@@ -356,7 +370,8 @@ Returns the number of weight based claims that have been initialised.
 function noOfInitialisedWeightBasedClaims(
     uint256 _rewardEpochId
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 | Parameters       | Type      | Description      |

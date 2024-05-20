@@ -129,7 +129,8 @@ function castVote(
     uint256 _proposalId,
     uint8 _support
 ) external returns (
-    uint256);
+    uint256
+);
 ```
 
 | Parameters    | Type      | Description                                  |
@@ -153,7 +154,8 @@ function castVoteBySig(
     bytes32 _r,
     bytes32 _s
 ) external returns (
-    uint256);
+    uint256
+);
 ```
 
 | Parameters    | Type      | Description                                      |
@@ -174,7 +176,8 @@ function castVoteWithReason(
     uint8 _support,
     string _reason
 ) external returns (
-    uint256);
+    uint256
+);
 ```
 
 | Parameters    | Type      | Description                                  |
@@ -232,7 +235,8 @@ function getProposalId(
     bytes[] _calldatas,
     string _description
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 | Parameters     | Type        | Description                                                     |
@@ -253,7 +257,8 @@ Returns the list of proposal ids.
 ```solidity
 function getProposalIds(
 ) external view returns (
-    uint256[]);
+    uint256[]
+);
 ```
 
 ### getProposalInfo
@@ -274,7 +279,8 @@ function getProposalInfo(
     uint256 _thresholdConditionBIPS,
     uint256 _majorityConditionBIPS,
     uint256 _circulatingSupply,
-    string _description);
+    string _description
+);
 ```
 
 | Parameters    | Type      | Description         |
@@ -304,7 +310,8 @@ function getProposalVotes(
     uint256 _proposalId
 ) external view returns (
     uint256 _for,
-    uint256 _against);
+    uint256 _against
+);
 ```
 
 | Parameters    | Type      | Description         |
@@ -325,7 +332,8 @@ function getVotes(
     address _voter,
     uint256 _blockNumber
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 | Parameters     | Type      | Description           |
@@ -346,7 +354,8 @@ function hasVoted(
     uint256 _proposalId,
     address _voter
 ) external view returns (
-    bool);
+    bool
+);
 ```
 
 | Parameters    | Type      | Description           |
@@ -366,7 +375,8 @@ Returns the current state of a proposal.
 function state(
     uint256 _proposalId
 ) external view returns (
-    enum IGovernor.ProposalState);
+    enum IGovernor.ProposalState
+);
 ```
 
 | Parameters    | Type      | Description         |

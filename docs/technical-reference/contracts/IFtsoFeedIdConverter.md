@@ -17,7 +17,8 @@ function getFeedCategoryAndName(
     bytes21 _feedId
 ) external pure returns (
     uint8 _category,
-    string _name);
+    string _name
+);
 ```
 
 | Parameters | Type      | Description |
@@ -38,7 +39,8 @@ function getFeedId(
     uint8 _category,
     string _name
 ) external view returns (
-    bytes21);
+    bytes21
+);
 ```
 
 | Parameters  | Type     | Description    |

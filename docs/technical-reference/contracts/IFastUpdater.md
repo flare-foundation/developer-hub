@@ -63,7 +63,8 @@ Informational getter concerning the eligibility criterion for being chosen by so
 ```solidity
 function currentScoreCutoff(
 ) external view returns (
-    uint256 _cutoff);
+    uint256 _cutoff
+);
 ```
 
 | Returns   | Type      | Description                                                                                                                                                                                    |
@@ -78,7 +79,8 @@ Informational getter concerning a provider's likelihood of being chosen by sorti
 function currentSortitionWeight(
     address _signingPolicyAddress
 ) external view returns (
-    uint256 _weight);
+    uint256 _weight
+);
 ```
 
 | Parameters              | Type      | Description                                                                                                                                                                |
@@ -98,7 +100,8 @@ function fetchAllCurrentFeeds(
 ) external view returns (
     bytes21[] _feedIds,
     uint256[] _feeds,
-    int8[] _decimals);
+    int8[] _decimals
+);
 ```
 
 | Returns     | Type        | Description                           |
@@ -117,7 +120,8 @@ function fetchCurrentFeeds(
     uint256[] _indices
 ) external view returns (
     uint256[] _feeds,
-    int8[] _decimals);
+    int8[] _decimals
+);
 ```
 
 | Parameters | Type        | Description                                                                                                                          |

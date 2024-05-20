@@ -29,7 +29,8 @@ The offset in reward epochs for the decimals value to become effective.
 ```solidity
 function decimalsUpdateOffset(
 ) external view returns (
-    uint24);
+    uint24
+);
 ```
 
 ### defaultDecimals
@@ -39,7 +40,8 @@ The default decimals value.
 ```solidity
 function defaultDecimals(
 ) external view returns (
-    int8);
+    int8
+);
 ```
 
 ### getCurrentDecimals
@@ -50,7 +52,8 @@ Returns current decimals set for `_feedId`.
 function getCurrentDecimals(
     bytes21 _feedId
 ) external view returns (
-    int8);
+    int8
+);
 ```
 
 | Parameters | Type      | Description |
@@ -65,7 +68,8 @@ Returns current decimals setting for `_feedIds`.
 function getCurrentDecimalsBulk(
     bytes _feedIds
 ) external view returns (
-    bytes _decimals);
+    bytes _decimals
+);
 ```
 
 | Parameters | Type    | Description                                  |
@@ -85,7 +89,8 @@ function getDecimals(
     bytes21 _feedId,
     uint256 _rewardEpochId
 ) external view returns (
-    int8);
+    int8
+);
 ```
 
 | Parameters       | Type      | Description                                                                                                      |
@@ -102,7 +107,8 @@ function getDecimalsBulk(
     bytes _feedIds,
     uint256 _rewardEpochId
 ) external view returns (
-    bytes _decimals);
+    bytes _decimals
+);
 ```
 
 | Parameters       | Type      | Description                                  |
@@ -124,7 +130,8 @@ function getScheduledDecimalsChanges(
 ) external view returns (
     int8[] _decimals,
     uint256[] _validFromEpochId,
-    bool[] _fixed);
+    bool[] _fixed
+);
 ```
 
 | Parameters | Type      | Description |

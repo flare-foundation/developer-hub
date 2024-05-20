@@ -15,7 +15,8 @@ Returns current random number. Method reverts if random number was not generated
 ```solidity
 function getCurrentRandom(
 ) external view returns (
-    uint256 _randomNumber);
+    uint256 _randomNumber
+);
 ```
 
 | Returns         | Type      | Description            |
@@ -31,7 +32,8 @@ It is up to the caller to decide whether to use the returned random number or no
 function getCurrentRandomWithQuality(
 ) external view returns (
     uint256 _randomNumber,
-    bool _isSecureRandom);
+    bool _isSecureRandom
+);
 ```
 
 | Returns           | Type      | Description                                   |
@@ -49,7 +51,8 @@ function getCurrentRandomWithQualityAndTimestamp(
 ) external view returns (
     uint256 _randomNumber,
     bool _isSecureRandom,
-    uint256 _randomTimestamp);
+    uint256 _randomTimestamp
+);
 ```
 
 | Returns            | Type      | Description                                   |

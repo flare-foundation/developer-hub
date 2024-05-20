@@ -218,7 +218,8 @@ Gets the delegation address of a voter at the current block number.
 function getDelegationAddressOf(
     address _voter
 ) external view returns (
-    address);
+    address
+);
 ```
 
 | Parameters | Type      | Description    |
@@ -238,7 +239,8 @@ function getDelegationAddressOfAt(
     address _voter,
     uint256 _blockNumber
 ) external view returns (
-    address);
+    address
+);
 ```
 
 | Parameters     | Type      | Description    |
@@ -258,7 +260,8 @@ Gets the node ids of a voter at the current block number.
 function getNodeIdsOf(
     address _voter
 ) external view returns (
-    bytes20[]);
+    bytes20[]
+);
 ```
 
 | Parameters | Type      | Description    |
@@ -278,7 +281,8 @@ function getNodeIdsOfAt(
     address _voter,
     uint256 _blockNumber
 ) external view returns (
-    bytes20[]);
+    bytes20[]
+);
 ```
 
 | Parameters     | Type      | Description    |
@@ -299,7 +303,8 @@ function getPublicKeyOf(
     address _voter
 ) external view returns (
     bytes32,
-    bytes32);
+    bytes32
+);
 ```
 
 | Parameters | Type      | Description    |
@@ -321,7 +326,8 @@ function getPublicKeyOfAt(
     uint256 _blockNumber
 ) external view returns (
     bytes32,
-    bytes32);
+    bytes32
+);
 ```
 
 | Parameters     | Type      | Description    |
@@ -342,7 +348,8 @@ Gets voter's addresses at the current block number.
 function getVoterAddresses(
     address _voter
 ) external view returns (
-    struct IEntityManager.VoterAddresses _addresses);
+    struct IEntityManager.VoterAddresses _addresses
+);
 ```
 
 | Parameters | Type      | Description    |
@@ -362,7 +369,8 @@ function getVoterAddressesAt(
     address _voter,
     uint256 _blockNumber
 ) external view returns (
-    struct IEntityManager.VoterAddresses _addresses);
+    struct IEntityManager.VoterAddresses _addresses
+);
 ```
 
 | Parameters     | Type      | Description    |
@@ -383,7 +391,8 @@ function getVoterForDelegationAddress(
     address _delegationAddress,
     uint256 _blockNumber
 ) external view returns (
-    address _voter);
+    address _voter
+);
 ```
 
 | Parameters           | Type      | Description         |
@@ -404,7 +413,8 @@ function getVoterForNodeId(
     bytes20 _nodeId,
     uint256 _blockNumber
 ) external view returns (
-    address _voter);
+    address _voter
+);
 ```
 
 | Parameters     | Type      | Description   |
@@ -426,7 +436,8 @@ function getVoterForPublicKey(
     bytes32 _part2,
     uint256 _blockNumber
 ) external view returns (
-    address _voter);
+    address _voter
+);
 ```
 
 | Parameters     | Type      | Description                    |
@@ -448,7 +459,8 @@ function getVoterForSigningPolicyAddress(
     address _signingPolicyAddress,
     uint256 _blockNumber
 ) external view returns (
-    address _voter);
+    address _voter
+);
 ```
 
 | Parameters              | Type      | Description             |
@@ -469,7 +481,8 @@ function getVoterForSubmitAddress(
     address _submitAddress,
     uint256 _blockNumber
 ) external view returns (
-    address _voter);
+    address _voter
+);
 ```
 
 | Parameters       | Type      | Description     |
@@ -490,7 +503,8 @@ function getVoterForSubmitSignaturesAddress(
     address _submitSignaturesAddress,
     uint256 _blockNumber
 ) external view returns (
-    address _voter);
+    address _voter
+);
 ```
 
 | Parameters                 | Type      | Description                |

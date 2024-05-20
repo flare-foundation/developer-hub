@@ -31,7 +31,8 @@ The size of the feeds history.
 ```solidity
 function feedsHistorySize(
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 ### ftsoProtocolId
@@ -41,7 +42,8 @@ The FTSO protocol id.
 ```solidity
 function ftsoProtocolId(
 ) external view returns (
-    uint8);
+    uint8
+);
 ```
 
 ### getCurrentFeed
@@ -52,7 +54,8 @@ Returns the current feed.
 function getCurrentFeed(
     bytes21 _feedId
 ) external view returns (
-    struct IFtsoFeedPublisher.Feed);
+    struct IFtsoFeedPublisher.Feed
+);
 ```
 
 | Parameters | Type      | Description |
@@ -68,7 +71,8 @@ function getFeed(
     bytes21 _feedId,
     uint256 _votingRoundId
 ) external view returns (
-    struct IFtsoFeedPublisher.Feed);
+    struct IFtsoFeedPublisher.Feed
+);
 ```
 
 | Parameters       | Type      | Description      |

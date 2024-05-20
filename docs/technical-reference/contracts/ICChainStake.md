@@ -16,7 +16,8 @@ Queries the token balance of `_owner` at current block.
 function balanceOf(
     address _owner
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 | Parameters | Type      | Description                                           |
@@ -36,7 +37,8 @@ function balanceOfAt(
     address _owner,
     uint256 _blockNumber
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 | Parameters     | Type      | Description                                           |
@@ -57,7 +59,8 @@ function batchVotePowerOfAt(
     address[] _accounts,
     uint256 _blockNumber
 ) external view returns (
-    uint256[]);
+    uint256[]
+);
 ```
 
 | Parameters     | Type        | Description                                  |
@@ -78,7 +81,8 @@ function stakesOf(
     address _owner
 ) external view returns (
     address[] _accounts,
-    uint256[] _amounts);
+    uint256[] _amounts
+);
 ```
 
 | Parameters | Type      | Description                |
@@ -101,7 +105,8 @@ function stakesOfAt(
     uint256 _blockNumber
 ) external view returns (
     address[] _accounts,
-    uint256[] _amounts);
+    uint256[] _amounts
+);
 ```
 
 | Parameters     | Type      | Description                     |
@@ -121,7 +126,8 @@ Total amount of tokens at current block.
 ```solidity
 function totalSupply(
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 | Returns | Type      | Description                         |
@@ -136,7 +142,8 @@ Total amount of tokens at a specific `_blockNumber`.
 function totalSupplyAt(
     uint256 _blockNumber
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 | Parameters     | Type      | Description                                       |
@@ -154,7 +161,8 @@ Get the current total vote power.
 ```solidity
 function totalVotePower(
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 | Returns | Type      | Description                                                      |
@@ -169,7 +177,8 @@ Get the total vote power at block `_blockNumber`
 function totalVotePowerAt(
     uint256 _blockNumber
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 | Parameters     | Type      | Description                         |
@@ -190,7 +199,8 @@ Can only be used if `_blockNumber` is in the past, otherwise reverts.
 function totalVotePowerAtCached(
     uint256 _blockNumber
 ) external returns (
-    uint256);
+    uint256
+);
 ```
 
 | Parameters     | Type      | Description                         |
@@ -210,7 +220,8 @@ function votePowerFromTo(
     address _owner,
     address _account
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 | Parameters | Type      | Description                  |
@@ -232,7 +243,8 @@ function votePowerFromToAt(
     address _account,
     uint256 _blockNumber
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 | Parameters     | Type      | Description                         |
@@ -253,7 +265,8 @@ Get the current vote power of `_account`.
 function votePowerOf(
     address _account
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 | Parameters | Type      | Description                      |
@@ -273,7 +286,8 @@ function votePowerOfAt(
     address _account,
     uint256 _blockNumber
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 | Parameters     | Type      | Description                         |
@@ -296,7 +310,8 @@ function votePowerOfAtCached(
     address _owner,
     uint256 _blockNumber
 ) external returns (
-    uint256);
+    uint256
+);
 ```
 
 | Parameters     | Type      | Description                         |

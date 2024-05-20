@@ -43,7 +43,8 @@ Viewer for the current value of the expected sample size.
 ```solidity
 function getExpectedSampleSize(
 ) external view returns (
-    SampleSize);
+    SampleSize
+);
 ```
 
 ### getIncentiveDuration
@@ -51,7 +52,8 @@ function getExpectedSampleSize(
 ```solidity
 function getIncentiveDuration(
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 ### getPrecision
@@ -61,7 +63,8 @@ Viewer for the current value of the unit delta's precision (the fractional part 
 ```solidity
 function getPrecision(
 ) external view returns (
-    Precision);
+    Precision
+);
 ```
 
 ### getRange
@@ -71,7 +74,8 @@ Viewer for the current value of the per-block variation range.
 ```solidity
 function getRange(
 ) external view returns (
-    Range);
+    Range
+);
 ```
 
 ### getScale
@@ -81,7 +85,8 @@ Viewer for the current value of the scale itself.
 ```solidity
 function getScale(
 ) external view returns (
-    Scale);
+    Scale
+);
 ```
 
 ### offerIncentive

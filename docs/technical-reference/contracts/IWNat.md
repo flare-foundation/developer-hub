@@ -21,7 +21,8 @@ function allowance(
     address owner,
     address spender
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 ### approve
@@ -45,7 +46,8 @@ function approve(
     address spender,
     uint256 value
 ) external returns (
-    bool);
+    bool
+);
 ```
 
 ### balanceOf
@@ -56,7 +58,8 @@ Returns the value of tokens owned by `account`.
 function balanceOf(
     address account
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 ### balanceOfAt
@@ -68,7 +71,8 @@ function balanceOfAt(
     address _owner,
     uint256 _blockNumber
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 | Parameters     | Type      | Description                                           |
@@ -104,7 +108,8 @@ Get the current cleanup block number set with `setCleanupBlockNumber()`.
 ```solidity
 function cleanupBlockNumber(
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 | Returns | Type      | Description                             |
@@ -130,7 +135,8 @@ Should be compatible with ERC20 method.
 ```solidity
 function decimals(
 ) external view returns (
-    uint8);
+    uint8
+);
 ```
 
 ### delegate
@@ -177,7 +183,8 @@ function delegatesOf(
     address[] _delegateAddresses,
     uint256[] _bips,
     uint256 _count,
-    uint256 _delegationMode);
+    uint256 _delegationMode
+);
 ```
 
 | Parameters | Type      | Description           |
@@ -203,7 +210,8 @@ function delegatesOfAt(
     address[] _delegateAddresses,
     uint256[] _bips,
     uint256 _count,
-    uint256 _delegationMode);
+    uint256 _delegationMode
+);
 ```
 
 | Parameters     | Type      | Description                |
@@ -228,7 +236,8 @@ it can never be changed, even if all delegations are removed.
 function delegationModeOf(
     address _who
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 | Parameters | Type      | Description                         |
@@ -270,7 +279,8 @@ and delegating governance vote power.
 ```solidity
 function governanceVotePower(
 ) external view returns (
-    contract IGovernanceVotePower);
+    contract IGovernanceVotePower
+);
 ```
 
 ### name
@@ -282,7 +292,8 @@ Should be compatible with ERC20 method.
 ```solidity
 function name(
 ) external view returns (
-    string);
+    string
+);
 ```
 
 ### readVotePowerContract
@@ -303,7 +314,8 @@ Use it only for listening to events and revoking.
 ```solidity
 function readVotePowerContract(
 ) external view returns (
-    contract IVPContractEvents);
+    contract IVPContractEvents
+);
 ```
 
 ### revokeDelegationAt
@@ -366,7 +378,8 @@ Should be compatible with ERC20 method.
 ```solidity
 function symbol(
 ) external view returns (
-    string);
+    string
+);
 ```
 
 ### totalSupply
@@ -376,7 +389,8 @@ Returns the value of tokens in existence.
 ```solidity
 function totalSupply(
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 ### totalSupplyAt
@@ -387,7 +401,8 @@ Total amount of tokens held by all accounts at a specific block number.
 function totalSupplyAt(
     uint256 _blockNumber
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 | Parameters     | Type      | Description                |
@@ -405,7 +420,8 @@ Get the current total vote power.
 ```solidity
 function totalVotePower(
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 | Returns | Type      | Description                                                     |
@@ -420,7 +436,8 @@ Get the total vote power at block `_blockNumber`.
 function totalVotePowerAt(
     uint256 _blockNumber
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 | Parameters     | Type      | Description                |
@@ -444,7 +461,8 @@ function transfer(
     address to,
     uint256 value
 ) external returns (
-    bool);
+    bool
+);
 ```
 
 ### transferFrom
@@ -463,7 +481,8 @@ function transferFrom(
     address to,
     uint256 value
 ) external returns (
-    bool);
+    bool
+);
 ```
 
 ### undelegateAll
@@ -487,7 +506,8 @@ Does not reset delegation mode back to NOT SET.
 function undelegateAllExplicit(
     address[] _delegateAddresses
 ) external returns (
-    uint256);
+    uint256
+);
 ```
 
 | Parameters           | Type        | Description                                                                               |
@@ -506,7 +526,8 @@ Compute the current undelegated vote power of the `_owner` account.
 function undelegatedVotePowerOf(
     address _owner
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 | Parameters | Type      | Description           |
@@ -526,7 +547,8 @@ function undelegatedVotePowerOfAt(
     address _owner,
     uint256 _blockNumber
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 | Parameters     | Type      | Description                |
@@ -547,7 +569,8 @@ function votePowerFromTo(
     address _from,
     address _to
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 | Parameters | Type      | Description           |
@@ -569,7 +592,8 @@ function votePowerFromToAt(
     address _to,
     uint256 _blockNumber
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 | Parameters     | Type      | Description                |
@@ -590,7 +614,8 @@ Get the current vote power of `_owner`.
 function votePowerOf(
     address _owner
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 | Parameters | Type      | Description           |
@@ -610,7 +635,8 @@ function votePowerOfAt(
     address _owner,
     uint256 _blockNumber
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 | Parameters     | Type      | Description                |
@@ -631,7 +657,8 @@ function votePowerOfAtIgnoringRevocation(
     address _owner,
     uint256 _blockNumber
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 | Parameters     | Type      | Description                |
@@ -693,5 +720,6 @@ Use it only for listening to events, delegating, and revoking.
 ```solidity
 function writeVotePowerContract(
 ) external view returns (
-    contract IVPContractEvents);
+    contract IVPContractEvents
+);
 ```

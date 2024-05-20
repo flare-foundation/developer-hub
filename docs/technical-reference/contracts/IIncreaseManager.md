@@ -13,5 +13,6 @@ title: IIncreaseManager
 ```solidity
 function getIncentiveDuration(
 ) external view returns (
-    uint256);
+    uint256
+);
 ```

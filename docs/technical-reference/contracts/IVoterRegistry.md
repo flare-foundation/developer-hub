@@ -58,7 +58,8 @@ If beneficiary is chilled, the vote power assigned to it is zero.
 function chilledUntilRewardEpochId(
     bytes20 _beneficiary
 ) external view returns (
-    uint256 _rewardEpochId);
+    uint256 _rewardEpochId
+);
 ```
 
 | Parameters     | Type      | Description                                   |
@@ -79,7 +80,8 @@ Size for the next reward epoch can still change until the signing policy snapsho
 function getNumberOfRegisteredVoters(
     uint256 _rewardEpochId
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 | Parameters       | Type      | Description          |
@@ -96,7 +98,8 @@ List for the next reward epoch can still change until the signing policy snapsho
 function getRegisteredVoters(
     uint256 _rewardEpochId
 ) external view returns (
-    address[]);
+    address[]
+);
 ```
 
 | Parameters       | Type      | Description          |
@@ -112,7 +115,8 @@ function isVoterRegistered(
     address _voter,
     uint256 _rewardEpochId
 ) external view returns (
-    bool);
+    bool
+);
 ```
 
 | Parameters       | Type      | Description          |
@@ -127,7 +131,8 @@ Maximum number of voters in one reward epoch.
 ```solidity
 function maxVoters(
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 ### newSigningPolicyInitializationStartBlockNumber
@@ -139,7 +144,8 @@ It is a snaphost block of the voters' addresses (it is zero if the reward epoch 
 function newSigningPolicyInitializationStartBlockNumber(
     uint256 _rewardEpochId
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 | Parameters       | Type      | Description          |
@@ -153,7 +159,8 @@ Indicates if the voter must have the public key set when registering.
 ```solidity
 function publicKeyRequired(
 ) external view returns (
-    bool);
+    bool
+);
 ```
 
 ### registerVoter

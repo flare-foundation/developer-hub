@@ -122,7 +122,8 @@ Timestamp when the first reward epoch started, in seconds since UNIX epoch.
 ```solidity
 function firstRewardEpochStartTs(
 ) external view returns (
-    uint64);
+    uint64
+);
 ```
 
 ### firstVotingRoundStartTs
@@ -132,7 +133,8 @@ Timestamp when the first voting epoch started, in seconds since UNIX epoch.
 ```solidity
 function firstVotingRoundStartTs(
 ) external view returns (
-    uint64);
+    uint64
+);
 ```
 
 ### getCurrentRewardEpoch
@@ -142,7 +144,8 @@ Returns the current reward epoch id (backwards compatibility).
 ```solidity
 function getCurrentRewardEpoch(
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 ### getCurrentRewardEpochId
@@ -152,7 +155,8 @@ Returns the current reward epoch id.
 ```solidity
 function getCurrentRewardEpochId(
 ) external view returns (
-    uint24);
+    uint24
+);
 ```
 
 ### getCurrentVotingEpochId
@@ -162,7 +166,8 @@ Returns the current voting epoch id.
 ```solidity
 function getCurrentVotingEpochId(
 ) external view returns (
-    uint32);
+    uint32
+);
 ```
 
 ### getSeed
@@ -173,7 +178,8 @@ Returns the seed for given reward epoch id.
 function getSeed(
     uint256 _rewardEpochId
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 ### getStartVotingRoundId
@@ -184,7 +190,8 @@ Returns the start voting round id for given reward epoch id.
 function getStartVotingRoundId(
     uint256 _rewardEpochId
 ) external view returns (
-    uint32);
+    uint32
+);
 ```
 
 ### getThreshold
@@ -195,7 +202,8 @@ Returns the threshold for given reward epoch id.
 function getThreshold(
     uint256 _rewardEpochId
 ) external view returns (
-    uint16);
+    uint16
+);
 ```
 
 ### getVotePowerBlock
@@ -206,7 +214,8 @@ Returns the vote power block for given reward epoch id.
 function getVotePowerBlock(
     uint256 _rewardEpochId
 ) external view returns (
-    uint64 _votePowerBlock);
+    uint64 _votePowerBlock
+);
 ```
 
 ### getVoterRegistrationData
@@ -218,7 +227,8 @@ function getVoterRegistrationData(
     uint256 _rewardEpochId
 ) external view returns (
     uint256 _votePowerBlock,
-    bool _enabled);
+    bool _enabled
+);
 ```
 
 | Parameters       | Type      | Description      |
@@ -237,7 +247,8 @@ Indicates if voter registration is currently enabled.
 ```solidity
 function isVoterRegistrationEnabled(
 ) external view returns (
-    bool);
+    bool
+);
 ```
 
 ### rewardEpochDurationSeconds
@@ -247,7 +258,8 @@ Duration of reward epoch, in seconds.
 ```solidity
 function rewardEpochDurationSeconds(
 ) external view returns (
-    uint64);
+    uint64
+);
 ```
 
 ### signNewSigningPolicy
@@ -331,7 +343,8 @@ Duration of voting epoch, in seconds.
 ```solidity
 function votingEpochDurationSeconds(
 ) external view returns (
-    uint64);
+    uint64
+);
 ```
 
 ## Structures

@@ -54,7 +54,8 @@ Returns the feed configurations, including removed ones.
 ```solidity
 function getFeedConfigurations(
 ) external view returns (
-    struct IFastUpdatesConfiguration.FeedConfiguration[]);
+    struct IFastUpdatesConfiguration.FeedConfiguration[]
+);
 ```
 
 ### getFeedConfigurationsBytes
@@ -66,7 +67,8 @@ function getFeedConfigurationsBytes(
 ) external view returns (
     bytes _feedIds,
     bytes _rewardBandValues,
-    bytes _inflationShares);
+    bytes _inflationShares
+);
 ```
 
 | Returns             | Type    | Description                                            |
@@ -83,7 +85,8 @@ Returns the feed id at a given index. Removed (unused) feed index will return by
 function getFeedId(
     uint256 _index
 ) external view returns (
-    bytes21 _feedId);
+    bytes21 _feedId
+);
 ```
 
 | Parameters | Type      | Description |
@@ -101,7 +104,8 @@ Returns all feed ids. For removed (unused) feed indices, the feed id will be byt
 ```solidity
 function getFeedIds(
 ) external view returns (
-    bytes21[]);
+    bytes21[]
+);
 ```
 
 ### getFeedIndex
@@ -112,7 +116,8 @@ Returns the index of a feed.
 function getFeedIndex(
     bytes21 _feedId
 ) external view returns (
-    uint256 _index);
+    uint256 _index
+);
 ```
 
 | Parameters | Type      | Description  |
@@ -130,7 +135,8 @@ Returns the number of feeds, including removed ones.
 ```solidity
 function getNumberOfFeeds(
 ) external view returns (
-    uint256);
+    uint256
+);
 ```
 
 ### getUnusedIndices
@@ -140,7 +146,8 @@ Returns the unused indices - indices of removed feeds.
 ```solidity
 function getUnusedIndices(
 ) external view returns (
-    uint256[]);
+    uint256[]
+);
 ```
 
 ## Structures

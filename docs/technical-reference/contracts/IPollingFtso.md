@@ -130,7 +130,8 @@ its proxy or the maintainer of the contract.
 function canPropose(
     address _account
 ) external view returns (
-    bool);
+    bool
+);
 ```
 
 | Parameters | Type      | Description                     |
@@ -150,7 +151,8 @@ function canVote(
     address _account,
     uint256 _proposalId
 ) external view returns (
-    bool);
+    bool
+);
 ```
 
 | Parameters    | Type      | Description                     |
@@ -200,7 +202,8 @@ Returns id and description of the last created proposal.
 function getLastProposal(
 ) external view returns (
     uint256 _proposalId,
-    string _description);
+    string _description
+);
 ```
 
 | Returns        | Type      | Description                       |
@@ -216,7 +219,8 @@ Returns the description string that was supplied when the specified proposal was
 function getProposalDescription(
     uint256 _proposalId
 ) external view returns (
-    string _description);
+    string _description
+);
 ```
 
 | Parameters    | Type      | Description         |
@@ -242,7 +246,8 @@ function getProposalInfo(
     uint256 _voteEndTime,
     uint256 _thresholdConditionBIPS,
     uint256 _majorityConditionBIPS,
-    uint256 _totalWeight);
+    uint256 _totalWeight
+);
 ```
 
 | Parameters    | Type      | Description         |
@@ -269,7 +274,8 @@ function getProposalVotes(
     uint256 _proposalId
 ) external view returns (
     uint256 _for,
-    uint256 _against);
+    uint256 _against
+);
 ```
 
 | Parameters    | Type      | Description         |
@@ -290,7 +296,8 @@ function hasVoted(
     uint256 _proposalId,
     address _voter
 ) external view returns (
-    bool);
+    bool
+);
 ```
 
 | Parameters    | Type      | Description           |
@@ -310,7 +317,8 @@ Creates a new proposal.
 function propose(
     string _description
 ) external payable returns (
-    uint256);
+    uint256
+);
 ```
 
 | Parameters     | Type     | Description                         |
@@ -366,7 +374,8 @@ Returns the current state of a proposal.
 function state(
     uint256 _proposalId
 ) external view returns (
-    enum IPollingFtso.ProposalState);
+    enum IPollingFtso.ProposalState
+);
 ```
 
 | Parameters    | Type      | Description         |

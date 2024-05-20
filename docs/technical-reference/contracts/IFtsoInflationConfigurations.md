@@ -16,7 +16,8 @@ Returns the FTSO configuration at `_index`.
 function getFtsoConfiguration(
     uint256 _index
 ) external view returns (
-    struct IFtsoInflationConfigurations.FtsoConfiguration);
+    struct IFtsoInflationConfigurations.FtsoConfiguration
+);
 ```
 
 | Parameters | Type      | Description                          |
@@ -30,7 +31,8 @@ Returns the FTSO configurations.
 ```solidity
 function getFtsoConfigurations(
 ) external view returns (
-    struct IFtsoInflationConfigurations.FtsoConfiguration[]);
+    struct IFtsoInflationConfigurations.FtsoConfiguration[]
+);
 ```
 
 ## Structures

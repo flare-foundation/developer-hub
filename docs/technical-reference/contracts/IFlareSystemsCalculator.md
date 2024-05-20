@@ -34,7 +34,8 @@ Number of blocks (in addition to non-punishable blocks) after which all rewards 
 ```solidity
 function signingPolicySignNoRewardsDurationBlocks(
 ) external view returns (
-    uint64);
+    uint64
+);
 ```
 
 ### signingPolicySignNonPunishableDurationBlocks
@@ -44,7 +45,8 @@ Number of non-punishable blocks to sign new signing policy.
 ```solidity
 function signingPolicySignNonPunishableDurationBlocks(
 ) external view returns (
-    uint64);
+    uint64
+);
 ```
 
 ### signingPolicySignNonPunishableDurationSeconds
@@ -54,7 +56,8 @@ Non-punishable time to sign new signing policy.
 ```solidity
 function signingPolicySignNonPunishableDurationSeconds(
 ) external view returns (
-    uint64);
+    uint64
+);
 ```
 
 ### wNatCapPPM
@@ -64,5 +67,6 @@ WNat cap used in signing policy weight.
 ```solidity
 function wNatCapPPM(
 ) external view returns (
-    uint24);
+    uint24
+);
 ```
