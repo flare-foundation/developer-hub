@@ -42,6 +42,14 @@ Once complete, you can switch node version back to the `developer-hub` project
 nvm use 20
 ```
 
+## Format
+
+Formats all documents with Prettier.
+
+```bash
+npm run format
+```
+
 ## Build
 
 ```bash
@@ -49,9 +57,3 @@ npm run build
 ```
 
 This command generates static content into the `build` directory and can be served using any static contents hosting service.
-
-## Format
-
-```bash
-npm run format
-```
