@@ -7,7 +7,8 @@ type FeatureItem = {
   title: string;
   Svg: React.ComponentType<React.ComponentProps<"svg">>;
   description: JSX.Element;
-  link: string;
+  linkToProtocolDocs: string;
+  linkToTechReference: string;
 };
 
 const FeatureList: FeatureItem[] = [
@@ -20,7 +21,8 @@ const FeatureList: FeatureItem[] = [
         Flare
       </>
     ),
-    link: "docs/ftso/fast-updates/intro",
+    linkToProtocolDocs: "docs/ftso/fast-updates/intro",
+    linkToTechReference: "docs/ftso/fast-updates/IFastUpdater",
   },
   {
     title: "FDC",
@@ -31,7 +33,9 @@ const FeatureList: FeatureItem[] = [
         on Flare
       </>
     ),
-    link: "docs/fdc/intro",
+    linkToProtocolDocs: "docs/fdc/intro",
+    linkToTechReference:
+      "docs/technical-reference/contracts/IFtsoFeedPublisher",
   },
   {
     title: "FAssets",
@@ -42,7 +46,8 @@ const FeatureList: FeatureItem[] = [
         Flare
       </>
     ),
-    link: "docs/fassets/intro",
+    linkToProtocolDocs: "docs/fassets/intro",
+    linkToTechReference: "docs/technical-reference/contracts/ICChainStake",
   },
 ];
 
@@ -60,7 +65,12 @@ function Feature({ title, Svg, description, link }: FeatureItem) {
   );
 }
 
-function FeatureCard({ title, Svg, description, link }: FeatureItem) {
+function FeatureCard({
+  title,
+  Svg,
+  description,
+  linkToProtocolDocs,
+}: FeatureItem) {
   return (
     <div className={clsx("col col--4")}>
       <div className="card margin--sm padding--md">
@@ -73,9 +83,9 @@ function FeatureCard({ title, Svg, description, link }: FeatureItem) {
           <div className={styles.buttons}>
             <Link
               className="button button--outline button--primary button--md"
-              to={link}
+              to={linkToProtocolDocs}
             >
-              Learn More
+              Protocol Docs
             </Link>
           </div>
         </div>
