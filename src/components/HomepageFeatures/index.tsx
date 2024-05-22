@@ -8,7 +8,6 @@ type FeatureItem = {
   Svg: React.ComponentType<React.ComponentProps<"svg">>;
   description: JSX.Element;
   linkToProtocolDocs: string;
-  linkToTechReference: string;
 };
 
 const FeatureList: FeatureItem[] = [
@@ -21,8 +20,7 @@ const FeatureList: FeatureItem[] = [
         Flare
       </>
     ),
-    linkToProtocolDocs: "docs/ftso/fast-updates/intro",
-    linkToTechReference: "docs/ftso/fast-updates/IFastUpdater",
+    linkToProtocolDocs: "docs/ftso/intro",
   },
   {
     title: "FDC",
@@ -34,8 +32,6 @@ const FeatureList: FeatureItem[] = [
       </>
     ),
     linkToProtocolDocs: "docs/fdc/intro",
-    linkToTechReference:
-      "docs/technical-reference/contracts/IFtsoFeedPublisher",
   },
   {
     title: "FAssets",
@@ -47,7 +43,6 @@ const FeatureList: FeatureItem[] = [
       </>
     ),
     linkToProtocolDocs: "docs/fassets/intro",
-    linkToTechReference: "docs/technical-reference/contracts/ICChainStake",
   },
 ];
 

@@ -1,8 +1,9 @@
 ---
 title: IFastUpdatesConfiguration
+sidebar_position: 2
 ---
 
-FastUpdatesConfiguration interface.
+Interface to read FTSOv2 configuration.
 Sourced from `IFastUpdatesConfiguration.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/IFastUpdatesConfiguration.sol).
 
 ## Functions

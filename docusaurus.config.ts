@@ -75,19 +75,13 @@ const config: Config = {
           type: "docSidebar",
           sidebarId: "networkSidebar",
           position: "left",
-          label: "Flare ☀️",
+          label: "Flare Network ☀️",
         },
         {
           type: "docSidebar",
           sidebarId: "dataProtocolsSidebar",
           position: "left",
           label: "Data Protocols",
-        },
-        {
-          type: "docSidebar",
-          sidebarId: "technicalReferenceSidebar",
-          position: "left",
-          label: "Technical Reference",
         },
         { to: "/guides", label: "Guides", position: "left" },
         {

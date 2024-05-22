@@ -1,8 +1,9 @@
 ---
 title: IFastUpdater
+sidebar_position: 1
 ---
 
-Fast updater interface.
+Primary interface for interacting with FTSOv2.
 Sourced from `IFastUpdater.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/IFastUpdater.sol).
 
 ## Functions
