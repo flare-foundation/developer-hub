@@ -1,35 +1,17 @@
 ---
 sidebar_position: 2
 slug: configuration
+title: Network Configuration
 ---
 
 import Tabs from "@theme/Tabs";
 import TabItem from "@theme/TabItem";
 
-# Network Configuration
-
-:::note
-
-Flare supports EVM versions up to London. Learn how to set the EVM version for your compiler in the [Solidity documentation](https://docs.soliditylang.org/en/latest/using-the-compiler.html#setting-the-evm-version-to-target).
-
-```json
-// In the standard Solidity JSON interface
-{
-  "settings": {
-    "optimizer": {
-      /* ... */
-    },
-    "evmVersion": "london"
-  }
-}
-```
-
-:::
-
 <Tabs block>
   <TabItem value="flare" label="Flare Mainnet" default>
     |               |                                                |
     |---------------|------------------------------------------------|
+    | Network type      | Mainnet                                             |
     | Chain ID      | 14                                             |
     | Gas token  | `FLR`                                          |
     | Gas token decimals  | 18                                          |
@@ -40,6 +22,7 @@ Flare supports EVM versions up to London. Learn how to set the EVM version for y
   <TabItem value="coston2" label="Flare Testnet (Coston2)">
     |               |                                                              |
     |---------------|--------------------------------------------------------------|
+    | Network type      | Testnet                                             |
     | Chain ID      | 114                                                          |
     | Gas token  | `C2FLR`                                                       |
     | Gas token decimals  | 18                                          |
@@ -51,6 +34,7 @@ Flare supports EVM versions up to London. Learn how to set the EVM version for y
     <TabItem value="songbird" label="Songbird Canary">
     |               |                                                                 |
     |---------------|--------------------------------------------------------------------------------------------------|
+    | Network type      | Canary                                             |
     | Chain ID | 19 |
     | Gas token  | `SGB` |
     | Gas token decimals  | 18                                          |
@@ -61,6 +45,7 @@ Flare supports EVM versions up to London. Learn how to set the EVM version for y
   <TabItem value="coston" label="Songbird Testnet (Coston)">
     |               |                                                            |
     |---------------|------------------------------------------------------------|
+    | Network type      | Testnet                                             |
     | Chain ID      | 16                                                         |
     | Gas token  | `CFLR`                                                     |
     | Gas token decimals  | 18                                          |
@@ -72,25 +57,59 @@ Flare supports EVM versions up to London. Learn how to set the EVM version for y
 
 </Tabs>
 
-## What are the different networks
-
-- **Flare** is the main network
-- **Coston2** is the test network for Flare
-- **Songbird** is the canary network for testing before deploying to Flare
-- **Coston** is the test network for Songbird
+## Development tracks
 
 All the four networks are permissionless. The most common development tracks are:
 
 1. Coston2 Testnet → Flare Mainnet
+
 2. Coston Testnet → Songbird Canary → Flare Mainnet
 
-## How are transaction fees calculated
+## Transaction format
 
-Flare supports [EIP-2718](https://eips.ethereum.org/EIPS/eip-2718) style typed transactions. The transaction fee is calculated based on the type of transaction.
+- **Address space:** Matches Ethereum, 20-byte addresses using ECDSA
 
-- **Type0** (Legacy) - The transaction fee is calculated as `gasUsed * gasPrice`
-- **Type2** (EIP-1559) - The transaction fee is calculated as `maxFeePerGas * gas`, where `maxFeePerGas` is distributed between the base fee and the priority fee. The base fee is adjusted according to the block production rate. Both the base and priority fees are burned.
+- **Transaction format:** Matches Ethereum, complies with [EIP-2718](https://eips.ethereum.org/EIPS/eip-2718), endoded with [RLP](https://ethereum.org/en/developers/docs/data-structures-and-encoding/rlp/)
 
-## Time to finality
+- **Transaction fees:**
 
-Flare uses [Snowman++ consensus](https://github.com/ava-labs/avalanchego/blob/v1.6.0-fuji/vms/proposervm/README.md), which offers a finality time of ≈2 seconds.
+  - **Type0** (Legacy) - Fee is calculated as `gasUsed * gasPrice`
+
+  - **Type2** (EIP-1559) - Fee is calculated as `maxFeePerGas * gas`, where `maxFeePerGas = baseFee + priorityFee`. Both the base and priority fees are burned.
+
+- **Wallet compatibility:** Supports standard Ethereum wallets like Metamask, Ledger, Trezor, etc. The only change required is to modify the RPC URL and Chain ID.
+
+## Smart contracts
+
+- **RPC-API:** [Ethereum RPC API](https://ethereum.org/en/developers/docs/apis/json-rpc/)
+- **Supported opcodes:** All [opcodes](https://www.evm.codes/?fork=london) (up to the London fork) are supported. In the standard Solidity JSON interface:
+  ```json
+  {
+    "settings": {
+      "optimizer": {
+        /* ... */
+      },
+      "evmVersion": "london"
+    }
+  }
+  ```
+
+## Consensus
+
+- **Sybil resistance mechanism:** Proof-of-Stake (PoS)
+
+- **Delegation:** In-protocol
+
+- **Transactions/second:** ≈4500
+
+- **Block time:** ≈2 seconds
+
+- **Finality:** ≈2 seconds
+
+- **Transaction ordering:** Leader's discretion (default behaviour is priority gas auction)
+
+- **Consensus mechanism:** Snowman++ (from [Avalanche](https://docs.avax.network)) offers a high-throughput, totally ordered consensus mechanism alongside a leader protocol to minimize MEV.
+
+- **Consensus participants:** Validators are randomly selected as leaders to propose new blocks, which are validated by the rest of the network. The probability of a node being elected leader is proportional to the node's stake. Only the top 100 nodes by stake are selected as validators
+
+- **Enshrined protocols:** In addition to consensus, Flare validators are also data providers for [FTSO](run-a-node/ftso-data-provider) and attestation providers for [FDC](run-a-node/fdc-attestation-provider)
