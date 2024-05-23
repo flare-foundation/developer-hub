@@ -3,7 +3,7 @@ import type { Config } from "@docusaurus/types";
 import type * as Preset from "@docusaurus/preset-classic";
 
 const config: Config = {
-  title: "Flare Developer Docs",
+  title: "Flare Developer Hub",
   tagline:
     "The decentralized origin for Flare builders. Written by builders, for builders.",
   favicon: "/img/favicon.ico", // TODO: This should be an ICO file
@@ -67,7 +67,7 @@ const config: Config = {
       },
     },
     navbar: {
-      title: "Developer Docs",
+      title: "Developer Hub",
       hideOnScroll: false,
       logo: {
         alt: "Flare Icon",
