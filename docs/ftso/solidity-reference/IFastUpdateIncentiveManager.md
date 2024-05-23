@@ -1,9 +1,9 @@
 ---
 title: IFastUpdateIncentiveManager
 sidebar_position: 3
+description: Interface to make FTSOv2 incentive offers.
 ---
 
-Interface to make FTSOv2 incentive offers.
 Sourced from `IFastUpdateIncentiveManager.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/IFastUpdateIncentiveManager.sol).
 
 ## Functions

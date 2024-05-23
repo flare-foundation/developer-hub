@@ -1,6 +1,7 @@
 ---
 title: IFastUpdatesConfiguration
 sidebar_position: 2
+description: Interface to read FTSOv2 configuration.
 ---
 
 Interface to read FTSOv2 configuration.
