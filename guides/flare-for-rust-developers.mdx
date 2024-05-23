@@ -1,10 +1,139 @@
 ---
 slug: flare-for-rust-developers
 title: Flare for Rust Developers
-authors: [lukaavbreht, dineshpinto]
-tags: [rust, quickstart]
+authors: [dineshpinto]
+tags: [rust, quickstart, ethers-rs]
 ---
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Orci eu lobortis elementum nibh. Sed arcu non odio euismod. Ornare suspendisse sed nisi lacus sed. Donec ac odio tempor orci. Vitae auctor eu augue ut lectus arcu bibendum at. Hac habitasse platea dictumst quisque sagittis purus sit amet. Lorem donec massa sapien faucibus. Urna nec tincidunt praesent semper feugiat nibh. Duis at tellus at urna. Nibh tortor id aliquet lectus proin. Volutpat blandit aliquam etiam erat velit scelerisque in dictum non. Elit pellentesque habitant morbi tristique senectus et netus et. Facilisi nullam vehicula ipsum a arcu cursus. Ante in nibh mauris cursus mattis. Pellentesque elit eget gravida cum sociis. Aliquet nibh praesent tristique magna sit amet.
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
 
-Mattis ullamcorper velit sed ullamcorper morbi tincidunt ornare. Dignissim sodales ut eu sem integer. Commodo elit at imperdiet dui accumsan sit. Arcu cursus vitae congue mauris rhoncus aenean vel elit scelerisque. Nibh praesent tristique magna sit. Sagittis purus sit amet volutpat consequat. Lorem donec massa sapien faucibus et molestie. Tempus urna et pharetra pharetra massa massa ultricies. Facilisis gravida neque convallis a cras semper auctor neque. Vestibulum morbi blandit cursus risus at ultrices mi. Dignissim sodales ut eu sem integer vitae. Rutrum quisque non tellus orci. Eu mi bibendum neque egestas congue quisque egestas diam. Augue eget arcu dictum varius duis at consectetur lorem donec. In mollis nunc sed id semper. Neque ornare aenean euismod elementum nisi quis.
+This guide is for developers who want to interact with Flare using Rust.
+
+{/* truncate */}
+
+## Getting started
+
+### Installation
+
+You can interact with Flare using [ethers-rs](https://github.com/gakonst/ethers-rs). Add this to your `Cargo.toml`:
+
+```toml
+[dependencies]
+ethers = "2.0"
+tokio = { version = "1.37.0", features = ["rt", "rt-multi-thread", "macros"] }
+eyre = "0.6.12"
+```
+
+### Usage
+
+You need to connect to testnet or mainnet via an RPC, any RPC listed on the [Network Configuration](../docs/flare/configuration#configuration) page will work. For this guide, you can use the Ankr RPC.
+
+<Tabs groupId="network">
+  <TabItem value="coston2" label="Coston2 Testnet" default>
+    ```rust
+    use ethers::providers::{Middleware, Provider};
+    use eyre::Result;
+
+    #[tokio::main]
+    async fn main() -> Result<()> {
+        let provider = Provider::try_from("https://rpc.ankr.com/flare_coston2")?;
+        let chain_id = provider.get_chainid().await?;
+        println!("Chain ID: {}", chain_id);
+        Ok(())
+    }
+    // Chain ID: 114
+    ```
+    </TabItem>
+    <TabItem value="flare" label="Flare Mainnet">
+    ```rust
+    use ethers::providers::{Middleware, Provider};
+    use eyre::Result;
+
+    #[tokio::main]
+    async fn main() -> Result<()> {
+        let provider = Provider::try_from("https://rpc.ankr.com/flare")?;
+        let chain_id = provider.get_chainid().await?;
+        println!("Chain ID: {}", chain_id);
+        Ok(())
+    }
+    // Chain ID: 14
+    ```
+
+  </TabItem>
+</Tabs>
+
+## Query a contract
+
+To query a contract, two pieces of information are required:
+
+- Contract address
+- Contract ABI (Application Binary Interface)
+
+For this example, you can use the `FlareContractRegistry` contract which has the same address `0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019` across both testnet and mainnet.
+
+### Fetch ABI
+
+To fetch a contract's ABI, you can use the Flare Explorer. Go to the [Code tab](https://flare-explorer.flare.network/address/0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019/contracts#address-tabs) of the Explorer, scroll down and click on `Copy ABI`. Paste this copied ABI into a file named `FlareContractRegistry.json` in the root of your project, i.e. same level as `Cargo.toml`.
+
+### Make query
+
+You can query the `FlareContractRegistry` contract to get the addresses of other Flare contracts.
+
+For example, querying it for the address of the `WNat` contract:
+
+<Tabs groupId="network">
+  <TabItem value="coston2" label="Coston2 Testnet" default>
+
+    ```rust
+    use std::sync::Arc;
+
+    use ethers::{prelude::abigen, providers::Provider, types::Address};
+    use eyre::Result;
+
+    #[tokio::main]
+    async fn main() -> Result<()> {
+        let address: Address = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019".parse()?;
+        let provider = Provider::try_from("https://rpc.ankr.com/flare_coston2")?;
+        let client = Arc::new(provider);
+
+        abigen!(FlareContractRegistry, "./FlareContractRegistry.json");
+        let contract = FlareContractRegistry::new(address, client);
+
+        if let Ok(wnat_addr) = contract.get_contract_address_by_name("WNat".to_string()).call().await {
+            println!("WNat contract address is {wnat_addr:?}");
+        }
+        Ok(())
+    }
+    // WNat contract address is 0xc67dce33d7a8efa5ffeb961899c73fe01bce9273
+    ```
+
+  </TabItem>
+    <TabItem value="flare" label="Flare Mainnet">
+
+    ```rust
+    use std::sync::Arc;
+
+    use ethers::{prelude::abigen, providers::Provider, types::Address};
+    use eyre::Result;
+
+    #[tokio::main]
+    async fn main() -> Result<()> {
+        let address: Address = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019".parse()?;
+
+        let provider = Provider::try_from("https://rpc.ankr.com/flare")?;
+        let client = Arc::new(provider);
+
+        abigen!(FlareContractRegistry, "./FlareContractRegistry.json");
+        let contract = FlareContractRegistry::new(address, client);
+
+        if let Ok(wnat_addr) = contract.get_contract_address_by_name("WNat".to_string()).call().await {
+            println!("WNat contract address is {wnat_addr:?}");
+        }
+        Ok(())
+    }
+    // WNat contract address is 0x1d80c49bbbcd1c0911346656b529df9e5c2f783d
+    ```
+
+  </TabItem>
+</Tabs>
