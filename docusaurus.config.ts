@@ -159,6 +159,27 @@ const config: Config = {
             },
           ],
         },
+        {
+          title: "Links",
+          items: [
+            {
+              label: "FTSO Explorer",
+              href: "https://coston2-systems-explorer.flare.rocks/",
+            },
+            {
+              label: "FTSO Monitor",
+              href: "https://flare-ftso-monitor.flare.network/data-providers",
+            },
+            {
+              label: "Governance Proposals",
+              href: "https://proposals.flare.network/",
+            },
+            {
+              label: "Flare P-Chain Explorer",
+              href: "https://flare.space/dapp/p-chain-explorer/validators",
+            },
+          ],
+        },
       ],
       copyright: `Copyright © Flare Networks ${new Date().getFullYear()}.`,
     },
