@@ -3,7 +3,7 @@ import type { Config } from "@docusaurus/types";
 import type * as Preset from "@docusaurus/preset-classic";
 
 const config: Config = {
-  title: "Flare Developer Hub",
+  title: "Flare Developer Docs",
   tagline:
     "The decentralized origin for Flare builders. Written by builders, for builders.",
   favicon: "/img/favicon.ico", // TODO: This should be an ICO file
@@ -67,7 +67,7 @@ const config: Config = {
       },
     },
     navbar: {
-      title: "Developer Hub",
+      title: "Developer Docs",
       hideOnScroll: false,
       logo: {
         alt: "Flare Icon",
@@ -96,6 +96,7 @@ const config: Config = {
         alt: "Flare Logo",
         src: "img/flare_tbfd_light.svg",
         srcDark: "img/flare_tbfd_dark.svg",
+        href: "https://flare.network/",
         width: 300,
       },
       links: [
