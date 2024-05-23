@@ -61,6 +61,11 @@ const config: Config = {
     image: "img/flare_tbfd_pink.jpg",
     defaultMode: "light",
     respectPrefersColorScheme: true,
+    docs: {
+      sidebar: {
+        autoCollapseCategories: true,
+      },
+    },
     navbar: {
       title: "Developer Hub",
       hideOnScroll: false,
