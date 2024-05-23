@@ -75,13 +75,7 @@ const config: Config = {
           type: "docSidebar",
           sidebarId: "networkSidebar",
           position: "left",
-          label: "Flare Network ☀️",
-        },
-        {
-          type: "docSidebar",
-          sidebarId: "dataProtocolsSidebar",
-          position: "left",
-          label: "Data Protocols",
+          label: "Flare ☀️",
         },
         { to: "/guides", label: "Guides", position: "left" },
         {
@@ -100,6 +94,23 @@ const config: Config = {
         width: 300,
       },
       links: [
+        {
+          title: "Support",
+          items: [
+            {
+              label: "FAQs",
+              to: "/docs/support/faqs",
+            },
+            {
+              label: "Terminology",
+              to: "docs/support/terminology",
+            },
+            {
+              label: "Audits",
+              to: "docs/support/audits",
+            },
+          ],
+        },
         {
           title: "Community",
           items: [
