@@ -20,7 +20,7 @@ const FeatureList: FeatureItem[] = [
         Flare
       </>
     ),
-    linkToProtocolDocs: "docs/ftso/intro",
+    linkToProtocolDocs: "docs/ftso/overview",
   },
   {
     title: "FDC",
