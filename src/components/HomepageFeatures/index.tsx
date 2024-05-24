@@ -22,7 +22,7 @@ const FeatureList: FeatureItem[] = [
       </>
     ),
     linkToProtocolDocs: "docs/ftso/overview",
-    linkToAPIReference: "docs/category/solidity-reference",
+    linkToAPIReference: "docs/category/api-reference",
   },
   {
     title: "FDC",
@@ -34,7 +34,7 @@ const FeatureList: FeatureItem[] = [
       </>
     ),
     linkToProtocolDocs: "docs/fdc/intro",
-    linkToAPIReference: "docs/category/solidity-reference",
+    linkToAPIReference: "docs/category/api-reference-1",
   },
   {
     title: "FAssets",
@@ -46,7 +46,7 @@ const FeatureList: FeatureItem[] = [
       </>
     ),
     linkToProtocolDocs: "docs/fassets/intro",
-    linkToAPIReference: "docs/category/solidity-reference",
+    linkToAPIReference: "docs/category/api-reference-1",
   },
 ];
 
