@@ -8,6 +8,7 @@ type FeatureItem = {
   Svg: React.ComponentType<React.ComponentProps<"svg">>;
   description: JSX.Element;
   linkToProtocolDocs: string;
+  linkToAPIReference: string;
 };
 
 const FeatureList: FeatureItem[] = [
@@ -21,17 +22,19 @@ const FeatureList: FeatureItem[] = [
       </>
     ),
     linkToProtocolDocs: "docs/ftso/overview",
+    linkToAPIReference: "docs/category/solidity-reference",
   },
   {
     title: "FDC",
     Svg: require("@site/static/img/DATACONNECTOR.svg").default,
     description: (
       <>
-        Verifiable, tamper-proof Web2 and Web3 data for real-world applications
-        on Flare
+        Verifiable, tamper-proof Web2 & Web3 data for real-world applications on
+        Flare
       </>
     ),
     linkToProtocolDocs: "docs/fdc/intro",
+    linkToAPIReference: "docs/category/solidity-reference",
   },
   {
     title: "FAssets",
@@ -43,6 +46,7 @@ const FeatureList: FeatureItem[] = [
       </>
     ),
     linkToProtocolDocs: "docs/fassets/intro",
+    linkToAPIReference: "docs/category/solidity-reference",
   },
 ];
 
@@ -65,22 +69,31 @@ function FeatureCard({
   Svg,
   description,
   linkToProtocolDocs,
+  linkToAPIReference,
 }: FeatureItem) {
   return (
     <div className={clsx("col col--4")}>
-      <div className="card margin--sm padding--md">
+      <div className="card margin--sm padding--sm">
         <div className="text--center">
           <Svg className={styles.featureSvg} role="img" />
         </div>
-        <div className="text--center">
+        <div className="text--center padding-horiz--md">
           <Heading as="h3">{title}</Heading>
           <p>{description}</p>
-          <div className={styles.buttons}>
+        </div>
+        <div className="card__footer">
+          <div className="button-group--block">
             <Link
               className="button button--outline button--primary button--md"
               to={linkToProtocolDocs}
             >
               Protocol Docs
+            </Link>
+            <Link
+              className="button button--link button--md"
+              to={linkToAPIReference}
+            >
+              API Reference
             </Link>
           </div>
         </div>
