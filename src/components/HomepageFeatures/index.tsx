@@ -8,7 +8,6 @@ type FeatureItem = {
   Svg: React.ComponentType<React.ComponentProps<"svg">>;
   description: JSX.Element;
   linkToProtocolDocs: string;
-  linkToAPIReference: string;
 };
 
 const FeatureList: FeatureItem[] = [
@@ -22,7 +21,6 @@ const FeatureList: FeatureItem[] = [
       </>
     ),
     linkToProtocolDocs: "docs/ftso/overview",
-    linkToAPIReference: "docs/category/api-reference",
   },
   {
     title: "FDC",
@@ -34,7 +32,6 @@ const FeatureList: FeatureItem[] = [
       </>
     ),
     linkToProtocolDocs: "docs/fdc/intro",
-    linkToAPIReference: "docs/category/api-reference-1",
   },
   {
     title: "FAssets",
@@ -46,7 +43,6 @@ const FeatureList: FeatureItem[] = [
       </>
     ),
     linkToProtocolDocs: "docs/fassets/intro",
-    linkToAPIReference: "docs/category/api-reference-1",
   },
 ];
 
@@ -69,33 +65,24 @@ function FeatureCard({
   Svg,
   description,
   linkToProtocolDocs,
-  linkToAPIReference,
 }: FeatureItem) {
   return (
     <div className={clsx("col col--4")}>
       <div className="card margin--sm padding--sm">
-        <div className="text--center">
+        <div className="card__header text--center">
           <Svg className={styles.featureSvg} role="img" />
         </div>
-        <div className="text--center padding-horiz--md">
+        <div className="card__body text--center padding-sm">
           <Heading as="h3">{title}</Heading>
           <p>{description}</p>
         </div>
-        <div className="card__footer">
-          <div className="button-group--block">
-            <Link
-              className="button button--outline button--primary button--md"
-              to={linkToProtocolDocs}
-            >
-              Protocol Docs
-            </Link>
-            <Link
-              className="button button--link button--md"
-              to={linkToAPIReference}
-            >
-              API Reference
-            </Link>
-          </div>
+        <div className="card__footer text--center">
+          <Link
+            className="button button--outline button--primary button--md"
+            to={linkToProtocolDocs}
+          >
+            Protocol Docs
+          </Link>
         </div>
       </div>
     </div>
