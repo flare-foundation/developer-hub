@@ -22,7 +22,7 @@ In this guide, using Python you will:
 
 ### Installation
 
-<Tabs>
+<Tabs groupId="python">
   <TabItem value="poetry" label="poetry" default>
     ```bash
     poetry add web3 py-solc-x
@@ -255,7 +255,7 @@ if __name__ == "__main__":
     contract_code = load_contract(contract_name)
 
     # Install the solc compiler
-    # Versions newer than 0.8.25 may work, but have not been tested
+    # Versions >0.8.25 may work, but have not been tested
     solc_version = "0.8.25"
     install_solc(solc_version)
 
@@ -286,7 +286,7 @@ if __name__ == "__main__":
 
 You can now run the `compile_contracts.py` script to compile the contract. The compiled output will be saved to `FtsoV2FeedConsumer.json`.
 
-<Tabs>
+<Tabs groupId="python">
   <TabItem value="poetry" label="poetry" default>
     ```bash
     poetry run python compile_contracts.py
@@ -309,7 +309,7 @@ To deploy a contract, you need to have an account with some testnet or mainnet g
 
 You can create a new Flare account from the CLI:
 
-<Tabs>
+<Tabs groupId="python">
   <TabItem value="poetry" label="poetry" default>
     ```bash
     poetry run python -c "from web3 import Web3; w3 = Web3(); acc = w3.eth.account.create(); print(f'private key={w3.to_hex(acc.key)}, account={acc.address}')"
@@ -364,43 +364,84 @@ def load_contract_interface(name: str) -> dict:
 
 With the functions and account ready, you can now deploy the contract. In a `deploy_contract.py` file, you can define the following code to deploy the contract:
 
-```python title="deploy_contract.py"
-from web3 import Web3
+<Tabs groupId="network">
+  <TabItem value="coston2" label="Coston2 Testnet" default>
 
-from .utils import load_contract_interface
+    ```python title="deploy_contract.py"
+    import os
+    from web3 import Web3
+
+    from .utils import load_contract_interface
 
 
-if __name__ == "__main__":
-    account, private_key = os.getenv("ACCOUNT"), os.getenv("ACCOUNT_PRIVATE_KEY")
-    contract_interface = load_contract_interface("FtsoV2FeedConsumer")
+    if __name__ == "__main__":
+        account, private_key = os.getenv("ACCOUNT"), os.getenv("ACCOUNT_PRIVATE_KEY")
+        contract = load_contract_interface("FtsoV2FeedConsumer")
 
-    w3 = Web3(Web3.HTTPProvider("https://rpc.ankr.com/flare_coston2"))
-    fast_updates_feed_consumer = w3.eth.contract(
-        abi=contract_interface["abi"],
-        bytecode=contract_interface["evm"]["bytecode"]["object"],
-    )
+        w3 = Web3(Web3.HTTPProvider("https://rpc.ankr.com/flare_coston2"))
+        ftsoV2_feed_consumer = w3.eth.contract(
+            abi=contract["abi"],
+            bytecode=contract["evm"]["bytecode"]["object"],
+        )
 
-    # Build transaction
-    tx = fast_updates_feed_consumer.constructor().build_transaction(
-        {
-            "from": account,
-            "nonce": w3.eth.get_transaction_count(account),
-            "gasPrice": w3.eth.gas_price,
-        }
-    )
+        # Build transaction
+        tx = ftsoV2_feed_consumer.constructor().build_transaction(
+            {
+                "from": account,
+                "nonce": w3.eth.get_transaction_count(account),
+                "gasPrice": w3.eth.gas_price,
+            }
+        )
 
-    # Sign transaction with private key
-    signed_tx = w3.eth.account.sign_transaction(tx, private_key=private_key)
+        # Sign transaction with private key
+        signed_tx = w3.eth.account.sign_transaction(tx, private_key=private_key)
+        tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+        tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+        print(f"Contract deployed at {tx_receipt['contractAddress']}")
+    ```
 
-    print("Deploying Contract...")
-    tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-    tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
-    print(f"Contract deployed at {tx_receipt['contractAddress']}")
-```
+  </TabItem>
+  <TabItem value="flare" label="Flare Mainnet">
 
-You can now run the `deploy_contract.py` script to deploy the contract. The contract address will be printed once the deployment is successful. You can make sure the deployment was successful by checking the contract address on a Block Explorer, whose links can be found on the Network Configuration](../docs/flare/configuration#configuration) page.
+    ```python title="deploy_contract.py"
+    import os
+    from web3 import Web3
 
-<Tabs>
+    from .utils import load_contract_interface
+
+
+    if __name__ == "__main__":
+        account, private_key = os.getenv("ACCOUNT"), os.getenv("ACCOUNT_PRIVATE_KEY")
+        contract = load_contract_interface("FtsoV2FeedConsumer")
+
+        w3 = Web3(Web3.HTTPProvider("https://rpc.ankr.com/flare"))
+        ftsoV2_feed_consumer = w3.eth.contract(
+            abi=contract["abi"],
+            bytecode=contract["evm"]["bytecode"]["object"],
+        )
+
+        # Build transaction
+        tx = ftsoV2_feed_consumer.constructor().build_transaction(
+            {
+                "from": account,
+                "nonce": w3.eth.get_transaction_count(account),
+                "gasPrice": w3.eth.gas_price,
+            }
+        )
+
+        # Sign transaction with private key and send it
+        signed_tx = w3.eth.account.sign_transaction(tx, private_key=private_key)
+        tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+        tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+        print(f"Contract deployed at {tx_receipt['contractAddress']}")
+    ```
+
+  </TabItem>
+</Tabs>
+
+You can now run the `deploy_contract.py` script to deploy the contract. The contract address will be printed once the deployment is successful. You can check the contract address on a Flare block explorer, linked on the [Network Configuration](../docs/flare/configuration#configuration) page.
+
+<Tabs groupId="python">
   <TabItem value="poetry" label="poetry" default>
     ```bash
     poetry run python deploy_contract.py
