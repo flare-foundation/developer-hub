@@ -2,13 +2,13 @@
 slug: flare-for-python-developers
 title: Flare for Python Developers
 authors: [dineshpinto]
-tags: [python, quickstart, web3py]
+tags: [python, quickstart, web3py, py-solc-x]
 ---
 
 import Tabs from "@theme/Tabs";
 import TabItem from "@theme/TabItem";
 
-This guide is for developers who want to interact with Flare using Python. You can interact with Flare using [web3.py](https://web3py.readthedocs.io/en/stable/), a library featuring both synchronous and asynchronous interfaces for interacting with Ethereum-like chains.
+This guide is for developers who want to interact with Flare using Python. You can interact with Flare using [web3.py](https://web3py.readthedocs.io/en/stable/), a library featuring both synchronous and asynchronous interfaces for interacting with Ethereum-like chains. To compile a contract, you can use [py-solc-x](https://solcx.readthedocs.io/en/latest/), a Python wrapper around the Solidity compiler.
 
 {/* truncate */}
 
@@ -19,13 +19,13 @@ This guide is for developers who want to interact with Flare using Python. You c
 <Tabs>
   <TabItem value="poetry" label="poetry" default>
     ```bash
-    poetry add web3
+    poetry add web3 py-solc-x
     ```
 
   </TabItem>
   <TabItem value="pip" label="pip">
     ```bash
-    pip install web3
+    pip install web3 py-solc-x
     ```
 
   </TabItem>
@@ -197,4 +197,216 @@ For example, querying it for the address of the `WNat` contract:
 
 ## Compiling a contract
 
-## Interacting with the compiled contract
+For this example, you can write a simple contract to query the FTSOv2 feed data. You can reuse the `FtsoV2FeedConsumer.sol` contract from the [FTSOv2 Basic Integration](../docs/ftso/guides/basic-integration) guide. Save the `.sol` file in the same folder as your Python script.
+
+:::note
+Double check the address of the FTSOv2 contract in `FtsoV2FeedConsumer.sol` to make sure it is the same as on the network you want to deploy your contract.
+:::
+
+### Set up helpers
+
+To compile the contracts, you need to first set up some basic helper functions to read the `.sol` file and write the compiled output to a `.json` file. In a `utils.py` file, you can define the following functions:
+
+```python title="utils.py"
+import json
+from pathlib import Path
+
+CURRENT_DIR = Path(__file__).resolve().parent
+
+
+def load_contract(name: str) -> str:
+    """Load contract from file.
+
+    :param name: Contract name
+    :return: Contract code
+    """
+    with (CURRENT_DIR / f"{name}.sol").open() as file:
+        return file.read()
+
+
+def save_compiled_contract(name: str, compiled_contract: dict) -> None:
+    """Save compiled contract to file.
+
+    :param name: Contract name
+    :param compiled_contract: Compiled contract
+    """
+    with (CURRENT_DIR / f"{name}.json").open("w") as file:
+        json.dump(compiled_contract, file)
+```
+
+### Compile with solc
+
+With these functions ready, you can now compile the contract. In a `compile_contracts.py` file, you can define the following code to install the correct version of the Solidity compiler and compile the contract:
+
+```python title="compile_contracts.py"
+from solcx import compile_standard
+
+from .utils import load_contract, save_compiled_contract
+
+
+if __name__ == "__main__":
+    contract_name = "FtsoV2FeedConsumer"
+    contract_code = load_contract(contract_name)
+
+    # Install the solc compiler
+    # Versions newer than 0.8.25 may work, but have not been tested
+    solc_version = "0.8.25"
+    install_solc(solc_version)
+
+    # Compile the contract
+    compiled_sol = compile_standard(
+        {
+            "language": "Solidity",
+            "sources": {f"{contract_name}.sol": {"content": contract_code}},
+            "settings": {
+                "outputSelection": {
+                    "*": {
+                        "*": [
+                            "abi",
+                            "metadata",
+                            "evm.bytecode",
+                            "evm.bytecode.sourceMap",
+                        ],
+                    }
+                },
+                "optimizer": {"enabled": True, "runs": 200},
+                "evmVersion": "london",
+            },
+        },
+        solc_version=solc_version,
+    )
+    save_compiled_contract(contract_name, compiled_sol)
+```
+
+You can now run the `compile_contracts.py` script to compile the contract. The compiled output will be saved to `FtsoV2FeedConsumer.json`.
+
+<Tabs>
+  <TabItem value="poetry" label="poetry" default>
+    ```bash
+    poetry run python compile_contracts.py
+    ```
+
+  </TabItem>
+  <TabItem value="pip" label="pip">
+    ```bash
+    python compile_contracts.py
+    ```
+
+  </TabItem>
+</Tabs>
+
+## Deploying a contract
+
+To deploy a contract, you need to have an account with some testnet or mainnet gas tokens.
+
+### Create account
+
+You can create a new Flare account from the CLI:
+
+<Tabs>
+  <TabItem value="poetry" label="poetry" default>
+    ```bash
+    poetry run python -c "from web3 import Web3; w3 = Web3(); acc = w3.eth.account.create(); print(f'private key={w3.to_hex(acc.key)}, account={acc.address}')"
+    ```
+
+  </TabItem>
+  <TabItem value="pip" label="pip">
+    ```bash
+    python -c "from web3 import Web3; w3 = Web3(); acc = w3.eth.account.create(); print(f'private key={w3.to_hex(acc.key)}, account={acc.address}')"
+    ```
+
+  </TabItem>
+</Tabs>
+
+This will output a new private key and an account pair.
+
+:::warning
+
+- Never share your private keys.
+- Never put your private keys in source code.
+- Never commit private keys to a Git repository.
+  :::
+
+You can save the account and private key into environment variables `ACCOUNT` and `ACCOUNT_PRIVATE_KEY` respectively.
+
+:::note
+You can also import the raw hex private key to MetaMask and any other wallet - the private key can be shared between your Python code and any number of wallets.
+:::
+
+### Fund account
+
+- For testnet, you can use the testnet faucets on the [Network Configuration](../docs/flare/configuration#configuration) page to get some testnet gas tokens.
+- For mainnet, you need to buy FLR in a cryptocurrency exchange such as Coinbase, Kraken etc.
+
+### Set up helpers
+
+To deploy the contract, you need to set up some basic helper functions to read the compiled contract output. Add the following function to `utils.py` file:
+
+```python title="utils.py"
+def load_contract_interface(name: str) -> dict:
+    """Load contract interface.
+
+    :param name: Contract name
+    :return: Contract interface
+    """
+    with (CURRENT_DIR / f"{name}.json").open() as file:
+        compiled_contract = json.load(file)
+    return compiled_contract["contracts"][f"{name}.sol"][f"{name}"]
+```
+
+### Deploy with web3
+
+With the functions and account ready, you can now deploy the contract. In a `deploy_contract.py` file, you can define the following code to deploy the contract:
+
+```python title="deploy_contract.py"
+from web3 import Web3
+
+from .utils import load_contract_interface
+
+
+if __name__ == "__main__":
+    account, private_key = os.getenv("ACCOUNT"), os.getenv("ACCOUNT_PRIVATE_KEY")
+    contract_interface = load_contract_interface("FtsoV2FeedConsumer")
+
+    w3 = Web3(Web3.HTTPProvider("https://rpc.ankr.com/flare_coston2"))
+    fast_updates_feed_consumer = w3.eth.contract(
+        abi=contract_interface["abi"],
+        bytecode=contract_interface["evm"]["bytecode"]["object"],
+    )
+
+    # Build transaction
+    tx = fast_updates_feed_consumer.constructor().build_transaction(
+        {
+            "from": account,
+            "nonce": w3.eth.get_transaction_count(account),
+            "gasPrice": w3.eth.gas_price,
+        }
+    )
+
+    # Sign transaction with private key
+    signed_tx = w3.eth.account.sign_transaction(tx, private_key=private_key)
+
+    print("Deploying Contract...")
+    tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+    tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+    print(f"Contract deployed at {tx_receipt['contractAddress']}")
+```
+
+You can now run the `deploy_contract.py` script to deploy the contract. The contract address will be printed once the deployment is successful. You can make sure the deployment was successful by checking the contract address on a Block Explorer, whose links can be found on the Network Configuration](../docs/flare/configuration#configuration) page.
+
+<Tabs>
+  <TabItem value="poetry" label="poetry" default>
+    ```bash
+    poetry run python deploy_contract.py
+    ```
+
+  </TabItem>
+  <TabItem value="pip" label="pip">
+    ```bash
+    python deploy_contract.py
+    ```
+
+  </TabItem>
+</Tabs>
+
+Congratulations! You have now successfully deployed a contract on Flare using Python.
