@@ -1,0 +1,83 @@
+---
+slug: flare-for-go-developers
+title: Flare for Go Developers
+authors: [dineshpinto]
+tags: [go, quickstart, go-ethereum]
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+This guide is for developers who want to interact with Flare using Go. In this guide, using Go, you will learn how to:
+
+- Query a contract on Flare using [geth](https://github.com/ethereum/go-ethereum) `ethclient` package, a client that implements the full Ethereum JSON-RPC API.
+
+{/* truncate */}
+
+## Getting started
+
+### Installation
+
+```bash
+go get -d github.com/ethereum/go-ethereum/ethclient
+```
+
+### Usage
+
+You need to connect to testnet or mainnet via an RPC, any RPC listed on the [Network Configuration](../docs/flare/configuration#configuration) page will work. For this guide, you can use the Ankr RPC.
+
+<Tabs groupId="network">
+  <TabItem value="coston2" label="Coston2 Testnet" default>
+
+```go title="main.go"
+
+package main
+
+import (
+    "context"
+    "fmt"
+    "github.com/ethereum/go-ethereum/ethclient"
+)
+
+func main() {
+    cl, err := ethclient.Dial("https://rpc.ankr.com/flare_coston2")
+    if err != nil {
+        panic(err)
+    }
+    chainid, err := cl.ChainID(context.Background())
+    if err != nil {
+        panic(err)
+    }
+    fmt.Println(chainid) // 114
+}
+```
+
+  </TabItem>
+    <TabItem value="flare" label="Flare Mainnet">
+
+```go title="main.go"
+
+package main
+
+import (
+    "context"
+    "fmt"
+    "github.com/ethereum/go-ethereum/ethclient"
+)
+
+func main() {
+    cl, err := ethclient.Dial("https://rpc.ankr.com/flare")
+    if err != nil {
+        panic(err)
+    }
+    chainid, err := cl.ChainID(context.Background())
+    if err != nil {
+        panic(err)
+    }
+    fmt.Println(chainid) // 14
+}
+```
+
+    </TabItem>
+
+</Tabs>
