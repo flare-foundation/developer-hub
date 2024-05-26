@@ -160,14 +160,18 @@ const config: Config = {
           ],
         },
         {
-          title: "Protocol Explorers",
+          title: "Explorers",
           items: [
+            {
+              label: "Flarescan Explorer",
+              href: "https://flarescan.com/",
+            },
             {
               label: "Flare Systems Explorer",
               href: "https://coston-systems-explorer.flare.rocks/",
             },
             {
-              label: "FTSO Monitor",
+              label: "Flare FTSO Monitor",
               href: "https://flare-ftso-monitor.flare.network/data-providers",
             },
             {
