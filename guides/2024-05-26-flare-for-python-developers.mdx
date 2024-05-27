@@ -41,7 +41,6 @@ You need to connect to testnet or mainnet via an RPC, any RPC listed on the [Net
 
 <Tabs groupId="network">
   <TabItem value="coston2" label="Coston2 Testnet" default>
-
     ```python
     from web3 import Web3
     from web3.middleware.geth_poa import geth_poa_middleware
@@ -53,8 +52,7 @@ You need to connect to testnet or mainnet via an RPC, any RPC listed on the [Net
     ```
 
   </TabItem>
-    <TabItem value="flare" label="Flare Mainnet">
-
+  <TabItem value="flare" label="Flare Mainnet">
     ```python
     from web3 import Web3
 
@@ -81,7 +79,6 @@ To fetch a contract's ABI programmatically, you can query the [Flare Explorer AP
 
 <Tabs groupId="network">
   <TabItem value="coston2" label="Coston2 Testnet" default>
-
     ```python
     import requests
     import json
@@ -93,8 +90,7 @@ To fetch a contract's ABI programmatically, you can query the [Flare Explorer AP
     ```
 
   </TabItem>
-    <TabItem value="flare" label="Flare Mainnet">
-
+  <TabItem value="flare" label="Flare Mainnet">
     ```python
     import requests
     import json
@@ -116,7 +112,6 @@ For example, querying it for the address of the `WNat` contract:
 
 <Tabs groupId="network">
   <TabItem value="coston2" label="Coston2 Testnet" default>
-
     ```python
     contract = w3.eth.contract(contract_addr, abi=abi)
     print(contract.functions.getContractAddressByName('WNat').call())
@@ -124,14 +119,13 @@ For example, querying it for the address of the `WNat` contract:
     ```
 
   </TabItem>
-    <TabItem value="flare" label="Flare Mainnet">
-
+  <TabItem value="flare" label="Flare Mainnet">
     ```python
     contract = w3.eth.contract(contract_addr, abi=abi)
     print(contract.functions.getContractAddressByName('WNat').call())
     # 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
     ```
-
+    
   </TabItem>
 </Tabs>
 
@@ -142,58 +136,58 @@ For example, querying it for the address of the `WNat` contract:
     <details>
     <summary>Complete code for querying a contract on Coston2 Testnet</summary>
 
-    ```python
-    import requests
-    import json
+      ```python
+      import requests
+      import json
 
-    from web3 import Web3
-    from web3.middleware.geth_poa import geth_poa_middleware
+      from web3 import Web3
+      from web3.middleware.geth_poa import geth_poa_middleware
 
-    # Inject middleware to handle testnet PoA consensus
-    w3 = Web3(Web3.HTTPProvider('https://rpc.ankr.com/flare_coston2'), middlewares=[geth_poa_middleware])
-    print(f"Chain ID: {w3.eth.chain_id}")
-    # Chain ID: 114
+      # Inject middleware to handle testnet PoA consensus
+      w3 = Web3(Web3.HTTPProvider('https://rpc.ankr.com/flare_coston2'), middlewares=[geth_poa_middleware])
+      print(f"Chain ID: {w3.eth.chain_id}")
+      # Chain ID: 114
 
-    # Fetch ABI
-    registry_addr = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
-    params = {"module": "contract", "action": "getabi", "address": registry_addr}
-    response = requests.get("https://coston2-explorer.flare.network/api", params).json()
-    abi = json.loads(response["result"])
+      # Fetch ABI
+      registry_addr = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
+      params = {"module": "contract", "action": "getabi", "address": registry_addr}
+      response = requests.get("https://coston2-explorer.flare.network/api", params).json()
+      abi = json.loads(response["result"])
 
-    # Query contract
-    registry = w3.eth.contract(registry_addr, abi=abi)
-    print(contract.functions.getContractAddressByName('WNat').call())
-    # 0xC67DCE33D7A8efA5FfEB961899C73fe01bCe9273
-    ```
+      # Query contract
+      registry = w3.eth.contract(registry_addr, abi=abi)
+      print(contract.functions.getContractAddressByName('WNat').call())
+      # 0xC67DCE33D7A8efA5FfEB961899C73fe01bCe9273
+      ```
 
     </details>
 
-</TabItem>
-<TabItem value="flare" label="Flare Mainnet">
+  </TabItem>
+  <TabItem value="flare" label="Flare Mainnet">
     <details>
     <summary>Complete code for querying a contract on Flare Mainnet</summary>
 
-    ```python
-    import requests
-    import json
+      ```python
+      import requests
+      import json
 
-    from web3 import Web3
+      from web3 import Web3
 
-    w3 = Web3(Web3.HTTPProvider('https://rpc.ankr.com/flare'))
-    print(f"Chain ID: {w3.eth.chain_id}")
-    # Chain ID: 14
+      w3 = Web3(Web3.HTTPProvider('https://rpc.ankr.com/flare'))
+      print(f"Chain ID: {w3.eth.chain_id}")
+      # Chain ID: 14
 
-    # Fetch ABI
-    registry_addr = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
-    params = {"module": "contract", "action": "getabi", "address": registry_addr}
-    response = requests.get("https://flare-explorer.flare.network/api", params).json()
-    abi = json.loads(response["result"])
+      # Fetch ABI
+      registry_addr = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
+      params = {"module": "contract", "action": "getabi", "address": registry_addr}
+      response = requests.get("https://flare-explorer.flare.network/api", params).json()
+      abi = json.loads(response["result"])
 
-    # Query contract
-    registry = w3.eth.contract(registry_addr, abi=abi)
-    print(contract.functions.getContractAddressByName('WNat').call())
-    # 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
-    ```
+      # Query contract
+      registry = w3.eth.contract(registry_addr, abi=abi)
+      print(contract.functions.getContractAddressByName('WNat').call())
+      # 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
+      ```
     </details>
 
 </TabItem>
@@ -221,21 +215,13 @@ CURRENT_DIR = Path(__file__).resolve().parent
 
 
 def load_contract(name: str) -> str:
-    """Load contract from file.
-
-    :param name: Contract name
-    :return: Contract code
-    """
+    """Load contract from Solidity file."""
     with (CURRENT_DIR / f"{name}.sol").open() as file:
         return file.read()
 
 
 def save_compiled_contract(name: str, compiled_contract: dict) -> None:
-    """Save compiled contract to file.
-
-    :param name: Contract name
-    :param compiled_contract: Compiled contract
-    """
+    """Save compiled contract to JSON file."""
     with (CURRENT_DIR / f"{name}.json").open("w") as file:
         json.dump(compiled_contract, file)
 ```
@@ -288,14 +274,15 @@ You can now run the `compile_contracts.py` script to compile the contract. The c
 
 <Tabs groupId="python">
   <TabItem value="poetry" label="poetry" default>
+
     ```bash
     poetry run python compile_contracts.py
     ```
 
   </TabItem>
   <TabItem value="pip" label="pip">
-    ```bash
-    python compile_contracts.py
+    ```bash 
+    python compile_contracts.py 
     ```
 
   </TabItem>
@@ -311,14 +298,18 @@ You can create a new Flare account from the CLI:
 
 <Tabs groupId="python">
   <TabItem value="poetry" label="poetry" default>
-    ```bash
-    poetry run python -c "from web3 import Web3; w3 = Web3(); acc = w3.eth.account.create(); print(f'private key={w3.to_hex(acc.key)}, account={acc.address}')"
+    ```bash 
+    poetry run python -c "from web3 import Web3; w3 = Web3(); acc =
+    w3.eth.account.create(); print(f'private key={w3.to_hex(acc.key)}, account=
+    {acc.address}')" 
     ```
 
   </TabItem>
   <TabItem value="pip" label="pip">
-    ```bash
-    python -c "from web3 import Web3; w3 = Web3(); acc = w3.eth.account.create(); print(f'private key={w3.to_hex(acc.key)}, account={acc.address}')"
+    ```bash 
+    python -c "from web3 import Web3; w3 = Web3(); acc =
+    w3.eth.account.create(); print(f'private key={w3.to_hex(acc.key)}, account=
+    {acc.address}')" 
     ```
 
   </TabItem>
@@ -350,11 +341,7 @@ To deploy the contract, you need to set up some basic helper functions to read t
 
 ```python title="utils.py"
 def load_contract_interface(name: str) -> dict:
-    """Load contract interface.
-
-    :param name: Contract name
-    :return: Contract interface
-    """
+    """Load contract interface from JSON."""
     with (CURRENT_DIR / f"{name}.json").open() as file:
         compiled_contract = json.load(file)
     return compiled_contract["contracts"][f"{name}.sol"][f"{name}"]
@@ -366,7 +353,6 @@ With the functions and account ready, you can now deploy the contract. In a `dep
 
 <Tabs groupId="network">
   <TabItem value="coston2" label="Coston2 Testnet" default>
-
     ```python title="deploy_contract.py"
     import os
     from web3 import Web3
@@ -402,7 +388,6 @@ With the functions and account ready, you can now deploy the contract. In a `dep
 
   </TabItem>
   <TabItem value="flare" label="Flare Mainnet">
-
     ```python title="deploy_contract.py"
     import os
     from web3 import Web3
@@ -443,16 +428,16 @@ You can now run the `deploy_contract.py` script to deploy the contract. The cont
 
 <Tabs groupId="python">
   <TabItem value="poetry" label="poetry" default>
-    ```bash
-    poetry run python deploy_contract.py
+    ```bash 
+    poetry run python deploy_contract.py 
     ```
 
   </TabItem>
   <TabItem value="pip" label="pip">
-    ```bash
-    python deploy_contract.py
+    ```bash 
+    python deploy_contract.py 
     ```
-
+    
   </TabItem>
 </Tabs>
 
