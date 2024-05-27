@@ -2,7 +2,7 @@
 slug: flare-for-go-developers
 title: Flare for Go Developers
 authors: [dineshpinto]
-tags: [go, quickstart, go-ethereum]
+tags: [go, quickstart, geth]
 ---
 
 import Tabs from "@theme/Tabs";
@@ -10,7 +10,7 @@ import TabItem from "@theme/TabItem";
 
 This guide is for developers who want to interact with Flare using Go. In this guide, using Go, you will learn how to:
 
-- Query a contract on Flare using [geth](https://github.com/ethereum/go-ethereum) `ethclient` package, a client that implements the full Ethereum JSON-RPC API.
+- Query a contract on Flare using the Go API for [Geth](https://github.com/ethereum/go-ethereum), a client that implements the full Ethereum JSON-RPC API.
 
 {/* truncate */}
 
@@ -18,8 +18,31 @@ This guide is for developers who want to interact with Flare using Go. In this g
 
 ### Installation
 
+Install Geth by following the instructions on the [official documentation](https://geth.ethereum.org/docs/getting-started/installing-geth). For simplicity, the main commands are provided here:
+
+<Tabs>
+  <TabItem value="macos" label="MacOS via Homebrew" default>
+    ```bash
+    brew tap ethereum/ethereum
+    brew install ethereum
+    ```
+
+  </TabItem>
+  <TabItem value="ubuntu" label="Ubuntu via PPAs">
+    ```bash
+    sudo add-apt-repository -y ppa:ethereum/ethereum
+    sudo apt-get update
+    sudo apt-get install ethereum
+    ```
+
+  </TabItem>
+</Tabs>
+
+Add the `ethclient` package to your Go project:
+
 ```bash
-go get -d github.com/ethereum/go-ethereum/ethclient
+go get github.com/ethereum/go-ethereum/ethclient
+go get github.com/ethereum/go-ethereum/accounts/keystore@v1.14.3
 ```
 
 ### Usage
@@ -48,8 +71,9 @@ func main() {
     if err != nil {
         panic(err)
     }
-    fmt.Println(chainid) // 114
+    fmt.Println("Chain ID is", chainid)
 }
+// Chain ID is 114
 ```
 
   </TabItem>
@@ -74,10 +98,120 @@ func main() {
     if err != nil {
         panic(err)
     }
-    fmt.Println(chainid) // 14
+    fmt.Println("Chain ID is", chainid)
 }
+// Chain ID is 14
 ```
 
     </TabItem>
 
 </Tabs>
+
+## Query a contract
+
+To query a contract, two pieces of information are required:
+
+- Contract address
+- Contract ABI (Application Binary Interface)
+
+For this example, you can use the `FlareContractRegistry` contract which has the same address `0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019` across both testnet and mainnet.
+
+### Fetch ABI
+
+To fetch a contract's ABI, you can use Flarescan. Copy the Contract ABI from [here](https://flarescan.com/address/0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019/contract/14/code#abi), and paste this into a file named `FlareContractRegistry.abi` in the root of your project, i.e. same level as `main.go`.
+
+### Make query
+
+You can query the `FlareContractRegistry` contract to get the addresses of other Flare contracts.
+
+For example, querying it for the address of the `WNat` contract:
+
+<Tabs groupId="network">
+  <TabItem value="coston2" label="Coston2 Testnet" default>
+
+```go title="main.go"
+package main
+
+//go:generate abigen --abi FlareContractRegistry.abi --pkg main --type contract --out FlareContractRegistry.go
+
+import (
+    "context"
+    "fmt"
+
+    "github.com/ethereum/go-ethereum/accounts/abi/bind"
+    "github.com/ethereum/go-ethereum/common"
+    "github.com/ethereum/go-ethereum/ethclient"
+)
+
+func main() {
+    client, err := ethclient.Dial("https://rpc.ankr.com/flare_coston2")
+    if err != nil {
+        panic(err)
+    }
+    contractAddr := common.HexToAddress("0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019")
+    instance, err := NewContract(contractAddr, client)
+    if err != nil {
+        panic(err)
+    }
+    callOpts := &bind.CallOpts{Context: context.Background(), Pending: false}
+    addr, err := instance.GetContractAddressesByName(callOpts, []string{"WNat"})
+    if err != nil {
+        panic(err)
+    }
+    fmt.Println("WNat contract address is", addr)
+}
+// WNat contract address is [0xC67DCE33D7A8efA5FfEB961899C73fe01bCe9273]
+```
+
+      </TabItem>
+     <TabItem value="flare" label="Flare Mainnet">
+
+```go title="main.go"
+package main
+
+//go:generate abigen --abi FlareContractRegistry.abi --pkg main --type contract --out FlareContractRegistry.go
+
+import (
+    "context"
+    "fmt"
+
+    "github.com/ethereum/go-ethereum/accounts/abi/bind"
+    "github.com/ethereum/go-ethereum/common"
+    "github.com/ethereum/go-ethereum/ethclient"
+)
+
+func main() {
+    client, err := ethclient.Dial("https://rpc.ankr.com/flare")
+    if err != nil {
+        panic(err)
+    }
+    contractAddr := common.HexToAddress("0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019")
+    instance, err := NewContract(contractAddr, client)
+    if err != nil {
+        panic(err)
+    }
+    callOpts := &bind.CallOpts{Context: context.Background(), Pending: false}
+    addr, err := instance.GetContractAddressesByName(callOpts, []string{"WNat"})
+    if err != nil {
+        panic(err)
+    }
+    fmt.Println("WNat contract address is", addr)
+}
+//WNat contract address is [0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d]
+```
+
+    </TabItem>
+
+</Tabs>
+
+To generate the ABI bindings, which will be saved to `FlareContractRegistry.go`:
+
+```bash
+go generate
+```
+
+Then run the Go file:
+
+```bash
+go run .
+```
