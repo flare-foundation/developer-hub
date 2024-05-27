@@ -10,7 +10,7 @@ import TabItem from "@theme/TabItem";
 
 This guide is for developers who want to interact with Flare using Python. In this guide, using Python, you will learn how to:
 
-- Query a contract on Flare using [web3.py](https://github.com/ethereum/web3.py), a library for interacting with Ethereum-like chains.
+- Query a contract on Flare using [web3.py](https://github.com/ethereum/web3.py), an async/sync library for interacting with Ethereum-like chains.
 - Compile a Solidity contract using [py-solc-x](https://github.com/ApeWorX/py-solc-x), a wrapper around the Solidity compiler.
 - Deploy your compiled contract on Flare.
 
@@ -41,24 +41,40 @@ You need to connect to testnet or mainnet via an RPC, any RPC listed on the [Net
 
 <Tabs groupId="network">
   <TabItem value="coston2" label="Coston2 Testnet" default>
-    ```python
-    from web3 import Web3
-    from web3.middleware.geth_poa import geth_poa_middleware
+    ```python title="chain_id.py"
+    import asyncio
 
-    # Inject middleware to handle testnet PoA consensus
-    w3 = Web3(Web3.HTTPProvider('https://rpc.ankr.com/flare_coston2'), middlewares=[geth_poa_middleware])
-    print(f"Chain ID: {w3.eth.chain_id}")
-    # Chain ID: 114
+    from web3 import AsyncHTTPProvider, AsyncWeb3
+    from web3.middleware.geth_poa import async_geth_poa_middleware
+
+
+    async def main():
+        w3 = AsyncWeb3(
+            AsyncHTTPProvider("https://rpc.ankr.com/flare_coston2"),
+            middlewares=[async_geth_poa_middleware], # Inject middleware to handle testnet PoA consensus
+        )
+        print(f"Chain ID: {await w3.eth.chain_id}") # Chain ID: 114
+
+
+    if __name__ == "__main__":
+        asyncio.run(main())
     ```
 
   </TabItem>
   <TabItem value="flare" label="Flare Mainnet">
-    ```python
-    from web3 import Web3
+    ```python title="chain_id.py"
+    import asyncio
 
-    w3 = Web3(Web3.HTTPProvider('https://rpc.ankr.com/flare'))
-    print(f"Chain ID: {w3.eth.chain_id}")
-    # Chain ID: 14
+    from web3 import AsyncHTTPProvider, AsyncWeb3
+
+
+    async def main():
+        w3 = AsyncWeb3(AsyncHTTPProvider("https://rpc.ankr.com/flare"))
+        print(f"Chain ID: {await w3.eth.chain_id}") # Chain ID: 14
+
+
+    if __name__ == "__main__":
+        asyncio.run(main())
     ```
 
   </TabItem>
@@ -79,26 +95,62 @@ To fetch a contract's ABI programmatically, you can query the [Flare Explorer AP
 
 <Tabs groupId="network">
   <TabItem value="coston2" label="Coston2 Testnet" default>
-    ```python
-    import requests
+    ```python title="fetch_abi.py"
+    import asyncio
     import json
 
-    contract_addr = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
-    params = {"module": "contract", "action": "getabi", "address": contract_addr}
-    response = requests.get("https://coston2-explorer.flare.network/api", params).json()
-    abi = json.loads(response["result"])
+    import aiohttp
+
+
+    async def main():
+        params = {
+            "module": "contract",
+            "action": "getabi",
+            "address": "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019",
+        }
+        async with (
+            aiohttp.ClientSession() as session,
+            session.get(
+                "https://coston2-explorer.flare.network/api", params=params
+            ) as response,
+        ):
+            res = await response.json()
+            abi = json.loads(res["result"])
+            print(abi[4]["name"]) # getContractAddressByName
+
+
+    if __name__ == "__main__":
+        asyncio.run(main())
     ```
 
   </TabItem>
   <TabItem value="flare" label="Flare Mainnet">
-    ```python
-    import requests
+    ```python title="fetch_abi.py"
+    import asyncio
     import json
 
-    contract_addr = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
-    params = {"module": "contract", "action": "getabi", "address": contract_addr}
-    response = requests.get("https://flare-explorer.flare.network/api", params).json()
-    abi = json.loads(response["result"])
+    import aiohttp
+
+
+    async def main():
+        params = {
+            "module": "contract",
+            "action": "getabi",
+            "address": "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019",
+        }
+        async with (
+            aiohttp.ClientSession() as session,
+            session.get(
+                "https://flare-explorer.flare.network/api", params=params
+            ) as response,
+        ):
+            res = await response.json()
+            abi = json.loads(res["result"])
+            print(abi[4]["name"]) # getContractAddressByName
+
+
+    if __name__ == "__main__":
+        asyncio.run(main())
     ```
 
   </TabItem>
@@ -112,90 +164,86 @@ For example, querying it for the address of the `WNat` contract:
 
 <Tabs groupId="network">
   <TabItem value="coston2" label="Coston2 Testnet" default>
-    ```python
-    contract = w3.eth.contract(contract_addr, abi=abi)
-    print(contract.functions.getContractAddressByName('WNat').call())
-    # 0xC67DCE33D7A8efA5FfEB961899C73fe01bCe9273
+    ```python title="make_query.py"
+    import asyncio
+    import json
+
+    import aiohttp
+    from web3 import AsyncHTTPProvider, AsyncWeb3
+    from web3.middleware.geth_poa import async_geth_poa_middleware
+
+    async def main():
+        registry_addr = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
+        w3 = AsyncWeb3(
+            AsyncHTTPProvider("https://rpc.ankr.com/flare_coston2"),
+            middlewares=[async_geth_poa_middleware],
+        )
+        params = {
+            "module": "contract",
+            "action": "getabi",
+            "address": registry_addr,
+        }
+        async with (
+            aiohttp.ClientSession() as session,
+            session.get(
+                "https://coston2-explorer.flare.network/api", params=params
+            ) as response,
+        ):
+            res = await response.json()
+            abi = json.loads(res["result"])
+        contract = w3.eth.contract(address=registry_addr, abi=abi)
+        res = await contract.functions.getContractAddressByName("WNat").call()
+        print(f"WNat address: {res}")  # WNat address: 0xC67DCE33D7A8efA5FfEB961899C73fe01bCe9273
+
+
+    if __name__ == "__main__":
+        asyncio.run(main())
     ```
 
   </TabItem>
   <TabItem value="flare" label="Flare Mainnet">
-    ```python
-    contract = w3.eth.contract(contract_addr, abi=abi)
-    print(contract.functions.getContractAddressByName('WNat').call())
-    # 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
+    ```python title="make_query.py"
+    import asyncio
+    import json
+
+    import aiohttp
+    from web3 import AsyncHTTPProvider, AsyncWeb3
+    from web3.middleware.geth_poa import async_geth_poa_middleware
+
+    async def main():
+        registry_addr = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
+        w3 = AsyncWeb3(
+            AsyncHTTPProvider("https://rpc.ankr.com/flare"),
+            middlewares=[async_geth_poa_middleware],
+        )
+        params = {
+            "module": "contract",
+            "action": "getabi",
+            "address": registry_addr,
+        }
+        async with (
+            aiohttp.ClientSession() as session,
+            session.get(
+                "https://flare-explorer.flare.network/api", params=params
+            ) as response,
+        ):
+            res = await response.json()
+            abi = json.loads(res["result"])
+        contract = w3.eth.contract(address=registry_addr, abi=abi)
+        res = await contract.functions.getContractAddressByName("WNat").call()
+        print(f"WNat address: {res}")  # WNat address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
+
+
+    if __name__ == "__main__":
+        asyncio.run(main())
     ```
-    
-  </TabItem>
-</Tabs>
-
-### Complete code
-
-<Tabs groupId="network">
-  <TabItem value="coston2" label="Coston2 Testnet" default>
-    <details>
-    <summary>Complete code for querying a contract on Coston2 Testnet</summary>
-
-      ```python
-      import requests
-      import json
-
-      from web3 import Web3
-      from web3.middleware.geth_poa import geth_poa_middleware
-
-      # Inject middleware to handle testnet PoA consensus
-      w3 = Web3(Web3.HTTPProvider('https://rpc.ankr.com/flare_coston2'), middlewares=[geth_poa_middleware])
-      print(f"Chain ID: {w3.eth.chain_id}")
-      # Chain ID: 114
-
-      # Fetch ABI
-      registry_addr = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
-      params = {"module": "contract", "action": "getabi", "address": registry_addr}
-      response = requests.get("https://coston2-explorer.flare.network/api", params).json()
-      abi = json.loads(response["result"])
-
-      # Query contract
-      registry = w3.eth.contract(registry_addr, abi=abi)
-      print(contract.functions.getContractAddressByName('WNat').call())
-      # 0xC67DCE33D7A8efA5FfEB961899C73fe01bCe9273
-      ```
-
-    </details>
 
   </TabItem>
-  <TabItem value="flare" label="Flare Mainnet">
-    <details>
-    <summary>Complete code for querying a contract on Flare Mainnet</summary>
-
-      ```python
-      import requests
-      import json
-
-      from web3 import Web3
-
-      w3 = Web3(Web3.HTTPProvider('https://rpc.ankr.com/flare'))
-      print(f"Chain ID: {w3.eth.chain_id}")
-      # Chain ID: 14
-
-      # Fetch ABI
-      registry_addr = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
-      params = {"module": "contract", "action": "getabi", "address": registry_addr}
-      response = requests.get("https://flare-explorer.flare.network/api", params).json()
-      abi = json.loads(response["result"])
-
-      # Query contract
-      registry = w3.eth.contract(registry_addr, abi=abi)
-      print(contract.functions.getContractAddressByName('WNat').call())
-      # 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
-      ```
-    </details>
-
-</TabItem>
 </Tabs>
 
 ## Compiling a contract
 
-For this example, you can write a simple contract to query the FTSOv2 feed data. You can reuse the `FtsoV2FeedConsumer.sol` contract from the [FTSOv2 Basic Integration](../docs/ftso/guides/basic-integration) guide. Save the `.sol` file in the same folder as your Python script.
+For this example, you can write a simple contract to query the FTSOv2 feed data. You can reuse the `FtsoV2FeedConsumer.sol` contract from the [FTSOv2 Sample Contract](../docs/ftso/getting-started#sample-contract) guide. Save the `.sol` file in the same folder as your Python script.
 
 :::note
 Double check the address of the FTSOv2 contract in `FtsoV2FeedConsumer.sol` to make sure it is the same as on the network you want to deploy your contract.
@@ -299,17 +347,13 @@ You can create a new Flare account from the CLI:
 <Tabs groupId="python">
   <TabItem value="poetry" label="poetry" default>
     ```bash 
-    poetry run python -c "from web3 import Web3; w3 = Web3(); acc =
-    w3.eth.account.create(); print(f'private key={w3.to_hex(acc.key)}, account=
-    {acc.address}')" 
+    poetry run python -c "from web3 import Web3; w3 = Web3(); acc = w3.eth.account.create(); print(f'private key={w3.to_hex(acc.key)}, account={acc.address}')" 
     ```
 
   </TabItem>
   <TabItem value="pip" label="pip">
     ```bash 
-    python -c "from web3 import Web3; w3 = Web3(); acc =
-    w3.eth.account.create(); print(f'private key={w3.to_hex(acc.key)}, account=
-    {acc.address}')" 
+    python -c "from web3 import Web3; w3 = Web3(); acc = w3.eth.account.create(); print(f'private key={w3.to_hex(acc.key)}, account = {acc.address}')" 
     ```
 
   </TabItem>
