@@ -33,7 +33,7 @@ You need to connect to testnet or mainnet via an RPC, any RPC listed on the [Net
 
 <Tabs groupId="network">
   <TabItem value="coston2" label="Coston2 Testnet" default>
-    ```rust title="src/main.rs"
+    ```rust title="src/bin/chain_id.rs"
     use ethers::providers::{Middleware, Provider};
     use eyre::Result;
 
@@ -41,14 +41,13 @@ You need to connect to testnet or mainnet via an RPC, any RPC listed on the [Net
     async fn main() -> Result<()> {
         let provider = Provider::try_from("https://rpc.ankr.com/flare_coston2")?;
         let chain_id = provider.get_chainid().await?;
-        println!("Chain ID: {}", chain_id);
+        println!("Chain ID: {}", chain_id); // Chain ID: 114
         Ok(())
     }
-    // Chain ID: 114
     ```
     </TabItem>
     <TabItem value="flare" label="Flare Mainnet">
-    ```rust title="src/main.rs"
+    ```rust title="src/bin/chain_id.rs"
     use ethers::providers::{Middleware, Provider};
     use eyre::Result;
 
@@ -56,14 +55,19 @@ You need to connect to testnet or mainnet via an RPC, any RPC listed on the [Net
     async fn main() -> Result<()> {
         let provider = Provider::try_from("https://rpc.ankr.com/flare")?;
         let chain_id = provider.get_chainid().await?;
-        println!("Chain ID: {}", chain_id);
+        println!("Chain ID: {}", chain_id); // Chain ID: 14
         Ok(())
     }
-    // Chain ID: 14
     ```
 
   </TabItem>
 </Tabs>
+
+
+
+```bash
+cargo run --bin chain_id
+```
 
 ## Query a contract
 
@@ -86,7 +90,7 @@ For example, querying it for the address of the `WNat` contract:
 
 <Tabs groupId="network">
   <TabItem value="coston2" label="Coston2 Testnet" default>
-    ```rust title="src/main.rs"
+    ```rust title="src/bin/make_query.rs"
     use std::sync::Arc;
 
     use ethers::{prelude::abigen, providers::Provider, types::Address};
@@ -102,16 +106,15 @@ For example, querying it for the address of the `WNat` contract:
         let contract = FlareContractRegistry::new(address, client);
 
         if let Ok(wnat_addr) = contract.get_contract_address_by_name("WNat".to_string()).call().await {
-            println!("WNat contract address is {wnat_addr:?}");
+            println!("WNat address: {wnat_addr:?}"); // WNat address: 0xc67dce33d7a8efa5ffeb961899c73fe01bce9273
         }
         Ok(())
     }
-    // WNat contract address is 0xc67dce33d7a8efa5ffeb961899c73fe01bce9273
     ```
 
   </TabItem>
   <TabItem value="flare" label="Flare Mainnet">
-    ```rust title="src/main.rs"
+    ```rust title="src/bin/make_query.rs"
     use std::sync::Arc;
 
     use ethers::{prelude::abigen, providers::Provider, types::Address};
@@ -127,12 +130,15 @@ For example, querying it for the address of the `WNat` contract:
         let contract = FlareContractRegistry::new(address, client);
 
         if let Ok(wnat_addr) = contract.get_contract_address_by_name("WNat".to_string()).call().await {
-            println!("WNat contract address is {wnat_addr:?}");
+            println!("WNat address: {wnat_addr:?}"); // WNat address: 0x1d80c49bbbcd1c0911346656b529df9e5c2f783d
         }
         Ok(())
     }
-    // WNat contract address is 0x1d80c49bbbcd1c0911346656b529df9e5c2f783d
     ```
 
   </TabItem>
 </Tabs>
+
+```bash
+cargo run --bin make_query
+```
