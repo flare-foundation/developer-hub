@@ -2,3 +2,55 @@
 slug: feed-ids
 title: Feed IDs
 ---
+
+FTSOv2 uses feed indexes to identify the price feeds.
+
+The following table lists the feed index and their corresponding symbols.
+
+| Feed Index | Symbol    | Feed Category |
+| ---------- | --------- | ------------- |
+| 0          | FLR/USD   | 1             |
+| 1          | SGB/USD   | 1             |
+| 2          | BTC/USD   | 1             |
+| 3          | XRP/USD   | 1             |
+| 4          | LTC/USD   | 1             |
+| 5          | XLM/USD   | 1             |
+| 6          | DOGE/USD  | 1             |
+| 7          | ADA/USD   | 1             |
+| 8          | ALGO/USD  | 1             |
+| 9          | ETH/USD   | 1             |
+| 10         | FIL/USD   | 1             |
+| 11         | ARB/USD   | 1             |
+| 12         | AVAX/USD  | 1             |
+| 13         | BNB/USD   | 1             |
+| 14         | MATIC/USD | 1             |
+| 15         | SOL/USD   | 1             |
+| 16         | USDC/USD  | 1             |
+| 17         | USDT/USD  | 1             |
+| 18         | XDC/USD   | 1             |
+
+The feed indexes are used in the [`fetchCurrentFeeds`](solidity-reference/IFastUpdater#fetchcurrentfeeds) function to get the current value of the feeds.
+
+```solidity
+function fetchCurrentFeeds(
+    uint256[] _indices
+) external view returns (
+    uint256[] _feeds,
+    int8[] _decimals
+);
+```
+
+An example call to the `fetchCurrentFeeds` function fetching the prices of FLR/USD, BTC/USD and ETH/USD is as follows:
+
+```solidity
+uint256[] memory feedIndexes = new uint256[](3);
+feedIndexes[0] = 0; // FLR/USD
+feedIndexes[1] = 2; // BTC/USD
+feedIndexes[2] = 9; // ETH/USD
+
+(uint256[] memory feedValues, int8[] memory decimals) = fetchCurrentFeeds(feedIndexes);
+```
+
+The `feedValues` array will contain the current prices of FLR/USD, BTC/USD and ETH/USD in the same order as the feed indexes were given. The `decimals` array will contain the decimal places for the corresponding feeds.
+
+The floating point price of a feed can be calculated by dividing the `feedValues` by 10^`decimals`. For example, if the feed value of BTC/USD is `6900420` and the decimal is `2`, the floating point price of BTC/USD is `69004.20`.
