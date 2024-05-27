@@ -2,3 +2,87 @@
 slug: getting-started
 title: Getting Started
 ---
+
+import IconExternalLink from "@theme/Icon/ExternalLink";
+import Link from "@docusaurus/Link";
+import Remix from "@site/src/components/remix";
+
+You can use FTSOv2 to connect your smart contracts to real-world data feeds. FTSOv2 leverages Flare's network of approximately 100 independent data providers to source off-chain data and deliver it on-chain. All feeds have single endpoint function that returns the latest data value. This section focuses on consuming FTSOv2 feeds on Flare with Solidity.
+
+:::note
+If you are new to smart contract development, learn how to [deploy your first smart contract](../../guides/deploy-first-contract) before you start this guide.
+:::
+
+:::note
+To read FTSOv2 feeds off-chain or use different languages. See the language specific guides for [Python](../../guides/flare-for-python-developers), [Rust](../../guides/flare-for-rust-developers), [JavaScript](../../guides/flare-for-javascript-developers), or [Go](../../guides/flare-for-go-developers)
+:::
+
+## Sample contract
+
+This example smart contact simultaneously queries the latest feed values for FLR/USD, BTC/USD and ETH/USD on Flare's Coston testnet.
+
+```solidity title="FtsoV2FeedConsumer.sol"
+// SPDX-License-Identifier: MIT
+pragma solidity <0.9.0;
+
+import {IFastUpdater} from "@flarenetwork/flare-smart-contracts-v2/contracts/userInterfaces/IFastUpdater.sol"
+
+/**
+ * THIS IS AN EXAMPLE CONTRACT USING HARDCODED VALUES.
+ * DO NOT USE THIS CODE IN PRODUCTION.
+ */
+
+contract FtsoV2FeedConsumer {
+    IFastUpdater internal ftsoV2;
+    // Feed indexes: 0 = FLR/USD, 2 = BTC/USD, 9 = ETH/USD
+    uint256[] public feedIndexes = [0, 1, 2];
+
+    /**
+     * Network: Coston
+     * Address: 0x5249E5C5F7013032abd4A3086414d9B485617632
+     */
+    constructor() {
+        ftsoV2 = IFastUpdater(0x5249E5C5F7013032abd4A3086414d9B485617632);
+    }
+
+    /**
+     * Get the current value of the feeds.
+     */
+    function getFtsoV2CurrentFeedValues()
+        public
+        view
+        returns (uint256[] memory _feedValues, int8[] memory _decimals)
+    {
+        return ftsoV2.fetchCurrentFeeds(feedIndexes);
+    }
+}
+```
+
+<Remix>Open in Remix</Remix>
+
+### Breaking down the contract
+
+- The contract imports the `IFastUpdater` interface from the Flare smart contracts library. You can also see the interface's full [Solidity reference](solidity-reference/IFastUpdater).
+- The contract defines an array of feed indexes to query. The indexes correspond to the FLR/USD, BTC/USD, and ETH/USD feeds.
+- The contract initializes the `ftsoV2` variable with the address of the FTSOv2 contract on the Coston testnet.
+- The `getFtsoV2CurrentFeedValues` function queries the FTSOv2 contract for the latest values of the specified feeds.
+
+## Compile, deploy, and run the contract
+
+1. <Remix>Open the contract in Remix</Remix>
+
+2. Because the code is already written, you can start the compile step. On the left side of Remix, click the Solidity Compiler tab to view the compiler settings.
+
+3. Use the default compiler settings. Click the **Compile FtsoV2FeedConsumer.sol** button to compile the contract. Remix automatically detects the correct compiler version depending on the pragma that you specify in the contract. You can ignore warnings about unused local variables in this example.
+
+4. On the **Deploy** tab, select the **Injected Provider** environment. This contract specifically requires Web3 because it connects with another contract on the blockchain. Running in a JavaScript VM will not work.
+
+5. Because the example contract has several imports, Remix might select another contract to deploy by default. In the **Contract** section, select the `FtsoV2FeedConsumer` contract to make sure that Remix deploys the correct contract.
+
+6. Click **Deploy** to deploy the contract to the Coston testnet. MetaMask opens and asks you to confirm payment for deploying the contract. Make sure MetaMask is set to the Coston network before you accept the transaction. Because these transactions are on the blockchain, they are not reversible.
+
+7. In the MetaMask prompt, click **Confirm** to approve the transaction and spend your testnet ETH required to deploy the contract.
+
+8. After a few seconds, the transaction completes and your contract appears under the **Deployed Contracts** list in Remix. Click the contract dropdown to view its variables and functions.
+
+9. Click `getFtsoV2CurrentFeedValues` to show the latest feed value and decimals. The first array (`feedValues`) will contain the current prices of FLR/USD, BTC/USD and ETH/USD in the same order as the feed indexes were given. The second array (`decimals`) will contain the decimal places for the corresponding feeds. The floating point price of a feed can be calculated by dividing the `feedValue` by 10^`decimals`. For example, if the feed value of BTC/USD is `6900420` and the decimal is `2`, the floating point feed value is `69004.20`.
