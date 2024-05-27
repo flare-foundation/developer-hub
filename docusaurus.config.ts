@@ -88,6 +88,11 @@ const config: Config = {
           label: "GitHub",
           position: "right",
         },
+        {
+          href: "https://flare.network",
+          label: "flare.network",
+          position: "right",
+        },
       ],
     },
     footer: {
