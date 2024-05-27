@@ -16,9 +16,9 @@ async def main():
             "https://coston2-explorer.flare.network/api", params=params
         ) as response,
     ):
-        res = await response.json()
-        abi = json.loads(res["result"])
-        print(abi[4]["name"])  # getContractAddressByName
+        abi = json.loads((await response.json())["result"])
+        print(abi[4]["name"])
+        # getContractAddressByName
 
 
 if __name__ == "__main__":

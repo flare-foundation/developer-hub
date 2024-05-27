@@ -53,7 +53,8 @@ You need to connect to testnet or mainnet via an RPC, any RPC listed on the [Net
             AsyncHTTPProvider("https://rpc.ankr.com/flare_coston2"),
             middlewares=[async_geth_poa_middleware], # Inject middleware to handle testnet PoA consensus
         )
-        print(f"Chain ID: {await w3.eth.chain_id}") # Chain ID: 114
+        print(f"Chain ID: {await w3.eth.chain_id}")
+        # Chain ID: 114
 
 
     if __name__ == "__main__":
@@ -70,7 +71,8 @@ You need to connect to testnet or mainnet via an RPC, any RPC listed on the [Net
 
     async def main():
         w3 = AsyncWeb3(AsyncHTTPProvider("https://rpc.ankr.com/flare"))
-        print(f"Chain ID: {await w3.eth.chain_id}") # Chain ID: 14
+        print(f"Chain ID: {await w3.eth.chain_id}")
+        # Chain ID: 14
 
 
     if __name__ == "__main__":
@@ -114,9 +116,9 @@ To fetch a contract's ABI programmatically, you can query the [Flare Explorer AP
                 "https://coston2-explorer.flare.network/api", params=params
             ) as response,
         ):
-            res = await response.json()
-            abi = json.loads(res["result"])
-            print(abi[4]["name"]) # getContractAddressByName
+            abi = json.loads((await response.json())["result"])
+            print(abi[4]["name"])
+            # getContractAddressByName
 
 
     if __name__ == "__main__":
@@ -144,9 +146,9 @@ To fetch a contract's ABI programmatically, you can query the [Flare Explorer AP
                 "https://flare-explorer.flare.network/api", params=params
             ) as response,
         ):
-            res = await response.json()
-            abi = json.loads(res["result"])
-            print(abi[4]["name"]) # getContractAddressByName
+            abi = json.loads((await response.json())["result"])
+            print(abi[4]["name"])
+            # getContractAddressByName
 
 
     if __name__ == "__main__":
@@ -172,11 +174,12 @@ For example, querying it for the address of the `WNat` contract:
     from web3 import AsyncHTTPProvider, AsyncWeb3
     from web3.middleware.geth_poa import async_geth_poa_middleware
 
+
     async def main():
         registry_addr = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
         w3 = AsyncWeb3(
             AsyncHTTPProvider("https://rpc.ankr.com/flare_coston2"),
-            middlewares=[async_geth_poa_middleware],
+            middlewares=[async_geth_poa_middleware], # Inject middleware to handle testnet PoA consensus
         )
         params = {
             "module": "contract",
@@ -189,11 +192,11 @@ For example, querying it for the address of the `WNat` contract:
                 "https://coston2-explorer.flare.network/api", params=params
             ) as response,
         ):
-            res = await response.json()
-            abi = json.loads(res["result"])
-        contract = w3.eth.contract(address=registry_addr, abi=abi)
-        res = await contract.functions.getContractAddressByName("WNat").call()
-        print(f"WNat address: {res}")  # WNat address: 0xC67DCE33D7A8efA5FfEB961899C73fe01bCe9273
+            abi = json.loads((await response.json())["result"])
+        registry = w3.eth.contract(address=registry_addr, abi=abi)
+        res = await registry.functions.getContractAddressByName("WNat").call()
+        print(f"WNat address: {res}")
+        # WNat address: 0xC67DCE33D7A8efA5FfEB961899C73fe01bCe9273
 
 
     if __name__ == "__main__":
@@ -209,6 +212,7 @@ For example, querying it for the address of the `WNat` contract:
     import aiohttp
     from web3 import AsyncHTTPProvider, AsyncWeb3
     from web3.middleware.geth_poa import async_geth_poa_middleware
+
 
     async def main():
         registry_addr = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
@@ -227,11 +231,11 @@ For example, querying it for the address of the `WNat` contract:
                 "https://flare-explorer.flare.network/api", params=params
             ) as response,
         ):
-            res = await response.json()
-            abi = json.loads(res["result"])
-        contract = w3.eth.contract(address=registry_addr, abi=abi)
-        res = await contract.functions.getContractAddressByName("WNat").call()
-        print(f"WNat address: {res}")  # WNat address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
+            abi = json.loads((await response.json())["result"])
+        registry = w3.eth.contract(address=registry_addr, abi=abi)
+        res = await registry.functions.getContractAddressByName("WNat").call()
+        print(f"WNat address: {res}")
+        # WNat address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
 
 
     if __name__ == "__main__":
@@ -243,12 +247,16 @@ For example, querying it for the address of the `WNat` contract:
 
 ## Compiling a contract
 
-For this example, you can write a simple contract to query the FTSOv2 feed data. You can reuse the `FtsoV2FeedConsumer.sol` contract from the [FTSOv2 Sample Contract](../docs/ftso/getting-started#sample-contract) guide. Save the `.sol` file in the same folder as your Python script.
+For this example, you can write a simple Solidity contract to query the FTSOv2 feeds. You can reuse `FtsoV2FeedConsumer.sol` from the [FTSOv2 Sample Contract](../docs/ftso/getting-started#sample-contract). Copy the code, and save the `.sol` file in the same folder as your Python script.
 
-:::note
-Double check the address of the FTSOv2 contract in `FtsoV2FeedConsumer.sol` to make sure it is the same as on the network you want to deploy your contract.
+:::info
+Double check the addresses in `FtsoV2FeedConsumer.sol` to make sure it is the same as on the network you want to deploy your contract.
 
-You can always query the `FlareContractRegistry` contract (as described [above](#query-a-contract)) to get the latest address.
+You can always query the `FlareContractRegistry` with key `FastUpdater` to get the address on that network:
+
+```python
+await registry.functions.getContractAddressByName("FastUpdater").call()
+```
 :::
 
 ### Set up helpers
@@ -276,9 +284,9 @@ def save_compiled_contract(name: str, compiled_contract: dict) -> None:
 
 ### Compile with solc
 
-With these functions ready, you can now compile the contract. In a `compile_contracts.py` file, you can define the following code to install the correct version of the Solidity compiler and compile the contract:
+With these functions ready, you can now compile the contract. In a `compile_contract.py` file, you can define the following code to install the correct version of the Solidity compiler and compile the contract:
 
-```python title="compile_contracts.py"
+```python title="compile_contract.py"
 from solcx import compile_standard
 
 from .utils import load_contract, save_compiled_contract
@@ -318,19 +326,19 @@ if __name__ == "__main__":
     save_compiled_contract(contract_name, compiled_sol)
 ```
 
-You can now run the `compile_contracts.py` script to compile the contract. The compiled output will be saved to `FtsoV2FeedConsumer.json`.
+You can now run the `compile_contract.py` script to compile the contract. The compiled output will be saved to `FtsoV2FeedConsumer.json`.
 
 <Tabs groupId="python">
   <TabItem value="poetry" label="poetry" default>
 
     ```bash
-    poetry run python compile_contracts.py
+    poetry run python compile_contract.py
     ```
 
   </TabItem>
   <TabItem value="pip" label="pip">
     ```bash 
-    python compile_contracts.py 
+    python compile_contract.py 
     ```
 
   </TabItem>
@@ -399,70 +407,83 @@ With the functions and account ready, you can now deploy the contract. In a `dep
   <TabItem value="coston2" label="Coston2 Testnet" default>
     ```python title="deploy_contract.py"
     import os
-    from web3 import Web3
+    import asyncio
+
+    from web3 import AsyncWeb3, AsyncHTTPProvider
 
     from .utils import load_contract_interface
 
 
-    if __name__ == "__main__":
+    async def main():
         account, private_key = os.getenv("ACCOUNT"), os.getenv("ACCOUNT_PRIVATE_KEY")
-        contract = load_contract_interface("FtsoV2FeedConsumer")
+        contract_interface = load_contract_interface("FtsoV2FeedConsumer")
 
-        w3 = Web3(Web3.HTTPProvider("https://rpc.ankr.com/flare_coston2"))
+        w3 = AsyncWeb3(
+          AsyncHTTPProvider("https://rpc.ankr.com/flare_coston2"),
+          middlewares=[async_geth_poa_middleware], # Inject middleware to handle testnet PoA consensus
+        )
         ftsoV2_feed_consumer = w3.eth.contract(
-            abi=contract["abi"],
-            bytecode=contract["evm"]["bytecode"]["object"],
+            abi=contract_interface["abi"],
+            bytecode=contract_interface["evm"]["bytecode"]["object"],
         )
 
-        # Build transaction
         tx = ftsoV2_feed_consumer.constructor().build_transaction(
             {
                 "from": account,
-                "nonce": w3.eth.get_transaction_count(account),
-                "gasPrice": w3.eth.gas_price,
+                "nonce": await w3.eth.get_transaction_count(account),
+                "gasPrice": await w3.eth.gas_price,
             }
         )
+        signed_tx = await w3.eth.account.sign_transaction(tx, private_key=private_key)
 
-        # Sign transaction with private key and send it to the network
-        signed_tx = w3.eth.account.sign_transaction(tx, private_key=private_key)
-        tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-        tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+        print("Deploying Contract...")
+        tx_hash = await w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+        tx_receipt = await w3.eth.wait_for_transaction_receipt(tx_hash)
         print(f"Contract deployed at {tx_receipt['contractAddress']}")
+
+
+    if __name__ == "__main__":
+        asyncio.run(main())
     ```
 
   </TabItem>
   <TabItem value="flare" label="Flare Mainnet">
     ```python title="deploy_contract.py"
     import os
-    from web3 import Web3
+    import asyncio
+
+    from web3 import AsyncWeb3, AsyncHTTPProvider
 
     from .utils import load_contract_interface
 
 
-    if __name__ == "__main__":
+    async def main():
         account, private_key = os.getenv("ACCOUNT"), os.getenv("ACCOUNT_PRIVATE_KEY")
-        contract = load_contract_interface("FtsoV2FeedConsumer")
+        contract_interface = load_contract_interface("FtsoV2FeedConsumer")
 
-        w3 = Web3(Web3.HTTPProvider("https://rpc.ankr.com/flare"))
+        w3 = AsyncWeb3(AsyncHTTPProvider("https://rpc.ankr.com/flare"))
         ftsoV2_feed_consumer = w3.eth.contract(
-            abi=contract["abi"],
-            bytecode=contract["evm"]["bytecode"]["object"],
+            abi=contract_interface["abi"],
+            bytecode=contract_interface["evm"]["bytecode"]["object"],
         )
 
-        # Build transaction
         tx = ftsoV2_feed_consumer.constructor().build_transaction(
             {
                 "from": account,
-                "nonce": w3.eth.get_transaction_count(account),
-                "gasPrice": w3.eth.gas_price,
+                "nonce": await w3.eth.get_transaction_count(account),
+                "gasPrice": await w3.eth.gas_price,
             }
         )
+        signed_tx = await w3.eth.account.sign_transaction(tx, private_key=private_key)
 
-        # Sign transaction with private key and send it to the network
-        signed_tx = w3.eth.account.sign_transaction(tx, private_key=private_key)
-        tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-        tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+        print("Deploying Contract...")
+        tx_hash = await w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+        tx_receipt = await w3.eth.wait_for_transaction_receipt(tx_hash)
         print(f"Contract deployed at {tx_receipt['contractAddress']}")
+
+
+    if __name__ == "__main__":
+        asyncio.run(main())
     ```
 
   </TabItem>

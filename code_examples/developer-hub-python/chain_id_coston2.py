@@ -10,7 +10,8 @@ async def main():
         AsyncHTTPProvider("https://rpc.ankr.com/flare_coston2"),
         middlewares=[async_geth_poa_middleware],
     )
-    print(f"Chain ID: {await w3.eth.chain_id}") # Chain ID: 114
+    print(f"Chain ID: {await w3.eth.chain_id}")
+    # Chain ID: 114
 
 
 if __name__ == "__main__":

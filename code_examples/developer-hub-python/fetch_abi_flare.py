@@ -18,7 +18,8 @@ async def main():
     ):
         res = await response.json()
         abi = json.loads(res["result"])
-        print(abi[4]["name"])  # getContractAddressByName
+        print(abi[4]["name"])
+        # getContractAddressByName
 
 
 if __name__ == "__main__":

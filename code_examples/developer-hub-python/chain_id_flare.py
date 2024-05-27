@@ -8,7 +8,8 @@ async def main():
     w3 = AsyncWeb3(
         AsyncHTTPProvider("https://rpc.ankr.com/flare"),
     )
-    print(f"Chain ID: {await w3.eth.chain_id}") # Chain ID: 14
+    print(f"Chain ID: {await w3.eth.chain_id}")
+    # Chain ID: 14
 
 
 if __name__ == "__main__":
