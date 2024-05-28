@@ -12,7 +12,11 @@ async fn main() -> Result<()> {
     abigen!(FlareContractRegistry, "./FlareContractRegistry.json");
     let registry = FlareContractRegistry::new(registry_addr, client);
 
-    if let Ok(wnat_addr) = registry.get_contract_address_by_name("WNat".to_string()).call().await {
+    if let Ok(wnat_addr) = registry
+        .get_contract_address_by_name("WNat".to_string())
+        .call()
+        .await
+    {
         println!("WNat address: {wnat_addr:?}"); // WNat address: 0x1d80c49bbbcd1c0911346656b529df9e5c2f783d
     }
     Ok(())

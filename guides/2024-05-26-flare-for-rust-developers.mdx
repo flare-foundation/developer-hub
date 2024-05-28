@@ -2,7 +2,7 @@
 slug: flare-for-rust-developers
 title: Flare for Rust Developers
 authors: [dineshpinto]
-tags: [rust, quickstart, ethers-rs]
+tags: [rust, quickstart, ethers-rs, solc]
 ---
 
 import Tabs from "@theme/Tabs";
@@ -11,12 +11,35 @@ import TabItem from "@theme/TabItem";
 This guide is for developers who want to interact with Flare using Rust. In this guide, using Rust, you will learn how to:
 
 - Query a contract on Flare using [ethers-rs](https://github.com/gakonst/ethers-rs), an async library designed to interact with Ethereum-like chains.
+- Compile a Solidity contract using [solc](https://github.com/ethereum/solidity), the Solidity compiler.
 
 {/* truncate */}
 
 ## Getting started
 
 ### Installation
+
+Install the Solidity compiler by following the instructions in the [Solidity documentation](https://docs.soliditylang.org/en/latest/installing-solidity.html#linux-packages).
+
+For simplicity, the main commands are provided here:
+
+<Tabs>
+  <TabItem value="macos" label="MacOS via Homebrew" default>
+    ```bash 
+    brew tap ethereum/ethereum
+    brew install solidity
+    ```
+
+  </TabItem>
+  <TabItem value="ubuntu" label="Ubuntu via PPAs">
+    ```bash 
+    sudo add-apt-repository -y ppa:ethereum/ethereum
+    sudo apt-get update
+    sudo apt-get install solc
+    ```
+    
+  </TabItem>
+</Tabs>
 
 Add this to your `Cargo.toml`:
 
@@ -103,7 +126,11 @@ For example, querying it for the address of the `WNat` contract:
         abigen!(FlareContractRegistry, "./FlareContractRegistry.json");
         let registry = FlareContractRegistry::new(registry_addr, client);
 
-        if let Ok(wnat_addr) = registry.get_contract_address_by_name("WNat".to_string()).call().await {
+        if let Ok(wnat_addr) = registry
+            .get_contract_address_by_name("WNat".to_string())
+            .call()
+            .await
+        {
             println!("WNat address: {wnat_addr:?}");
             // WNat address: 0xc67dce33d7a8efa5ffeb961899c73fe01bce9273
         }
@@ -128,7 +155,11 @@ For example, querying it for the address of the `WNat` contract:
         abigen!(FlareContractRegistry, "./FlareContractRegistry.json");
         let registry = FlareContractRegistry::new(registry_addr, client);
 
-        if let Ok(wnat_addr) = registry.get_contract_address_by_name("WNat".to_string()).call().await {
+        if let Ok(wnat_addr) = registry
+            .get_contract_address_by_name("WNat".to_string())
+            .call()
+            .await
+        {
             println!("WNat address: {wnat_addr:?}");
             // WNat address: 0x1d80c49bbbcd1c0911346656b529df9e5c2f783d
         }
@@ -157,3 +188,13 @@ registry.get_contract_address_by_name("FastUpdater".to_string()).call().await
 ```
 
 :::
+
+### Compile with solc
+
+To compile the contract, use the Solidity compiler:
+
+```bash
+solc --evm-version london --abi --bin FtsoV2FeedConsumer.sol -o build
+```
+
+The compiled contract will be saved in the `build/` folder.
