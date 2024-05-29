@@ -31,7 +31,7 @@ const FeatureList: FeatureItem[] = [
         Flare
       </>
     ),
-    linkToProtocolDocs: "docs/fdc/intro",
+    linkToProtocolDocs: "docs/fdc/overview",
   },
   {
     title: "FAssets",
