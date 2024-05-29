@@ -85,12 +85,8 @@ const config: Config = {
         { to: "/guides", label: "Guides", position: "left" },
         {
           href: "https://github.com/flare-foundation/",
-          label: "GitHub",
-          position: "right",
-        },
-        {
-          href: "https://flare.network",
-          label: "flare.network",
+          className: "header-github-link",
+          "aria-label": "GitHub repository",
           position: "right",
         },
       ],
@@ -168,7 +164,7 @@ const config: Config = {
           title: "Explorers",
           items: [
             {
-              label: "Flarescan Explorer",
+              label: "Flarescan",
               href: "https://flarescan.com/",
             },
             {
