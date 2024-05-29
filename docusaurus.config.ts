@@ -116,6 +116,10 @@ const config: Config = {
               label: "Audits",
               to: "docs/support/audits",
             },
+            {
+              label: "Bug Bounty",
+              href: "https://flare.network/start-building/#bugbounty",
+            },
           ],
         },
         {
