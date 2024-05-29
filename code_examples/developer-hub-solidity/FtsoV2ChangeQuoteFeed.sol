@@ -15,7 +15,7 @@ interface IFastUpdater {
  * DO NOT USE THIS CODE IN PRODUCTION.
  */
 
-contract FtsoV2FeedChangeQuote {
+contract FtsoV2ChangeQuoteFeed {
     IFastUpdater internal ftsoV2;
 
     /**
@@ -26,46 +26,37 @@ contract FtsoV2FeedChangeQuote {
         ftsoV2 = IFastUpdater(0x9B931f5d3e24fc8C9064DB35bDc8FB4bE0E862f9);
     }
 
-    function _scaleFeed(
-        uint256 _feedValue,
-        uint8 _feedDecimals,
-        uint8 _decimals
+    function _scaleBaseFeedValue(
+        uint256 _baseFeedValue,
+        uint8 _baseFeedDecimals,
+        uint8 _quoteDecimals
     ) internal pure returns (uint256) {
-        if (_feedDecimals < _decimals) {
-            return _feedValue * 10 ** uint256(_decimals - _feedDecimals);
-        } else if (_feedDecimals > _decimals) {
-            return _feedValue / 10 ** uint256(_feedDecimals - _decimals);
+        if (_baseFeedDecimals < _quoteDecimals) {
+            return _baseFeedValue * 10 ** uint256(_quoteDecimals - _baseFeedDecimals);
+        } else if (_baseFeedDecimals > _quoteDecimals) {
+            return _baseFeedValue / 10 ** uint256(_baseFeedDecimals - _quoteDecimals);
         }
-        return _feedValue;
+        return _baseFeedValue;
     }
 
-    function getNewQuoteFeed(
-        uint256[] calldata _baseAndQuoteFeedIndexes,
-        uint8 _newQuoteDecimals
+    function getNewQuoteFeedValue(
+        uint256[] calldata _baseAndQuoteFeedIndexes
     ) public view returns (uint256) {
         require(
             _baseAndQuoteFeedIndexes.length == 2,
             "invalid _baseAndQuoteFeedIndexes, should be of length 2"
         );
-        require(
-            _newQuoteDecimals > uint8(0) && _newQuoteDecimals <= uint8(18),
-            "invalid _newQuoteDecimals, should be between 1 and 18 inclusive"
-        );
 
         (uint256[] memory feedValues, int8[] memory decimals) = ftsoV2
             .fetchCurrentFeeds(_baseAndQuoteFeedIndexes);
 
-        uint256 scaledBaseFeedValue = _scaleFeed(
+        uint8 _newQuoteDecimals = uint8(decimals[1]);
+        uint256 scaledBaseFeedValue = _scaleBaseFeedValue(
             feedValues[0],
             uint8(decimals[0]),
             _newQuoteDecimals
         );
 
-        uint256 scaledQuoteFeedValue = _scaleFeed(
-            feedValues[1],
-            uint8(decimals[1]),
-            _newQuoteDecimals
-        );
-        return (scaledBaseFeedValue * _newQuoteDecimals) / scaledQuoteFeedValue;
+        return (scaledBaseFeedValue * 10 ** uint256(_newQuoteDecimals)) / feedValues[1];
     }
 }

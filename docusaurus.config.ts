@@ -6,7 +6,7 @@ const config: Config = {
   title: "Flare Developer Hub",
   tagline:
     "The decentralized origin for Flare builders. Written by builders, for builders.",
-  favicon: "/img/favicon.ico", // TODO: This should be an ICO file
+  favicon: "/img/favicon.ico",
 
   // Set the production url of your site here
   url: "https://dineshpinto.github.io",
@@ -110,7 +110,7 @@ const config: Config = {
           items: [
             {
               label: "FAQs",
-              to: "/docs/support/faqs",
+              to: "docs/support/faqs",
             },
             {
               label: "Terminology",

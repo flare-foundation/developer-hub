@@ -1,0 +1,81 @@
+---
+title: Change quote feed
+tags: [ftso, oracle]
+slug: basic-integration
+description: Convert to feeds to a new quote feed.
+sidebar_position: 1
+---
+
+import Remix from "@site/src/components/remix";
+
+This guide will show you how to fetch the latest feed values for two feeds and convert them to a new quote feed. For example, if you need the price of `BTC/ETH`, you can fetch the latest feed values for `BTC/USD` and `ETH/USD` and calculate the price of `BTC/ETH = (BTC/USD) / (ETH/USD)`.
+
+```solidity title="FtsoV2ChangeQuoteFeed.sol"// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: MIT
+pragma solidity <0.9.0;
+
+interface IFastUpdater {
+    function fetchCurrentFeeds(
+        uint256[] calldata _feedIndexes
+    )
+        external
+        view
+        returns (uint256[] memory _feedValues, int8[] memory _decimals);
+}
+
+/**
+ * THIS IS AN EXAMPLE CONTRACT USING HARDCODED VALUES.
+ * DO NOT USE THIS CODE IN PRODUCTION.
+ */
+
+contract FtsoV2ChangeQuoteFeed {
+    IFastUpdater internal ftsoV2;
+
+    /**
+     * Network: Coston
+     * Address: 0x9B931f5d3e24fc8C9064DB35bDc8FB4bE0E862f9
+     */
+    constructor() {
+        ftsoV2 = IFastUpdater(0x9B931f5d3e24fc8C9064DB35bDc8FB4bE0E862f9);
+    }
+
+    function _scaleBaseFeedValue(
+        uint256 _baseFeedValue,
+        uint8 _baseFeedDecimals,
+        uint8 _quoteDecimals
+    ) internal pure returns (uint256) {
+        if (_baseFeedDecimals < _quoteDecimals) {
+            return _baseFeedValue * 10 ** uint256(_quoteDecimals - _baseFeedDecimals);
+        } else if (_baseFeedDecimals > _quoteDecimals) {
+            return _baseFeedValue / 10 ** uint256(_baseFeedDecimals - _quoteDecimals);
+        }
+        return _baseFeedValue;
+    }
+
+    function getNewQuoteFeedValue(
+        uint256[] calldata _baseAndQuoteFeedIndexes
+    ) public view returns (uint256) {
+        require(
+            _baseAndQuoteFeedIndexes.length == 2,
+            "invalid _baseAndQuoteFeedIndexes, should be of length 2"
+        );
+
+        (uint256[] memory feedValues, int8[] memory decimals) = ftsoV2
+            .fetchCurrentFeeds(_baseAndQuoteFeedIndexes);
+
+        uint8 _newQuoteDecimals = uint8(decimals[1]);
+        uint256 scaledBaseFeedValue = _scaleBaseFeedValue(
+            feedValues[0],
+            uint8(decimals[0]),
+            _newQuoteDecimals
+        );
+
+        return (scaledBaseFeedValue * 10 ** uint256(_newQuoteDecimals)) / feedValues[1];
+    }
+}
+```
+
+{/* prettier-ignore */}
+<Remix href="https://remix.ethereum.org/#version=soljson-v0.8.25+commit.b61c2a91.js&optimize=true&runs=200&gist=d6181b71e7932701efbc6c3c78898f5a">Open in Remix</Remix>
+
+For BTC and ETH specifically, the function signature would be `getNewQuoteFeedValue([2, 9])`. This will return the price of BTC/ETH in the new quote feed.
