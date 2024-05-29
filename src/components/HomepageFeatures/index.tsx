@@ -50,7 +50,7 @@ function FeatureCard({
 }: FeatureItem) {
   return (
     <div className={clsx("col col--4")}>
-      <div className="card">
+      <div className="card margin-left--sm margin-right--sm margin-bottom--lg">
         <div className="card__header text--center">
           <Svg className={styles.featureSvg} role="img" />
         </div>
