@@ -2,7 +2,7 @@
 
 # See README.md for usage instructions.
 INPUT_PATH="docs/userInterfaces/"
-OUTPUT_PATH="../../docs/technical-reference/contracts/"
+OUTPUT_PATH="../technical-reference/"
 set -e
 
 # Defined in repos.list
