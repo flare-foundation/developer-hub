@@ -46,6 +46,8 @@ nvm use 20
 
 Formats all documents with Prettier.
 
+Prettier support for MDXv3 is currently a WIP (see [this issue](https://github.com/prettier/prettier/issues/12209)), so add in `{/* prettier-ignore */}` wherever necessary.
+
 ```bash
 npm run format
 ```
@@ -58,8 +60,4 @@ npm run build
 
 This command generates static content into the `build` directory and can be served using any static contents hosting service.
 
-## TODO
-
-- [ ] Finish writing content
-- [ ] Add horizontal line under headers
-- [ ] Simplify tables, only keep inside lines
+Note: Search will only function with a production build.
