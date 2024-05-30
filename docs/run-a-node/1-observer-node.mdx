@@ -11,9 +11,8 @@ An observer node does not participate in network consensus. Unlike [validator no
 
 Running an observer node is optional. However, submitting transactions through your own node offers a number of benefits:
 
-- Transactions are sent directly to the network instead of through a third party, removing a potential security risk.
-- Public nodes are usually rate-limited (the amount of requests they accept per second is restricted). Your own node does not have such restriction.
-- The time savings described above allow FTSO data providers to submit their data a few seconds later, thus having more time to gather data before submitting.
+- Transactions are sent directly to the network instead of through a third party.
+- Public nodes are usually rate-limited, your own node does not have such restriction.
 
 ## Prerequisites
 
@@ -21,17 +20,18 @@ Running an observer node is optional. However, submitting transactions through y
 
 Enabling pruning is recommended for observer nodes, as they do not need to keep the whole history of the blockchain. In some cases, pruning can save up to 60% of disk space.
 
+For archival nodes, which keep the whole history of the blockchain, pruning should be disabled.
 :::
 
 ### Hardware recommendations
 
-- CPU: 8 cores, or more
+- CPU: 4 cores, or more
 - RAM: 16 GB, or more
-- Disk: 500 GB PCIe Gen 3 NVMe SSD, or better
+- Disk: 1 TB SSD, or better (For archival nodes 4 TB SSD, or better)
 
 ### Docker
 
-Docker Hub contains container images for all releases at [flare-foundation/go-flare](https://hub.docker.com/r/flarefoundation/go-flare).
+Docker Hub contains container images for all `go-flare` releases at [flare-foundation/go-flare](https://hub.docker.com/r/flarefoundation/go-flare).
 
 ## Deploying an Observer Node
 
@@ -42,6 +42,7 @@ Clone the repository at [flare-foundation/go-flare](https://github.com/flare-fou
 ```bash
 git clone https://github.com/flare-foundation/go-flare.git
 cd go-flare/avalanchego
+chmod +x scripts/build.sh
 ./scripts/build.sh
 ```
 
@@ -164,12 +165,9 @@ You can read about all of them in the [Avalanche documentation](https://docs.ava
             "log-level": "info"
         }
         ```
+        For archival nodes, set `"pruning-enabled": false` to disable pruning. Note that archival nodes require significantly more disk space than standard observer nodes.
 
   :::
-
-### Archival nodes
-
-An archival node keeps the whole history of the blockchain, instead of pruning old transactions. Set `"pruning-enabled": false` in the configuration file to disable pruning. Note that archival nodes require significantly more disk space than standard observer nodes.
 
 ## Node maintenance
 
