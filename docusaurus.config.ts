@@ -58,7 +58,6 @@ const config: Config = {
   ],
 
   themeConfig: {
-    image: "img/flare_tbfd_pink.jpg",
     defaultMode: "light",
     respectPrefersColorScheme: true,
     docs: {
@@ -99,6 +98,7 @@ const config: Config = {
         srcDark: "img/flare_tbfd_dark.svg",
         href: "https://flare.network/",
         width: 300,
+        height: 25,
       },
       links: [
         {

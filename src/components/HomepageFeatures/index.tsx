@@ -55,7 +55,7 @@ function FeatureCard({
           <Svg className={styles.featureSvg} role="img" />
         </div>
         <div className="card__body text--center">
-          <Heading as="h3">{title}</Heading>
+          <Heading as="h2">{title}</Heading>
           <p>{description}</p>
         </div>
         <div className="card__footer text--center">
