@@ -12,7 +12,7 @@ async def main():
     contract_interface = load_contract_interface("FtsoV2FeedConsumer")
 
     w3 = AsyncWeb3(
-        AsyncHTTPProvider("https://rpc.ankr.com/flare"),
+        AsyncHTTPProvider("https://rpc.ankr.com/flare_coston2"),
         middlewares=[async_geth_poa_middleware],
     )
     ftsoV2_feed_consumer = w3.eth.contract(
