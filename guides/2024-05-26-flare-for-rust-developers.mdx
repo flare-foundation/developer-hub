@@ -2,7 +2,7 @@
 slug: flare-for-rust-developers
 title: Flare for Rust Developers
 authors: [dineshpinto]
-tags: [rust, quickstart, ethers-rs, solc]
+tags: [rust, quickstart, alloy-rs, solc]
 ---
 
 import Tabs from "@theme/Tabs";
@@ -10,7 +10,7 @@ import TabItem from "@theme/TabItem";
 
 This guide is for developers who want to interact with Flare using Rust. In this guide, using Rust, you will learn how to:
 
-- Query a contract on Flare using [ethers-rs](https://github.com/gakonst/ethers-rs), an async library designed to interact with Ethereum-like chains.
+- Query a contract on Flare using [alloy-rs](https://github.com/alloy-rs), an async library designed to interact with Ethereum-like chains.
 - Compile a Solidity contract using [solc](https://github.com/ethereum/solidity), the Solidity compiler.
 
 {/* truncate */}
@@ -45,9 +45,9 @@ Add this to your `Cargo.toml`:
 
 ```toml title="Cargo.toml"
 [dependencies]
-ethers = "2.0"
 tokio = { version = "1.37.0", features = ["rt", "rt-multi-thread", "macros"] }
 eyre = "0.6.12"
+alloy = { git = "https://github.com/alloy-rs/alloy", rev = "ec3a00dc00d68014565e39350b17cd2a56d0ceeb", features = ["contract", "providers", "transport-http", "network", "signers", "signer-wallet"]}
 ```
 
 ### Usage
@@ -57,13 +57,13 @@ You need to connect to testnet or mainnet via an RPC, any RPC listed on the [Net
 <Tabs groupId="network">
   <TabItem value="coston2" label="Coston2 Testnet" default>
     ```rust title="src/bin/chain_id.rs"
-    use ethers::providers::{Middleware, Provider};
+    use alloy::providers::{Provider, ProviderBuilder};
     use eyre::Result;
 
     #[tokio::main]
     async fn main() -> Result<()> {
-        let provider = Provider::try_from("https://rpc.ankr.com/flare_coston2")?;
-        let chain_id = provider.get_chainid().await?;
+        let provider = ProviderBuilder::new().on_http("https://rpc.ankr.com/flare_coston2".parse()?);
+        let chain_id = provider.get_chain_id().await?;
         println!("Chain ID: {}", chain_id); // Chain ID: 114
         Ok(())
     }
@@ -71,13 +71,13 @@ You need to connect to testnet or mainnet via an RPC, any RPC listed on the [Net
     </TabItem>
     <TabItem value="flare" label="Flare Mainnet">
     ```rust title="src/bin/chain_id.rs"
-    use ethers::providers::{Middleware, Provider};
+    use alloy::providers::{Provider, ProviderBuilder};
     use eyre::Result;
 
     #[tokio::main]
     async fn main() -> Result<()> {
-        let provider = Provider::try_from("https://rpc.ankr.com/flare")?;
-        let chain_id = provider.get_chainid().await?;
+        let provider = ProviderBuilder::new().on_http("https://rpc.ankr.com/flare".parse()?);
+        let chain_id = provider.get_chain_id().await?;
         println!("Chain ID: {}", chain_id); // Chain ID: 14
         Ok(())
     }
@@ -112,28 +112,27 @@ For example, querying it for the address of the `WNat` contract:
 <Tabs groupId="network">
   <TabItem value="coston2" label="Coston2 Testnet" default>
     ```rust title="src/bin/make_query.rs"
-    use std::sync::Arc;
-
-    use ethers::{prelude::abigen, providers::Provider, types::Address};
+    use alloy::{providers::ProviderBuilder, sol};
     use eyre::Result;
+
+    sol!(
+        #[sol(rpc)]
+        FlareContractRegistry,
+        "FlareContractRegistry.json"
+    );
 
     #[tokio::main]
     async fn main() -> Result<()> {
-        let registry_addr: Address = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019".parse()?;
-        let provider = Provider::try_from("https://rpc.ankr.com/flare_coston2")?;
-        let client = Arc::new(provider);
-
-        abigen!(FlareContractRegistry, "./FlareContractRegistry.json");
-        let registry = FlareContractRegistry::new(registry_addr, client);
-
-        if let Ok(wnat_addr) = registry
-            .get_contract_address_by_name("WNat".to_string())
+        let provider = ProviderBuilder::new().on_http("https://rpc.ankr.com/flare_coston2".parse()?);
+        let registry = FlareContractRegistry::new(
+            "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019".parse()?,
+            provider,
+        );
+        let FlareContractRegistry::getContractAddressByNameReturn { _0 } = registry
+            .getContractAddressByName("WNat".to_string())
             .call()
-            .await
-        {
-            println!("WNat address: {wnat_addr:?}");
-            // WNat address: 0xc67dce33d7a8efa5ffeb961899c73fe01bce9273
-        }
+            .await?;
+        println!("WNat address: {_0}"); // WNat address: 0xC67DCE33D7A8efA5FfEB961899C73fe01bCe9273
         Ok(())
     }
     ```
@@ -141,28 +140,27 @@ For example, querying it for the address of the `WNat` contract:
   </TabItem>
   <TabItem value="flare" label="Flare Mainnet">
     ```rust title="src/bin/make_query.rs"
-    use std::sync::Arc;
-
-    use ethers::{prelude::abigen, providers::Provider, types::Address};
+    use alloy::{providers::ProviderBuilder, sol};
     use eyre::Result;
+
+    sol!(
+        #[sol(rpc)]
+        FlareContractRegistry,
+        "FlareContractRegistry.json"
+    );
 
     #[tokio::main]
     async fn main() -> Result<()> {
-        let registry_addr: Address = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019".parse()?;
-        let provider = Provider::try_from("https://rpc.ankr.com/flare")?;
-        let client = Arc::new(provider);
-
-        abigen!(FlareContractRegistry, "./FlareContractRegistry.json");
-        let registry = FlareContractRegistry::new(registry_addr, client);
-
-        if let Ok(wnat_addr) = registry
-            .get_contract_address_by_name("WNat".to_string())
+        let provider = ProviderBuilder::new().on_http("https://rpc.ankr.com/flare".parse()?);
+        let registry = FlareContractRegistry::new(
+            "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019".parse()?,
+            provider,
+        );
+        let FlareContractRegistry::getContractAddressByNameReturn { _0 } = registry
+            .getContractAddressByName("WNat".to_string())
             .call()
-            .await
-        {
-            println!("WNat address: {wnat_addr:?}");
-            // WNat address: 0x1d80c49bbbcd1c0911346656b529df9e5c2f783d
-        }
+            .await?;
+        println!("WNat address: {_0}"); // WNat address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
         Ok(())
     }
     ```
@@ -191,10 +189,178 @@ registry.get_contract_address_by_name("FastUpdater".to_string()).call().await
 
 ### Compile with solc
 
-To compile the contract, use the Solidity compiler:
+To compile the contract using the Solidity CLI compiler, create a file named `config.json`:
 
-```bash
-solc --evm-version london --abi --bin FtsoV2FeedConsumer.sol -o build
+```json title="config.json"
+{
+  "language": "Solidity",
+  "sources": {
+    "FtsoV2FeedConsumer.sol": {
+      "urls": ["./FtsoV2FeedConsumer.sol"]
+    }
+  },
+  "settings": {
+    "outputSelection": {
+      "FtsoV2FeedConsumer.sol": {
+        "FtsoV2FeedConsumer": [
+          "abi",
+          "metadata",
+          "evm.bytecode",
+          "evm.bytecode.sourceMap"
+        ]
+      }
+    },
+    "optimizer": {
+      "enabled": true,
+      "runs": 200
+    },
+    "evmVersion": "london"
+  }
+}
 ```
 
-The compiled contract will be saved in the `build/` folder.
+```bash
+solc --standard-json config.json  > FtsoV2FeedConsumer.json
+```
+
+This will generate a `FtsoV2FeedConsumer.json` file with the contract's ABI and bytecode. Things get a bit annoying here, as the Rust solc importer expects a specific format for the JSON, which is not the same as the output from the Solidity compiler.
+
+### Convert to Rust format
+
+Remove the two top-level JSON fields i.e. "contracts" and "FtsoV2FeedConsumer", the JSON should look like:
+
+```json title="config.json"
+{
+  "abi": [
+    ...
+  ],
+  "evm": {
+    ...
+  }
+  "metadata": {
+    ...
+  }
+}
+```
+
+## Deploying a contract
+
+To deploy a contract, you need to have an account with some testnet or mainnet gas tokens.
+
+### Create account
+
+You can create a new Flare account using `create_account.rs`:
+
+```rust title="src/bin/create_account.rs"
+use alloy::signers::{wallet::LocalWallet, Signer};
+use eyre::Result;
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    let signer = LocalWallet::random();
+    println!(
+        "Account: {}, Private key: {}",
+        signer.address(),
+        signer.as_nonzero_scalar()
+    );
+    Ok(())
+}
+```
+
+```bash
+cargo run --bin create_account
+```
+
+This will output a new private key and an account pair.
+
+:::warning
+
+- Never share your private keys.
+- Never put your private keys in source code.
+- Never commit private keys to a Git repository.
+  :::
+
+You can save the account and private key into environment variables `ACCOUNT` and `ACCOUNT_PRIVATE_KEY` respectively.
+
+:::note
+You can also import the raw hex private key to MetaMask and any other wallet - the private key can be shared between your Rust code and any number of wallets.
+:::
+
+### Fund account
+
+- For testnet, you can use the testnet faucets on the [Network Configuration](../docs/flare/configuration#configuration) page to get some testnet `C2FLR` tokens.
+- For mainnet, you need to buy `FLR` in a cryptocurrency exchange such as Coinbase, Kraken etc.
+
+### Deploy with alloy
+
+With the account ready, you can now deploy the contract. In a `deploy_contract.rs` file, you can define the following code to deploy the contract:
+
+<Tabs groupId="network">
+  <TabItem value="coston2" label="Coston2 Testnet" default>
+
+    ```rust title="src/bin/deploy_contract.rs"
+    use alloy::{
+        network::EthereumSigner, providers::ProviderBuilder, signers::wallet::LocalWallet, sol,
+    };
+    use eyre::Result;
+
+    sol!(
+        #[sol(rpc)]
+        FtsoV2FeedConsumer,
+        "./FtsoV2FeedConsumer.json"
+    );
+
+    #[tokio::main]
+    async fn main() -> Result<()> {
+        let private_key = std::env::var("ACCOUNT_PRIVATE_KEY")?;
+
+        let signer: LocalWallet = private_key.parse().unwrap();
+        let provider = ProviderBuilder::new()
+            .with_recommended_fillers()
+            .signer(EthereumSigner::from(signer))
+            .on_http("https://rpc.ankr.com/flare_coston2".parse()?);
+
+        let contract = FtsoV2FeedConsumer::deploy(&provider).await?;
+        println!("Deployed contract at address: {}", contract.address());
+        Ok(())
+    }
+    ```
+
+  </TabItem>
+  <TabItem value="flare" label="Flare Mainnet">
+    ```rust title="src/bin/deploy_contract.rs"
+    use alloy::{
+        network::EthereumSigner, providers::ProviderBuilder, signers::wallet::LocalWallet, sol,
+    };
+    use eyre::Result;
+
+    sol!(
+        #[sol(rpc)]
+        FtsoV2FeedConsumer,
+        "./FtsoV2FeedConsumer.json"
+    );
+
+    #[tokio::main]
+    async fn main() -> Result<()> {
+        let private_key = std::env::var("ACCOUNT_PRIVATE_KEY")?;
+
+        let signer: LocalWallet = private_key.parse().unwrap();
+        let provider = ProviderBuilder::new()
+            .with_recommended_fillers()
+            .signer(EthereumSigner::from(signer))
+            .on_http("https://rpc.ankr.com/flare".parse()?);
+
+        let contract = FtsoV2FeedConsumer::deploy(&provider).await?;
+        println!("Deployed contract at address: {}", contract.address());
+        Ok(())
+    }
+    ```
+
+  </TabItem>
+</Tabs>
+
+```bash
+cargo run --bin deploy_contract
+```
+
+Congratulations! You have now successfully deployed a contract on Flare using Rust.
