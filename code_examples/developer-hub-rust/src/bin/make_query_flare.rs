@@ -1,23 +1,23 @@
-use std::sync::Arc;
-
-use ethers::{prelude::abigen, providers::Provider, types::Address};
+use alloy::{providers::ProviderBuilder, sol};
 use eyre::Result;
+
+sol!(
+    #[sol(rpc)]
+    FlareContractRegistry,
+    "FlareContractRegistry.json"
+);
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let registry_addr: Address = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019".parse()?;
-    let provider = Provider::try_from("https://rpc.ankr.com/flare")?;
-    let client = Arc::new(provider);
-
-    abigen!(FlareContractRegistry, "./FlareContractRegistry.json");
-    let registry = FlareContractRegistry::new(registry_addr, client);
-
-    if let Ok(wnat_addr) = registry
-        .get_contract_address_by_name("WNat".to_string())
+    let provider = ProviderBuilder::new().on_http("https://rpc.ankr.com/flare".parse()?);
+    let registry = FlareContractRegistry::new(
+        "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019".parse()?,
+        provider,
+    );
+    let FlareContractRegistry::getContractAddressByNameReturn { _0 } = registry
+        .getContractAddressByName("WNat".to_string())
         .call()
-        .await
-    {
-        println!("WNat address: {wnat_addr:?}"); // WNat address: 0x1d80c49bbbcd1c0911346656b529df9e5c2f783d
-    }
+        .await?;
+    println!("WNat address: {_0}"); // WNat address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
     Ok(())
 }
