@@ -1,22 +1,171 @@
 ---
 slug: deploy-first-contract
 title: Deploy your first smart contract
-tags: [solidity, remix, quickstart]
+tags: [solidity, remix, metamask, quickstart]
 ---
 
-Write your first smart contract and run it in your browser without any knowledge about Flare or blockchains.
+import Remix from "@site/src/components/remix";
+import OpenMetamask from "/static/img/deploy-first-contract/0-open-metamask.png";
+import AddCoston2 from "/static/img/deploy-first-contract/1-add-coston2.png";
+import ApproveCoston2 from "/static/img/deploy-first-contract/2-approve-coston2.png";
+import SwitchNetwork from "/static/img/deploy-first-contract/3-switch-networks.png";
+import CopyAddress from "/static/img/deploy-first-contract/4-copy-address.png";
+import PasteAddress from "/static/img/deploy-first-contract/5-paste-address.png";
+import AfterFaucetConfirmation from "/static/img/deploy-first-contract/6-after-faucet-confirmation.png";
+import OpenSolidityCompiler from "/static/img/deploy-first-contract/7-open-solidity-compiler.png";
+import SetEvmVersion from "/static/img/deploy-first-contract/8-set-evm-version.png";
+import CompileContract from "/static/img/deploy-first-contract/9-compile-contract.png";
+import DeployAndRunTxs from "/static/img/deploy-first-contract/10-deploy-and-run-transactions.png";
+import SetInjectedProvider from "/static/img/deploy-first-contract/11-set-injected-provider.png";
+import ConnectToMetamask from "/static/img/deploy-first-contract/12-connect-to-metamask.png";
+import ConfirmPermissions from "/static/img/deploy-first-contract/13-confirm-permissions.png";
+import MessageWhenDeploying from "/static/img/deploy-first-contract/14-message-when-deploying.png";
+import ConfirmDeployInMetamask from "/static/img/deploy-first-contract/15-confirm-deploy-in-metamask.png";
+import ClickOnMessage from "/static/img/deploy-first-contract/16-click-on-message.png";
+import UpdateMessage from "/static/img/deploy-first-contract/17-update-message.png";
+import ConfirmMetamaskUpdateMessage from "/static/img/deploy-first-contract/18-confirm-metamask-update-message.png";
+import QueryUpdatedMessage from "/static/img/deploy-first-contract/19-query-updated-message.png";
+
+You can write your first smart contract and run it in your browser without any knowledge about Flare. This guide shows you how easy it is to develop smart contracts using the [Solidity language](https://soliditylang.org/), a [MetaMask wallet](https://metamask.io/) and the [Remix Development Environment](https://remix.ethereum.org/). You can use all of these tools in your browser for free with no signup required.
 
 {/* truncate */}
 
-## Overview
-
-You can write your first smart contract and run it in your browser without any knowledge about Ethereum or blockchains. This guide shows you how easy it is to develop smart contracts using the Solidity language, a MetaMask wallet and the Remix Development Environment. You can use all of these tools in your browser for free with no signup required.
-
-## Objective
+## Goals
 
 You will create and deploy a simple "Hello world" smart contract using the following process:
 
-1. Write: Write a contract to define how the contract functions, what data it can store, what other contracts it interacts with, and what external APIs it might call.
-2. Compile: Pass your smart contract code through a compiler to translate the contract into byte code that the blockchain can understand. For example, Solidity code must be compiled before it can run in the Ethereum Virtual Machine.
-3. Deploy: Send the compiled smart contract to the blockchain. From that point forward, the contract cannot be altered. However, you can still interact with the contract in several ways.
-4. Run functions: When you run the functions that you defined for the contract, the network processes those functions and modifies the state of your contract. For some functions, the network charges a small fee to complete the work. Your contract can also have functions that transfer funds to other contracts or wallets.
+1. **Write:** Write a contract to define how the contract functions, what data it can store, what other contracts it interacts with, and what external APIs it might call.
+
+2. **Compile:** Pass your smart contract code through a compiler to translate the contract into byte code that the blockchain can understand. For example, Solidity code must be compiled before it can run in the Ethereum Virtual Machine.
+
+3. **Deploy:** Send the compiled smart contract to the blockchain. From that point forward, the contract cannot be altered. However, you can still interact with the contract in several ways.
+
+4. **Run functions:** When you run the functions that you defined for the contract, the network processes those functions and modifies the state of your contract. For some functions, the network charges a small fee to complete the work. Your contract can also have functions that transfer funds to other contracts or wallets.
+
+## Steps
+
+<details>
+<summary>1. Install, configure and fund your MetaMask wallet</summary>
+
+1. [Install the MetaMask browser extension wallet](https://metamask.io/download/)
+
+2. After you install the extension, open your browser extension list and click on MetaMask to open the MetaMask wallet extension.
+
+   <img src={OpenMetamask} style={{ width: 300 }} />
+
+3. Follow the instructions in MetaMask to create a new wallet. The new wallet includes a 12-word mnemonic phrase. This phrase is the key to your wallet. Copy that phrase down in a very secure location that only you can access. You can use this phrase to retrieve your wallet later or add it to another browser.
+
+4. Add the Coston2 Testnet to your MetaMask wallet. Go to the the [Coston2 Explorer](https://coston2-explorer.flare.network), scroll down and click on **Add Coston2**.
+
+   <img src={AddCoston2} style={{ width: 300 }} />
+
+5. A Metamask popup will open asking you to approve adding the network. Click on **Approve**. You can ignore the Metamask warnings.
+
+   <img src={ApproveCoston2} style={{ width: 300 }} />
+
+6. Once approved, Metamask will ask you to switch to the Coston2 network. Click on **Switch network**.
+
+   <img src={SwitchNetwork} style={{ width: 300 }} />
+
+7. Copy your Metamask address.
+
+   <img src={CopyAddress} style={{ width: 300 }} />
+
+8. Go to the [Coston2 Faucet](https://faucet.flare.network/coston2), and paste your Metamask address into the input field. Click on **Request C2FLR**.
+
+   <img src={PasteAddress} style={{ width: 300 }} />
+
+9. After the faucet completes the transaction, you should see the C2FLR in your Metamask wallet.
+
+   <img src={AfterFaucetConfirmation} style={{ width: 300 }} />
+
+Now that you configured your wallet and funded it with testnet C2FLR, you can write, compile, and deploy your contract.
+
+</details>
+
+<details>
+<summary>2.  Write, compile and deploy your first smart contract</summary>
+
+Your first contract is a simple `HelloWorld.sol` example. This example shows you how to set and retrieve variables in a smart contract onchain.
+
+```solidity
+// SPDX-License-Identifier: MIT
+
+pragma solidity <0.9.0;
+
+/**
+ * THIS IS AN EXAMPLE CONTRACT.
+ * DO NOT USE THIS CODE IN PRODUCTION.
+ */
+
+contract HelloWorld {
+    string public message;
+
+    constructor(string memory initialMessage) {
+        message = initialMessage;
+    }
+
+    function updateMessage(string memory newMessage) public {
+        message = newMessage;
+    }
+}
+```
+
+1. <Remix href="https://remix.ethereum.org/#version=soljson-v0.8.7+commit.e28d00a7.js&optimize=false&runs=200&gist=c05ca2bc30aba872d584bb56578a893f">
+     Open the contract in Remix
+   </Remix>
+
+2. On the left side of Remix, click the **Solidity compiler** tab to view the compiler settings.
+
+   <img src={OpenSolidityCompiler} style={{ width: 300 }} />
+
+3. Expand the **Advanced Configuration** section and set the EVM Version to `london`. This tells Remix to use the London hard fork of the Ethereum Virtual Machine.
+
+   <img src={SetEvmVersion} style={{ width: 300 }} />
+
+4. Click the **Compile HelloWorld.sol** button to compile the contract. This converts the contract from Solidity into bytecode that the Ethereum Virtual Machine can understand.
+
+   <img src={CompileContract} style={{ width: 300 }} />
+
+5. After Remix compiles the contract, deploy it. On the left side of Remix, click the **Deploy & run transactions** tab to view the deployment settings.
+
+   <img src={DeployAndRunTxs} style={{ width: 300 }} />
+
+6. In the deployment settings, select the **Injected Provider - MetaMask** environment. This tells Remix that you want to deploy your contract to the blockchain that you configured in MetaMask.
+
+   <img src={SetInjectedProvider} style={{ width: 300 }} />
+
+7. Next to the **Deploy** button, enter a message that you want to send with the smart contract when you deploy it. This contract has a constructor that sets an initial message when you deploy the contract.
+
+   <img src={MessageWhenDeploying} style={{ width: 300 }} />
+
+8. Click the **Deploy** button to deploy the contract and its initial message to the blockchain network. MetaMask opens and asks you to confirm payment to deploy the contract. Make sure MetaMask is set to the Coston2 network before you accept the transaction. Click on **Confirm**.
+
+   <img src={ConfirmDeployInMetamask} style={{ width: 300 }} />
+
+9. After a few seconds, the transaction completes and your contract appears under the **Deployed/Unpinned Contracts** list in Remix. Click the contract dropdown to view its variables and functions. Click the **message** button. Remix retrieves and prints the initial message that you set.
+
+   <img src={ClickOnMessage} style={{ width: 300 }} />
+
+</details>
+
+<details>
+<summary>3. Run functions in your contract</summary>
+
+Because you deployed the contract to an actual blockchain, several nodes on the test network confirmed your payment for the smart contract. The contract, its variables, and its functions remain in the blockchain permanently. To change the message variable that is stored with your contract, run the updateMessage function.
+
+1. In your deployed contract, enter a new message next to the updateMessage function.
+
+   <img src={UpdateMessage} style={{ width: 300 }} />
+
+2. Click the **updateMessage** button to set the new message in the contract data. MetaMask opens and asks you to confirm payment to update the state of your contract.
+
+   <img src={ConfirmMetamaskUpdateMessage} style={{ width: 300 }} />
+
+3. In the new MetaMask prompt, click **Confirm** to approve the transaction.
+
+4. Click the **message** button again to see the updated value.
+
+   <img src={QueryUpdatedMessage} style={{ width: 300 }} />
+
+</details>
