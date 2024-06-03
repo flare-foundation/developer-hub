@@ -20,7 +20,7 @@ const config: Config = {
   projectName: "developer-hub", // Usually your repo name.
 
   onBrokenLinks: "throw",
-  onBrokenMarkdownLinks: "warn",
+  onBrokenMarkdownLinks: "throw",
 
   // Even if you don't use internationalization, you can use this field to set
   // useful metadata like html lang. For example, if your site is Chinese, you
@@ -49,6 +49,7 @@ const config: Config = {
           blogDescription: "Guides",
           blogSidebarCount: "ALL",
           blogSidebarTitle: "All guides",
+          onInlineTags: "throw",
         },
         theme: {
           customCss: "./src/css/custom.css",
@@ -58,8 +59,10 @@ const config: Config = {
   ],
 
   themeConfig: {
-    defaultMode: "light",
-    respectPrefersColorScheme: true,
+    colorMode: {
+      defaultMode: "light",
+      respectPrefersColorScheme: true,
+    },
     docs: {
       sidebar: {
         autoCollapseCategories: true,
