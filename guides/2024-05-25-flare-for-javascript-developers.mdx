@@ -2,7 +2,7 @@
 slug: flare-for-javascript-developers
 title: Flare for JavaScript Developers
 authors: [dineshpinto]
-tags: [javascript, quickstart, web3js, solc]
+tags: [javascript, quickstart, solidity]
 ---
 
 import Tabs from "@theme/Tabs";
@@ -95,7 +95,7 @@ For this example, you can query the `FlareContractRegistry` contract which has t
 
 ### Fetch ABI
 
-To fetch a contract's ABI programmatically, you can query the [Flare Explorer API](https://flare-explorer.flare.network/api-docs):
+To fetch a contract's ABI programmatically, you can query the [Flare Blockchain Explorer API](https://flare-explorer.flare.network/api-docs):
 
 <Tabs groupId="network">
   <TabItem value="coston2" label="Flare Testnet Coston2" default>
@@ -233,8 +233,8 @@ You can also import the raw hex private key to MetaMask and any other wallet - t
 
 ### Fund account
 
-- For testnet, you can use the testnet faucets on the [Network Configuration](../docs/flare/configuration#configuration) page to get some testnet `C2FLR` tokens.
-- For mainnet, you need to buy `FLR` in a cryptocurrency exchange such as Coinbase, Kraken etc.
+- For testnet, you can use the testnet faucets on the [Network Configuration](../docs/flare/configuration#configuration) page to get some testnet C2FLR.
+- For mainnet, you need to buy FLR in a cryptocurrency exchange such as Coinbase, Kraken etc.
 
 ### Deploy with web3
 
@@ -257,19 +257,19 @@ With the account ready, you can now deploy the contract. In a `deployContract.js
     FtsoV2FeedConsumer.handleRevert = true;
 
     async function deploy() {
-    const privateKey = process.env.ACCOUNT_PRIVATE_KEY.toString();
-    const wallet = web3.eth.accounts.wallet.add(privateKey);
+      const privateKey = process.env.ACCOUNT_PRIVATE_KEY.toString();
+      const wallet = web3.eth.accounts.wallet.add(privateKey);
 
-    const contractDeployer = FtsoV2FeedConsumer.deploy({
-        data: "0x" + bytecode,
-    });
+      const contractDeployer = FtsoV2FeedConsumer.deploy({
+          data: "0x" + bytecode,
+      });
 
-    const tx = await contractDeployer.send({
-        from: wallet[0].address,
-        nonce: await web3.eth.getTransactionCount(wallet[0].address),
-        gasPrice: await web3.eth.getGasPrice(),
-    });
-    console.log("Contract deployed at address: " + tx.options.address);
+      const tx = await contractDeployer.send({
+          from: wallet[0].address,
+          nonce: await web3.eth.getTransactionCount(wallet[0].address),
+          gasPrice: await web3.eth.getGasPrice(),
+      });
+      console.log("Contract deployed at address: " + tx.options.address);
     }
 
     deploy();
@@ -293,19 +293,19 @@ With the account ready, you can now deploy the contract. In a `deployContract.js
     FtsoV2FeedConsumer.handleRevert = true;
 
     async function deploy() {
-    const privateKey = process.env.ACCOUNT_PRIVATE_KEY.toString();
-    const wallet = web3.eth.accounts.wallet.add(privateKey);
+      const privateKey = process.env.ACCOUNT_PRIVATE_KEY.toString();
+      const wallet = web3.eth.accounts.wallet.add(privateKey);
 
-    const contractDeployer = FtsoV2FeedConsumer.deploy({
-        data: "0x" + bytecode,
-    });
+      const contractDeployer = FtsoV2FeedConsumer.deploy({
+          data: "0x" + bytecode,
+      });
 
-    const tx = await contractDeployer.send({
-        from: wallet[0].address,
-        nonce: await web3.eth.getTransactionCount(wallet[0].address),
-        gasPrice: await web3.eth.getGasPrice(),
-    });
-    console.log("Contract deployed at address: " + tx.options.address);
+      const tx = await contractDeployer.send({
+          from: wallet[0].address,
+          nonce: await web3.eth.getTransactionCount(wallet[0].address),
+          gasPrice: await web3.eth.getGasPrice(),
+      });
+      console.log("Contract deployed at address: " + tx.options.address);
     }
 
     deploy();
@@ -314,6 +314,10 @@ With the account ready, you can now deploy the contract. In a `deployContract.js
   </TabItem>
 </Tabs>
 
-You can now run the `deployContract.js` script to deploy the contract. The contract address will be printed once the deployment is successful. You can check the contract address on a Flare block explorer, linked on the [Network Configuration](../docs/flare/configuration#configuration) page.
+You can now run the `deployContract.js` script to deploy the contract. The contract address will be printed once the deployment is successful. You can check the contract address on a Flare Blockchain Explorer, linked on the [Network Configuration](../docs/flare/configuration#configuration) page.
 
 Congratulations! You have now successfully deployed a contract on Flare using Python.
+
+:::tip[What's next?]
+Check out the [Solidity Reference](/docs/ftso/solidity-reference/IFastUpdater) for the Flare Time-Series Oracle (FTSOv2), to see what all on-chain functions you can interact with using JavaScript.
+:::
