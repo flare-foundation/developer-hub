@@ -7,4 +7,5 @@ func main() {
 	MakeQueryFlare()
 	CreateAccount()
 	DeployContractCoston()
+	FtsoV2Consumer()
 }

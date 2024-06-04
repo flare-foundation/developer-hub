@@ -12,7 +12,7 @@ sol!(
 async fn main() -> Result<()> {
     // Feed indexes: 0 = FLR/USD, 2 = BTC/USD, 9 = ETH/USD
     let feed_indexes = vec![U256::from(0_u32), U256::from(2_u32), U256::from(9_u32)];
-    // IFastUpdater address (Songbird Testnet Coston)
+    // FastUpdater address (Songbird Testnet Coston)
     let addr = "0x9B931f5d3e24fc8C9064DB35bDc8FB4bE0E862f9".parse()?;
     // Connect to an RPC node
     let provider = ProviderBuilder::new().on_http("https://rpc.ankr.com/flare_coston".parse()?);

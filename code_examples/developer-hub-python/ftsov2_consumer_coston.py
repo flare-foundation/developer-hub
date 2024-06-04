@@ -5,9 +5,9 @@ from web3 import AsyncHTTPProvider, AsyncWeb3
 
 
 async def main() -> None:
-    #  Feed indexes: 0 = FLR/USD, 2 = BTC/USD, 9 = ETH/USD
+    # Feed indexes: 0 = FLR/USD, 2 = BTC/USD, 9 = ETH/USD
     feed_indexes = [0, 2, 9]
-    # IFastUpdater address (Songbird Testnet Coston)
+    # FastUpdater address (Songbird Testnet Coston)
     addr = "0x9B931f5d3e24fc8C9064DB35bDc8FB4bE0E862f9"
     # Connect to an RPC node
     w3 = AsyncWeb3(
