@@ -7,11 +7,15 @@ interface IFastUpdater {
     )
         external
         view
-        returns (uint256[] memory _feedValues, int8[] memory _decimals);
+        returns (
+            uint256[] memory _feedValues,
+            int8[] memory _decimals,
+            uint64 _timestamp
+        );
 }
 
 /**
- * THIS IS AN EXAMPLE CONTRACT USING HARDCODED VALUES.
+ * THIS IS AN EXAMPLE CONTRACT.
  * DO NOT USE THIS CODE IN PRODUCTION.
  */
 
@@ -31,12 +35,22 @@ contract FtsoV2ChangeQuoteFeed {
         uint8 _baseFeedDecimals,
         uint8 _quoteDecimals
     ) internal pure returns (uint256) {
+        uint _scaledBasedFeedValue;
         if (_baseFeedDecimals < _quoteDecimals) {
-            return _baseFeedValue * 10 ** uint256(_quoteDecimals - _baseFeedDecimals);
+            // If base feed decimals are less than quote feed decimals, scale up
+            _scaledBasedFeedValue =
+                _baseFeedValue *
+                10 ** uint256(_quoteDecimals - _baseFeedDecimals);
         } else if (_baseFeedDecimals > _quoteDecimals) {
-            return _baseFeedValue / 10 ** uint256(_baseFeedDecimals - _quoteDecimals);
+            // If base feed decimals are more than quote feed decimals, scale down
+            _scaledBasedFeedValue =
+                _baseFeedValue /
+                10 ** uint256(_baseFeedDecimals - _quoteDecimals);
+        } else {
+            // If base feed decimals are equal to quote feed decimals, return as is
+            _scaledBasedFeedValue = _baseFeedValue;
         }
-        return _baseFeedValue;
+        return _scaledBasedFeedValue;
     }
 
     function getNewQuoteFeedValue(
@@ -46,17 +60,24 @@ contract FtsoV2ChangeQuoteFeed {
             _baseAndQuoteFeedIndexes.length == 2,
             "invalid _baseAndQuoteFeedIndexes, should be of length 2"
         );
+        // Fetch the current feed values and decimals of the base and quote feeds
+        (
+            uint256[] memory feedValues,
+            int8[] memory decimals,
+            /* uint64 timestamp */
+        ) = ftsoV2.fetchCurrentFeeds(_baseAndQuoteFeedIndexes);
 
-        (uint256[] memory feedValues, int8[] memory decimals) = ftsoV2
-            .fetchCurrentFeeds(_baseAndQuoteFeedIndexes);
-
+        // Set the new quote decimals to the quote feed decimals
         uint8 _newQuoteDecimals = uint8(decimals[1]);
+        // Scale the base feed value to the new quote decimals
         uint256 scaledBaseFeedValue = _scaleBaseFeedValue(
             feedValues[0],
             uint8(decimals[0]),
             _newQuoteDecimals
         );
-
-        return (scaledBaseFeedValue * 10 ** uint256(_newQuoteDecimals)) / feedValues[1];
+        // Calculate the new quote feed value
+        uint256 newQuoteFeedValue = (scaledBaseFeedValue *
+            10 ** uint256(_newQuoteDecimals)) / feedValues[1];
+        return newQuoteFeedValue;
     }
 }
