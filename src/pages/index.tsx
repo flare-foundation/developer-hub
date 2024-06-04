@@ -17,10 +17,7 @@ function HomepageHeader() {
         </Heading>
         <p className="hero__subtitle">{siteConfig.tagline}</p>
         <div className={styles.buttons}>
-          <Link
-            className="button button--primary button--lg"
-            to="docs/flare/intro"
-          >
+          <Link className="button button--primary button--lg" to="docs/intro">
             Start Building →
           </Link>
         </div>
