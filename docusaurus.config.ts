@@ -9,14 +9,14 @@ const config: Config = {
   favicon: "/img/favicon.ico",
 
   // Set the production url of your site here
-  url: "https://dineshpinto.github.io",
+  url: "https://dev.flare.network",
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: "/developer-hub/",
+  baseUrl: "/",
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
-  organizationName: "dineshpinto", // Usually your GitHub org/user name.
+  organizationName: "flare-foundation", // Usually your GitHub org/user name.
   projectName: "developer-hub", // Usually your repo name.
 
   onBrokenLinks: "throw",
