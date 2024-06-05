@@ -87,7 +87,7 @@ Now that you configured your wallet and funded it with testnet C2FLR, you can wr
 
 Your first contract is a simple `HelloWorld.sol` example. This example shows you how to set and retrieve variables in a smart contract onchain.
 
-```solidity
+```solidity title="HelloWorld.sol"
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
@@ -169,6 +169,45 @@ Since you deployed the contract to a blockchain, multiple nodes on the test netw
 </details>
 
 Now you know how to deploy and call example contracts on Flare's testnet. You can write your own contracts and test them using this same process.
+
+<details>
+<summary>Didn't understand the contract?</summary>
+
+Let's break down the `HelloWorld` contract:
+
+```solidity title="HelloWorld.sol"
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+/**
+ * THIS IS AN EXAMPLE CONTRACT.
+ * DO NOT USE THIS CODE IN PRODUCTION.
+ */
+
+contract HelloWorld {
+    string public message;
+
+    constructor(string memory initialMessage) {
+        message = initialMessage;
+    }
+
+    function updateMessage(string memory newMessage) public {
+        message = newMessage;
+    }
+}
+```
+
+1. **Pragma Directive:** The `pragma solidity ^0.8.20;` statement specifies the version of the Solidity compiler the contract should use. In this case, it's indicating that the contract is compatible with Solidity versions from 0.8.20 up to, but not including, version 0.9.0.
+
+2. **Contract Declaration:** The `contract HelloWorld { ... }` statement defines a new Solidity contract named `HelloWorld`.
+
+3. **State Variable:** `string public message`; declares a state variable named message, which is of type `string` and is publicly accessible (due to the `public` visibility modifier). This variable will store a message that can be read by any external entity.
+
+4. **Constructor:** The `constructor(string memory initialMessage) { ... }` function is a special function that is executed only once when the contract is deployed. It initializes the `message` state variable with the value passed as `initialMessage` when the contract is deployed.
+
+5. **Function `updateMessage`:** This function allows anyone to update the `message` state variable. It takes a `newMessage` parameter of type `string`, updates the `message` variable with the new value, and is publicly accessible (`public` visibility modifier).
+
+</details>
 
 :::tip[What's next?]
 Read FTSOv2's [Getting Started](../docs/ftso/getting-started) guide to learn how to connect your smart contracts to Flare's enshrined oracle and retrieve onchain data feeds.

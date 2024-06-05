@@ -7,7 +7,7 @@ interface IFastUpdater {
     )
         external
         view
-        returns (uint256[] memory _feedValues, int8[] memory _decimals);
+        returns (uint256[] memory _feedValues, int8[] memory _decimals, int64 _timestamp);
 }
 
 /**
@@ -32,9 +32,9 @@ contract FtsoV2FeedConsumer {
      * Get the current value of the feeds.
      */
     function getFtsoV2CurrentFeedValues()
-        public
+        external
         view
-        returns (uint256[] memory _feedValues, int8[] memory _decimals)
+        returns (uint256[] memory _feedValues, int8[] memory _decimals, int64 _timestamp)
     {
         return ftsoV2.fetchCurrentFeeds(feedIndexes);
     }
