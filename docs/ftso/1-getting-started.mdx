@@ -27,7 +27,7 @@ This example smart contact queries the latest feed values for FLR/USD, BTC/USD a
 
 ```solidity title="FtsoV2FeedConsumer.sol"
 // SPDX-License-Identifier: MIT
-pragma solidity <0.9.0;
+pragma solidity ^0.8.20;
 
 import { IFastUpdater } from "@flarenetwork/flare-periphery-contracts/flare/ftso/userInterfaces/IFastUpdater.sol";
 
@@ -50,12 +50,15 @@ contract FtsoV2FeedConsumer {
     }
 
     /**
-     * Get the current value of the feeds.
+     * Get the current values of the specified feeds.
+     * @return _feedValues The current values of the specified feeds.
+     * @return _decimals The number of decimal places for each feed value.
+     * @return _timestamp The timestamp at which the feed values were fetched.
      */
     function getFtsoV2CurrentFeedValues()
         public
         view
-        returns (uint256[] memory _feedValues, int8[] memory _decimals)
+        returns (uint256[] memory _feedValues, int8[] memory _decimals, int64 _timestamp)
     {
         return ftsoV2.fetchCurrentFeeds(feedIndexes);
     }

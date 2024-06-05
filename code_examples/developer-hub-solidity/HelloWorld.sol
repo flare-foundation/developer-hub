@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
-
-pragma solidity <0.9.0;
+pragma solidity ^0.8.20;
 
 /**
  * THIS IS AN EXAMPLE CONTRACT.

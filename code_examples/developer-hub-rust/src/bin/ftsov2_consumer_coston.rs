@@ -10,20 +10,24 @@ sol!(
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // FastUpdater address (Songbird Testnet Coston)
+    let ftso_address = "0x9B931f5d3e24fc8C9064DB35bDc8FB4bE0E862f9".parse()?;
+    let rpc_url = "https://rpc.ankr.com/flare_coston".parse()?;
     // Feed indexes: 0 = FLR/USD, 2 = BTC/USD, 9 = ETH/USD
     let feed_indexes = vec![U256::from(0_u32), U256::from(2_u32), U256::from(9_u32)];
-    // FastUpdater address (Songbird Testnet Coston)
-    let addr = "0x9B931f5d3e24fc8C9064DB35bDc8FB4bE0E862f9".parse()?;
     // Connect to an RPC node
-    let provider = ProviderBuilder::new().on_http("https://rpc.ankr.com/flare_coston".parse()?);
+    let provider = ProviderBuilder::new().on_http(rpc_url);
     // Set up contract instance
-    let ftsov2 = FtsoV2::new(addr, provider);
+    let ftsov2 = FtsoV2::new(ftso_address, provider);
     // Fetch current feeds
     let FtsoV2::fetchCurrentFeedsReturn {
         _feeds,
         _decimals,
         _timestamp,
     } = ftsov2.fetchCurrentFeeds(feed_indexes).call().await?;
-    println!("{_feeds:?}, {_decimals:?}, {_timestamp:?}");
+    // Print results
+    println!("Feeds:{:?}", _feeds);
+    println!("Decimals:{:?}", _decimals);
+    println!("Timestamp:{:?}", _timestamp);
     Ok(())
 }
