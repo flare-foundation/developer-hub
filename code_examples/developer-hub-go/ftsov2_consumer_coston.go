@@ -5,10 +5,11 @@ import (
 	"context"
 	"fmt"
 
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"math/big"
 )
 
 func FtsoV2Consumer() {
@@ -24,6 +25,7 @@ func FtsoV2Consumer() {
 	// Fetch current feeds
 	opts := &bind.CallOpts{Context: context.Background()}
 	res, _ := ftsov2.FetchCurrentFeeds(opts, feedIndexes)
+	// Print results
 	fmt.Println("Feeds:", res.Feeds)
 	fmt.Println("Decimals:", res.Decimals)
 	fmt.Println("Timestamp:", res.Timestamp)
