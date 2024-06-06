@@ -86,7 +86,7 @@ const config: Config = {
         },
         { to: "/guides", label: "Guides", position: "left" },
         {
-          href: "https://github.com/flare-foundation/",
+          href: "https://github.com/flare-foundation/developer-hub",
           className: "header-github-link",
           "aria-label": "GitHub repository",
           position: "right",
