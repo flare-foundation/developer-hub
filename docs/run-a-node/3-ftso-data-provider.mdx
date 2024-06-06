@@ -1,0 +1,357 @@
+---
+sidebar_position: 3
+slug: ftso-data-provider
+title: FTSOv2 Data Provider
+description: Provide block-latency updates and Scaling for FTSOv2.
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import ThemedImage from "@theme/ThemedImage";
+import useBaseUrl from "@docusaurus/useBaseUrl";
+
+This guide will help you set up an FTSOv2 data provider. FTSO data providers are responsible for sourcing off-chain data and bringing it to Flare. FTSOv2 consists of two main types of feeds:
+
+- **Block-latency feeds**, protocol code name Fast Updates or `fast-updates`. Updates with every new block on Flare, every ≈1.8 seconds.
+
+- **Anchor feeds**, protocol code name Scaling or `ftso-scaling`. Updates with every new voting round, which each round lasting exactly 90 seconds.
+
+This guide will help you set up both components, note that only the code names will be used in this guide and any repositories referenced.
+
+## Overview
+
+A data provider system for FTSOv2 consists of five components:
+
+- **Feed Value Provider.** Provides the latest values for a given set of feeds.
+
+- **Data Provider.** Provides commit, reveal, and median result data to **Flare System Client** for submission.
+
+- **Flare System Client.** Responsible for all interactions with the FTSOv2 smart contracts, including data collection, submission, voter registration, and other system tasks.
+
+- **Fast Updates Client.** Responsible for interaction with Fast Updates contracts, including data collection, submission and other system tasks.
+
+- **Indexer.** Monitors the blockchain and records all FTSOv2 related transactions and events.
+
+Reference implementations are provided for all five components.
+
+:::warning
+The reference implementation of **Feed Value Provider** is only provided for testing purposes and should not be relied on. Data providers are expected to reimplement this with their own data sources.
+:::
+
+<ThemedImage
+  alt="FTSO Architecture"
+  sources={{
+    light: useBaseUrl("/img/ftso_architecture_light.jpg"),
+    dark: useBaseUrl("/img/ftso_architecture_dark.jpg"),
+  }}
+/>
+
+## Operation
+
+A simplified description of a single voting round operation:
+
+**Flare System Client** runs a scheduler which triggers voting actions every round (90s):
+
+- On voting round start, obtain reveal data for the previous round from **Data Provider** and send to `Submission` smart contract.
+
+- Once the reveal deadline passes (45s), obtain median result Merkle root from **Data Provider**, sign, and send to `Submission` smart contract.
+
+- Before the end of the voting round, obtain a feed value commit hash for the current round from the **Data Provider** (which will get processed in the following round).
+
+- There is a finalizer process which monitors the indexer database for signature transactions, and once enough signature weight for a voting round is gathered, submits the set of signatures to the `Relay` smart contract. If signature verification passes, the voting round is considered finalized. The `Relay` contract is the authoritative storage of confirmed voting round result Merkle roots.
+
+Additionally, once in a reward epoch the **System Client** triggers voter registration, which allows participating in the following reward epoch.
+
+**Data Provider** obtains all commit and reveal data straight from encoded transaction calldata recorded in the indexer database. All calls to `Submission` contract are simply empty function invocations, with the actual submission data provided as additional calldata in the transaction.
+
+## Registration
+
+:::note
+Account registration with the `EntityManager` contract is required for FTSOv2 participation, and must be done before starting any further deployment steps.
+:::
+
+Each data provider in the FTSOv2 system must set up and register the following five accounts:
+
+- `Identity`. Main identity account of the voter. On mainnet this should be held in cold storage. This account is required for initial data provider setup, but is not used during each voting round.
+
+- `Submit`. Used for sending commit and reveal transactions.
+
+- `SubmitSignatures`. Used for sending voting round result signature transactions. (To avoid nonce conflicts, **Flare System Client** uses multiple accounts for submitting transactions).
+
+- `SigningPolicy`. Used for signature generation during the voting round, and reward epoch signing policy signing (it's a system protocol ran once during reward epoch to establish reward epoch settings, including valid voters and their weights).
+
+- `Delegation`. Account to which community should delegate funds (using WNat contract) to increase the vote power of the voter (identity/entity) - and also to later get the rewards. If not set, the identity account will be used.
+
+Accounts need to be funded for gas fees. The delegation account is used of establishing voter power, which can be achieved by wrapping funds directly or by delegation from other accounts. Wrapping can be done via the [development portal](https://governance.dev.aflabs.org/) (make sure to pick the correct network for testnets) and via [portal](https://portal.flare.network) for mainnet.
+
+:::warning
+Protocol operation uses normalized weights, and the delegation account should have **at least 150 WCFLR** to obtain a non-zero vote power.
+:::
+
+### Generate sortition key
+
+Generate a sortition key to use in Fast Updates, read more about this in [flare-foundation/fast-updates](https://github.com/flare-foundation/fast-updates/tree/main/go-client). You can use the provided docker image to generate a key:
+
+```bash
+docker run --rm ghcr.io/flare-foundation/fast-updates/go-client:latest keygen
+```
+
+Accounts for submission need to be generated and funded with gas fees. These can be any accounts **not used** for the five accounts above and don't need to be registered with the system. We suggest using three accounts to avoid nonce conflicts. You will need to pass their private keys in the `.env` file defined ahead in [Configure environment](#configure-environment).
+
+### Using the contract
+
+Account registration is handled by the `EntityManager` smart contract:
+
+- [EntityManager Coston](https://coston-explorer.flare.network/address/0x60A848E5Da796D741e559c170E851FC813061217/write-contract#address-tabs)
+- [EntityManager Songbird](https://songbird-explorer.flare.network/address/0x46C417D0760198E94fee455CE0e223262a3D0049/write-contract#address-tabs)
+
+The required contract invocation steps can be found in the [register-entities.ts](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/deployment/tasks/register-entities.ts#L33) deployment task. You can checkout the repo and run the task, or register accounts manually via the explorer UI linked above. Registration only needs to be done once.
+
+### Using Hardhat
+
+Clone and build [flare-foundation/flare-smart-contracts-v2](https://github.com/flare-foundation/flare-smart-contracts-v2/)
+
+```bash
+git clone https://github.com/flare-foundation/flare-smart-contracts-v2/
+cd flare-smart-contracts-v2
+yarn
+yarn c
+```
+
+Create a JSON file with account addresses and keys
+
+```json title="entities.json"
+[
+  {
+      "identity": {
+        "address": "0xca84d6086c5b32212a0cf1638803355d7be31482",
+        "privateKey": "<private key hex>"
+      },
+      "submit": {
+        "address": "0x7961de7ad159106a79187379a22d21c1e5a924db",
+        "privateKey": "<private key hex>"
+      },
+      "submitSignatures": {
+        "address": "0x7570c09c17f79aa50bab7ba385c0d5ca12c5b4d3",
+        "privateKey": "<private key hex>"
+      },
+      "signingPolicy": {
+        "address": "0x9ffa9cf5f677e925b6ecacbf66caefd7e1b9883a",
+        "privateKey": "<private key hex>"
+      },
+      "delegation": {
+        "address": "0x95288e962ff1893ef6c32ad4143fffb12e1eb15f",
+        "privateKey": "<private key hex>"
+      }
+      "sortitionPrivateKey": "<private key hex>"
+  }
+]
+```
+
+Setup the following variables in `.env`
+
+<Tabs>
+  <TabItem value="coston" label="Coston" default>
+
+```text title=".env"
+ENTITIES_FILE_PATH="<path to entities.json>"
+COSTON_RPC=<non-public Coston RPC>
+CHAIN_CONFIG="coston"
+```
+
+  </TabItem>
+  <TabItem value="coston2" label="Coston2">
+
+```text title=".env"
+ENTITIES_FILE_PATH="<path to entities.json>"
+COSTON2_RPC=<non-public Coston2 RPC>
+CHAIN_CONFIG="coston2"
+```
+
+  </TabItem>
+  <TabItem value="songbird" label="Songbird">
+
+```text title=".env"
+ENTITIES_FILE_PATH="<path to entities.json>"
+SONGBIRD_RPC=<non-public Songbird RPC>
+CHAIN_CONFIG="songbird"
+```
+
+  </TabItem>
+</Tabs>
+
+:::warning
+
+- Do not use `.env.template`, instead just create a `.env` using the above example, otherwise the running tasks will fail.
+- Do not use public RPCs, you will get rate limited.
+  :::
+
+Run registration tasks
+
+<Tabs>
+  <TabItem value="coston" label="Coston" default>
+
+```bash
+yarn hardhat --network coston register-entities
+yarn hardhat --network coston register-public-keys
+```
+
+  </TabItem>
+  <TabItem value="coston2" label="Coston2">
+
+```bash
+yarn hardhat --network coston2 register-entities
+```
+
+  </TabItem>
+  <TabItem value="songbird" label="Songbird">
+
+```bash
+yarn hardhat --network songbird register-entities
+```
+
+  </TabItem>
+</Tabs>
+
+## Setup
+
+### Install dependencies
+
+<Tabs>
+  <TabItem value="macos" label="MacOS" default>
+    ```bash 
+    brew install jq gettext bash
+    ```
+
+  </TabItem>
+  <TabItem value="ubuntu" label="Ubuntu">
+    ```bash 
+    apt-get install jq
+    ```
+    
+  </TabItem>
+
+    <TabItem value="arch" label="Arch">
+    ```bash
+    pacman -S jq
+    ```
+
+  </TabItem>
+</Tabs>
+
+### Clone the repository
+
+Clone [flare-foundation/ftso-v2-provider-deployment](https://github.com/flare-foundation/ftso-v2-provider-deployment.git)
+
+```bash
+git clone https://github.com/flare-foundation/ftso-v2-provider-deployment.git
+cd ftso-v2-provider-deployment
+```
+
+### Configure environment
+
+Use `.env.example` to create a `.env` file
+
+```bash
+cp .env.example .env
+```
+
+Set the following variables in `.env`:
+
+- Private keys for required accounts.
+- `NETWORK` to `coston` `coston2` or `songbird`.
+- `NODE_RPC_URL` and `NODE_API_KEY` (optional) with your Coston or Songbird node RPC endpoint.
+- `VALUE_PROVIDER_URL` to the endpoint of your feed value provider. Leave default if using the example provider for testing.
+- `FAST_UPDATES_ACCOUNTS` for the private keys of fast updates submission accounts separated by commas.
+- `FAST_UPDATES_SORTITION_PRIVATE_KEY` to the key that was registered with the network
+
+Populate the provider stack config:
+
+```bash
+chmod +x populate_config.sh
+./populate_config.sh
+```
+
+:::note
+You will need to re-run this command if you modify your `.env` file.
+:::
+
+## Deployment
+
+### Start provider stack
+
+Since the `docker-compose.yaml` is already provided you can start everything with `docker compose up -d`
+and stop everything with `docker compose down`. Database is persisted in a named docker volume.
+If you need to wipe the database you will need to remove the volume manually. When codebase is changed
+new images need to be pulled with `docker compose pull`
+
+### Feed value provider
+
+Start your own feed value provider, or (for testing only) use the example test provider:
+
+```bash
+docker run --rm -it --publish "0.0.0.0:3101:3101" --network "ftso-v2-deployment_default" ghcr.io/flare-foundation/ftso-v2-example-value-provider
+```
+
+Once the container is running, you can find the API spec at: http://localhost:3101/api-doc
+
+:::note
+Some users reported issues with getting the example test provider to start. For initial testing a "fixed" value provider can be used that simply returns a constant instead of reading data from external data sources. It can be started by setting an extra env variable `VALUE_PROVIDER_IMPL=fixed`:
+
+```bash
+docker run --rm -it --env VALUE_PROVIDER_IMPL=fixed --publish "0.0.0.0:3101:3101" --network "ftso-v2-deployment_default" ghcr.io/flare-foundation/ftso-v2-example-value-provider
+```
+
+You should see the following in the logs:
+
+```log
+WARN [FixedFeed] Initializing FixedFeed, will return 0.01 for all feeds.
+```
+
+:::
+
+## Is it working?
+
+You will see various errors initially on `ftso-scaling` and `flare-system-client`, since the data provider will not be registered as a voter for the current reward epoch. There is a time window for voter registration on every reward epoch, and if you leave things running you should eventually see `RegisterVoter success` logged by `flare-system-client`. It should then start submitting data successfully in the **following** reward epoch.
+
+`flare-system-client` log samples indicating successful operation:
+
+```text
+[03-04|06:58:20.000]	DEBUG	protocol/submitter.go:142	submitter submit1 running epoch 567838
+[03-04|06:58:20.000]	DEBUG	protocol/submitter.go:143	  epoch is [2024-03-04 06:57:00 +0000 UTC, 2024-03-04 06:58:30 +0000 UTC], now is 2024-03-04 06:58:20.000923016 +0000 UTC m=+234317.457953448
+[03-04|06:58:20.001]	DEBUG	protocol/protocol_utils.go:55	Calling protocol client API: http://ftso-scaling-00:3100/submit1/567838/0x5579C824e5550ae24ceFe41B129472c3EC70be5c
+[03-04|06:58:20.081]	DEBUG	chain/tx_utils.go:120	Sending signed tx: 0xd4e677859190afca0c5f287e735b959ced12d8f5107bcb14cc31add09cbc92ec
+[03-04|06:58:20.212]	DEBUG	chain/tx_utils.go:128	Waiting for tx to be mined...
+[03-04|06:58:22.244]	DEBUG	chain/tx_utils.go:134	Tx mined, getting receipt 0xd4e677859190afca0c5f287e735b959ced12d8f5107bcb14cc31add09cbc92ec
+[03-04|06:58:22.271]	DEBUG	chain/tx_utils.go:139	Receipt status: 1
+[03-04|06:58:22.272]	INFO	protocol/submitter.go:78	submitter submit1 submitted tx
+[03-04|06:58:35.001]	DEBUG	protocol/submitter.go:142	submitter submit2 running epoch 567839
+[03-04|06:58:35.001]	DEBUG	protocol/submitter.go:143	  epoch is [2024-03-04 06:58:30 +0000 UTC, 2024-03-04 07:00:00 +0000 UTC], now is 2024-03-04 06:58:35.001392224 +0000 UTC m=+234332.458422666
+[03-04|06:58:35.001]	DEBUG	protocol/protocol_utils.go:55	Calling protocol client API: http://ftso-scaling-00:3100/submit2/567838/0x5579C824e5550ae24ceFe41B129472c3EC70be5c
+[03-04|06:58:35.074]	DEBUG	chain/tx_utils.go:120	Sending signed tx: 0x56fe0f0d60b876122ea13d2ae902c4ad777f26d3e2d44c19742d7fb0a1ae25af
+[03-04|06:58:35.197]	DEBUG	chain/tx_utils.go:128	Waiting for tx to be mined...
+[03-04|06:58:37.241]	DEBUG	chain/tx_utils.go:134	Tx mined, getting receipt 0x56fe0f0d60b876122ea13d2ae902c4ad777f26d3e2d44c19742d7fb0a1ae25af
+[03-04|06:58:37.274]	DEBUG	chain/tx_utils.go:139	Receipt status: 1
+[03-04|06:58:37.274]	INFO	protocol/submitter.go:78	submitter submit2 submitted tx
+[03-04|06:59:20.000]	DEBUG	protocol/submitter.go:208	signatureSubmitter submitSignatures running epoch 567839
+[03-04|06:59:20.003]	DEBUG	protocol/submitter.go:209	  epoch is [2024-03-04 06:58:30 +0000 UTC, 2024-03-04 07:00:00 +0000 UTC], now is 2024-03-04 06:59:20.003337094 +0000 UTC m=+234377.460367537
+[03-04|06:59:20.003]	DEBUG	protocol/protocol_utils.go:55	Calling protocol client API: http://ftso-scaling-00:3100/submitSignatures/567838/0x6Bc692221B1feff64218eF6Fb3D1D2cE077a64D3
+[03-04|06:59:20.502]	DEBUG	chain/tx_utils.go:120	Sending signed tx: 0xb371cae856bf1f37f52f9db556a346d0de35e2b02b73f87ec2dad63f044d7e8a
+[03-04|06:59:20.532]	DEBUG	chain/tx_utils.go:128	Waiting for tx to be mined...
+[03-04|06:59:21.564]	DEBUG	chain/tx_utils.go:134	Tx mined, getting receipt 0xb371cae856bf1f37f52f9db556a346d0de35e2b02b73f87ec2dad63f044d7e8a
+[03-04|06:59:21.604]	DEBUG	chain/tx_utils.go:139	Receipt status: 1
+```
+
+`fast-updates` log samples indicating successful operation:
+
+:::note
+Depending on your weight it may take some time until you are selected for the fast-updates
+:::
+
+```text
+ftso-v2-deployment-fast-updates  | [04-25|09:00:32.456] INFO    provider/feed_provider.go:65    deltas: +++++++++++++++++++++-++++0+
+ftso-v2-deployment-fast-updates  | [04-25|09:00:32.456] INFO    client/client_requests.go:205   submitting update for block 14266248 replicate 0: +++++++++++++++++++++-++++0+
+ftso-v2-deployment-fast-updates  | [04-25|09:00:33.496] INFO    client/client_requests.go:239   successful update for block 14266248 replicate 0 in block 14266250
+```
+
+If you made it this far, congratulations! You have successfully set up an FTSOv2 data provider.
