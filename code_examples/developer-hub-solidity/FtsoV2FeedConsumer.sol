@@ -7,7 +7,11 @@ interface IFastUpdater {
     )
         external
         view
-        returns (uint256[] memory _feedValues, int8[] memory _decimals, int64 _timestamp);
+        returns (
+            uint256[] memory _feedValues,
+            int8[] memory _decimals,
+            int64 _timestamp
+        );
 }
 
 /**
@@ -21,7 +25,7 @@ contract FtsoV2FeedConsumer {
     uint256[] public feedIndexes = [0, 2, 9];
 
     /**
-     * Network: Coston
+     * Network: Songbird Testnet Coston
      * Address: 0x9B931f5d3e24fc8C9064DB35bDc8FB4bE0E862f9
      */
     constructor() {
@@ -34,9 +38,15 @@ contract FtsoV2FeedConsumer {
     function getFtsoV2CurrentFeedValues()
         external
         view
-        returns (uint256[] memory _feedValues, int8[] memory _decimals, int64 _timestamp)
+        returns (uint256[] memory _feedValues, int8[] memory _decimals)
     {
-        return ftsoV2.fetchCurrentFeeds(feedIndexes);
+        (
+            uint256[] memory feedValues,
+            int8[] memory decimals,
+             /* uint64 timestamp */
+        ) = ftsoV2.fetchCurrentFeeds(feedIndexes);
+        /* Your custom feed consumption logic. */
+        /* In this example the feed values and decimals are just returned. */
+        return (feedValues, decimals);
     }
 }
-

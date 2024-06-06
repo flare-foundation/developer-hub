@@ -38,7 +38,7 @@ contract FtsoV2FeedConsumer {
     uint256[] public feedIndexes = [0, 2, 9];
 
     /**
-     * Network: Flare Testnet Coston
+     * Network: Songbird Testnet Coston
      * Address: 0x9B931f5d3e24fc8C9064DB35bDc8FB4bE0E862f9
      */
     constructor() {
@@ -46,17 +46,21 @@ contract FtsoV2FeedConsumer {
     }
 
     /**
-     * Get the current values of the specified feeds.
-     * @return _feedValues The current values of the specified feeds.
-     * @return _decimals The number of decimal places for each feed value.
-     * @return _timestamp The timestamp at which the feed values were fetched.
+     * Get the current value of the feeds.
      */
     function getFtsoV2CurrentFeedValues()
-        public
+        external
         view
-        returns (uint256[] memory _feedValues, int8[] memory _decimals, int64 _timestamp)
+        returns (uint256[] memory _feedValues, int8[] memory _decimals)
     {
-        return ftsoV2.fetchCurrentFeeds(feedIndexes);
+        (
+            uint256[] memory feedValues,
+            int8[] memory decimals,
+             /* uint64 timestamp */
+        ) = ftsoV2.fetchCurrentFeeds(feedIndexes);
+        /* Your custom feed consumption logic. */
+        /* In this example the feed values and decimals are just returned. */
+        return (feedValues, decimals);
     }
 }
 ```
