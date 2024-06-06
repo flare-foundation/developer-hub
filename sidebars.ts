@@ -24,7 +24,7 @@ const sidebars: SidebarsConfig = {
         "ftso/feeds",
         {
           type: "category",
-          label: "FTSOv2 Guides",
+          label: "Guides",
           collapsed: true,
           link: {
             slug: "/category/ftso/guides",
@@ -50,7 +50,7 @@ const sidebars: SidebarsConfig = {
         },
         {
           type: "category",
-          label: "FTSOv2 Scaling",
+          label: "Scaling",
           collapsed: true,
           link: { type: "doc", id: "ftso/scaling/overview" },
           items: [
