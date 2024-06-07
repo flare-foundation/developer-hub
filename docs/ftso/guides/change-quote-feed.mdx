@@ -69,8 +69,11 @@ contract FtsoV2ChangeQuoteFeed {
             "Invalid feed indexes. Please provide exactly two indexes."
         );
         // Fetch current feeds
-        (uint256[] memory feedValues, int8[] memory decimals, ) = ftsoV2
-            .fetchCurrentFeeds(_baseAndQuoteFeedIndexes);
+        (
+            uint256[] memory feedValues,
+            int8[] memory decimals,
+            /* uint64 timestamp */
+        ) = ftsoV2.fetchCurrentFeeds(_baseAndQuoteFeedIndexes);
         uint8 newQuoteDecimals = uint8(decimals[1]);
         // Scale the base feed value to match the quote feed decimals
         uint256 scaledBaseFeedValue = _scaleBaseFeedValue(
@@ -92,3 +95,83 @@ contract FtsoV2ChangeQuoteFeed {
 <Remix href="https://remix.ethereum.org/#version=soljson-v0.8.25+commit.b61c2a91.js&optimize=true&runs=200&gist=d6181b71e7932701efbc6c3c78898f5a">Open in Remix</Remix>
 
 For the example of BTC and ETH, the function signature would be `getNewQuoteFeedValue([2, 9])`. This will return the value of BTC/ETH with the decimals of ETH.
+
+<details>
+<summary>Didn't understand the Solidity code?</summary>
+
+Let's go through the Solidity contract `FtsoV2ChangeQuoteFeed` step-by-step to understand its functionality.
+
+**Imports**
+
+```solidity
+import { IFastUpdater } from "@flarenetwork/flare-periphery-contracts/flare/ftso/userInterfaces/IFastUpdater.sol";
+```
+
+- Imports the `IFastUpdater` interface from the specified path. This interface is expected to define functions that the `FtsoV2ChangeQuoteFeed` contract will interact with.
+
+**Internal variable**
+
+```solidity
+IFastUpdater internal ftsoV2;
+```
+
+- Declares an internal variable `ftsoV2` of type `IFastUpdater`, which will hold the address of the `FtsoV2` contract.
+
+**Constructor**
+
+```solidity
+constructor() {
+    ftsoV2 = IFastUpdater(0x9B931f5d3e24fc8C9064DB35bDc8FB4bE0E862f9);
+}
+```
+
+- The constructor initializes the `ftsoV2` variable with the address of the `FtsoV2` contract on the Songbird Testnet Coston network.
+
+**Internal function**
+
+```solidity
+function _scaleBaseFeedValue(
+    uint256 _baseFeedValue,
+    uint8 _baseFeedDecimals,
+    uint8 _quoteDecimals
+) internal pure returns (uint256) {
+    if (_baseFeedDecimals < _quoteDecimals) {
+        return _baseFeedValue * 10 ** uint256(_quoteDecimals - _baseFeedDecimals);
+    } else if (_baseFeedDecimals > _quoteDecimals) {
+        return _baseFeedValue / 10 ** uint256(_baseFeedDecimals - _quoteDecimals);
+    } else {
+        return _baseFeedValue;
+    }
+}
+```
+
+- This internal function scales the base feed value to match the decimals of the quote feed. It adjusts the base feed value by either scaling it up or down depending on the difference in decimal places between the base and quote feeds.
+
+**External function**
+
+```solidity
+function getNewQuoteFeedValue(
+    uint256[] calldata _baseAndQuoteFeedIndexes
+) external view returns (uint256) {
+    require(
+        _baseAndQuoteFeedIndexes.length == 2,
+        "Invalid feed indexes. Please provide exactly two indexes."
+    );
+    (uint256[] memory feedValues, int8[] memory decimals, ) = ftsoV2.fetchCurrentFeeds(_baseAndQuoteFeedIndexes);
+    uint8 newQuoteDecimals = uint8(decimals[1]);
+    uint256 scaledBaseFeedValue = _scaleBaseFeedValue(feedValues[0], uint8(decimals[0]), newQuoteDecimals);
+    require(feedValues[1] != 0, "Division by zero");
+    uint256 newQuoteFeedValue = (scaledBaseFeedValue * 10 ** uint256(newQuoteDecimals)) / feedValues[1];
+    return newQuoteFeedValue;
+}
+```
+
+- Parameters: Takes an array of two feed indexes, one for the base feed and one for the quote feed.
+- Require Statement: Ensures that exactly two feed indexes are provided.
+- Fetching Feeds: Uses the `fetchCurrentFeeds` function of the `ftsoV2` contract to get the current feed values and their decimals.
+- Scaling Base Feed Value: Scales the base feed value to match the decimals of the quote feed using the `_scaleBaseFeedValue` function.
+- Division by Zero Check: Ensures the quote feed value is not zero to prevent division by zero.
+- Computing New Quote Feed Value: Calculates the new quote feed value by adjusting for the decimal difference and dividing by the quote feed value.
+- Return Value: Returns the computed new quote feed value.
+
+</details>
