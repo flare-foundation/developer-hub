@@ -85,6 +85,12 @@ const config: Config = {
           label: "Flare ☀️",
         },
         { to: "/guides", label: "Guides", position: "left" },
+        // {
+        //   href: "https://t.me/FlareNetwork",
+        //   className: "header-telegram-link",
+        //   "aria-label": "Flare Telegram",
+        //   position: "right",
+        // },
         {
           href: "https://github.com/flare-foundation/developer-hub",
           className: "header-github-link",
