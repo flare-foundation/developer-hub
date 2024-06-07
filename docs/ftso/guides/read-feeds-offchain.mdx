@@ -68,6 +68,76 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
+<details>
+<summary>Didn't understand the Python code?</summary>
+
+Let's go through the Python code step-by-step to understand its functionality.
+
+**Imports**
+
+```python
+import asyncio
+from web3 import AsyncHTTPProvider, AsyncWeb3
+```
+
+- `asyncio`: A library to write concurrent code using the `async`/`await` syntax.
+- `AsyncHTTPProvider`, `AsyncWeb3`: Asynchronous versions of `web3` components for interacting with the Ethereum blockchain.
+
+**Configuration**
+
+```python
+ADDRESS = "0x9B931f5d3e24fc8C9064DB35bDc8FB4bE0E862f9"
+RPC_URL = "https://rpc.ankr.com/flare_coston"
+FEED_INDEXES = [0, 2, 9]
+ABI = '[...]'
+```
+
+- `ADDRESS`: The address of the `FastUpdater` smart contract on the Songbird Testnet Coston.
+- `RPC_URL`: The URL of the RPC node to connect to the Ethereum network.
+- `FEED_INDEXES`: List of indexes representing specific price feeds: 0 for FLR/USD, 2 for BTC/USD, and 9 for ETH/USD.
+- `ABI`: The Application Binary Interface (ABI) of the FastUpdater smart contract, which describes the contract's methods and events.
+
+**Main Asynchronous Function**
+
+```python
+async def main() -> None:
+    # Connect to an RPC node
+    w3 = AsyncWeb3(AsyncHTTPProvider(RPC_URL))
+```
+
+- Connect to the RPC node using `AsyncWeb3` and `AsyncHTTPProvider`.
+
+```python
+    # Set up contract instance
+    ftsov2 = w3.eth.contract(address=ADDRESS, abi=ABI)
+```
+
+- Create an instance of the smart contract using its address and ABI.
+
+```python
+    # Fetch current feeds
+    feeds, decimals, timestamp = await ftsov2.functions.fetchCurrentFeeds(
+      FEED_INDEXES
+    ).call()
+```
+
+- Call the `fetchCurrentFeeds` method of the smart contract with `FEED_INDEXES` to get the current feed data.
+- This method returns `feeds`, `decimals`, and `timestamp`:
+  - `feeds`: The price feed data.
+  - `decimals`: The decimal places for each feed value.
+  - `timestamp`: The timestamp when the feeds were last updated.
+
+**Entry Point**
+
+```python
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+- When the script is executed, it runs the `main` function within an asyncio event loop using `asyncio.run()`.
+
+</details>
+
 ## JavaScript
 
 This example shows two ways, one using [web3.js](https://github.com/web3/web3.js) and the other using [ethers.js](https://github.com/ethers-io/ethers.js/), to retrieve FTSOv2 feed data for FLR/USD, BTC/USD, and ETH/USD on Flare Testnet Coston.
@@ -198,6 +268,83 @@ async fn main() -> Result<()> {
     Ok(())
 }
 ```
+
+<details>
+<summary>Didn't understand the Rust code?</summary>
+
+Let's go through the Rust code step-by-step to understand its functionality.
+
+**Libraries and Crates**
+
+```rust
+use alloy::{primitives::U256, providers::ProviderBuilder, sol};
+```
+
+- This line imports necessary modules from the `alloy` crate. The `U256` primitive is used for handling 256-bit unsigned integers. `ProviderBuilder` is for building a provider to connect to an RPC node. The `sol` macro is used for Solidity contract interaction.
+
+```rust
+use eyre::Result;
+```
+
+- This line imports the `Result` type from the `eyre` crate for better error handling.
+
+**Solidity Contract Interface**
+
+```rust
+sol!(
+  #[sol(rpc)]
+  FtsoV2,
+  r#"..."#
+);
+```
+
+- This macro defines a Solidity contract interface named `FtsoV2`. The long JSON string inside the macro is the ABI (Application Binary Interface) of the contract. It specifies the functions, events, and errors of the contract, allowing Rust code to interact with the Solidity contract on the Ethereum blockchain.
+
+**Asynchronous Main Function**
+
+```rust
+#[tokio::main] async fn main() -> Result<()> {
+```
+
+- This line uses the `#[tokio::main]` attribute to mark the main function as asynchronous, enabling it to perform asynchronous operations. The function returns a `Result<()>`, indicating it can return errors wrapped in the `eyre::Result` type.
+
+**Initialization and Connection**
+
+```rust
+let address = "0x9B931f5d3e24fc8C9064DB35bDc8FB4bE0E862f9".parse()?;
+let rpc_url = "https://rpc.ankr.com/flare_coston".parse()?;
+let feed_indexes = vec![U256::from(0_u32), U256::from(2_u32), U256::from(9_u32)];
+let provider = ProviderBuilder::new().on_http(rpc_url);
+```
+
+- The contract address and RPC URL are parsed into appropriate types.
+- This sets up a vector of feed indexes, which correspond to specific data feeds (e.g., FLR/USD, BTC/USD, ETH/USD).
+- A provider is created using `ProviderBuilder`, configured to connect via HTTP to the specified RPC URL.
+
+**Contract Interaction**
+
+```rust
+let ftsov2 = FtsoV2::new(address, provider);
+let FtsoV2::fetchCurrentFeedsReturn {
+  _feeds,
+  _decimals,
+  _timestamp
+} = ftsov2.fetchCurrentFeeds(feed_indexes).call().await?;
+```
+
+- An instance of the `FtsoV2` contract is created using the contract address and the provider.
+- The function `fetchCurrentFeeds` is called on the contract instance, passing in the feed indexes. This function is awaited asynchronously and returns the current feed data.
+- The fetched feed data (`_feeds`), their decimals (`_decimals`), and the timestamp (`_timestamp`) are stored in the corresponding variables.
+
+**Error handling**
+
+```rust
+Ok(())
+```
+
+- The function returns `Ok(())` to indicate successful execution.
+
+</details>
 
 ## Go
 
