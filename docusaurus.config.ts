@@ -199,10 +199,7 @@ const config: Config = {
   } satisfies Preset.ThemeConfig,
   themes: [
     [
-      // @ts-ignore
       require.resolve("@easyops-cn/docusaurus-search-local"),
-      /** @type {import("@easyops-cn/docusaurus-search-local").PluginOptions} */
-      // @ts-ignore
       {
         // `hashed` is recommended as long-term-cache of index file is possible
         language: ["en"],

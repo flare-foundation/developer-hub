@@ -3,6 +3,10 @@ import Heading from "@theme/Heading";
 import styles from "./styles.module.css";
 import Link from "@docusaurus/Link";
 
+import FTSO from "@site/static/img/FTSO.svg";
+import DataConnector from "@site/static/img/DATACONNECTOR.svg";
+import FAssets from "@site/static/img/FASSETS.svg";
+
 type FeatureItem = {
   title: string;
   Svg: React.ComponentType<React.ComponentProps<"svg">>;
@@ -13,7 +17,7 @@ type FeatureItem = {
 const FeatureList: FeatureItem[] = [
   {
     title: "FTSO",
-    Svg: require("@site/static/img/FTSO.svg").default,
+    Svg: FTSO,
     description: (
       <>
         High-integrity, block-latency data feeds for decentralized finance on
@@ -24,7 +28,7 @@ const FeatureList: FeatureItem[] = [
   },
   {
     title: "FDC",
-    Svg: require("@site/static/img/DATACONNECTOR.svg").default,
+    Svg: DataConnector,
     description: (
       <>
         Interoperable, tamper-proof Web2 & Web3 data for real-world applications
@@ -34,7 +38,7 @@ const FeatureList: FeatureItem[] = [
   },
   {
     title: "FAssets",
-    Svg: require("@site/static/img/FASSETS.svg").default,
+    Svg: FAssets,
     description: (
       <>
         Verifiable security for bridging BTC, XRP and other non smart-contract
