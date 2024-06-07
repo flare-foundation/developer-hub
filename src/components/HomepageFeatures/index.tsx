@@ -15,7 +15,10 @@ const FeatureList: FeatureItem[] = [
     title: "FTSO",
     Svg: require("@site/static/img/FTSO.svg").default,
     description: (
-      <>High-integrity & block-latency data feeds for DeFi on Flare</>
+      <>
+        High-integrity, block-latency data feeds for decentralized finance on
+        Flare
+      </>
     ),
     linkToProtocolDocs: "docs/ftso/overview",
   },
@@ -23,7 +26,9 @@ const FeatureList: FeatureItem[] = [
     title: "FDC",
     Svg: require("@site/static/img/DATACONNECTOR.svg").default,
     description: (
-      <>Interoperable, tamper-proof Web2 & Web3 data for RWAs on Flare</>
+      <>
+        Interoperable, tamper-proof Web2 & Web3 data for real-world applications
+      </>
     ),
     linkToProtocolDocs: "docs/fdc/overview",
   },
@@ -32,7 +37,7 @@ const FeatureList: FeatureItem[] = [
     Svg: require("@site/static/img/FASSETS.svg").default,
     description: (
       <>
-        Verifiable economic security for bridging BTC, XRP, DOGE and non-SC
+        Verifiable security for bridging BTC, XRP and other non smart-contract
         tokens
       </>
     ),
