@@ -155,12 +155,12 @@ const config: Config = {
               href: "https://github.com/flare-foundation/",
             },
             {
-              label: "Terms & Privacy",
-              href: "https://flare.network/privacy-policy/",
+              label: "Grants",
+              href: "https://flare.network/grants/",
             },
             {
-              label: "Bug Bounty",
-              href: "https://flare.network/start-building/#bugbounty",
+              label: "Terms & Privacy",
+              href: "https://flare.network/privacy-policy/",
             },
           ],
         },
