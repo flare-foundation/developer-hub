@@ -20,6 +20,7 @@ async def main():
         abi = json.loads(res["result"])
         print(abi[4]["name"])
         # getContractAddressByName
+    return abi
 
 
 if __name__ == "__main__":
