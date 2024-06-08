@@ -14,7 +14,7 @@ async function main() {
   // Connect to an RPC node
   const provider = new ethers.JsonRpcProvider(RPC_URL);
   // Set up contract instance
-  const ftsov2 = new ethers.Contract(FTSO_ADDRESS, ABI, provider);
+  const ftsov2 = new ethers.Contract(FTSO_ADDRESS, JSON.parse(ABI), provider);
   // Fetch current feeds
   const res = await ftsov2.fetchCurrentFeeds(FEED_INDEXES);
   // Log results

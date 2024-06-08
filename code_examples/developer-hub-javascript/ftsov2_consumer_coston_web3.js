@@ -14,7 +14,7 @@ async function main() {
   // Connect to an RPC node
   const w3 = new Web3(RPC_URL);
   // Set up contract instance
-  const ftsov2 = new w3.eth.Contract(ABI, FTSO_ADDRESS);
+  const ftsov2 = new w3.eth.Contract(JSON.parse(ABI), FTSO_ADDRESS);
   // Fetch current feeds
   const res = await ftsov2.methods.fetchCurrentFeeds(FEED_INDEXES).call();
   // Log results
