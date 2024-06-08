@@ -125,10 +125,6 @@ const config: Config = {
               label: "Audits",
               to: "docs/support/audits",
             },
-            {
-              label: "Bug Bounty",
-              href: "https://flare.network/start-building/#bugbounty",
-            },
           ],
         },
         {
@@ -143,12 +139,8 @@ const config: Config = {
               href: "https://t.me/FlareNetwork",
             },
             {
-              label: "Discord",
-              href: "https://discord.com/invite/flarenetwork",
-            },
-            {
-              label: "LinkedIn",
-              href: "https://www.linkedin.com/company/flarenetwork/",
+              label: "YouTube",
+              href: "https://www.youtube.com/channel/UCDyqyTWHYMWY5ie6xOCgG0w",
             },
           ],
         },
@@ -160,16 +152,12 @@ const config: Config = {
               href: "https://github.com/flare-foundation/",
             },
             {
-              label: "YouTube",
-              href: "https://www.youtube.com/channel/UCDyqyTWHYMWY5ie6xOCgG0w",
-            },
-            {
-              label: "Medium",
-              href: "https://medium.com/flarenetwork",
-            },
-            {
               label: "Terms & Privacy",
               href: "https://flare.network/privacy-policy/",
+            },
+            {
+              label: "Bug Bounty",
+              href: "https://flare.network/start-building/#bugbounty",
             },
           ],
         },
@@ -187,10 +175,6 @@ const config: Config = {
             {
               label: "Flare FTSO Monitor",
               href: "https://flare-ftso-monitor.flare.network/data-providers",
-            },
-            {
-              label: "Flare P-Chain Explorer",
-              href: "https://flare.space/dapp/p-chain-explorer/validators",
             },
           ],
         },
