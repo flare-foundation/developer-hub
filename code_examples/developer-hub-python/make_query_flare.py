@@ -25,10 +25,11 @@ async def main():
     ):
         res = await response.json()
         abi = json.loads(res["result"])
-    registry = w3.eth.contract(address=registry_addr, abi=abi)
+    registry = w3.eth.contract(address=w3.to_checksum_address(registry_addr), abi=abi)
     res = await registry.functions.getContractAddressByName("WNat").call()
     print(f"WNat address: {res}")
     # WNat address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
+    return res
 
 
 if __name__ == "__main__":

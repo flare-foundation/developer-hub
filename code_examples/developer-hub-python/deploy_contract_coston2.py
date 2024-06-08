@@ -4,7 +4,7 @@ import asyncio
 from web3 import AsyncWeb3, AsyncHTTPProvider
 from web3.middleware.geth_poa import async_geth_poa_middleware
 
-from .utils import load_contract_interface
+from utils import load_contract_interface
 
 
 async def main():
@@ -15,6 +15,7 @@ async def main():
         AsyncHTTPProvider("https://rpc.ankr.com/flare_coston2"),
         middlewares=[async_geth_poa_middleware],
     )
+    account = w3.to_checksum_address(account)
     ftsoV2_feed_consumer = w3.eth.contract(
         abi=contract_interface["abi"],
         bytecode=contract_interface["evm"]["bytecode"]["object"],

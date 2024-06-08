@@ -1,6 +1,6 @@
 from solcx import compile_standard, install_solc
 
-from .utils import load_contract, save_compiled_contract
+from utils import load_contract, save_compiled_contract
 
 if __name__ == "__main__":
     contract_name = "FtsoV2FeedConsumer"

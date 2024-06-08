@@ -3,7 +3,7 @@ import asyncio
 
 from web3 import AsyncWeb3, AsyncHTTPProvider
 
-from .utils import load_contract_interface
+from utils import load_contract_interface
 
 
 async def main():
@@ -15,7 +15,7 @@ async def main():
         abi=contract_interface["abi"],
         bytecode=contract_interface["evm"]["bytecode"]["object"],
     )
-
+    account = w3.to_checksum_address(account)
     tx = ftsoV2_feed_consumer.constructor().build_transaction(
         {
             "from": account,
