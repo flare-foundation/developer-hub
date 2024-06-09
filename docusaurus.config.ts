@@ -77,6 +77,7 @@ const config: Config = {
       logo: {
         alt: "Flare Icon",
         src: "img/flare_icon.svg",
+        srcDark: "img/flare_icon_dark.svg",
         width: 32,
         height: 32,
       },
