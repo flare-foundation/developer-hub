@@ -19,14 +19,16 @@ async function main() {
     JSON.parse(ABI),
     signer,
   );
-  // Get the sample size increase price
+  // Get the sample size increase price, sample size, precision, and scale
   const sampleSizeIncreasePrice =
     await incentive.getCurrentSampleSizeIncreasePrice();
-  console.log("Sample Size Increase Price:", sampleSizeIncreasePrice);
-  // Log the current sample size, precision, and scale
-  console.log("Current Sample Size:", await incentive.getExpectedSampleSize());
-  console.log("Current Precision:", await incentive.getPrecision());
-  console.log("Current Scale:", await incentive.getScale());
+  console.log(
+    "Sample Size Increase Price: %i, Current Sample Size: %i, Current Precision %i, Current Scale %i",
+    sampleSizeIncreasePrice,
+    await incentive.getExpectedSampleSize(),
+    await incentive.getPrecision(),
+    await incentive.getScale(),
+  );
 
   // Offer the incentive
   const tx = await incentive.offerIncentive(
@@ -41,9 +43,12 @@ async function main() {
   await tx.wait();
 
   // Log the new sample size, precision, and scale
-  console.log("New Sample Size:", await incentive.getExpectedSampleSize());
-  console.log("New Precision:", await incentive.getPrecision());
-  console.log("New Scale:", await incentive.getScale());
+  console.log(
+    "Current Sample Size: %i, Current Precision %i, Current Scale %i",
+    await incentive.getExpectedSampleSize(),
+    await incentive.getPrecision(),
+    await incentive.getScale(),
+  );
 }
 
 main();

@@ -25,13 +25,14 @@ async def main():
     sample_size_increase_price = (
         await incentive.functions.getCurrentSampleSizeIncreasePrice().call()
     )
-    print("Sample Size Increase Price:", sample_size_increase_price)
-    # Print the current sample size, precision, and scale
     print(
-        "Current Sample Size:", await incentive.functions.getExpectedSampleSize().call()
+        "Sample Size Increase Price: {}, Current Sample Size: {}, Current Range: {}, Current Scale: {}".format(
+            sample_size_increase_price,
+            await incentive.functions.getExpectedSampleSize().call(),
+            await incentive.functions.getRange().call(),
+            await incentive.functions.getScale().call(),
+        )
     )
-    print("Current Precision:", await incentive.functions.getPrecision().call())
-    print("Current Scale:", await incentive.functions.getScale().call())
 
     # Offer the incentive
     tx = await incentive.functions.offerIncentive(
@@ -51,9 +52,13 @@ async def main():
     await w3.eth.wait_for_transaction_receipt(tx_hash)
 
     # Print the new sample size, precision, and scale
-    print("New Sample Size:", await incentive.functions.getExpectedSampleSize().call())
-    print("New Precision:", await incentive.functions.getPrecision().call())
-    print("New Scale:", await incentive.functions.getScale().call())
+    print(
+        "New Sample Size: {}, New Range: {}, New Scale: {}".format(
+            await incentive.functions.getExpectedSampleSize().call(),
+            await incentive.functions.getRange().call(),
+            await incentive.functions.getScale().call(),
+        )
+    )
 
 
 if __name__ == "__main__":

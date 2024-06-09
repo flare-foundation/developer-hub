@@ -19,17 +19,13 @@ async function main() {
   const sampleSizeIncreasePrice = await incentive.methods
     .getCurrentSampleSizeIncreasePrice()
     .call();
-  console.log("Sample Size Increase Price:", sampleSizeIncreasePrice);
-  // Log the current sample size, precision, and scale
   console.log(
-    "Current Sample Size:",
+    "Sample Size Increase Price: %i, Current Sample Size: %i, Current Precision %i, Current Scale %i",
+    sampleSizeIncreasePrice,
     await incentive.methods.getExpectedSampleSize().call(),
-  );
-  console.log(
-    "Current Precision:",
     await incentive.methods.getPrecision().call(),
+    await incentive.methods.getScale().call(),
   );
-  console.log("Current Scale:", await incentive.methods.getScale().call());
 
   // Offer the incentive
   const tx = await incentive.methods
@@ -44,11 +40,11 @@ async function main() {
 
   // Log the new sample size, precision, and scale
   console.log(
-    "New Sample Size:",
+    "New Sample Size: %i, New Precision %i, New Scale %i",
     await incentive.methods.getExpectedSampleSize().call(),
+    await incentive.methods.getPrecision().call(),
+    await incentive.methods.getScale().call(),
   );
-  console.log("New Precision:", await incentive.methods.getPrecision().call());
-  console.log("New Scale:", await incentive.methods.getScale().call());
 }
 
 main();

@@ -9,7 +9,7 @@ sidebar_position: 3
 import TabItem from "@theme/TabItem";
 import Tabs from "@theme/Tabs";
 
-:::note
+:::info
 Before reading this guide, make sure you understand FTSOv2's [Volatility Incentive Mechanism](/docs/ftso/overview#volatility-incentive-mechanism).
 :::
 
@@ -43,17 +43,13 @@ This example shows two ways, one using [web3.js](https://github.com/web3/web3.js
         const sampleSizeIncreasePrice = await incentive.methods
             .getCurrentSampleSizeIncreasePrice()
             .call();
-        console.log("Sample Size Increase Price:", sampleSizeIncreasePrice);
-        // Log the current sample size, precision, and scale
         console.log(
-            "Current Sample Size:",
+            "Sample Size Increase Price: %i, Current Sample Size: %i, Current Precision %i, Current Scale %i",
+            sampleSizeIncreasePrice,
             await incentive.methods.getExpectedSampleSize().call(),
-        );
-        console.log(
-            "Current Precision:",
             await incentive.methods.getPrecision().call(),
+            await incentive.methods.getScale().call(),
         );
-        console.log("Current Scale:", await incentive.methods.getScale().call());
 
         // Offer the incentive
         const tx = await incentive.methods
@@ -68,11 +64,11 @@ This example shows two ways, one using [web3.js](https://github.com/web3/web3.js
 
         // Log the new sample size, precision, and scale
         console.log(
-            "New Sample Size:",
+            "New Sample Size: %i, New Precision %i, New Scale %i",
             await incentive.methods.getExpectedSampleSize().call(),
+            await incentive.methods.getPrecision().call(),
+            await incentive.methods.getScale().call(),
         );
-        console.log("New Precision:", await incentive.methods.getPrecision().call());
-        console.log("New Scale:", await incentive.methods.getScale().call());
     }
 
     main();
@@ -105,11 +101,13 @@ This example shows two ways, one using [web3.js](https://github.com/web3/web3.js
         // Get the sample size increase price
         const sampleSizeIncreasePrice =
             await incentive.getCurrentSampleSizeIncreasePrice();
-        console.log("Sample Size Increase Price:", sampleSizeIncreasePrice);
-        // Log the current sample size, precision, and scale
-        console.log("Current Sample Size:", await incentive.getExpectedSampleSize());
-        console.log("Current Precision:", await incentive.getPrecision());
-        console.log("Current Scale:", await incentive.getScale());
+        console.log(
+            "Sample Size Increase Price: %i, Current Sample Size: %i, Current Precision %i, Current Scale %i",
+            sampleSizeIncreasePrice,
+            await incentive.getExpectedSampleSize(),
+            await incentive.getPrecision(),
+            await incentive.getScale(),
+        );
 
         // Offer the incentive
         const tx = await incentive.offerIncentive(
@@ -124,9 +122,12 @@ This example shows two ways, one using [web3.js](https://github.com/web3/web3.js
         await tx.wait();
 
         // Log the new sample size, precision, and scale
-        console.log("New Sample Size:", await incentive.getExpectedSampleSize());
-        console.log("New Precision:", await incentive.getPrecision());
-        console.log("New Scale:", await incentive.getScale());
+        console.log(
+            "Current Sample Size: %i, Current Precision %i, Current Scale %i",
+            await incentive.getExpectedSampleSize(),
+            await incentive.getPrecision(),
+            await incentive.getScale(),
+        );
     }
 
     main();
@@ -167,13 +168,14 @@ async def main():
     sample_size_increase_price = (
         await incentive.functions.getCurrentSampleSizeIncreasePrice().call()
     )
-    print("Sample Size Increase Price:", sample_size_increase_price)
-    # Print the current sample size, precision, and scale
     print(
-        "Current Sample Size:", await incentive.functions.getExpectedSampleSize().call()
+        "Sample Size Increase Price: {}, Current Sample Size: {}, Current Range: {}, Current Scale: {}".format(
+            sample_size_increase_price,
+            await incentive.functions.getExpectedSampleSize().call(),
+            await incentive.functions.getRange().call(),
+            await incentive.functions.getScale().call(),
+        )
     )
-    print("Current Precision:", await incentive.functions.getPrecision().call())
-    print("Current Scale:", await incentive.functions.getScale().call())
 
     # Offer the incentive
     tx = await incentive.functions.offerIncentive(
@@ -193,9 +195,13 @@ async def main():
     await w3.eth.wait_for_transaction_receipt(tx_hash)
 
     # Print the new sample size, precision, and scale
-    print("New Sample Size:", await incentive.functions.getExpectedSampleSize().call())
-    print("New Precision:", await incentive.functions.getPrecision().call())
-    print("New Scale:", await incentive.functions.getScale().call())
+    print(
+        "New Sample Size: {}, New Range: {}, New Scale: {}".format(
+            await incentive.functions.getExpectedSampleSize().call(),
+            await incentive.functions.getRange().call(),
+            await incentive.functions.getScale().call(),
+        )
+    )
 
 
 if __name__ == "__main__":
