@@ -8,6 +8,37 @@ Sourced from `IFastUpdater.sol` on [GitHub](https://github.com/flare-foundation/
 
 ## Functions
 
+### blockScoreCutoff
+
+Informational getter concerning the eligibility criterion for being chosen by sortition in a given block.
+
+```solidity
+function blockScoreCutoff(
+    uint256 _blockNum
+) external view returns (
+    uint256 _cutoff
+);
+```
+
+#### Parameters
+
+- `_blockNum`: The block for which the cutoff is requested.
+
+#### Returns
+
+- `_cutoff`: The upper endpoint of the acceptable range of "scores" that providers generate for sortition. A score below the cutoff indicates eligibility to submit updates in the present sortition round.
+
+### currentRewardEpochId
+
+Id of the current reward epoch.
+
+```solidity
+function currentRewardEpochId(
+) external view returns (
+    uint24
+);
+```
+
 ### currentScoreCutoff
 
 Informational getter concerning the eligibility criterion for being chosen by sortition.
@@ -52,7 +83,8 @@ function fetchAllCurrentFeeds(
 ) external view returns (
     bytes21[] _feedIds,
     uint256[] _feeds,
-    int8[] _decimals
+    int8[] _decimals,
+    uint64 _timestamp
 );
 ```
 
@@ -61,6 +93,7 @@ function fetchAllCurrentFeeds(
 - `_feedIds`: The list of feed ids.
 - `_feeds`: The list of feeds.
 - `_decimals`: The list of decimal places for feeds.
+- `_timestamp`: The timestamp of the last update.
 
 ### fetchCurrentFeeds
 
@@ -72,7 +105,8 @@ function fetchCurrentFeeds(
     uint256[] _indices
 ) external view returns (
     uint256[] _feeds,
-    int8[] _decimals
+    int8[] _decimals,
+    uint64 _timestamp
 );
 ```
 
@@ -84,6 +118,60 @@ function fetchCurrentFeeds(
 
 - `_feeds`: The list of data for the requested feeds, in the same order as the feed indices were given (which may not be their sorted order).
 - `_decimals`: The list of decimal places for the requested feeds, in the same order as the feed indices were given (which may not be their sorted order).
+- `_timestamp`: The timestamp of the last update.
+
+### numberOfUpdates
+
+The number of updates submitted in each block for the last `_historySize` blocks (up to `MAX_BLOCKS_HISTORY`).
+
+```solidity
+function numberOfUpdates(
+    uint256 _historySize
+) external view returns (
+    uint256[] _noOfUpdates
+);
+```
+
+#### Parameters
+
+- `_historySize`: The number of blocks for which the number of updates should be returned.
+
+#### Returns
+
+- `_noOfUpdates`: The number of updates submitted in each block for the last `_historySize` blocks. The array is ordered from the current block to the oldest block.
+
+### numberOfUpdatesInBlock
+
+The number of updates submitted in a block - available only for the last `MAX_BLOCKS_HISTORY` blocks.
+
+```solidity
+function numberOfUpdatesInBlock(
+    uint256 _blockNumber
+) external view returns (
+    uint256 _noOfUpdates
+);
+```
+
+#### Parameters
+
+- `_blockNumber`: The block number for which the number of updates should be returned.
+
+#### Returns
+
+- `_noOfUpdates`: The number of updates submitted in the specified block.
+
+### submissionWindow
+
+The submission window is a number of blocks forming a "grace period" after a round of sortition starts,
+during which providers may submit updates for that round. In other words, each block starts a new round of
+sortition and that round lasts `submissionWindow` blocks.
+
+```solidity
+function submissionWindow(
+) external view returns (
+    uint8
+);
+```
 
 ### submitUpdates
 
@@ -143,6 +231,7 @@ Event emitted when a new set of updates is submitted.
 
 ```solidity
 event FastUpdateFeedsSubmitted(
+    uint32 votingRoundId,
     address signingPolicyAddress
 )
 ```

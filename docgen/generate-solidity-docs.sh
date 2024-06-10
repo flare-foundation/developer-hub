@@ -1,19 +1,23 @@
 #!/bin/bash
 
-# See README.md for usage instructions.
+# Set input and output paths for documentation
 INPUT_PATH="docs/userInterfaces/"
 OUTPUT_PATH="../technical-reference/"
-set -e
 
-# Defined in repos.list
+# Read repositories from repos.list and process each one
 while IFS=' ' read -r repo_url repo_branch repo_source_path build_command || [ -n "$build_command" ];
 do
+    # Extract repository name from URL
     repo_name=$(basename $repo_url .git)
+    
+    # Clone the repository with shallow depth
     rm -rf $repo_name
     git clone --depth 1 $repo_url
     
-    # Move to the repo
+    # Move to the repository directory
     cd $repo_name
+    
+    # Switch to the specified branch
     git checkout $repo_branch
     
     # Install dependencies
@@ -21,17 +25,20 @@ do
     yarn add solidity-docgen
     
     # Patch hardhat.config.ts
-    sed -i -E "1s/^/import 'solidity-docgen';\n/" hardhat.config.ts
-    sed -i -E "/HardhatUserConfig = / r ../hardhat.config.ts.patch" hardhat.config.ts
+    sed -i.bak -E "1s/^/import 'solidity-docgen';\n/" hardhat.config.ts
+    sed -i.bak -E "/HardhatUserConfig = / r ../hardhat.config.ts.patch" hardhat.config.ts
     
-    # Copy template
+    # Copy templates
     cp -r ../templates .
     
     # Build docs
-    echo -e "\nBuilding docs for $repo_name"
     yarn hardhat docgen
     
     # Copy docs
-    echo -e "\nCopying docs from $INPUT_PATH to $OUTPUT_PATH"
     cp -r $INPUT_PATH $OUTPUT_PATH
+    
+    # Move back to the previous directory
+    cd ..
+    
+    echo "Output documentation saved to: $OUTPUT_PATH"
 done < "repos.list"

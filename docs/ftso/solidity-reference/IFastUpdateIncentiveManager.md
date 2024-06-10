@@ -8,6 +8,28 @@ Sourced from `IFastUpdateIncentiveManager.sol` on [GitHub](https://github.com/fl
 
 ## Functions
 
+### getBaseScale
+
+Viewer for the base value of the scale itself.
+
+```solidity
+function getBaseScale(
+) external view returns (
+    Scale
+);
+```
+
+### getCurrentSampleSizeIncreasePrice
+
+Viewer for the current value of sample size increase price.
+
+```solidity
+function getCurrentSampleSizeIncreasePrice(
+) external view returns (
+    Fee
+);
+```
+
 ### getExpectedSampleSize
 
 Viewer for the current value of the expected sample size.
@@ -78,6 +100,41 @@ function offerIncentive(
 
 - `_offer`: The requested amount of per-block variation range increase, along with a cap for the ultimate range.
 
+### rangeIncreaseLimit
+
+The maximum value that the range can be increased to by an incentive offer.
+
+```solidity
+function rangeIncreaseLimit(
+) external view returns (
+    Range
+);
+```
+
+### rangeIncreasePrice
+
+The price for increasing the per-block range of variation by 1, prorated for the actual amount of increase.
+
+```solidity
+function rangeIncreasePrice(
+) external view returns (
+    Fee
+);
+```
+
+### sampleIncreaseLimit
+
+The maximum amount by which the expected sample size can be increased by an incentive offer.
+This is controlled by governance and forces a minimum cost to increasing the sample size greatly,
+which would otherwise be an attack on the protocol.
+
+```solidity
+function sampleIncreaseLimit(
+) external view returns (
+    SampleSize
+);
+```
+
 ## Events
 
 ### IncentiveOffered
@@ -86,6 +143,7 @@ Event emitted when an incentive is offered.
 
 ```solidity
 event IncentiveOffered(
+    uint24 rewardEpochId,
     Range rangeIncrease,
     SampleSize sampleSizeIncrease,
     Fee offerAmount
@@ -99,9 +157,7 @@ Event emitted when inflation rewards are offered.
 ```solidity
 event InflationRewardsOffered(
     uint24 rewardEpochId,
-    bytes feedIds,
-    bytes rewardBandValues,
-    bytes inflationShares,
+    struct IFastUpdatesConfiguration.FeedConfiguration[] feedConfigurations,
     uint256 amount
 )
 ```

@@ -4,7 +4,6 @@ sidebar_position: 2
 description: Interface for reading the block-latency feed configuration.
 ---
 
-Interface to read FTSOv2 configuration.
 Sourced from `IFastUpdatesConfiguration.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/IFastUpdatesConfiguration.sol).
 
 ## Functions
@@ -19,25 +18,6 @@ function getFeedConfigurations(
     struct IFastUpdatesConfiguration.FeedConfiguration[]
 );
 ```
-
-### getFeedConfigurationsBytes
-
-Returns the feed configurations in bytes format, including removed ones.
-
-```solidity
-function getFeedConfigurationsBytes(
-) external view returns (
-    bytes _feedIds,
-    bytes _rewardBandValues,
-    bytes _inflationShares
-);
-```
-
-#### Returns
-
-- `_feedIds`: The feed ids - multiple of 21 (one feedId is bytes21).
-- `_rewardBandValues`: The reward band values - multiple of 4 (uint32).
-- `_inflationShares`: The inflation shares - multiple of 3 (uint24).
 
 ### getFeedId
 
