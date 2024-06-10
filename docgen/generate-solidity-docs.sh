@@ -4,6 +4,8 @@
 INPUT_PATH="docs/userInterfaces/"
 OUTPUT_PATH="../technical-reference/"
 
+OUTPUT_PATH_ABS=$(realpath "$OUTPUT_PATH")
+
 # Read repositories from repos.list and process each one
 while IFS=' ' read -r repo_url repo_branch repo_source_path build_command || [ -n "$build_command" ];
 do
@@ -40,5 +42,5 @@ do
     # Move back to the previous directory
     cd ..
     
-    echo "Output documentation saved to: $OUTPUT_PATH"
+    echo "Output documentation saved to: $OUTPUT_PATH_ABS"
 done < "repos.list"

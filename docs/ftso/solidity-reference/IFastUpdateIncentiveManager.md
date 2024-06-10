@@ -1,7 +1,7 @@
 ---
 title: IFastUpdateIncentiveManager
 sidebar_position: 3
-description: Interface for making block-latency incentive offers.
+description: Interface for making volatility incentive offers.
 ---
 
 Sourced from `IFastUpdateIncentiveManager.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/IFastUpdateIncentiveManager.sol).
