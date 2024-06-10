@@ -70,13 +70,11 @@ const sidebars: SidebarsConfig = {
             },
             {
               type: "category",
-              label: "Technical Reference",
+              label: "Solidity Reference",
               collapsed: true,
               link: {
-                slug: "/category/ftso/scaling/solidity-reference",
-                type: "generated-index",
-                description:
-                  "Learn about the key APIs and smart contracts to interact with FTSOv2.",
+                type: "doc",
+                id: "ftso/scaling/solidity-reference-overview",
               },
               items: [
                 {
