@@ -1,19 +1,19 @@
 ---
 slug: how-to-state-connector
-title: How to State Connector
+title: Part 1 - State Connector
 authors: [lukaavbreht, filipkoprivec]
 tags: [quickstart, bitcoin, fdc]
 ---
 
 The State Connector bridges the gap between different blockchains, enabling the smooth exchange of information and synchronization of smart contracts and state changes. In this guide, you will learn how to:
 
-- Bridge data across blockchains using the State Connector
-- Understand the working of the CCCR protocol to securely verify and publish cross-blockchain data
-- Attest to a Bitcoin transaction and use the proof on Flare network
+- Bridge data across blockchains using the State Connector.
+- Understand the working of the CCCR protocol to securely verify and publish cross-blockchain data.
+- Attest to a Bitcoin transaction and use the proof on Flare network.
 
 {/* truncate */}
 
-This blog post includes code snippets to recreate the process of attesting to a payment on the Bitcoin network and using the proof on the Flare Network. The complete setup and full code are available at [flare-foundation/flare-demo-examples](https://github.com/flare-foundation/flare-demo-examples). You are encouraged to follow along and try it yourself. The repository contains all the necessary code and instructions to set up the environment and run the code.
+This blog post includes code snippets to recreate the process of attesting to a payment on the Bitcoin network and using the proof on the Flare Network. The complete setup and full code are available on the [Flare Demo examples](https://github.com/flare-foundation/flare-demo-examples) repository. You are encouraged to follow along and try it yourself. The repository contains all the necessary code and instructions to set up the environment and run the code.
 
 :::info
 If you are new to Flare, you should first understand the [Flare Network](../docs/network).
@@ -46,7 +46,7 @@ During each round, attestation providers create a Merkle tree, with the leaves c
 
 [Merkle trees](https://en.wikipedia.org/wiki/Merkle_tree) are binary trees where each leaf represents a hash of some data, which in our case is the full response to the attestation request. Each internal node, with two children, represents a hash of the concatenation of the hashes of its children. This structure allows all responses to be securely and efficiently represented by a single hash, the Merkle root.
 
-Furthermore, verifying if a specific leaf is part of the tree is straightforward by constructing a Merkle proof. A Merkle proof is a list of hashes that, when combined with the Merkle root, proves that a particular leaf is indeed part of the tree. The size of this proof is logarithmic relative to the number of leaves in the tree. This logarithmic size ensures that proving the inclusion of a specific leaf is highly efficient, even for large trees. For instance, proving a leaf in a tree with 1 million leaves requires only 20 hashes, as opposed to 1 million hashes if we were to store all the leaves in a list.
+Furthermore, verifying if a specific leaf is part of the tree is straightforward by constructing a Merkle proof. A Merkle proof is a list of hashes that, when combined with the Merkle root, proves that a particular leaf is indeed part of the tree. The size of this proof is logarithmic relative to the number of leaves in the tree. This logarithmic size ensures that proving the inclusion of a specific leaf is highly efficient, even for large trees. For instance, proving a leaf in a tree with 1 million leaves requires only 20 hashes, as opposed to 1 million hashes if all the leaves were stored in a list.
 
 </details>
 
@@ -56,17 +56,17 @@ This guide focuses on the [**Payment attestation type**](https://github.com/flar
 
 For example, suppose you have a transaction on the Bitcoin (BTC) network and want to use this information on Flare, you can achieve this in the following steps:
 
-1. **Verifying the transaction**: Submit the BTC transaction to a verifier (a service provided by attestation providers or another entity) of your choice. The verifier returns a JSON containing all the information about the transaction and a hex string representing an encoded attestation request to be submitted to the State Connector smart contract.
+1. **Verifying the transaction.** Submit the BTC transaction to a verifier (a service provided by attestation providers or another entity) of your choice. The verifier returns a JSON containing all the information about the transaction and a hex string representing an encoded attestation request to be submitted to the State Connector smart contract.
 
-2. **Make attestation request**: Submit the hex-encoded request to the State Connector smart contract, which emits an event to notify attestation providers about your request.
+2. **Make attestation request.** Submit the hex-encoded request to the State Connector smart contract, which emits an event to notify attestation providers about your request.
 
-3. **CCCR phases**: Wait for all four stages of the overlapped Collect-Choose-Commit-Reveal (CCCR) protocol to finalize.
+3. **CCCR phases.** Wait for all four stages of the overlapped Collect-Choose-Commit-Reveal (CCCR) protocol to finalize.
 
-4. **Merkle proof extraction**: Once the data is confirmed by the attestation providers and the State Connector contract reaches a consensus on the final Merkle root, the transaction data can be used on the Flare blockchain. To use the data, you will need the response and Merkle proof, which can be queried from the attestation provider of your choice.
+4. **Merkle proof extraction.** Once the data is confirmed by the attestation providers and the State Connector contract reaches a consensus on the final Merkle root, the transaction data can be used on the Flare blockchain. To use the data, you will need the response and Merkle proof, which can be queried from the attestation provider of your choice.
 
-5. **Submitting Merkle proof**: Submit the response and Merkle proof to your smart contract. The smart contract verifies the proof using a dedicated verification contract that checks the response against the stored Merkle root using the Merkle proof. This verification is available both on the chain and in the State Connector repository.
+5. **Submitting Merkle proof.** Submit the response and Merkle proof to your smart contract. The smart contract verifies the proof using a dedicated verification contract that checks the response against the stored Merkle root using the Merkle proof. This verification is available both on the chain and in the State Connector repository.
 
-In the following section, we will look into each of those steps in detail, including how to implement them.
+Let's understand each of these steps in detail in the following sections.
 
 ### Verifying the transaction
 
@@ -85,11 +85,11 @@ Keep in mind that there is a strict separation between testing and production en
 - Songbird Canary-Network and Flare Mainnet: Connected to Bitcoin, Dogecoin, and XRP Ledger.
 - Songbird Testnet Coston and Flare Testnet Coston2: Connected to Bitcoin Testnet, Dogecoin Testnet, and XRP Ledger Testnet.
 
-On the attestation client side, this typically means a different base URL (e.g., coston.attester.xx vs songbird.attester.xx). Additionally, you need to specify testBTC for the network name instead of BTC because the sourceId (the network name) is included in the transaction encoding.
+On the attestation client side, this typically means a different base URL (e.g., coston.attester.xx vs songbird.attester.xx). Additionally, you need to specify testBTC for the network name instead of BTC because the `sourceId` (the network name) is included in the transaction encoding.
 
 Now that you have the transaction hash you want to prove, the next step is to construct the encoded version of the data you want to attest. While you can do this manually, the process is complex and requires access to an indexer.
 
-A simpler approach is to use an API provided by verifiers. Any trusted verifier should suffice. You can refer to the full verifier specification on [flare-foundation/songbird-state-connector-protocol](https://github.com/flare-foundation/songbird-state-connector-protocol/tree/main/specs/attestations/verifier.md).
+A simpler approach is to use an API provided by verifiers. Any trusted verifier should suffice. You can refer to the full verifier specification on the [Verifier server](https://github.com/flare-foundation/songbird-state-connector-protocol/tree/main/specs/attestations/verifier.md).
 
 To get the encoded request using default verifier implementations, call the `${ATTESTATION_URL}/verifier/btc/Payment/prepareRequest` endpoint. Here are the steps to follow:
 
@@ -153,7 +153,8 @@ The `status` field indicates that the verifier recognized this transaction as va
 
 This encoded request is what you'll submit to the State Connector contract. Once submitted, it will be emitted as an event, picked up by attestation clients, verified, and used on the blockchain.
 
-#### Decoding `abiEncodedRequest`
+<details>
+<summary>Understanding the structure of `abiEncodedRequest`.</summary>
 
 The structure of `abiEncodedRequest` may seem complex, but it's essentially a concatenated hex string (with the initial 0x removed) representing different parts of the request. Each part is 32 bytes long (64 characters in hex). Here's a breakdown of the string:
 
@@ -178,11 +179,13 @@ Breaking it down line-by-line:
 
 - **Remaining lines:** These contain the request data, including the transaction hash, `inUtxo`, and `utxo` parameters.
 
+</details>
+
 ### Make attestation request
 
 The next step is to request attestation on the State Connector smart contract, thus broadcasting to the entire network that you want this transaction to be proven. This will be your first interaction with the blockchain and will involve making a transaction. For this, you'll need a small amount of CFLR to cover gas fees. You can obtain testnet CFLR using the [CFLR faucet](https://faucet.flare.network/).
 
-Once the attestation is requested you can calculate the `roundId` - The State Connector round that was in the collect phase the moment we requested attestation. You now have to wait for the corresponding Reveal round to end to be able to get the proof. This takes between 3 and 4.5 minutes.
+Once the attestation is requested you can calculate the `roundId` - The State Connector round that was in the collect phase the moment the attestation was requested. You now have to wait for the corresponding Reveal round to end to be able to get the proof. This takes between 3 and 4.5 minutes.
 
 :::note
 You can get the proof immediately after the Reveal phase ends, but you will not be able to use it until the phase is finalized.
@@ -220,7 +223,7 @@ async function submitRequest() {
 
 ### CCCR phases
 
-- During the attestation request submission in a fixed roundId within the CCCR protocol, the system enters the **collect** phase. In this phase, all attestation providers gather and store attestation requests, a process that spans 90 seconds.
+- During the attestation request submission in a fixed `roundId` within the CCCR protocol, the system enters the **collect** phase. In this phase, all attestation providers gather and store attestation requests, a process that spans 90 seconds.
 
 - Following the collect phase is the **choose** phase, where attestation providers vote on which requests to confirm based on their node states. Upon its conclusion, a consensus is reached among all attestation providers regarding which requests to confirm for the current round.
 
@@ -232,11 +235,15 @@ Upon achieving consensus, the State Connector smart contract concludes the round
 
 ### Merkle proof extraction
 
-After the conclusion of the reveal phase, the round in which we sought attestation has been finalized, and consequently, a Merkle root is now stored within the State Connector smart contract. As previously explained, this Merkle root serves as the apex of a Merkle tree, encompassing hashes of responses to attestation requests, including the one we aim to validate.
+After the conclusion of the reveal phase, the round in which the attestation has been finalized, and consequently, a Merkle root is now stored within the State Connector smart contract. As previously explained, this Merkle root serves as the apex of a Merkle tree, encompassing hashes of responses to attestation requests, including the one you aim to validate.
 
 Our next step entails acquiring a Merkle proof—verification that the hash of our transaction indeed resides within the accepted Merkle tree, thereby confirming its acceptance by both the group of attestors and the State Connector smart contract. The most straightforward approach is to leverage one of the attestation clients, as they possess the complete Merkle tree structure already assembled.
 
-To extract the merkle proof we use `${ATTESTATION_URL}/attestation-client/api/proof/get-specific-proof` API endpoint:
+To extract the merkle proof you use the API endpoint:
+
+```text
+${ATTESTATION_URL}/attestation-client/api/proof/get-specific-proof
+```
 
 ```typescript
 async function testAttestation(scRound, requestData) {
@@ -262,11 +269,11 @@ async function testAttestation(scRound, requestData) {
 }
 ```
 
-Utilizing the roundId associated with the data submission from the preceding step, along with the abiEncodedRequest submitted earlier, we proceed to retrieve the proof. If the attestation client has already constructed the Merkle tree for the corresponding round, obtaining the proof from them involves a straightforward lookup within the tree they submitted for that specific round. This process streamlines the verification, ensuring a swift and efficient confirmation of our transaction's acceptance.
+Utilizing the `roundId` associated with the data submission from the preceding step, along with the abiEncodedRequest submitted earlier, you can proceed to retrieve the proof. If the attestation client has already constructed the Merkle tree for the corresponding round, obtaining the proof from them involves a straightforward lookup within the tree they submitted for that specific round. This process streamlines the verification, ensuring a swift and efficient confirmation of our transaction's acceptance.
 
-Using the roundId linked to the previous data submission and the `abiEncodedRequest` provided earlier. If the attestation client has built the Merkle tree for the same round, getting the proof from them is straightforward — it's just a matter of looking it up in the tree they submitted for that round. This makes the verification process quick and simple, ensuring our transaction's acceptance is efficiently confirmed.
+Using the `roundId` linked to the previous data submission and the `abiEncodedRequest` provided earlier. If the attestation client has built the Merkle tree for the same round, getting the proof from them is straightforward — it's just a matter of looking it up in the tree they submitted for that round. This makes the verification process quick and simple, ensuring our transaction's acceptance is efficiently confirmed.
 
-The result of the call yields the following JSON, you can review the full specification on [flare-foundation/songbird-state-connector-protocol](https://github.com/flare-foundation/songbird-state-connector-protocol/tree/main/specs/attestations/active-types/Payment.md).
+The result of the call yields the following JSON, you can review the full specification on the [Payment attestation type](https://github.com/flare-foundation/songbird-state-connector-protocol/tree/main/specs/attestations/active-types/Payment.md).
 
 <details>
 <summary>JSON result</summary>
@@ -458,13 +465,13 @@ Relevant if the transaction is unsuccessful.
 
 </details>
 
-Let's thoroughly examine the `ResponseBody` section of the response, as it forms the core of the entire attestation process to be utilized on the Flare chain. Imagine a scenario where we aim to ensure that someone has made a payment to us on the Bitcoin network and utilized that payment to mint an NFT on Flare. In such a case, we would meticulously verify several aspects: whether the payment amount is sufficient, if the payment has been accepted, whether it was directed to the correct address, and more.
+Let's thoroughly examine the `ResponseBody` section of the response, as it forms the core of the entire attestation process to be utilized on the Flare chain. Imagine a scenario where you aim to ensure that someone has made a payment to us on the Bitcoin network and utilized that payment to mint an NFT on Flare. In such a case, you would meticulously verify several aspects: whether the payment amount is sufficient, if the payment has been accepted, whether it was directed to the correct address, and more.
 
 This is precisely what the `ResponseBody` encapsulates. Let's delve deeper into its contents.
 
 - `blockNumber`: This denotes the block number on the underlying chain where the transaction was included. While not directly relevant for all scenarios, it can be crucial for certain applications where transaction sequencing is significant.
 
-- `blockTimestamp`: This represents the timestamp of the block on the underlying chain in which the transaction was included. This timestamp holds significance, particularly if we need to ensure that the transaction occurred within a specific timeframe, such as when minting an NFT where timely payment is essential.
+- `blockTimestamp`: This represents the timestamp of the block on the underlying chain in which the transaction was included. This timestamp holds significance, particularly if you need to ensure that the transaction occurred within a specific timeframe, such as when minting an NFT where timely payment is essential.
 
 - `sourceAddressHash`: This is the hash of the address that initiated the payment. It's hashed to ensure compatibility across different blockchain formats and lengths. Notably, for UTXO-based chains like BTC and DOGE, where multiple addresses may be involved, this hash represents the selected payee address specified by the `utxo` field in the request.
 
@@ -490,7 +497,7 @@ The transaction hash is not explicitly included in the `ResponseBody` as it's pa
 
 #### Type structure
 
-Let's explore the `Payment` interface in detail. Each attestation type, including those we'll encounter in the future, follows a similar structure, making it crucial to grasp its components.
+Let's explore the `Payment` interface in detail. Each attestation type, including any you encounter in the future, follows a similar structure, making it crucial to grasp its components.
 
 1. `Request`: This part defines the structure of the request, comprising fields like `attestationType`, `sourceId`, `messageIntegrityCode`, and `requestBody`. While the first three fields remain consistent across all attestation types, `requestBody` varies based on the type. In our case, the request body includes the initially requested data - the transaction hash and utxo indices. Interestingly, the unpacking of the request made to the state connector mirrors the ABI-encoded version of the `requestBody` within the `Request` structure. This standardization aids attestation providers in unpacking the request effortlessly.
 
@@ -508,11 +515,11 @@ In the typical interaction with a contract on the Flare chain, there are two mai
 
 1. **Validation of Relay Information**: The contract needs to verify that the relayed information contains sufficient details to execute the intended action. For instance, it might need to confirm that the payment amount is adequate to mint an NFT. As discussed earlier, the necessary information for this validation is provided by the State Connector.
 
-2. **Verification of Relay Authenticity**: Once the relayed information is deemed sufficient, the contract must verify its authenticity by confirming that it was indeed relayed by the State Connector and that the accompanying Merkle proof is valid. This verification is performed by submitting the Merkle proof to the verification contract. This contract, which we'll explore further in the next section, acts as a wrapper around OpenZeppelin's Merkle proof verification contract. To ascertain whether the round in which the request was submitted has been finalized, one can check the `lastFinalizedRoundId` method on the State Connector smart contract. The finalization occurs after the reveal phase of the round has ended, signifying the completion of the round's processing. The verification process typically commences with the first request to the State Connector smart contract following the conclusion of the reveal phase.
+2. **Verification of Relay Authenticity**: Once the relayed information is deemed sufficient, the contract must verify its authenticity by confirming that it was indeed relayed by the State Connector and that the accompanying Merkle proof is valid. This verification is performed by submitting the Merkle proof to the verification contract. This contract, which will be explored further in the next section, acts as a wrapper around OpenZeppelin's Merkle proof verification contract. To ascertain whether the round in which the request was submitted has been finalized, one can check the `lastFinalizedRoundId` method on the State Connector smart contract. The finalization occurs after the reveal phase of the round has ended, signifying the completion of the round's processing. The verification process typically commences with the first request to the State Connector smart contract following the conclusion of the reveal phase.
 
-Regarding the Verifier contract, it's essentially a straightforward wrapper around OpenZeppelin's Merkle proof verification contract. While the code for these verifier contracts can be found on [flare-foundation/songbird-state-connector-protocol](https://github.com/flare-foundation/songbird-state-connector-protocol/tree/main/contracts/generated/verification), they've been deployed on the Songbird Testnet Coston for ease of use and are already included in the Periphery Library Unofficial Contract Registry.
+Regarding the Verifier contract, it's essentially a straightforward wrapper around OpenZeppelin's Merkle proof verification contract. While the code for these verifier contracts can be found in the [verification subfolder](https://github.com/flare-foundation/songbird-state-connector-protocol/tree/main/contracts/generated/verification), they've been deployed on the Songbird Testnet Coston for ease of use and are already included in the Periphery Library Unofficial Contract Registry.
 
-The verifier interface resembles the payment interface we've already discussed, with similar components and structures.
+The verifier interface resembles the payment interface already discussed, with similar components and structures.
 
 ```solidity title="IPaymentVerification.sol"
 // SPDX-License-Identifier: MIT
@@ -679,7 +686,7 @@ Let's break down the key functions:
 
 - `isPaymentValid`: This view function verifies if the provided payment is valid by checking if it's included in the State Connector. We utilize the Flare-provided PaymentVerification contract in conjunction with the periphery library to directly access the verifier contract. The function is straightforward—we call the `verifyPayment` method on the verifier contract. Remember, this is a view function, so there are no costs associated with checking the proof on the chain.
 
-- `addPayment`: This function is called by users to add payments to the contract. Remember, using the State Connector on the chain typically involves a two-step process. Firstly, we validate the proof and data using the verifier contract, ensuring that the provided payment is valid. Then, we verify that the provided data meets our specific use case—such as being a payment in `testBTC`. Once we're certain of the payment's validity, we tally the total received amount and store the proof for future reference.
+- `addPayment`: This function is called by users to add payments to the contract. Remember, using the State Connector on the chain typically involves a two-step process. Firstly, you validate the proof and data using the verifier contract, ensuring that the provided payment is valid. Then, you verify that the provided data meets our specific use case—such as being a payment in `testBTC`. Once you are certain of the payment's validity, you can tally the total received amount and store the proof for future reference.
 
 ## Conclusion
 
@@ -764,13 +771,13 @@ When you query the `prepareResponse` endpoint, you receive only the response par
 <details>
 <summary>Automations for XRPL, Bitcoin and Dogecoin.</summary>
 
-Let's automate this process and create a script, that creates a transaction on external chain and immediately try to see what request we would get from the state connector.
+Let's automate this process and create a script, that creates a transaction on external chain and immediately try to see what request you would get from the state connector.
 
 **XRP Ledger**
 
-In the `tryXRPLTransactionVerification.ts` file, we've created a script that initiates an XRPL transaction to a predefined address. Upon running the script after populating the `.env` file with an `XRPL_PRIVATE_KEY` containing testnet XRP ([Faucet](https://test.bithomp.com/faucet/)), the transaction is executed.
+In the `tryXRPLTransactionVerification.ts` file, a script initiates an XRPL transaction to a predefined address. Upon running the script after populating the `.env` file with an `XRPL_PRIVATE_KEY` containing testnet XRP ([Faucet](https://test.bithomp.com/faucet/)), the transaction is executed.
 
-Subsequently, we immediately examine the request we would receive from the state connector. The script is straightforward, with the critical aspect being the proper encoding and padding of the standard payment reference to 32 bytes. If the standard payment reference adheres to the specification, it will also be included in the response from the State Connector.
+Subsequently, you can immediately examine the request you would receive from the state connector. The script is straightforward, with the critical aspect being the proper encoding and padding of the standard payment reference to 32 bytes. If the standard payment reference adheres to the specification, it will also be included in the response from the State Connector.
 
 An example result of this process:
 
@@ -809,7 +816,7 @@ Hello world!
 
 **Bitcoin (and Dogecoin)**
 
-The process is analogous: we create a basic transaction with an `OP_RETURN` containing the payment reference. However, due to security considerations, we can't immediately verify the response as we do with XRPL transactions. Bitcoin requires 6 confirmations, and Dogecoin requires 60, typically taking just under an hour.
+The process is analogous: create a basic transaction with an `OP_RETURN` containing the payment reference. However, due to security considerations, you can't immediately verify the response as you do with XRPL transactions. Bitcoin requires 6 confirmations, and Dogecoin requires 60, typically taking just under an hour.
 
 As a result, the script solely generates the transaction and prints the transaction hash. Alternatively, it can use a provided transaction hash to query the response from the State Connector.
 
