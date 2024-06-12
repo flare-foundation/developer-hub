@@ -42,6 +42,7 @@ const config: Config = {
           rehypePlugins: [rehypeKatex],
         },
         blog: {
+          sortPosts: "ascending",
           path: "guides",
           routeBasePath: "guides",
           showReadingTime: true,
@@ -49,7 +50,8 @@ const config: Config = {
             type: "all",
             copyright: `Copyright © Flare Networks ${new Date().getFullYear()}.`,
           },
-          blogDescription: "Guides",
+          blogTitle: "Guides",
+          blogDescription: "All guides for interacting with Flare.",
           blogSidebarCount: "ALL",
           blogSidebarTitle: "All guides",
           onInlineTags: "throw",
