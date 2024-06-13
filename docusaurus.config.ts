@@ -187,7 +187,7 @@ const config: Config = {
             },
             {
               label: "Flare FTSO Monitor",
-              href: "https://flare-ftso-monitor.flare.network/data-providers",
+              href: "https://flare-ftso-monitor.flare.network/",
             },
           ],
         },
