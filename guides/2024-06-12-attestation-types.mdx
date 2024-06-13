@@ -1,9 +1,10 @@
 ---
 title: Part 2 - Attestation Types
 slug: attestation-types
-description: Learn about attestation types
+description: Learn about Flare State Connector attestation types
 authors: [lukaavbreht, filipkoprivec]
 tags: [intermediate, fdc]
+keywords: [quickstart, bitcoin, flare-data-connector, flare-network]
 ---
 
 In [Part 1](/guides/how-to-state-connector) of this series, you learnt the basics of the State Connector protocol, and how to use it to prove a payment on an external chain. In this guide you will learn:
@@ -20,11 +21,11 @@ Out of the [full specification](https://github.com/flare-foundation/songbird-sta
 
 - [BalanceDecreasingTransaction](https://github.com/flare-foundation/songbird-state-connector-protocol/blob/main/specs/attestations/active-types/BalanceDecreasingTransaction.md). Prove that a transaction decreased the balance of an address or that the address was the initiator of the transaction.
 
-- [ConfirmedBLockHeightExists](https://github.com/flare-foundation/songbird-state-connector-protocol/blob/main/specs/attestations/active-types/ConfirmedBlockHeightExists.md). Prove that a block with a specified height is confirmed by a specified number of confirmations and provide additional details about the chain's block production rate.
+- [ConfirmedBlockHeightExists](https://github.com/flare-foundation/songbird-state-connector-protocol/blob/main/specs/attestations/active-types/ConfirmedBlockHeightExists.md). Prove that a block with a specified height is confirmed by a specified number of confirmations and provide additional details about the chain's block production rate.
 
 - [ReferencePaymentNonexistence](https://github.com/flare-foundation/songbird-state-connector-protocol/blob/main/specs/attestations/active-types/ReferencedPaymentNonexistence.md). Prove that a payment with the specified reference does not exist on the specified chain. This is useful for proving that someone did not honor a payment request.
 
-The specification also includes `EVMTransaction`, which is more complex and powerful. This will be covered in Part 3 of this series.
+The specification also includes `EVMTransaction`, which is more complex and powerful. This will be covered in [Part 3](/guides/evm-connectivity) of this series.
 
 Each attestation type is designed to prove a specific aspect, whether it be about transactions, blocks, or offloading expensive computations off-chain to have the results available on-chain. The team has carefully studied the most important use cases and designed the attestation types to be safe, well-defined, and efficient.
 
@@ -1684,6 +1685,6 @@ This approach ensures that complex and resource-intensive computations can be pe
 
 Congratulations — you made it this far! Now you see what the State Connector can do, how to use it, and some details you need to be careful about. As usual, check the repository for the full code and try to play around.
 
-In [Part 3](/guides/evm-attestation), we will explore how information from EVM chains can be relayed and what we can do with it.
+In [Part 3](/guides/evm-connectivity), we will explore how information from EVM chains can be relayed and what we can do with it.
 
 A word of warning: while it might be tempting to save the whole proof structure in your smart contract (if you want to do some later operations), this is terribly inefficient from a gas standpoint, as you are writing a lot of data to memory and decoding nested structures is expensive. Additionally, since the structures are nested, even operating on them when in memory (or copying them from `calldata` to `memory`) generates large bytecode, which makes contract deployment more expensive or even impossible if you exceed the limit.
