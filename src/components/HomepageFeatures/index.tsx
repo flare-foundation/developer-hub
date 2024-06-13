@@ -41,7 +41,7 @@ const FeatureList: FeatureItem[] = [
     Svg: FAssets,
     description: (
       <>
-        Verifiable economic security for bridging BTC, XRP and non
+        Verifiable economic security for bridging BTC, XRP, and non
         smart-contract tokens
       </>
     ),
