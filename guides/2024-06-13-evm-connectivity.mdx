@@ -391,7 +391,7 @@ Here is an example result:
 
 After you have the transaction hashes, copy them to the part of the `main` method that will execute the State Connector part, this time on Coston. Let's take a look at `executeStateConnectorProof`.
 
-Here, the State Connector part comes into play. You have already seen it in the previous blog posts, so you will just quickly scan through it. The code is a bit more involved, as you are now working with multiple transactions (this is not EVMTransaction specific, but it is a good example of how you can use the State Connector to do more complex things). Again, you get an encoded attestation request (one for each transaction) and then you submit them to the State Connector. Once this is done, you wait for the round to be confirmed (see the while loop that takes most of the time) and then you get the proof.
+Here, the State Connector part comes into play. You have already seen it in the previous guides, so you will just quickly scan through it. The code is a bit more involved, as you are now working with multiple transactions (this is not EVMTransaction specific, but it is a good example of how you can use the State Connector to do more complex things). Again, you get an encoded attestation request (one for each transaction) and then you submit them to the State Connector. Once this is done, you wait for the round to be confirmed (see the while loop that takes most of the time) and then you get the proof.
 
 The `EthereumPaymentCollector` contract is deployed on Coston with one important method `collectPayment`. This method accepts the `EVMTransaction.Proof` response and does the important accounting.
 
@@ -815,14 +815,14 @@ The code for this:
 
 ```solidity
 /*
-The function assumes that the event emitted in the eventIndex is the result of checking the balance of specific ERC20 token as emitted by FallbackWithEventContract (see previous blogpost).
+The function assumes that the event emitted in the eventIndex is the result of checking the balance of specific ERC20 token as emitted by FallbackWithEventContract (see previous guides).
 The main idea is to first emit the event checking the balance and then properly decode it
 */
 function confirmBalanceEvent(EVMTransaction.Proof calldata transaction, address tokenAddress, address targetAddress, uint256 eventIndex) public
 {
     // We explicitly ignore the proof here, but in production code, you should always verify the proof
     // We ignore it so we can test the whole contract much faster on the same network using only the
-    // In this blogpost we will just use the `prepareResponse` endpoint which has everything we need but the proof
+    // In this guide we will just use the `prepareResponse` endpoint which has everything we need but the proof
     require(
         true || isEVMTransactionProofValid(transaction),
         "Invalid proof"
