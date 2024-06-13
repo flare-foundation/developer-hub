@@ -21,6 +21,8 @@ const config: Config = {
   organizationName: "flare-foundation", // Usually your GitHub org/user name.
   projectName: "developer-hub", // Usually your repo name.
 
+  onBrokenAnchors: "throw",
+  onDuplicateRoutes: "throw",
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "throw",
 
@@ -40,6 +42,8 @@ const config: Config = {
           sidebarPath: "./sidebars.ts",
           remarkPlugins: [remarkMath],
           rehypePlugins: [rehypeKatex],
+          editUrl:
+            "https://github.com/flare-foundation/developer-hub/edit/main",
         },
         blog: {
           sortPosts: "ascending",
@@ -55,6 +59,8 @@ const config: Config = {
           blogSidebarCount: "ALL",
           blogSidebarTitle: "All guides",
           onInlineTags: "throw",
+          editUrl:
+            "https://github.com/flare-foundation/developer-hub/edit/main",
         },
         theme: {
           customCss: "./src/css/custom.css",
