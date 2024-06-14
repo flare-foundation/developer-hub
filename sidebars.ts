@@ -24,7 +24,7 @@ const sidebars: SidebarsConfig = {
         "ftso/feeds",
         {
           type: "category",
-          label: "Guides",
+          label: "FTSOv2 Guides",
           collapsed: true,
           link: {
             slug: "/category/ftso/guides",
@@ -97,7 +97,7 @@ const sidebars: SidebarsConfig = {
         "fdc/attestation-types",
         {
           type: "category",
-          label: "Guides",
+          label: "FDC Guides",
           collapsed: true,
           link: {
             type: "generated-index",
@@ -115,7 +115,7 @@ const sidebars: SidebarsConfig = {
         "fassets/getting-started",
         {
           type: "category",
-          label: "Guides",
+          label: "FAssets Guides",
           collapsed: true,
           link: {
             type: "generated-index",
