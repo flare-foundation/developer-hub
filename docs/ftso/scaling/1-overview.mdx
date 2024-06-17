@@ -14,7 +14,7 @@ Track the latest developments on [GitHub](https://github.com/flare-foundation/fl
 
 **Scaling** is an advanced framework designed to optimize the functionality and efficiency of FTSOv2. It operates through data providers who submit feed estimates weighted by their stake in the network. These estimates are processed using a weighted median algorithm to determine consensus feed values. Scaling offers several enhancements:
 
-- Supports up to 1000 data feeds, including historical data across various asset classes such as equities, commodities, and cryptocurrencies.
+- Supports up to 1000 data feeds across various asset classes, including equities, commodities, and cryptocurrencies, and offers access to 2 weeks of historical data.
 
 - Uses a commit-reveal process across approximately 100 independent data providers every 90 seconds to ensure data integrity and accuracy.
 
@@ -30,7 +30,7 @@ Each phase of Scaling is designed to ensure a secure, efficient, and fair consen
 
 - **Sign**: Valid data reveals are used to calculate median values, which are aggregated into an efficient Merkle tree structure and published on-chain.
 
-- **Finalization**: Once a sufficient weight of signatures for the same Merkle root is collected, any entity can collect them and submit them on-chain for verification.
+- **Finalization**: Once a sufficient weight of signatures for the same Merkle root is collected, a randomly chosen provider (or any other entity in case of a failure), can collect them and submit them on-chain for verification.
 
 Once the finalization phase is complete, the Merkle root is published on the voting contract, making it available to all other smart contracts for verification of calculation results. This structured approach not only maintains data integrity and accuracy but also incentivizes active participation from data providers, contributing to the overall efficiency and reliability of Scaling.
 
@@ -49,10 +49,10 @@ Suppose we have the following data estimates from five providers with their corr
 
 | Estimate (Feed Value) | Weight |
 | --------------------- | ------ |
+| 250                   | 4      |
+| 200                   | 2      |
 | 100                   | 1      |
 | 150                   | 3      |
-| 200                   | 2      |
-| 250                   | 4      |
 | 300                   | 1      |
 
 First, sort these estimates:
@@ -85,7 +85,7 @@ This weighted median calculation ensures that the consensus feed value reflects 
 
 The incentivization mechanism in the FTSO Scaling Protocol is designed to ensure active and accurate participation from data providers while maintaining the integrity of the data submission process. The protocol divides the total reward pool for each voting epoch into three main categories: median closeness rewards, signature rewards, and finalization rewards.
 
-Rewards are calculated by comparing data submissions to the median value. Providers whose submissions fall within the interquartile range (IQR) band are eligible for median closeness rewards. If a submission is on the boundary of the IQR band, a pseudo-random selection process determines inclusion. Additional reward bands based on community or system-defined criteria further refine the distribution, ensuring fair and accurate reward allocation.
+Rewards are calculated by comparing data submissions to the median value. Providers whose submissions fall within the interquartile range (IQR) band are eligible for median closeness rewards. If a submission is on the boundary of the IQR band, a pseudo-random selection process determines inclusion. Additional reward bands, which are defined by Flare governance and have a fixed percentage around the finalized value, further refine the distribution, ensuring fair and accurate reward allocation.
 
 Penalties are imposed for non-matching or omitted reveals to maintain data integrity. Providers with mismatched or missing reveals face reduced rewards or even negative cumulative rewards, making them non-claimable. The protocol also evaluates the quality of random numbers generated during reveals, penalizing omissions to prevent manipulation.
 
