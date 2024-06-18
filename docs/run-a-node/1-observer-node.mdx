@@ -5,39 +5,65 @@ title: Observer Node
 description: Observe Flare without participating in consensus.
 ---
 
-An observer node does not participate in network consensus. Unlike [validator nodes](validator-node), which provide state consensus and add blocks, observer nodes remain outside the network and have no effect on consensus or blocks.
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
 
-## Why run an Observer Node
+An observer node, unlike a [validator node](validator-node), operates outside the network and does not influence consensus or block production. This guide will walk you through deploying an observer node for all Flare networks.
 
-Running an observer node is optional. However, submitting transactions through your own node offers a number of benefits:
+You have two options for setting up an observer node, each with its own pros and cons:
 
-- Transactions are sent directly to the network instead of through a third party.
-- Public nodes are usually rate-limited, your own node does not have such restriction.
+1. **On bare-metal:** This method is more complex but offers better performance and lower memory usage.
 
-## Prerequisites
+2. **With Docker:** This approach is simpler but results in lower performance and higher memory usage.
 
-:::note
+## Hardware requirements
 
-Enabling pruning is recommended for observer nodes, as they do not need to keep the whole history of the blockchain. In some cases, pruning can save up to 60% of disk space.
+**Minimum:**
 
-For archival nodes, which keep the whole history of the blockchain, pruning should be disabled.
-:::
+- CPU: 4 cores
+- RAM: 16 GB
+- Disk: 500 GB NVMe SSD
 
-### Hardware recommendations
+**Recommended:**
 
-- CPU: 4 cores, or more
-- RAM: 16 GB, or more
-- Disk: 1 TB SSD, or better (For archival nodes 4 TB SSD, or better)
+- CPU: 8 cores, or more
+- RAM: 32 GB, or more
+- Disk: 1 TB NVMe SSD, or better (For archival nodes 4 TB NVMe SSD, or better)
 
-### Docker
+## Setup on bare-metal
 
-Docker Hub contains container images for all `go-flare` releases at [flare-foundation/go-flare](https://hub.docker.com/r/flarefoundation/go-flare).
+### Prerequisites
 
-## Deploying an Observer Node
+Ensure you have the following dependencies installed:
+
+- [Go](https://golang.org/doc/install)
+- [GCC](https://gcc.gnu.org/install/)
+- [jq](https://stedolan.github.io/jq/download/)
+
+<Tabs>
+  <TabItem value="macos" label="MacOS" default>
+    ```bash 
+    brew install go gcc jq
+    ```
+
+  </TabItem>
+  <TabItem value="ubuntu" label="Ubuntu">
+    ```bash 
+    apt install golang gcc jq
+    ```
+    
+  </TabItem>
+  <TabItem value="arch" label="Arch">
+    ```bash
+    pacman -S go gcc jq
+    ```
+
+  </TabItem>
+</Tabs>
 
 ### Configure the node
 
-Clone the repository at [flare-foundation/go-flare](https://github.com/flare-foundation/go-flare) and run the `build.sh` script:
+Clone the [flare-foundation/go-flare](https://github.com/flare-foundation/go-flare) repository and run the `build.sh` script:
 
 ```bash
 git clone https://github.com/flare-foundation/go-flare.git
@@ -61,18 +87,38 @@ cd ../avalanchego
 
 :::
 
-### Run the Node
+### Run the node
 
-This is the minimum command to quickly get your node up and running.
-To understand each parameter read the following step before launching the node.
+This is the simplest command to quickly get your node up and running. The next section explains the parameters used here, along with additional parameters you may wish to configure.
 
-```bash
-./build/avalanchego --network-id=flare --http-host= --bootstrap-ips="$(curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeIP" }' -H 'content-type:application/json;' https://flare.flare.network/ext/info | jq -r ".result.ip")" --bootstrap-ids="$(curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeID" }' -H 'content-type:application/json;' https://flare.flare.network/ext/info | jq -r ".result.nodeID")"
-```
+<Tabs groupId="network" block>
+  <TabItem value="flare" label="Flare Mainnet" default>
+  ```bash
+  ./build/avalanchego --network-id=flare --http-host= --bootstrap-ips="$(curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeIP" }' -H 'content-type:application/json;' https://flare.flare.network/ext/info | jq -r ".result.ip")" --bootstrap-ids="$(curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeID" }' -H 'content-type:application/json;' https://flare.flare.network/ext/info | jq -r ".result.nodeID")"
+  ```
 
-After a lot of log messages the node should start synchronizing with the network, which might take anywhere from a few hours to a few days depending on network speed and machine specs.
+  </TabItem>
+  <TabItem value="coston2" label="Flare Testnet Coston2">
+  ```bash
+  ./build/avalanchego --network-id=costwo --http-host= --bootstrap-ips="$(curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeIP" }' -H 'content-type:application/json;' https://coston2.flare.network/ext/info | jq -r ".result.ip")" --bootstrap-ids="$(curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeID" }' -H 'content-type:application/json;' https://coston2.flare.network/ext/info | jq -r ".result.nodeID")"
+  ```
 
-Node syncing can be stopped at any time. Use the same command as before to resume the node syncing from where it left off.
+  </TabItem>
+  <TabItem value="songbird" label="Songbird Canary-Network">
+  ```bash
+  ./build/avalanchego --network-id=songbird --http-host= --bootstrap-ips="$(curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeIP" }' -H 'content-type:application/json;' https://songbird.flare.network/ext/info | jq -r ".result.ip")" --bootstrap-ids="$(curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeID" }' -H 'content-type:application/json;' https://songbird.flare.network/ext/info | jq -r ".result.nodeID")"
+  ```
+
+  </TabItem>
+  <TabItem value="coston" label="Songbird Testnet Coston">
+  ```bash
+  ./build/avalanchego --network-id=coston --http-host= --bootstrap-ips="$(curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeIP" }' -H 'content-type:application/json;' https://coston.flare.network/ext/info | jq -r ".result.ip")" --bootstrap-ids="$(curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeID" }' -H 'content-type:application/json;' https://coston.flare.network/ext/info | jq -r ".result.nodeID")"
+  ```
+
+  </TabItem>
+</Tabs>
+
+After a lot of log messages the node should start synchronizing with the network, which might take anywhere from a few hours to a few days depending on network speed and hardware specification. Node syncing can be stopped at any time. Use the same command to resume the node syncing from where it left off.
 
 You will know your node is fully booted and accepting transactions when the output of this command:
 
@@ -90,92 +136,564 @@ If the node gets stuck during bootstrap (it takes far longer than the estimates 
 
 ### Additional configuration
 
-These are some of the most relevant CLI parameters you can use.
-You can read about all of them in the [Avalanche documentation](https://docs.avax.network/nodes/maintain/avalanchego-config-flags).
+These are some of the most relevant CLI parameters you can use. Read more about them in the [Avalanche documentation](https://docs.avax.network/nodes/maintain/avalanchego-config-flags).
 
 - [`--bootstrap-ips`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--bootstrap-ips-string),
   [`--bootstrap-ids`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--bootstrap-ids-string):
-  IP address and node ID of the peer used to connect to the rest of the network for bootstrapping.
+  IP address and node ID of the peer used to connect to the rest of the network for bootstrapping. Note that you have to whitelist your node's IP address or your queries will always be answered with 403 error codes.
 
-  You can use Flare's public nodes for this, as shown in the quick start command given above:
-
-  Peer's IP address:
-
+<Tabs groupId="network">
+  <TabItem value="flare" label="Flare Mainnet" default>
+  **Peer's IP address:**
   ```bash
   curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeIP" }' -H 'content-type:application/json;' https://flare.flare.network/ext/info | jq -r ".result.ip"
   ```
-
-  Peer's node ID:
-
+  **Peer's node ID:**
   ```bash
   curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeID" }' -H 'content-type:application/json;' https://flare.flare.network/ext/info | jq -r ".result.nodeID"
   ```
 
-  Remember that you need to whitelist your node's IP address or your queries will always be answered with 403 error codes.
+  </TabItem>
+  <TabItem value="coston2" label="Flare Testnet Coston2">
+  **Peer's IP address:**
+  ```bash
+  curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeIP" }' -H 'content-type:application/json;' https://coston2.flare.network/ext/info | jq -r ".result.ip"
+  ```
 
-- [`--http-host`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--http-host-string):
-  Use `--http-host=` (empty) to allow connections from other machines.
-  Otherwise, only connections from `localhost` are accepted.
+**Peer's node ID:**
 
-- [`--http-port`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--http-port-int):
-  The port through which the node will listen to API requests.
-  The default value is `9650`.
+```bash
+curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeID" }' -H 'content-type:application/json;' https://coston2.flare.network/ext/info | jq -r ".result.nodeID"
+```
 
-- [`--staking-port`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--staking-port-int):
-  The port through which the network peers will connect to this node externally.
-  Having this port accessible from the internet is required for correct node operation.
-  The default value is `9651`.
+  </TabItem>
+  <TabItem value="songbird" label="Songbird Canary-Network">
+  **Peer's IP address:**
+  ```bash
+  curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeIP" }' -H 'content-type:application/json;' https://songbird.flare.network/ext/info | jq -r ".result.ip"
+  ```
+  **Peer's node ID:**
+  ```bash
+  curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeID" }' -H 'content-type:application/json;' https://songbird.flare.network/ext/info | jq -r ".result.nodeID"
+  ```
 
-- [`--db-dir`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--db-dir-string-file-path):
-  Directory where the database is stored.
-  Make sure to use a disk with enough space as recommended in the [Hardware prerequisites](#prerequisites) section.
-  It defaults to `~/.avalanchego/db` on Flare and Coston2, and to `~/.flare/db` on Songbird and Coston.
+  </TabItem>
+  <TabItem value="coston" label="Songbird Testnet Coston">
+  **Peer's IP address:**
+  ```bash
+  curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeIP" }' -H 'content-type:application/json;' https://coston.flare.network/ext/info | jq -r ".result.ip"
+  ```
+  **Peer's node ID:**
+  ```bash
+  curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeID" }' -H 'content-type:application/json;' https://coston.flare.network/ext/info | jq -r ".result.nodeID"
+  ```
+  </TabItem>
+</Tabs>
 
-  For example, you can use this option to store the database on an external drive.
+- [`--http-host`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--http-host-string): Use `--http-host= ` (empty) to allow connections from other machines. Otherwise, only connections from `localhost` are accepted.
 
-- [`--chain-config-dir`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--chain-config-dir-string):
-  Optional JSON configuration file, in case you want to use lots of non-default values.
+- [`--http-port`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--http-port-int): The port through which the node will listen to API requests. The default value is `9650`.
 
-  :::note[Sample configuration for observer nodes]
+- [`--staking-port`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--staking-port-int): The port through which the network peers will connect to this node externally. Having this port accessible from the internet is required for correct node operation. The default value is `9651`.
 
-        These are the most common configuration options, put them in `<chain-config-dir>/C/config.json`.
+- [`--db-dir`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--db-dir-string-file-path): Directory where the database is stored. Make sure to use a disk with enough space as recommended in the [Hardware requirements](#hardware-requirements) section. It defaults to `~/.avalanchego/db` on Flare Mainnet and Flare Testnet Coston2, and to `~/.flare/db` on Songbird Canary-Network and Songbird Testnet Coston. For example, you can use this option to store the database on an external drive.
 
-        ```json
-        {
-            "snowman-api-enabled": false,
-            "coreth-admin-api-enabled": false,
-            "eth-apis": [
-                "eth",
-                "eth-filter",
-                "net",
-                "web3",
-                "internal-eth",
-                "internal-blockchain",
-                "internal-transaction-pool"
-            ],
-            "rpc-gas-cap": 50000000,
-            "rpc-tx-fee-cap": 100,
-            "pruning-enabled": true,
-            "local-txs-enabled": false,
-            "api-max-duration": 0,
-            "api-max-blocks-per-request": 0,
-            "allow-unfinalized-queries": false,
-            "allow-unprotected-txs": false,
-            "remote-tx-gossip-only-enabled": false,
-            "log-level": "info"
-        }
-        ```
-        For archival nodes, set `"pruning-enabled": false` to disable pruning. Note that archival nodes require significantly more disk space than standard observer nodes.
+- [`--chain-config-dir`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--chain-config-dir-string): Optional JSON configuration file, in case you want to use lots of non-default values.
 
+<details>
+  <summary>Sample configuration for observer nodes</summary>
+  ```json title="<chain-config-dir>/C/config.json"
+  {
+    "snowman-api-enabled": false,
+    "coreth-admin-api-enabled": false,
+    "eth-apis": [
+      "eth",
+      "eth-filter",
+      "net",
+      "web3",
+      "internal-eth",
+      "internal-blockchain",
+      "internal-transaction-pool"
+    ],
+    "rpc-gas-cap": 50000000,
+    "rpc-tx-fee-cap": 100,
+    "pruning-enabled": true,
+    "local-txs-enabled": false,
+    "api-max-duration": 0,
+    "api-max-blocks-per-request": 0,
+    "allow-unfinalized-queries": false,
+    "allow-unprotected-txs": false,
+    "remote-tx-gossip-only-enabled": false,
+    "log-level": "info"
+  }
+  ```
+  For archival nodes, set `"pruning-enabled": false` to disable pruning. Note that archival nodes require significantly more disk space than standard observer nodes.
+
+</details>
+
+## Setup with Docker
+
+### Prerequisites
+
+- [Docker CE](https://docs.docker.com/engine/install/)
+- [jq](https://stedolan.github.io/jq/download/) (optional, but recommended)
+
+For simplicity this guide uses Docker CE installed on Debian Linux.
+
+:::tip
+To avoid using `sudo` each time you run the `docker` command, add your user to the Docker group after installation:
+
+```bash
+sudo usermod -a -G docker $USER
+# Log out and log back in or restart your system for the changes to take effect
+```
+
+:::
+
+### Configure the node
+
+#### Disk setup
+
+This setup varies depending on your use case, but essentially you need to have a local directory with sufficient space for the blockchain data to be stored and persisted in. In this guide, there is an additional disk mounted at `/mnt/db`, which is used to persist the blockchain data. After you have a machine set up and ready to go, find the additional disk, format it if necessary, and mount to a directory:
+
+```bash
+lsblk
+# ----
+# NAME    MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+# sda       8:0    0   10G  0 disk
+# ├─sda1    8:1    0  9.9G  0 part /
+# ├─sda14   8:14   0    3M  0 part
+# └─sda15   8:15   0  124M  0 part /boot/efi
+# sdb       8:16   0  300G  0 disk <- Device identified as db disk via size
+# ----
+sudo mkdir /mnt/db
+sudo chown -R <user>:<user> /mnt/db
+sudo mkfs.ext4 -m 0 -E lazy_itable_init=0,lazy_journal_init=0,discard /dev/sdb
+sudo mount /dev/sdb /mnt/db
+```
+
+:::info
+
+- Replace `<user>` with the user you wish to start your containerized observer node with.
+  It is recommended that this isn't the root user for security reasons.
+- Ensure you are replacing `/dev/sdb` with your actual device, since it could be different to the example.
   :::
+
+Confirm the new disk is mounted:
+
+```bash hl_lines="11"
+df -h
+# -----
+# Filesystem      Size  Used Avail Use% Mounted on
+# udev            3.9G     0  3.9G   0% /dev
+# tmpfs           796M  376K  796M   1% /run
+# /dev/sda1       9.7G  1.9G  7.3G  21% /
+# tmpfs           3.9G     0  3.9G   0% /dev/shm
+# tmpfs           5.0M     0  5.0M   0% /run/lock
+# /dev/sda15      124M   11M  114M   9% /boot/efi
+# tmpfs           796M     0  796M   0% /run/user/1009
+# /dev/sdb        295G   28K  295G   1% /mnt/db
+```
+
+Look for your device name and mount point specified in the output to confirm the mount worked.
+
+Backup the original `fstab` file (to revert changes if needed) and update `/etc/fstab` to make sure the device is mounted when the system reboots:
+
+```bash
+sudo -i
+cp /etc/fstab /etc/fstab.backup
+fstab_entry="UUID=$(blkid -o value -s UUID /dev/sdb) /mnt/db ext4 discard,defaults 0 2"
+echo $fstab_entry >> /etc/fstab
+exit
+```
+
+#### Configuration File and Logs Directory Setup
+
+Once the disk setup is complete, you can define the configuration file and logs directory for the observer node. These will be mounted from your local machine to the specified directories on your containerized observer node.
+
+Mounting the logs directory allows you to access the logs generated by the workload directly on your local machine. This saves you the effort of using `docker logs` and lets you inspect the files in your local directory instead.
+
+This example uses the configuration provided in the [Additional Configuration](#additional-configuration) section of the Setup on Bare-Metal.
+
+Create the local directories and change ownership to a non-root user of your choice:
+
+```bash
+sudo mkdir -p /opt/flare/conf
+sudo mkdir /opt/flare/logs
+sudo chown -R <user>:<user> /opt/flare
+```
+
+:::info
+Replace `<user>` with the user you wish to start your containerized observer node with.
+It is recommended that this isn't the root user for security reasons.
+:::
+
+Create the configuration file:
+
+```json title="/opt/flare/conf/config.json"
+{
+  "snowman-api-enabled": false,
+  "coreth-admin-api-enabled": false,
+  "eth-apis": [
+    "eth",
+    "eth-filter",
+    "net",
+    "web3",
+    "internal-eth",
+    "internal-blockchain",
+    "internal-transaction-pool"
+  ],
+  "rpc-gas-cap": 50000000,
+  "rpc-tx-fee-cap": 100,
+  "pruning-enabled": true,
+  "local-txs-enabled": false,
+  "api-max-duration": 0,
+  "api-max-blocks-per-request": 0,
+  "allow-unfinalized-queries": false,
+  "allow-unprotected-txs": false,
+  "remote-tx-gossip-only-enabled": false,
+  "log-level": "info"
+}
+```
+
+### Run the node
+
+The node can be run using:
+
+- [Docker CLI](#using-docker-cli), easier for a quick setup.
+
+- [Docker Compose](#using-docker-compose), more permanent and usable in the future.
+
+#### Using Docker CLI
+
+<Tabs groupId="network" block>
+  <TabItem value="flare" label="Flare Mainnet" default>
+
+    Use the Docker image at [flare-foundation/go-flare](https://hub.docker.com/r/flarefoundation/go-flare). The **Overview** tab in the repository linked explains the configurable parameters.
+
+    Start the container:
+
+    ```bash
+    docker run -d --name flare-observer -e AUTOCONFIGURE_BOOTSTRAP="1" -e NETWORK_ID="costwo" -e AUTOCONFIGURE_PUBLIC_IP="1" -e AUTOCONFIGURE_BOOTSTRAP_ENDPOINT="https://flare.flare.network/ext/info" -v /mnt/db:/app/db -v /opt/flare/conf:/app/conf/C -v /opt/flare/logs:/app/logs -p 0.0.0.0:9650:9650 -p 0.0.0.0:9651:9651 flarefoundation/go-flare:v1.7.1807
+    ```
+
+    Confirm your container is running and inspect that logs are printing:
+
+    ```bash
+    docker ps
+    docker logs flare-observer -f
+    ```
+
+  </TabItem>
+  <TabItem value="coston2" label="Flare Testnet Coston2">
+
+    Use the Docker image at [flare-foundation/go-flare](https://hub.docker.com/r/flarefoundation/go-flare). The **Overview** tab in the repository linked explains the configurable parameters.
+
+    Start the container:
+
+    ```bash
+    docker run -d --name coston2-observer -e AUTOCONFIGURE_BOOTSTRAP="1" -e NETWORK_ID="costwo" -e AUTOCONFIGURE_PUBLIC_IP="1" -e AUTOCONFIGURE_BOOTSTRAP_ENDPOINT="https://coston2.flare.network/ext/info" -v /mnt/db:/app/db -v /opt/flare/conf:/app/conf/C -v /opt/flare/logs:/app/logs -p 0.0.0.0:9650:9650 -p 0.0.0.0:9651:9651 flarefoundation/go-flare:v1.7.1807
+    ```
+
+    Confirm your container is running and inspect that logs are printing:
+
+    ```bash
+    docker ps
+    docker logs coston2-observer -f
+    ```
+
+  </TabItem>
+  <TabItem value="songbird" label="Songbird Canary-Network">
+
+    Use the Docker image at [flare-foundation/go-songbird](https://hub.docker.com/r/flarefoundation/go-songbird). The **Overview** tab in the repository linked explains the configurable parameters.
+
+    Start the container:
+
+    ```bash
+    docker run -d --name songbird-observer -e AUTOCONFIGURE_BOOTSTRAP="1" -e NETWORK_ID="songbird" -e AUTOCONFIGURE_PUBLIC_IP="1" -e AUTOCONFIGURE_BOOTSTRAP_ENDPOINT="https://songbird.flare.network/ext/info" -v /mnt/db:/app/db -v /opt/flare/conf:/app/conf/C -v /opt/flare/logs:/app/logs -p 0.0.0.0:9650:9650 -p 0.0.0.0:9651:9651 flarefoundation/go-songbird:v0.6.4
+    ```
+
+    Confirm your container is running and inspect that logs are printing:
+
+    ```bash
+    docker ps
+    docker logs songbird-observer -f
+    ```
+
+  </TabItem>
+  <TabItem value="coston" label="Songbird Testnet Coston">
+
+    Use the Docker image at [flare-foundation/go-songbird](https://hub.docker.com/r/flarefoundation/go-songbird). The **Overview** tab in the repository linked explains the configurable parameters.
+
+    Start the container:
+
+    ```bash
+    docker run -d --name coston-observer -e AUTOCONFIGURE_BOOTSTRAP="1" -e NETWORK_ID="coston" -e AUTOCONFIGURE_PUBLIC_IP="1" -e AUTOCONFIGURE_BOOTSTRAP_ENDPOINT="https://coston.flare.network/ext/info" -v /mnt/db:/app/db -v /opt/flare/conf:/app/conf/C -v /opt/flare/logs:/app/logs -p 0.0.0.0:9650:9650 -p 0.0.0.0:9651:9651 flarefoundation/go-songbird:v0.6.4
+    ```
+
+    Confirm your container is running and inspect that logs are printing:
+
+    ```bash
+    docker ps
+    docker logs coston-observer -f
+    ```
+
+  </TabItem>
+</Tabs>
+
+Once you have confirmed that the container is running, use Ctrl+C to exit the following of logs and check your container's `/ext/health` endpoint. Only when the observer node is fully synced will you see `"healthy": true`, but this otherwise confirms your container's HTTP port `9650` is accessible from your local machine.
+
+```bash
+curl http://localhost:9650/ext/health | jq
+```
+
+<details>
+<summary>Explanation of the CLI arguments.</summary>
+
+**Volumes:**
+
+- `-v /mnt/db:/app/db`
+
+  Mount the local database directory to the default database directory of the container.
+
+- `-v /opt/flare/conf:/app/conf/C`
+
+  Mount the local configuration directory to the default location of `config.json`.
+
+- `-v /opt/flare/logs:/app/logs`
+
+  Mount the local logs directory to the workloads default logs directory.
+
+**Ports:**
+
+- `-p 0.0.0.0:9650:9650`
+
+  Mapping the container's HTTP port to your local machine, enabling the querying of the containerized observer node's HTTP port via your local machine's IP and port.
+
+  !!! warning
+  Only use binding `0.0.0.0` for port 9650 if you wish to publicly expose your containerized observer node's RPC endpoint from your machine's public IP address.
+  If you require it to be publicly accessible for another application to use, ensure you set up a firewall rule to only allow port 9650 to be accessible via specific source IP addresses.
+
+- `-p 0.0.0.0:9651:9651`
+
+  Mapping the container's peering port to your local machine so other peers can query the node.
+
+**Environment Variables:**
+
+- `-e AUTOCONFIGURE_BOOTSTRAP="1"`
+
+  Retrieves the bootstrap endpoints Node-IP and Node-ID automatically.
+
+- `-e NETWORK_ID="<network>"`
+
+  Sets the correct network ID from the provided options below:
+
+  - `coston`
+  - `costwo`
+  - `songbird`
+  - `flare`
+
+- `-e AUTOCONFIGURE_PUBLIC_IP="1"`
+
+  Retrieves your local machine's IP automatically.
+
+- `-e AUTOCONFIGURE_BOOTSTRAP_ENDPOINT="<bootstrap_host>/ext/info"`
+
+      Defines the bootstrap endpoint used to initialize chain sync.
+      Flare nodes can be used to bootstrap your node for each chain:
+
+      - `https://coston.flare.network/ext/info`
+      - `https://costwo.flare.network/ext/info`
+      - `https://songbird.flare.network/ext/info`
+      - `https://flare.flare.network/ext/info`
+
+</details>
+
+#### Using Docker Compose
+
+Docker Compose for this use case is a good way to simplify your setup of running the observer node. Adding all necessary configurations into a single file that can be run with a simple command.
+
+In this guide the `docker-compose.yaml` file is created in `/opt/observer` but the location is entirely up to you.
+
+Create the working directory and set the ownership.
+
+```bash
+sudo mkdir /opt/observer
+sudo chown -R <user>:<user> /opt/observer
+```
+
+Create the `docker-compose.yaml` file:
+
+<Tabs groupId="network" block>
+  <TabItem value="flare" label="Flare Mainnet" default>
+
+    ```yaml title="/opt/observer/docker-compose.yaml"
+    version: '3.6'
+
+    services:
+      observer:
+        container_name: flare-observer
+        image: flarefoundation/go-flare:v1.7.1807
+        restart: on-failure
+        environment:
+          - AUTOCONFIGURE_BOOTSTRAP=1
+          - NETWORK_ID=flare
+          - AUTOCONFIGURE_PUBLIC_IP=1
+          - AUTOCONFIGURE_BOOTSTRAP_ENDPOINT=https://flare.flare.network/ext/info
+        volumes:
+          - /mnt/db:/app/db
+          - /opt/flare/conf:/app/conf/C
+          - /opt/flare/logs:/app/logs
+        ports:
+          - 0.0.0.0:9650:9650
+          - 0.0.0.0:9651:9651
+    ```
+
+  </TabItem>
+  <TabItem value="coston2" label="Flare Testnet Coston2">
+
+    ```yaml title="/opt/observer/docker-compose.yaml"
+    version: '3.6'
+
+    services:
+      observer:
+        container_name: coston2-observer
+        image: flarefoundation/go-flare:v1.7.1807
+        restart: on-failure
+        environment:
+          - AUTOCONFIGURE_BOOTSTRAP=1
+          - NETWORK_ID=costwo
+          - AUTOCONFIGURE_PUBLIC_IP=1
+          - AUTOCONFIGURE_BOOTSTRAP_ENDPOINT=https://coston2.flare.network/ext/info
+        volumes:
+          - /mnt/db:/app/db
+          - /opt/flare/conf:/app/conf/C
+          - /opt/flare/logs:/app/logs
+        ports:
+          - 0.0.0.0:9650:9650
+          - 0.0.0.0:9651:9651
+    ```
+
+  </TabItem>
+  <TabItem value="songbird" label="Songbird Canary-Network">
+
+    ```yaml title="/opt/observer/docker-compose.yaml"
+    version: '3.6'
+
+    services:
+      observer:
+        container_name: songbird-observer
+        image: flarefoundation/go-songbird:v0.6.4
+        restart: on-failure
+        environment:
+          - AUTOCONFIGURE_BOOTSTRAP=1
+          - NETWORK_ID=songbird
+          - AUTOCONFIGURE_PUBLIC_IP=1
+          - AUTOCONFIGURE_BOOTSTRAP_ENDPOINT=https://songbird.flare.network/ext/info
+        volumes:
+          - /mnt/db:/app/db
+          - /opt/flare/conf:/app/conf/C
+          - /opt/flare/logs:/app/logs
+        ports:
+          - 0.0.0.0:9650:9650
+          - 0.0.0.0:9651:9651
+    ```
+
+  </TabItem>
+  <TabItem value="coston" label="Songbird Testnet Coston">
+
+    ```yaml title="/opt/observer/docker-compose.yaml"
+    version: '3.6'
+
+    services:
+      observer:
+        container_name: coston-observer
+        image: flarefoundation/go-songbird:v0.6.4
+        restart: on-failure
+        environment:
+          - AUTOCONFIGURE_BOOTSTRAP=1
+          - NETWORK_ID=coston
+          - AUTOCONFIGURE_PUBLIC_IP=1
+          - AUTOCONFIGURE_BOOTSTRAP_ENDPOINT=https://coston.flare.network/ext/info
+        volumes:
+          - /mnt/db:/app/db
+          - /opt/flare/conf:/app/conf/C
+          - /opt/flare/logs:/app/logs
+        ports:
+          - 0.0.0.0:9650:9650
+          - 0.0.0.0:9651:9651
+    ```
+
+  </TabItem>
+</Tabs>
+
+Run Docker Compose:
+
+```bash
+docker compose -f /opt/observer/docker-compose.yaml up -d
+```
+
+When the command completes, check the container is running and inspect that logs are being generated:
+
+```bash
+docker ps
+docker compose logs -f
+```
+
+Once you have confirmed the container is running, use Ctrl+C to exit the following of logs and check your container's `/ext/health` endpoint.
+Only when the observer node is fully synced will you see `"healthy": true`, but this otherwise confirms your container's HTTP port (9650) is accessible from your local machine.
+
+```bash
+curl http://localhost:9650/ext/health | jq
+```
+
+### Additional configuration
+
+There are several environment variables to adjust your workload at runtime. The example Docker and Docker Compose guides above assumed some defaults and utilized built-in automation scripts for most of the configuration. Outlined below are all options available:
+
+|             Variable Name | Default     | Description                                                          |
+| ------------------------: | :---------- | :------------------------------------------------------------------- |
+|               `HTTP_HOST` | `0.0.0.0`   | HTTP host binding address                                            |
+|               `HTTP_PORT` | `9650`      | The listening port for the HTTP host                                 |
+|            `STAKING_PORT` | `9651`      | The staking port for bootstrapping nodes                             |
+|               `PUBLIC_IP` | (empty)     | Public facing IP. Must be set if `AUTOCONFIGURE_PUBLIC_IP=0`         |
+|                  `DB_DIR` | `/app/db`   | The database directory location                                      |
+|                 `DB_TYPE` | `leveldb`   | The database type to be used                                         |
+|           `BOOTSTRAP_IPS` | (empty)     | A list of bootstrap server IPs                                       |
+|           `BOOTSTRAP_IDS` | (empty)     | A list of bootstrap server IDs                                       |
+|        `CHAIN_CONFIG_DIR` | `/app/conf` | Configuration folder where you should mount your configuration file  |
+|                 `LOG_DIR` | `/app/logs` | Logging directory                                                    |
+|               `LOG_LEVEL` | `info`      | Logging verbosity level that is logged into the file                 |
+| `AUTOCONFIGURE_PUBLIC_IP` | `0`         | Set to 1 to autoconfigure `PUBLIC_IP`, skipped if `PUBLIC_IP` is set |
+| `AUTOCONFIGURE_BOOTSTRAP` | `0`         | Set to 1 to autoconfigure `BOOTSTRAP_IPS` and `BOOTSTRAP_IDS`        |
+|         `EXTRA_ARGUMENTS` | (empty)     | Extra arguments passed to flare binary                               |
+
+Additional options:
+
+- `NETWORK_ID`
+
+  **Default:** The default depends on the image you use, so either go-songbird (`default: coston`) or go-flare (`default: costwo`)
+
+  **Description:** Name of the network you want to connect to.
+
+- `AUTOCONFIGURE_BOOTSTRAP_ENDPOINT`
+
+  **Default:** `https://coston2.flare.network/ext/info` or `https://flare.flare.network/ext/info`
+
+  **Description:** Endpoint used to automatically retrieve the Node-ID and Node-IP from.
+
+- `AUTOCONFIGURE_FALLBACK_ENDPOINTS`
+
+  **Default:** (empty)
+
+  **Description:** Comma-divided fallback bootstrap endpoints, used if `AUTOCONFIGURE_BOOTSTRAP_ENDPOINT` is not valid, such as the bootstrap endpoint being unreachable.
+  Tested from first-to-last, until one is valid.
 
 ## Node maintenance
 
-In some cases, your node might not work correctly or you might receive unusual messages that appear difficult to troubleshoot.
-Use the following solutions to ensure your node stays healthy:
+In some cases, your node might not work correctly or you might receive unusual messages that are difficult to troubleshoot. Use the following solutions to ensure your node stays healthy:
 
-- Remember that when your node has less than 16 peers, your node will not work correctly.
-  To retrieve the number of connected peers, run the following command and find the line that contains `connectedPeers`:
+- **Ensure Adequate Peers:** When your node has fewer than 16 peers, it will not work correctly. To retrieve the number of connected peers, run the following command and look for the line containing `connectedPeers`:
 
   ```bash
   curl http://127.0.0.1:9650/ext/health | jq
@@ -187,14 +705,14 @@ Use the following solutions to ensure your node stays healthy:
   curl -s http://127.0.0.1:9650/ext/health | jq -r ".checks.network.message.connectedPeers"
   ```
 
-- If your node does not sync after a long time and abruptly stops working, ensure the database location has sufficient disk space, and remember the database size might change a lot during bootstrapping.
-- If you receive unusual messages after you make submissions or when transactions are reverted, your node might not be connected correctly.
-  First, ensure the database location has sufficient disk space, and then restart the node.
-- If you receive this error related to `GetAcceptedFrontier` during bootstrapping, your node was disconnected during bootstrapping.
-- Restart the node.
+- **Check Disk Space:** If your node does not sync after a long time and abruptly stops working, ensure the database location has sufficient disk space. Remember, the database size might change significantly during bootstrapping.
+
+- **Resolve Connection Issues:** If you receive unusual messages after making submissions or when transactions are reverted, your node might not be connected correctly. Ensure the database location has sufficient disk space, then restart the node.
+
+- **Handle Bootstrap Errors:** If you receive an error related to `GetAcceptedFrontier` during bootstrapping, your node was disconnected during the process. Restart the node if you see the following error:
 
   ```text
   failed to send GetAcceptedFrontier(MtF8bVH241hetCQJgsKEdKyJBs8vhp1BC, 11111111111111111111111111111111LpoYY, NUMBER)
   ```
 
-* If you sync your node, but it stays unhealthy for no discernible reason, restart the node.
+- **Restart Unhealthy Nodes:** If your node syncs but remains unhealthy for no discernible reason, restart the node.
