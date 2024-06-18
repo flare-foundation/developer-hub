@@ -1,0 +1,24 @@
+name: Test Rust Examples
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./code_examples/developer-hub-rust
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: cargo build
+      - name: Format with rustfmt
+        run: cargo fmt -- --check
+      - name: Lint with clippy
+        run: cargo clippy -- -D warnings
+      - name: Run tests
+        run: cargo test
