@@ -42,12 +42,12 @@ Install the Solidity compiler by following the instructions in the [Solidity doc
   </TabItem>
 </Tabs>
 
-Add the following dependencies:
+Add the following dependencies to `Cargo.toml`:
 
-```bash
-cargo add alloy --git "https://github.com/alloy-rs/alloy" --features "contract providers transport-http network signers signer-wallet"
-cargo add tokio --features "rt rt-multi-thread macros"
-cargo add eyre
+```toml title="Cargo.toml"
+alloy = { version = "0.1", features = ["full"] }
+eyre = "0.6"
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros"] }
 ```
 
 ### Usage
@@ -252,12 +252,12 @@ To deploy a contract, you need to have an account with some testnet or mainnet g
 You can create a new Flare account using `create_account.rs`:
 
 ```rust title="src/bin/create_account.rs"
-use alloy::signers::{wallet::LocalWallet, Signer};
+use alloy::signers::local::LocalSigner;
 use eyre::Result;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let signer = LocalWallet::random();
+    let signer = LocalSigner::random();
     println!(
         "Account: {}, Private key: {}",
         signer.address(),
@@ -300,7 +300,7 @@ With the account ready, you can now deploy the contract. In a `deploy_contract.r
 
     ```rust title="src/bin/deploy_contract.rs"
     use alloy::{
-        network::EthereumSigner, providers::ProviderBuilder, signers::wallet::LocalWallet, sol,
+        network::EthereumWallet, providers::ProviderBuilder, signers::local::PrivateKeySigner, sol,
     };
     use eyre::Result;
 
@@ -314,10 +314,11 @@ With the account ready, you can now deploy the contract. In a `deploy_contract.r
     async fn main() -> Result<()> {
         let private_key = std::env::var("ACCOUNT_PRIVATE_KEY")?;
 
-        let signer: LocalWallet = private_key.parse().unwrap();
+        let signer: PrivateKeySigner = private_key.parse().unwrap();
+        let wallet = EthereumWallet::from(signer.clone());
         let provider = ProviderBuilder::new()
             .with_recommended_fillers()
-            .signer(EthereumSigner::from(signer))
+            .wallet(wallet)
             .on_http("https://rpc.ankr.com/flare_coston2".parse()?);
 
         let contract = FtsoV2FeedConsumer::deploy(&provider).await?;
@@ -330,7 +331,7 @@ With the account ready, you can now deploy the contract. In a `deploy_contract.r
   <TabItem value="flare" label="Flare Mainnet">
     ```rust title="src/bin/deploy_contract.rs"
     use alloy::{
-        network::EthereumSigner, providers::ProviderBuilder, signers::wallet::LocalWallet, sol,
+        network::EthereumWallet, providers::ProviderBuilder, signers::local::PrivateKeySigner, sol,
     };
     use eyre::Result;
 
@@ -344,10 +345,11 @@ With the account ready, you can now deploy the contract. In a `deploy_contract.r
     async fn main() -> Result<()> {
         let private_key = std::env::var("ACCOUNT_PRIVATE_KEY")?;
 
-        let signer: LocalWallet = private_key.parse().unwrap();
+        let signer: PrivateKeySigner = private_key.parse().unwrap();
+        let wallet = EthereumWallet::from(signer.clone());
         let provider = ProviderBuilder::new()
             .with_recommended_fillers()
-            .signer(EthereumSigner::from(signer))
+            .wallet(wallet)
             .on_http("https://rpc.ankr.com/flare".parse()?);
 
         let contract = FtsoV2FeedConsumer::deploy(&provider).await?;

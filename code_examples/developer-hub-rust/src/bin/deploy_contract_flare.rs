@@ -1,5 +1,5 @@
 use alloy::{
-    network::EthereumSigner, providers::ProviderBuilder, signers::wallet::LocalWallet, sol,
+    network::EthereumWallet, providers::ProviderBuilder, signers::local::PrivateKeySigner, sol,
 };
 use eyre::Result;
 
@@ -13,10 +13,11 @@ sol!(
 async fn main() -> Result<()> {
     let private_key = std::env::var("ACCOUNT_PRIVATE_KEY")?;
 
-    let signer: LocalWallet = private_key.parse().unwrap();
+    let signer: PrivateKeySigner = private_key.parse().unwrap();
+    let wallet = EthereumWallet::from(signer.clone());
     let provider = ProviderBuilder::new()
         .with_recommended_fillers()
-        .signer(EthereumSigner::from(signer))
+        .wallet(wallet)
         .on_http("https://rpc.ankr.com/flare".parse()?);
 
     let contract = FtsoV2FeedConsumer::deploy(&provider).await?;

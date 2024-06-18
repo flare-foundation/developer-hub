@@ -1,9 +1,9 @@
-use alloy::signers::{wallet::LocalWallet, Signer};
+use alloy::signers::local::LocalSigner;
 use eyre::Result;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let signer = LocalWallet::random();
+    let signer = LocalSigner::random();
     println!(
         "Account: {}, Private key: {}",
         signer.address(),
