@@ -45,7 +45,7 @@ const FeatureList: FeatureItem[] = [
         smart-contract tokens
       </>
     ),
-    linkToProtocolDocs: "docs/fassets/intro",
+    linkToProtocolDocs: "docs/fassets/overview",
   },
 ];
 
