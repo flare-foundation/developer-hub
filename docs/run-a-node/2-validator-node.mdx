@@ -5,99 +5,131 @@ title: Validator Node
 description: Secure Flare by validating state transitions.
 ---
 
-A validator node secures the network. It is responsible for validating transactions and blocks, and participating in the consensus process.
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
 
-To become a validator on Flare, you must stake native tokens and be associated with an FTSO data provider. The performance of the data provider has an impact on the validation rewards. Each validator can be associated with only one FTSO provider, and each data provider can be associated with up to 4 validators. The staking cap on each validator's rewards is 5% of the total staked funds on the network.
+A validator node is essential for securing the network by validating transactions and blocks, and participating in the consensus process. Deploying validator nodes enables participation in the consensus mechanism and allows for the collection of rewards provided by the network to those who help secure it.
 
-## Why run a Validator Node?
+Validator nodes perform the following tasks:
 
-Running a validator node is a way to secure the network and earn rewards. Validators are responsible for validating transactions and blocks, and participating in the consensus process. Validators are rewarded with native tokens for their work.
+- **Validation:** Ensure the validity of transactions.
+- **Consensus:** Reach agreement with other validators on the transactions to be added to the blockchain.
+- **Block Addition:** Bundle the agreed-upon transactions into a block and append it to the blockchain.
 
-## Hardware recommendations
+On Flare, data protocols such as the [Flare Time Series Oracle](./ftso-data-provider) and [Flare Data Connector](./fdc-attestation-provider) are enshrined into the network. This requires validators to perform additional tasks to secure the network and earn rewards.
 
-The hardware recommendations below are provided as a guide. Node operators are encouraged to do their own performance testing.
+## Hardware requirements
 
-- CPU: 4 cores, or more
-- RAM: 16 GB, or more
-- Disk: 1 TB SSD, or better
+**Minimum:**
+
+- CPU: 8 cores
+- RAM: 32 GB
+- Disk: 500 GB NVMe SSD
+
+**Recommended:**
+
+- CPU: 16 cores, or more
+- RAM: 64 GB, or more
+- Disk: 1 TB NVMe SSD, or better
 
 ## Prerequisites
 
-Validator nodes run the same software as regular Observer nodes, read up on deploying an [Observer node](observer-node) for more information.
+Ensure you have the following tools installed:
 
-:::note
+- [Go](https://golang.org/doc/install)
+- [GCC](https://gcc.gnu.org/install/)
+- [jq](https://stedolan.github.io/jq/download/)
 
-The following instructions only apply to the Flare network. Validators on the Songbird Canary network are managed by the Flare Foundation.
+<Tabs>
+  <TabItem value="macos" label="MacOS" default>
+    ```bash 
+    brew install go gcc jq 
+    ```
 
-:::
+  </TabItem>
+  <TabItem value="ubuntu" label="Ubuntu">
+    ```bash 
+    apt install golang gcc jq
+    ```
+    
+  </TabItem>
+  <TabItem value="arch" label="Arch">
+    ```bash
+    pacman -S go gcc jq
+    ```
+
+  </TabItem>
+</Tabs>
 
 ## Configure the node
 
-### Recommended security measures
+:::warning
+Validator security impacts the security of the entire network. To configure your node for security:
 
-- Ensure port 9650 is not externally reachable
-- Disallow password authentication over SSH
-- Don't run any non-validator services on the same IP
+- **Don't** allow port `9650` to be reached externally.
+- **Don't** allow password authentication over SSH.
+- **Don't** run any non-validator services on the same IP.
+  :::
 
-### Optional security measures
+In addition to the above, the following security measures are recommended for further hardening:
 
-- Disallow any ICMP traffic.
-- Have the machine **firewalled**. Only the ports required for validator operation should be open (i.e. only the staking port, which defaults to 9651). If you use a virtual server, use only its web interface for management and close the SSH port. If the SSH port must be open, it should ideally be restricted to a private IP (i.e. only accessible through VPN) or only temporarily open to the operator's office/home static IP or a bastion SSH VM that can be turned off between use.
-- The node should **only act as a validator**, and not accept RPC API calls. You should deploy a separate observer node for tasks requiring RPC API access. Additionally, this observer node can point to your validator for peering and bootstrapping.
-- The validator should only enable the minimum set of EVM APIs by adding this line to the config file:
+- **Do** firewall the machine. Only the ports required for validator operation should be open (i.e. only the staking port, which defaults to `9651`).
 
-```json
-"eth-apis": [
-    "web3"
-]
-```
+- **Don't** allow any ICMP traffic.
 
-### Example configuration
+- **Don't** allow the node to accept RPC API requests, only use it as a validator. Deploy a separate observer node for tasks requiring RPC API access.
 
-```json
-{
-  "snowman-api-enabled": false,
-  "coreth-admin-api-enabled": false,
-  "coreth-admin-api-dir": "",
-  "eth-apis": ["web3"],
-  "continuous-profiler-dir": "",
-  "continuous-profiler-frequency": 900000000000,
-  "continuous-profiler-max-files": 5,
-  "rpc-gas-cap": 50000000,
-  "rpc-tx-fee-cap": 100,
-  "preimages-enabled": false,
-  "pruning-enabled": true,
-  "snapshot-async": true,
-  "snapshot-verification-enabled": false,
-  "metrics-enabled": true,
-  "metrics-expensive-enabled": false,
-  "local-txs-enabled": false,
-  "api-max-duration": 30000000000,
-  "ws-cpu-refill-rate": 0,
-  "ws-cpu-max-stored": 0,
-  "api-max-blocks-per-request": 30,
-  "allow-unfinalized-queries": false,
-  "allow-unprotected-txs": false,
-  "keystore-directory": "",
-  "keystore-external-signer": "",
-  "keystore-insecure-unlock-allowed": false,
-  "remote-tx-gossip-only-enabled": false,
-  "tx-regossip-frequency": 60000000000,
-  "tx-regossip-max-size": 15,
-  "log-level": "info",
-  "offline-pruning-enabled": false,
-  "offline-pruning-bloom-filter-size": 512,
-  "offline-pruning-data-directory": ""
-}
-```
+- **Don't** enable the more than the minimum set of EVM APIs when configuring your node.
+
+<details>
+  <summary>Sample JSON configuration for validator nodes.</summary>
+  ```json title="config.json"
+  {
+      "snowman-api-enabled": false,
+      "coreth-admin-api-enabled": false,
+      "coreth-admin-api-dir": "",
+      "eth-apis": [
+          "web3"
+      ],
+      "continuous-profiler-dir": "",
+      "continuous-profiler-frequency": 900000000000,
+      "continuous-profiler-max-files": 5,
+      "rpc-gas-cap": 50000000,
+      "rpc-tx-fee-cap": 100,
+      "preimages-enabled": false,
+      "pruning-enabled": true,
+      "snapshot-async": true,
+      "snapshot-verification-enabled": false,
+      "metrics-enabled": true,
+      "metrics-expensive-enabled": false,
+      "local-txs-enabled": false,
+      "api-max-duration": 30000000000,
+      "ws-cpu-refill-rate": 0,
+      "ws-cpu-max-stored": 0,
+      "api-max-blocks-per-request": 30,
+      "allow-unfinalized-queries": false,
+      "allow-unprotected-txs": false,
+      "keystore-directory": "",
+      "keystore-external-signer": "",
+      "keystore-insecure-unlock-allowed": false,
+      "remote-tx-gossip-only-enabled": false,
+      "tx-regossip-frequency": 60000000000,
+      "tx-regossip-max-size": 15,
+      "log-level": "info",
+      "offline-pruning-enabled": false,
+      "offline-pruning-bloom-filter-size": 512,
+      "offline-pruning-data-directory": ""
+  }
+  ```
+
+</details>
 
 ## Run the node
 
-:::note Preregistered validator keys
+Start your node by following the **Run the node** section of the [Observer Node](./observer-node) guide.
 
-Some users have received preregistered validator keys, this is, the keys required to deploy a node which has already been registered as a validator.
-
-If that is your case, you just need to add these parameters to the launch command line:
+:::info
+If you have a pre-registered validator key, you just need to add these parameters to the launch command:
 
 ```bash
 --staking-tls-cert-file=<NODE_CRT_PATH> --staking-tls-key-file=<NODE_KEY_PATH>

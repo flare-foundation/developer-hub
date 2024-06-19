@@ -34,7 +34,7 @@ You have two options for setting up an observer node, each with its own pros and
 
 ### Prerequisites
 
-Ensure you have the following dependencies installed:
+Ensure you have the following tools installed:
 
 - [Go](https://golang.org/doc/install)
 - [GCC](https://gcc.gnu.org/install/)
@@ -138,59 +138,69 @@ If the node gets stuck during bootstrap (it takes far longer than the estimates 
 
 These are some of the most relevant CLI parameters you can use. Read more about them in the [Avalanche documentation](https://docs.avax.network/nodes/maintain/avalanchego-config-flags).
 
+{/* prettier-ignore */}
 - [`--bootstrap-ips`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--bootstrap-ips-string),
   [`--bootstrap-ids`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--bootstrap-ids-string):
   IP address and node ID of the peer used to connect to the rest of the network for bootstrapping. Note that you have to whitelist your node's IP address or your queries will always be answered with 403 error codes.
 
-<Tabs groupId="network">
-  <TabItem value="flare" label="Flare Mainnet" default>
-  **Peer's IP address:**
-  ```bash
-  curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeIP" }' -H 'content-type:application/json;' https://flare.flare.network/ext/info | jq -r ".result.ip"
-  ```
-  **Peer's node ID:**
-  ```bash
-  curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeID" }' -H 'content-type:application/json;' https://flare.flare.network/ext/info | jq -r ".result.nodeID"
-  ```
+  <details>
+    <summary>Determining your peer's IP address and node ID.</summary>
 
-  </TabItem>
-  <TabItem value="coston2" label="Flare Testnet Coston2">
-  **Peer's IP address:**
-  ```bash
-  curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeIP" }' -H 'content-type:application/json;' https://coston2.flare.network/ext/info | jq -r ".result.ip"
-  ```
+    <Tabs groupId="network">
+      <TabItem value="flare" label="Flare Mainnet" default>
 
-**Peer's node ID:**
+      **Peer's IP address:**
+      ```bash
+      curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeIP" }' -H 'content-type:application/json;' https://flare.flare.network/ext/info | jq -r ".result.ip"
+      ```
+      **Peer's node ID:**
+      ```bash
+      curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeID" }' -H 'content-type:application/json;' https://flare.flare.network/ext/info | jq -r ".result.nodeID"
+      ```
 
-```bash
-curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeID" }' -H 'content-type:application/json;' https://coston2.flare.network/ext/info | jq -r ".result.nodeID"
-```
+      </TabItem>
+      <TabItem value="coston2" label="Flare Testnet Coston2">
 
-  </TabItem>
-  <TabItem value="songbird" label="Songbird Canary-Network">
-  **Peer's IP address:**
-  ```bash
-  curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeIP" }' -H 'content-type:application/json;' https://songbird.flare.network/ext/info | jq -r ".result.ip"
-  ```
-  **Peer's node ID:**
-  ```bash
-  curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeID" }' -H 'content-type:application/json;' https://songbird.flare.network/ext/info | jq -r ".result.nodeID"
-  ```
+      **Peer's IP address:**
+      ```bash
+      curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeIP" }' -H 'content-type:application/json;' https://coston2.flare.network/ext/info | jq -r ".result.ip"
+      ```
 
-  </TabItem>
-  <TabItem value="coston" label="Songbird Testnet Coston">
-  **Peer's IP address:**
-  ```bash
-  curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeIP" }' -H 'content-type:application/json;' https://coston.flare.network/ext/info | jq -r ".result.ip"
-  ```
-  **Peer's node ID:**
-  ```bash
-  curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeID" }' -H 'content-type:application/json;' https://coston.flare.network/ext/info | jq -r ".result.nodeID"
-  ```
-  </TabItem>
-</Tabs>
+      **Peer's node ID:**
 
-- [`--http-host`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--http-host-string): Use `--http-host= ` (empty) to allow connections from other machines. Otherwise, only connections from `localhost` are accepted.
+      ```bash
+      curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeID" }' -H 'content-type:application/json;' https://coston2.flare.network/ext/info | jq -r ".result.nodeID"
+      ```
+
+      </TabItem>
+      <TabItem value="songbird" label="Songbird Canary-Network">
+
+      **Peer's IP address:**
+      ```bash
+      curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeIP" }' -H 'content-type:application/json;' https://songbird.flare.network/ext/info | jq -r ".result.ip"
+      ```
+      **Peer's node ID:**
+      ```bash
+      curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeID" }' -H 'content-type:application/json;' https://songbird.flare.network/ext/info | jq -r ".result.nodeID"
+      ```
+
+      </TabItem>
+      <TabItem value="coston" label="Songbird Testnet Coston">
+
+      **Peer's IP address:**
+      ```bash
+      curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeIP" }' -H 'content-type:application/json;' https://coston.flare.network/ext/info | jq -r ".result.ip"
+      ```
+      **Peer's node ID:**
+      ```bash
+      curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeID" }' -H 'content-type:application/json;' https://coston.flare.network/ext/info | jq -r ".result.nodeID"
+      ```
+      </TabItem>
+    </Tabs>
+
+  </details>
+
+- [`--http-host`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--http-host-string): Use `--http-host=` (empty) to allow connections from other machines. Otherwise, only connections from `localhost` are accepted.
 
 - [`--http-port`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--http-port-int): The port through which the node will listen to API requests. The default value is `9650`.
 
@@ -198,38 +208,38 @@ curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeID"
 
 - [`--db-dir`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--db-dir-string-file-path): Directory where the database is stored. Make sure to use a disk with enough space as recommended in the [Hardware requirements](#hardware-requirements) section. It defaults to `~/.avalanchego/db` on Flare Mainnet and Flare Testnet Coston2, and to `~/.flare/db` on Songbird Canary-Network and Songbird Testnet Coston. For example, you can use this option to store the database on an external drive.
 
-- [`--chain-config-dir`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--chain-config-dir-string): Optional JSON configuration file, in case you want to use lots of non-default values.
+- [`--chain-config-dir`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--chain-config-dir-string): Optional JSON configuration file for using non-default values.
 
-<details>
-  <summary>Sample configuration for observer nodes</summary>
-  ```json title="<chain-config-dir>/C/config.json"
-  {
-    "snowman-api-enabled": false,
-    "coreth-admin-api-enabled": false,
-    "eth-apis": [
-      "eth",
-      "eth-filter",
-      "net",
-      "web3",
-      "internal-eth",
-      "internal-blockchain",
-      "internal-transaction-pool"
-    ],
-    "rpc-gas-cap": 50000000,
-    "rpc-tx-fee-cap": 100,
-    "pruning-enabled": true,
-    "local-txs-enabled": false,
-    "api-max-duration": 0,
-    "api-max-blocks-per-request": 0,
-    "allow-unfinalized-queries": false,
-    "allow-unprotected-txs": false,
-    "remote-tx-gossip-only-enabled": false,
-    "log-level": "info"
-  }
-  ```
-  For archival nodes, set `"pruning-enabled": false` to disable pruning. Note that archival nodes require significantly more disk space than standard observer nodes.
+  <details>
+    <summary>Sample JSON configuration for observer nodes.</summary>
+    ```json title="<chain-config-dir>/C/config.json"
+    {
+      "snowman-api-enabled": false,
+      "coreth-admin-api-enabled": false,
+      "eth-apis": [
+        "eth",
+        "eth-filter",
+        "net",
+        "web3",
+        "internal-eth",
+        "internal-blockchain",
+        "internal-transaction-pool"
+      ],
+      "rpc-gas-cap": 50000000,
+      "rpc-tx-fee-cap": 100,
+      "pruning-enabled": true,
+      "local-txs-enabled": false,
+      "api-max-duration": 0,
+      "api-max-blocks-per-request": 0,
+      "allow-unfinalized-queries": false,
+      "allow-unprotected-txs": false,
+      "remote-tx-gossip-only-enabled": false,
+      "log-level": "info"
+    }
+    ```
+    For archival nodes, set `"pruning-enabled": false` to disable pruning. Note that archival nodes require significantly more disk space than standard observer nodes.
 
-</details>
+  </details>
 
 ## Setup with Docker
 

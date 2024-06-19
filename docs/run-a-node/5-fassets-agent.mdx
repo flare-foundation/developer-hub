@@ -1,0 +1,241 @@
+---
+sidebar_position: 5
+slug: fassets-agent
+title: FAssets Agents
+description: Provide security for bridging non-smart contract tokens.
+---
+
+FAssets agents play a crucial role in the system, enabling tokens from blockchains without smart contract support to be used with smart contracts on the Flare blockchain.
+
+This guide covers the following topics:
+
+- Setting up the FAssets CLI.
+- Configuring access keys for interacting with Songbird Testnet Coston and test XRP Ledger network.
+- Establishing an FAssets agent and providing collateral.
+- Operating the agent to allow FAssets system users to convert (mint and redeem) assets between the testnet XRP Ledger and Songbird Testnet Coston.
+
+## Contract Addresses
+
+These are important FAssets smart contract addresses representing test tokens and notable system components, provided for your convenience during the Open Beta on the Songbird Testnet Coston.
+
+### ERC20 Test Tokens
+
+| Token      | Address                                                                                                                                  |
+| ---------: | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `testUSDC` | [`0xd20D9284E8b43C60365BcA90662C67B5A0B91dd6`](https://coston-explorer.flare.network/address/0xd20D9284E8b43C60365BcA90662C67B5A0B91dd6) |
+| `testUSDT` | [`0x18bd7bE80F76055aeB4F1575A99d0c4d7893B8b5`](https://coston-explorer.flare.network/address/0x18bd7bE80F76055aeB4F1575A99d0c4d7893B8b5) |
+| `testETH`  | [`0x17c3E6318cb45B4267998940d7D65BA95A32954F`](https://coston-explorer.flare.network/address/0x17c3E6318cb45B4267998940d7D65BA95A32954F) |
+
+### FAssets System Contracts
+
+| Contract             | Address                                                                                                                                  | Description                                                                                                                              |
+| -------------------: | ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `AgentOwnerRegistry` | [`0xDb6c11b8D074D4488f5fFd0129AA5F91C4f00fb6`](https://coston-explorer.flare.network/address/0xDb6c11b8D074D4488f5fFd0129AA5F91C4f00fb6) | Manages agent whitelisting and allows setting and retrieving details such as work and management addresses, name, description, and icon. |
+| `FTestXRP`           | [`0x5905Df703221d4Ea311E85edEa860734b2072C7d`](https://coston-explorer.flare.network/address/0x5905Df703221d4Ea311E85edEa860734b2072C7d) | The FAsset-wrapped TestXRP token, ready for use on Songbird Testnet Coston.                                                              |
+
+## Prerequisites
+
+- CPU: 2 cores
+- RAM: 4 GB
+- Disk: 50 GB SSD
+
+Ensure you have the following tools installed:
+
+- [yarn](https://yarnpkg.com/)
+
+:::note
+If you are using Windows, it is strongly recommended to use [Windows Subsystem for Linux (WSL v2)](https://docs.microsoft.com/en-us/windows/wsl/about).
+
+:::
+
+## Setup
+
+### Install repository
+
+1. Clone the [flare-labs-ltd/fasset-bots](https://github.com/flare-labs-ltd/fasset-bots) repository and switch to the `open_beta` branch:
+
+   ```bash
+   git clone https://github.com/flare-labs-ltd/fasset-bots.git
+   cd fasset-bots
+   git checkout open_beta
+   ```
+
+2. Install the dependencies and build the project:
+
+   ```bash
+   yarn && yarn build
+   ```
+
+3. Copy the environment file from `.env.example` to `.env`:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+### Configure Access Keys
+
+The FAsset agents operate with multiple keys for the Flare and underlying network chains. You should generate these keys to make the agent operational.
+
+1. Create or use an existing management (cold) wallet that will be your agent's management address. Fund this wallet with some CFLR for gas using the [Flare Faucet](https://faucet.flare.network/).
+
+2. Generate secrets using the following command, replace `MANAGEMENT_WALLET_ADDRESS` with your wallet address:
+
+   ```bash
+   yarn key-gen generateSecrets --user --agent MANAGEMENT_WALLET_ADDRESS --other -o secrets.json
+   ```
+
+3. Start the [whitelisting process](#whitelist-management-address) to grant your agent's management address access to the FAssets system. While waiting for approval, you can proceed to the next steps.
+
+4. The `secrets.json` file contains the `owner.native.address` field, representing the Flare account responsible for funding agent vaults and covering gas fees for smart contract calls. Ensure this wallet has enough CFLR tokens to cover gas fees for smart contract calls.
+
+5. Change the permissions for the `secrets.json` file:
+
+   ```bash
+   chmod 600 secrets.json
+   ```
+
+6. Fill the `native_rpc`, `xrp_rpc` and `indexer` fields in the `secrets.json` file with the following values:
+
+   ```json
+   // Songbird Testnet Coston
+   "native_rpc": "AavSehMLhcgz3crQHH5YJ3Rt8GMQGdV9aViGilADXGnTcjij",
+   "xrp_rpc": "4tg3AxysaZodxTqsCtcMnBdBIEkR6KDKGTdqBEA8g9MKq4bH",
+   "indexer": "123456",
+   ```
+
+### Whitelist Management Address
+
+To access the FAssets system during the open beta, you must be whitelisted for security reasons. This ensures only authorized participants interact with the system, maintaining a secure and controlled environment for testing and platform improvement. The whitelisting process will be removed after the open beta.
+
+1. Find your agent owner address, which is the `owner.management.address` value in `secrets.json`.
+
+2. Use the [FlareFAssetsBot Telegram channel](https://t.me/FlareFAssetsBot), specifically designed for registration, and provide the necessary information, including your agent name and description and, optionally, a link to your icon.
+
+3. Enter the information and confirm it. The Telegram bot will inform you about the successful process.
+
+4. Wait for Flare support engineers to approve registrations and issue test assets such as CFLR, testUSDC, testUSDT, and testETH assets, which will be sent to your `owner.management.address`. While you wait, you can continue with the rest of this guide.
+
+5. If the information you entered is correct, the Telegram Bot will notify you that you have been whitelisted for the FAssets Open Beta.
+
+#### Check Whitelist Status
+
+1. Navigate to the `AgentOwnerRegistry` contract on the Coston Explorer and open the **Read Contract** tab:
+
+   `AgentOwnerRegistry`: [`0xDb6c11b8D074D4488f5fFd0129AA5F91C4f00fb6`](https://coston-explorer.flare.network/address/0xDb6c11b8D074D4488f5fFd0129AA5F91C4f00fb6/read-contract#address-tabs)
+
+2. Execute the `isWhitelisted` function with the value of `owner.management.address` from `secrets.json`. This function returns a boolean: `true` of the address is whitelisted or `false` if it is not.
+
+## Setting Up the Agent
+
+### Configure Native Address
+
+Configuring the native address links your agent's work address to the management address and grants access.
+
+1. Navigate to the `AgentOwnerRegistry` contract on the Coston Explorer and open the **Write Contract** tab:
+
+   `AgentOwnerRegistry`: [`0xDb6c11b8D074D4488f5fFd0129AA5F91C4f00fb6`](https://coston-explorer.flare.network/address/0xDb6c11b8D074D4488f5fFd0129AA5F91C4f00fb6/write-contract#address-tabs)
+
+2. Connect the wallet you used to generate the access keys.
+
+3. Register the work address by executing the `setWorkAddress` function with the value of `owner.native.address` from `secrets.json`.
+
+### Configure the Agent
+
+You need to set up your agent's parameters like name, collateral, and fund with underlying assets.
+
+1.  Prepare the agent settings `tmp.agent-settings.json` file:
+
+    ```bash
+    yarn agent-bot --fasset FTestXRP create --prepare
+    ```
+
+2.  Choose a suffix for your agent's collateral pool and fill in the `poolTokenSuffix` field in the `tmp.agent-settings.json` file with it.
+    The `poolTokenSuffix` should only include uppercase letters, numbers, and the `-` symbol.
+    This suffix will be used for the FAsset Collateral Pool Token. For example, if you use `MY-ALPHA-AGENT-1`, it would be `FCPT-TXRP-MY-ALPHA-AGENT-1`.
+
+3.  Choose one of the stable tokens (`testUSDT` or `testUSDC`) or wrapped ETH in `vaultCollateralFtsoSymbol` to back up the agent vault collateral.
+
+4.  In the `secrets.json` file, the `owner.testXRP.address` field is the underlying testnet XRP Ledger account that pays the underlying chain's transaction fees.
+    Activate your underlying XRP Ledger account by sending at least 100 test-XRP to it by using one of the XRP Ledger testnet faucets:
+
+        - [XRP Testnet Faucet](https://test.bithomp.com/faucet/)
+        - [XRP Ledger Faucet](https://faucet.tequ.dev/)
+
+5.  Create the agent by specifying the FAsset and agent settings, noting that this operation can take up to 10 minutes because the FAssets verifies the underlying assets.
+    This command will print out your agent's address.
+
+        ```bash
+        yarn agent-bot --fasset FTestXRP create tmp.agent-settings.json
+        ```
+
+### Deposit Collateral
+
+To make your newly created agent public, it must hold enough collateral to mint one lot. This means its agent vault contract needs to be funded with the two collateral assets (CFLR and a stablecoin or wrapped ETH) held by your `owner.native.address`. Flare support sends test assets to your `owner.management.address`, so remember to move these funds to the `owner.native.address`.
+
+There are two options:
+
+- Deposit vault and pool collateral together.
+
+- Deposit vault and pool collateral separately.
+
+#### Deposit Vault and Pool Collateral Together
+
+To deposit both vault and pool collateral together and let the tool calculate the minimum required collateral to back the lots, you can use the `depositCollateral` function to the agent, specifying your created agent address in the `AGENT_ADDRESS` and lot size in the `LOTS`:
+
+```bash
+yarn agent-bot depositCollaterals AGENT_ADDRESS LOTS --fasset FTestXRP
+```
+
+#### Deposit Vault and Pool Collateral Separately
+
+1. Deposit enough vault collateral to the agent specifying your created agent address in the `AGENT_ADDRESS` and the amount of the stablecoin or wrapped ETH in the `AMOUNT` field.
+
+   ```bash
+   yarn agent-bot depositVaultCollateral AGENT_ADDRESS AMOUNT --fasset FTestXRP
+   ```
+
+2. Buy enough pool collateral for the agent specifying your agent's address in the `AGENT_ADDRESS` and the amount of the CFLR in the `CFLR_AMOUNT` field.
+
+   ```bash
+   yarn agent-bot buyPoolCollateral AGENT_ADDRESS CFLR_AMOUNT --fasset FTestXRP
+   ```
+
+### Register Agent as Available
+
+You need to make your agent available to mint and redeem FAssets.
+
+1. Register your agent as available to the network by executing this command replacing the `AGENT_ADDRESS` with your agent address:
+
+   ```bash
+   yarn agent-bot enter AGENT_ADDRESS --fasset FTestXRP
+   ```
+
+   :::warning
+
+   To prevent failures, ensure that your agent owner's Flare account has completed the whitelisting process via the [FlareFAssetsBot Telegram channel](https://t.me/FlareFAssetsBot).
+   :::
+
+2. If you deposited enough collateral, you should see that your agent has at least one lot available by running the command.
+
+   ```bash
+   yarn user-bot agents --fasset FTestXRP
+   ```
+
+If you don't have available lots, check if the vault and pool collaterals are enough.
+
+## Running the Agent
+
+The agent bot responds to all requests made to the agent vaults you have created.
+To run the agent bot, you need to run the following command:
+
+```bash
+yarn run-agent
+```
+
+When you want to stop the server, press Ctrl + C.
+
+:::tip
+
+To maximize uptime for production use, you can setup `run-agent` as a `systemd` service. Follow the guide on how to [Run Agent as a systemd Service](https://github.com/flare-labs-ltd/fasset-bots/blob/main/docs/systemd/systemd-service.md)
+
+:::
