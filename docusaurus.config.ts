@@ -132,6 +132,31 @@ const config: Config = {
           ],
         },
         {
+          title: "Developer links",
+          items: [
+            {
+              label: "Flarescan",
+              href: "https://flarescan.com/",
+            },
+            {
+              label: "Flare Systems Explorer",
+              href: "https://coston-systems-explorer.flare.rocks/",
+            },
+            {
+              label: "Flare FTSO Monitor",
+              href: "https://flare-ftso-monitor.flare.network/",
+            },
+            {
+              label: "Flare P-Chain Explorer",
+              href: "https://flare.space/dapp/p-chain-explorer/",
+            },
+            {
+              label: "Grants",
+              href: "https://flare.network/grants/",
+            },
+          ],
+        },
+        {
           title: "Community",
           items: [
             {
@@ -183,7 +208,7 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Copyright © Flare Networks ${new Date().getFullYear()}.`,
+      copyright: `Copyright © Flare Networks ${new Date().getFullYear()}`,
     },
     prism: {
       additionalLanguages: ["solidity", "bash", "json", "toml"],
