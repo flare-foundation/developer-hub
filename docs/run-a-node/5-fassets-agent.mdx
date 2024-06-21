@@ -1,8 +1,8 @@
 ---
 sidebar_position: 5
 slug: fassets-agent
-title: FAssets Agents
-description: Provide security for bridging non-smart contract tokens.
+title: FAssets Agent
+description: Provide economic security for non smart-contract tokens.
 ---
 
 FAssets agents play a crucial role in the system, enabling tokens from blockchains without smart contract support to be used with smart contracts on the Flare blockchain.
@@ -20,26 +20,28 @@ These are important FAssets smart contract addresses representing test tokens an
 
 ### ERC20 Test Tokens
 
-| Token      | Address                                                                                                                                  |
+|      Token | Address                                                                                                                                  |
 | ---------: | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | `testUSDC` | [`0xd20D9284E8b43C60365BcA90662C67B5A0B91dd6`](https://coston-explorer.flare.network/address/0xd20D9284E8b43C60365BcA90662C67B5A0B91dd6) |
 | `testUSDT` | [`0x18bd7bE80F76055aeB4F1575A99d0c4d7893B8b5`](https://coston-explorer.flare.network/address/0x18bd7bE80F76055aeB4F1575A99d0c4d7893B8b5) |
-| `testETH`  | [`0x17c3E6318cb45B4267998940d7D65BA95A32954F`](https://coston-explorer.flare.network/address/0x17c3E6318cb45B4267998940d7D65BA95A32954F) |
+|  `testETH` | [`0x17c3E6318cb45B4267998940d7D65BA95A32954F`](https://coston-explorer.flare.network/address/0x17c3E6318cb45B4267998940d7D65BA95A32954F) |
 
 ### FAssets System Contracts
 
-| Contract             | Address                                                                                                                                  | Description                                                                                                                              |
+|             Contract | Address                                                                                                                                  | Description                                                                                                                              |
 | -------------------: | ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | `AgentOwnerRegistry` | [`0xDb6c11b8D074D4488f5fFd0129AA5F91C4f00fb6`](https://coston-explorer.flare.network/address/0xDb6c11b8D074D4488f5fFd0129AA5F91C4f00fb6) | Manages agent whitelisting and allows setting and retrieving details such as work and management addresses, name, description, and icon. |
-| `FTestXRP`           | [`0x5905Df703221d4Ea311E85edEa860734b2072C7d`](https://coston-explorer.flare.network/address/0x5905Df703221d4Ea311E85edEa860734b2072C7d) | The FAsset-wrapped TestXRP token, ready for use on Songbird Testnet Coston.                                                              |
+|           `FTestXRP` | [`0x5905Df703221d4Ea311E85edEa860734b2072C7d`](https://coston-explorer.flare.network/address/0x5905Df703221d4Ea311E85edEa860734b2072C7d) | The FAsset-wrapped TestXRP token, ready for use on Songbird Testnet Coston.                                                              |
 
 ## Prerequisites
+
+**Minimum hardware requirements:**
 
 - CPU: 2 cores
 - RAM: 4 GB
 - Disk: 50 GB SSD
 
-Ensure you have the following tools installed:
+**Tooling:**
 
 - [yarn](https://yarnpkg.com/)
 
@@ -48,7 +50,7 @@ If you are using Windows, it is strongly recommended to use [Windows Subsystem f
 
 :::
 
-## Setup
+## Registration
 
 ### Install repository
 
@@ -125,7 +127,7 @@ To access the FAssets system during the open beta, you must be whitelisted for s
 
 2. Execute the `isWhitelisted` function with the value of `owner.management.address` from `secrets.json`. This function returns a boolean: `true` of the address is whitelisted or `false` if it is not.
 
-## Setting Up the Agent
+## Setup
 
 ### Configure Native Address
 
@@ -200,7 +202,7 @@ yarn agent-bot depositCollaterals AGENT_ADDRESS LOTS --fasset FTestXRP
    yarn agent-bot buyPoolCollateral AGENT_ADDRESS CFLR_AMOUNT --fasset FTestXRP
    ```
 
-### Register Agent as Available
+### Register as Available
 
 You need to make your agent available to mint and redeem FAssets.
 
@@ -223,7 +225,7 @@ You need to make your agent available to mint and redeem FAssets.
 
 If you don't have available lots, check if the vault and pool collaterals are enough.
 
-## Running the Agent
+## Run the Agent
 
 The agent bot responds to all requests made to the agent vaults you have created.
 To run the agent bot, you need to run the following command:
@@ -234,8 +236,66 @@ yarn run-agent
 
 When you want to stop the server, press Ctrl + C.
 
-:::tip
+<details>
+<summary>Maximize uptime by setting up the agent as a `systemd` service.</summary>
 
-To maximize uptime for production use, you can setup `run-agent` as a `systemd` service. Follow the guide on how to [Run Agent as a systemd Service](https://github.com/flare-labs-ltd/fasset-bots/blob/main/docs/systemd/systemd-service.md)
+1. Download the example [`agent-bot.service`](https://github.com/flare-labs-ltd/fasset-bots/blob/main/docs/systemd/agent-bot.service) from the repository.
 
-:::
+2. Modify the the following variables in `agent-bot.service`:
+
+   - **WorkingDirectory**: Set this to your `fasset-bots` checkout directory.
+   - **User**, **Group**: Set these to the user under which the service should run.
+   - **ExecStart**: If required, change the path to `node`.
+
+3. Copy the modified service file to `systemd` directory:
+
+   ```bash
+   sudo cp agent-bot.service /etc/systemd/system/
+   ```
+
+4. Reload the `systemd` daemon to recognize the new service:
+
+   ```bash
+   sudo systemctl daemon-reload
+   ```
+
+5. **Manage the service:**
+
+   To start the service:
+
+   ```bash
+   sudo systemctl start agent-bot
+   ```
+
+   To stop the service:
+
+   ```bash
+   sudo systemctl stop agent-bot
+   ```
+
+6. Enable auto-start on boot:
+
+   ```bash
+   sudo systemctl enable agent-bot
+   ```
+
+7. **View service logs:**
+
+   Follow the console output live:
+
+   ```bash
+   sudo journalctl -fu agent-bot.service
+   ```
+
+   View past logs in `less`:
+
+   ```bash
+   sudo journalctl -eu agent-bot.service
+   ```
+
+**Additional Tips**
+
+- Always verify the paths and user permissions when setting up the service to avoid common issues.
+- Use `sudo systemctl status agent-bot` to check the status and troubleshoot any problems with the service.
+
+</details>
