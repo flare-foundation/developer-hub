@@ -12,23 +12,61 @@ An observer node, unlike a [validator node](validator-node), operates outside th
 
 You have two options for setting up an observer node, each with its own pros and cons:
 
-1. **On bare-metal:** This method is more complex but offers better performance and lower memory usage.
+1. [On bare-metal](#setup-on-bare-metal): This method is more complex but offers better performance and lower memory usage.
 
-2. **With Docker:** This approach is simpler but results in lower performance and higher memory usage.
+2. [With Docker](#setup-with-docker): This approach is simpler but results in lower performance and higher memory usage.
 
 ## Hardware requirements
 
-**Minimum:**
+<Tabs groupId="network" block>
+  <TabItem value="flare" label="Flare Mainnet" default>
 
-- CPU: 4 cores
-- RAM: 16 GB
-- Disk: 500 GB NVMe SSD
+    |                           | Requirement |
+    |--------------------------:|:------------|
+    | **CPU**                   | 4 cores     |
+    | **RAM**                   | 16 GB       |
+    | **Disk space (pruned)**   | 500 GB SSD  |
+    | **Disk space (archival)** | 3.5 TB SSD  |
+    | **Disk growth**           | 30 GB/month |
 
-**Recommended:**
+  </TabItem>
+  <TabItem value="coston2" label="Flare Testnet Coston2">
 
-- CPU: 8 cores, or more
-- RAM: 32 GB, or more
-- Disk: 1 TB NVMe SSD, or better (For archival nodes 4 TB NVMe SSD, or better)
+    |                           | Requirement |
+    |--------------------------:|:------------|
+    | **CPU**                   | 4 cores     |
+    | **RAM**                   | 16 GB       |
+    | **Disk space (pruned)**   | 150 GB SSD  |
+    | **Disk space (archival)** | 1 TB SSD    |
+    | **Disk growth**           | 5 GB/month  |
+
+  </TabItem>
+  <TabItem value="songbird" label="Songbird Canary-Network">
+
+    |                           | Requirement  |
+    |--------------------------:|:-------------|
+    | **CPU**                   | 4 cores      |
+    | **RAM**                   | 16 GB        |
+    | **Disk space (pruned)**   | 2 TB SSD     |
+    | **Disk space (archival)** | 8 TB SSD     |
+    | **Disk growth**           | 120 GB/month |
+
+  </TabItem>
+  <TabItem value="coston" label="Songbird Testnet Coston">
+
+    |                           | Requirement |
+    |--------------------------:|:------------|
+    | **CPU**                   | 4 cores     |
+    | **RAM**                   | 16 GB       |
+    | **Disk space (pruned)**   | 150 GB SSD  |
+    | **Disk space (archival)** | 1 TB SSD    |
+    | **Disk growth**           | 11 GB/month |
+
+  </TabItem>
+</Tabs>
+
+- **Disk speed:** 1200 MB/s read and 600 MB/s write, or higher
+- **Network speed:** 40 Mbps, or higher
 
 ## Setup on bare-metal
 
@@ -86,6 +124,31 @@ cd ../avalanchego
 ```
 
 :::
+
+<details>
+<summary>Whitelisting nodes for Songbird Canary-Network</summary>
+
+While the Songbird Canary-Network is being tested, all nodes wanting to peer with it, including observer nodes, need to have their IP address whitelisted.
+
+To do this, make a whitelisting request by contacting **Tom T.** over:
+
+- Discord (`Tom T#7603`)
+- Telegram (`@TampaBay7`)
+- Email ([tom@flare.network](mailto:tom@flare.network))
+
+To have greater redundancy, you can whitelist multiple nodes per single provider.
+
+**Checking the status of your whitelisting request**
+
+```bash
+curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeIP" }' -H 'content-type:application/json;' https://songbird.flare.network/ext/info
+```
+
+If your IP address is whitelisted, this command returns a JSON response. Otherwise you will get a 403 error ("Forbidden").
+
+Note that whitelisting is **not required** on Flare Mainnet, Flare Testnet Coston2, or Songbird Testnet Coston.
+
+</details>
 
 ### Run the node
 
@@ -212,6 +275,9 @@ These are some of the most relevant CLI parameters you can use. Read more about 
 
   <details>
     <summary>Sample JSON configuration for observer nodes.</summary>
+
+    For archival nodes, set `"pruning-enabled": false` to disable pruning. Note that archival nodes require significantly more disk space than standard observer nodes.
+
     ```json title="<chain-config-dir>/C/config.json"
     {
       "snowman-api-enabled": false,
@@ -237,7 +303,6 @@ These are some of the most relevant CLI parameters you can use. Read more about 
       "log-level": "info"
     }
     ```
-    For archival nodes, set `"pruning-enabled": false` to disable pruning. Note that archival nodes require significantly more disk space than standard observer nodes.
 
   </details>
 
