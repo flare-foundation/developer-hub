@@ -19,11 +19,11 @@ contract FtsoV2FeedConsumer {
     uint256[] public feedIndexes = [0, 1, 2];
 
     /**
-     * Network: Coston
-     * Address: 0x9B931f5d3e24fc8C9064DB35bDc8FB4bE0E862f9
+     * Network: Flare Testnet Coston2
+     * Address: 0x58fb598EC6DB6901aA6F26a9A2087E9274128E59
      */
     constructor() {
-        ftsoV2 = IFastUpdater(0x9B931f5d3e24fc8C9064DB35bDc8FB4bE0E862f9);
+        ftsoV2 = IFastUpdater(0x58fb598EC6DB6901aA6F26a9A2087E9274128E59);
     }
 
     /**
