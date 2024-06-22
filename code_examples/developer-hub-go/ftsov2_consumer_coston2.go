@@ -13,9 +13,9 @@ import (
 )
 
 func FtsoV2Consumer() {
-	// FastUpdater address (Songbird Testnet Coston)
-	ftsoAddress := common.HexToAddress("0x9B931f5d3e24fc8C9064DB35bDc8FB4bE0E862f9")
-	rpcUrl := "https://rpc.ankr.com/flare_coston"
+	// FastUpdater address (Flare Testnet Coston2)
+	ftsoAddress := common.HexToAddress("0x58fb598EC6DB6901aA6F26a9A2087E9274128E59")
+	rpcUrl := "https://rpc.ankr.com/flare_coston2"
 	// Connect to an RPC node
 	client, _ := ethclient.Dial(rpcUrl)
 	// Set up contract instance
