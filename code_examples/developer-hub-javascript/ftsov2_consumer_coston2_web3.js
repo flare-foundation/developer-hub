@@ -1,9 +1,9 @@
 // THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
 import { Web3 } from "web3";
 
-// FastUpdater address (Songbird Testnet Coston)
-const ADDRESS = "0x9B931f5d3e24fc8C9064DB35bDc8FB4bE0E862f9";
-const RPC_URL = "https://rpc.ankr.com/flare_coston";
+// FastUpdater address (Flare Testnet Coston2)
+const ADDRESS = "0x58fb598EC6DB6901aA6F26a9A2087E9274128E59";
+const RPC_URL = "https://rpc.ankr.com/flare_coston2";
 // Feed indexes: 0 = FLR/USD, 2 = BTC/USD, 9 = ETH/USD
 const FEED_INDEXES = [0, 2, 9];
 // ABI for FastUpdater contract

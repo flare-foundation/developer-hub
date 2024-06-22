@@ -1,3 +1,4 @@
+// THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
 import { Web3 } from "web3";
 
 // FastUpdatesConfiguration address (Flare Testnet Coston2)
@@ -18,7 +19,7 @@ async function main() {
   for (const feed of res) {
     console.log(
       "feedId:",
-      feed["feedId"],
+      Buffer.from(feed["feedId"].slice(2), "hex").toString("utf-8"),
       "rewardBandValue:",
       feed["rewardBandValue"],
       "inflationShare:",

@@ -1,7 +1,7 @@
 // THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
 import { ethers } from "ethers";
 
-// FastUpdater address (Songbird Testnet Coston)
+// FastUpdatesConfiguration address (Flare Testnet Coston2)
 const ADDRESS = "0xE7d1D5D58cAE01a82b84989A931999Cb34A86B14";
 const RPC_URL = "https://rpc.ankr.com/flare_coston2";
 // ABI for FastUpdatesConfiguration contract
@@ -19,7 +19,7 @@ async function main() {
   for (const feed of res) {
     console.log(
       "feedId:",
-      feed["feedId"],
+      Buffer.from(feed["feedId"].slice(2), "hex").toString("utf-8"),
       "rewardBandValue:",
       feed["rewardBandValue"],
       "inflationShare:",
