@@ -35,7 +35,7 @@ async def test_fetch_abi_flare():
 
 @pytest.mark.asyncio
 async def test_ftsov2_consumer_coston():
-    from ftsov2_consumer_coston import main
+    from ftsov2_consumer_coston2 import main
 
     feeds, decimals, timestamp = await main()
     assert len(feeds) == len(decimals)
