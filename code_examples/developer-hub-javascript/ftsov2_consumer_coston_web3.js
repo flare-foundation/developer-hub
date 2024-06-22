@@ -2,7 +2,7 @@
 import { Web3 } from "web3";
 
 // FastUpdater address (Songbird Testnet Coston)
-const FTSO_ADDRESS = "0x9B931f5d3e24fc8C9064DB35bDc8FB4bE0E862f9";
+const ADDRESS = "0x9B931f5d3e24fc8C9064DB35bDc8FB4bE0E862f9";
 const RPC_URL = "https://rpc.ankr.com/flare_coston";
 // Feed indexes: 0 = FLR/USD, 2 = BTC/USD, 9 = ETH/USD
 const FEED_INDEXES = [0, 2, 9];
@@ -14,7 +14,7 @@ async function main() {
   // Connect to an RPC node
   const w3 = new Web3(RPC_URL);
   // Set up contract instance
-  const ftsov2 = new w3.eth.Contract(JSON.parse(ABI), FTSO_ADDRESS);
+  const ftsov2 = new w3.eth.Contract(JSON.parse(ABI), ADDRESS);
   // Fetch current feeds
   const res = await ftsov2.methods.fetchCurrentFeeds(FEED_INDEXES).call();
   // Log results
