@@ -17,7 +17,7 @@ const sidebars: SidebarsConfig = {
     {
       type: "category",
       label: "FTSOv2",
-      collapsed: true,
+      collapsed: false,
       link: { type: "doc", id: "ftso/overview" },
       items: [
         "ftso/getting-started",

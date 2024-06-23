@@ -2,7 +2,7 @@
 title: Query feed configuration
 tags: [quickstart, ftso, python, rust, javascript, go]
 slug: query-feed-configuration
-description: Query the configuration of the block-latency feeds.
+description: Query feed configuration using JS, Python, Rust, or Go.
 keywords:
   [
     ftso,
@@ -20,253 +20,268 @@ sidebar_position: 4
 import TabItem from "@theme/TabItem";
 import Tabs from "@theme/Tabs";
 
-This guide contains code examples that demonstrate how to read FTSOv2 feed configurations off-chain using different programming languages. To read the feed configuration off-chain you need two pieces of information:
+This guide provides code examples demonstrating how to read FTSOv2 feed configurations off-chain using various programming languages. To achieve this, you need two key pieces of information:
 
-1. **RPC Endpoint URL:** This determines which network that code will interact with. You can use a node provider service or point to your own client. A list of public and private RPC endpoints for all Flare networks is provided on the [Network Configuration](../../network#configuration) page.
+**1. RPC Endpoint URL:** The RPC Endpoint URL determines which network your code will interact with. You can either use a node provider service or point to your own client. A list of public and private RPC endpoints for all Flare networks is available on the [Network Configuration](../../network#configuration) page.
 
-2. **Contract Address:** The address for the `FastUpdatesConfiguration` contract is different for each network. You can either:
+**2. Contract Address:** The address for the `FastUpdatesConfiguration` contract varies by network. You can obtain this address in two ways:
 
-   - Find the `FastUpdatesConfiguration` contract address on the [Solidity Reference](../solidity-reference) page,
+- **From the Solidity Reference page:** Find the `FastUpdatesConfiguration` address for each network on the [Solidity Reference](../solidity-reference) page.
 
-     OR
+  **OR**
 
-   - Query the address from the `FlareContractRegistry` contract, which has the same address across all networks. Examples for this are given in the language guides using [JavaScript](/guides/flare-for-javascript-developers#make-query), [Python](/guides/flare-for-python-developers#make-query), [Rust](/guides/flare-for-rust-developers#make-query), and [Go](/guides/flare-for-go-developers#make-query).
+- **Query the FlareContractRegistry Contract:** The `FlareContractRegistry` contract has the same address across all networks. You can query it to get the `FastUpdatesConfiguration` contract address. Refer to the specific language guides for examples:
+  - [JavaScript](/guides/flare-for-javascript-developers#make-query)
+  - [Python](/guides/flare-for-python-developers#make-query)
+  - [Rust](/guides/flare-for-rust-developers#make-query)
+  - [Go](/guides/flare-for-go-developers#make-query)
 
-## JavaScript
+:::tip
 
-This example shows two ways, one using [web3.js](https://github.com/web3/web3.js) and the other using [ethers.js](https://github.com/ethers-io/ethers.js/), to retrieve FTSOv2 feed configurations on Flare Testnet Coston2.
+All code examples in this guide are also available in the [developer-hub repository](https://github.com/flare-foundation/developer-hub/tree/main/code_examples).
 
-<Tabs groupId="web3">
-  <TabItem value="web3js" label="web3.js" default>
-    ```bash
-    npm install web3
-    ```
+:::
 
-  </TabItem>
-  <TabItem value="ethersjs" label="ethers.js">
-    ```bash
-    npm install ethers
-    ```
+<Tabs block>
+  <TabItem value="JavaScript" label="JavaScript" default>
+    This example shows two ways, one using [web3.js](https://github.com/web3/web3.js) and the other using [ethers.js](https://github.com/ethers-io/ethers.js/), to retrieve FTSOv2 feed configurations on Flare Testnet Coston2.
 
-  </TabItem>
-</Tabs>
+    <Tabs groupId="web3">
+      <TabItem value="web3js" label="web3.js" default>
+        ```bash
+        npm install web3
+        ```
 
-<Tabs groupId="web3">
-  <TabItem value="web3js" label="web3.js" default>
-    ```javascript title="ftsov2_config.js"
-    // THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
-    import { Web3 } from "web3";
+      </TabItem>
+      <TabItem value="ethersjs" label="ethers.js">
+        ```bash
+        npm install ethers
+        ```
 
-    // FastUpdatesConfiguration address (Flare Testnet Coston2)
-    const ADDRESS = "0xE7d1D5D58cAE01a82b84989A931999Cb34A86B14";
-    const RPC_URL = "https://rpc.ankr.com/flare_coston2";
-    // ABI for FastUpdatesConfiguration contract
-    const ABI =
-      '[{"type":"constructor","stateMutability":"nonpayable","inputs":[{"type":"address","name":"_governanceSettings","internalType":"contract IGovernanceSettings"},{"type":"address","name":"_initialGovernance","internalType":"address"},{"type":"address","name":"_addressUpdater","internalType":"address"}]},{"type":"event","name":"FeedAdded","inputs":[{"type":"bytes21","name":"feedId","internalType":"bytes21","indexed":true},{"type":"uint32","name":"rewardBandValue","internalType":"uint32","indexed":false},{"type":"uint24","name":"inflationShare","internalType":"uint24","indexed":false},{"type":"uint256","name":"index","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"FeedRemoved","inputs":[{"type":"bytes21","name":"feedId","internalType":"bytes21","indexed":true},{"type":"uint256","name":"index","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"FeedUpdated","inputs":[{"type":"bytes21","name":"feedId","internalType":"bytes21","indexed":true},{"type":"uint32","name":"rewardBandValue","internalType":"uint32","indexed":false},{"type":"uint24","name":"inflationShare","internalType":"uint24","indexed":false},{"type":"uint256","name":"index","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"GovernanceCallTimelocked","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"allowedAfterTimestamp","internalType":"uint256","indexed":false},{"type":"bytes","name":"encodedCall","internalType":"bytes","indexed":false}],"anonymous":false},{"type":"event","name":"GovernanceInitialised","inputs":[{"type":"address","name":"initialGovernance","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"GovernedProductionModeEntered","inputs":[{"type":"address","name":"governanceSettings","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"TimelockedGovernanceCallCanceled","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"timestamp","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"TimelockedGovernanceCallExecuted","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"timestamp","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"addFeeds","inputs":[{"type":"tuple[]","name":"_feedConfigs","internalType":"struct IFastUpdatesConfiguration.FeedConfiguration[]","components":[{"type":"bytes21","name":"feedId","internalType":"bytes21"},{"type":"uint32","name":"rewardBandValue","internalType":"uint32"},{"type":"uint24","name":"inflationShare","internalType":"uint24"}]}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"cancelGovernanceCall","inputs":[{"type":"bytes4","name":"_selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"executeGovernanceCall","inputs":[{"type":"bytes4","name":"_selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IIFastUpdater"}],"name":"fastUpdater","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"_addressUpdater","internalType":"address"}],"name":"getAddressUpdater","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"tuple[]","name":"","internalType":"struct IFastUpdatesConfiguration.FeedConfiguration[]","components":[{"type":"bytes21","name":"feedId","internalType":"bytes21"},{"type":"uint32","name":"rewardBandValue","internalType":"uint32"},{"type":"uint24","name":"inflationShare","internalType":"uint24"}]}],"name":"getFeedConfigurations","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"bytes21","name":"_feedId","internalType":"bytes21"}],"name":"getFeedId","inputs":[{"type":"uint256","name":"_index","internalType":"uint256"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bytes21[]","name":"_feedIds","internalType":"bytes21[]"}],"name":"getFeedIds","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"_index","internalType":"uint256"}],"name":"getFeedIndex","inputs":[{"type":"bytes21","name":"_feedId","internalType":"bytes21"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"getNumberOfFeeds","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256[]","name":"","internalType":"uint256[]"}],"name":"getUnusedIndices","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"address"}],"name":"governance","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IGovernanceSettings"}],"name":"governanceSettings","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"initialise","inputs":[{"type":"address","name":"_governanceSettings","internalType":"contract IGovernanceSettings"},{"type":"address","name":"_initialGovernance","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"isExecutor","inputs":[{"type":"address","name":"_address","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"productionMode","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"removeFeeds","inputs":[{"type":"bytes21[]","name":"_feedIds","internalType":"bytes21[]"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"switchToProductionMode","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"allowedAfterTimestamp","internalType":"uint256"},{"type":"bytes","name":"encodedCall","internalType":"bytes"}],"name":"timelockedCalls","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"updateContractAddresses","inputs":[{"type":"bytes32[]","name":"_contractNameHashes","internalType":"bytes32[]"},{"type":"address[]","name":"_contractAddresses","internalType":"address[]"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"updateFeeds","inputs":[{"type":"tuple[]","name":"_feedConfigs","internalType":"struct IFastUpdatesConfiguration.FeedConfiguration[]","components":[{"type":"bytes21","name":"feedId","internalType":"bytes21"},{"type":"uint32","name":"rewardBandValue","internalType":"uint32"},{"type":"uint24","name":"inflationShare","internalType":"uint24"}]}]}]';
+      </TabItem>
+    </Tabs>
 
-    async function main() {
-      // Connect to an RPC node
-      const w3 = new Web3(RPC_URL);
-      // Set up contract instance
-      const ftsov2Config = new w3.eth.Contract(JSON.parse(ABI), ADDRESS);
-      // Fetch feed configurations
-      const res = await ftsov2Config.methods.getFeedConfigurations().call();
-      // Log results
-      for (const feed of res) {
-        console.log(
-          "feedId:",
-          Buffer.from(feed["feedId"].slice(2), "hex").toString("utf-8"),
-          "rewardBandValue:",
-          feed["rewardBandValue"],
-          "inflationShare:",
-          feed["inflationShare"],
-        );
-      }
-    }
+    <Tabs groupId="web3">
+      <TabItem value="web3js" label="web3.js" default>
+        ```javascript title="ftsov2_config.js"
+        // THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
+        import { Web3 } from "web3";
 
-    main();
-    ```
+        // FastUpdatesConfiguration address (Flare Testnet Coston2)
+        const ADDRESS = "0xE7d1D5D58cAE01a82b84989A931999Cb34A86B14";
+        const RPC_URL = "https://rpc.ankr.com/flare_coston2";
+        // ABI for FastUpdatesConfiguration contract
+        const ABI =
+          '[{"type":"constructor","stateMutability":"nonpayable","inputs":[{"type":"address","name":"_governanceSettings","internalType":"contract IGovernanceSettings"},{"type":"address","name":"_initialGovernance","internalType":"address"},{"type":"address","name":"_addressUpdater","internalType":"address"}]},{"type":"event","name":"FeedAdded","inputs":[{"type":"bytes21","name":"feedId","internalType":"bytes21","indexed":true},{"type":"uint32","name":"rewardBandValue","internalType":"uint32","indexed":false},{"type":"uint24","name":"inflationShare","internalType":"uint24","indexed":false},{"type":"uint256","name":"index","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"FeedRemoved","inputs":[{"type":"bytes21","name":"feedId","internalType":"bytes21","indexed":true},{"type":"uint256","name":"index","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"FeedUpdated","inputs":[{"type":"bytes21","name":"feedId","internalType":"bytes21","indexed":true},{"type":"uint32","name":"rewardBandValue","internalType":"uint32","indexed":false},{"type":"uint24","name":"inflationShare","internalType":"uint24","indexed":false},{"type":"uint256","name":"index","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"GovernanceCallTimelocked","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"allowedAfterTimestamp","internalType":"uint256","indexed":false},{"type":"bytes","name":"encodedCall","internalType":"bytes","indexed":false}],"anonymous":false},{"type":"event","name":"GovernanceInitialised","inputs":[{"type":"address","name":"initialGovernance","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"GovernedProductionModeEntered","inputs":[{"type":"address","name":"governanceSettings","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"TimelockedGovernanceCallCanceled","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"timestamp","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"TimelockedGovernanceCallExecuted","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"timestamp","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"addFeeds","inputs":[{"type":"tuple[]","name":"_feedConfigs","internalType":"struct IFastUpdatesConfiguration.FeedConfiguration[]","components":[{"type":"bytes21","name":"feedId","internalType":"bytes21"},{"type":"uint32","name":"rewardBandValue","internalType":"uint32"},{"type":"uint24","name":"inflationShare","internalType":"uint24"}]}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"cancelGovernanceCall","inputs":[{"type":"bytes4","name":"_selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"executeGovernanceCall","inputs":[{"type":"bytes4","name":"_selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IIFastUpdater"}],"name":"fastUpdater","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"_addressUpdater","internalType":"address"}],"name":"getAddressUpdater","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"tuple[]","name":"","internalType":"struct IFastUpdatesConfiguration.FeedConfiguration[]","components":[{"type":"bytes21","name":"feedId","internalType":"bytes21"},{"type":"uint32","name":"rewardBandValue","internalType":"uint32"},{"type":"uint24","name":"inflationShare","internalType":"uint24"}]}],"name":"getFeedConfigurations","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"bytes21","name":"_feedId","internalType":"bytes21"}],"name":"getFeedId","inputs":[{"type":"uint256","name":"_index","internalType":"uint256"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bytes21[]","name":"_feedIds","internalType":"bytes21[]"}],"name":"getFeedIds","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"_index","internalType":"uint256"}],"name":"getFeedIndex","inputs":[{"type":"bytes21","name":"_feedId","internalType":"bytes21"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"getNumberOfFeeds","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256[]","name":"","internalType":"uint256[]"}],"name":"getUnusedIndices","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"address"}],"name":"governance","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IGovernanceSettings"}],"name":"governanceSettings","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"initialise","inputs":[{"type":"address","name":"_governanceSettings","internalType":"contract IGovernanceSettings"},{"type":"address","name":"_initialGovernance","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"isExecutor","inputs":[{"type":"address","name":"_address","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"productionMode","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"removeFeeds","inputs":[{"type":"bytes21[]","name":"_feedIds","internalType":"bytes21[]"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"switchToProductionMode","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"allowedAfterTimestamp","internalType":"uint256"},{"type":"bytes","name":"encodedCall","internalType":"bytes"}],"name":"timelockedCalls","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"updateContractAddresses","inputs":[{"type":"bytes32[]","name":"_contractNameHashes","internalType":"bytes32[]"},{"type":"address[]","name":"_contractAddresses","internalType":"address[]"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"updateFeeds","inputs":[{"type":"tuple[]","name":"_feedConfigs","internalType":"struct IFastUpdatesConfiguration.FeedConfiguration[]","components":[{"type":"bytes21","name":"feedId","internalType":"bytes21"},{"type":"uint32","name":"rewardBandValue","internalType":"uint32"},{"type":"uint24","name":"inflationShare","internalType":"uint24"}]}]}]';
 
-  </TabItem>
-  <TabItem value="ethersjs" label="ethers.js">
-    ```javascript title="ftsov2_config.js"
-    // THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
-    import { ethers } from "ethers";
+        async function main() {
+          // Connect to an RPC node
+          const w3 = new Web3(RPC_URL);
+          // Set up contract instance
+          const ftsov2Config = new w3.eth.Contract(JSON.parse(ABI), ADDRESS);
+          // Fetch feed configurations
+          const res = await ftsov2Config.methods.getFeedConfigurations().call();
+          // Log results
+          for (const feed of res) {
+            console.log(
+              "feedId:",
+              Buffer.from(feed["feedId"].slice(2), "hex").toString("utf-8"),
+              "rewardBandValue:",
+              feed["rewardBandValue"],
+              "inflationShare:",
+              feed["inflationShare"],
+            );
+          }
+        }
 
-    // FastUpdater address (Songbird Testnet Coston)
-    const ADDRESS = "0xE7d1D5D58cAE01a82b84989A931999Cb34A86B14";
-    const RPC_URL = "https://rpc.ankr.com/flare_coston2";
-    // ABI for FastUpdatesConfiguration contract
-    const ABI =
-      '[{"type":"constructor","stateMutability":"nonpayable","inputs":[{"type":"address","name":"_governanceSettings","internalType":"contract IGovernanceSettings"},{"type":"address","name":"_initialGovernance","internalType":"address"},{"type":"address","name":"_addressUpdater","internalType":"address"}]},{"type":"event","name":"FeedAdded","inputs":[{"type":"bytes21","name":"feedId","internalType":"bytes21","indexed":true},{"type":"uint32","name":"rewardBandValue","internalType":"uint32","indexed":false},{"type":"uint24","name":"inflationShare","internalType":"uint24","indexed":false},{"type":"uint256","name":"index","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"FeedRemoved","inputs":[{"type":"bytes21","name":"feedId","internalType":"bytes21","indexed":true},{"type":"uint256","name":"index","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"FeedUpdated","inputs":[{"type":"bytes21","name":"feedId","internalType":"bytes21","indexed":true},{"type":"uint32","name":"rewardBandValue","internalType":"uint32","indexed":false},{"type":"uint24","name":"inflationShare","internalType":"uint24","indexed":false},{"type":"uint256","name":"index","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"GovernanceCallTimelocked","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"allowedAfterTimestamp","internalType":"uint256","indexed":false},{"type":"bytes","name":"encodedCall","internalType":"bytes","indexed":false}],"anonymous":false},{"type":"event","name":"GovernanceInitialised","inputs":[{"type":"address","name":"initialGovernance","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"GovernedProductionModeEntered","inputs":[{"type":"address","name":"governanceSettings","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"TimelockedGovernanceCallCanceled","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"timestamp","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"TimelockedGovernanceCallExecuted","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"timestamp","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"addFeeds","inputs":[{"type":"tuple[]","name":"_feedConfigs","internalType":"struct IFastUpdatesConfiguration.FeedConfiguration[]","components":[{"type":"bytes21","name":"feedId","internalType":"bytes21"},{"type":"uint32","name":"rewardBandValue","internalType":"uint32"},{"type":"uint24","name":"inflationShare","internalType":"uint24"}]}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"cancelGovernanceCall","inputs":[{"type":"bytes4","name":"_selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"executeGovernanceCall","inputs":[{"type":"bytes4","name":"_selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IIFastUpdater"}],"name":"fastUpdater","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"_addressUpdater","internalType":"address"}],"name":"getAddressUpdater","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"tuple[]","name":"","internalType":"struct IFastUpdatesConfiguration.FeedConfiguration[]","components":[{"type":"bytes21","name":"feedId","internalType":"bytes21"},{"type":"uint32","name":"rewardBandValue","internalType":"uint32"},{"type":"uint24","name":"inflationShare","internalType":"uint24"}]}],"name":"getFeedConfigurations","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"bytes21","name":"_feedId","internalType":"bytes21"}],"name":"getFeedId","inputs":[{"type":"uint256","name":"_index","internalType":"uint256"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bytes21[]","name":"_feedIds","internalType":"bytes21[]"}],"name":"getFeedIds","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"_index","internalType":"uint256"}],"name":"getFeedIndex","inputs":[{"type":"bytes21","name":"_feedId","internalType":"bytes21"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"getNumberOfFeeds","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256[]","name":"","internalType":"uint256[]"}],"name":"getUnusedIndices","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"address"}],"name":"governance","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IGovernanceSettings"}],"name":"governanceSettings","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"initialise","inputs":[{"type":"address","name":"_governanceSettings","internalType":"contract IGovernanceSettings"},{"type":"address","name":"_initialGovernance","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"isExecutor","inputs":[{"type":"address","name":"_address","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"productionMode","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"removeFeeds","inputs":[{"type":"bytes21[]","name":"_feedIds","internalType":"bytes21[]"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"switchToProductionMode","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"allowedAfterTimestamp","internalType":"uint256"},{"type":"bytes","name":"encodedCall","internalType":"bytes"}],"name":"timelockedCalls","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"updateContractAddresses","inputs":[{"type":"bytes32[]","name":"_contractNameHashes","internalType":"bytes32[]"},{"type":"address[]","name":"_contractAddresses","internalType":"address[]"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"updateFeeds","inputs":[{"type":"tuple[]","name":"_feedConfigs","internalType":"struct IFastUpdatesConfiguration.FeedConfiguration[]","components":[{"type":"bytes21","name":"feedId","internalType":"bytes21"},{"type":"uint32","name":"rewardBandValue","internalType":"uint32"},{"type":"uint24","name":"inflationShare","internalType":"uint24"}]}]}]';
+        main();
+        ```
 
-    async function main() {
-      // Connect to an RPC node
-      const provider = new ethers.JsonRpcProvider(RPC_URL);
-      // Set up contract instance
-      const ftsov2Config = new ethers.Contract(ADDRESS, JSON.parse(ABI), provider);
-      // Fetch feed configurations
-      const res = await ftsov2Config.getFeedConfigurations();
-      // Log results
-      for (const feed of res) {
-        console.log(
-          "feedId:",
-          Buffer.from(feed["feedId"].slice(2), "hex").toString("utf-8"),
-          "rewardBandValue:",
-          feed["rewardBandValue"],
-          "inflationShare:",
-          feed["inflationShare"],
-        );
-      }
-    }
+      </TabItem>
+      <TabItem value="ethersjs" label="ethers.js">
+        ```javascript title="ftsov2_config.js"
+        // THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
+        import { ethers } from "ethers";
 
-    main();
-    ```
+        // FastUpdater address (Songbird Testnet Coston)
+        const ADDRESS = "0xE7d1D5D58cAE01a82b84989A931999Cb34A86B14";
+        const RPC_URL = "https://rpc.ankr.com/flare_coston2";
+        // ABI for FastUpdatesConfiguration contract
+        const ABI =
+          '[{"type":"constructor","stateMutability":"nonpayable","inputs":[{"type":"address","name":"_governanceSettings","internalType":"contract IGovernanceSettings"},{"type":"address","name":"_initialGovernance","internalType":"address"},{"type":"address","name":"_addressUpdater","internalType":"address"}]},{"type":"event","name":"FeedAdded","inputs":[{"type":"bytes21","name":"feedId","internalType":"bytes21","indexed":true},{"type":"uint32","name":"rewardBandValue","internalType":"uint32","indexed":false},{"type":"uint24","name":"inflationShare","internalType":"uint24","indexed":false},{"type":"uint256","name":"index","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"FeedRemoved","inputs":[{"type":"bytes21","name":"feedId","internalType":"bytes21","indexed":true},{"type":"uint256","name":"index","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"FeedUpdated","inputs":[{"type":"bytes21","name":"feedId","internalType":"bytes21","indexed":true},{"type":"uint32","name":"rewardBandValue","internalType":"uint32","indexed":false},{"type":"uint24","name":"inflationShare","internalType":"uint24","indexed":false},{"type":"uint256","name":"index","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"GovernanceCallTimelocked","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"allowedAfterTimestamp","internalType":"uint256","indexed":false},{"type":"bytes","name":"encodedCall","internalType":"bytes","indexed":false}],"anonymous":false},{"type":"event","name":"GovernanceInitialised","inputs":[{"type":"address","name":"initialGovernance","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"GovernedProductionModeEntered","inputs":[{"type":"address","name":"governanceSettings","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"TimelockedGovernanceCallCanceled","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"timestamp","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"TimelockedGovernanceCallExecuted","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"timestamp","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"addFeeds","inputs":[{"type":"tuple[]","name":"_feedConfigs","internalType":"struct IFastUpdatesConfiguration.FeedConfiguration[]","components":[{"type":"bytes21","name":"feedId","internalType":"bytes21"},{"type":"uint32","name":"rewardBandValue","internalType":"uint32"},{"type":"uint24","name":"inflationShare","internalType":"uint24"}]}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"cancelGovernanceCall","inputs":[{"type":"bytes4","name":"_selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"executeGovernanceCall","inputs":[{"type":"bytes4","name":"_selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IIFastUpdater"}],"name":"fastUpdater","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"_addressUpdater","internalType":"address"}],"name":"getAddressUpdater","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"tuple[]","name":"","internalType":"struct IFastUpdatesConfiguration.FeedConfiguration[]","components":[{"type":"bytes21","name":"feedId","internalType":"bytes21"},{"type":"uint32","name":"rewardBandValue","internalType":"uint32"},{"type":"uint24","name":"inflationShare","internalType":"uint24"}]}],"name":"getFeedConfigurations","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"bytes21","name":"_feedId","internalType":"bytes21"}],"name":"getFeedId","inputs":[{"type":"uint256","name":"_index","internalType":"uint256"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bytes21[]","name":"_feedIds","internalType":"bytes21[]"}],"name":"getFeedIds","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"_index","internalType":"uint256"}],"name":"getFeedIndex","inputs":[{"type":"bytes21","name":"_feedId","internalType":"bytes21"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"getNumberOfFeeds","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256[]","name":"","internalType":"uint256[]"}],"name":"getUnusedIndices","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"address"}],"name":"governance","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IGovernanceSettings"}],"name":"governanceSettings","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"initialise","inputs":[{"type":"address","name":"_governanceSettings","internalType":"contract IGovernanceSettings"},{"type":"address","name":"_initialGovernance","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"isExecutor","inputs":[{"type":"address","name":"_address","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"productionMode","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"removeFeeds","inputs":[{"type":"bytes21[]","name":"_feedIds","internalType":"bytes21[]"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"switchToProductionMode","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"allowedAfterTimestamp","internalType":"uint256"},{"type":"bytes","name":"encodedCall","internalType":"bytes"}],"name":"timelockedCalls","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"updateContractAddresses","inputs":[{"type":"bytes32[]","name":"_contractNameHashes","internalType":"bytes32[]"},{"type":"address[]","name":"_contractAddresses","internalType":"address[]"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"updateFeeds","inputs":[{"type":"tuple[]","name":"_feedConfigs","internalType":"struct IFastUpdatesConfiguration.FeedConfiguration[]","components":[{"type":"bytes21","name":"feedId","internalType":"bytes21"},{"type":"uint32","name":"rewardBandValue","internalType":"uint32"},{"type":"uint24","name":"inflationShare","internalType":"uint24"}]}]}]';
 
-  </TabItem>
-</Tabs>
+        async function main() {
+          // Connect to an RPC node
+          const provider = new ethers.JsonRpcProvider(RPC_URL);
+          // Set up contract instance
+          const ftsov2Config = new ethers.Contract(ADDRESS, JSON.parse(ABI), provider);
+          // Fetch feed configurations
+          const res = await ftsov2Config.getFeedConfigurations();
+          // Log results
+          for (const feed of res) {
+            console.log(
+              "feedId:",
+              Buffer.from(feed["feedId"].slice(2), "hex").toString("utf-8"),
+              "rewardBandValue:",
+              feed["rewardBandValue"],
+              "inflationShare:",
+              feed["inflationShare"],
+            );
+          }
+        }
 
-## Python
+        main();
+        ```
 
-This example uses [web3.py](https://github.com/ethereum/web3.py) to retrieve FTSOv2 feed configurations on Flare Testnet Coston2.
-
-<Tabs groupId="python">
-  <TabItem value="poetry" label="poetry" default>
-    ```bash
-    poetry add web3
-    ```
-
-  </TabItem>
-  <TabItem value="pip" label="pip">
-    ```bash
-    pip install web3
-    ```
+      </TabItem>
+    </Tabs>
 
   </TabItem>
-</Tabs>
+  <TabItem value="Python" label="Python">
+    This example uses [web3.py](https://github.com/ethereum/web3.py) to retrieve FTSOv2 feed configurations on Flare Testnet Coston2.
 
-```python title="ftsov2_config.py"
-# THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
-import asyncio
+    <Tabs groupId="python">
+      <TabItem value="poetry" label="poetry" default>
+        ```bash
+        poetry add web3
+        ```
 
-from web3 import AsyncHTTPProvider, AsyncWeb3
+      </TabItem>
+      <TabItem value="pip" label="pip">
+        ```bash
+        pip install web3
+        ```
 
-# FastUpdatesConfiguration address (Flare Testnet Coston2)
-ADDRESS = "0xE7d1D5D58cAE01a82b84989A931999Cb34A86B14"
-RPC_URL = "https://rpc.ankr.com/flare_coston2"
-# ABI for FastUpdatesConfiguration contract
-ABI = '[{"type":"constructor","stateMutability":"nonpayable","inputs":[{"type":"address","name":"_governanceSettings","internalType":"contract IGovernanceSettings"},{"type":"address","name":"_initialGovernance","internalType":"address"},{"type":"address","name":"_addressUpdater","internalType":"address"}]},{"type":"event","name":"FeedAdded","inputs":[{"type":"bytes21","name":"feedId","internalType":"bytes21","indexed":true},{"type":"uint32","name":"rewardBandValue","internalType":"uint32","indexed":false},{"type":"uint24","name":"inflationShare","internalType":"uint24","indexed":false},{"type":"uint256","name":"index","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"FeedRemoved","inputs":[{"type":"bytes21","name":"feedId","internalType":"bytes21","indexed":true},{"type":"uint256","name":"index","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"FeedUpdated","inputs":[{"type":"bytes21","name":"feedId","internalType":"bytes21","indexed":true},{"type":"uint32","name":"rewardBandValue","internalType":"uint32","indexed":false},{"type":"uint24","name":"inflationShare","internalType":"uint24","indexed":false},{"type":"uint256","name":"index","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"GovernanceCallTimelocked","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"allowedAfterTimestamp","internalType":"uint256","indexed":false},{"type":"bytes","name":"encodedCall","internalType":"bytes","indexed":false}],"anonymous":false},{"type":"event","name":"GovernanceInitialised","inputs":[{"type":"address","name":"initialGovernance","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"GovernedProductionModeEntered","inputs":[{"type":"address","name":"governanceSettings","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"TimelockedGovernanceCallCanceled","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"timestamp","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"TimelockedGovernanceCallExecuted","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"timestamp","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"addFeeds","inputs":[{"type":"tuple[]","name":"_feedConfigs","internalType":"struct IFastUpdatesConfiguration.FeedConfiguration[]","components":[{"type":"bytes21","name":"feedId","internalType":"bytes21"},{"type":"uint32","name":"rewardBandValue","internalType":"uint32"},{"type":"uint24","name":"inflationShare","internalType":"uint24"}]}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"cancelGovernanceCall","inputs":[{"type":"bytes4","name":"_selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"executeGovernanceCall","inputs":[{"type":"bytes4","name":"_selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IIFastUpdater"}],"name":"fastUpdater","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"_addressUpdater","internalType":"address"}],"name":"getAddressUpdater","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"tuple[]","name":"","internalType":"struct IFastUpdatesConfiguration.FeedConfiguration[]","components":[{"type":"bytes21","name":"feedId","internalType":"bytes21"},{"type":"uint32","name":"rewardBandValue","internalType":"uint32"},{"type":"uint24","name":"inflationShare","internalType":"uint24"}]}],"name":"getFeedConfigurations","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"bytes21","name":"_feedId","internalType":"bytes21"}],"name":"getFeedId","inputs":[{"type":"uint256","name":"_index","internalType":"uint256"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bytes21[]","name":"_feedIds","internalType":"bytes21[]"}],"name":"getFeedIds","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"_index","internalType":"uint256"}],"name":"getFeedIndex","inputs":[{"type":"bytes21","name":"_feedId","internalType":"bytes21"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"getNumberOfFeeds","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256[]","name":"","internalType":"uint256[]"}],"name":"getUnusedIndices","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"address"}],"name":"governance","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IGovernanceSettings"}],"name":"governanceSettings","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"initialise","inputs":[{"type":"address","name":"_governanceSettings","internalType":"contract IGovernanceSettings"},{"type":"address","name":"_initialGovernance","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"isExecutor","inputs":[{"type":"address","name":"_address","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"productionMode","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"removeFeeds","inputs":[{"type":"bytes21[]","name":"_feedIds","internalType":"bytes21[]"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"switchToProductionMode","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"allowedAfterTimestamp","internalType":"uint256"},{"type":"bytes","name":"encodedCall","internalType":"bytes"}],"name":"timelockedCalls","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"updateContractAddresses","inputs":[{"type":"bytes32[]","name":"_contractNameHashes","internalType":"bytes32[]"},{"type":"address[]","name":"_contractAddresses","internalType":"address[]"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"updateFeeds","inputs":[{"type":"tuple[]","name":"_feedConfigs","internalType":"struct IFastUpdatesConfiguration.FeedConfiguration[]","components":[{"type":"bytes21","name":"feedId","internalType":"bytes21"},{"type":"uint32","name":"rewardBandValue","internalType":"uint32"},{"type":"uint24","name":"inflationShare","internalType":"uint24"}]}]}]'
+      </TabItem>
+    </Tabs>
+
+    ```python title="ftsov2_config.py"
+    # THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
+    import asyncio
+
+    from web3 import AsyncHTTPProvider, AsyncWeb3
+
+    # FastUpdatesConfiguration address (Flare Testnet Coston2)
+    ADDRESS = "0xE7d1D5D58cAE01a82b84989A931999Cb34A86B14"
+    RPC_URL = "https://rpc.ankr.com/flare_coston2"
+    # ABI for FastUpdatesConfiguration contract
+    ABI = '[{"type":"constructor","stateMutability":"nonpayable","inputs":[{"type":"address","name":"_governanceSettings","internalType":"contract IGovernanceSettings"},{"type":"address","name":"_initialGovernance","internalType":"address"},{"type":"address","name":"_addressUpdater","internalType":"address"}]},{"type":"event","name":"FeedAdded","inputs":[{"type":"bytes21","name":"feedId","internalType":"bytes21","indexed":true},{"type":"uint32","name":"rewardBandValue","internalType":"uint32","indexed":false},{"type":"uint24","name":"inflationShare","internalType":"uint24","indexed":false},{"type":"uint256","name":"index","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"FeedRemoved","inputs":[{"type":"bytes21","name":"feedId","internalType":"bytes21","indexed":true},{"type":"uint256","name":"index","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"FeedUpdated","inputs":[{"type":"bytes21","name":"feedId","internalType":"bytes21","indexed":true},{"type":"uint32","name":"rewardBandValue","internalType":"uint32","indexed":false},{"type":"uint24","name":"inflationShare","internalType":"uint24","indexed":false},{"type":"uint256","name":"index","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"GovernanceCallTimelocked","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"allowedAfterTimestamp","internalType":"uint256","indexed":false},{"type":"bytes","name":"encodedCall","internalType":"bytes","indexed":false}],"anonymous":false},{"type":"event","name":"GovernanceInitialised","inputs":[{"type":"address","name":"initialGovernance","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"GovernedProductionModeEntered","inputs":[{"type":"address","name":"governanceSettings","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"TimelockedGovernanceCallCanceled","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"timestamp","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"TimelockedGovernanceCallExecuted","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"timestamp","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"addFeeds","inputs":[{"type":"tuple[]","name":"_feedConfigs","internalType":"struct IFastUpdatesConfiguration.FeedConfiguration[]","components":[{"type":"bytes21","name":"feedId","internalType":"bytes21"},{"type":"uint32","name":"rewardBandValue","internalType":"uint32"},{"type":"uint24","name":"inflationShare","internalType":"uint24"}]}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"cancelGovernanceCall","inputs":[{"type":"bytes4","name":"_selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"executeGovernanceCall","inputs":[{"type":"bytes4","name":"_selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IIFastUpdater"}],"name":"fastUpdater","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"_addressUpdater","internalType":"address"}],"name":"getAddressUpdater","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"tuple[]","name":"","internalType":"struct IFastUpdatesConfiguration.FeedConfiguration[]","components":[{"type":"bytes21","name":"feedId","internalType":"bytes21"},{"type":"uint32","name":"rewardBandValue","internalType":"uint32"},{"type":"uint24","name":"inflationShare","internalType":"uint24"}]}],"name":"getFeedConfigurations","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"bytes21","name":"_feedId","internalType":"bytes21"}],"name":"getFeedId","inputs":[{"type":"uint256","name":"_index","internalType":"uint256"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bytes21[]","name":"_feedIds","internalType":"bytes21[]"}],"name":"getFeedIds","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"_index","internalType":"uint256"}],"name":"getFeedIndex","inputs":[{"type":"bytes21","name":"_feedId","internalType":"bytes21"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"getNumberOfFeeds","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256[]","name":"","internalType":"uint256[]"}],"name":"getUnusedIndices","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"address"}],"name":"governance","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IGovernanceSettings"}],"name":"governanceSettings","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"initialise","inputs":[{"type":"address","name":"_governanceSettings","internalType":"contract IGovernanceSettings"},{"type":"address","name":"_initialGovernance","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"isExecutor","inputs":[{"type":"address","name":"_address","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"productionMode","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"removeFeeds","inputs":[{"type":"bytes21[]","name":"_feedIds","internalType":"bytes21[]"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"switchToProductionMode","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"allowedAfterTimestamp","internalType":"uint256"},{"type":"bytes","name":"encodedCall","internalType":"bytes"}],"name":"timelockedCalls","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"updateContractAddresses","inputs":[{"type":"bytes32[]","name":"_contractNameHashes","internalType":"bytes32[]"},{"type":"address[]","name":"_contractAddresses","internalType":"address[]"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"updateFeeds","inputs":[{"type":"tuple[]","name":"_feedConfigs","internalType":"struct IFastUpdatesConfiguration.FeedConfiguration[]","components":[{"type":"bytes21","name":"feedId","internalType":"bytes21"},{"type":"uint32","name":"rewardBandValue","internalType":"uint32"},{"type":"uint24","name":"inflationShare","internalType":"uint24"}]}]}]'
 
 
-async def main():
-    # Connect to an RPC node
-    w3 = AsyncWeb3(
-        AsyncHTTPProvider(RPC_URL),
-    )
-    # Set up contract instance
-    ftsov2_config = w3.eth.contract(address=w3.to_checksum_address(ADDRESS), abi=ABI)
-    # Fetch feed configurations
-    feed_configurations = await ftsov2_config.functions.getFeedConfigurations().call()
-    # Print results
-    for feed_id, reward_band_value, inflation_share in feed_configurations:
-        print(
-            f"feedId: {feed_id.decode('ascii')}, rewardBandValue: {reward_band_value}, inflationShare: {inflation_share}"
+    async def main():
+        # Connect to an RPC node
+        w3 = AsyncWeb3(
+            AsyncHTTPProvider(RPC_URL),
         )
-    return feed_configurations
+        # Set up contract instance
+        ftsov2_config = w3.eth.contract(address=w3.to_checksum_address(ADDRESS), abi=ABI)
+        # Fetch feed configurations
+        feed_configurations = await ftsov2_config.functions.getFeedConfigurations().call()
+        # Print results
+        for feed_id, reward_band_value, inflation_share in feed_configurations:
+            print(
+                f"feedId: {feed_id.decode('ascii')}, rewardBandValue: {reward_band_value}, inflationShare: {inflation_share}"
+            )
+        return feed_configurations
 
 
-if __name__ == "__main__":
-    asyncio.run(main())
-```
+    if __name__ == "__main__":
+        asyncio.run(main())
+    ```
 
-## Rust
+  </TabItem>
+  <TabItem value="Rust" label="Rust">
 
-This example uses [alloy-rs](https://github.com/alloy-rs) to retrieve FTSOv2 feed configurationson Flare Testnet Coston2.
+    This example uses [alloy-rs](https://github.com/alloy-rs) to retrieve FTSOv2 feed configurationson Flare Testnet Coston2.
 
-Add the following dependencies to `Cargo.toml`:
+    Add the following dependencies to `Cargo.toml`:
 
-```toml title="Cargo.toml"
-alloy = { version = "0.1", features = ["full"] }
-eyre = "0.6"
-tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros"] }
-```
+    ```toml title="Cargo.toml"
+    alloy = { version = "0.1", features = ["full"] }
+    eyre = "0.6"
+    tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros"] }
+    ```
 
-```rust title="src/bin/ftsov2_config.rs"// THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
-use alloy::{providers::ProviderBuilder, sol};
-use eyre::Result;
+    ```rust title="src/bin/ftsov2_config.rs"// THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
+    use alloy::{providers::ProviderBuilder, sol};
+    use eyre::Result;
 
-sol!(
-    #[sol(rpc)]
-    FastUpdatesConfiguration,
-    r#"[{"type":"constructor","stateMutability":"nonpayable","inputs":[{"type":"address","name":"_governanceSettings","internalType":"contract IGovernanceSettings"},{"type":"address","name":"_initialGovernance","internalType":"address"},{"type":"address","name":"_addressUpdater","internalType":"address"}]},{"type":"event","name":"FeedAdded","inputs":[{"type":"bytes21","name":"feedId","internalType":"bytes21","indexed":true},{"type":"uint32","name":"rewardBandValue","internalType":"uint32","indexed":false},{"type":"uint24","name":"inflationShare","internalType":"uint24","indexed":false},{"type":"uint256","name":"index","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"FeedRemoved","inputs":[{"type":"bytes21","name":"feedId","internalType":"bytes21","indexed":true},{"type":"uint256","name":"index","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"FeedUpdated","inputs":[{"type":"bytes21","name":"feedId","internalType":"bytes21","indexed":true},{"type":"uint32","name":"rewardBandValue","internalType":"uint32","indexed":false},{"type":"uint24","name":"inflationShare","internalType":"uint24","indexed":false},{"type":"uint256","name":"index","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"GovernanceCallTimelocked","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"allowedAfterTimestamp","internalType":"uint256","indexed":false},{"type":"bytes","name":"encodedCall","internalType":"bytes","indexed":false}],"anonymous":false},{"type":"event","name":"GovernanceInitialised","inputs":[{"type":"address","name":"initialGovernance","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"GovernedProductionModeEntered","inputs":[{"type":"address","name":"governanceSettings","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"TimelockedGovernanceCallCanceled","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"timestamp","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"TimelockedGovernanceCallExecuted","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"timestamp","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"addFeeds","inputs":[{"type":"tuple[]","name":"_feedConfigs","internalType":"struct IFastUpdatesConfiguration.FeedConfiguration[]","components":[{"type":"bytes21","name":"feedId","internalType":"bytes21"},{"type":"uint32","name":"rewardBandValue","internalType":"uint32"},{"type":"uint24","name":"inflationShare","internalType":"uint24"}]}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"cancelGovernanceCall","inputs":[{"type":"bytes4","name":"_selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"executeGovernanceCall","inputs":[{"type":"bytes4","name":"_selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IIFastUpdater"}],"name":"fastUpdater","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"_addressUpdater","internalType":"address"}],"name":"getAddressUpdater","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"tuple[]","name":"","internalType":"struct IFastUpdatesConfiguration.FeedConfiguration[]","components":[{"type":"bytes21","name":"feedId","internalType":"bytes21"},{"type":"uint32","name":"rewardBandValue","internalType":"uint32"},{"type":"uint24","name":"inflationShare","internalType":"uint24"}]}],"name":"getFeedConfigurations","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"bytes21","name":"_feedId","internalType":"bytes21"}],"name":"getFeedId","inputs":[{"type":"uint256","name":"_index","internalType":"uint256"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bytes21[]","name":"_feedIds","internalType":"bytes21[]"}],"name":"getFeedIds","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"_index","internalType":"uint256"}],"name":"getFeedIndex","inputs":[{"type":"bytes21","name":"_feedId","internalType":"bytes21"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"getNumberOfFeeds","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256[]","name":"","internalType":"uint256[]"}],"name":"getUnusedIndices","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"address"}],"name":"governance","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IGovernanceSettings"}],"name":"governanceSettings","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"initialise","inputs":[{"type":"address","name":"_governanceSettings","internalType":"contract IGovernanceSettings"},{"type":"address","name":"_initialGovernance","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"isExecutor","inputs":[{"type":"address","name":"_address","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"productionMode","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"removeFeeds","inputs":[{"type":"bytes21[]","name":"_feedIds","internalType":"bytes21[]"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"switchToProductionMode","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"allowedAfterTimestamp","internalType":"uint256"},{"type":"bytes","name":"encodedCall","internalType":"bytes"}],"name":"timelockedCalls","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"updateContractAddresses","inputs":[{"type":"bytes32[]","name":"_contractNameHashes","internalType":"bytes32[]"},{"type":"address[]","name":"_contractAddresses","internalType":"address[]"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"updateFeeds","inputs":[{"type":"tuple[]","name":"_feedConfigs","internalType":"struct IFastUpdatesConfiguration.FeedConfiguration[]","components":[{"type":"bytes21","name":"feedId","internalType":"bytes21"},{"type":"uint32","name":"rewardBandValue","internalType":"uint32"},{"type":"uint24","name":"inflationShare","internalType":"uint24"}]}]}]"#
-);
+    sol!(
+        #[sol(rpc)]
+        FastUpdatesConfiguration,
+        r#"[{"type":"constructor","stateMutability":"nonpayable","inputs":[{"type":"address","name":"_governanceSettings","internalType":"contract IGovernanceSettings"},{"type":"address","name":"_initialGovernance","internalType":"address"},{"type":"address","name":"_addressUpdater","internalType":"address"}]},{"type":"event","name":"FeedAdded","inputs":[{"type":"bytes21","name":"feedId","internalType":"bytes21","indexed":true},{"type":"uint32","name":"rewardBandValue","internalType":"uint32","indexed":false},{"type":"uint24","name":"inflationShare","internalType":"uint24","indexed":false},{"type":"uint256","name":"index","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"FeedRemoved","inputs":[{"type":"bytes21","name":"feedId","internalType":"bytes21","indexed":true},{"type":"uint256","name":"index","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"FeedUpdated","inputs":[{"type":"bytes21","name":"feedId","internalType":"bytes21","indexed":true},{"type":"uint32","name":"rewardBandValue","internalType":"uint32","indexed":false},{"type":"uint24","name":"inflationShare","internalType":"uint24","indexed":false},{"type":"uint256","name":"index","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"GovernanceCallTimelocked","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"allowedAfterTimestamp","internalType":"uint256","indexed":false},{"type":"bytes","name":"encodedCall","internalType":"bytes","indexed":false}],"anonymous":false},{"type":"event","name":"GovernanceInitialised","inputs":[{"type":"address","name":"initialGovernance","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"GovernedProductionModeEntered","inputs":[{"type":"address","name":"governanceSettings","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"TimelockedGovernanceCallCanceled","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"timestamp","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"TimelockedGovernanceCallExecuted","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"timestamp","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"addFeeds","inputs":[{"type":"tuple[]","name":"_feedConfigs","internalType":"struct IFastUpdatesConfiguration.FeedConfiguration[]","components":[{"type":"bytes21","name":"feedId","internalType":"bytes21"},{"type":"uint32","name":"rewardBandValue","internalType":"uint32"},{"type":"uint24","name":"inflationShare","internalType":"uint24"}]}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"cancelGovernanceCall","inputs":[{"type":"bytes4","name":"_selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"executeGovernanceCall","inputs":[{"type":"bytes4","name":"_selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IIFastUpdater"}],"name":"fastUpdater","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"_addressUpdater","internalType":"address"}],"name":"getAddressUpdater","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"tuple[]","name":"","internalType":"struct IFastUpdatesConfiguration.FeedConfiguration[]","components":[{"type":"bytes21","name":"feedId","internalType":"bytes21"},{"type":"uint32","name":"rewardBandValue","internalType":"uint32"},{"type":"uint24","name":"inflationShare","internalType":"uint24"}]}],"name":"getFeedConfigurations","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"bytes21","name":"_feedId","internalType":"bytes21"}],"name":"getFeedId","inputs":[{"type":"uint256","name":"_index","internalType":"uint256"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bytes21[]","name":"_feedIds","internalType":"bytes21[]"}],"name":"getFeedIds","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"_index","internalType":"uint256"}],"name":"getFeedIndex","inputs":[{"type":"bytes21","name":"_feedId","internalType":"bytes21"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"getNumberOfFeeds","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256[]","name":"","internalType":"uint256[]"}],"name":"getUnusedIndices","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"address"}],"name":"governance","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IGovernanceSettings"}],"name":"governanceSettings","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"initialise","inputs":[{"type":"address","name":"_governanceSettings","internalType":"contract IGovernanceSettings"},{"type":"address","name":"_initialGovernance","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"isExecutor","inputs":[{"type":"address","name":"_address","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"productionMode","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"removeFeeds","inputs":[{"type":"bytes21[]","name":"_feedIds","internalType":"bytes21[]"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"switchToProductionMode","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"allowedAfterTimestamp","internalType":"uint256"},{"type":"bytes","name":"encodedCall","internalType":"bytes"}],"name":"timelockedCalls","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"updateContractAddresses","inputs":[{"type":"bytes32[]","name":"_contractNameHashes","internalType":"bytes32[]"},{"type":"address[]","name":"_contractAddresses","internalType":"address[]"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"updateFeeds","inputs":[{"type":"tuple[]","name":"_feedConfigs","internalType":"struct IFastUpdatesConfiguration.FeedConfiguration[]","components":[{"type":"bytes21","name":"feedId","internalType":"bytes21"},{"type":"uint32","name":"rewardBandValue","internalType":"uint32"},{"type":"uint24","name":"inflationShare","internalType":"uint24"}]}]}]"#
+    );
 
-#[tokio::main]
-async fn main() -> Result<()> {
-    // FastUpdatesConfiguration address (Flare Testnet Coston2)
-    let address = "0xE7d1D5D58cAE01a82b84989A931999Cb34A86B14".parse()?;
-    let rpc_url = "https://rpc.ankr.com/flare_coston2".parse()?;
-    // Connect to an RPC node
-    let provider = ProviderBuilder::new().on_http(rpc_url);
-    // Set up contract instance
-    let ftsov2_config = FastUpdatesConfiguration::new(address, provider);
-    // Fetch feed configurations
-    let FastUpdatesConfiguration::getFeedConfigurationsReturn { _0 } =
-        ftsov2_config.getFeedConfigurations().call().await?;
-    // Print results
-    for feed in _0 {
-        println!(
-            "feedId: {}, rewardBandValue: {}, inflationShare: {}",
-            String::from_utf8(feed.feedId.as_slice().to_vec())?,
-            feed.rewardBandValue,
-            feed.inflationShare
-        );
+    #[tokio::main]
+    async fn main() -> Result<()> {
+        // FastUpdatesConfiguration address (Flare Testnet Coston2)
+        let address = "0xE7d1D5D58cAE01a82b84989A931999Cb34A86B14".parse()?;
+        let rpc_url = "https://rpc.ankr.com/flare_coston2".parse()?;
+        // Connect to an RPC node
+        let provider = ProviderBuilder::new().on_http(rpc_url);
+        // Set up contract instance
+        let ftsov2_config = FastUpdatesConfiguration::new(address, provider);
+        // Fetch feed configurations
+        let FastUpdatesConfiguration::getFeedConfigurationsReturn { _0 } =
+            ftsov2_config.getFeedConfigurations().call().await?;
+        // Print results
+        for feed in _0 {
+            println!(
+                "feedId: {}, rewardBandValue: {}, inflationShare: {}",
+                String::from_utf8(feed.feedId.as_slice().to_vec())?,
+                feed.rewardBandValue,
+                feed.inflationShare
+            );
+        }
+        Ok(())
     }
-    Ok(())
-}
-```
+    ```
 
-## Go
+  </TabItem>
+  <TabItem value="Go" label="Go">
 
-This example uses the Go API from [Geth](https://geth.ethereum.org) to retrieve FTSOv2 feed configurations on Flare Testnet Coston2.
+    This example uses the Go API from [Geth](https://geth.ethereum.org) to retrieve FTSOv2 feed configurations on Flare Testnet Coston2.
 
-```bash
-go get github.com/ethereum/go-ethereum/ethclient
-```
+    ```bash
+    go get github.com/ethereum/go-ethereum/ethclient
+    ```
 
-With Go, you need to manually fetch the contract's ABI and generate the Go bindings. Copy the Contract ABI for [FastUpdatesConfiguration on Flare Testnet Coston2](../solidity-reference) and paste it into a file named `FastUpdatesConfiguration.abi`, located in the root of your project, i.e. same level as `go.mod`. Then using [abigen](https://geth.ethereum.org/docs/tools/abigen), generate the Go bindings.
+    With Go, you need to manually fetch the contract's ABI and generate the Go bindings. Copy the Contract ABI for [FastUpdatesConfiguration on Flare Testnet Coston2](../solidity-reference) and paste it into a file named `FastUpdatesConfiguration.abi`, located in the root of your project, i.e. same level as `go.mod`. Then using [abigen](https://geth.ethereum.org/docs/tools/abigen), generate the Go bindings.
 
-```bash
-abigen --abi FastUpdatesConfiguration.abi --pkg main --type FastUpdatesConfiguration --out FastUpdatesConfiguration.go
-```
+    ```bash
+    abigen --abi FastUpdatesConfiguration.abi --pkg main --type FastUpdatesConfiguration --out FastUpdatesConfiguration.go
+    ```
 
-```go title="ftsov2_config.go"
-// THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
-package main
+    ```go title="ftsov2_config.go"
+    // THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
+    package main
 
-import (
-  "context"
-  "fmt"
+    import (
+      "context"
+      "fmt"
 
-  "github.com/ethereum/go-ethereum/accounts/abi/bind"
-  "github.com/ethereum/go-ethereum/common"
-  "github.com/ethereum/go-ethereum/ethclient"
-)
+      "github.com/ethereum/go-ethereum/accounts/abi/bind"
+      "github.com/ethereum/go-ethereum/common"
+      "github.com/ethereum/go-ethereum/ethclient"
+    )
 
-func FtsoV2Config() {
-  // FastUpdatesConfiguration address (Flare Testnet Coston2)
-  address := common.HexToAddress("0xE7d1D5D58cAE01a82b84989A931999Cb34A86B14")
-  rpcUrl := "https://rpc.ankr.com/flare_coston2"
-  // Connect to an RPC node
-  client, _ := ethclient.Dial(rpcUrl)
-  // Set up contract instance
-  ftsov2, _ := NewFastUpdatesConfiguration(address, client)
-  // Fetch current feeds
-  opts := &bind.CallOpts{Context: context.Background()}
-  res, _ := ftsov2.GetFeedConfigurations(opts)
-  // Print results
-  for i := 0; i < len(res); i++ {
-    fmt.Printf("feedId: %s, rewardBandValue %d, inflationShare %d\n", string(res[i].FeedId[:]), res[i].RewardBandValue, res[i].InflationShare)
-  }
-}
-```
+    func FtsoV2Config() {
+      // FastUpdatesConfiguration address (Flare Testnet Coston2)
+      address := common.HexToAddress("0xE7d1D5D58cAE01a82b84989A931999Cb34A86B14")
+      rpcUrl := "https://rpc.ankr.com/flare_coston2"
+      // Connect to an RPC node
+      client, _ := ethclient.Dial(rpcUrl)
+      // Set up contract instance
+      ftsov2, _ := NewFastUpdatesConfiguration(address, client)
+      // Fetch current feeds
+      opts := &bind.CallOpts{Context: context.Background()}
+      res, _ := ftsov2.GetFeedConfigurations(opts)
+      // Print results
+      for i := 0; i < len(res); i++ {
+        fmt.Printf("feedId: %s, rewardBandValue %d, inflationShare %d\n", string(res[i].FeedId[:]), res[i].RewardBandValue, res[i].InflationShare)
+      }
+    }
+    ```
+
+  </TabItem>
+</Tabs>

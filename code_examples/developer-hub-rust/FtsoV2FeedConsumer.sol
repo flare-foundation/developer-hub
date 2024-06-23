@@ -1,11 +1,17 @@
 // SPDX-License-Identifier: MIT
-pragma solidity <0.9.0;
+pragma solidity ^0.8.20;
 
 interface IFastUpdater {
-    function fetchCurrentFeeds(uint256[] calldata feedIndexes)
+    function fetchCurrentFeeds(
+        uint256[] calldata _feedIndexes
+    )
         external
         view
-        returns (uint256[] memory feedValues, int8[] memory decimals);
+        returns (
+            uint256[] memory _feedValues,
+            int8[] memory _decimals,
+            int64 _timestamp
+        );
 }
 
 /**
@@ -16,7 +22,7 @@ interface IFastUpdater {
 contract FtsoV2FeedConsumer {
     IFastUpdater internal ftsoV2;
     // Feed indexes: 0 = FLR/USD, 2 = BTC/USD, 9 = ETH/USD
-    uint256[] public feedIndexes = [0, 1, 2];
+    uint256[] public feedIndexes = [0, 2, 9];
 
     /**
      * Network: Flare Testnet Coston2
@@ -30,10 +36,17 @@ contract FtsoV2FeedConsumer {
      * Get the current value of the feeds.
      */
     function getFtsoV2CurrentFeedValues()
-        public
+        external
         view
         returns (uint256[] memory _feedValues, int8[] memory _decimals)
     {
-        return ftsoV2.fetchCurrentFeeds(feedIndexes);
+        (
+            uint256[] memory feedValues,
+            int8[] memory decimals,
+             /* uint64 timestamp */
+        ) = ftsoV2.fetchCurrentFeeds(feedIndexes);
+        /* Your custom feed consumption logic. */
+        /* In this example the feed values and decimals are just returned. */
+        return (feedValues, decimals);
     }
 }
