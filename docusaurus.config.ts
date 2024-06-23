@@ -40,6 +40,7 @@ const config: Config = {
       {
         docs: {
           sidebarPath: "./sidebars.ts",
+          routeBasePath: "/",
           remarkPlugins: [remarkMath],
           rehypePlugins: [rehypeKatex],
           editUrl:
@@ -134,15 +135,15 @@ const config: Config = {
           items: [
             {
               label: "FAQs",
-              to: "docs/support/faqs",
+              to: "support/faqs",
             },
             {
               label: "Terminology",
-              to: "docs/support/terminology",
+              to: "support/terminology",
             },
             {
               label: "Audits",
-              to: "docs/support/audits",
+              to: "support/audits",
             },
           ],
         },

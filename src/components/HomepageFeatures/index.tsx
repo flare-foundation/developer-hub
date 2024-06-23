@@ -24,7 +24,7 @@ const FeatureList: FeatureItem[] = [
         Flare
       </>
     ),
-    linkToProtocolDocs: "docs/ftso/overview",
+    linkToProtocolDocs: "/ftso/overview",
   },
   {
     title: "FDC",
@@ -34,7 +34,7 @@ const FeatureList: FeatureItem[] = [
         Interoperable, tamper-proof Web2 & Web3 data for real-world applications
       </>
     ),
-    linkToProtocolDocs: "docs/fdc/overview",
+    linkToProtocolDocs: "/fdc/overview",
   },
   {
     title: "FAssets",
@@ -45,7 +45,7 @@ const FeatureList: FeatureItem[] = [
         smart-contract tokens
       </>
     ),
-    linkToProtocolDocs: "docs/fassets/overview",
+    linkToProtocolDocs: "/fassets/overview",
   },
 ];
 
