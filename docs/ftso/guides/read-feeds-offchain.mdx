@@ -44,383 +44,390 @@ All code examples in this guide are also available in the [developer-hub reposit
 
 :::
 
-## JavaScript
+<Tabs block>
+  <TabItem value="JavaScript" label="JavaScript" default>
 
-This example shows two ways, one using [web3.js](https://github.com/web3/web3.js) and the other using [ethers.js](https://github.com/ethers-io/ethers.js/), to retrieve FTSOv2 feed data for FLR/USD, BTC/USD, and ETH/USD on Flare Testnet Coston2.
+    This example shows two ways, one using [web3.js](https://github.com/web3/web3.js) and the other using [ethers.js](https://github.com/ethers-io/ethers.js/), to retrieve FTSOv2 feed data for FLR/USD, BTC/USD, and ETH/USD on Flare Testnet Coston2.
 
-<Tabs groupId="web3">
-  <TabItem value="web3js" label="web3.js" default>
-    ```bash
-    npm install web3
-    ```
+    <Tabs groupId="web3">
+      <TabItem value="web3js" label="web3.js" default>
+        ```bash
+        npm install web3
+        ```
+
+      </TabItem>
+      <TabItem value="ethersjs" label="ethers.js">
+        ```bash
+        npm install ethers
+        ```
+
+      </TabItem>
+    </Tabs>
+
+    <Tabs groupId="web3">
+      <TabItem value="web3js" label="web3.js" default>
+        ```javascript title="ftsov2_consumer.js"
+        // THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
+        import { Web3 } from "web3";
+
+        // FastUpdater address (Flare Testnet Coston2)
+        const ADDRESS = "0x58fb598EC6DB6901aA6F26a9A2087E9274128E59";
+        const RPC_URL = "https://rpc.ankr.com/flare_coston2";
+        // Feed indexes: 0 = FLR/USD, 2 = BTC/USD, 9 = ETH/USD
+        const FEED_INDEXES = [0, 2, 9];
+        // ABI for FastUpdater contract
+        const ABI =
+          '[{"type":"constructor","stateMutability":"nonpayable","inputs":[{"type":"address","name":"_governanceSettings","internalType":"contract IGovernanceSettings"},{"type":"address","name":"_initialGovernance","internalType":"address"},{"type":"address","name":"_addressUpdater","internalType":"address"},{"type":"address","name":"_flareDaemon","internalType":"address"},{"type":"uint32","name":"_firstVotingRoundStartTs","internalType":"uint32"},{"type":"uint8","name":"_votingEpochDurationSeconds","internalType":"uint8"},{"type":"uint8","name":"_submissionWindow","internalType":"uint8"}]},{"type":"error","name":"ECDSAInvalidSignature","inputs":[]},{"type":"error","name":"ECDSAInvalidSignatureLength","inputs":[{"type":"uint256","name":"length","internalType":"uint256"}]},{"type":"error","name":"ECDSAInvalidSignatureS","inputs":[{"type":"bytes32","name":"s","internalType":"bytes32"}]},{"type":"event","name":"FastUpdateFeedRemoved","inputs":[{"type":"uint256","name":"index","internalType":"uint256","indexed":true}],"anonymous":false},{"type":"event","name":"FastUpdateFeedReset","inputs":[{"type":"uint256","name":"votingRoundId","internalType":"uint256","indexed":true},{"type":"uint256","name":"index","internalType":"uint256","indexed":true},{"type":"bytes21","name":"id","internalType":"bytes21","indexed":true},{"type":"uint256","name":"value","internalType":"uint256","indexed":false},{"type":"int8","name":"decimals","internalType":"int8","indexed":false}],"anonymous":false},{"type":"event","name":"FastUpdateFeeds","inputs":[{"type":"uint256","name":"votingEpochId","internalType":"uint256","indexed":true},{"type":"uint256[]","name":"feeds","internalType":"uint256[]","indexed":false},{"type":"int8[]","name":"decimals","internalType":"int8[]","indexed":false}],"anonymous":false},{"type":"event","name":"FastUpdateFeedsSubmitted","inputs":[{"type":"uint32","name":"votingRoundId","internalType":"uint32","indexed":true},{"type":"address","name":"signingPolicyAddress","internalType":"address","indexed":true}],"anonymous":false},{"type":"event","name":"GovernanceCallTimelocked","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"allowedAfterTimestamp","internalType":"uint256","indexed":false},{"type":"bytes","name":"encodedCall","internalType":"bytes","indexed":false}],"anonymous":false},{"type":"event","name":"GovernanceInitialised","inputs":[{"type":"address","name":"initialGovernance","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"GovernedProductionModeEntered","inputs":[{"type":"address","name":"governanceSettings","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"TimelockedGovernanceCallCanceled","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"timestamp","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"TimelockedGovernanceCallExecuted","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"timestamp","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"MAX_BLOCKS_HISTORY","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"MAX_FEED_AGE_IN_VOTING_EPOCHS","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"_cutoff","internalType":"uint256"}],"name":"blockScoreCutoff","inputs":[{"type":"uint256","name":"_blockNum","internalType":"uint256"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"cancelGovernanceCall","inputs":[{"type":"bytes4","name":"_selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint24","name":"","internalType":"uint24"}],"name":"currentRewardEpochId","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"_cutoff","internalType":"uint256"}],"name":"currentScoreCutoff","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"_weight","internalType":"uint256"}],"name":"currentSortitionWeight","inputs":[{"type":"address","name":"_signingPolicyAddress","internalType":"address"}]},{"type":"function","stateMutability":"nonpayable","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"daemonize","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"executeGovernanceCall","inputs":[{"type":"bytes4","name":"_selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IIFastUpdateIncentiveManager"}],"name":"fastUpdateIncentiveManager","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IFastUpdatesConfiguration"}],"name":"fastUpdatesConfiguration","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"bytes21[]","name":"_feedIds","internalType":"bytes21[]"},{"type":"uint256[]","name":"_feeds","internalType":"uint256[]"},{"type":"int8[]","name":"_decimals","internalType":"int8[]"},{"type":"uint64","name":"_timestamp","internalType":"uint64"}],"name":"fetchAllCurrentFeeds","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256[]","name":"_feeds","internalType":"uint256[]"},{"type":"int8[]","name":"_decimals","internalType":"int8[]"},{"type":"uint64","name":"_timestamp","internalType":"uint64"}],"name":"fetchCurrentFeeds","inputs":[{"type":"uint256[]","name":"_indices","internalType":"uint256[]"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint64","name":"","internalType":"uint64"}],"name":"firstVotingRoundStartTs","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"address"}],"name":"flareDaemon","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IFlareSystemsManager"}],"name":"flareSystemsManager","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IFtsoFeedPublisher"}],"name":"ftsoFeedPublisher","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"_addressUpdater","internalType":"address"}],"name":"getAddressUpdater","inputs":[]},{"type":"function","stateMutability":"pure","outputs":[{"type":"string","name":"","internalType":"string"}],"name":"getContractName","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"address"}],"name":"governance","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IGovernanceSettings"}],"name":"governanceSettings","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"initialise","inputs":[{"type":"address","name":"_governanceSettings","internalType":"contract IGovernanceSettings"},{"type":"address","name":"_initialGovernance","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"isExecutor","inputs":[{"type":"address","name":"_address","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256[]","name":"_noOfUpdates","internalType":"uint256[]"}],"name":"numberOfUpdates","inputs":[{"type":"uint256","name":"_historySize","internalType":"uint256"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"numberOfUpdatesInBlock","inputs":[{"type":"uint256","name":"_blockNumber","internalType":"uint256"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"productionMode","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"removeFeeds","inputs":[{"type":"uint256[]","name":"_indices","internalType":"uint256[]"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"resetFeeds","inputs":[{"type":"uint256[]","name":"_indices","internalType":"uint256[]"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"setSubmissionWindow","inputs":[{"type":"uint8","name":"_submissionWindow","internalType":"uint8"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint8","name":"","internalType":"uint8"}],"name":"submissionWindow","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"submitUpdates","inputs":[{"type":"tuple","name":"_updates","internalType":"struct IFastUpdater.FastUpdates","components":[{"type":"uint256","name":"sortitionBlock","internalType":"uint256"},{"type":"tuple","name":"sortitionCredential","internalType":"struct SortitionCredential","components":[{"type":"uint256","name":"replicate","internalType":"uint256"},{"type":"tuple","name":"gamma","internalType":"struct Bn256.G1Point","components":[{"type":"uint256","name":"x","internalType":"uint256"},{"type":"uint256","name":"y","internalType":"uint256"}]},{"type":"uint256","name":"c","internalType":"uint256"},{"type":"uint256","name":"s","internalType":"uint256"}]},{"type":"bytes","name":"deltas","internalType":"bytes"},{"type":"tuple","name":"signature","internalType":"struct IFastUpdater.Signature","components":[{"type":"uint8","name":"v","internalType":"uint8"},{"type":"bytes32","name":"r","internalType":"bytes32"},{"type":"bytes32","name":"s","internalType":"bytes32"}]}]}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"switchToFallbackMode","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"switchToProductionMode","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"allowedAfterTimestamp","internalType":"uint256"},{"type":"bytes","name":"encodedCall","internalType":"bytes"}],"name":"timelockedCalls","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"updateContractAddresses","inputs":[{"type":"bytes32[]","name":"_contractNameHashes","internalType":"bytes32[]"},{"type":"address[]","name":"_contractAddresses","internalType":"address[]"}]},{"type":"function","stateMutability":"view","outputs":[],"name":"verifyPublicKey","inputs":[{"type":"address","name":"_voter","internalType":"address"},{"type":"bytes32","name":"_part1","internalType":"bytes32"},{"type":"bytes32","name":"_part2","internalType":"bytes32"},{"type":"bytes","name":"_verificationData","internalType":"bytes"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IIVoterRegistry"}],"name":"voterRegistry","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint64","name":"","internalType":"uint64"}],"name":"votingEpochDurationSeconds","inputs":[]}]';
+
+        async function main() {
+          // Connect to an RPC node
+          const w3 = new Web3(RPC_URL);
+          // Set up contract instance
+          const ftsov2 = new w3.eth.Contract(JSON.parse(ABI), ADDRESS);
+          // Fetch current feeds
+          const res = await ftsov2.methods.fetchCurrentFeeds(FEED_INDEXES).call();
+          // Log results
+          console.log("Feeds:", res["_feeds"]);
+          console.log("Decimals:", res["_decimals"]);
+          console.log("Timestamp:", res["_timestamp"]);
+        }
+
+        main();
+        ```
+
+      </TabItem>
+      <TabItem value="ethersjs" label="ethers.js">
+
+        ```javascript title="ftsov2_consumer.js"
+        // THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
+        import { ethers } from "ethers";
+
+        // FastUpdater address (Flare Testnet Coston2)
+        const ADDRESS = "0x58fb598EC6DB6901aA6F26a9A2087E9274128E59";
+        const RPC_URL = "https://rpc.ankr.com/flare_coston2";
+        // Feed indexes: 0 = FLR/USD, 2 = BTC/USD, 9 = ETH/USD
+        const FEED_INDEXES = [0, 2, 9];
+        // ABI for FastUpdater contract
+        const ABI =
+          '[{"type":"constructor","stateMutability":"nonpayable","inputs":[{"type":"address","name":"_governanceSettings","internalType":"contract IGovernanceSettings"},{"type":"address","name":"_initialGovernance","internalType":"address"},{"type":"address","name":"_addressUpdater","internalType":"address"},{"type":"address","name":"_flareDaemon","internalType":"address"},{"type":"uint32","name":"_firstVotingRoundStartTs","internalType":"uint32"},{"type":"uint8","name":"_votingEpochDurationSeconds","internalType":"uint8"},{"type":"uint8","name":"_submissionWindow","internalType":"uint8"}]},{"type":"error","name":"ECDSAInvalidSignature","inputs":[]},{"type":"error","name":"ECDSAInvalidSignatureLength","inputs":[{"type":"uint256","name":"length","internalType":"uint256"}]},{"type":"error","name":"ECDSAInvalidSignatureS","inputs":[{"type":"bytes32","name":"s","internalType":"bytes32"}]},{"type":"event","name":"FastUpdateFeedRemoved","inputs":[{"type":"uint256","name":"index","internalType":"uint256","indexed":true}],"anonymous":false},{"type":"event","name":"FastUpdateFeedReset","inputs":[{"type":"uint256","name":"votingRoundId","internalType":"uint256","indexed":true},{"type":"uint256","name":"index","internalType":"uint256","indexed":true},{"type":"bytes21","name":"id","internalType":"bytes21","indexed":true},{"type":"uint256","name":"value","internalType":"uint256","indexed":false},{"type":"int8","name":"decimals","internalType":"int8","indexed":false}],"anonymous":false},{"type":"event","name":"FastUpdateFeeds","inputs":[{"type":"uint256","name":"votingEpochId","internalType":"uint256","indexed":true},{"type":"uint256[]","name":"feeds","internalType":"uint256[]","indexed":false},{"type":"int8[]","name":"decimals","internalType":"int8[]","indexed":false}],"anonymous":false},{"type":"event","name":"FastUpdateFeedsSubmitted","inputs":[{"type":"uint32","name":"votingRoundId","internalType":"uint32","indexed":true},{"type":"address","name":"signingPolicyAddress","internalType":"address","indexed":true}],"anonymous":false},{"type":"event","name":"GovernanceCallTimelocked","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"allowedAfterTimestamp","internalType":"uint256","indexed":false},{"type":"bytes","name":"encodedCall","internalType":"bytes","indexed":false}],"anonymous":false},{"type":"event","name":"GovernanceInitialised","inputs":[{"type":"address","name":"initialGovernance","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"GovernedProductionModeEntered","inputs":[{"type":"address","name":"governanceSettings","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"TimelockedGovernanceCallCanceled","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"timestamp","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"TimelockedGovernanceCallExecuted","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"timestamp","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"MAX_BLOCKS_HISTORY","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"MAX_FEED_AGE_IN_VOTING_EPOCHS","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"_cutoff","internalType":"uint256"}],"name":"blockScoreCutoff","inputs":[{"type":"uint256","name":"_blockNum","internalType":"uint256"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"cancelGovernanceCall","inputs":[{"type":"bytes4","name":"_selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint24","name":"","internalType":"uint24"}],"name":"currentRewardEpochId","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"_cutoff","internalType":"uint256"}],"name":"currentScoreCutoff","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"_weight","internalType":"uint256"}],"name":"currentSortitionWeight","inputs":[{"type":"address","name":"_signingPolicyAddress","internalType":"address"}]},{"type":"function","stateMutability":"nonpayable","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"daemonize","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"executeGovernanceCall","inputs":[{"type":"bytes4","name":"_selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IIFastUpdateIncentiveManager"}],"name":"fastUpdateIncentiveManager","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IFastUpdatesConfiguration"}],"name":"fastUpdatesConfiguration","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"bytes21[]","name":"_feedIds","internalType":"bytes21[]"},{"type":"uint256[]","name":"_feeds","internalType":"uint256[]"},{"type":"int8[]","name":"_decimals","internalType":"int8[]"},{"type":"uint64","name":"_timestamp","internalType":"uint64"}],"name":"fetchAllCurrentFeeds","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256[]","name":"_feeds","internalType":"uint256[]"},{"type":"int8[]","name":"_decimals","internalType":"int8[]"},{"type":"uint64","name":"_timestamp","internalType":"uint64"}],"name":"fetchCurrentFeeds","inputs":[{"type":"uint256[]","name":"_indices","internalType":"uint256[]"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint64","name":"","internalType":"uint64"}],"name":"firstVotingRoundStartTs","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"address"}],"name":"flareDaemon","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IFlareSystemsManager"}],"name":"flareSystemsManager","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IFtsoFeedPublisher"}],"name":"ftsoFeedPublisher","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"_addressUpdater","internalType":"address"}],"name":"getAddressUpdater","inputs":[]},{"type":"function","stateMutability":"pure","outputs":[{"type":"string","name":"","internalType":"string"}],"name":"getContractName","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"address"}],"name":"governance","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IGovernanceSettings"}],"name":"governanceSettings","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"initialise","inputs":[{"type":"address","name":"_governanceSettings","internalType":"contract IGovernanceSettings"},{"type":"address","name":"_initialGovernance","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"isExecutor","inputs":[{"type":"address","name":"_address","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256[]","name":"_noOfUpdates","internalType":"uint256[]"}],"name":"numberOfUpdates","inputs":[{"type":"uint256","name":"_historySize","internalType":"uint256"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"numberOfUpdatesInBlock","inputs":[{"type":"uint256","name":"_blockNumber","internalType":"uint256"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"productionMode","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"removeFeeds","inputs":[{"type":"uint256[]","name":"_indices","internalType":"uint256[]"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"resetFeeds","inputs":[{"type":"uint256[]","name":"_indices","internalType":"uint256[]"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"setSubmissionWindow","inputs":[{"type":"uint8","name":"_submissionWindow","internalType":"uint8"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint8","name":"","internalType":"uint8"}],"name":"submissionWindow","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"submitUpdates","inputs":[{"type":"tuple","name":"_updates","internalType":"struct IFastUpdater.FastUpdates","components":[{"type":"uint256","name":"sortitionBlock","internalType":"uint256"},{"type":"tuple","name":"sortitionCredential","internalType":"struct SortitionCredential","components":[{"type":"uint256","name":"replicate","internalType":"uint256"},{"type":"tuple","name":"gamma","internalType":"struct Bn256.G1Point","components":[{"type":"uint256","name":"x","internalType":"uint256"},{"type":"uint256","name":"y","internalType":"uint256"}]},{"type":"uint256","name":"c","internalType":"uint256"},{"type":"uint256","name":"s","internalType":"uint256"}]},{"type":"bytes","name":"deltas","internalType":"bytes"},{"type":"tuple","name":"signature","internalType":"struct IFastUpdater.Signature","components":[{"type":"uint8","name":"v","internalType":"uint8"},{"type":"bytes32","name":"r","internalType":"bytes32"},{"type":"bytes32","name":"s","internalType":"bytes32"}]}]}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"switchToFallbackMode","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"switchToProductionMode","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"allowedAfterTimestamp","internalType":"uint256"},{"type":"bytes","name":"encodedCall","internalType":"bytes"}],"name":"timelockedCalls","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"updateContractAddresses","inputs":[{"type":"bytes32[]","name":"_contractNameHashes","internalType":"bytes32[]"},{"type":"address[]","name":"_contractAddresses","internalType":"address[]"}]},{"type":"function","stateMutability":"view","outputs":[],"name":"verifyPublicKey","inputs":[{"type":"address","name":"_voter","internalType":"address"},{"type":"bytes32","name":"_part1","internalType":"bytes32"},{"type":"bytes32","name":"_part2","internalType":"bytes32"},{"type":"bytes","name":"_verificationData","internalType":"bytes"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IIVoterRegistry"}],"name":"voterRegistry","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint64","name":"","internalType":"uint64"}],"name":"votingEpochDurationSeconds","inputs":[]}]';
+
+        async function main() {
+          // Connect to an RPC node
+          const provider = new ethers.JsonRpcProvider(RPC_URL);
+          // Set up contract instance
+          const ftsov2 = new ethers.Contract(ADDRESS, JSON.parse(ABI), provider);
+          // Fetch current feeds
+          const res = await ftsov2.fetchCurrentFeeds(FEED_INDEXES);
+          // Log results
+          console.log("Feeds:", res[0]);
+          console.log("Decimals:", res[1]);
+          console.log("Timestamp:", res[2]);
+        }
+
+        main();
+        ```
+
+      </TabItem>
+    </Tabs>
 
   </TabItem>
-  <TabItem value="ethersjs" label="ethers.js">
-    ```bash
-    npm install ethers
+  <TabItem value="Python" label="Python">
+
+    This example uses [web3.py](https://github.com/ethereum/web3.py) to retrieve FTSOv2 feed values for FLR/USD, BTC/USD, and ETH/USD on Flare Testnet Coston2.
+
+    <Tabs groupId="python">
+      <TabItem value="poetry" label="poetry" default>
+        ```bash
+        poetry add web3
+        ```
+
+      </TabItem>
+      <TabItem value="pip" label="pip">
+        ```bash
+        pip install web3
+        ```
+
+      </TabItem>
+    </Tabs>
+
+    ```python title="ftsov2_consumer.py"
+    # THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
+    import asyncio
+
+    from web3 import AsyncHTTPProvider, AsyncWeb3
+
+    # FastUpdater address (Flare Testnet Coston2)
+    ADDRESS = "0x58fb598EC6DB6901aA6F26a9A2087E9274128E59"
+    RPC_URL = "https://rpc.ankr.com/flare_coston2"
+    # Feed indexes: 0 = FLR/USD, 2 = BTC/USD, 9 = ETH/USD
+    FEED_INDEXES = [0, 2, 9]
+    # ABI for FastUpdater contract
+    ABI = '[{"type":"constructor","stateMutability":"nonpayable","inputs":[{"type":"address","name":"_governanceSettings","internalType":"contract IGovernanceSettings"},{"type":"address","name":"_initialGovernance","internalType":"address"},{"type":"address","name":"_addressUpdater","internalType":"address"},{"type":"address","name":"_flareDaemon","internalType":"address"},{"type":"uint32","name":"_firstVotingRoundStartTs","internalType":"uint32"},{"type":"uint8","name":"_votingEpochDurationSeconds","internalType":"uint8"},{"type":"uint8","name":"_submissionWindow","internalType":"uint8"}]},{"type":"error","name":"ECDSAInvalidSignature","inputs":[]},{"type":"error","name":"ECDSAInvalidSignatureLength","inputs":[{"type":"uint256","name":"length","internalType":"uint256"}]},{"type":"error","name":"ECDSAInvalidSignatureS","inputs":[{"type":"bytes32","name":"s","internalType":"bytes32"}]},{"type":"event","name":"FastUpdateFeedRemoved","inputs":[{"type":"uint256","name":"index","internalType":"uint256","indexed":true}],"anonymous":false},{"type":"event","name":"FastUpdateFeedReset","inputs":[{"type":"uint256","name":"votingRoundId","internalType":"uint256","indexed":true},{"type":"uint256","name":"index","internalType":"uint256","indexed":true},{"type":"bytes21","name":"id","internalType":"bytes21","indexed":true},{"type":"uint256","name":"value","internalType":"uint256","indexed":false},{"type":"int8","name":"decimals","internalType":"int8","indexed":false}],"anonymous":false},{"type":"event","name":"FastUpdateFeeds","inputs":[{"type":"uint256","name":"votingEpochId","internalType":"uint256","indexed":true},{"type":"uint256[]","name":"feeds","internalType":"uint256[]","indexed":false},{"type":"int8[]","name":"decimals","internalType":"int8[]","indexed":false}],"anonymous":false},{"type":"event","name":"FastUpdateFeedsSubmitted","inputs":[{"type":"uint32","name":"votingRoundId","internalType":"uint32","indexed":true},{"type":"address","name":"signingPolicyAddress","internalType":"address","indexed":true}],"anonymous":false},{"type":"event","name":"GovernanceCallTimelocked","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"allowedAfterTimestamp","internalType":"uint256","indexed":false},{"type":"bytes","name":"encodedCall","internalType":"bytes","indexed":false}],"anonymous":false},{"type":"event","name":"GovernanceInitialised","inputs":[{"type":"address","name":"initialGovernance","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"GovernedProductionModeEntered","inputs":[{"type":"address","name":"governanceSettings","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"TimelockedGovernanceCallCanceled","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"timestamp","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"TimelockedGovernanceCallExecuted","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"timestamp","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"MAX_BLOCKS_HISTORY","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"MAX_FEED_AGE_IN_VOTING_EPOCHS","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"_cutoff","internalType":"uint256"}],"name":"blockScoreCutoff","inputs":[{"type":"uint256","name":"_blockNum","internalType":"uint256"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"cancelGovernanceCall","inputs":[{"type":"bytes4","name":"_selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint24","name":"","internalType":"uint24"}],"name":"currentRewardEpochId","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"_cutoff","internalType":"uint256"}],"name":"currentScoreCutoff","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"_weight","internalType":"uint256"}],"name":"currentSortitionWeight","inputs":[{"type":"address","name":"_signingPolicyAddress","internalType":"address"}]},{"type":"function","stateMutability":"nonpayable","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"daemonize","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"executeGovernanceCall","inputs":[{"type":"bytes4","name":"_selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IIFastUpdateIncentiveManager"}],"name":"fastUpdateIncentiveManager","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IFastUpdatesConfiguration"}],"name":"fastUpdatesConfiguration","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"bytes21[]","name":"_feedIds","internalType":"bytes21[]"},{"type":"uint256[]","name":"_feeds","internalType":"uint256[]"},{"type":"int8[]","name":"_decimals","internalType":"int8[]"},{"type":"uint64","name":"_timestamp","internalType":"uint64"}],"name":"fetchAllCurrentFeeds","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256[]","name":"_feeds","internalType":"uint256[]"},{"type":"int8[]","name":"_decimals","internalType":"int8[]"},{"type":"uint64","name":"_timestamp","internalType":"uint64"}],"name":"fetchCurrentFeeds","inputs":[{"type":"uint256[]","name":"_indices","internalType":"uint256[]"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint64","name":"","internalType":"uint64"}],"name":"firstVotingRoundStartTs","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"address"}],"name":"flareDaemon","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IFlareSystemsManager"}],"name":"flareSystemsManager","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IFtsoFeedPublisher"}],"name":"ftsoFeedPublisher","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"_addressUpdater","internalType":"address"}],"name":"getAddressUpdater","inputs":[]},{"type":"function","stateMutability":"pure","outputs":[{"type":"string","name":"","internalType":"string"}],"name":"getContractName","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"address"}],"name":"governance","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IGovernanceSettings"}],"name":"governanceSettings","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"initialise","inputs":[{"type":"address","name":"_governanceSettings","internalType":"contract IGovernanceSettings"},{"type":"address","name":"_initialGovernance","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"isExecutor","inputs":[{"type":"address","name":"_address","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256[]","name":"_noOfUpdates","internalType":"uint256[]"}],"name":"numberOfUpdates","inputs":[{"type":"uint256","name":"_historySize","internalType":"uint256"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"numberOfUpdatesInBlock","inputs":[{"type":"uint256","name":"_blockNumber","internalType":"uint256"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"productionMode","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"removeFeeds","inputs":[{"type":"uint256[]","name":"_indices","internalType":"uint256[]"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"resetFeeds","inputs":[{"type":"uint256[]","name":"_indices","internalType":"uint256[]"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"setSubmissionWindow","inputs":[{"type":"uint8","name":"_submissionWindow","internalType":"uint8"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint8","name":"","internalType":"uint8"}],"name":"submissionWindow","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"submitUpdates","inputs":[{"type":"tuple","name":"_updates","internalType":"struct IFastUpdater.FastUpdates","components":[{"type":"uint256","name":"sortitionBlock","internalType":"uint256"},{"type":"tuple","name":"sortitionCredential","internalType":"struct SortitionCredential","components":[{"type":"uint256","name":"replicate","internalType":"uint256"},{"type":"tuple","name":"gamma","internalType":"struct Bn256.G1Point","components":[{"type":"uint256","name":"x","internalType":"uint256"},{"type":"uint256","name":"y","internalType":"uint256"}]},{"type":"uint256","name":"c","internalType":"uint256"},{"type":"uint256","name":"s","internalType":"uint256"}]},{"type":"bytes","name":"deltas","internalType":"bytes"},{"type":"tuple","name":"signature","internalType":"struct IFastUpdater.Signature","components":[{"type":"uint8","name":"v","internalType":"uint8"},{"type":"bytes32","name":"r","internalType":"bytes32"},{"type":"bytes32","name":"s","internalType":"bytes32"}]}]}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"switchToFallbackMode","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"switchToProductionMode","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"allowedAfterTimestamp","internalType":"uint256"},{"type":"bytes","name":"encodedCall","internalType":"bytes"}],"name":"timelockedCalls","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"updateContractAddresses","inputs":[{"type":"bytes32[]","name":"_contractNameHashes","internalType":"bytes32[]"},{"type":"address[]","name":"_contractAddresses","internalType":"address[]"}]},{"type":"function","stateMutability":"view","outputs":[],"name":"verifyPublicKey","inputs":[{"type":"address","name":"_voter","internalType":"address"},{"type":"bytes32","name":"_part1","internalType":"bytes32"},{"type":"bytes32","name":"_part2","internalType":"bytes32"},{"type":"bytes","name":"_verificationData","internalType":"bytes"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IIVoterRegistry"}],"name":"voterRegistry","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint64","name":"","internalType":"uint64"}],"name":"votingEpochDurationSeconds","inputs":[]}]'
+
+
+    async def main() -> None:
+        # Connect to an RPC node
+        w3 = AsyncWeb3(AsyncHTTPProvider(RPC_URL))
+        # Set up contract instance
+        ftsov2 = w3.eth.contract(address=ADDRESS, abi=ABI)
+        # Fetch current feeds
+        feeds, decimals, timestamp = await ftsov2.functions.fetchCurrentFeeds(
+          FEED_INDEXES
+        ).call()
+        # Print results
+        print("Feeds:", feeds)
+        print("Decimals:", decimals)
+        print("Timestamp:", timestamp)
+
+
+    if __name__ == "__main__":
+        asyncio.run(main())
     ```
 
-  </TabItem>
-</Tabs>
+    <details>
+    <summary>Didn't understand the Python code?</summary>
 
-<Tabs groupId="web3">
-  <TabItem value="web3js" label="web3.js" default>
-    ```javascript title="ftsov2_consumer.js"
+    Let's go through the Python code step-by-step to understand its functionality.
+
+    **Imports**
+
+    ```python
+    import asyncio
+    from web3 import AsyncHTTPProvider, AsyncWeb3
+    ```
+
+    - `asyncio`: A library to write concurrent code using the `async`/`await` syntax.
+    - `AsyncHTTPProvider`, `AsyncWeb3`: Asynchronous versions of `web3` components for interacting with the Ethereum blockchain.
+
+    **Configuration**
+
+    ```python
+    ADDRESS = "0x58fb598EC6DB6901aA6F26a9A2087E9274128E59"
+    RPC_URL = "https://rpc.ankr.com/flare_coston2"
+    FEED_INDEXES = [0, 2, 9]
+    ABI = '[...]'
+    ```
+
+    - `ADDRESS`: The address of the `FastUpdater` smart contract on the Flare Testnet Coston2.
+    - `RPC_URL`: The URL of the RPC node to connect to the Ethereum network.
+    - `FEED_INDEXES`: List of indexes representing specific price feeds: 0 for FLR/USD, 2 for BTC/USD, and 9 for ETH/USD.
+    - `ABI`: The Application Binary Interface (ABI) of the FastUpdater smart contract, which describes the contract's methods and events.
+
+    **Main Asynchronous Function**
+
+    ```python
+    async def main() -> None:
+        # Connect to an RPC node
+        w3 = AsyncWeb3(AsyncHTTPProvider(RPC_URL))
+    ```
+
+    - Connect to the RPC node using `AsyncWeb3` and `AsyncHTTPProvider`.
+
+    ```python
+        # Set up contract instance
+        ftsov2 = w3.eth.contract(address=ADDRESS, abi=ABI)
+    ```
+
+    - Create an instance of the smart contract using its address and ABI.
+
+    ```python
+        # Fetch current feeds
+        feeds, decimals, timestamp = await ftsov2.functions.fetchCurrentFeeds(
+          FEED_INDEXES
+        ).call()
+    ```
+
+    - Call the `fetchCurrentFeeds` method of the smart contract with `FEED_INDEXES` to get the current feed data.
+    - This method returns `feeds`, `decimals`, and `timestamp`:
+      - `feeds`: The price feed data.
+      - `decimals`: The decimal places for each feed value.
+      - `timestamp`: The timestamp when the feeds were last updated.
+
+    **Entry Point**
+
+    ```python
+    if __name__ == "__main__":
+        asyncio.run(main())
+    ```
+
+    - When the script is executed, it runs the `main` function within an asyncio event loop using `asyncio.run()`.
+
+    </details>
+
+  </TabItem>
+  <TabItem value="Rust" label="Rust">
+
+    This example uses [alloy-rs](https://github.com/alloy-rs) to retrieve FTSOv2 feed data for FLR/USD, BTC/USD, and ETH/USD on Flare Testnet Coston2.
+
+    Add the following dependencies to `Cargo.toml`:
+
+    ```toml title="Cargo.toml"
+    alloy = { version = "0.1", features = ["full"] }
+    eyre = "0.6"
+    tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros"] }
+    ```
+
+    ```rust title="src/bin/ftsov2_consumer.rs"
     // THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
-    import { Web3 } from "web3";
+    use alloy::{primitives::U256, providers::ProviderBuilder, sol};
+    use eyre::Result;
 
-    // FastUpdater address (Flare Testnet Coston2)
-    const ADDRESS = "0x58fb598EC6DB6901aA6F26a9A2087E9274128E59";
-    const RPC_URL = "https://rpc.ankr.com/flare_coston2";
-    // Feed indexes: 0 = FLR/USD, 2 = BTC/USD, 9 = ETH/USD
-    const FEED_INDEXES = [0, 2, 9];
-    // ABI for FastUpdater contract
-    const ABI =
-      '[{"type":"constructor","stateMutability":"nonpayable","inputs":[{"type":"address","name":"_governanceSettings","internalType":"contract IGovernanceSettings"},{"type":"address","name":"_initialGovernance","internalType":"address"},{"type":"address","name":"_addressUpdater","internalType":"address"},{"type":"address","name":"_flareDaemon","internalType":"address"},{"type":"uint32","name":"_firstVotingRoundStartTs","internalType":"uint32"},{"type":"uint8","name":"_votingEpochDurationSeconds","internalType":"uint8"},{"type":"uint8","name":"_submissionWindow","internalType":"uint8"}]},{"type":"error","name":"ECDSAInvalidSignature","inputs":[]},{"type":"error","name":"ECDSAInvalidSignatureLength","inputs":[{"type":"uint256","name":"length","internalType":"uint256"}]},{"type":"error","name":"ECDSAInvalidSignatureS","inputs":[{"type":"bytes32","name":"s","internalType":"bytes32"}]},{"type":"event","name":"FastUpdateFeedRemoved","inputs":[{"type":"uint256","name":"index","internalType":"uint256","indexed":true}],"anonymous":false},{"type":"event","name":"FastUpdateFeedReset","inputs":[{"type":"uint256","name":"votingRoundId","internalType":"uint256","indexed":true},{"type":"uint256","name":"index","internalType":"uint256","indexed":true},{"type":"bytes21","name":"id","internalType":"bytes21","indexed":true},{"type":"uint256","name":"value","internalType":"uint256","indexed":false},{"type":"int8","name":"decimals","internalType":"int8","indexed":false}],"anonymous":false},{"type":"event","name":"FastUpdateFeeds","inputs":[{"type":"uint256","name":"votingEpochId","internalType":"uint256","indexed":true},{"type":"uint256[]","name":"feeds","internalType":"uint256[]","indexed":false},{"type":"int8[]","name":"decimals","internalType":"int8[]","indexed":false}],"anonymous":false},{"type":"event","name":"FastUpdateFeedsSubmitted","inputs":[{"type":"uint32","name":"votingRoundId","internalType":"uint32","indexed":true},{"type":"address","name":"signingPolicyAddress","internalType":"address","indexed":true}],"anonymous":false},{"type":"event","name":"GovernanceCallTimelocked","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"allowedAfterTimestamp","internalType":"uint256","indexed":false},{"type":"bytes","name":"encodedCall","internalType":"bytes","indexed":false}],"anonymous":false},{"type":"event","name":"GovernanceInitialised","inputs":[{"type":"address","name":"initialGovernance","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"GovernedProductionModeEntered","inputs":[{"type":"address","name":"governanceSettings","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"TimelockedGovernanceCallCanceled","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"timestamp","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"TimelockedGovernanceCallExecuted","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"timestamp","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"MAX_BLOCKS_HISTORY","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"MAX_FEED_AGE_IN_VOTING_EPOCHS","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"_cutoff","internalType":"uint256"}],"name":"blockScoreCutoff","inputs":[{"type":"uint256","name":"_blockNum","internalType":"uint256"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"cancelGovernanceCall","inputs":[{"type":"bytes4","name":"_selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint24","name":"","internalType":"uint24"}],"name":"currentRewardEpochId","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"_cutoff","internalType":"uint256"}],"name":"currentScoreCutoff","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"_weight","internalType":"uint256"}],"name":"currentSortitionWeight","inputs":[{"type":"address","name":"_signingPolicyAddress","internalType":"address"}]},{"type":"function","stateMutability":"nonpayable","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"daemonize","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"executeGovernanceCall","inputs":[{"type":"bytes4","name":"_selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IIFastUpdateIncentiveManager"}],"name":"fastUpdateIncentiveManager","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IFastUpdatesConfiguration"}],"name":"fastUpdatesConfiguration","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"bytes21[]","name":"_feedIds","internalType":"bytes21[]"},{"type":"uint256[]","name":"_feeds","internalType":"uint256[]"},{"type":"int8[]","name":"_decimals","internalType":"int8[]"},{"type":"uint64","name":"_timestamp","internalType":"uint64"}],"name":"fetchAllCurrentFeeds","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256[]","name":"_feeds","internalType":"uint256[]"},{"type":"int8[]","name":"_decimals","internalType":"int8[]"},{"type":"uint64","name":"_timestamp","internalType":"uint64"}],"name":"fetchCurrentFeeds","inputs":[{"type":"uint256[]","name":"_indices","internalType":"uint256[]"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint64","name":"","internalType":"uint64"}],"name":"firstVotingRoundStartTs","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"address"}],"name":"flareDaemon","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IFlareSystemsManager"}],"name":"flareSystemsManager","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IFtsoFeedPublisher"}],"name":"ftsoFeedPublisher","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"_addressUpdater","internalType":"address"}],"name":"getAddressUpdater","inputs":[]},{"type":"function","stateMutability":"pure","outputs":[{"type":"string","name":"","internalType":"string"}],"name":"getContractName","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"address"}],"name":"governance","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IGovernanceSettings"}],"name":"governanceSettings","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"initialise","inputs":[{"type":"address","name":"_governanceSettings","internalType":"contract IGovernanceSettings"},{"type":"address","name":"_initialGovernance","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"isExecutor","inputs":[{"type":"address","name":"_address","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256[]","name":"_noOfUpdates","internalType":"uint256[]"}],"name":"numberOfUpdates","inputs":[{"type":"uint256","name":"_historySize","internalType":"uint256"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"numberOfUpdatesInBlock","inputs":[{"type":"uint256","name":"_blockNumber","internalType":"uint256"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"productionMode","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"removeFeeds","inputs":[{"type":"uint256[]","name":"_indices","internalType":"uint256[]"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"resetFeeds","inputs":[{"type":"uint256[]","name":"_indices","internalType":"uint256[]"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"setSubmissionWindow","inputs":[{"type":"uint8","name":"_submissionWindow","internalType":"uint8"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint8","name":"","internalType":"uint8"}],"name":"submissionWindow","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"submitUpdates","inputs":[{"type":"tuple","name":"_updates","internalType":"struct IFastUpdater.FastUpdates","components":[{"type":"uint256","name":"sortitionBlock","internalType":"uint256"},{"type":"tuple","name":"sortitionCredential","internalType":"struct SortitionCredential","components":[{"type":"uint256","name":"replicate","internalType":"uint256"},{"type":"tuple","name":"gamma","internalType":"struct Bn256.G1Point","components":[{"type":"uint256","name":"x","internalType":"uint256"},{"type":"uint256","name":"y","internalType":"uint256"}]},{"type":"uint256","name":"c","internalType":"uint256"},{"type":"uint256","name":"s","internalType":"uint256"}]},{"type":"bytes","name":"deltas","internalType":"bytes"},{"type":"tuple","name":"signature","internalType":"struct IFastUpdater.Signature","components":[{"type":"uint8","name":"v","internalType":"uint8"},{"type":"bytes32","name":"r","internalType":"bytes32"},{"type":"bytes32","name":"s","internalType":"bytes32"}]}]}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"switchToFallbackMode","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"switchToProductionMode","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"allowedAfterTimestamp","internalType":"uint256"},{"type":"bytes","name":"encodedCall","internalType":"bytes"}],"name":"timelockedCalls","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"updateContractAddresses","inputs":[{"type":"bytes32[]","name":"_contractNameHashes","internalType":"bytes32[]"},{"type":"address[]","name":"_contractAddresses","internalType":"address[]"}]},{"type":"function","stateMutability":"view","outputs":[],"name":"verifyPublicKey","inputs":[{"type":"address","name":"_voter","internalType":"address"},{"type":"bytes32","name":"_part1","internalType":"bytes32"},{"type":"bytes32","name":"_part2","internalType":"bytes32"},{"type":"bytes","name":"_verificationData","internalType":"bytes"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IIVoterRegistry"}],"name":"voterRegistry","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint64","name":"","internalType":"uint64"}],"name":"votingEpochDurationSeconds","inputs":[]}]';
+    sol!(
+        #[sol(rpc)]
+        FastUpdater,
+        r#"[{"type":"constructor","stateMutability":"nonpayable","inputs":[{"type":"address","name":"_governanceSettings","internalType":"contract IGovernanceSettings"},{"type":"address","name":"_initialGovernance","internalType":"address"},{"type":"address","name":"_addressUpdater","internalType":"address"},{"type":"address","name":"_flareDaemon","internalType":"address"},{"type":"uint32","name":"_firstVotingRoundStartTs","internalType":"uint32"},{"type":"uint8","name":"_votingEpochDurationSeconds","internalType":"uint8"},{"type":"uint8","name":"_submissionWindow","internalType":"uint8"}]},{"type":"error","name":"ECDSAInvalidSignature","inputs":[]},{"type":"error","name":"ECDSAInvalidSignatureLength","inputs":[{"type":"uint256","name":"length","internalType":"uint256"}]},{"type":"error","name":"ECDSAInvalidSignatureS","inputs":[{"type":"bytes32","name":"s","internalType":"bytes32"}]},{"type":"event","name":"FastUpdateFeedRemoved","inputs":[{"type":"uint256","name":"index","internalType":"uint256","indexed":true}],"anonymous":false},{"type":"event","name":"FastUpdateFeedReset","inputs":[{"type":"uint256","name":"votingRoundId","internalType":"uint256","indexed":true},{"type":"uint256","name":"index","internalType":"uint256","indexed":true},{"type":"bytes21","name":"id","internalType":"bytes21","indexed":true},{"type":"uint256","name":"value","internalType":"uint256","indexed":false},{"type":"int8","name":"decimals","internalType":"int8","indexed":false}],"anonymous":false},{"type":"event","name":"FastUpdateFeeds","inputs":[{"type":"uint256","name":"votingEpochId","internalType":"uint256","indexed":true},{"type":"uint256[]","name":"feeds","internalType":"uint256[]","indexed":false},{"type":"int8[]","name":"decimals","internalType":"int8[]","indexed":false}],"anonymous":false},{"type":"event","name":"FastUpdateFeedsSubmitted","inputs":[{"type":"uint32","name":"votingRoundId","internalType":"uint32","indexed":true},{"type":"address","name":"signingPolicyAddress","internalType":"address","indexed":true}],"anonymous":false},{"type":"event","name":"GovernanceCallTimelocked","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"allowedAfterTimestamp","internalType":"uint256","indexed":false},{"type":"bytes","name":"encodedCall","internalType":"bytes","indexed":false}],"anonymous":false},{"type":"event","name":"GovernanceInitialised","inputs":[{"type":"address","name":"initialGovernance","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"GovernedProductionModeEntered","inputs":[{"type":"address","name":"governanceSettings","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"TimelockedGovernanceCallCanceled","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"timestamp","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"TimelockedGovernanceCallExecuted","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"timestamp","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"MAX_BLOCKS_HISTORY","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"MAX_FEED_AGE_IN_VOTING_EPOCHS","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"_cutoff","internalType":"uint256"}],"name":"blockScoreCutoff","inputs":[{"type":"uint256","name":"_blockNum","internalType":"uint256"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"cancelGovernanceCall","inputs":[{"type":"bytes4","name":"_selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint24","name":"","internalType":"uint24"}],"name":"currentRewardEpochId","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"_cutoff","internalType":"uint256"}],"name":"currentScoreCutoff","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"_weight","internalType":"uint256"}],"name":"currentSortitionWeight","inputs":[{"type":"address","name":"_signingPolicyAddress","internalType":"address"}]},{"type":"function","stateMutability":"nonpayable","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"daemonize","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"executeGovernanceCall","inputs":[{"type":"bytes4","name":"_selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IIFastUpdateIncentiveManager"}],"name":"fastUpdateIncentiveManager","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IFastUpdatesConfiguration"}],"name":"fastUpdatesConfiguration","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"bytes21[]","name":"_feedIds","internalType":"bytes21[]"},{"type":"uint256[]","name":"_feeds","internalType":"uint256[]"},{"type":"int8[]","name":"_decimals","internalType":"int8[]"},{"type":"uint64","name":"_timestamp","internalType":"uint64"}],"name":"fetchAllCurrentFeeds","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256[]","name":"_feeds","internalType":"uint256[]"},{"type":"int8[]","name":"_decimals","internalType":"int8[]"},{"type":"uint64","name":"_timestamp","internalType":"uint64"}],"name":"fetchCurrentFeeds","inputs":[{"type":"uint256[]","name":"_indices","internalType":"uint256[]"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint64","name":"","internalType":"uint64"}],"name":"firstVotingRoundStartTs","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"address"}],"name":"flareDaemon","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IFlareSystemsManager"}],"name":"flareSystemsManager","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IFtsoFeedPublisher"}],"name":"ftsoFeedPublisher","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"_addressUpdater","internalType":"address"}],"name":"getAddressUpdater","inputs":[]},{"type":"function","stateMutability":"pure","outputs":[{"type":"string","name":"","internalType":"string"}],"name":"getContractName","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"address"}],"name":"governance","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IGovernanceSettings"}],"name":"governanceSettings","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"initialise","inputs":[{"type":"address","name":"_governanceSettings","internalType":"contract IGovernanceSettings"},{"type":"address","name":"_initialGovernance","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"isExecutor","inputs":[{"type":"address","name":"_address","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256[]","name":"_noOfUpdates","internalType":"uint256[]"}],"name":"numberOfUpdates","inputs":[{"type":"uint256","name":"_historySize","internalType":"uint256"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"numberOfUpdatesInBlock","inputs":[{"type":"uint256","name":"_blockNumber","internalType":"uint256"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"productionMode","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"removeFeeds","inputs":[{"type":"uint256[]","name":"_indices","internalType":"uint256[]"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"resetFeeds","inputs":[{"type":"uint256[]","name":"_indices","internalType":"uint256[]"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"setSubmissionWindow","inputs":[{"type":"uint8","name":"_submissionWindow","internalType":"uint8"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint8","name":"","internalType":"uint8"}],"name":"submissionWindow","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"submitUpdates","inputs":[{"type":"tuple","name":"_updates","internalType":"struct IFastUpdater.FastUpdates","components":[{"type":"uint256","name":"sortitionBlock","internalType":"uint256"},{"type":"tuple","name":"sortitionCredential","internalType":"struct SortitionCredential","components":[{"type":"uint256","name":"replicate","internalType":"uint256"},{"type":"tuple","name":"gamma","internalType":"struct Bn256.G1Point","components":[{"type":"uint256","name":"x","internalType":"uint256"},{"type":"uint256","name":"y","internalType":"uint256"}]},{"type":"uint256","name":"c","internalType":"uint256"},{"type":"uint256","name":"s","internalType":"uint256"}]},{"type":"bytes","name":"deltas","internalType":"bytes"},{"type":"tuple","name":"signature","internalType":"struct IFastUpdater.Signature","components":[{"type":"uint8","name":"v","internalType":"uint8"},{"type":"bytes32","name":"r","internalType":"bytes32"},{"type":"bytes32","name":"s","internalType":"bytes32"}]}]}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"switchToFallbackMode","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"switchToProductionMode","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"allowedAfterTimestamp","internalType":"uint256"},{"type":"bytes","name":"encodedCall","internalType":"bytes"}],"name":"timelockedCalls","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"updateContractAddresses","inputs":[{"type":"bytes32[]","name":"_contractNameHashes","internalType":"bytes32[]"},{"type":"address[]","name":"_contractAddresses","internalType":"address[]"}]},{"type":"function","stateMutability":"view","outputs":[],"name":"verifyPublicKey","inputs":[{"type":"address","name":"_voter","internalType":"address"},{"type":"bytes32","name":"_part1","internalType":"bytes32"},{"type":"bytes32","name":"_part2","internalType":"bytes32"},{"type":"bytes","name":"_verificationData","internalType":"bytes"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IIVoterRegistry"}],"name":"voterRegistry","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint64","name":"","internalType":"uint64"}],"name":"votingEpochDurationSeconds","inputs":[]}]"#
+    );
 
-    async function main() {
-      // Connect to an RPC node
-      const w3 = new Web3(RPC_URL);
-      // Set up contract instance
-      const ftsov2 = new w3.eth.Contract(JSON.parse(ABI), ADDRESS);
-      // Fetch current feeds
-      const res = await ftsov2.methods.fetchCurrentFeeds(FEED_INDEXES).call();
-      // Log results
-      console.log("Feeds:", res["_feeds"]);
-      console.log("Decimals:", res["_decimals"]);
-      console.log("Timestamp:", res["_timestamp"]);
+    #[tokio::main]
+    async fn main() -> Result<()> {
+        // FastUpdater address (Songbird Testnet Coston)
+        let ftso_address = "0x58fb598EC6DB6901aA6F26a9A2087E9274128E59".parse()?;
+        let rpc_url = "https://rpc.ankr.com/flare_coston2".parse()?;
+        // Feed indexes: 0 = FLR/USD, 2 = BTC/USD, 9 = ETH/USD
+        let feed_indexes = vec![U256::from(0_u32), U256::from(2_u32), U256::from(9_u32)];
+        // Connect to an RPC node
+        let provider = ProviderBuilder::new().on_http(rpc_url);
+        // Set up contract instance
+        let ftsov2 = FastUpdater::new(ftso_address, provider);
+        // Fetch current feeds
+        let FastUpdater::fetchCurrentFeedsReturn {
+            _feeds,
+            _decimals,
+            _timestamp,
+        } = ftsov2.fetchCurrentFeeds(feed_indexes).call().await?;
+        // Print results
+        println!("Feeds:{:?} ", _feeds);
+        println!("Decimals:{:?} ", _decimals);
+        println!("Timestamp:{:?} ", _timestamp);
+        Ok(())
     }
-
-    main();
     ```
 
-  </TabItem>
-  <TabItem value="ethersjs" label="ethers.js">
+    <details>
+    <summary>Didn't understand the Rust code?</summary>
 
-    ```javascript title="ftsov2_consumer.js"
-    // THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
-    import { ethers } from "ethers";
+    Let's go through the Rust code step-by-step to understand its functionality.
 
-    // FastUpdater address (Flare Testnet Coston2)
-    const ADDRESS = "0x58fb598EC6DB6901aA6F26a9A2087E9274128E59";
-    const RPC_URL = "https://rpc.ankr.com/flare_coston2";
-    // Feed indexes: 0 = FLR/USD, 2 = BTC/USD, 9 = ETH/USD
-    const FEED_INDEXES = [0, 2, 9];
-    // ABI for FastUpdater contract
-    const ABI =
-      '[{"type":"constructor","stateMutability":"nonpayable","inputs":[{"type":"address","name":"_governanceSettings","internalType":"contract IGovernanceSettings"},{"type":"address","name":"_initialGovernance","internalType":"address"},{"type":"address","name":"_addressUpdater","internalType":"address"},{"type":"address","name":"_flareDaemon","internalType":"address"},{"type":"uint32","name":"_firstVotingRoundStartTs","internalType":"uint32"},{"type":"uint8","name":"_votingEpochDurationSeconds","internalType":"uint8"},{"type":"uint8","name":"_submissionWindow","internalType":"uint8"}]},{"type":"error","name":"ECDSAInvalidSignature","inputs":[]},{"type":"error","name":"ECDSAInvalidSignatureLength","inputs":[{"type":"uint256","name":"length","internalType":"uint256"}]},{"type":"error","name":"ECDSAInvalidSignatureS","inputs":[{"type":"bytes32","name":"s","internalType":"bytes32"}]},{"type":"event","name":"FastUpdateFeedRemoved","inputs":[{"type":"uint256","name":"index","internalType":"uint256","indexed":true}],"anonymous":false},{"type":"event","name":"FastUpdateFeedReset","inputs":[{"type":"uint256","name":"votingRoundId","internalType":"uint256","indexed":true},{"type":"uint256","name":"index","internalType":"uint256","indexed":true},{"type":"bytes21","name":"id","internalType":"bytes21","indexed":true},{"type":"uint256","name":"value","internalType":"uint256","indexed":false},{"type":"int8","name":"decimals","internalType":"int8","indexed":false}],"anonymous":false},{"type":"event","name":"FastUpdateFeeds","inputs":[{"type":"uint256","name":"votingEpochId","internalType":"uint256","indexed":true},{"type":"uint256[]","name":"feeds","internalType":"uint256[]","indexed":false},{"type":"int8[]","name":"decimals","internalType":"int8[]","indexed":false}],"anonymous":false},{"type":"event","name":"FastUpdateFeedsSubmitted","inputs":[{"type":"uint32","name":"votingRoundId","internalType":"uint32","indexed":true},{"type":"address","name":"signingPolicyAddress","internalType":"address","indexed":true}],"anonymous":false},{"type":"event","name":"GovernanceCallTimelocked","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"allowedAfterTimestamp","internalType":"uint256","indexed":false},{"type":"bytes","name":"encodedCall","internalType":"bytes","indexed":false}],"anonymous":false},{"type":"event","name":"GovernanceInitialised","inputs":[{"type":"address","name":"initialGovernance","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"GovernedProductionModeEntered","inputs":[{"type":"address","name":"governanceSettings","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"TimelockedGovernanceCallCanceled","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"timestamp","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"TimelockedGovernanceCallExecuted","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"timestamp","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"MAX_BLOCKS_HISTORY","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"MAX_FEED_AGE_IN_VOTING_EPOCHS","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"_cutoff","internalType":"uint256"}],"name":"blockScoreCutoff","inputs":[{"type":"uint256","name":"_blockNum","internalType":"uint256"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"cancelGovernanceCall","inputs":[{"type":"bytes4","name":"_selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint24","name":"","internalType":"uint24"}],"name":"currentRewardEpochId","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"_cutoff","internalType":"uint256"}],"name":"currentScoreCutoff","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"_weight","internalType":"uint256"}],"name":"currentSortitionWeight","inputs":[{"type":"address","name":"_signingPolicyAddress","internalType":"address"}]},{"type":"function","stateMutability":"nonpayable","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"daemonize","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"executeGovernanceCall","inputs":[{"type":"bytes4","name":"_selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IIFastUpdateIncentiveManager"}],"name":"fastUpdateIncentiveManager","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IFastUpdatesConfiguration"}],"name":"fastUpdatesConfiguration","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"bytes21[]","name":"_feedIds","internalType":"bytes21[]"},{"type":"uint256[]","name":"_feeds","internalType":"uint256[]"},{"type":"int8[]","name":"_decimals","internalType":"int8[]"},{"type":"uint64","name":"_timestamp","internalType":"uint64"}],"name":"fetchAllCurrentFeeds","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256[]","name":"_feeds","internalType":"uint256[]"},{"type":"int8[]","name":"_decimals","internalType":"int8[]"},{"type":"uint64","name":"_timestamp","internalType":"uint64"}],"name":"fetchCurrentFeeds","inputs":[{"type":"uint256[]","name":"_indices","internalType":"uint256[]"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint64","name":"","internalType":"uint64"}],"name":"firstVotingRoundStartTs","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"address"}],"name":"flareDaemon","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IFlareSystemsManager"}],"name":"flareSystemsManager","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IFtsoFeedPublisher"}],"name":"ftsoFeedPublisher","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"_addressUpdater","internalType":"address"}],"name":"getAddressUpdater","inputs":[]},{"type":"function","stateMutability":"pure","outputs":[{"type":"string","name":"","internalType":"string"}],"name":"getContractName","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"address"}],"name":"governance","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IGovernanceSettings"}],"name":"governanceSettings","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"initialise","inputs":[{"type":"address","name":"_governanceSettings","internalType":"contract IGovernanceSettings"},{"type":"address","name":"_initialGovernance","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"isExecutor","inputs":[{"type":"address","name":"_address","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256[]","name":"_noOfUpdates","internalType":"uint256[]"}],"name":"numberOfUpdates","inputs":[{"type":"uint256","name":"_historySize","internalType":"uint256"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"numberOfUpdatesInBlock","inputs":[{"type":"uint256","name":"_blockNumber","internalType":"uint256"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"productionMode","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"removeFeeds","inputs":[{"type":"uint256[]","name":"_indices","internalType":"uint256[]"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"resetFeeds","inputs":[{"type":"uint256[]","name":"_indices","internalType":"uint256[]"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"setSubmissionWindow","inputs":[{"type":"uint8","name":"_submissionWindow","internalType":"uint8"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint8","name":"","internalType":"uint8"}],"name":"submissionWindow","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"submitUpdates","inputs":[{"type":"tuple","name":"_updates","internalType":"struct IFastUpdater.FastUpdates","components":[{"type":"uint256","name":"sortitionBlock","internalType":"uint256"},{"type":"tuple","name":"sortitionCredential","internalType":"struct SortitionCredential","components":[{"type":"uint256","name":"replicate","internalType":"uint256"},{"type":"tuple","name":"gamma","internalType":"struct Bn256.G1Point","components":[{"type":"uint256","name":"x","internalType":"uint256"},{"type":"uint256","name":"y","internalType":"uint256"}]},{"type":"uint256","name":"c","internalType":"uint256"},{"type":"uint256","name":"s","internalType":"uint256"}]},{"type":"bytes","name":"deltas","internalType":"bytes"},{"type":"tuple","name":"signature","internalType":"struct IFastUpdater.Signature","components":[{"type":"uint8","name":"v","internalType":"uint8"},{"type":"bytes32","name":"r","internalType":"bytes32"},{"type":"bytes32","name":"s","internalType":"bytes32"}]}]}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"switchToFallbackMode","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"switchToProductionMode","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"allowedAfterTimestamp","internalType":"uint256"},{"type":"bytes","name":"encodedCall","internalType":"bytes"}],"name":"timelockedCalls","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"updateContractAddresses","inputs":[{"type":"bytes32[]","name":"_contractNameHashes","internalType":"bytes32[]"},{"type":"address[]","name":"_contractAddresses","internalType":"address[]"}]},{"type":"function","stateMutability":"view","outputs":[],"name":"verifyPublicKey","inputs":[{"type":"address","name":"_voter","internalType":"address"},{"type":"bytes32","name":"_part1","internalType":"bytes32"},{"type":"bytes32","name":"_part2","internalType":"bytes32"},{"type":"bytes","name":"_verificationData","internalType":"bytes"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IIVoterRegistry"}],"name":"voterRegistry","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint64","name":"","internalType":"uint64"}],"name":"votingEpochDurationSeconds","inputs":[]}]';
+    **Libraries and Crates**
 
-    async function main() {
-      // Connect to an RPC node
-      const provider = new ethers.JsonRpcProvider(RPC_URL);
-      // Set up contract instance
-      const ftsov2 = new ethers.Contract(ADDRESS, JSON.parse(ABI), provider);
-      // Fetch current feeds
-      const res = await ftsov2.fetchCurrentFeeds(FEED_INDEXES);
-      // Log results
-      console.log("Feeds:", res[0]);
-      console.log("Decimals:", res[1]);
-      console.log("Timestamp:", res[2]);
-    }
-
-    main();
+    ```rust
+    use alloy::{primitives::U256, providers::ProviderBuilder, sol};
     ```
 
-  </TabItem>
-</Tabs>
+    - This line imports necessary modules from the `alloy` crate. The `U256` primitive is used for handling 256-bit unsigned integers. `ProviderBuilder` is for building a provider to connect to an RPC node. The `sol` macro is used for Solidity contract interaction.
 
-## Python
-
-This example uses [web3.py](https://github.com/ethereum/web3.py) to retrieve FTSOv2 feed values for FLR/USD, BTC/USD, and ETH/USD on Flare Testnet Coston2.
-
-<Tabs groupId="python">
-  <TabItem value="poetry" label="poetry" default>
-    ```bash
-    poetry add web3
+    ```rust
+    use eyre::Result;
     ```
 
-  </TabItem>
-  <TabItem value="pip" label="pip">
-    ```bash
-    pip install web3
+    - This line imports the `Result` type from the `eyre` crate for better error handling.
+
+    **Solidity Contract Interface**
+
+    ```rust
+    sol!(
+      #[sol(rpc)]
+      FtsoV2,
+      r#"..."#
+    );
     ```
 
-  </TabItem>
-</Tabs>
+    - This macro defines a Solidity contract interface named `FtsoV2`. The long JSON string inside the macro is the ABI (Application Binary Interface) of the contract. It specifies the functions, events, and errors of the contract, allowing Rust code to interact with the Solidity contract on the Ethereum blockchain.
 
-```python title="ftsov2_consumer.py"
-# THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
-import asyncio
+    **Asynchronous Main Function**
 
-from web3 import AsyncHTTPProvider, AsyncWeb3
+    ```rust
+    #[tokio::main] async fn main() -> Result<()> {
+    ```
 
-# FastUpdater address (Flare Testnet Coston2)
-ADDRESS = "0x58fb598EC6DB6901aA6F26a9A2087E9274128E59"
-RPC_URL = "https://rpc.ankr.com/flare_coston2"
-# Feed indexes: 0 = FLR/USD, 2 = BTC/USD, 9 = ETH/USD
-FEED_INDEXES = [0, 2, 9]
-# ABI for FastUpdater contract
-ABI = '[{"type":"constructor","stateMutability":"nonpayable","inputs":[{"type":"address","name":"_governanceSettings","internalType":"contract IGovernanceSettings"},{"type":"address","name":"_initialGovernance","internalType":"address"},{"type":"address","name":"_addressUpdater","internalType":"address"},{"type":"address","name":"_flareDaemon","internalType":"address"},{"type":"uint32","name":"_firstVotingRoundStartTs","internalType":"uint32"},{"type":"uint8","name":"_votingEpochDurationSeconds","internalType":"uint8"},{"type":"uint8","name":"_submissionWindow","internalType":"uint8"}]},{"type":"error","name":"ECDSAInvalidSignature","inputs":[]},{"type":"error","name":"ECDSAInvalidSignatureLength","inputs":[{"type":"uint256","name":"length","internalType":"uint256"}]},{"type":"error","name":"ECDSAInvalidSignatureS","inputs":[{"type":"bytes32","name":"s","internalType":"bytes32"}]},{"type":"event","name":"FastUpdateFeedRemoved","inputs":[{"type":"uint256","name":"index","internalType":"uint256","indexed":true}],"anonymous":false},{"type":"event","name":"FastUpdateFeedReset","inputs":[{"type":"uint256","name":"votingRoundId","internalType":"uint256","indexed":true},{"type":"uint256","name":"index","internalType":"uint256","indexed":true},{"type":"bytes21","name":"id","internalType":"bytes21","indexed":true},{"type":"uint256","name":"value","internalType":"uint256","indexed":false},{"type":"int8","name":"decimals","internalType":"int8","indexed":false}],"anonymous":false},{"type":"event","name":"FastUpdateFeeds","inputs":[{"type":"uint256","name":"votingEpochId","internalType":"uint256","indexed":true},{"type":"uint256[]","name":"feeds","internalType":"uint256[]","indexed":false},{"type":"int8[]","name":"decimals","internalType":"int8[]","indexed":false}],"anonymous":false},{"type":"event","name":"FastUpdateFeedsSubmitted","inputs":[{"type":"uint32","name":"votingRoundId","internalType":"uint32","indexed":true},{"type":"address","name":"signingPolicyAddress","internalType":"address","indexed":true}],"anonymous":false},{"type":"event","name":"GovernanceCallTimelocked","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"allowedAfterTimestamp","internalType":"uint256","indexed":false},{"type":"bytes","name":"encodedCall","internalType":"bytes","indexed":false}],"anonymous":false},{"type":"event","name":"GovernanceInitialised","inputs":[{"type":"address","name":"initialGovernance","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"GovernedProductionModeEntered","inputs":[{"type":"address","name":"governanceSettings","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"TimelockedGovernanceCallCanceled","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"timestamp","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"TimelockedGovernanceCallExecuted","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"timestamp","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"MAX_BLOCKS_HISTORY","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"MAX_FEED_AGE_IN_VOTING_EPOCHS","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"_cutoff","internalType":"uint256"}],"name":"blockScoreCutoff","inputs":[{"type":"uint256","name":"_blockNum","internalType":"uint256"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"cancelGovernanceCall","inputs":[{"type":"bytes4","name":"_selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint24","name":"","internalType":"uint24"}],"name":"currentRewardEpochId","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"_cutoff","internalType":"uint256"}],"name":"currentScoreCutoff","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"_weight","internalType":"uint256"}],"name":"currentSortitionWeight","inputs":[{"type":"address","name":"_signingPolicyAddress","internalType":"address"}]},{"type":"function","stateMutability":"nonpayable","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"daemonize","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"executeGovernanceCall","inputs":[{"type":"bytes4","name":"_selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IIFastUpdateIncentiveManager"}],"name":"fastUpdateIncentiveManager","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IFastUpdatesConfiguration"}],"name":"fastUpdatesConfiguration","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"bytes21[]","name":"_feedIds","internalType":"bytes21[]"},{"type":"uint256[]","name":"_feeds","internalType":"uint256[]"},{"type":"int8[]","name":"_decimals","internalType":"int8[]"},{"type":"uint64","name":"_timestamp","internalType":"uint64"}],"name":"fetchAllCurrentFeeds","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256[]","name":"_feeds","internalType":"uint256[]"},{"type":"int8[]","name":"_decimals","internalType":"int8[]"},{"type":"uint64","name":"_timestamp","internalType":"uint64"}],"name":"fetchCurrentFeeds","inputs":[{"type":"uint256[]","name":"_indices","internalType":"uint256[]"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint64","name":"","internalType":"uint64"}],"name":"firstVotingRoundStartTs","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"address"}],"name":"flareDaemon","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IFlareSystemsManager"}],"name":"flareSystemsManager","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IFtsoFeedPublisher"}],"name":"ftsoFeedPublisher","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"_addressUpdater","internalType":"address"}],"name":"getAddressUpdater","inputs":[]},{"type":"function","stateMutability":"pure","outputs":[{"type":"string","name":"","internalType":"string"}],"name":"getContractName","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"address"}],"name":"governance","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IGovernanceSettings"}],"name":"governanceSettings","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"initialise","inputs":[{"type":"address","name":"_governanceSettings","internalType":"contract IGovernanceSettings"},{"type":"address","name":"_initialGovernance","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"isExecutor","inputs":[{"type":"address","name":"_address","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256[]","name":"_noOfUpdates","internalType":"uint256[]"}],"name":"numberOfUpdates","inputs":[{"type":"uint256","name":"_historySize","internalType":"uint256"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"numberOfUpdatesInBlock","inputs":[{"type":"uint256","name":"_blockNumber","internalType":"uint256"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"productionMode","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"removeFeeds","inputs":[{"type":"uint256[]","name":"_indices","internalType":"uint256[]"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"resetFeeds","inputs":[{"type":"uint256[]","name":"_indices","internalType":"uint256[]"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"setSubmissionWindow","inputs":[{"type":"uint8","name":"_submissionWindow","internalType":"uint8"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint8","name":"","internalType":"uint8"}],"name":"submissionWindow","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"submitUpdates","inputs":[{"type":"tuple","name":"_updates","internalType":"struct IFastUpdater.FastUpdates","components":[{"type":"uint256","name":"sortitionBlock","internalType":"uint256"},{"type":"tuple","name":"sortitionCredential","internalType":"struct SortitionCredential","components":[{"type":"uint256","name":"replicate","internalType":"uint256"},{"type":"tuple","name":"gamma","internalType":"struct Bn256.G1Point","components":[{"type":"uint256","name":"x","internalType":"uint256"},{"type":"uint256","name":"y","internalType":"uint256"}]},{"type":"uint256","name":"c","internalType":"uint256"},{"type":"uint256","name":"s","internalType":"uint256"}]},{"type":"bytes","name":"deltas","internalType":"bytes"},{"type":"tuple","name":"signature","internalType":"struct IFastUpdater.Signature","components":[{"type":"uint8","name":"v","internalType":"uint8"},{"type":"bytes32","name":"r","internalType":"bytes32"},{"type":"bytes32","name":"s","internalType":"bytes32"}]}]}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"switchToFallbackMode","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"switchToProductionMode","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"allowedAfterTimestamp","internalType":"uint256"},{"type":"bytes","name":"encodedCall","internalType":"bytes"}],"name":"timelockedCalls","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"updateContractAddresses","inputs":[{"type":"bytes32[]","name":"_contractNameHashes","internalType":"bytes32[]"},{"type":"address[]","name":"_contractAddresses","internalType":"address[]"}]},{"type":"function","stateMutability":"view","outputs":[],"name":"verifyPublicKey","inputs":[{"type":"address","name":"_voter","internalType":"address"},{"type":"bytes32","name":"_part1","internalType":"bytes32"},{"type":"bytes32","name":"_part2","internalType":"bytes32"},{"type":"bytes","name":"_verificationData","internalType":"bytes"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IIVoterRegistry"}],"name":"voterRegistry","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint64","name":"","internalType":"uint64"}],"name":"votingEpochDurationSeconds","inputs":[]}]'
+    - This line uses the `#[tokio::main]` attribute to mark the main function as asynchronous, enabling it to perform asynchronous operations. The function returns a `Result<()>`, indicating it can return errors wrapped in the `eyre::Result` type.
 
+    **Initialization and Connection**
 
-async def main() -> None:
-    # Connect to an RPC node
-    w3 = AsyncWeb3(AsyncHTTPProvider(RPC_URL))
-    # Set up contract instance
-    ftsov2 = w3.eth.contract(address=ADDRESS, abi=ABI)
-    # Fetch current feeds
-    feeds, decimals, timestamp = await ftsov2.functions.fetchCurrentFeeds(
-      FEED_INDEXES
-    ).call()
-    # Print results
-    print("Feeds:", feeds)
-    print("Decimals:", decimals)
-    print("Timestamp:", timestamp)
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
-```
-
-<details>
-<summary>Didn't understand the Python code?</summary>
-
-Let's go through the Python code step-by-step to understand its functionality.
-
-**Imports**
-
-```python
-import asyncio
-from web3 import AsyncHTTPProvider, AsyncWeb3
-```
-
-- `asyncio`: A library to write concurrent code using the `async`/`await` syntax.
-- `AsyncHTTPProvider`, `AsyncWeb3`: Asynchronous versions of `web3` components for interacting with the Ethereum blockchain.
-
-**Configuration**
-
-```python
-ADDRESS = "0x58fb598EC6DB6901aA6F26a9A2087E9274128E59"
-RPC_URL = "https://rpc.ankr.com/flare_coston2"
-FEED_INDEXES = [0, 2, 9]
-ABI = '[...]'
-```
-
-- `ADDRESS`: The address of the `FastUpdater` smart contract on the Flare Testnet Coston2.
-- `RPC_URL`: The URL of the RPC node to connect to the Ethereum network.
-- `FEED_INDEXES`: List of indexes representing specific price feeds: 0 for FLR/USD, 2 for BTC/USD, and 9 for ETH/USD.
-- `ABI`: The Application Binary Interface (ABI) of the FastUpdater smart contract, which describes the contract's methods and events.
-
-**Main Asynchronous Function**
-
-```python
-async def main() -> None:
-    # Connect to an RPC node
-    w3 = AsyncWeb3(AsyncHTTPProvider(RPC_URL))
-```
-
-- Connect to the RPC node using `AsyncWeb3` and `AsyncHTTPProvider`.
-
-```python
-    # Set up contract instance
-    ftsov2 = w3.eth.contract(address=ADDRESS, abi=ABI)
-```
-
-- Create an instance of the smart contract using its address and ABI.
-
-```python
-    # Fetch current feeds
-    feeds, decimals, timestamp = await ftsov2.functions.fetchCurrentFeeds(
-      FEED_INDEXES
-    ).call()
-```
-
-- Call the `fetchCurrentFeeds` method of the smart contract with `FEED_INDEXES` to get the current feed data.
-- This method returns `feeds`, `decimals`, and `timestamp`:
-  - `feeds`: The price feed data.
-  - `decimals`: The decimal places for each feed value.
-  - `timestamp`: The timestamp when the feeds were last updated.
-
-**Entry Point**
-
-```python
-if __name__ == "__main__":
-    asyncio.run(main())
-```
-
-- When the script is executed, it runs the `main` function within an asyncio event loop using `asyncio.run()`.
-
-</details>
-
-## Rust
-
-This example uses [alloy-rs](https://github.com/alloy-rs) to retrieve FTSOv2 feed data for FLR/USD, BTC/USD, and ETH/USD on Flare Testnet Coston2.
-
-Add the following dependencies to `Cargo.toml`:
-
-```toml title="Cargo.toml"
-alloy = { version = "0.1", features = ["full"] }
-eyre = "0.6"
-tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros"] }
-```
-
-```rust title="src/bin/ftsov2_consumer.rs"
-// THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
-use alloy::{primitives::U256, providers::ProviderBuilder, sol};
-use eyre::Result;
-
-sol!(
-    #[sol(rpc)]
-    FastUpdater,
-    r#"[{"type":"constructor","stateMutability":"nonpayable","inputs":[{"type":"address","name":"_governanceSettings","internalType":"contract IGovernanceSettings"},{"type":"address","name":"_initialGovernance","internalType":"address"},{"type":"address","name":"_addressUpdater","internalType":"address"},{"type":"address","name":"_flareDaemon","internalType":"address"},{"type":"uint32","name":"_firstVotingRoundStartTs","internalType":"uint32"},{"type":"uint8","name":"_votingEpochDurationSeconds","internalType":"uint8"},{"type":"uint8","name":"_submissionWindow","internalType":"uint8"}]},{"type":"error","name":"ECDSAInvalidSignature","inputs":[]},{"type":"error","name":"ECDSAInvalidSignatureLength","inputs":[{"type":"uint256","name":"length","internalType":"uint256"}]},{"type":"error","name":"ECDSAInvalidSignatureS","inputs":[{"type":"bytes32","name":"s","internalType":"bytes32"}]},{"type":"event","name":"FastUpdateFeedRemoved","inputs":[{"type":"uint256","name":"index","internalType":"uint256","indexed":true}],"anonymous":false},{"type":"event","name":"FastUpdateFeedReset","inputs":[{"type":"uint256","name":"votingRoundId","internalType":"uint256","indexed":true},{"type":"uint256","name":"index","internalType":"uint256","indexed":true},{"type":"bytes21","name":"id","internalType":"bytes21","indexed":true},{"type":"uint256","name":"value","internalType":"uint256","indexed":false},{"type":"int8","name":"decimals","internalType":"int8","indexed":false}],"anonymous":false},{"type":"event","name":"FastUpdateFeeds","inputs":[{"type":"uint256","name":"votingEpochId","internalType":"uint256","indexed":true},{"type":"uint256[]","name":"feeds","internalType":"uint256[]","indexed":false},{"type":"int8[]","name":"decimals","internalType":"int8[]","indexed":false}],"anonymous":false},{"type":"event","name":"FastUpdateFeedsSubmitted","inputs":[{"type":"uint32","name":"votingRoundId","internalType":"uint32","indexed":true},{"type":"address","name":"signingPolicyAddress","internalType":"address","indexed":true}],"anonymous":false},{"type":"event","name":"GovernanceCallTimelocked","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"allowedAfterTimestamp","internalType":"uint256","indexed":false},{"type":"bytes","name":"encodedCall","internalType":"bytes","indexed":false}],"anonymous":false},{"type":"event","name":"GovernanceInitialised","inputs":[{"type":"address","name":"initialGovernance","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"GovernedProductionModeEntered","inputs":[{"type":"address","name":"governanceSettings","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"TimelockedGovernanceCallCanceled","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"timestamp","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"TimelockedGovernanceCallExecuted","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4","indexed":false},{"type":"uint256","name":"timestamp","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"MAX_BLOCKS_HISTORY","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"MAX_FEED_AGE_IN_VOTING_EPOCHS","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"_cutoff","internalType":"uint256"}],"name":"blockScoreCutoff","inputs":[{"type":"uint256","name":"_blockNum","internalType":"uint256"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"cancelGovernanceCall","inputs":[{"type":"bytes4","name":"_selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint24","name":"","internalType":"uint24"}],"name":"currentRewardEpochId","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"_cutoff","internalType":"uint256"}],"name":"currentScoreCutoff","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"_weight","internalType":"uint256"}],"name":"currentSortitionWeight","inputs":[{"type":"address","name":"_signingPolicyAddress","internalType":"address"}]},{"type":"function","stateMutability":"nonpayable","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"daemonize","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"executeGovernanceCall","inputs":[{"type":"bytes4","name":"_selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IIFastUpdateIncentiveManager"}],"name":"fastUpdateIncentiveManager","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IFastUpdatesConfiguration"}],"name":"fastUpdatesConfiguration","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"bytes21[]","name":"_feedIds","internalType":"bytes21[]"},{"type":"uint256[]","name":"_feeds","internalType":"uint256[]"},{"type":"int8[]","name":"_decimals","internalType":"int8[]"},{"type":"uint64","name":"_timestamp","internalType":"uint64"}],"name":"fetchAllCurrentFeeds","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256[]","name":"_feeds","internalType":"uint256[]"},{"type":"int8[]","name":"_decimals","internalType":"int8[]"},{"type":"uint64","name":"_timestamp","internalType":"uint64"}],"name":"fetchCurrentFeeds","inputs":[{"type":"uint256[]","name":"_indices","internalType":"uint256[]"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint64","name":"","internalType":"uint64"}],"name":"firstVotingRoundStartTs","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"address"}],"name":"flareDaemon","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IFlareSystemsManager"}],"name":"flareSystemsManager","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IFtsoFeedPublisher"}],"name":"ftsoFeedPublisher","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"_addressUpdater","internalType":"address"}],"name":"getAddressUpdater","inputs":[]},{"type":"function","stateMutability":"pure","outputs":[{"type":"string","name":"","internalType":"string"}],"name":"getContractName","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"address"}],"name":"governance","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IGovernanceSettings"}],"name":"governanceSettings","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"initialise","inputs":[{"type":"address","name":"_governanceSettings","internalType":"contract IGovernanceSettings"},{"type":"address","name":"_initialGovernance","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"isExecutor","inputs":[{"type":"address","name":"_address","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256[]","name":"_noOfUpdates","internalType":"uint256[]"}],"name":"numberOfUpdates","inputs":[{"type":"uint256","name":"_historySize","internalType":"uint256"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"numberOfUpdatesInBlock","inputs":[{"type":"uint256","name":"_blockNumber","internalType":"uint256"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"productionMode","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"removeFeeds","inputs":[{"type":"uint256[]","name":"_indices","internalType":"uint256[]"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"resetFeeds","inputs":[{"type":"uint256[]","name":"_indices","internalType":"uint256[]"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"setSubmissionWindow","inputs":[{"type":"uint8","name":"_submissionWindow","internalType":"uint8"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint8","name":"","internalType":"uint8"}],"name":"submissionWindow","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"submitUpdates","inputs":[{"type":"tuple","name":"_updates","internalType":"struct IFastUpdater.FastUpdates","components":[{"type":"uint256","name":"sortitionBlock","internalType":"uint256"},{"type":"tuple","name":"sortitionCredential","internalType":"struct SortitionCredential","components":[{"type":"uint256","name":"replicate","internalType":"uint256"},{"type":"tuple","name":"gamma","internalType":"struct Bn256.G1Point","components":[{"type":"uint256","name":"x","internalType":"uint256"},{"type":"uint256","name":"y","internalType":"uint256"}]},{"type":"uint256","name":"c","internalType":"uint256"},{"type":"uint256","name":"s","internalType":"uint256"}]},{"type":"bytes","name":"deltas","internalType":"bytes"},{"type":"tuple","name":"signature","internalType":"struct IFastUpdater.Signature","components":[{"type":"uint8","name":"v","internalType":"uint8"},{"type":"bytes32","name":"r","internalType":"bytes32"},{"type":"bytes32","name":"s","internalType":"bytes32"}]}]}]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"switchToFallbackMode","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"switchToProductionMode","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"allowedAfterTimestamp","internalType":"uint256"},{"type":"bytes","name":"encodedCall","internalType":"bytes"}],"name":"timelockedCalls","inputs":[{"type":"bytes4","name":"selector","internalType":"bytes4"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"updateContractAddresses","inputs":[{"type":"bytes32[]","name":"_contractNameHashes","internalType":"bytes32[]"},{"type":"address[]","name":"_contractAddresses","internalType":"address[]"}]},{"type":"function","stateMutability":"view","outputs":[],"name":"verifyPublicKey","inputs":[{"type":"address","name":"_voter","internalType":"address"},{"type":"bytes32","name":"_part1","internalType":"bytes32"},{"type":"bytes32","name":"_part2","internalType":"bytes32"},{"type":"bytes","name":"_verificationData","internalType":"bytes"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IIVoterRegistry"}],"name":"voterRegistry","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint64","name":"","internalType":"uint64"}],"name":"votingEpochDurationSeconds","inputs":[]}]"#
-);
-
-#[tokio::main]
-async fn main() -> Result<()> {
-    // FastUpdater address (Songbird Testnet Coston)
-    let ftso_address = "0x58fb598EC6DB6901aA6F26a9A2087E9274128E59".parse()?;
+    ```rust
+    let address = "0x58fb598EC6DB6901aA6F26a9A2087E9274128E59".parse()?;
     let rpc_url = "https://rpc.ankr.com/flare_coston2".parse()?;
-    // Feed indexes: 0 = FLR/USD, 2 = BTC/USD, 9 = ETH/USD
     let feed_indexes = vec![U256::from(0_u32), U256::from(2_u32), U256::from(9_u32)];
-    // Connect to an RPC node
     let provider = ProviderBuilder::new().on_http(rpc_url);
-    // Set up contract instance
-    let ftsov2 = FastUpdater::new(ftso_address, provider);
-    // Fetch current feeds
-    let FastUpdater::fetchCurrentFeedsReturn {
-        _feeds,
-        _decimals,
-        _timestamp,
+    ```
+
+    - The contract address and RPC URL are parsed into appropriate types.
+    - This sets up a vector of feed indexes, which correspond to specific data feeds (e.g., FLR/USD, BTC/USD, ETH/USD).
+    - A provider is created using `ProviderBuilder`, configured to connect via HTTP to the specified RPC URL.
+
+    **Contract Interaction**
+
+    ```rust
+    let ftsov2 = FtsoV2::new(address, provider);
+    let FtsoV2::fetchCurrentFeedsReturn {
+      _feeds,
+      _decimals,
+      _timestamp
     } = ftsov2.fetchCurrentFeeds(feed_indexes).call().await?;
-    // Print results
-    println!("Feeds:{:?} ", _feeds);
-    println!("Decimals:{:?} ", _decimals);
-    println!("Timestamp:{:?} ", _timestamp);
+    ```
+
+    - An instance of the `FtsoV2` contract is created using the contract address and the provider.
+    - The function `fetchCurrentFeeds` is called on the contract instance, passing in the feed indexes. This function is awaited asynchronously and returns the current feed data.
+    - The fetched feed data (`_feeds`), their decimals (`_decimals`), and the timestamp (`_timestamp`) are stored in the corresponding variables.
+
+    **Error handling**
+
+    ```rust
     Ok(())
-}
-```
+    ```
 
-<details>
-<summary>Didn't understand the Rust code?</summary>
+    - The function returns `Ok(())` to indicate successful execution.
 
-Let's go through the Rust code step-by-step to understand its functionality.
+    </details>
 
-**Libraries and Crates**
+  </TabItem>
+  <TabItem value="Go" label="Go">
 
-```rust
-use alloy::{primitives::U256, providers::ProviderBuilder, sol};
-```
+    This example uses the Go API from [Geth](https://geth.ethereum.org) to retrieve FTSOv2 feed data for FLR/USD, BTC/USD, and ETH/USD from Flare Testnet Coston2.
 
-- This line imports necessary modules from the `alloy` crate. The `U256` primitive is used for handling 256-bit unsigned integers. `ProviderBuilder` is for building a provider to connect to an RPC node. The `sol` macro is used for Solidity contract interaction.
+    ```bash
+    go get github.com/ethereum/go-ethereum/ethclient
+    ```
 
-```rust
-use eyre::Result;
-```
+    With Go, you need to manually fetch the contract's ABI and generate the Go bindings. Copy the Contract ABI for [FastUpdater on Flare Testnet Coston2](../solidity-reference) and paste it into a file named `FastUpdater.abi`, located in the root of your project, i.e. same level as `go.mod`. Then using [abigen](https://geth.ethereum.org/docs/tools/abigen), generate the Go bindings.
 
-- This line imports the `Result` type from the `eyre` crate for better error handling.
+    ```bash
+    abigen --abi FastUpdater.abi --pkg main --type FastUpdater --out FastUpdater.go
+    ```
 
-**Solidity Contract Interface**
+    ```go title="ftsov2_consumer.go"
+    // THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
+    package main
 
-```rust
-sol!(
-  #[sol(rpc)]
-  FtsoV2,
-  r#"..."#
-);
-```
+    import (
+      "context"
+      "fmt"
 
-- This macro defines a Solidity contract interface named `FtsoV2`. The long JSON string inside the macro is the ABI (Application Binary Interface) of the contract. It specifies the functions, events, and errors of the contract, allowing Rust code to interact with the Solidity contract on the Ethereum blockchain.
+      "github.com/ethereum/go-ethereum/accounts/abi/bind"
+      "github.com/ethereum/go-ethereum/common"
+      "github.com/ethereum/go-ethereum/ethclient"
+      "math/big"
+    )
 
-**Asynchronous Main Function**
+    func FtsoV2Consumer() {
+      // FastUpdater address (Flare Testnet Coston2)
+      address := common.HexToAddress("0x58fb598EC6DB6901aA6F26a9A2087E9274128E59")
+      rpcUrl := "https://rpc.ankr.com/flare_coston2"
+      // Connect to an RPC node
+      client, _ := ethclient.Dial(rpcUrl)
+      // Set up contract instance
+      ftsov2, _ := NewFastUpdater(address, client)
+      // Feed indexes: 0 = FLR/USD, 2 = BTC/USD, 9 = ETH/USD
+      feedIndexes := []*big.Int{big.NewInt(0), big.NewInt(2), big.NewInt(9)}
+      // Fetch current feeds
+      opts := &bind.CallOpts{Context: context.Background()}
+      res, _ := ftsov2.FetchCurrentFeeds(opts, feedIndexes)
+      // Print results
+      fmt.Println("Feeds:", res.Feeds)
+      fmt.Println("Decimals:", res.Decimals)
+      fmt.Println("Timestamp:", res.Timestamp)
+    }
+    ```
 
-```rust
-#[tokio::main] async fn main() -> Result<()> {
-```
-
-- This line uses the `#[tokio::main]` attribute to mark the main function as asynchronous, enabling it to perform asynchronous operations. The function returns a `Result<()>`, indicating it can return errors wrapped in the `eyre::Result` type.
-
-**Initialization and Connection**
-
-```rust
-let address = "0x58fb598EC6DB6901aA6F26a9A2087E9274128E59".parse()?;
-let rpc_url = "https://rpc.ankr.com/flare_coston2".parse()?;
-let feed_indexes = vec![U256::from(0_u32), U256::from(2_u32), U256::from(9_u32)];
-let provider = ProviderBuilder::new().on_http(rpc_url);
-```
-
-- The contract address and RPC URL are parsed into appropriate types.
-- This sets up a vector of feed indexes, which correspond to specific data feeds (e.g., FLR/USD, BTC/USD, ETH/USD).
-- A provider is created using `ProviderBuilder`, configured to connect via HTTP to the specified RPC URL.
-
-**Contract Interaction**
-
-```rust
-let ftsov2 = FtsoV2::new(address, provider);
-let FtsoV2::fetchCurrentFeedsReturn {
-  _feeds,
-  _decimals,
-  _timestamp
-} = ftsov2.fetchCurrentFeeds(feed_indexes).call().await?;
-```
-
-- An instance of the `FtsoV2` contract is created using the contract address and the provider.
-- The function `fetchCurrentFeeds` is called on the contract instance, passing in the feed indexes. This function is awaited asynchronously and returns the current feed data.
-- The fetched feed data (`_feeds`), their decimals (`_decimals`), and the timestamp (`_timestamp`) are stored in the corresponding variables.
-
-**Error handling**
-
-```rust
-Ok(())
-```
-
-- The function returns `Ok(())` to indicate successful execution.
-
-</details>
-
-## Go
-
-This example uses the Go API from [Geth](https://geth.ethereum.org) to retrieve FTSOv2 feed data for FLR/USD, BTC/USD, and ETH/USD from Flare Testnet Coston2.
-
-```bash
-go get github.com/ethereum/go-ethereum/ethclient
-```
-
-With Go, you need to manually fetch the contract's ABI and generate the Go bindings. Copy the Contract ABI for [FastUpdater on Flare Testnet Coston2](../solidity-reference) and paste it into a file named `FastUpdater.abi`, located in the root of your project, i.e. same level as `go.mod`. Then using [abigen](https://geth.ethereum.org/docs/tools/abigen), generate the Go bindings.
-
-```bash
-abigen --abi FastUpdater.abi --pkg main --type FastUpdater --out FastUpdater.go
-```
-
-```go title="ftsov2_consumer.go"
-// THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
-package main
-
-import (
-  "context"
-  "fmt"
-
-  "github.com/ethereum/go-ethereum/accounts/abi/bind"
-  "github.com/ethereum/go-ethereum/common"
-  "github.com/ethereum/go-ethereum/ethclient"
-  "math/big"
-)
-
-func FtsoV2Consumer() {
-  // FastUpdater address (Flare Testnet Coston2)
-  address := common.HexToAddress("0x58fb598EC6DB6901aA6F26a9A2087E9274128E59")
-  rpcUrl := "https://rpc.ankr.com/flare_coston2"
-  // Connect to an RPC node
-  client, _ := ethclient.Dial(rpcUrl)
-  // Set up contract instance
-  ftsov2, _ := NewFastUpdater(address, client)
-  // Feed indexes: 0 = FLR/USD, 2 = BTC/USD, 9 = ETH/USD
-  feedIndexes := []*big.Int{big.NewInt(0), big.NewInt(2), big.NewInt(9)}
-  // Fetch current feeds
-  opts := &bind.CallOpts{Context: context.Background()}
-  res, _ := ftsov2.FetchCurrentFeeds(opts, feedIndexes)
-  // Print results
-  fmt.Println("Feeds:", res.Feeds)
-  fmt.Println("Decimals:", res.Decimals)
-  fmt.Println("Timestamp:", res.Timestamp)
-}
-```
+  </TabItem>
+</Tabs>
