@@ -1,10 +1,10 @@
 import { ReactNode } from "react";
 import classes from "./customFooter.module.css";
-import type { Props } from "@theme/Footer/Links/MultiColumn";
 import Link from "@docusaurus/Link";
 import SocialLinks from "../SocialLinks/SocialLinks";
 
 type CustomFooterProps = {
+  //TODO: figure out this type
   links?: any[];
   logo?: ReactNode;
   copyright?: ReactNode;
@@ -30,7 +30,7 @@ export default function CustomFooter({
                 to={href}
                 target="_blank"
               >
-                <div>{label}</div>
+                <div style={{ textWrap: "wrap" }}>{label}</div>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width={24}
@@ -66,10 +66,11 @@ export default function CustomFooter({
                 </Link>
               </>
             ))}
-            <div>|</div>
-            <div>{copyright}</div>
+            <div className={classes.mobileHide}>|</div>
+            <div className={classes.mobileHide}>{copyright}</div>
           </div>
           <SocialLinks />
+          <div className={classes.mobileOnly}>{copyright}</div>
         </div>
       </div>
     </footer>
