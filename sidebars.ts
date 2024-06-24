@@ -23,7 +23,7 @@ const sidebars: SidebarsConfig = {
         {
           type: "category",
           label: "Network Guides",
-          collapsed: false,
+          collapsed: true,
           link: {
             slug: "/category/network/guides",
             type: "generated-index",
@@ -44,7 +44,7 @@ const sidebars: SidebarsConfig = {
         {
           type: "category",
           label: "FTSOv2 Guides",
-          collapsed: false,
+          collapsed: true,
           link: {
             slug: "/category/ftso/guides",
             type: "generated-index",
