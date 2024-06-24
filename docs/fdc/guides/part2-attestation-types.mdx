@@ -5,9 +5,10 @@ description: Learn about Flare State Connector attestation types
 authors: [lukaavbreht, filipkoprivec]
 tags: [intermediate, fdc]
 keywords: [quickstart, bitcoin, flare-data-connector, flare-network]
+sidebar_position: 2
 ---
 
-In [Part 1](/guides/how-to-state-connector) of this series, you learnt the basics of the State Connector protocol, and how to use it to prove a payment on an external chain. In this guide you will learn:
+In [Part 1](state-connector) of this series, you learnt the basics of the State Connector protocol, and how to use it to prove a payment on an external chain. In this guide you will learn:
 
 - How to prepare requests for different attestation types.
 - What information you need to provide.
@@ -25,7 +26,7 @@ Out of the [full specification](https://github.com/flare-foundation/songbird-sta
 
 - [ReferencePaymentNonexistence](https://github.com/flare-foundation/songbird-state-connector-protocol/blob/main/specs/attestations/active-types/ReferencedPaymentNonexistence.md). Prove that a payment with the specified reference does not exist on the specified chain. This is useful for proving that someone did not honor a payment request.
 
-The specification also includes `EVMTransaction`, which is more complex and powerful. This will be covered in [Part 3](/guides/evm-connectivity) of this series.
+The specification also includes `EVMTransaction`, which is more complex and powerful. This will be covered in [Part 3](evm-connectivity) of this series.
 
 Each attestation type is designed to prove a specific aspect, whether it be about transactions, blocks, or offloading expensive computations off-chain to have the results available on-chain. The team has carefully studied the most important use cases and designed the attestation types to be safe, well-defined, and efficient.
 
@@ -59,7 +60,7 @@ Before diving into different attestation types, let's explore the generated Swag
 
 Open the page `${ATTESTATION_HOST}/verifier/btc/api-doc#/` (replace `btc` with the network you are interested in), where you'll find the full documentation of the API. Here, you can see all available endpoints, the types they accept, and what they return. Remember to authorize yourself with the API key before trying them out (you can do this in the top right corner of the page).
 
-Let's start by preparing a request for the `Payment` type, which was covered in [Part 1](/guides/how-to-state-connector), and see what is returned. Pick a Bitcoin transaction from the block explorer and prepare the request for it. If you're doing this on a test network, ensure the `sourceId` in the example request is correct (it should be `testBTC`). If you execute a request with an incorrect `sourceId`, the attestation client will reject it and provide an error message indicating what needs to be fixed.
+Let's start by preparing a request for the `Payment` type, which was covered in [Part 1](state-connector), and see what is returned. Pick a Bitcoin transaction from the block explorer and prepare the request for it. If you're doing this on a test network, ensure the `sourceId` in the example request is correct (it should be `testBTC`). If you execute a request with an incorrect `sourceId`, the attestation client will reject it and provide an error message indicating what needs to be fixed.
 
 {/* <!--TODO: add example image--> */}
 
@@ -1319,7 +1320,7 @@ Successful non existence proofs:
 
 And there is a sub-specification for each chain that specifies the rules for the address validity for each chain. Be careful: Bitcoin and Dogecoin have different rules for validity on the mainnet and testnet, so make sure to check the correct specification with the correct verifier.
 
-This is a very simple attestation type that can prove that a string constitutes a valid address on the specified chain. Importantly, unlike the `Payment` type we saw in [Part 1](/guides/how-to-state-connector), this type does not require a transaction to be proven. It just offloads the computation of the address validity to the verifier so that expensive computation does not have to be done on-chain.
+This is a very simple attestation type that can prove that a string constitutes a valid address on the specified chain. Importantly, unlike the `Payment` type we saw in [Part 1](state-connector), this type does not require a transaction to be proven. It just offloads the computation of the address validity to the verifier so that expensive computation does not have to be done on-chain.
 
 This is useful if you want to ensure that the address is valid before using it in your protocol. For example, fAssets need to make sure that an address is valid before they can be used in the protocol, and this is a good way to offload difficult computation regarding when the bitcoin address is valid to off-chain entities.
 
@@ -1685,6 +1686,6 @@ This approach ensures that complex and resource-intensive computations can be pe
 
 Congratulations — you made it this far! Now you see what the State Connector can do, how to use it, and some details you need to be careful about. As usual, check the repository for the full code and try to play around.
 
-In [Part 3](/guides/evm-connectivity), we will explore how information from EVM chains can be relayed and what we can do with it.
+In [Part 3](evm-connectivity), we will explore how information from EVM chains can be relayed and what we can do with it.
 
 A word of warning: while it might be tempting to save the whole proof structure in your smart contract (if you want to do some later operations), this is terribly inefficient from a gas standpoint, as you are writing a lot of data to memory and decoding nested structures is expensive. Additionally, since the structures are nested, even operating on them when in memory (or copying them from `calldata` to `memory`) generates large bytecode, which makes contract deployment more expensive or even impossible if you exceed the limit.
