@@ -22,7 +22,7 @@ This command starts a local development server and opens up a browser window. Mo
 
 ## Autogenerate Solidity docs
 
-Note that `flare-smart-contracts-v2` uses `node 18` and `developer-hub` uses `node 20`. You can use `nvm` to switch between them.
+Note that `flare-smart-contracts-v2` uses `node 18` and `developer-hub` uses `node 20` (latest LTS). You can use `nvm` to switch between them.
 
 ```bash
 nvm use 18
