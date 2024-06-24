@@ -16,12 +16,13 @@ keywords:
 ---
 
 import Remix from "@site/src/components/remix";
-import SetEvmVersion from "/static/img/ftso-getting-started/0-set-evm-version.png";
+import OpenSolidityCompiler from "/static/img/ftso-getting-started/0-open-solidity-compiler-tab.png";
 import SetInjectedProvider from "/static/img/ftso-getting-started/1-set-injected-provider.png";
 import CompileContract from "/static/img/ftso-getting-started/2-compile-contract.png";
-import DeployContract from "/static/img/ftso-getting-started/3-deploy-contract.png";
-import ConfirmDeployInMetamask from "/static/img/ftso-getting-started/4-confirm-deploy-in-metamask.png";
-import QueryLatestFeeds from "/static/img/ftso-getting-started/5-query-latest-feeds.png";
+import OpenDeploy from "/static/img/ftso-getting-started/3-open-deploy.png";
+import DeployContract from "/static/img/ftso-getting-started/4-deploy-contract.png";
+import ConfirmDeployInMetamask from "/static/img/ftso-getting-started/5-confirm-deploy-in-metamask.png";
+import QueryLatestFeeds from "/static/img/ftso-getting-started/6-query-latest-feeds.png";
 
 You can use FTSOv2 to connect your smart contracts with real-world data feeds. FTSOv2 leverages Flare's network of 100 independent data providers to fetch off-chain data and deliver it on-chain. This section demonstrates how to consume FTSOv2's block-latency feeds on Flare using an on-chain Solidity contract.
 
@@ -39,7 +40,7 @@ This example smart contract queries the latest feed values for FLR/USD, BTC/USD,
 
 ```solidity title="FtsoV2FeedConsumer.sol"
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.19;
 
 import { IFastUpdater } from "@flarenetwork/flare-periphery-contracts/flare/ftso/userInterfaces/IFastUpdater.sol";
 
@@ -67,22 +68,26 @@ contract FtsoV2FeedConsumer {
     function getFtsoV2CurrentFeedValues()
         external
         view
-        returns (uint256[] memory _feedValues, int8[] memory _decimals)
+        returns (
+            uint256[] memory _feedValues,
+            int8[] memory _decimals,
+            int64 _timestamp
+        )
     {
         (
             uint256[] memory feedValues,
             int8[] memory decimals,
-             /* uint64 timestamp */
+            int64 timestamp
         ) = ftsoV2.fetchCurrentFeeds(feedIndexes);
         /* Your custom feed consumption logic. */
-        /* In this example the feed values and decimals are just returned. */
-        return (feedValues, decimals);
+        /* In this example the feed values, decimals and last updated timestamp are just returned. */
+        return (feedValues, decimals, timestamp);
     }
 }
 ```
 
 {/* prettier-ignore */}
-<Remix href="https://remix.ethereum.org/#version=soljson-v0.8.25+commit.b61c2a91.js&optimize=true&runs=200&gist=d6181b71e7932701efbc6c3c78898f5a">Open in Remix</Remix>
+<Remix href="https://remix.ethereum.org/#version=soljson-v0.8.19+commit.7dd6d404.js&optimize=true&runs=200&gist=d6181b71e7932701efbc6c3c78898f5a">Open in Remix</Remix>
 
 ### Breaking down the contract
 
@@ -100,19 +105,23 @@ You can get testnet C2FLR from the [Coston2 Faucet](https://faucet.flare.network
 :::
 
 {/* prettier-ignore */}
-1. [Open the contract in Remix](https://remix.ethereum.org/#version=soljson-v0.8.25+commit.b61c2a91.js&optimize=true&runs=200&gist=d6181b71e7932701efbc6c3c78898f5a)
+1. [Open the contract in Remix](https://remix.ethereum.org/#version=soljson-v0.8.19+commit.7dd6d404.js&optimize=true&runs=200&gist=d6181b71e7932701efbc6c3c78898f5a)
 
 2. Click on `FtsoV2FeedConsumer.sol` in the file explorer to open the contract in the editor.
 
-2. On the left side of Remix, click the **Solidity Compiler** tab to view the compiler settings. Expand **Advanced Configuration** and set **EVM Version** to `london`.
+2. On the left side of Remix, click the **Solidity Compiler** tab to view the compiler settings.
 
-   <img src={SetEvmVersion} style={{ width: 300 }} />
+   <img src={OpenSolidityCompiler} style={{ width: 300 }} />
 
 3. Click the **Compile FtsoV2FeedConsumer.sol** button to compile the contract.
 
     <img src={CompileContract} style={{ width: 300 }} />
 
-4. On the **Deploy & Run transactions** tab, select the **Injected Provider - MetaMask** environment.
+4. On the left side of Remix, click the **Deploy & Run transactions** tab to view the deployment settings.
+
+   <img src={OpenDeploy} style={{ width: 300 }} />
+
+5. Select the **Injected Provider - MetaMask** environment.
 
    <img src={SetInjectedProvider} style={{ width: 300 }} />
 
@@ -124,11 +133,13 @@ You can get testnet C2FLR from the [Coston2 Faucet](https://faucet.flare.network
 
     <img src={ConfirmDeployInMetamask} style={{ width: 300 }} />
 
-8. After a few seconds, the transaction completes and your contract appears under the **Deployed/Unpinned Contracts** list in Remix. Click the contract dropdown to view its variables and functions. Click `getFtsoV2CurrentFeedValues` to show the latest feed values and decimals.
+8. After a few seconds, the transaction completes and your contract appears under the **Deployed/Unpinned Contracts** list in Remix. Click the contract dropdown to view its variables and functions. Click on **getFtsoV2CurrentFeedValues** to show the latest feed values and decimals.
 
     <img src={QueryLatestFeeds} style={{ width: 300 }} />
 
-The first `feedValues` array will contain the current integer values of FLR/USD, BTC/USD, and ETH/USD in the same order as the feed indexes were given. The second `decimals` array will contain the decimal places for the corresponding feeds.
+- The `_feedValues` array will contain the current integer values of FLR/USD, BTC/USD, and ETH/USD in the same order as the feed indexes were given.
+- The `_decimals` array will contain the decimal places for the corresponding feeds.
+- The `_timestamp` variable will contain the timestamp of the last feed update.
 
 The floating point price of a feed can be calculated by dividing the `feedValue` by 10^`decimals`. For example, if the feed value of BTC/USD is `6900420` and the decimal is `2`, the floating point feed value is `69004.20`.
 
