@@ -107,11 +107,11 @@ const config: Config = {
       style: "light",
       logo: {
         alt: "Flare Logo",
-        src: "img/flare_tbfd_light.svg",
-        srcDark: "img/flare_tbfd_dark.svg",
+        src: "img/logo/FooterLogoLight.svg",
+        srcDark: "img/logo/FooterLogoDark.svg",
         href: "https://flare.network/",
-        width: 300,
-        height: 25,
+        width: 405,
+        height: 35.25,
       },
       links: [
         {
