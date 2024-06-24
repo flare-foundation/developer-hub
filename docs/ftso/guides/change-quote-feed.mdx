@@ -1,6 +1,6 @@
 ---
 title: Change quote feed
-tags: [quickstart, ftso, solidity]
+tags: [intermediate, ftso, solidity]
 slug: change-quote-feed
 description: Change block-latency quote feeds using Solidity.
 keywords:
@@ -13,16 +13,23 @@ keywords:
     solidity,
     remix,
   ]
-sidebar_position: 2
+sidebar_position: 3
 ---
 
 import Remix from "@site/src/components/remix";
+import SetEvmVersionRemix from "/static/img/set-evm-version-remix.png";
 
 This guide will show you how to fetch the latest feed values for two feeds and convert them to a new quote feed. For example, if you need the price of `BTC/ETH`, you can fetch the latest feed values for `BTC/USD` and `ETH/USD` and calculate the price of `BTC/ETH = (BTC/USD) / (ETH/USD)`.
 
-```solidity title="FtsoV2ChangeQuoteFeed.sol"// SPDX-License-Identifier: MIT
+In the following smart contract, for `BTC/USD` (feed index `2`) and `ETH/USD` (feed index `9`), returning the value of `BTC/ETH`, the function signature would be:
+
+```solidity
+getNewQuoteFeedValue([2, 9])
+```
+
+```solidity title="FtsoV2ChangeQuoteFeed.sol"
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity <0.9.0;
 
 import { IFastUpdater } from "@flarenetwork/flare-periphery-contracts/flare/ftso/userInterfaces/IFastUpdater.sol";
 
@@ -104,16 +111,35 @@ contract FtsoV2ChangeQuoteFeed {
 {/* prettier-ignore */}
 <Remix href="https://remix.ethereum.org/#version=soljson-v0.8.19+commit.7dd6d404.js&optimize=true&runs=200&gist=d6181b71e7932701efbc6c3c78898f5a">Open in Remix</Remix>
 
-<br />
+<br></br>
 
-For the example of `BTC/USD` (feed index `2`) and `ETH/USD` (feed index `9`), returning the value of `BTC/ETH`, the function signature would be:
+:::warning
 
-```solidity
-getNewQuoteFeedValue([2, 9])
-```
+When compiling and deploying the contract:
 
-:::tip
-You can do this with any two feeds you want to convert to a new quote feed. See a full list of feed indexes on the [Block-Latency Feeds](../feeds) page.
+- **Using Remix:** Set EVM version to `london` in the **Advanced Configurations** section of the **Solidity Compiler** tab:
+
+  {" "}
+  <img src={SetEvmVersionRemix} style={{ width: 300 }} />
+
+- **Using Standard Solidity JSON:** Set `evmVersion` to `london`:
+
+  ```json
+  {
+    "settings": {
+      "optimizer": {
+        /* ... */
+      },
+      "evmVersion": "london"
+    }
+  }
+  ```
+
+- **Using `solc` CLI:** Set `--evm-version` to `london`:
+
+  ```bash
+  solc --evm-version london <args>
+  ```
 
 :::
 
