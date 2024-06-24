@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.19;
 
 interface IFastUpdater {
     function fetchCurrentFeeds(
@@ -38,15 +38,19 @@ contract FtsoV2FeedConsumer {
     function getFtsoV2CurrentFeedValues()
         external
         view
-        returns (uint256[] memory _feedValues, int8[] memory _decimals)
+        returns (
+            uint256[] memory _feedValues,
+            int8[] memory _decimals,
+            int64 _timestamp
+        )
     {
         (
             uint256[] memory feedValues,
             int8[] memory decimals,
-             /* uint64 timestamp */
+            int64 timestamp
         ) = ftsoV2.fetchCurrentFeeds(feedIndexes);
         /* Your custom feed consumption logic. */
-        /* In this example the feed values and decimals are just returned. */
-        return (feedValues, decimals);
+        /* In this example the feed values, decimals and last updated timestamp are just returned. */
+        return (feedValues, decimals, timestamp);
     }
 }
