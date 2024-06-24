@@ -69,7 +69,7 @@ export default function CustomFooter({
             <div>|</div>
             <div>{copyright}</div>
           </div>
-          {/* <SocialLinks /> */}
+          <SocialLinks />
         </div>
       </div>
     </footer>

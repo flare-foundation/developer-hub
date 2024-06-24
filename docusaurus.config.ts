@@ -112,6 +112,7 @@ const config: Config = {
         href: "https://flare.network/",
         width: 405,
         height: 35.25,
+        target: "_blank",
       },
       links: [
         {
