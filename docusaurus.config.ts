@@ -45,24 +45,9 @@ const config: Config = {
           rehypePlugins: [rehypeKatex],
           editUrl:
             "https://github.com/flare-foundation/developer-hub/edit/main",
-        },
-        blog: {
-          sortPosts: "ascending",
-          path: "guides",
-          routeBasePath: "guides",
-          showReadingTime: true,
-          feedOptions: {
-            type: "all",
-            copyright: `Copyright © Flare Networks ${new Date().getFullYear()}.`,
-          },
-          blogTitle: "Guides",
-          blogDescription: "All guides for interacting with Flare.",
-          blogSidebarCount: "ALL",
-          blogSidebarTitle: "All guides",
           onInlineTags: "throw",
-          editUrl:
-            "https://github.com/flare-foundation/developer-hub/edit/main",
         },
+        blog: false,
         theme: {
           customCss: "./src/css/custom.css",
         },
@@ -104,7 +89,6 @@ const config: Config = {
           position: "left",
           label: "Flare ☀️",
         },
-        { to: "/guides", label: "Guides", position: "left" },
         // {
         //   href: "https://t.me/FlareNetwork",
         //   className: "header-telegram-link",
