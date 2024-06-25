@@ -15,7 +15,7 @@ export default function HeroSection() {
             The decentralization origin for Flare builders. Written by builders,
             for builders
           </p>
-          <Link className={classes.button} to="docs/intro">
+          <Link className={classes.button} to="intro">
             <div>Get Started Building</div>
             <div>
               {" "}
