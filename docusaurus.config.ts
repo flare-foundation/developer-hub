@@ -119,15 +119,15 @@ const config: Config = {
           items: [
             {
               label: "FAQs",
-              to: "support/faqs",
+              to: "/support/faqs",
             },
             {
               label: "Terminology",
-              to: "support/terminology",
+              to: "/support/terminology",
             },
             {
               label: "Audits",
-              to: "support/audits",
+              to: "/support/audits",
             },
           ],
         },
