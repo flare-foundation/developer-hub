@@ -61,35 +61,3 @@ npm run build
 This command generates static content into the `build` directory and can be served using any static contents hosting service.
 
 Note: Search will only function with a production build.
-
-## How to contribute
-
-1. Clone and Branch from main
-
-    ```bash
-    git clone https://github.com/flare-foundation/developer-hub.git
-    git checkout -b <feature-branch-name>
-    ```
-
-2. Make your changes
-
-3. Format and Build locally
-
-    ```bash
-    npm run format
-    npm run build
-    ```
-
-4. Make sure your branch is up to date with main
-
-    ```bash
-    git pull origin main –-rebase –-autostash
-    ```
-
-5. Push your changes
-
-    ```bash
-    git push origin <feature-branch-name>
-    ```
-
-6. Open a Pull Request on GitHub
