@@ -198,9 +198,9 @@ const config: Config = {
         // `hashed` is recommended as long-term-cache of index file is possible
         language: ["en"],
         indexDocs: true,
-        indexBlog: true,
-        docsRouteBasePath: "/docs",
-        blogRouteBasePath: "/guides",
+        indexPages: true,
+        indexBlog: false,
+        docsRouteBasePath: "/",
       },
     ],
   ],
