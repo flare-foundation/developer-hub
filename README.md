@@ -60,4 +60,4 @@ npm run build
 
 This command generates static content into the `build` directory and can be served using any static contents hosting service.
 
-Note: Search will only function with a production build.
+**Note:** Search will only function with a production build.
