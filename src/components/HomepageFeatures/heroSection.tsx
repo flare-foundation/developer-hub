@@ -1,11 +1,41 @@
-import classes from "./hero.module.css";
-import clsx from "clsx";
 import Link from "@docusaurus/Link";
 import Heading from "@theme/Heading";
+import clsx from "clsx";
+import classes from "./hero.module.css";
 
 export default function HeroSection() {
   return (
     <section className={classes.heroSection}>
+      <div className={clsx(classes.videoContainer, classes.videoDark)}>
+        <video
+          id="background-video"
+          autoPlay
+          loop
+          muted
+          poster={"/img/landing/dev_hub_ani_noblur.png"}
+          style={{ height: "100%", width: "100%" }}
+        >
+          <source
+            src={"/img/landing/dev_hub_ani_dark.mp4"}
+            type="video/mp4"
+          ></source>
+        </video>
+      </div>
+      <div className={clsx(classes.videoContainer, classes.videoLight)}>
+        <video
+          id="background-video"
+          autoPlay
+          loop
+          muted
+          poster={"/img/landing/dev_hub_ani_noblur.png"}
+          style={{ height: "100%", width: "100%" }}
+        >
+          <source
+            src={"/img/landing/dev_hub_ani_light.mp4"}
+            type="video/mp4"
+          ></source>
+        </video>
+      </div>
       <div className={clsx(classes.content, "container")}>
         <div className={classes.callToAction}>
           <Heading as="h1" className={classes.heading}>
@@ -18,7 +48,6 @@ export default function HeroSection() {
           <Link className={classes.button} to="intro">
             <div>Get Started Building</div>
             <div>
-              {" "}
               <svg
                 width="16"
                 height="16"
