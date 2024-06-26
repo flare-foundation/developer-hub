@@ -2,10 +2,15 @@ import { ReactNode } from "react";
 import classes from "./customFooter.module.css";
 import Link from "@docusaurus/Link";
 import SocialLinks from "../SocialLinks/SocialLinks";
+import { Props } from "@theme/Footer/LinkItem";
 
 type CustomFooterProps = {
   //TODO: figure out this type
-  links?: any[];
+  //   links?: any[];
+  links?: {
+    title: string;
+    items: Props["item"][];
+  }[];
   logo?: ReactNode;
   copyright?: ReactNode;
 };

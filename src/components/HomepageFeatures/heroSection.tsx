@@ -12,9 +12,15 @@ export default function HeroSection() {
           autoPlay
           loop
           muted
+          height={"100%"}
+          width={"100%"}
           poster={"/img/landing/dev_hub_ani_noblur.png"}
-          style={{ height: "100%", width: "100%" }}
+          // style={{ height: "100%", width: "100%" }}
         >
+          <source
+            src={"/img/landing/dev_hub_ani_dark.webm"}
+            type="video/webm"
+          ></source>
           <source
             src={"/img/landing/dev_hub_ani_dark.mp4"}
             type="video/mp4"
@@ -27,9 +33,15 @@ export default function HeroSection() {
           autoPlay
           loop
           muted
+          height={"100%"}
+          width={"100%"}
           poster={"/img/landing/dev_hub_ani_noblur.png"}
-          style={{ height: "100%", width: "100%" }}
+          // style={{ height: "100%", width: "100%" }}
         >
+          <source
+            src={"/img/landing/dev_hub_ani_light.webm"}
+            type="video/webm"
+          ></source>
           <source
             src={"/img/landing/dev_hub_ani_light.mp4"}
             type="video/mp4"

@@ -19,6 +19,7 @@ function Footer(): JSX.Element | null {
       {links.find((link) => link.title == "Developer links") &&
       links.find((link) => link.title == "Support") ? (
         <CustomFooter
+          // @ts-expect-error: We are for sure that if both titles are defined that we have right type
           links={links && links.length > 0 && links}
           logo={logo && <FooterLogo logo={logo} />}
           copyright={copyright && <FooterCopyright copyright={copyright} />}

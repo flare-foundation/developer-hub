@@ -158,23 +158,6 @@ const config: Config = {
           ],
         },
         {
-          title: "Community",
-          items: [
-            {
-              label: "X",
-              href: "https://x.com/FlareNetworks",
-            },
-            {
-              label: "Telegram",
-              href: "https://t.me/FlareNetwork",
-            },
-            {
-              label: "YouTube",
-              href: "https://www.youtube.com/channel/UCDyqyTWHYMWY5ie6xOCgG0w",
-            },
-          ],
-        },
-        {
           title: "More",
           items: [
             {
@@ -188,23 +171,6 @@ const config: Config = {
             {
               label: "Terms & Privacy",
               href: "https://flare.network/privacy-policy/",
-            },
-          ],
-        },
-        {
-          title: "Explorers",
-          items: [
-            {
-              label: "Flarescan",
-              href: "https://flarescan.com/",
-            },
-            {
-              label: "Flare Systems Explorer",
-              href: "https://coston-systems-explorer.flare.rocks/",
-            },
-            {
-              label: "Flare FTSO Monitor",
-              href: "https://flare-ftso-monitor.flare.network/",
             },
           ],
         },
