@@ -1,17 +1,17 @@
-import React from 'react';
-import LinkItem from '@theme/Footer/LinkItem';
-import type {Props} from '@theme/Footer/Links/MultiColumn';
+import React from "react";
+import LinkItem from "@theme/Footer/LinkItem";
+import type { Props } from "@theme/Footer/Links/MultiColumn";
 
-type ColumnType = Props['columns'][number];
-type ColumnItemType = ColumnType['items'][number];
+type ColumnType = Props["columns"][number];
+type ColumnItemType = ColumnType["items"][number];
 
-function ColumnLinkItem({item}: {item: ColumnItemType}) {
+function ColumnLinkItem({ item }: { item: ColumnItemType }) {
   return item.html ? (
     <li
       className="footer__item"
       // Developer provided the HTML, so assume it's safe.
       // eslint-disable-next-line react/no-danger
-      dangerouslySetInnerHTML={{__html: item.html}}
+      dangerouslySetInnerHTML={{ __html: item.html }}
     />
   ) : (
     <li key={item.href ?? item.to} className="footer__item">
@@ -20,7 +20,7 @@ function ColumnLinkItem({item}: {item: ColumnItemType}) {
   );
 }
 
-function Column({column}: {column: ColumnType}) {
+function Column({ column }: { column: ColumnType }) {
   return (
     <div className="col footer__col">
       <div className="footer__title">{column.title}</div>
@@ -33,7 +33,9 @@ function Column({column}: {column: ColumnType}) {
   );
 }
 
-export default function FooterLinksMultiColumn({columns}: Props): JSX.Element {
+export default function FooterLinksMultiColumn({
+  columns,
+}: Props): JSX.Element {
   return (
     <div className="row footer__links">
       {columns.map((column, i) => (
