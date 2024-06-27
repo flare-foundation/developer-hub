@@ -161,23 +161,6 @@ const config: Config = {
             },
           ],
         },
-        {
-          title: "More",
-          items: [
-            {
-              label: "GitHub",
-              href: "https://github.com/flare-foundation/",
-            },
-            {
-              label: "Grants",
-              href: "https://flare.network/grants/",
-            },
-            {
-              label: "Terms & Privacy",
-              href: "https://flare.network/privacy-policy/",
-            },
-          ],
-        },
       ],
       copyright: `Copyright © Flare Networks ${new Date().getFullYear()}`,
     },
