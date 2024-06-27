@@ -6,7 +6,7 @@ export default function FooterCopyright({ copyright }: Props): JSX.Element {
     <div
       className="footer__copyright"
       // Developer provided the HTML, so assume it's safe.
-      // eslint-disable-next-line react/no-danger
+      // eslint-disable-next-line
       dangerouslySetInnerHTML={{ __html: copyright }}
     />
   );
