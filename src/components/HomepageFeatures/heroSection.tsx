@@ -2,8 +2,10 @@ import Link from "@docusaurus/Link";
 import Heading from "@theme/Heading";
 import clsx from "clsx";
 import classes from "./hero.module.css";
+import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
 
 export default function HeroSection() {
+  const { siteConfig } = useDocusaurusContext();
   return (
     <section className={classes.heroSection}>
       <div className={clsx(classes.videoContainer, classes.videoDark)}>
@@ -53,10 +55,7 @@ export default function HeroSection() {
           <Heading as="h1" className={classes.heading}>
             Flare Developer Hub
           </Heading>
-          <p className={classes.description}>
-            The decentralization origin for Flare builders. Written by builders,
-            for builders
-          </p>
+          <p className={classes.description}>{siteConfig.tagline}</p>
           <Link className={classes.button} to="intro">
             <div>Get Started Building</div>
             <div>

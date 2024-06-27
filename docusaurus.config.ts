@@ -69,7 +69,7 @@ const config: Config = {
     },
     docs: {
       sidebar: {
-        autoCollapseCategories: true,
+        autoCollapseCategories: false,
       },
     },
     navbar: {
