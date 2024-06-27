@@ -130,6 +130,10 @@ const config: Config = {
               label: "Audits",
               to: "/support/audits",
             },
+            {
+              label: "Terms & Privacy",
+              href: "https://flare.network/privacy-policy/",
+            },
           ],
         },
         {

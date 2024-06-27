@@ -3,10 +3,9 @@ import classes from "./customFooter.module.css";
 import Link from "@docusaurus/Link";
 import SocialLinks from "../SocialLinks/SocialLinks";
 import { Props } from "@theme/Footer/LinkItem";
+import clsx from "clsx";
 
 type CustomFooterProps = {
-  //TODO: figure out this type
-  //   links?: any[];
   links?: {
     title: string;
     items: Props["item"][];
@@ -23,8 +22,8 @@ export default function CustomFooter({
   const developerLinks = links.find((link) => link.title == "Developer links");
   const supportLinks = links.find((link) => link.title == "Support");
   return (
-    <footer>
-      <div className={classes.footerContainer}>
+    <footer className={classes.footerRoot}>
+      <div className={clsx(classes.footerContainer, "container")}>
         <div className={classes.developerLinks}>
           <div className={classes.developerLinksTitle}>DEVELOPER LINKS</div>
           <div className={classes.displayedLinks}>
@@ -59,23 +58,32 @@ export default function CustomFooter({
         <div className={classes.supportLinks}>
           <div>{logo}</div>
           <div className={classes.supportDisplayedLinks}>
-            {supportLinks.items.map(({ label, to }, index) => (
+            {supportLinks.items.map(({ label, to, href }, index) => (
               <>
                 {index != 0 && <div>|</div>}
-                <Link
-                  key={label}
-                  to={to}
-                  className={classes.supportExternalLink}
-                >
-                  {label}
-                </Link>
+                {href ? (
+                  <Link
+                    key={label}
+                    to={href}
+                    className={classes.supportExternalLink}
+                    target="_blank"
+                  >
+                    {label}
+                  </Link>
+                ) : (
+                  <Link
+                    key={label}
+                    to={to}
+                    className={classes.supportExternalLink}
+                  >
+                    {label}
+                  </Link>
+                )}
               </>
             ))}
-            <div className={classes.mobileHide}>|</div>
-            <div className={classes.mobileHide}>{copyright}</div>
           </div>
           <SocialLinks />
-          <div className={classes.mobileOnly}>{copyright}</div>
+          <div>{copyright}</div>
         </div>
       </div>
     </footer>
