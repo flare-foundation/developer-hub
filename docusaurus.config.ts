@@ -107,11 +107,12 @@ const config: Config = {
       style: "light",
       logo: {
         alt: "Flare Logo",
-        src: "img/flare_tbfd_light.svg",
-        srcDark: "img/flare_tbfd_dark.svg",
+        src: "img/logo/FooterLogoLight.svg",
+        srcDark: "img/logo/FooterLogoDark.svg",
         href: "https://flare.network/",
-        width: 300,
-        height: 25,
+        width: 405,
+        height: 35.25,
+        target: "_blank",
       },
       links: [
         {
@@ -129,36 +130,6 @@ const config: Config = {
               label: "Audits",
               to: "/support/audits",
             },
-          ],
-        },
-        {
-          title: "Community",
-          items: [
-            {
-              label: "X",
-              href: "https://x.com/FlareNetworks",
-            },
-            {
-              label: "Telegram",
-              href: "https://t.me/FlareNetwork",
-            },
-            {
-              label: "YouTube",
-              href: "https://www.youtube.com/channel/UCDyqyTWHYMWY5ie6xOCgG0w",
-            },
-          ],
-        },
-        {
-          title: "More",
-          items: [
-            {
-              label: "GitHub",
-              href: "https://github.com/flare-foundation/",
-            },
-            {
-              label: "Grants",
-              href: "https://flare.network/grants/",
-            },
             {
               label: "Terms & Privacy",
               href: "https://flare.network/privacy-policy/",
@@ -166,7 +137,7 @@ const config: Config = {
           ],
         },
         {
-          title: "Explorers",
+          title: "Developer links",
           items: [
             {
               label: "Flarescan",
@@ -180,10 +151,18 @@ const config: Config = {
               label: "Flare FTSO Monitor",
               href: "https://flare-ftso-monitor.flare.network/",
             },
+            {
+              label: "Flare P-Chain Explorer",
+              href: "https://flare.space/dapp/p-chain-explorer/",
+            },
+            {
+              label: "Grants",
+              href: "https://flare.network/grants/",
+            },
           ],
         },
       ],
-      copyright: `Copyright © Flare Networks ${new Date().getFullYear()}.`,
+      copyright: `Copyright © Flare Networks ${new Date().getFullYear()}`,
     },
     prism: {
       additionalLanguages: ["solidity", "bash", "json", "toml"],
