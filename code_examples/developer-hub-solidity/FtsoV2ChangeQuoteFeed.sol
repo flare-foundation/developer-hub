@@ -1,33 +1,27 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity >=0.8.0 <0.9.0;
 
-interface IFastUpdater {
-    function fetchCurrentFeeds(
-        uint256[] calldata _feedIndexes
-    )
-        external
-        view
-        returns (
-            uint256[] memory _feedValues,
-            int8[] memory _decimals,
-            int64 _timestamp
-        );
-}
+import {IFlareContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/util-contracts/userInterfaces/IFlareContractRegistry.sol";
+import {IFastUpdater} from "@flarenetwork/flare-periphery-contracts/coston2/ftso/userInterfaces/IFastUpdater.sol";
 
 /**
  * THIS IS AN EXAMPLE CONTRACT USING HARDCODED VALUES.
  * DO NOT USE THIS CODE IN PRODUCTION.
  */
-
 contract FtsoV2ChangeQuoteFeed {
+    IFlareContractRegistry internal contractRegistry;
     IFastUpdater internal ftsoV2;
 
     /**
-     * Network: Flare Testnet Coston2
-     * Address: 0x58fb598EC6DB6901aA6F26a9A2087E9274128E59
+     * Constructor initializes the contract registry and fetches the FTSOv2 contract address.
      */
     constructor() {
-        ftsoV2 = IFastUpdater(0x58fb598EC6DB6901aA6F26a9A2087E9274128E59);
+        contractRegistry = IFlareContractRegistry(
+            0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019
+        );
+        ftsoV2 = IFastUpdater(
+            contractRegistry.getContractAddressByName("FastUpdater")
+        );
     }
 
     /**

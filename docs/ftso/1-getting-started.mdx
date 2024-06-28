@@ -17,6 +17,7 @@ keywords:
 
 import Remix from "@site/src/components/remix";
 import OpenSolidityCompiler from "/static/img/ftso-getting-started/0-open-solidity-compiler-tab.png";
+import SetEvmVersion from "/static/img/ftso-getting-started/1-set-evm-version.png";
 import SetInjectedProvider from "/static/img/ftso-getting-started/1-set-injected-provider.png";
 import CompileContract from "/static/img/ftso-getting-started/2-compile-contract.png";
 import OpenDeploy from "/static/img/ftso-getting-started/3-open-deploy.png";
@@ -36,9 +37,10 @@ This example smart contract queries the latest feed values for FLR/USD, BTC/USD,
 
 ```solidity title="FtsoV2FeedConsumer.sol"
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity >=0.8.0 <0.9.0;
 
-import { IFastUpdater } from "@flarenetwork/flare-periphery-contracts/flare/ftso/userInterfaces/IFastUpdater.sol";
+import {IFlareContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/util-contracts/userInterfaces/IFlareContractRegistry.sol";
+import {IFastUpdater} from "@flarenetwork/flare-periphery-contracts/coston2/ftso/userInterfaces/IFastUpdater.sol";
 
 /**
  * THIS IS AN EXAMPLE CONTRACT USING HARDCODED VALUES.
@@ -46,16 +48,14 @@ import { IFastUpdater } from "@flarenetwork/flare-periphery-contracts/flare/ftso
  */
 
 contract FtsoV2FeedConsumer {
+    IFlareContractRegistry internal contractRegistry;
     IFastUpdater internal ftsoV2;
     // Feed indexes: 0 = FLR/USD, 2 = BTC/USD, 9 = ETH/USD
     uint256[] public feedIndexes = [0, 2, 9];
 
-    /**
-     * Network: Flare Testnet Coston2
-     * Address: 0x58fb598EC6DB6901aA6F26a9A2087E9274128E59
-     */
     constructor() {
-        ftsoV2 = IFastUpdater(0x58fb598EC6DB6901aA6F26a9A2087E9274128E59);
+        contractRegistry = IFlareContractRegistry(0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019);
+        ftsoV2 = IFastUpdater(contractRegistry.getContractAddressByName("FastUpdater"));
     }
 
     /**
@@ -64,11 +64,7 @@ contract FtsoV2FeedConsumer {
     function getFtsoV2CurrentFeedValues()
         external
         view
-        returns (
-            uint256[] memory _feedValues,
-            int8[] memory _decimals,
-            int64 _timestamp
-        )
+        returns (uint256[] memory _feedValues, int8[] memory _decimals, int64 _timestamp)
     {
         (
             uint256[] memory feedValues,
@@ -83,14 +79,31 @@ contract FtsoV2FeedConsumer {
 ```
 
 {/* prettier-ignore */}
-<Remix href="https://remix.ethereum.org/#version=soljson-v0.8.19+commit.7dd6d404.js&optimize=true&runs=200&gist=d6181b71e7932701efbc6c3c78898f5a">Open in Remix</Remix>
+<Remix href="https://remix.ethereum.org/#version=builtin&optimize=true&runs=200&gist=d6181b71e7932701efbc6c3c78898f5a">Open in Remix</Remix>
 
 ### Breaking down the contract
 
-- The contract imports the `IFastUpdater` interface from the Flare smart contracts library. You can also see the interface's full [Solidity reference](./solidity-reference/IFastUpdater).
-- The contract defines an array of feed indexes to query. The indexes `[0, 2, 9]`correspond to FLR/USD, BTC/USD, and ETH/USD respectively.
-- The contract initializes the `ftsoV2` variable with the address of the FTSOv2 contract on Flare Testnet Coston2.
-- The `getFtsoV2CurrentFeedValues` function queries the FTSOv2 contract for the latest values of the specified feeds.
+- **Purpose**: Interacts with the Flare Network to fetch current feed values for specific cryptocurrency pairs (FLR/USD, BTC/USD, ETH/USD).
+
+- **Dependencies**:
+
+  - `IFlareContractRegistry`: Interface to get contract addresses from the Flare Network registry.
+  - `IFastUpdater`: Interface to fetch current feed values.
+
+- **State Variables**:
+
+  - `contractRegistry`: Instance of `IFlareContractRegistry` to access the contract registry.
+  - `ftsoV2`: Instance of `IFastUpdater` to fetch feed values.
+  - `feedIndexes`: Array of feed indexes ([0, 2, 9]) representing FLR/USD, BTC/USD, ETH/USD.
+
+- **Constructor**:
+
+  - Initializes `contractRegistry` with a hardcoded address. This address is the same on mainnet and testnet.
+  - Retrieves and sets the `ftsoV2` contract address using the contract registry.
+
+- **Function `getFtsoV2CurrentFeedValues`**:
+  - Fetches the current feed values, decimals, and timestamp.
+  - Returns the fetched values.
 
 ## Compile, deploy, and run the contract
 
@@ -101,13 +114,17 @@ You can get testnet C2FLR from the [Coston2 Faucet](https://faucet.flare.network
 :::
 
 {/* prettier-ignore */}
-1. [Open the contract in Remix](https://remix.ethereum.org/#version=soljson-v0.8.19+commit.7dd6d404.js&optimize=true&runs=200&gist=d6181b71e7932701efbc6c3c78898f5a)
+1. <Remix href="https://remix.ethereum.org/#version=builtin&optimize=true&runs=200&gist=d6181b71e7932701efbc6c3c78898f5a">Open contract in Remix</Remix>
 
 2. Click on `FtsoV2FeedConsumer.sol` in the file explorer to open the contract in the editor.
 
 2. On the left side of Remix, click the **Solidity Compiler** tab to view the compiler settings.
 
    <img src={OpenSolidityCompiler} style={{ width: 300 }} />
+
+3. Expand the **Advanced Configurations** section and set the **EVM Version** to `london`.
+
+   <img src={SetEvmVersion} style={{ width: 300 }} />
 
 3. Click the **Compile FtsoV2FeedConsumer.sol** button to compile the contract.
 

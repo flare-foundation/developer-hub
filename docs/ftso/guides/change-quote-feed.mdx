@@ -29,24 +29,29 @@ getNewQuoteFeedValue([2, 9])
 
 ```solidity title="FtsoV2ChangeQuoteFeed.sol"
 // SPDX-License-Identifier: MIT
-pragma solidity <0.9.0;
+pragma solidity >=0.8.0 <0.9.0;
 
-import { IFastUpdater } from "@flarenetwork/flare-periphery-contracts/flare/ftso/userInterfaces/IFastUpdater.sol";
+import {IFlareContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/util-contracts/userInterfaces/IFlareContractRegistry.sol";
+import {IFastUpdater} from "@flarenetwork/flare-periphery-contracts/coston2/ftso/userInterfaces/IFastUpdater.sol";
 
 /**
  * THIS IS AN EXAMPLE CONTRACT USING HARDCODED VALUES.
  * DO NOT USE THIS CODE IN PRODUCTION.
  */
-
 contract FtsoV2ChangeQuoteFeed {
+    IFlareContractRegistry internal contractRegistry;
     IFastUpdater internal ftsoV2;
 
     /**
-     * Network: Flare Testnet Coston2
-     * Address: 0x58fb598EC6DB6901aA6F26a9A2087E9274128E59
+     * Constructor initializes the contract registry and fetches the FTSOv2 contract address.
      */
     constructor() {
-        ftsoV2 = IFastUpdater(0x58fb598EC6DB6901aA6F26a9A2087E9274128E59);
+        contractRegistry = IFlareContractRegistry(
+            0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019
+        );
+        ftsoV2 = IFastUpdater(
+            contractRegistry.getContractAddressByName("FastUpdater")
+        );
     }
 
     /**
@@ -86,11 +91,8 @@ contract FtsoV2ChangeQuoteFeed {
             "Invalid feed indexes. Please provide exactly two indexes."
         );
         // Fetch current feeds
-        (
-            uint256[] memory feedValues,
-            int8[] memory decimals,
-            /* uint64 timestamp */
-        ) = ftsoV2.fetchCurrentFeeds(_baseAndQuoteFeedIndexes);
+        (uint256[] memory feedValues, int8[] memory decimals, ) = ftsoV2
+            .fetchCurrentFeeds(_baseAndQuoteFeedIndexes);
         uint8 newQuoteDecimals = uint8(decimals[1]);
         // Scale the base feed value to match the quote feed decimals
         uint256 scaledBaseFeedValue = _scaleBaseFeedValue(
@@ -109,7 +111,7 @@ contract FtsoV2ChangeQuoteFeed {
 ```
 
 {/* prettier-ignore */}
-<Remix href="https://remix.ethereum.org/#version=soljson-v0.8.19+commit.7dd6d404.js&optimize=true&runs=200&gist=d6181b71e7932701efbc6c3c78898f5a">Open in Remix</Remix>
+<Remix href="https://remix.ethereum.org/#version=builtin&optimize=true&runs=200&gist=c1dccb7c1216aa5f8de7caf03565d8d2">Open in Remix</Remix>
 
 <br></br>
 
@@ -143,79 +145,37 @@ contract FtsoV2ChangeQuoteFeed {
 <details>
 <summary>Didn't understand the Solidity code?</summary>
 
-Let's go through the Solidity contract `FtsoV2ChangeQuoteFeed` step-by-step to understand its functionality.
+- **Purpose**: This contract interacts with the Flare Network to fetch feed values and compute a new quote feed value based on the base and quote feed values.
 
-**Imports**
+- **Dependencies**:
 
-```solidity
-import { IFastUpdater } from "@flarenetwork/flare-periphery-contracts/flare/ftso/userInterfaces/IFastUpdater.sol";
-```
+  - `IFlareContractRegistry`: Interface to get contract addresses from the Flare Network registry.
+  - `IFastUpdater`: Interface to fetch current feed values.
 
-- Imports the `IFastUpdater` interface from the specified path. This interface is expected to define functions that the `FtsoV2ChangeQuoteFeed` contract will interact with.
+- **State Variables**:
 
-**Internal variable**
+  - `contractRegistry`: Instance of `IFlareContractRegistry` to access the contract registry.
+  - `ftsoV2`: Instance of `IFastUpdater` to fetch feed values.
 
-```solidity
-IFastUpdater internal ftsoV2;
-```
+- **Constructor**:
 
-- Declares an internal variable `ftsoV2` of type `IFastUpdater`, which will hold the address of the `FtsoV2` contract.
+  - Initializes `contractRegistry` with a hardcoded address.
+  - Retrieves and sets the `ftsoV2` contract address using the contract registry.
 
-**Constructor**
+- **Internal Function `_scaleBaseFeedValue`**:
 
-```solidity
-constructor() {
-    ftsoV2 = IFastUpdater(0x58fb598EC6DB6901aA6F26a9A2087E9274128E59);
-}
-```
+  - Scales the base feed value to match the decimals of the quote feed.
+  - Adjusts the feed value by scaling up or down depending on the difference in decimals.
 
-- The constructor initializes the `ftsoV2` variable with the address of the `FtsoV2` contract on the Flare Testnet Coston2 network.
+- **External Function `getNewQuoteFeedValue`**:
 
-**Internal function**
+  - Accepts an array of feed indexes (base and quote feed indexes).
+  - Fetches current feed values and decimals using `ftsoV2`.
+  - Scales the base feed value to match the quote feed decimals.
+  - Computes and returns the new quote feed value by adjusting for the decimal differences and performing a calculation.
 
-```solidity
-function _scaleBaseFeedValue(
-    uint256 _baseFeedValue,
-    uint8 _baseFeedDecimals,
-    uint8 _quoteDecimals
-) internal pure returns (uint256) {
-    if (_baseFeedDecimals < _quoteDecimals) {
-        return _baseFeedValue * 10 ** uint256(_quoteDecimals - _baseFeedDecimals);
-    } else if (_baseFeedDecimals > _quoteDecimals) {
-        return _baseFeedValue / 10 ** uint256(_baseFeedDecimals - _quoteDecimals);
-    } else {
-        return _baseFeedValue;
-    }
-}
-```
-
-- This internal function scales the base feed value to match the decimals of the quote feed. It adjusts the base feed value by either scaling it up or down depending on the difference in decimal places between the base and quote feeds.
-
-**External function**
-
-```solidity
-function getNewQuoteFeedValue(
-    uint256[] calldata _baseAndQuoteFeedIndexes
-) external view returns (uint256) {
-    require(
-        _baseAndQuoteFeedIndexes.length == 2,
-        "Invalid feed indexes. Please provide exactly two indexes."
-    );
-    (uint256[] memory feedValues, int8[] memory decimals, ) = ftsoV2.fetchCurrentFeeds(_baseAndQuoteFeedIndexes);
-    uint8 newQuoteDecimals = uint8(decimals[1]);
-    uint256 scaledBaseFeedValue = _scaleBaseFeedValue(feedValues[0], uint8(decimals[0]), newQuoteDecimals);
-    require(feedValues[1] != 0, "Division by zero");
-    uint256 newQuoteFeedValue = (scaledBaseFeedValue * 10 ** uint256(newQuoteDecimals)) / feedValues[1];
-    return newQuoteFeedValue;
-}
-```
-
-- Parameters: Takes an array of two feed indexes, one for the base feed and one for the quote feed.
-- Require Statement: Ensures that exactly two feed indexes are provided.
-- Fetching Feeds: Uses the `fetchCurrentFeeds` function of the `ftsoV2` contract to get the current feed values and their decimals.
-- Scaling Base Feed Value: Scales the base feed value to match the decimals of the quote feed using the `_scaleBaseFeedValue` function.
-- Division by Zero Check: Ensures the quote feed value is not zero to prevent division by zero.
-- Computing New Quote Feed Value: Calculates the new quote feed value by adjusting for the decimal difference and dividing by the quote feed value.
-- Return Value: Returns the computed new quote feed value.
+- **Key Validations**:
+  - Ensures exactly two feed indexes are provided.
+  - Prevents division by zero during the computation of the new quote feed value.
 
 </details>
