@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 
-import {IFlareContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/util-contracts/userInterfaces/IFlareContractRegistry.sol";
-import {IFastUpdater} from "@flarenetwork/flare-periphery-contracts/coston2/ftso/userInterfaces/IFastUpdater.sol";
+import {IFlareContractRegistry} from "@flarenetwork/flare-periphery-contracts@0.1.9/coston2/util-contracts/userInterfaces/IFlareContractRegistry.sol";
+import {IFastUpdater} from "@flarenetwork/flare-periphery-contracts@0.1.9/coston2/ftso/userInterfaces/IFastUpdater.sol";
 
 /**
- * THIS IS AN EXAMPLE CONTRACT USING HARDCODED VALUES.
+ * THIS IS AN EXAMPLE CONTRACT.
  * DO NOT USE THIS CODE IN PRODUCTION.
  */
 contract FtsoV2FeedConsumer {
@@ -15,7 +15,8 @@ contract FtsoV2FeedConsumer {
     uint256[] public feedIndexes = [0, 2, 9];
 
     /**
-     * Constructor initializes the contract registry and fetches the FTSOv2 contract address.
+     * Constructor initializes the FTSOv2 contract.
+     * The contract registry is used to fetch the FTSOv2 contract address.
      */
     constructor() {
         contractRegistry = IFlareContractRegistry(
@@ -43,8 +44,7 @@ contract FtsoV2FeedConsumer {
             int8[] memory decimals,
             uint64 timestamp
         ) = ftsoV2.fetchCurrentFeeds(feedIndexes);
-        /* Your custom feed consumption logic. */
-        /* In this example the feed values, decimals and last updated timestamp are just returned. */
+        /* Your custom feed consumption logic. In this example the values are just returned. */
         return (feedValues, decimals, timestamp);
     }
 }
