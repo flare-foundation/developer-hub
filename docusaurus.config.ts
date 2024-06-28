@@ -145,7 +145,7 @@ const config: Config = {
             },
             {
               label: "Flare Systems Explorer",
-              href: "https://coston-systems-explorer.flare.rocks/",
+              href: "https://coston2-systems-explorer.flare.rocks",
             },
             {
               label: "Flare FTSO Monitor",
@@ -158,6 +158,10 @@ const config: Config = {
             {
               label: "Grants",
               href: "https://flare.network/grants/",
+            },
+            {
+              label: "Flare Builders (community)",
+              href: "https://www.flare.builders",
             },
           ],
         },
