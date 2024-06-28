@@ -5,7 +5,7 @@ import {IFlareContractRegistry} from "@flarenetwork/flare-periphery-contracts/co
 import {IFastUpdater} from "@flarenetwork/flare-periphery-contracts/coston2/ftso/userInterfaces/IFastUpdater.sol";
 
 /**
- * THIS IS AN EXAMPLE CONTRACT USING HARDCODED VALUES.
+ * THIS IS AN EXAMPLE CONTRACT.
  * DO NOT USE THIS CODE IN PRODUCTION.
  */
 contract FtsoV2ChangeQuoteFeed {
@@ -13,7 +13,8 @@ contract FtsoV2ChangeQuoteFeed {
     IFastUpdater internal ftsoV2;
 
     /**
-     * Constructor initializes the contract registry and fetches the FTSOv2 contract address.
+     * Constructor initializes the FTSOv2 contract.
+     * The contract registry is used to fetch the FTSOv2 contract address.
      */
     constructor() {
         contractRegistry = IFlareContractRegistry(
