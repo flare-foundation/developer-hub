@@ -35,13 +35,13 @@ contract FtsoV2FeedConsumer {
         returns (
             uint256[] memory _feedValues,
             int8[] memory _decimals,
-            int64 _timestamp
+            uint64 _timestamp
         )
     {
         (
             uint256[] memory feedValues,
             int8[] memory decimals,
-            int64 timestamp
+            uint64 timestamp
         ) = ftsoV2.fetchCurrentFeeds(feedIndexes);
         /* Your custom feed consumption logic. */
         /* In this example the feed values, decimals and last updated timestamp are just returned. */
