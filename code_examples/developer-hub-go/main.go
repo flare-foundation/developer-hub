@@ -15,4 +15,5 @@ func main() {
 	flare.DeployContract()
 	FtsoV2Consumer()
 	FtsoV2Config()
+	coston2.MakeVolatilityIncentive()
 }
