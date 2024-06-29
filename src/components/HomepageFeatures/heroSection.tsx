@@ -14,6 +14,7 @@ export default function HeroSection() {
           autoPlay
           loop
           muted
+          playsInline
           height={"100%"}
           width={"100%"}
           poster={"/img/landing/dev_hub_ani_noblur.png"}
@@ -53,7 +54,7 @@ export default function HeroSection() {
       <div className={clsx(classes.content, "container")}>
         <div className={classes.callToAction}>
           <Heading as="h1" className={classes.heading}>
-            Flare Developer Hub
+            {siteConfig.title}
           </Heading>
           <p className={classes.description}>{siteConfig.tagline}</p>
           <Link className={classes.button} to="intro">

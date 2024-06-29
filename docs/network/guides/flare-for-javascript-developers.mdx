@@ -41,8 +41,6 @@ This guide is for developers who want to interact with Flare using JavaScript. I
 
 ## Getting started
 
-### Installation
-
 Install the Solidity compiler by following the instructions in the [Solidity documentation](https://docs.soliditylang.org/en/latest/installing-solidity.html#linux-packages). The main commands are provided here:
 
 <Tabs>
@@ -154,7 +152,7 @@ For example, querying it for the address of the `WNat` contract:
   </TabItem>
 </Tabs>
 
-## Compiling a contract
+## Compiling with solc
 
 For this example, you can use the `FtsoV2FeedConsumer` contract to query the FTSOv2 feeds. Copy the `FtsoV2FeedConsumer` sample contract code given below, and save the `.sol` file in the same folder as your `package.json`.
 
@@ -169,21 +167,15 @@ Note that the contract interface dependencies have been inlined to avoid any imp
 
 </details>
 
-### Compile with solc
-
 ```bash
 solc --evm-version london FtsoV2FeedConsumer.sol --abi --bin -o build
 ```
 
 This will generate two files `build/FtsoV2FeedConsumer.abi` and `build/FtsoV2FeedConsumer.bin` files with the contract's ABI and bytecode. Rename `FtsoV2FeedConsumer.abi` to `FtsoV2FeedConsumer.json`.
 
-## Deploying a contract
+## Create account
 
-To deploy a contract, you need to have an account with some testnet or mainnet gas tokens.
-
-### Create account
-
-You can create a new Flare account using `createAccount.js`:
+Before deploying a contract, you need to have an account with some testnet or mainnet gas tokens. You can create a new Flare account using `createAccount.js`:
 
 <CodeBlock language="javascript" title="createAccount.js">
   {CreateAccount}
@@ -196,20 +188,21 @@ This will output a new private key and an account pair.
 - Never share your private keys.
 - Never put your private keys in source code.
 - Never commit private keys to a Git repository.
-  :::
+
+:::
 
 You can save the account and private key into environment variables `ACCOUNT` and `ACCOUNT_PRIVATE_KEY` respectively.
 
 :::note
+
 You can also import the raw hex private key to MetaMask and any other wallet - the private key can be shared between your JavaScript code and any number of wallets.
+
 :::
 
-### Fund account
+- For testnet, you can get free testnet C2FLR on the [Coston2 Faucet](https://faucet.flare.network/coston2).
+- For mainnet you will need to fund the account with FLR. You can buy FLR with regular currency in places like centralized exchanges, crypto on-ramps, or swap other tokens for FLR on decentralized exchanges.
 
-- For testnet, you can use the testnet faucets on the [Network Configuration](/network/overview#configuration) page to get some testnet C2FLR.
-- For mainnet, you need to buy FLR in a cryptocurrency exchange such as Coinbase, Kraken etc.
-
-### Deploy with web3
+## Deploying with web3.js
 
 With the account ready, you can now deploy the contract. In a `deployContract.js` file, you can define the following code to deploy the contract:
 
@@ -236,5 +229,7 @@ You can now run the `deployContract.js` script to deploy the contract. The contr
 Congratulations! You have now successfully deployed a contract on Flare using JavaScript.
 
 :::tip[What's next?]
-Check out the [Solidity Reference](/ftso/solidity-reference/IFastUpdater) for the Flare Time-Series Oracle (FTSOv2), to see what all on-chain functions you can interact with using JavaScript.
+
+Learn how to interact with the Flare Time-Series Oracle [using JavaScript](/ftso/guides/read-feeds-offchain).
+
 :::
