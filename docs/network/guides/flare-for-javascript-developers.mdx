@@ -19,6 +19,17 @@ sidebar_position: 2
 
 import Tabs from "@theme/Tabs";
 import TabItem from "@theme/TabItem";
+import CodeBlock from "@theme/CodeBlock";
+import FtsoV2FeedConsumerNoImports from "!!raw-loader!/code_examples/developer-hub-solidity/FtsoV2FeedConsumer_no_imports.sol";
+import ChainIdCoston2 from "!!raw-loader!/code_examples/developer-hub-javascript/chain_id_coston2.js";
+import ChainIdFlare from "!!raw-loader!/code_examples/developer-hub-javascript/chain_id_flare.js";
+import FetchAbiCoston2 from "!!raw-loader!/code_examples/developer-hub-javascript/fetch_abi_coston2.js";
+import FetchAbiFlare from "!!raw-loader!/code_examples/developer-hub-javascript/fetch_abi_flare.js";
+import MakeQueryCoston2 from "!!raw-loader!/code_examples/developer-hub-javascript/make_query_coston2.js";
+import MakeQueryFlare from "!!raw-loader!/code_examples/developer-hub-javascript/make_query_flare.js";
+import CreateAccount from "!!raw-loader!/code_examples/developer-hub-javascript/create_account.js";
+import DeployContractCoston2 from "!!raw-loader!/code_examples/developer-hub-javascript/deploy_contract_coston2.js";
+import DeployContractFlare from "!!raw-loader!/code_examples/developer-hub-javascript/deploy_contract_flare.js";
 
 This guide is for developers who want to interact with Flare using JavaScript. In this guide, using JavaScript, you will learn how to:
 
@@ -75,23 +86,17 @@ You need to connect to testnet or mainnet via an RPC, any RPC listed on the [Net
 
 <Tabs groupId="network">
   <TabItem value="coston2" label="Flare Testnet Coston2" default>
-    ```javascript title="chainId.js"
-    import { Web3 } from "web3";
 
-    const web3 = new Web3("https://rpc.ankr.com/flare_coston2");
-    web3.eth.getChainId().then(console.log);
-    // 114
-    ```
+    <CodeBlock language="javascript" title="chainId.js">
+      {ChainIdCoston2}
+    </CodeBlock>
 
   </TabItem>
   <TabItem value="flare" label="Flare Mainnet">
-    ```javascript title="chainId.js"
-    import { Web3 } from "web3";
 
-    const web3 = new Web3("https://rpc.ankr.com/flare");
-    web3.eth.getChainId().then(console.log);
-    // 14
-    ```
+    <CodeBlock language="javascript" title="chainId.js">
+      {ChainIdFlare}
+    </CodeBlock>
 
   </TabItem>
 </Tabs>
@@ -111,25 +116,17 @@ To fetch a contract's ABI programmatically, you can query the [Flare Blockchain 
 
 <Tabs groupId="network">
   <TabItem value="coston2" label="Flare Testnet Coston2" default>
-    ```javascript title="fetchAbi.js"
-    const base_url = "https://coston2-explorer.flare.network/api";
-    const params = "?module=contract&action=getabi&address=0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019";
 
-    const response = await fetch(base_url + params);
-    const abi = JSON.parse((await response.json())["result"]);
-    console.log(abi);
-    ```
+    <CodeBlock language="javascript" title="fetchAbi.js">
+      {FetchAbiCoston2}
+    </CodeBlock>
 
   </TabItem>
   <TabItem value="flare" label="Flare Mainnet">
-    ```javascript title="fetchAbi.js"
-    const base_url = "https://flare-explorer.flare.network/api";
-    const params = "?module=contract&action=getabi&address=0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019";
 
-    const response = await fetch(base_url + params);
-    const abi = JSON.parse((await response.json())["result"]);
-    console.log(abi);
-    ```
+    <CodeBlock language="javascript" title="fetchAbi.js">
+      {FetchAbiFlare}
+    </CodeBlock>
 
   </TabItem>
 </Tabs>
@@ -142,47 +139,17 @@ For example, querying it for the address of the `WNat` contract:
 
 <Tabs groupId="network">
   <TabItem value="coston2" label="Flare Testnet Coston2" default>
-    ```javascript title="makeQuery.js"
-    import { Web3 } from "web3";
 
-    const registry_addr = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019";
-
-    // Fetch ABI
-    const base_url = "https://coston2-explorer.flare.network/api";
-    const params = `?module=contract&action=getabi&address=${registry_addr}`;
-    const response = await fetch(base_url + params);
-    const abi = JSON.parse((await response.json())["result"]);
-
-    // Query contract
-    const w3 = new Web3("https://rpc.ankr.com/flare_coston2");
-    const registry = new w3.eth.Contract(abi, registry_addr);
-    const res = await registry.methods.getContractAddressByName("WNat").call();
-
-    console.log("WNat address: ", res);
-    // WNat address: 0xC67DCE33D7A8efA5FfEB961899C73fe01bCe9273
-    ```
+    <CodeBlock language="javascript" title="makeQuery.js">
+      {MakeQueryCoston2}
+    </CodeBlock>
 
   </TabItem>
   <TabItem value="flare" label="Flare Mainnet">
-    ```javascript title="makeQuery.js"
-    import { Web3 } from "web3";
 
-    const registry_addr = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019";
-
-    // Fetch ABI
-    const base_url = "https://flare-explorer.flare.network/api";
-    const params = `?module=contract&action=getabi&address=${registry_addr}`;
-    const response = await fetch(base_url + params);
-    const abi = JSON.parse((await response.json())["result"]);
-
-    // Query contract
-    const w3 = new Web3("https://rpc.ankr.com/flare");
-    const registry = new w3.eth.Contract(abi, registry_addr);
-    const res = await registry.methods.getContractAddressByName("WNat").call();
-
-    console.log("WNat address: ", res);
-    // WNat address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
-    ```
+    <CodeBlock language="javascript" title="makeQuery.js">
+      {MakeQueryFlare}
+    </CodeBlock>
 
   </TabItem>
 </Tabs>
@@ -194,74 +161,11 @@ For this example, you can use the `FtsoV2FeedConsumer` contract to query the FTS
 <details>
 <summary>`FtsoV2FeedConsumer` sample contract</summary>
 
-```solidity title="FtsoV2FeedConsumer.sol"
-// SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.9.0;
+Note that the contract interface dependencies have been inlined to avoid any import issues.
 
-interface IFlareContractRegistry {
-    function getContractAddressByName(
-        string calldata _name
-    ) external view returns (address);
-}
-
-interface IFastUpdater {
-    function fetchCurrentFeeds(
-        uint256[] calldata _feedIndexes
-    )
-        external
-        view
-        returns (
-            uint256[] memory _feedValues,
-            int8[] memory _decimals,
-            uint64 _timestamp
-        );
-}
-
-/**
- * THIS IS AN EXAMPLE CONTRACT USING HARDCODED VALUES.
- * DO NOT USE THIS CODE IN PRODUCTION.
- */
-contract FtsoV2FeedConsumer {
-    IFlareContractRegistry internal contractRegistry;
-    IFastUpdater internal ftsoV2;
-    // Feed indexes: 0 = FLR/USD, 2 = BTC/USD, 9 = ETH/USD
-    uint256[] public feedIndexes = [0, 2, 9];
-
-    /**
-     * Constructor initializes the contract registry and fetches the FTSOv2 contract address.
-     */
-    constructor() {
-        contractRegistry = IFlareContractRegistry(
-            0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019
-        );
-        ftsoV2 = IFastUpdater(
-            contractRegistry.getContractAddressByName("FastUpdater")
-        );
-    }
-
-    /**
-     * Get the current value of the feeds.
-     */
-    function getFtsoV2CurrentFeedValues()
-        external
-        view
-        returns (
-            uint256[] memory _feedValues,
-            int8[] memory _decimals,
-            uint64 _timestamp
-        )
-    {
-        (
-            uint256[] memory feedValues,
-            int8[] memory decimals,
-            uint64 timestamp
-        ) = ftsoV2.fetchCurrentFeeds(feedIndexes);
-        /* Your custom feed consumption logic. */
-        /* In this example the feed values, decimals and last updated timestamp are just returned. */
-        return (feedValues, decimals, timestamp);
-    }
-}
-```
+<CodeBlock language="solidity" title="FtsoV2FeedConsumer.sol">
+  {FtsoV2FeedConsumerNoImports}
+</CodeBlock>
 
 </details>
 
@@ -281,15 +185,9 @@ To deploy a contract, you need to have an account with some testnet or mainnet g
 
 You can create a new Flare account using `createAccount.js`:
 
-```javascript title="createAccount.js"
-import { Web3 } from "web3";
-
-const w3 = new Web3();
-w3.eth.accounts.wallet.create(1);
-console.log(
-  `Account: ${w3.eth.accounts.wallet[0].address}, Private key: ${w3.eth.accounts.wallet[0].privateKey}`,
-);
-```
+<CodeBlock language="javascript" title="createAccount.js">
+  {CreateAccount}
+</CodeBlock>
 
 This will output a new private key and an account pair.
 
@@ -317,74 +215,18 @@ With the account ready, you can now deploy the contract. In a `deployContract.js
 
 <Tabs groupId="network">
   <TabItem value="coston2" label="Flare Testnet Coston2" default>
-    ```javascript title="deployContract.js"
-    import { Web3 } from "web3";
-    import fs from "fs";
 
-    const web3 = new Web3(
-    new Web3.providers.HttpProvider("https://rpc.ankr.com/flare_coston2"),
-    );
-
-    const bytecode = fs.readFileSync("./build/FtsoV2FeedConsumer.bin", "utf8");
-    import abi from "./build/FtsoV2FeedConsumer.json" assert { type: "json" };
-    const FtsoV2FeedConsumer = new web3.eth.Contract(abi);
-
-    FtsoV2FeedConsumer.handleRevert = true;
-
-    async function deploy() {
-      const privateKey = process.env.ACCOUNT_PRIVATE_KEY.toString();
-      const wallet = web3.eth.accounts.wallet.add(privateKey);
-
-      const contractDeployer = FtsoV2FeedConsumer.deploy({
-          data: "0x" + bytecode,
-      });
-
-      const tx = await contractDeployer.send({
-          from: wallet[0].address,
-          nonce: await web3.eth.getTransactionCount(wallet[0].address),
-          gasPrice: await web3.eth.getGasPrice(),
-      });
-      console.log("Contract deployed at address: " + tx.options.address);
-    }
-
-    deploy();
-    ```
+    <CodeBlock language="javascript" title="deployContract.js">
+      {DeployContractCoston2}
+    </CodeBlock>
 
     </TabItem>
 
   <TabItem value="flare" label="Flare Mainnet">
-    ```javascript title="deployContract.js"
-    import { Web3 } from "web3";
-    import fs from "fs";
 
-    const web3 = new Web3(
-    new Web3.providers.HttpProvider("https://rpc.ankr.com/flare"),
-    );
-
-    const bytecode = fs.readFileSync("./build/FtsoV2FeedConsumer.bin", "utf8");
-    import abi from "./build/FtsoV2FeedConsumer.json" assert { type: "json" };
-    const FtsoV2FeedConsumer = new web3.eth.Contract(abi);
-
-    FtsoV2FeedConsumer.handleRevert = true;
-
-    async function deploy() {
-      const privateKey = process.env.ACCOUNT_PRIVATE_KEY.toString();
-      const wallet = web3.eth.accounts.wallet.add(privateKey);
-
-      const contractDeployer = FtsoV2FeedConsumer.deploy({
-          data: "0x" + bytecode,
-      });
-
-      const tx = await contractDeployer.send({
-          from: wallet[0].address,
-          nonce: await web3.eth.getTransactionCount(wallet[0].address),
-          gasPrice: await web3.eth.getGasPrice(),
-      });
-      console.log("Contract deployed at address: " + tx.options.address);
-    }
-
-    deploy();
-    ```
+    <CodeBlock language="javascript" title="deployContract.js">
+      {DeployContractFlare}
+    </CodeBlock>
 
   </TabItem>
 </Tabs>

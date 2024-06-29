@@ -10,6 +10,18 @@ sidebar_position: 3
 
 import Tabs from "@theme/Tabs";
 import TabItem from "@theme/TabItem";
+import CodeBlock from "@theme/CodeBlock";
+import FtsoV2FeedConsumerNoImports from "!!raw-loader!/code_examples/developer-hub-solidity/FtsoV2FeedConsumer_no_imports.sol";
+import ChainIdCoston2 from "!!raw-loader!/code_examples/developer-hub-python/chain_id_coston2.py";
+import ChainIdFlare from "!!raw-loader!/code_examples/developer-hub-python/chain_id_flare.py";
+import FetchAbiCoston2 from "!!raw-loader!/code_examples/developer-hub-python/fetch_abi_coston2.py";
+import FetchAbiFlare from "!!raw-loader!/code_examples/developer-hub-python/fetch_abi_flare.py";
+import MakeQueryCoston2 from "!!raw-loader!/code_examples/developer-hub-python/make_query_coston2.py";
+import MakeQueryFlare from "!!raw-loader!/code_examples/developer-hub-python/make_query_flare.py";
+import DeployContractCoston2 from "!!raw-loader!/code_examples/developer-hub-python/deploy_contract_coston2.py";
+import DeployContractFlare from "!!raw-loader!/code_examples/developer-hub-python/deploy_contract_flare.py";
+import Utils from "!!raw-loader!/code_examples/developer-hub-python/utils.py";
+import CompileContract from "!!raw-loader!/code_examples/developer-hub-python/compile_contract.py";
 
 This guide is for developers who want to interact with Flare using Python. In this guide, using Python, you will learn how to:
 
@@ -44,43 +56,17 @@ You need to connect to testnet or mainnet via an RPC, any RPC listed on the [Net
 
 <Tabs groupId="network">
   <TabItem value="coston2" label="Flare Testnet Coston2" default>
-    ```python title="chain_id.py"
-    import asyncio
 
-    from web3 import AsyncHTTPProvider, AsyncWeb3
-    from web3.middleware.geth_poa import async_geth_poa_middleware
-
-
-    async def main():
-        w3 = AsyncWeb3(
-            AsyncHTTPProvider("https://rpc.ankr.com/flare_coston2"),
-            middlewares=[async_geth_poa_middleware], # Inject middleware to handle testnet PoA consensus
-        )
-        print(f"Chain ID: {await w3.eth.chain_id}")
-        # Chain ID: 114
-
-
-    if __name__ == "__main__":
-        asyncio.run(main())
-    ```
+    <CodeBlock language="python" title="chain_id.py">
+      {ChainIdCoston2}
+    </CodeBlock>
 
   </TabItem>
   <TabItem value="flare" label="Flare Mainnet">
-    ```python title="chain_id.py"
-    import asyncio
 
-    from web3 import AsyncHTTPProvider, AsyncWeb3
-
-
-    async def main():
-        w3 = AsyncWeb3(AsyncHTTPProvider("https://rpc.ankr.com/flare"))
-        print(f"Chain ID: {await w3.eth.chain_id}")
-        # Chain ID: 14
-
-
-    if __name__ == "__main__":
-        asyncio.run(main())
-    ```
+    <CodeBlock language="python" title="chain_id.py">
+      {ChainIdFlare}
+    </CodeBlock>
 
   </TabItem>
 </Tabs>
@@ -100,63 +86,17 @@ To fetch a contract's ABI programmatically, you can query the [Flare Blockchain 
 
 <Tabs groupId="network">
   <TabItem value="coston2" label="Flare Testnet Coston2" default>
-    ```python title="fetch_abi.py"
-    import asyncio
-    import json
 
-    import aiohttp
-
-
-    async def main():
-        params = {
-            "module": "contract",
-            "action": "getabi",
-            "address": "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019",
-        }
-        async with (
-            aiohttp.ClientSession() as session,
-            session.get(
-                "https://coston2-explorer.flare.network/api", params=params
-            ) as response,
-        ):
-            abi = json.loads((await response.json())["result"])
-            print(abi[4]["name"])
-            # getContractAddressByName
-
-
-    if __name__ == "__main__":
-        asyncio.run(main())
-    ```
+    <CodeBlock language="python" title="fetch_abi.py">
+      {FetchAbiCoston2}
+    </CodeBlock>
 
   </TabItem>
   <TabItem value="flare" label="Flare Mainnet">
-    ```python title="fetch_abi.py"
-    import asyncio
-    import json
-
-    import aiohttp
-
-
-    async def main():
-        params = {
-            "module": "contract",
-            "action": "getabi",
-            "address": "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019",
-        }
-        async with (
-            aiohttp.ClientSession() as session,
-            session.get(
-                "https://flare-explorer.flare.network/api", params=params
-            ) as response,
-        ):
-            abi = json.loads((await response.json())["result"])
-            print(abi[4]["name"])
-            # getContractAddressByName
-
-
-    if __name__ == "__main__":
-        asyncio.run(main())
-    ```
+ 
+    <CodeBlock language="python" title="fetch_abi.py">
+      {FetchAbiFlare}
+    </CodeBlock>
 
   </TabItem>
 </Tabs>
@@ -169,81 +109,17 @@ For example, querying it for the address of the `WNat` contract:
 
 <Tabs groupId="network">
   <TabItem value="coston2" label="Flare Testnet Coston2" default>
-    ```python title="make_query.py"
-    import asyncio
-    import json
-
-    import aiohttp
-    from web3 import AsyncHTTPProvider, AsyncWeb3
-    from web3.middleware.geth_poa import async_geth_poa_middleware
-
-
-    async def main():
-        registry_addr = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
-        w3 = AsyncWeb3(
-            AsyncHTTPProvider("https://rpc.ankr.com/flare_coston2"),
-            middlewares=[async_geth_poa_middleware], # Inject middleware to handle testnet PoA consensus
-        )
-        params = {
-            "module": "contract",
-            "action": "getabi",
-            "address": registry_addr,
-        }
-        async with (
-            aiohttp.ClientSession() as session,
-            session.get(
-                "https://coston2-explorer.flare.network/api", params=params
-            ) as response,
-        ):
-            abi = json.loads((await response.json())["result"])
-        registry = w3.eth.contract(address=registry_addr, abi=abi)
-        res = await registry.functions.getContractAddressByName("WNat").call()
-        print(f"WNat address: {res}")
-        # WNat address: 0xC67DCE33D7A8efA5FfEB961899C73fe01bCe9273
-
-
-    if __name__ == "__main__":
-        asyncio.run(main())
-    ```
+ 
+    <CodeBlock language="python" title="make_query.py">
+      {MakeQueryCoston2}
+    </CodeBlock>
 
   </TabItem>
   <TabItem value="flare" label="Flare Mainnet">
-    ```python title="make_query.py"
-    import asyncio
-    import json
 
-    import aiohttp
-    from web3 import AsyncHTTPProvider, AsyncWeb3
-    from web3.middleware.geth_poa import async_geth_poa_middleware
-
-
-    async def main():
-        registry_addr = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
-        w3 = AsyncWeb3(
-            AsyncHTTPProvider("https://rpc.ankr.com/flare"),
-            middlewares=[async_geth_poa_middleware],
-        )
-        params = {
-            "module": "contract",
-            "action": "getabi",
-            "address": registry_addr,
-        }
-        async with (
-            aiohttp.ClientSession() as session,
-            session.get(
-                "https://flare-explorer.flare.network/api", params=params
-            ) as response,
-        ):
-            abi = json.loads((await response.json())["result"])
-        registry = w3.eth.contract(address=registry_addr, abi=abi)
-        res = await registry.functions.getContractAddressByName("WNat").call()
-        print(f"WNat address: {res}")
-        # WNat address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
-
-
-    if __name__ == "__main__":
-        asyncio.run(main())
-    ```
+    <CodeBlock language="python" title="make_query.py">
+      {MakeQueryFlare}
+    </CodeBlock>
 
   </TabItem>
 </Tabs>
@@ -255,74 +131,11 @@ For this example, you can use the `FtsoV2FeedConsumer` contract to query the FTS
 <details>
 <summary>`FtsoV2FeedConsumer` sample contract</summary>
 
-```solidity title="FtsoV2FeedConsumer.sol"
-// SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.9.0;
+Note that the contract interface dependencies have been inlined to avoid any import issues.
 
-interface IFlareContractRegistry {
-    function getContractAddressByName(
-        string calldata _name
-    ) external view returns (address);
-}
-
-interface IFastUpdater {
-    function fetchCurrentFeeds(
-        uint256[] calldata _feedIndexes
-    )
-        external
-        view
-        returns (
-            uint256[] memory _feedValues,
-            int8[] memory _decimals,
-            uint64 _timestamp
-        );
-}
-
-/**
- * THIS IS AN EXAMPLE CONTRACT USING HARDCODED VALUES.
- * DO NOT USE THIS CODE IN PRODUCTION.
- */
-contract FtsoV2FeedConsumer {
-    IFlareContractRegistry internal contractRegistry;
-    IFastUpdater internal ftsoV2;
-    // Feed indexes: 0 = FLR/USD, 2 = BTC/USD, 9 = ETH/USD
-    uint256[] public feedIndexes = [0, 2, 9];
-
-    /**
-     * Constructor initializes the contract registry and fetches the FTSOv2 contract address.
-     */
-    constructor() {
-        contractRegistry = IFlareContractRegistry(
-            0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019
-        );
-        ftsoV2 = IFastUpdater(
-            contractRegistry.getContractAddressByName("FastUpdater")
-        );
-    }
-
-    /**
-     * Get the current value of the feeds.
-     */
-    function getFtsoV2CurrentFeedValues()
-        external
-        view
-        returns (
-            uint256[] memory _feedValues,
-            int8[] memory _decimals,
-            uint64 _timestamp
-        )
-    {
-        (
-            uint256[] memory feedValues,
-            int8[] memory decimals,
-            uint64 timestamp
-        ) = ftsoV2.fetchCurrentFeeds(feedIndexes);
-        /* Your custom feed consumption logic. */
-        /* In this example the feed values, decimals and last updated timestamp are just returned. */
-        return (feedValues, decimals, timestamp);
-    }
-}
-```
+<CodeBlock language="solidity" title="FtsoV2FeedConsumer.sol">
+  {FtsoV2FeedConsumerNoImports}
+</CodeBlock>
 
 </details>
 
@@ -330,67 +143,17 @@ contract FtsoV2FeedConsumer {
 
 To compile the contracts, you need to first set up some basic helper functions to read the `.sol` file and write the compiled output to a `.json` file. In a `utils.py` file, you can define the following functions:
 
-```python title="utils.py"
-import json
-from pathlib import Path
-
-CURRENT_DIR = Path(__file__).resolve().parent
-
-
-def load_contract(name: str) -> str:
-    """Load contract from Solidity file."""
-    with (CURRENT_DIR / f"{name}.sol").open() as file:
-        return file.read()
-
-
-def save_compiled_contract(name: str, compiled_contract: dict) -> None:
-    """Save compiled contract to JSON file."""
-    with (CURRENT_DIR / f"{name}.json").open("w") as file:
-        json.dump(compiled_contract, file)
-```
+<CodeBlock language="python" title="utils.py">
+  {Utils}
+</CodeBlock>
 
 ### Compile with solcx
 
 With these functions ready, you can now compile the contract. In a `compile_contract.py` file, you can define the following code to install the correct version of the Solidity compiler and compile the contract:
 
-```python title="compile_contract.py"
-from solcx import compile_standard
-
-from .utils import load_contract, save_compiled_contract
-
-
-if __name__ == "__main__":
-    contract_name = "FtsoV2FeedConsumer"
-    contract_code = load_contract(contract_name)
-
-    # Install the solc compiler, versions >0.8.25 may work, but haven't been tested
-    solc_version = "0.8.25"
-    install_solc(solc_version)
-
-    # Compile the contract
-    compiled_sol = compile_standard(
-        {
-            "language": "Solidity",
-            "sources": {f"{contract_name}.sol": {"content": contract_code}},
-            "settings": {
-                "outputSelection": {
-                    "*": {
-                        "*": [
-                            "abi",
-                            "metadata",
-                            "evm.bytecode",
-                            "evm.bytecode.sourceMap",
-                        ],
-                    }
-                },
-                "optimizer": {"enabled": True, "runs": 200},
-                "evmVersion": "london",
-            },
-        },
-        solc_version=solc_version,
-    )
-    save_compiled_contract(contract_name, compiled_sol)
-```
+<CodeBlock language="python" title="compile_contract.py">
+  {CompileContract}
+</CodeBlock>
 
 You can now run the `compile_contract.py` script to compile the contract. The compiled output will be saved to `FtsoV2FeedConsumer.json`.
 
@@ -453,104 +216,23 @@ You can also import the raw hex private key to MetaMask and any other wallet - t
 - For testnet, you can use the testnet faucets on the [Network Configuration](/network/overview#configuration) page to get some testnet C2FLR.
 - For mainnet, you need to buy FLR in a cryptocurrency exchange such as Coinbase, Kraken etc.
 
-### Set up helpers
-
-To deploy the contract, you need to set up some basic helper functions to read the compiled contract output. Add the following function to `utils.py` file:
-
-```python title="utils.py"
-def load_contract_interface(name: str) -> dict:
-    """Load contract interface from JSON."""
-    with (CURRENT_DIR / f"{name}.json").open() as file:
-        compiled_contract = json.load(file)
-    return compiled_contract["contracts"][f"{name}.sol"][f"{name}"]
-```
-
 ### Deploy with web3
 
 With the functions and account ready, you can now deploy the contract. In a `deploy_contract.py` file, you can define the following code to deploy the contract:
 
 <Tabs groupId="network">
   <TabItem value="coston2" label="Flare Testnet Coston2" default>
-    ```python title="deploy_contract.py"
-    import os
-    import asyncio
 
-    from web3 import AsyncWeb3, AsyncHTTPProvider
-
-    from .utils import load_contract_interface
-
-
-    async def main():
-        account, private_key = os.getenv("ACCOUNT"), os.getenv("ACCOUNT_PRIVATE_KEY")
-        contract_interface = load_contract_interface("FtsoV2FeedConsumer")
-
-        w3 = AsyncWeb3(
-          AsyncHTTPProvider("https://rpc.ankr.com/flare_coston2"),
-          middlewares=[async_geth_poa_middleware], # Inject middleware to handle testnet PoA consensus
-        )
-        ftsoV2_feed_consumer = w3.eth.contract(
-            abi=contract_interface["abi"],
-            bytecode=contract_interface["evm"]["bytecode"]["object"],
-        )
-
-        tx = ftsoV2_feed_consumer.constructor().build_transaction(
-            {
-                "from": account,
-                "nonce": await w3.eth.get_transaction_count(account),
-                "gasPrice": await w3.eth.gas_price,
-            }
-        )
-        signed_tx = await w3.eth.account.sign_transaction(tx, private_key=private_key)
-
-        print("Deploying Contract...")
-        tx_hash = await w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-        tx_receipt = await w3.eth.wait_for_transaction_receipt(tx_hash)
-        print(f"Contract deployed at {tx_receipt['contractAddress']}")
-
-
-    if __name__ == "__main__":
-        asyncio.run(main())
-    ```
+    <CodeBlock language="python" title="deploy_contract.py">
+      {DeployContractCoston2}
+    </CodeBlock>
 
   </TabItem>
   <TabItem value="flare" label="Flare Mainnet">
-    ```python title="deploy_contract.py"
-    import os
-    import asyncio
 
-    from web3 import AsyncWeb3, AsyncHTTPProvider
-
-    from .utils import load_contract_interface
-
-
-    async def main():
-        account, private_key = os.getenv("ACCOUNT"), os.getenv("ACCOUNT_PRIVATE_KEY")
-        contract_interface = load_contract_interface("FtsoV2FeedConsumer")
-
-        w3 = AsyncWeb3(AsyncHTTPProvider("https://rpc.ankr.com/flare"))
-        ftsoV2_feed_consumer = w3.eth.contract(
-            abi=contract_interface["abi"],
-            bytecode=contract_interface["evm"]["bytecode"]["object"],
-        )
-
-        tx = ftsoV2_feed_consumer.constructor().build_transaction(
-            {
-                "from": account,
-                "nonce": await w3.eth.get_transaction_count(account),
-                "gasPrice": await w3.eth.gas_price,
-            }
-        )
-        signed_tx = await w3.eth.account.sign_transaction(tx, private_key=private_key)
-
-        print("Deploying Contract...")
-        tx_hash = await w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-        tx_receipt = await w3.eth.wait_for_transaction_receipt(tx_hash)
-        print(f"Contract deployed at {tx_receipt['contractAddress']}")
-
-
-    if __name__ == "__main__":
-        asyncio.run(main())
-    ```
+    <CodeBlock language="python" title="deploy_contract.py">
+      {DeployContractFlare}
+    </CodeBlock>
 
   </TabItem>
 </Tabs>

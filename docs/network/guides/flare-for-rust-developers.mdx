@@ -10,6 +10,16 @@ sidebar_position: 4
 
 import Tabs from "@theme/Tabs";
 import TabItem from "@theme/TabItem";
+import CodeBlock from "@theme/CodeBlock";
+import FtsoV2FeedConsumerNoImports from "!!raw-loader!/code_examples/developer-hub-solidity/FtsoV2FeedConsumer_no_imports.sol";
+import ChainIdCoston2 from "!!raw-loader!/code_examples/developer-hub-rust/src/bin/chain_id_coston2.rs";
+import ChainIdFlare from "!!raw-loader!/code_examples/developer-hub-rust/src/bin/chain_id_flare.rs";
+import CreateAccount from "!!raw-loader!/code_examples/developer-hub-rust/src/bin/create_account.rs";
+import MakeQueryCoston2 from "!!raw-loader!/code_examples/developer-hub-rust/src/bin/make_query_coston2.rs";
+import MakeQueryFlare from "!!raw-loader!/code_examples/developer-hub-rust/src/bin/make_query_flare.rs";
+import DeployContractCoston2 from "!!raw-loader!/code_examples/developer-hub-rust/src/bin/deploy_contract_coston2.rs";
+import DeployContractFlare from "!!raw-loader!/code_examples/developer-hub-rust/src/bin/deploy_contract_flare.rs";
+import Config from "!!raw-loader!/code_examples/developer-hub-rust/config.json";
 
 This guide is for developers who want to interact with Flare using Rust. In this guide, using Rust, you will learn how to:
 
@@ -57,32 +67,17 @@ You need to connect to testnet or mainnet via an RPC, any RPC listed on the [Net
 
 <Tabs groupId="network">
   <TabItem value="coston2" label="Flare Testnet Coston2" default>
-    ```rust title="src/bin/chain_id.rs"
-    use alloy::providers::{Provider, ProviderBuilder};
-    use eyre::Result;
 
-    #[tokio::main]
-    async fn main() -> Result<()> {
-        let provider = ProviderBuilder::new().on_http("https://rpc.ankr.com/flare_coston2".parse()?);
-        let chain_id = provider.get_chain_id().await?;
-        println!("Chain ID: {}", chain_id); // Chain ID: 114
-        Ok(())
-    }
-    ```
+    <CodeBlock language="rust" title="src/bin/chain_id.rs">
+      {ChainIdCoston2}
+    </CodeBlock>
+
     </TabItem>
     <TabItem value="flare" label="Flare Mainnet">
-    ```rust title="src/bin/chain_id.rs"
-    use alloy::providers::{Provider, ProviderBuilder};
-    use eyre::Result;
 
-    #[tokio::main]
-    async fn main() -> Result<()> {
-        let provider = ProviderBuilder::new().on_http("https://rpc.ankr.com/flare".parse()?);
-        let chain_id = provider.get_chain_id().await?;
-        println!("Chain ID: {}", chain_id); // Chain ID: 14
-        Ok(())
-    }
-    ```
+    <CodeBlock language="rust" title="src/bin/chain_id.rs">
+      {ChainIdFlare}
+    </CodeBlock>
 
   </TabItem>
 </Tabs>
@@ -112,59 +107,17 @@ For example, querying it for the address of the `WNat` contract:
 
 <Tabs groupId="network">
   <TabItem value="coston2" label="Flare Testnet Coston2" default>
-    ```rust title="src/bin/make_query.rs"
-    use alloy::{providers::ProviderBuilder, sol};
-    use eyre::Result;
 
-    sol!(
-        #[sol(rpc)]
-        FlareContractRegistry,
-        "FlareContractRegistry.json"
-    );
-
-    #[tokio::main]
-    async fn main() -> Result<()> {
-        let provider = ProviderBuilder::new().on_http("https://rpc.ankr.com/flare_coston2".parse()?);
-        let registry = FlareContractRegistry::new(
-            "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019".parse()?,
-            provider,
-        );
-        let FlareContractRegistry::getContractAddressByNameReturn { _0 } = registry
-            .getContractAddressByName("WNat".to_string())
-            .call()
-            .await?;
-        println!("WNat address: {_0}"); // WNat address: 0xC67DCE33D7A8efA5FfEB961899C73fe01bCe9273
-        Ok(())
-    }
-    ```
+    <CodeBlock language="rust" title="src/bin/make_query.rs">
+      {MakeQueryCoston2}
+    </CodeBlock>
 
   </TabItem>
   <TabItem value="flare" label="Flare Mainnet">
-    ```rust title="src/bin/make_query.rs"
-    use alloy::{providers::ProviderBuilder, sol};
-    use eyre::Result;
 
-    sol!(
-        #[sol(rpc)]
-        FlareContractRegistry,
-        "FlareContractRegistry.json"
-    );
-
-    #[tokio::main]
-    async fn main() -> Result<()> {
-        let provider = ProviderBuilder::new().on_http("https://rpc.ankr.com/flare".parse()?);
-        let registry = FlareContractRegistry::new(
-            "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019".parse()?,
-            provider,
-        );
-        let FlareContractRegistry::getContractAddressByNameReturn { _0 } = registry
-            .getContractAddressByName("WNat".to_string())
-            .call()
-            .await?;
-        println!("WNat address: {_0}"); // WNat address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d
-        Ok(())
-    }
-    ```
+    <CodeBlock language="rust" title="src/bin/make_query.rs">
+      {MakeQueryFlare}
+    </CodeBlock>
 
   </TabItem>
 </Tabs>
@@ -180,74 +133,11 @@ For this example, you can use the `FtsoV2FeedConsumer` contract to query the FTS
 <details>
 <summary>`FtsoV2FeedConsumer` sample contract</summary>
 
-```solidity title="FtsoV2FeedConsumer.sol"
-// SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.9.0;
+Note that the contract interface dependencies have been inlined to avoid any import issues.
 
-interface IFlareContractRegistry {
-    function getContractAddressByName(
-        string calldata _name
-    ) external view returns (address);
-}
-
-interface IFastUpdater {
-    function fetchCurrentFeeds(
-        uint256[] calldata _feedIndexes
-    )
-        external
-        view
-        returns (
-            uint256[] memory _feedValues,
-            int8[] memory _decimals,
-            uint64 _timestamp
-        );
-}
-
-/**
- * THIS IS AN EXAMPLE CONTRACT USING HARDCODED VALUES.
- * DO NOT USE THIS CODE IN PRODUCTION.
- */
-contract FtsoV2FeedConsumer {
-    IFlareContractRegistry internal contractRegistry;
-    IFastUpdater internal ftsoV2;
-    // Feed indexes: 0 = FLR/USD, 2 = BTC/USD, 9 = ETH/USD
-    uint256[] public feedIndexes = [0, 2, 9];
-
-    /**
-     * Constructor initializes the contract registry and fetches the FTSOv2 contract address.
-     */
-    constructor() {
-        contractRegistry = IFlareContractRegistry(
-            0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019
-        );
-        ftsoV2 = IFastUpdater(
-            contractRegistry.getContractAddressByName("FastUpdater")
-        );
-    }
-
-    /**
-     * Get the current value of the feeds.
-     */
-    function getFtsoV2CurrentFeedValues()
-        external
-        view
-        returns (
-            uint256[] memory _feedValues,
-            int8[] memory _decimals,
-            uint64 _timestamp
-        )
-    {
-        (
-            uint256[] memory feedValues,
-            int8[] memory decimals,
-            uint64 timestamp
-        ) = ftsoV2.fetchCurrentFeeds(feedIndexes);
-        /* Your custom feed consumption logic. */
-        /* In this example the feed values, decimals and last updated timestamp are just returned. */
-        return (feedValues, decimals, timestamp);
-    }
-}
-```
+<CodeBlock language="solidity" title="FtsoV2FeedConsumer.sol">
+  {FtsoV2FeedConsumerNoImports}
+</CodeBlock>
 
 </details>
 
@@ -255,33 +145,9 @@ contract FtsoV2FeedConsumer {
 
 To compile the contract using the Solidity CLI compiler, create a file named `config.json`:
 
-```json title="config.json"
-{
-  "language": "Solidity",
-  "sources": {
-    "FtsoV2FeedConsumer.sol": {
-      "urls": ["./FtsoV2FeedConsumer.sol"]
-    }
-  },
-  "settings": {
-    "outputSelection": {
-      "FtsoV2FeedConsumer.sol": {
-        "FtsoV2FeedConsumer": [
-          "abi",
-          "metadata",
-          "evm.bytecode",
-          "evm.bytecode.sourceMap"
-        ]
-      }
-    },
-    "optimizer": {
-      "enabled": true,
-      "runs": 200
-    },
-    "evmVersion": "london"
-  }
-}
-```
+<CodeBlock language="json" title="config.json">
+  {Config}
+</CodeBlock>
 
 ```bash
 solc --standard-json config.json  > FtsoV2FeedConsumer.json
@@ -313,21 +179,9 @@ To deploy a contract, you need to have an account with some testnet or mainnet g
 
 You can create a new Flare account using `create_account.rs`:
 
-```rust title="src/bin/create_account.rs"
-use alloy::signers::local::LocalSigner;
-use eyre::Result;
-
-#[tokio::main]
-async fn main() -> Result<()> {
-    let signer = LocalSigner::random();
-    println!(
-        "Account: {}, Private key: {}",
-        signer.address(),
-        signer.as_nonzero_scalar()
-    );
-    Ok(())
-}
-```
+<CodeBlock language="rust" title="src/bin/create_account.rs">
+  {CreateAccount}
+</CodeBlock>
 
 ```bash
 cargo run --bin create_account
@@ -360,65 +214,16 @@ With the account ready, you can now deploy the contract. In a `deploy_contract.r
 <Tabs groupId="network">
   <TabItem value="coston2" label="Flare Testnet Coston2" default>
 
-    ```rust title="src/bin/deploy_contract.rs"
-    use alloy::{
-        network::EthereumWallet, providers::ProviderBuilder, signers::local::PrivateKeySigner, sol,
-    };
-    use eyre::Result;
-
-    sol!(
-        #[sol(rpc)]
-        FtsoV2FeedConsumer,
-        "./FtsoV2FeedConsumer.json"
-    );
-
-    #[tokio::main]
-    async fn main() -> Result<()> {
-        let private_key = std::env::var("ACCOUNT_PRIVATE_KEY")?;
-
-        let signer: PrivateKeySigner = private_key.parse().unwrap();
-        let wallet = EthereumWallet::from(signer.clone());
-        let provider = ProviderBuilder::new()
-            .with_recommended_fillers()
-            .wallet(wallet)
-            .on_http("https://rpc.ankr.com/flare_coston2".parse()?);
-
-        let contract = FtsoV2FeedConsumer::deploy(&provider).await?;
-        println!("Deployed contract at address: {}", contract.address());
-        Ok(())
-    }
-    ```
+    <CodeBlock language="rust" title="src/bin/deploy_contract.rs">
+      {DeployContractCoston2}
+    </CodeBlock>
 
   </TabItem>
   <TabItem value="flare" label="Flare Mainnet">
-    ```rust title="src/bin/deploy_contract.rs"
-    use alloy::{
-        network::EthereumWallet, providers::ProviderBuilder, signers::local::PrivateKeySigner, sol,
-    };
-    use eyre::Result;
 
-    sol!(
-        #[sol(rpc)]
-        FtsoV2FeedConsumer,
-        "./FtsoV2FeedConsumer.json"
-    );
-
-    #[tokio::main]
-    async fn main() -> Result<()> {
-        let private_key = std::env::var("ACCOUNT_PRIVATE_KEY")?;
-
-        let signer: PrivateKeySigner = private_key.parse().unwrap();
-        let wallet = EthereumWallet::from(signer.clone());
-        let provider = ProviderBuilder::new()
-            .with_recommended_fillers()
-            .wallet(wallet)
-            .on_http("https://rpc.ankr.com/flare".parse()?);
-
-        let contract = FtsoV2FeedConsumer::deploy(&provider).await?;
-        println!("Deployed contract at address: {}", contract.address());
-        Ok(())
-    }
-    ```
+    <CodeBlock language="rust" title="src/bin/deploy_contract.rs">
+      {DeployContractFlare}
+    </CodeBlock>
 
   </TabItem>
 </Tabs>

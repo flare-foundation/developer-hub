@@ -1,4 +1,4 @@
-package main
+package flare
 
 import (
 	"context"
@@ -11,10 +11,13 @@ import (
 )
 
 // Paste the contents of the generated keystore file here
+// THIS IS PROVIDED FOR SIMPLICITY ONLY.
+// DO NOT USE THIS CODE IN PRODUCTION.
+// NEVER COMMIT PRIVATE KEYS TO A GIT REPOSITORY.
 const key = ``
 
-func DeployContractCoston() {
-	conn, err := ethclient.Dial("https://rpc.ankr.com/flare_coston")
+func DeployContract() {
+	conn, err := ethclient.Dial("https://rpc.ankr.com/flare")
 	if err != nil {
 		panic(err)
 	}
