@@ -16,6 +16,8 @@ keywords:
 ---
 
 import Remix from "@site/src/components/remix";
+import CodeBlock from "@theme/CodeBlock";
+import FtsoV2FeedConsumer from "!!raw-loader!/code_examples/developer-hub-solidity/FtsoV2FeedConsumer.sol";
 import OpenSolidityCompiler from "/static/img/ftso-getting-started/0-open-solidity-compiler-tab.png";
 import SetEvmVersion from "/static/img/ftso-getting-started/1-set-evm-version.png";
 import SetInjectedProvider from "/static/img/ftso-getting-started/1-set-injected-provider.png";
@@ -35,48 +37,9 @@ If you are new to smart contract development, learn how to [deploy your first sm
 
 This example smart contract queries the latest feed values for FLR/USD, BTC/USD, and ETH/USD from FTSOv2 on Flare Testnet Coston2.
 
-```solidity title="FtsoV2FeedConsumer.sol"
-// SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.9.0;
-
-import {IFlareContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/util-contracts/userInterfaces/IFlareContractRegistry.sol";
-import {IFastUpdater} from "@flarenetwork/flare-periphery-contracts/coston2/ftso/userInterfaces/IFastUpdater.sol";
-
-/**
- * THIS IS AN EXAMPLE CONTRACT USING HARDCODED VALUES.
- * DO NOT USE THIS CODE IN PRODUCTION.
- */
-
-contract FtsoV2FeedConsumer {
-    IFlareContractRegistry internal contractRegistry;
-    IFastUpdater internal ftsoV2;
-    // Feed indexes: 0 = FLR/USD, 2 = BTC/USD, 9 = ETH/USD
-    uint256[] public feedIndexes = [0, 2, 9];
-
-    constructor() {
-        contractRegistry = IFlareContractRegistry(0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019);
-        ftsoV2 = IFastUpdater(contractRegistry.getContractAddressByName("FastUpdater"));
-    }
-
-    /**
-     * Get the current value of the feeds.
-     */
-    function getFtsoV2CurrentFeedValues()
-        external
-        view
-        returns (uint256[] memory _feedValues, int8[] memory _decimals, uint64 _timestamp)
-    {
-        (
-            uint256[] memory feedValues,
-            int8[] memory decimals,
-            uint64 timestamp
-        ) = ftsoV2.fetchCurrentFeeds(feedIndexes);
-        /* Your custom feed consumption logic. */
-        /* In this example the feed values, decimals and last updated timestamp are just returned. */
-        return (feedValues, decimals, timestamp);
-    }
-}
-```
+<CodeBlock language="solidity" title="FtsoV2FeedConsumer.sol">
+  {FtsoV2FeedConsumer}
+</CodeBlock>
 
 {/* prettier-ignore */}
 <Remix href="https://remix.ethereum.org/#version=builtin&optimize=true&runs=200&gist=d6181b71e7932701efbc6c3c78898f5a">Open in Remix</Remix>

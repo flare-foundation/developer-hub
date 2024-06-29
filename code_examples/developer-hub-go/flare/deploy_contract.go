@@ -1,3 +1,4 @@
+// THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
 package flare
 
 import (
@@ -11,7 +12,6 @@ import (
 )
 
 // Paste the contents of the generated keystore file here
-// THIS IS PROVIDED FOR SIMPLICITY ONLY.
 // DO NOT USE THIS CODE IN PRODUCTION.
 // NEVER COMMIT PRIVATE KEYS TO A GIT REPOSITORY.
 const key = ``
