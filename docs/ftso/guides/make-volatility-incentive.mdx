@@ -1,18 +1,18 @@
 ---
 title: Make a volatility incentive
-tags: [intermediate, ftso, javascript, python]
+tags: [intermediate, ftso, javascript, python, rust, go]
 slug: make-volatility-incentive
-description: Make a volatility incentive offer using JS or Python.
+description: Make a volatility incentive using JS, Python Rust or Go.
 keywords:
   [
+    javascript,
+    python,
+    rust,
+    go,
     ftso,
     oracle,
     flare-time-series-oracle,
     flare-network,
-    smart-contracts,
-    solidity,
-    javascript,
-    python,
   ]
 sidebar_position: 5
 ---
@@ -23,10 +23,12 @@ import CodeBlock from "@theme/CodeBlock";
 import VolIncentiveWeb3Js from "!!raw-loader!/code_examples/developer-hub-javascript/volatility_incentive_coston2_web3.js";
 import VolIncentiveEthersJs from "!!raw-loader!/code_examples/developer-hub-javascript/volatility_incentive_coston2_ethers.js";
 import VolIncentiveWeb3Py from "!!raw-loader!/code_examples/developer-hub-python/volatility_incentive_coston2.py";
+import VolIncentiveRust from "!!raw-loader!/code_examples/developer-hub-rust/src/bin/volatility_incentive_coston2.rs";
+import VolIncentiveGo from "!!raw-loader!/code_examples/developer-hub-go/coston2/volatility_incentive.go";
 
 :::info
 
-Before reading this guide, make sure you understand the [FTSOv2 Architecture](/ftso/overview#architecture), in particular the [Volatility Incentive Mechanism](/ftso/overview#volatility-incentive-mechanism).
+Before reading this guide, make sure you understand [FTSOv2's Volatility Incentive Mechanism](/ftso/overview#volatility-incentive-mechanism).
 
 :::
 
@@ -46,7 +48,7 @@ This guide provides code examples demonstrating how to make an FTSOv2 volatility
      - [Rust](/network/guides/flare-for-rust-developers#make-query)
      - [Go](/network/guides/flare-for-go-developers#make-query)
 
-3. **Cost of Increasing the Sample Size:** FTSOv2 allows you to dynamically increase the sample size, i.e., the expected number of providers who can submit a block-latency feed update. The cost for this increases dynamically with the expected sample size. A single volatility incentive lasts for a period of 8 blocks.
+3. **Cost of Increasing the Sample Size:** FTSOv2 allows you to increase the sample size, i.e., the expected number of providers who can submit a block-latency feed update. The cost for this increases dynamically with the expected sample size. A single volatility incentive lasts for a period of 8 blocks.
 
 :::tip
 
@@ -57,7 +59,7 @@ All code examples in this guide are also available in the [developer-hub reposit
 <Tabs block>
     <TabItem value="JavaScript" label="JavaScript" default>
 
-        This example shows two ways, one using [web3.js](https://github.com/web3/web3.js) and the other using [ethers.js](https://github.com/ethers-io/ethers.js/), to make an FTSOv2 Volatility Incentive offer on Flare Testnet Coston2.
+        This example shows two ways, one using [web3.js](https://github.com/web3/web3.js) and the other using [ethers.js](https://github.com/ethers-io/ethers.js/), to make an FTSOv2 volatility incentive offer on Flare Testnet Coston2.
 
         <Tabs groupId="web3">
         <TabItem value="web3js" label="web3.js" default>
@@ -77,12 +79,63 @@ All code examples in this guide are also available in the [developer-hub reposit
         </Tabs>
     </TabItem>
     <TabItem value="Python" label="Python">
-        This example uses [web3.py](https://github.com/ethereum/web3.py) to make an FTSOv2 Volatility Incentive offer on Flare Testnet Coston2.
+
+        This example uses [web3.py](https://github.com/ethereum/web3.py) to make an FTSOv2 volatility incentive offer on Flare Testnet Coston2.
 
         <CodeBlock language="python" title="volatility_incentive.py">
             {VolIncentiveWeb3Py}
         </CodeBlock>
 
-  </TabItem>
+    </TabItem>
+        <TabItem value="Rust" label="Rust">
+
+        This example uses [alloy-rs](https://github.com/ethereum/web3.py) to make an FTSOv2 volatility incentive offer on Flare Testnet Coston2.
+
+        Add the following dependencies to `Cargo.toml`:
+
+        ```toml title="Cargo.toml"
+        alloy = { version = "0.1", features = ["full"] }
+        eyre = "0.6"
+        tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros"] }
+        ```
+
+        <CodeBlock language="rust" title="volatility_incentive.rs">
+            {VolIncentiveRust}
+        </CodeBlock>
+
+    </TabItem>
+    <TabItem value="Go" label="Go">
+
+        This example uses the Go API from [Geth](https://geth.ethereum.org) to make an FTSOv2 volatility incentive offer on Flare Testnet Coston2.
+
+        ```bash
+        go get github.com/ethereum/go-ethereum/ethclient
+        go get github.com/ethereum/go-ethereum/accounts
+        ```
+
+        The project structure should look like:
+
+        ```plaintext
+        developer-hub-go/
+        ├── coston2/
+        │   └── *.go
+        ├── flare/
+        │   └── *.go
+        ├── main.go
+        ├── go.mod
+        └── go.sum
+        ```
+
+        With Go, you need to manually fetch the contract's ABI and generate the Go bindings. Copy the [FastUpdatesIncentiveManager ABI](https://api.routescan.io/v2/network/testnet/evm/114/etherscan/api?module=contract&action=getabi&address=0x003e9bD18f73e0B25BED0DC8382Bde6aa999525c&format=raw) and paste it into a file named `FastUpdatesIncentiveManager.abi`, located in the root of your project, i.e. same level as `go.mod`. Then using [abigen](https://geth.ethereum.org/docs/tools/abigen), generate the Go bindings.
+
+        ```bash
+        abigen --abi FastUpdatesIncentiveManager.abi --pkg coston2 --type FastUpdatesIncentiveManager --out coston2/FastUpdatesIncentiveManager.go
+        ```
+
+        <CodeBlock language="go" title="coston2/volatility_incentive.go">
+            {VolIncentiveGo}
+        </CodeBlock>
+
+    </TabItem>
 
 </Tabs>
