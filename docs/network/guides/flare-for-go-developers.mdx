@@ -30,8 +30,6 @@ This guide is for developers who want to interact with Flare using Go. In this g
 
 ## Getting started
 
-### Installation
-
 Install Geth by following the instructions in the [Geth documentation](https://geth.ethereum.org/docs/getting-started/installing-geth). Also install the Solidity compiler by following the instructions in the [Solidity documentation](https://docs.soliditylang.org/en/latest/installing-solidity.html#linux-packages). The main commands are provided here:
 
 <Tabs>
@@ -56,7 +54,20 @@ Add the `ethclient` and `keystore` packages to your Go project:
 
 ```bash
 go get github.com/ethereum/go-ethereum/ethclient
-go get github.com/ethereum/go-ethereum/accounts/keystore@v1.14.3
+go get github.com/ethereum/go-ethereum/accounts/keystore
+```
+
+The folder structure of your Go project should look like:
+
+```plaintext
+developer-hub-go/
+├── coston2/
+│   └── *.go
+├── flare/
+│   └── *.go
+├── main.go
+├── go.mod
+└── go.sum
 ```
 
 ### Usage
@@ -91,7 +102,7 @@ For this example, you can use the `FlareContractRegistry` contract which has the
 
 ### Fetch ABI
 
-To fetch a contract's ABI, you can use Flarescan. Copy the **Contract ABI** from [Flarescan](https://flarescan.com/address/0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019/contract/14/code#abi), and paste it into a file named `FlareContractRegistry.abi`, located in the root of your project, i.e. same level as `go.mod`.
+To fetch a contract's ABI, copy the [FlareContractRegistry ABI](https://api.routescan.io/v2/network/testnet/evm/114/etherscan/api?module=contract&action=getabi&address=0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019&format=raw), and paste it into a file named `FlareContractRegistry.abi`, located in the root of your project, i.e. same level as `go.mod`.
 
 To generate the ABI bindings, which will be saved to `FlareContractRegistry.go`:
 
@@ -135,7 +146,7 @@ For example, querying it for the address of the `WNat` contract:
   </TabItem>
 </Tabs>
 
-## Compiling a contract
+## Compiling with solc
 
 For this example, you can use the `FtsoV2FeedConsumer` contract to query the FTSOv2 feeds. Copy the `FtsoV2FeedConsumer` sample contract code given below, and save the `.sol` file in the same folder as your `go.mod`.
 
@@ -150,8 +161,6 @@ Note that the contract interface dependencies have been inlined to avoid any imp
 
 </details>
 
-### Compile with solc
-
 To compile the contract, use the Solidity compiler:
 
 ```bash
@@ -160,9 +169,28 @@ solc --evm-version london --abi --bin FtsoV2FeedConsumer.sol -o build
 
 The compiled contract will be saved in the `build/` folder.
 
-## Deploying a contract
+## Create account
 
-### Generate bindings
+Before deploying a contract, you need an account. You can create an account using the following code:
+
+<CodeBlock language="go" title="create_account.go">
+  {CreateAccount}
+</CodeBlock>
+
+This will generate a new account and save the keystore file in the current directory. The account address will be printed to the console.
+
+:::danger
+
+- Never share your private keys.
+- Never put your private keys in source code.
+- Never commit private keys to a Git repository.
+
+:::
+
+- For testnet, you can get free testnet C2FLR on the [Coston2 Faucet](https://faucet.flare.network/coston2).
+- For mainnet you will need to fund the account with FLR. You can buy FLR with regular currency in places like centralized exchanges, crypto on-ramps, or swap other tokens for FLR on decentralized exchanges.
+
+## Deploying with geth
 
 To deploy the contract, you need to first generate the contract bindings:
 
@@ -184,31 +212,6 @@ To deploy the contract, you need to first generate the contract bindings:
 </Tabs>
 
 This will generate the `FtsoV2FeedConsumer.go` file, with the function `DeployFtsoV2FeedConsumer`.
-
-### Create account
-
-To deploy a contract, you need an account. You can create an account using the following code:
-
-<CodeBlock language="go" title="create_account.go">
-  {CreateAccount}
-</CodeBlock>
-
-This will generate a new account and save the keystore file in the current directory. The account address will be printed to the console.
-
-:::danger
-
-- Never share your private keys.
-- Never put your private keys in source code.
-- Never commit private keys to a Git repository.
-
-:::
-
-### Fund account
-
-- For testnet, you can use the testnet faucets on the [Network Configuration](/network/overview#configuration) page to get some testnet C2FLR.
-- For mainnet, you need to buy FLR in a cryptocurrency exchange such as Coinbase, Kraken etc.
-
-### Deploy contract
 
 Copy the contents of the generated keystore file into the `key` constant in the following code:
 
@@ -234,6 +237,6 @@ Congratulations! You have now successfully deployed a contract on Flare using Go
 
 :::tip[What's next?]
 
-Check out the [Solidity Reference](/ftso/solidity-reference/IFastUpdater) for the Flare Time-Series Oracle (FTSOv2), to see what all on-chain functions you can interact with using Go.
+Learn how to interact with the Flare Time-Series Oracle [using Go](/ftso/guides/read-feeds-offchain).
 
 :::

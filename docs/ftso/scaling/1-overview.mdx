@@ -26,19 +26,19 @@ Track the latest developments on [GitHub](https://github.com/flare-foundation/fl
 
 Each phase of Scaling is designed to ensure a secure, efficient, and fair consensus process. The protocol is structured into four phases:
 
-- **Commit**: Data providers compute and submit data proposals encoded in a commit hash. To maintain privacy and security, the actual feed values are not disclosed at this stage.
+- **Commit**: Data providers compute and submit data proposals encoded in a commit hash. To maintain security, the actual feed values are not disclosed at this stage.
 
 - **Reveal**: Data providers reveal their data to one another, alongside the random numbers used to generate their commit hash.
 
 - **Sign**: Valid data reveals are used to calculate median values, which are aggregated into an efficient Merkle tree structure and published on-chain.
 
-- **Finalization**: Once a sufficient weight of signatures for the same Merkle root is collected, a randomly chosen provider (or any other entity in case of a failure), can collect them and submit them on-chain for verification.
+- **Finalization**: Once a sufficient weight of signatures for the same Merkle root is collected, a randomly chosen provider (or any other entity in case of a failure), can collect and submit them on-chain for verification.
 
-Once the finalization phase is complete, the Merkle root is published on the voting contract, making it available to all other smart contracts for verification of calculation results. This structured approach not only maintains data integrity and accuracy but also incentivizes active participation from data providers, contributing to the overall efficiency and reliability of Scaling.
+Once the finalization phase is complete, the Merkle root is published on-chain, making it available to all other smart contracts for verification of calculation results. This structured approach not only maintains data integrity and accuracy but also incentivizes active participation from data providers, contributing to the overall efficiency and reliability of Scaling.
 
 ### Weighted Median Calculation
 
-The calculation of the weighted median in Scaling is a crucial process for ensuring accurate consensus on feed values from various data providers. This calculation begins once all valid data estimates are collected, which are sorted in increasing order based on their feed values. Each data estimate is associated with a weight that corresponds to the voting power of the data provider, which is determined by the amount of stake each provider has. This weighted approach ensures that providers with a higher stake have a proportional impact on the final median calculation, alongside facing a stricter economic cost for misbehavior.
+The calculation of the weighted median in Scaling is a crucial process for ensuring accurate consensus on feed values from various data providers. This calculation begins once all valid data estimates are collected, which are then sorted in increasing order based on their feed values. Each data estimate is associated with a weight that corresponds to the voting power of the data provider, which is determined by the amount of stake each provider has. This weighted approach ensures that providers with a higher stake have a proportional impact on the final median calculation, alongside facing a stricter economic cost for misbehavior.
 
 The next step involves calculating the total weight, which is the sum of the weights of all valid data submissions. The median threshold is then determined as half of the total weight. This threshold helps identify the point at which the cumulative weight of the sorted data meets or exceeds half of the total weight, indicating the weighted median.
 

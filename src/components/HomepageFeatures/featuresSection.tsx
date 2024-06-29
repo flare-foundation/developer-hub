@@ -30,6 +30,7 @@ const FeatureList: FeatureItem[] = [
     description: (
       <>
         Interoperable, tamper-proof Web2 & Web3 data for real-world applications
+        on Flare
       </>
     ),
     linkToProtocolDocs: "/fdc/overview",
