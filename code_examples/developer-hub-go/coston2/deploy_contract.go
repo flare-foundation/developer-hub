@@ -1,4 +1,5 @@
-package main
+// THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
+package coston2
 
 import (
 	"context"
@@ -11,10 +12,12 @@ import (
 )
 
 // Paste the contents of the generated keystore file here
+// DO NOT USE THIS CODE IN PRODUCTION.
+// NEVER COMMIT PRIVATE KEYS TO A GIT REPOSITORY.
 const key = ``
 
-func DeployContractCoston() {
-	conn, err := ethclient.Dial("https://rpc.ankr.com/flare_coston")
+func DeployContract() {
+	conn, err := ethclient.Dial("https://rpc.ankr.com/flare_coston2")
 	if err != nil {
 		panic(err)
 	}

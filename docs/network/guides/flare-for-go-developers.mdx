@@ -10,6 +10,15 @@ sidebar_position: 5
 
 import Tabs from "@theme/Tabs";
 import TabItem from "@theme/TabItem";
+import CodeBlock from "@theme/CodeBlock";
+import FtsoV2FeedConsumerNoImports from "!!raw-loader!/code_examples/developer-hub-solidity/FtsoV2FeedConsumer_no_imports.sol";
+import ChainIdCoston2 from "!!raw-loader!/code_examples/developer-hub-go/coston2/chain_id.go";
+import ChainIdFlare from "!!raw-loader!/code_examples/developer-hub-go/flare/chain_id.go";
+import MakeQueryCoston2 from "!!raw-loader!/code_examples/developer-hub-go/coston2/make_query.go";
+import MakeQueryFlare from "!!raw-loader!/code_examples/developer-hub-go/flare/make_query.go";
+import CreateAccount from "!!raw-loader!/code_examples/developer-hub-go/create_account.go";
+import DeployContractCoston2 from "!!raw-loader!/code_examples/developer-hub-go/coston2/deploy_contract.go";
+import DeployContractFlare from "!!raw-loader!/code_examples/developer-hub-go/flare/deploy_contract.go";
 
 This guide is for developers who want to interact with Flare using Go. In this guide, using Go, you will learn how to:
 
@@ -56,53 +65,17 @@ You need to connect to testnet or mainnet via an RPC, any RPC listed on the [Net
 
 <Tabs groupId="network">
   <TabItem value="coston2" label="Flare Testnet Coston2" default>
-    ```go title="chain_id.go"
-    package main
 
-    import (
-        "context"
-        "fmt"
-        "github.com/ethereum/go-ethereum/ethclient"
-    )
-
-    func ChainId() {
-        cl, err := ethclient.Dial("https://rpc.ankr.com/flare_coston2")
-        if err != nil {
-            panic(err)
-        }
-        chainid, err := cl.ChainID(context.Background())
-        if err != nil {
-            panic(err)
-        }
-        fmt.Println("Chain ID is", chainid)
-        // Chain ID is 114
-    }
-    ```
+    <CodeBlock language="go" title="coston2/chain_id.go">
+      {ChainIdCoston2}
+    </CodeBlock>
 
   </TabItem>
   <TabItem value="flare" label="Flare Mainnet">
-    ```go title="chain_id.go"
-    package main
 
-    import (
-        "context"
-        "fmt"
-        "github.com/ethereum/go-ethereum/ethclient"
-    )
-
-    func ChainId() {
-        cl, err := ethclient.Dial("https://rpc.ankr.com/flare")
-        if err != nil {
-            panic(err)
-        }
-        chainid, err := cl.ChainID(context.Background())
-        if err != nil {
-            panic(err)
-        }
-        fmt.Println("Chain ID is", chainid)
-        // Chain ID is 14
-    }
-    ```
+    <CodeBlock language="go" title="flare/chain_id.go">
+      {ChainIdFlare}
+    </CodeBlock>
 
   </TabItem>
 </Tabs>
@@ -122,9 +95,22 @@ To fetch a contract's ABI, you can use Flarescan. Copy the **Contract ABI** from
 
 To generate the ABI bindings, which will be saved to `FlareContractRegistry.go`:
 
-```bash
-abigen --abi FlareContractRegistry.abi --pkg main --type contract --out FlareContractRegistry.go
-```
+<Tabs groupId="network">
+  <TabItem value="coston2" label="Flare Testnet Coston2" default>
+
+    ```bash
+    abigen --abi FlareContractRegistry.abi --pkg coston2 --type FlareContractRegistry --out coston2/FlareContractRegistry.go
+    ```
+
+  </TabItem>
+  <TabItem value="flare" label="Flare Mainnet">
+
+    ```bash
+    abigen --abi FlareContractRegistry.abi --pkg flare --type FlareContractRegistry --out flare/FlareContractRegistry.go
+    ```
+
+  </TabItem>
+</Tabs>
 
 ### Make query
 
@@ -134,71 +120,17 @@ For example, querying it for the address of the `WNat` contract:
 
 <Tabs groupId="network">
   <TabItem value="coston2" label="Flare Testnet Coston2" default>
-    ```go title="make_query.go"
-    package main
 
-    import (
-        "context"
-        "fmt"
-
-        "github.com/ethereum/go-ethereum/accounts/abi/bind"
-        "github.com/ethereum/go-ethereum/common"
-        "github.com/ethereum/go-ethereum/ethclient"
-    )
-
-    func MakeQuery() {
-        client, err := ethclient.Dial("https://rpc.ankr.com/flare_coston2")
-        if err != nil {
-            panic(err)
-        }
-        registryAddr := common.HexToAddress("0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019")
-        registry, err := NewContract(registryAddr, client)
-        if err != nil {
-            panic(err)
-        }
-        callOpts := &bind.CallOpts{Context: context.Background(), Pending: false}
-        addr, err := registry.GetContractAddressesByName(callOpts, []string{"WNat"})
-        if err != nil {
-            panic(err)
-        }
-        fmt.Println("WNat contract address is", addr)
-        // WNat contract address is [0xC67DCE33D7A8efA5FfEB961899C73fe01bCe9273]
-    }
-    ```
+    <CodeBlock language="go" title="coston2/make_query.go">
+      {MakeQueryCoston2}
+    </CodeBlock>
 
   </TabItem>
   <TabItem value="flare" label="Flare Mainnet">
-    ```go title="make_query.go"
-    package main
-
-    import (
-        "context"
-        "fmt"
-
-        "github.com/ethereum/go-ethereum/accounts/abi/bind"
-        "github.com/ethereum/go-ethereum/common"
-        "github.com/ethereum/go-ethereum/ethclient"
-    )
-
-    func MakeQuery() {
-        client, err := ethclient.Dial("https://rpc.ankr.com/flare")
-        if err != nil {
-            panic(err)
-        }
-        registryAddr := common.HexToAddress("0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019")
-        registry, err := NewContract(registryAddr, client)
-        if err != nil {
-            panic(err)
-        }
-        callOpts := &bind.CallOpts{Context: context.Background(), Pending: false}
-        addr, err := registry.GetContractAddressesByName(callOpts, []string{"WNat"})
-        if err != nil {
-            panic(err)
-        }
-        fmt.Println("WNat contract address is", addr)
-        // WNat contract address is [0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d]
-    }
-    ```
+    
+    <CodeBlock language="go" title="flare/make_query.go">
+      {MakeQueryFlare}
+    </CodeBlock>
 
   </TabItem>
 </Tabs>
@@ -210,74 +142,11 @@ For this example, you can use the `FtsoV2FeedConsumer` contract to query the FTS
 <details>
 <summary>`FtsoV2FeedConsumer` sample contract</summary>
 
-```solidity title="FtsoV2FeedConsumer.sol"
-// SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.9.0;
+Note that the contract interface dependencies have been inlined to avoid any import issues.
 
-interface IFlareContractRegistry {
-    function getContractAddressByName(
-        string calldata _name
-    ) external view returns (address);
-}
-
-interface IFastUpdater {
-    function fetchCurrentFeeds(
-        uint256[] calldata _feedIndexes
-    )
-        external
-        view
-        returns (
-            uint256[] memory _feedValues,
-            int8[] memory _decimals,
-            uint64 _timestamp
-        );
-}
-
-/**
- * THIS IS AN EXAMPLE CONTRACT USING HARDCODED VALUES.
- * DO NOT USE THIS CODE IN PRODUCTION.
- */
-contract FtsoV2FeedConsumer {
-    IFlareContractRegistry internal contractRegistry;
-    IFastUpdater internal ftsoV2;
-    // Feed indexes: 0 = FLR/USD, 2 = BTC/USD, 9 = ETH/USD
-    uint256[] public feedIndexes = [0, 2, 9];
-
-    /**
-     * Constructor initializes the contract registry and fetches the FTSOv2 contract address.
-     */
-    constructor() {
-        contractRegistry = IFlareContractRegistry(
-            0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019
-        );
-        ftsoV2 = IFastUpdater(
-            contractRegistry.getContractAddressByName("FastUpdater")
-        );
-    }
-
-    /**
-     * Get the current value of the feeds.
-     */
-    function getFtsoV2CurrentFeedValues()
-        external
-        view
-        returns (
-            uint256[] memory _feedValues,
-            int8[] memory _decimals,
-            uint64 _timestamp
-        )
-    {
-        (
-            uint256[] memory feedValues,
-            int8[] memory decimals,
-            uint64 timestamp
-        ) = ftsoV2.fetchCurrentFeeds(feedIndexes);
-        /* Your custom feed consumption logic. */
-        /* In this example the feed values, decimals and last updated timestamp are just returned. */
-        return (feedValues, decimals, timestamp);
-    }
-}
-```
+<CodeBlock language="solidity" title="FtsoV2FeedConsumer.sol">
+  {FtsoV2FeedConsumerNoImports}
+</CodeBlock>
 
 </details>
 
@@ -297,9 +166,22 @@ The compiled contract will be saved in the `build/` folder.
 
 To deploy the contract, you need to first generate the contract bindings:
 
-```bash
-abigen --bin=build/FtsoV2FeedConsumer.bin --abi=build/FtsoV2FeedConsumer.abi --pkg main --type FtsoV2FeedConsumer --out FtsoV2FeedConsumer.go
-```
+<Tabs groupId="network">
+  <TabItem value="coston2" label="Flare Testnet Coston2" default>
+
+    ```bash
+    abigen --bin=build/FtsoV2FeedConsumer.bin --abi=build/FtsoV2FeedConsumer.abi --pkg coston2 --type FtsoV2FeedConsumer --out coston2/FtsoV2FeedConsumer.go
+    ```
+
+  </TabItem>
+  <TabItem value="flare" label="Flare Mainnet">
+    
+    ```bash
+    abigen --bin=build/FtsoV2FeedConsumer.bin --abi=build/FtsoV2FeedConsumer.abi --pkg flare --type FtsoV2FeedConsumer --out flare/FtsoV2FeedConsumer.go
+    ```
+
+  </TabItem>
+</Tabs>
 
 This will generate the `FtsoV2FeedConsumer.go` file, with the function `DeployFtsoV2FeedConsumer`.
 
@@ -307,23 +189,9 @@ This will generate the `FtsoV2FeedConsumer.go` file, with the function `DeployFt
 
 To deploy a contract, you need an account. You can create an account using the following code:
 
-```go
-package main
-
-import (
-    "fmt"
-    "github.com/ethereum/go-ethereum/accounts/keystore"
-)
-
-func CreateAccount() {
-    ks := keystore.NewKeyStore(".", keystore.StandardScryptN, keystore.StandardScryptP)
-    account, err := ks.NewAccount("Creation password")
-    if err != nil {
-      panic(err)
-    }
-    fmt.Println("address: ", account.Address.Hex())
-}
-```
+<CodeBlock language="go" title="create_account.go">
+  {CreateAccount}
+</CodeBlock>
 
 This will generate a new account and save the keystore file in the current directory. The account address will be printed to the console.
 
@@ -345,103 +213,19 @@ Copy the contents of the generated keystore file into the `key` constant in the 
 
 <Tabs groupId="network">
   <TabItem value="coston2" label="Flare Testnet Coston2" default>
-    ```go title="deploy_contract.go"
-    package main
 
-    import (
-      "context"
-      "fmt"
-      "strings"
-      "time"
+    <CodeBlock language="go" title="deploy_contract.go">
+      {DeployContractCoston2}
+    </CodeBlock>
 
-      "github.com/ethereum/go-ethereum/accounts/abi/bind"
-      "github.com/ethereum/go-ethereum/ethclient"
-    )
-
-    // Paste the contents of the generated keystore file here
-    const key = ``
-
-    func DeployContract() {
-        conn, err := ethclient.Dial("https://rpc.ankr.com/flare_coston2")
-        if err != nil {
-            panic(err)
-        }
-        ctx := context.Background()
-        chainId, err := conn.ChainID(ctx)
-        if err != nil {
-            panic(err)
-        }
-        auth, err := bind.NewTransactorWithChainID(strings.NewReader(key), "Creation password", chainId)
-        if err != nil {
-            panic(err)
-        }
-        address, tx, ftsoV2FeedConsumer, err := DeployFtsoV2FeedConsumer(auth, conn)
-        if err != nil {
-            panic(err)
-        }
-        fmt.Printf("Contract pending deploy: 0x%x\n", address)
-        fmt.Printf("Transaction waiting to be mined: 0x%x\n\n", tx.Hash())
-        time.Sleep(2000 * time.Millisecond)
-
-        feeds, err := ftsoV2FeedConsumer.GetFtsoV2CurrentFeedValues(&bind.CallOpts{Context: ctx, Pending: true})
-        if err != nil {
-            panic(err)
-        }
-        fmt.Println("Feeds values and decimals:", feeds)
-    }
-    ```
-
-    </TabItem>
-
+  </TabItem>
   <TabItem value="flare" label="Flare Mainnet">
-    ```go title="deploy_contract.go"
-    package main
 
-    import (
-      "context"
-      "fmt"
-      "strings"
-      "time"
+    <CodeBlock language="go" title="deploy_contract.go">
+      {DeployContractFlare}
+    </CodeBlock>
 
-      "github.com/ethereum/go-ethereum/accounts/abi/bind"
-      "github.com/ethereum/go-ethereum/ethclient"
-    )
-
-    // Paste the contents of the generated keystore file here
-    const key = ``
-
-    func DeployContract() {
-        conn, err := ethclient.Dial("https://rpc.ankr.com/flare")
-        if err != nil {
-            panic(err)
-        }
-        ctx := context.Background()
-        chainId, err := conn.ChainID(ctx)
-        if err != nil {
-            panic(err)
-        }
-        auth, err := bind.NewTransactorWithChainID(strings.NewReader(key), "Creation password", chainId)
-        if err != nil {
-            panic(err)
-        }
-        address, tx, ftsoV2FeedConsumer, err := DeployFtsoV2FeedConsumer(auth, conn)
-        if err != nil {
-            panic(err)
-        }
-        fmt.Printf("Contract pending deploy: 0x%x\n", address)
-        fmt.Printf("Transaction waiting to be mined: 0x%x\n\n", tx.Hash())
-        time.Sleep(2000 * time.Millisecond)
-
-        feeds, err := ftsoV2FeedConsumer.GetFtsoV2CurrentFeedValues(&bind.CallOpts{Context: ctx, Pending: true})
-        if err != nil {
-            panic(err)
-        }
-        fmt.Println("Feeds values and decimals:", feeds)
-        // This will print the latest FTSOv2 feed values and decimals
-    }
-    ```
-
-    </TabItem>
+</TabItem>
 
 </Tabs>
 
