@@ -1,0 +1,27 @@
+name: Test JavaScript Examples
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Test JavaScript Examples
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./code_examples/developer-hub-javascript
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Format with prettier
+        run: npm run format:diff
+      - name: Lint with ESLint
+        run: npm run lint
