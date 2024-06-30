@@ -107,8 +107,8 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       link: { type: "doc", id: "fdc/overview" },
       items: [
-        "fdc/getting-started",
-        "fdc/attestation-types",
+        // "fdc/getting-started",
+        // "fdc/attestation-types",
         {
           type: "category",
           label: "FDC Guides",
@@ -126,7 +126,7 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       link: { type: "doc", id: "fassets/overview" },
       items: [
-        "fassets/getting-started",
+        // "fassets/getting-started",
         {
           type: "category",
           label: "FAssets Guides",
