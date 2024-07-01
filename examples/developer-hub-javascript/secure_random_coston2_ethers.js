@@ -1,7 +1,7 @@
 // THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
 import { ethers } from "ethers";
 
-// Relay address (Flare Testnet Coston2)
+// Relay address where the secure RNG is served(Flare Testnet Coston2)
 // See https://dev.flare.network/ftso/scaling/solidity-reference
 const ADDRESS = "0x5CdF9eAF3EB8b44fB696984a1420B56A7575D250";
 const RPC_URL = "https://rpc.ankr.com/flare_coston2";
@@ -13,9 +13,9 @@ async function main() {
   // Connect to an RPC node
   const provider = new ethers.JsonRpcProvider(RPC_URL);
   // Set up contract instance
-  const secureRng = new ethers.Contract(ADDRESS, JSON.parse(ABI), provider);
+  const relay = new ethers.Contract(ADDRESS, JSON.parse(ABI), provider);
   // Fetch secure random number
-  const res = await secureRng.getRandomNumber();
+  const res = await relay.getRandomNumber();
   // Log results
   console.log("Random Number:", res[0]);
   console.log("Is secure random:", res[1]);

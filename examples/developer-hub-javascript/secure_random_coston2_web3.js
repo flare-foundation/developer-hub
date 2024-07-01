@@ -1,7 +1,7 @@
 // THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
 import { Web3 } from "web3";
 
-// Relay address (Flare Testnet Coston2)
+// Relay address where the secure RNG is served (Flare Testnet Coston2)
 // See https://dev.flare.network/ftso/scaling/solidity-reference
 const ADDRESS = "0x5CdF9eAF3EB8b44fB696984a1420B56A7575D250";
 const RPC_URL = "https://rpc.ankr.com/flare_coston2";
@@ -13,9 +13,9 @@ async function main() {
   // Connect to an RPC node
   const w3 = new Web3(RPC_URL);
   // Set up contract instance
-  const secureRng = new w3.eth.Contract(JSON.parse(ABI), ADDRESS);
+  const relay = new w3.eth.Contract(JSON.parse(ABI), ADDRESS);
   // Fetch secure random number
-  const res = await secureRng.methods.getRandomNumber().call();
+  const res = await relay.methods.getRandomNumber().call();
   // Log results
   console.log("Random Number:", res["_randomNumber"]);
   console.log("Is secure random:", res["_isSecureRandom"]);
