@@ -1,4 +1,7 @@
 import type { SidebarsConfig } from "@docusaurus/plugin-content-docs";
+import DataConnector from "@site/static/img/DATACONNECTOR.svg";
+import FAssets from "@site/static/img/FASSETS.svg";
+import FTSO from "@site/static/img/FTSO.svg";
 
 /**
  * Creating a sidebar enables you to:
