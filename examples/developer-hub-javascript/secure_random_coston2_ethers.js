@@ -2,6 +2,7 @@
 import { ethers } from "ethers";
 
 // Relay address (Flare Testnet Coston2)
+// See https://dev.flare.network/ftso/scaling/solidity-reference
 const ADDRESS = "0x5CdF9eAF3EB8b44fB696984a1420B56A7575D250";
 const RPC_URL = "https://rpc.ankr.com/flare_coston2";
 // ABI for Relay contract

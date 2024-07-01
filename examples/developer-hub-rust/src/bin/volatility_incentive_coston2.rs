@@ -16,7 +16,8 @@ async fn main() -> Result<()> {
     // Get private key from environment
     let private_key = std::env::var("ACCOUNT_PRIVATE_KEY")?;
     // FastUpdatesIncentiveManager address (Flare Testnet Coston2)
-    let ftso_address = "0x003e9bD18f73e0B25BED0DC8382Bde6aa999525c".parse()?;
+    // See https://dev.flare.network/ftso/solidity-reference
+    let incentive_address = "0x003e9bD18f73e0B25BED0DC8382Bde6aa999525c".parse()?;
     // Set up wallet and provider
     let signer: PrivateKeySigner = private_key.parse().unwrap();
     let wallet = EthereumWallet::from(signer.clone());
@@ -25,7 +26,7 @@ async fn main() -> Result<()> {
         .wallet(wallet)
         .on_http("https://rpc.ankr.com/flare_coston2".parse()?);
     // Set up contract instance
-    let incentive = FastUpdatesIncentiveManager::new(ftso_address, provider);
+    let incentive = FastUpdatesIncentiveManager::new(incentive_address, provider);
 
     // Get the current sample size, sample size increase price, range, and scale
     let FastUpdatesIncentiveManager::getCurrentSampleSizeIncreasePriceReturn {

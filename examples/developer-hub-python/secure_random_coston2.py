@@ -4,6 +4,7 @@ import asyncio
 from web3 import AsyncHTTPProvider, AsyncWeb3
 
 # Relay address (Flare Testnet Coston2)
+# See https://dev.flare.network/ftso/scaling/solidity-reference
 ADDRESS = "0x5CdF9eAF3EB8b44fB696984a1420B56A7575D250"
 RPC_URL = "https://rpc.ankr.com/flare_coston2"
 # ABI for Relay contract

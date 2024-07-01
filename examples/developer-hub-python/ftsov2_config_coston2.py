@@ -4,6 +4,7 @@ import asyncio
 from web3 import AsyncHTTPProvider, AsyncWeb3
 
 # FastUpdatesConfiguration address (Flare Testnet Coston2)
+# See https://dev.flare.network/ftso/solidity-reference
 ADDRESS = "0xE7d1D5D58cAE01a82b84989A931999Cb34A86B14"
 RPC_URL = "https://rpc.ankr.com/flare_coston2"
 # ABI for FastUpdatesConfiguration contract
