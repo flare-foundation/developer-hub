@@ -12,6 +12,7 @@ import (
 
 func FtsoV2Config() {
 	// FastUpdatesConfiguration address (Flare Testnet Coston2)
+	// See https://dev.flare.network/ftso/solidity-reference
 	address := common.HexToAddress("0xE7d1D5D58cAE01a82b84989A931999Cb34A86B14")
 	rpcUrl := "https://rpc.ankr.com/flare_coston2"
 	// Connect to an RPC node

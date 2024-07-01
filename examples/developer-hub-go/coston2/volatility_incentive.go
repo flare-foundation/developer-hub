@@ -18,6 +18,7 @@ func MakeVolatilityIncentive() {
 	// Get private key from environment
 	privateKey, _ := crypto.HexToECDSA(os.Getenv("ACCOUNT_PRIVATE_KEY")[2:])
 	// FastUpdatesIncentiveManager address (Flare Testnet Coston2)
+	// See https://dev.flare.network/ftso/solidity-reference
 	incentiveAddress := common.HexToAddress("0x003e9bD18f73e0B25BED0DC8382Bde6aa999525c")
 	// Connect to an RPC node
 	client, _ := ethclient.Dial("https://rpc.ankr.com/flare_coston2")

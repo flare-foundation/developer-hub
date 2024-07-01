@@ -5,6 +5,7 @@ from web3 import AsyncHTTPProvider, AsyncWeb3
 
 
 # FastUpdatesIncentiveManager address (Flare Testnet Coston2)
+# See https://dev.flare.network/ftso/solidity-reference
 INCENTIVE_ADDRESS = "0x003e9bD18f73e0B25BED0DC8382Bde6aa999525c"
 RPC_URL = "https://rpc.ankr.com/flare_coston2"
 # ABI for FastUpdatesIncentiveManager contract

@@ -2,6 +2,7 @@
 import { Web3 } from "web3";
 
 // FastUpdatesIncentiveManager address (Flare Testnet Coston2)
+// See https://dev.flare.network/ftso/solidity-reference
 const INCENTIVE_ADDRESS = "0x58fb598EC6DB6901aA6F26a9A2087E9274128E59";
 const RPC_URL = "https://rpc.ankr.com/flare_coston2";
 // ABI for FastUpdatesIncentiveManager contract
