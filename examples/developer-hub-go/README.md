@@ -11,6 +11,18 @@
 go get -u
 ```
 
+## Generate Go bindings
+
+```bash
+go generate
+```
+
+## Run main.go
+
+```bash
+go run .
+```
+
 ## Format
 
 ```bash
