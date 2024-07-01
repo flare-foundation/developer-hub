@@ -11,5 +11,5 @@ func CreateAccount() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("address: ", account.Address.Hex())
+	fmt.Println("Account: ", account.Address.Hex())
 }
