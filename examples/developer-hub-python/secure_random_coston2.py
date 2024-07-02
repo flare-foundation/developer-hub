@@ -3,7 +3,7 @@ import asyncio
 
 from web3 import AsyncHTTPProvider, AsyncWeb3
 
-# Relay address (Flare Testnet Coston2)
+# Relay address where the secure RNG is served (Flare Testnet Coston2)
 # See https://dev.flare.network/ftso/scaling/solidity-reference
 ADDRESS = "0x5CdF9eAF3EB8b44fB696984a1420B56A7575D250"
 RPC_URL = "https://rpc.ankr.com/flare_coston2"
@@ -17,9 +17,9 @@ async def main():
         AsyncHTTPProvider(RPC_URL),
     )
     # Set up contract instance
-    secure_rng = w3.eth.contract(address=w3.to_checksum_address(ADDRESS), abi=ABI)
+    relay = w3.eth.contract(address=w3.to_checksum_address(ADDRESS), abi=ABI)
     # Fetch secure random number
-    res = await secure_rng.functions.getRandomNumber().call()
+    res = await relay.functions.getRandomNumber().call()
     # Print results
     print("Random Number:", res[0])
     print("Is secure random:", res[1])

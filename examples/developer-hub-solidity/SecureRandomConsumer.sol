@@ -10,17 +10,17 @@ import {IRelay} from "@flarenetwork/flare-periphery-contracts/coston2/util-contr
  */
 contract SecureRandomConsumer {
     IFlareContractRegistry internal contractRegistry;
-    IRelay internal secureRng;
+    IRelay internal relay;
 
     /**
-     * Constructor initializes the Relay contract.
+     * Constructor initializes the Relay contract, where the secure RNG is served.
      * The contract registry is used to fetch the Relay contract address.
      */
     constructor() {
         contractRegistry = IFlareContractRegistry(
             0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019
         );
-        secureRng = IRelay(contractRegistry.getContractAddressByName("Relay"));
+        relay = IRelay(contractRegistry.getContractAddressByName("Relay"));
     }
 
     /**
@@ -32,7 +32,7 @@ contract SecureRandomConsumer {
         view
         returns (uint256 randomNumber, bool isSecure, uint256 timestamp)
     {
-        (randomNumber, isSecure, timestamp) = secureRng.getRandomNumber();
+        (randomNumber, isSecure, timestamp) = relay.getRandomNumber();
         require(isSecure, "Random number is not secure");
         /* Your custom RNG consumption logic. In this example the values are just returned. */
         return (randomNumber, isSecure, timestamp);
