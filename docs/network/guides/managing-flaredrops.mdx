@@ -1,0 +1,113 @@
+---
+slug: managing-flaredrops
+title: Managing FlareDrops
+tags: [intermediate, solidity]
+authors: [dineshpinto]
+description: Manage FlareDrop functionality in applications.
+keywords: [intermediate, solidity, smart-contract, flare-network]
+sidebar_position: 7
+---
+
+[FlareDrops](https://flare.network/flaredrop-guide/) are a series of 36 monthly drops totalling 24.2 billion FLR can be claimed by active Flare community members who have wrapped their Flare tokens.
+This guide explains how to manage FlareDrop functionality in applications.
+
+<details>
+<summary>**Understanding Personal Delegation Accounts (PDAs).**</summary>
+
+Differences between PDAs and regular accounts:
+
+- A PDA cannot have another PDA of its own.
+- PDA addresses cannot participate in governance directly, but their owners can transfer all their votes to another address (their main account or someone else's).
+- A PDA automatically converts any FLR tokens transferred to it to wrapped Flare tokens (WFLR), which are more useful for functions such as delegation.
+- Only the owner of the main account can transfer funds from the PDA and only to the main account.
+- When an executor is configured, it will claim rewards both from the main account and the PDA, and send them to the PDA.
+
+</details>
+
+<details>
+<summary>**Understanding the Registered Claim Process.**</summary>
+
+Registration allows accounts to list themselves on-chain as registered executors and post their service fees. This simplifies the process for both users and executors: users can easily find a suitable executor, and executors benefit from automatic fee transfers when user rewards are claimed. Users pay a fee to set an executor for claiming their rewards, which are then claimed automatically without user intervention. All agreements with a registered executor occur on-chain.
+
+Here is how the registered claiming process works, with applications performing these actions on behalf of executors and users:
+
+1. Executors who want to be publicly available to users register as executors by paying a registration fee, which is then burned.
+2. Registered executors post their fees for claiming rewards.
+3. Users with accrued rewards who want an executor to claim on their behalf can choose from the list of registered executors.
+4. Users pay a setup fee to enable a registered executor to claim their rewards, and this fee is sent to the executor.
+5. Executors claim rewards for one or more users, with their fees automatically deducted from the claimed rewards.
+6. Executors notify users off-chain if they discontinue providing this service.
+
+Throughout the process:
+
+- Users and executors can view reports on which addresses executors are claiming for and which executors are registered.
+- Registered executors can change their fees or unregister, while users can change the registered executor claiming on their behalf or disable automatic claiming.
+
+</details>
+
+## Contracts
+
+Working with the FlareDrop requires interacting with these contracts:
+
+- `DistributionToDelegators` ([address](/network/solidity-reference), [interface](/network/solidity-reference/IDistributionToDelegators)): Manages FlareDrop claims.
+- `ClaimSetupManager` ([address](/network/solidity-reference), [interface](/network/solidity-reference/IClaimSetupManager)): Automating reward claiming.
+
+## Basic Claiming
+
+The [`claim`](/network/solidity-reference/IDistributionToDelegators#claim) method on `DistributionToDelegators` allows claiming the FlareDrop one account at a time.
+It transfers the FlareDrop rewards accrued by account `_rewardOwner` during the specified `_month` to the specified `_recipient`. `_wrap` controls whether the reward is transferred in native FLR tokens or wrapped in WFLR tokens.
+You can use [`getCurrentMonth()`](/network/solidity-reference/IDistributionToDelegators#getcurrentmonth) to find out the current month (starting at 0), or [`getClaimableMonths()`](/network/solidity-reference/IDistributionToDelegators#getclaimablemonths) to get the interval of months which are currently available for claiming.
+
+```solidity
+function claim(
+    address _rewardOwner,
+    address _recipient,
+    uint256 _month,
+    bool _wrap
+) external returns(
+    uint256 _rewardAmount
+);
+```
+
+:::note
+
+Use [`getClaimableAmount()`](/network/solidity-reference/IDistributionToDelegators#getclaimableamount) or [`getClaimableAmountOf()`](/network/solidity-reference/IDistributionToDelegators#getclaimableamountof) to find out if a given address has pending rewards on any given month.
+
+:::
+
+The `claim()` function returns the amount of claimed rewards. Two modes of operation are supported:
+
+- **Self-Claiming**: When `msg.sender` matches `_rewardOwner`
+
+  Here, the caller is claiming its own rewards, and the `_recipient` can be any address.
+
+- **Claiming on behalf of another account**: When `msg.sender` does not match `_rewardOwner`
+
+  Here, the caller must be a claim executor, claiming on behalf of `_rewardOwner`. If `_msg.sender` is not in the authorized list of executors for `_rewardOwner`, the call will revert.
+  Authorized executors must be set beforehand by `_rewardOwner` using [`setClaimExecutors()`](/network/solidity-reference/IClaimSetupManager#setclaimexecutors).
+  The `_recipient` must either be `_rewardOwner`, its PDA, or any of the authorized recipients previously set by `_rewardOwner` using the [`setAllowedClaimRecipients()`](/network/solidity-reference/IClaimSetupManager#setallowedclaimrecipients) on `ClaimSetupManager`.
+  The call will revert otherwise.
+
+## Batched Claiming
+
+The [`autoClaim()`](/network/solidity-reference/IDistributionToDelegators#autoclaim) method allows claiming the FlareDrop for an arbitrary amount of accounts in a single call, with convenient default values.
+It claims the rewards accrued by all the accounts in the `_rewardOwners` array during the specified `_month`.
+If an account does not have an enabled PDA, the rewards are sent to the same account.
+However, if an account does have an enabled PDA, the rewards are sent to the PDA account.
+Any rewards accrued by the PDA account are also claimed and sent to the PDA.
+Rewards claimed with this method are always wrapped.
+
+```solidity
+function autoClaim(
+    address[] calldata _rewardOwners,
+    uint256 _month
+) external;
+```
+
+If the executor is a registered executor with a nonzero fee, the fee is automatically deducted from each claimed reward and sent to the executor account (unwrapped).
+If rewards are claimed for both an address and its PDA, the fee is deducted only once.
+
+The call reverts if:
+
+- `msg.sender` is not in the authorized list of executors for any of the `_rewardOwners`.
+- The total claimed rewards for any of the `_rewardOwners` is not high enough to cover the executor's fee.
