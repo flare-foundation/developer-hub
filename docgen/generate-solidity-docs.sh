@@ -7,7 +7,7 @@ OUTPUT_PATH="../technical-reference/"
 OUTPUT_PATH_ABS=$(realpath "$OUTPUT_PATH")
 
 # Read repositories from repos.list and process each one
-while IFS=' ' read -r repo_url repo_branch repo_source_path build_command || [ -n "$build_command" ];
+while IFS=' ' read -r repo_url repo_branch repo_source_path hardhat_config_file build_command || [ -n "$build_command" ];
 do
     # Extract repository name from URL
     repo_name=$(basename $repo_url .git)
@@ -19,16 +19,13 @@ do
     # Move to the repository directory
     cd $repo_name
     
-    # Switch to the specified branch
-    git checkout $repo_branch
-    
     # Install dependencies
     yarn
     yarn add solidity-docgen
     
     # Patch hardhat.config.ts
-    sed -i.bak -E "1s/^/import 'solidity-docgen';\n/" hardhat.config.ts
-    sed -i.bak -E "/HardhatUserConfig = / r ../hardhat.config.ts.patch" hardhat.config.ts
+    sed -i.bak -E "1s/^/import 'solidity-docgen';\n/" $hardhat_config_file
+    sed -i.bak -E "/HardhatUserConfig = / r ../hardhat.config.ts.patch" $hardhat_config_file
     
     # Copy templates
     cp -r ../templates .
@@ -42,5 +39,5 @@ do
     # Move back to the previous directory
     cd ..
     
-    echo "Output documentation saved to: $OUTPUT_PATH_ABS"
+    echo "Output documentation saved to: $OUTPUT_PATH"
 done < "repos.list"
