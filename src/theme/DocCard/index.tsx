@@ -115,6 +115,7 @@ function CardCategory({
   return (
     <CardLayout
       href={href}
+      // @ts-expect-error: To make linter happy not sure whats wrong since code is swizzled from docosaurus theme
       icon="🗃️"
       title={item.label}
       description={item.description ?? categoryItemsPlural(item.items.length)}
@@ -128,6 +129,7 @@ function CardLink({ item }: { item: PropSidebarItemLink }): JSX.Element {
   return (
     <CardLayout
       href={item.href}
+      // @ts-expect-error: To make linter happy not sure whats wrong since code is swizzled from docosaurus theme
       icon={icon}
       title={item.label}
       description={item.description ?? doc?.description}
