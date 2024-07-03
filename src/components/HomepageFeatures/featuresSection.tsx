@@ -29,7 +29,7 @@ const FeatureList: FeatureItem[] = [
     Svg: DataConnector,
     description: (
       <>
-        Interoperable, tamper-proof Web2 & Web3 data for real-world applications
+        Tamper-proof consensus on Web2 & Web3 data for real-world applications
         on Flare
       </>
     ),
@@ -40,8 +40,8 @@ const FeatureList: FeatureItem[] = [
     Svg: FAssets,
     description: (
       <>
-        Verifiable economic security for bridging BTC, XRP, and non
-        smart-contract tokens
+        Verifiable economic security enabling decentralized finance for BTC,
+        DOGE and XRP on Flare
       </>
     ),
     linkToProtocolDocs: "/fassets/overview",
