@@ -33,6 +33,7 @@ contract SecureRandomConsumer {
         returns (uint256 randomNumber, bool isSecure, uint256 timestamp)
     {
         (randomNumber, isSecure, timestamp) = relay.getRandomNumber();
+        /* DO NOT USE THE RANDOM NUMBER IF isSecure=false. */
         require(isSecure, "Random number is not secure");
         /* Your custom RNG consumption logic. In this example the values are just returned. */
         return (randomNumber, isSecure, timestamp);
