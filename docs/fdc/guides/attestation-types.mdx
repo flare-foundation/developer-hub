@@ -1,14 +1,14 @@
 ---
-title: Part 2 - Attestation Types
+title: Attestation Types
 slug: attestation-types
-description: Learn about Flare State Connector attestation types
+description: Learn about the attestation types supported by FDC.
 authors: [lukaavbreht, filipkoprivec]
 tags: [intermediate, fdc]
 keywords: [quickstart, bitcoin, flare-data-connector, flare-network]
 sidebar_position: 2
 ---
 
-In [Part 1](state-connector) of this series, you learnt the basics of the State Connector protocol, and how to use it to prove a payment on an external chain. In this guide you will learn:
+In [Part 1](data-connector) of this series, you learnt the basics of the Data Connector protocol, and how to use it to prove a payment on an external chain. In this guide you will learn:
 
 - How to prepare requests for different attestation types.
 - What information you need to provide.
@@ -40,13 +40,13 @@ In Part 1, the whole process was described as:
 
 2. Prepare a request for the attestation using your attestation client API.
 
-3. Submit the request to the State Connector.
+3. Submit the request to the Data Connector.
 
-4. Wait for the State Connector to confirm the request.
+4. Wait for the Data Connector to confirm the request.
 
 5. Once the request is confirmed, prepare the response and use it.
 
-6. Verify that the response is included in the state connector root using the verification contract.
+6. Verify that the response is included in the data connector root using the verification contract.
 
 7. Validate that the response meets your expectations (e.g., correct payment, correct address).
 
@@ -60,7 +60,7 @@ Before diving into different attestation types, let's explore the generated Swag
 
 Open the page `${ATTESTATION_HOST}/verifier/btc/api-doc#/` (replace `btc` with the network you are interested in), where you'll find the full documentation of the API. Here, you can see all available endpoints, the types they accept, and what they return. Remember to authorize yourself with the API key before trying them out (you can do this in the top right corner of the page).
 
-Let's start by preparing a request for the `Payment` type, which was covered in [Part 1](state-connector), and see what is returned. Pick a Bitcoin transaction from the block explorer and prepare the request for it. If you're doing this on a test network, ensure the `sourceId` in the example request is correct (it should be `testBTC`). If you execute a request with an incorrect `sourceId`, the attestation client will reject it and provide an error message indicating what needs to be fixed.
+Let's start by preparing a request for the `Payment` type, which was covered in [Part 1](data-connector), and see what is returned. Pick a Bitcoin transaction from the block explorer and prepare the request for it. If you're doing this on a test network, ensure the `sourceId` in the example request is correct (it should be `testBTC`). If you execute a request with an incorrect `sourceId`, the attestation client will reject it and provide an error message indicating what needs to be fixed.
 
 {/* <!--TODO: add example image--> */}
 
@@ -84,7 +84,7 @@ The endpoints are:
 
 - **`transactions`**: Returns the list of transactions currently indexed (this is controlled by the block range of the indexer).
 
-These methods are not necessary for using the State Connector but are very useful for debugging, gathering chain information, and will prove invaluable when building your dapp.
+These methods are not necessary for using the Data Connector but are very useful for debugging, gathering chain information, and will prove invaluable when building your dapp.
 
 ## Preparing the Request
 
@@ -93,7 +93,7 @@ The first step is to prepare the request for the attestation. Since attestation 
 To simplify the process, you will directly check what the response would be, without going through the entire proof process.
 
 ```typescript title="attestation.ts"
-// The same function can also be found in State Connector utils bundled with the artifact periphery package (`encodeAttestationName`)
+// The same function can also be found in Data Connector utils bundled with the artifact periphery package (`encodeAttestationName`)
 
 // Simple hex encoding
 function toHex(data: string): string {
@@ -164,7 +164,7 @@ Here, we assume that the verifier supports all attestation types and networks. T
 
 Remember, we will be working on the `coston` testnet, so we will use `testBTC` as the `sourceID` in the attestation type body. Since verifiers are set up for a single deployment, testnet verifiers automatically look at testnets and mainnet verifiers look at mainnets. Therefore, you simply need to specify `BTC` as the network in the request URL. To change the network type, you would need to update the attestation URL to point to mainnet verifiers.
 
-Similarly, verifier contracts (which check that the response together with the Merkle proof is included in the state connector round) are very similar. The only difference is the type the verification function receives (and thus the type they verify). The type is encoded, hashed, and the rest of the check is the same.
+Similarly, verifier contracts (which check that the response together with the Merkle proof is included in the data connector round) are very similar. The only difference is the type the verification function receives (and thus the type they verify). The type is encoded, hashed, and the rest of the check is the same.
 
 Now, let's take a look at each of the attestation types, see how to prepare the request for them, what needs to provide, and what is returned.
 
@@ -174,9 +174,9 @@ Now, let's take a look at each of the attestation types, see how to prepare the 
 
 This attestation type is designed to prove that a transaction either decreases the balance of an address or is signed by the source address.
 
-One of the purposes of the State Connector is to provide connectivity between different blockchains, allowing the use of information from one chain on another. Other chains may not have smart contract capability or support any kind of "fund locking" and unlocking based on conditions. This is where the State Connector comes into play, allowing the Flare network to monitor (and police) an address on another chain and act upon changes in its balance.
+One of the purposes of the Data Connector is to provide connectivity between different blockchains, allowing the use of information from one chain on another. Other chains may not have smart contract capability or support any kind of "fund locking" and unlocking based on conditions. This is where the Data Connector comes into play, allowing the Flare network to monitor (and police) an address on another chain and act upon changes in its balance.
 
-For instance, we can have an address on the Bitcoin network that acts as a vault (think fAssets). If the address owner violates an agreement by sending funds out, the State Connector can detect it. To enhance security and avoid dependence on a single chain, this attestation type makes minimal assumptions about the violating transaction. A transaction is considered "offending" if the balance of the designated address is lower after the transaction or if the address is among the signers of the transaction (even if its balance is higher than before the transaction).
+For instance, we can have an address on the Bitcoin network that acts as a vault (think fAssets). If the address owner violates an agreement by sending funds out, the Data Connector can detect it. To enhance security and avoid dependence on a single chain, this attestation type makes minimal assumptions about the violating transaction. A transaction is considered "offending" if the balance of the designated address is lower after the transaction or if the address is among the signers of the transaction (even if its balance is higher than before the transaction).
 
 This allows us to track balance decreases even if the change results from a complex transaction (e.g., multisig, complex scripts, or specific XRPL transactions where a non-participating address can have funds removed).
 
@@ -241,7 +241,7 @@ interface BalanceDecreasingTransaction {
      * @notice Toplevel response
      * @param attestationType Extracted from the request.
      * @param sourceId Extracted from the request.
-     * @param votingRound The ID of the State Connector round in which the request was considered. This is a security measure to prevent a collision of attestation hashes.
+     * @param votingRound The ID of the Data Connector round in which the request was considered. This is a security measure to prevent a collision of attestation hashes.
      * @param lowestUsedTimestamp The lowest timestamp used to generate the response.
      * @param requestBody Extracted from the request.
      * @param responseBody Data defining the response. The verification rules for the construction of the response body and the type are defined per specific `attestationType`.
@@ -577,7 +577,7 @@ interface ConfirmedBlockHeightExists {
      * @notice Toplevel response
      * @param attestationType Extracted from the request.
      * @param sourceId Extracted from the request.
-     * @param votingRound The ID of the State Connector round in which the request was considered.
+     * @param votingRound The ID of the Data Connector round in which the request was considered.
      * @param lowestUsedTimestamp The lowest timestamp used to generate the response.
      * @param requestBody Extracted from the request.
      * @param responseBody Data defining the response. The verification rules for the construction of the response body and the type are defined per specific `attestationType`.
@@ -912,7 +912,7 @@ interface ReferencedPaymentNonexistence {
      * @notice Toplevel response
      * @param attestationType Extracted from the request.
      * @param sourceId Extracted from the request.
-     * @param votingRound The ID of the State Connector round in which the request was considered.
+     * @param votingRound The ID of the Data Connector round in which the request was considered.
      * @param lowestUsedTimestamp The lowest timestamp used to generate the response.
      * @param requestBody Extracted from the request.
      * @param responseBody Data defining the response. The verification rules for the construction of the response body and the type are defined per specific `attestationType`.
@@ -1320,7 +1320,7 @@ Successful non existence proofs:
 
 And there is a sub-specification for each chain that specifies the rules for the address validity for each chain. Be careful: Bitcoin and Dogecoin have different rules for validity on the mainnet and testnet, so make sure to check the correct specification with the correct verifier.
 
-This is a very simple attestation type that can prove that a string constitutes a valid address on the specified chain. Importantly, unlike the `Payment` type we saw in [Part 1](state-connector), this type does not require a transaction to be proven. It just offloads the computation of the address validity to the verifier so that expensive computation does not have to be done on-chain.
+This is a very simple attestation type that can prove that a string constitutes a valid address on the specified chain. Importantly, unlike the `Payment` type we saw in [Part 1](data-connector), this type does not require a transaction to be proven. It just offloads the computation of the address validity to the verifier so that expensive computation does not have to be done on-chain.
 
 This is useful if you want to ensure that the address is valid before using it in your protocol. For example, fAssets need to make sure that an address is valid before they can be used in the protocol, and this is a good way to offload difficult computation regarding when the bitcoin address is valid to off-chain entities.
 
@@ -1366,7 +1366,7 @@ interface AddressValidity {
      * @notice Toplevel response
      * @param attestationType Extracted from the request.
      * @param sourceId Extracted from the request.
-     * @param votingRound The ID of the State Connector round in which the request was considered.
+     * @param votingRound The ID of the Data Connector round in which the request was considered.
      * @param lowestUsedTimestamp The lowest timestamp used to generate the response.
      * @param requestBody Extracted from the request.
      * @param responseBody Data defining the response. The verification rules for the construction of the response body and the type are defined per specific `attestationType`.
@@ -1428,7 +1428,7 @@ Think of this as an example of what can be offloaded to off-chain computation (a
 
 ### Example
 
-The script for address validity (`tryAddressValidity.ts`) is simpler than the scripts we've seen so far. There's no need to create a transaction or anything complex; you just call the `prepareResponse` endpoint and see the result. In actual use, you will first prepare a request for the State Connector, wait for it to be confirmed, and then use the response in your smart contract together with the proof. This means your smart contract will receive the result of a potentially large and expensive calculation (the response body part) along with proof that it was included in the Merkle root. This attests that it has been calculated and verified by the network validator.
+The script for address validity (`tryAddressValidity.ts`) is simpler than the scripts we've seen so far. There's no need to create a transaction or anything complex; you just call the `prepareResponse` endpoint and see the result. In actual use, you will first prepare a request for the Data Connector, wait for it to be confirmed, and then use the response in your smart contract together with the proof. This means your smart contract will receive the result of a potentially large and expensive calculation (the response body part) along with proof that it was included in the Merkle root. This attests that it has been calculated and verified by the network validator.
 
 This setup ensures that your smart contract gets a verified result without having to perform the expensive calculation on-chain, thereby saving computational resources and improving efficiency.
 
@@ -1684,7 +1684,7 @@ This approach ensures that complex and resource-intensive computations can be pe
 
 ## Conclusion
 
-Congratulations — you made it this far! Now you see what the State Connector can do, how to use it, and some details you need to be careful about. As usual, check the repository for the full code and try to play around.
+Congratulations — you made it this far! Now you see what the Data Connector can do, how to use it, and some details you need to be careful about. As usual, check the repository for the full code and try to play around.
 
 In [Part 3](evm-connectivity), we will explore how information from EVM chains can be relayed and what we can do with it.
 
