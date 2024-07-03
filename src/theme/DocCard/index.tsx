@@ -30,8 +30,8 @@ function useCategoryItemsPlural() {
           description:
             "The default description for a category card in the generated index about how many items this category includes",
         },
-        { count }
-      )
+        { count },
+      ),
     );
 }
 
@@ -54,12 +54,12 @@ function CardContainer({
 
 function CardLayout({
   href,
-  icon,
+  // icon,
   title,
   description,
 }: {
   href: string;
-  icon: ReactNode;
+  // icon?: ReactNode;
   title: string;
   description?: string;
 }): JSX.Element {

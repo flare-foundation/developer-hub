@@ -10,7 +10,7 @@ export default function PaginatorNavLink(props: Props): JSX.Element {
     <Link
       className={clsx(
         "pagination-nav__link",
-        isNext ? "pagination-nav__link--next" : "pagination-nav__link--prev"
+        isNext ? "pagination-nav__link--next" : "pagination-nav__link--prev",
       )}
       to={permalink}
     >
@@ -18,12 +18,12 @@ export default function PaginatorNavLink(props: Props): JSX.Element {
         <div
           className={clsx(
             styles.subLabel,
-            isNext ? styles.nextSubLabel : styles.prevSubLabe
+            isNext ? styles.nextSubLabel : styles.prevSubLabe,
           )}
         >
           {!isNext && (
             <svg
-              style={{ transform: "rotate(180deg)" }}
+              style={{ transform: "rotate(180deg)", marginBottom: 4 }}
               width="12"
               height="12"
               viewBox="0 0 16 16"
@@ -39,6 +39,7 @@ export default function PaginatorNavLink(props: Props): JSX.Element {
           <div className="pagination-nav__sublabel">{subLabel}</div>
           {isNext && (
             <svg
+              style={{ marginBottom: 4 }}
               width="12"
               height="12"
               viewBox="0 0 16 16"
@@ -53,7 +54,7 @@ export default function PaginatorNavLink(props: Props): JSX.Element {
           )}
         </div>
       )}
-      <div className="pagination-nav__label">{title}</div>
+      <div className={styles.title}>{title}</div>
     </Link>
   );
 }
