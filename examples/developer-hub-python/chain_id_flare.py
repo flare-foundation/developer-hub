@@ -4,7 +4,6 @@ from web3 import AsyncHTTPProvider, AsyncWeb3
 
 
 async def main():
-    # Inject middleware to handle testnet PoA consensus
     w3 = AsyncWeb3(
         AsyncHTTPProvider("https://rpc.ankr.com/flare"),
     )

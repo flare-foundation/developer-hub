@@ -1,14 +1,14 @@
 ---
-title: Part 3 - EVM Connectivity
+title: EVM Connectivity
 slug: evm-connectivity
 authors: [lukaavbreht, filipkoprivec]
-description: Learn how to connect EVM chains to Flare.
+description: Learn how to connect EVM chains to Flare using FDC.
 tags: [intermediate, ethereum, fdc]
 keywords: [ethereum, flare-data-connector, evm, flare-network]
 sidebar_position: 3
 ---
 
-In [Part 1](state-connector) and [Part 2](attestation-types) of the series, you you have learned how the State Connector works and what kind of different attestations you can get from it. In this guide, you will:
+In [Part 1](data-connector) and [Part 2](attestation-types) of the series, you you have learned how the Data Connector works and what kind of different attestations you can get from it. In this guide, you will:
 
 - Move from the world of UTXO chains to the world of EVM chains with a new `EVMTransaction` attestation type.
 - Understand the implications of connecting account-based chains, and the additional possibilities that smart contracts bring.
@@ -28,9 +28,9 @@ From Parts 1 and 2, the attestations that you know so far are:
 
 - Address validity check
 
-You also know that the State Connector allows Flare to connect to Bitcoin, Dogecoin, and XRP Ledger.
+You also know that the Data Connector allows Flare to connect to Bitcoin, Dogecoin, and XRP Ledger.
 
-The information that the State Connector provides is similar to what was provided before (sender and recipient, amount, block, timestamp, etc.), but since you are on a smart-contract compatible chain now, you can also get additional things, namely, you can extract the full data about events that were emitted during the transaction, and you can also get the input data of the transaction (in case a contract was called).
+The information that the Data Connector provides is similar to what was provided before (sender and recipient, amount, block, timestamp, etc.), but since you are on a smart-contract compatible chain now, you can also get additional things, namely, you can extract the full data about events that were emitted during the transaction, and you can also get the input data of the transaction (in case a contract was called).
 
 ## Transaction Type
 
@@ -72,7 +72,7 @@ interface EVMTransaction {
      * @notice Toplevel response
      * @param attestationType Extracted from the request.
      * @param sourceId Extracted from the request.
-     * @param votingRound The ID of the State Connector round in which the request was considered.
+     * @param votingRound The ID of the Data Connector round in which the request was considered.
      * @param lowestUsedTimestamp The lowest timestamp used to generate the response.
      * @param requestBody Extracted from the request.
      * @param responseBody Data defining the response. The verification rules for the construction of the response body and the type are defined per specific `attestationType`.
@@ -390,9 +390,9 @@ Here is an example result:
 }
 ```
 
-After you have the transaction hashes, copy them to the part of the `main` method that will execute the State Connector part, this time on Coston. Let's take a look at `executeStateConnectorProof`.
+After you have the transaction hashes, copy them to the part of the `main` method that will execute the Data Connector part, this time on Coston. Let's take a look at `executeStateConnectorProof`.
 
-Here, the State Connector part comes into play. You have already seen it in the previous guides, so you will just quickly scan through it. The code is a bit more involved, as you are now working with multiple transactions (this is not EVMTransaction specific, but it is a good example of how you can use the State Connector to do more complex things). Again, you get an encoded attestation request (one for each transaction) and then you submit them to the State Connector. Once this is done, you wait for the round to be confirmed (see the while loop that takes most of the time) and then you get the proof.
+Here, the Data Connector part comes into play. You have already seen it in the previous guides, so you will just quickly scan through it. The code is a bit more involved, as you are now working with multiple transactions (this is not EVMTransaction specific, but it is a good example of how you can use the Data Connector to do more complex things). Again, you get an encoded attestation request (one for each transaction) and then you submit them to the Data Connector. Once this is done, you wait for the round to be confirmed (see the while loop that takes most of the time) and then you get the proof.
 
 The `EthereumPaymentCollector` contract is deployed on Coston with one important method `collectPayment`. This method accepts the `EVMTransaction.Proof` response and does the important accounting.
 
@@ -812,7 +812,7 @@ The last example showed how you can observe the state on another blockchain and 
 
 The full contract that does this is in `contracts/ERC20BalanceMonitor.sol` and the accompanying script is in the `scripts/evm/tryStateCheckingAndSave.ts` file. What you want to do is simple: query the ERC20 balance of a specific address and save it in the contract storage. Here, you need to be careful, as this query is valid only at the time of the transaction; it might be different at the time of block creation and confirmation. Plus, keep in mind that emitting an event means executing a transaction, and that means gas, so you should be careful with how often you do this.
 
-The process is the same as before: you invoke the contract, it emits the event, and you use the result to interact with the chain. But this time, you cheat a bit. Instead of waiting for the whole state connector process to finish, you use `getResponse` to get just the response without the proof. The `ERC20BalanceMonitor` then disregards the proof and just uses the response to process the data.
+The process is the same as before: you invoke the contract, it emits the event, and you use the result to interact with the chain. But this time, you cheat a bit. Instead of waiting for the whole data connector process to finish, you use `getResponse` to get just the response without the proof. The `ERC20BalanceMonitor` then disregards the proof and just uses the response to process the data.
 
 The number of events can be quite large and processing all of them can be tedious (and error-prone), so the easiest way is to find out which event is the one you want and add an index parameter to the function call.
 
@@ -877,9 +877,9 @@ Once the data of the top-level event is decoded, we check if the call data is wh
 
 Let's take a look at the test code and show a simple trick that is also hidden in there.
 
-The code is practically the same as before: you create a transaction, query the state connector, and use the data in the contract. But this time, everything is done on the same (Coston - `testSGB`) network. This makes it a bit easier to test, as you don't need to change the network, but it is a minor thing.
+The code is practically the same as before: you create a transaction, query the data connector, and use the data in the contract. But this time, everything is done on the same (Coston - `testSGB`) network. This makes it a bit easier to test, as you don't need to change the network, but it is a minor thing.
 
-It does sound strange (and pointless) to allow the State Connector to be used on the same network, but the main improvement comes from the top-level relayer coming in the FSP. Once the State Connector is included in the top-level protocol, any State Connector data is immediately relayed to externally connected chains via relay (as is the FTSO data). This means that external chains can also observe what is happening on Flare.
+It does sound strange (and pointless) to allow the Data Connector to be used on the same network, but the main improvement comes from the top-level relayer coming in the FSP. Once the Data Connector is included in the top-level protocol, any Data Connector data is immediately relayed to externally connected chains via relay (as is the FTSO data). This means that external chains can also observe what is happening on Flare.
 
 Think about this: up until now, you only relayed information from other chains to Flare, but now any example from the EVM part can immediately be replicated on the Sepolia chain with Flare being the source chain (where things happen).
 

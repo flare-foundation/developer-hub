@@ -139,7 +139,7 @@ const sidebars: SidebarsConfig = {
         {
           type: "category",
           label: "FAssets Guides",
-          collapsed: true,
+          collapsed: false,
           link: {
             type: "generated-index",
           },

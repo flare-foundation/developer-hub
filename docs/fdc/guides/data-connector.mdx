@@ -1,16 +1,16 @@
 ---
-slug: state-connector
-title: Part 1 - State Connector
+slug: data-connector
+title: Flare Data Connector
 authors: [lukaavbreht, filipkoprivec]
-description: Learn how to bridge data across blockchains.
+description: Learn how FDC obtains consensus on data from other chains.
 tags: [quickstart, bitcoin, fdc]
 keywords: [quickstart, bitcoin, flare-data-connector, flare-network]
 sidebar_position: 1
 ---
 
-The State Connector bridges the gap between different blockchains, enabling the smooth exchange of information and synchronization of smart contracts and state changes. In this guide, you will learn how to:
+The Data Connector bridges the gap between different blockchains, enabling the smooth exchange of information and synchronization of smart contracts and state changes. In this guide, you will learn how to:
 
-- Bridge data across blockchains using the State Connector.
+- Bridge data across blockchains using the Data Connector.
 - Understand the working of the CCCR protocol to securely verify and publish cross-blockchain data.
 - Attest to a Bitcoin transaction and use the proof on Flare network.
 
@@ -26,13 +26,13 @@ Starter packs for [Hardhat](https://github.com/flare-foundation/flare-hardhat-st
 
 :::
 
-The State Connector is a protocol on the Flare Network that enables any smart contract on the network to query non-changing, verifiable information from other blockchains such as Bitcoin or the XRP Ledger (XRPL). The State Connector provides data in a decentralized and secure manner. This is achieved through a set of independent attestation providers that retrieve the required information from another blockchain and deliver it to the Flare Network. The State Connector smart contract then verifies if there is sufficient consensus among the received answers and publishes the results.
+The Data Connector is a protocol on the Flare Network that enables any smart contract on the network to query non-changing, verifiable information from other blockchains such as Bitcoin or the XRP Ledger (XRPL). The Data Connector provides data in a decentralized and secure manner. This is achieved through a set of independent attestation providers that retrieve the required information from another blockchain and deliver it to the Flare Network. The Data Connector smart contract then verifies if there is sufficient consensus among the received answers and publishes the results.
 
 ## CCCR protocol
 
-Flare's State Connector protocol operates in **attestation rounds**, each consisting of five consecutive phases:
+Flare's Data Connector protocol operates in **attestation rounds**, each consisting of five consecutive phases:
 
-- **Collect.** Users send their requests to the State Connector contract, which emits events. Attestation providers gather these requests, assign them to a voting round based on the emission timestamp, and attempt to compile a response.
+- **Collect.** Users send their requests to the Data Connector contract, which emits events. Attestation providers gather these requests, assign them to a voting round based on the emission timestamp, and attempt to compile a response.
 
 - **Choose.** Attestation providers vote on which requests they can provide valid responses for in the current round.
 
@@ -40,7 +40,7 @@ Flare's State Connector protocol operates in **attestation rounds**, each consis
 
 - **Reveal.** Attestation providers disclose the attestation data.
 
-- **Count.** The State Connector contract verifies the revealed attestation data against the committed data. If a majority consensus is reached, the result is published and stored on the blockchain.
+- **Count.** The Data Connector contract verifies the revealed attestation data against the committed data. If a majority consensus is reached, the result is published and stored on the blockchain.
 
 During each round, attestation providers create a Merkle tree, with the leaves containing all the attestation responses for requests marked valid in the choose phase. In the reveal phase, only the Merkle root is used as the attestation data. This approach ensures the consensus process remains lightweight and efficient. To act upon an attested request, the end user must provide the response and the Merkle proof demonstrating the inclusion of the response in the Merkle tree.
 
@@ -61,15 +61,15 @@ This guide focuses on the [**Payment attestation type**](https://github.com/flar
 
 For example, suppose you have a transaction on the Bitcoin (BTC) network and want to use this information on Flare, you can achieve this in the following steps:
 
-1. **Verifying the transaction.** Submit the BTC transaction to a verifier (a service provided by attestation providers or another entity) of your choice. The verifier returns a JSON containing all the information about the transaction and a hex string representing an encoded attestation request to be submitted to the State Connector smart contract.
+1. **Verifying the transaction.** Submit the BTC transaction to a verifier (a service provided by attestation providers or another entity) of your choice. The verifier returns a JSON containing all the information about the transaction and a hex string representing an encoded attestation request to be submitted to the Data Connector smart contract.
 
-2. **Make attestation request.** Submit the hex-encoded request to the State Connector smart contract, which emits an event to notify attestation providers about your request.
+2. **Make attestation request.** Submit the hex-encoded request to the Data Connector smart contract, which emits an event to notify attestation providers about your request.
 
 3. **CCCR phases.** Wait for all four stages of the overlapped Collect-Choose-Commit-Reveal (CCCR) protocol to finalize.
 
-4. **Merkle proof extraction.** Once the data is confirmed by the attestation providers and the State Connector contract reaches a consensus on the final Merkle root, the transaction data can be used on the Flare blockchain. To use the data, you will need the response and Merkle proof, which can be queried from the attestation provider of your choice.
+4. **Merkle proof extraction.** Once the data is confirmed by the attestation providers and the Data Connector contract reaches a consensus on the final Merkle root, the transaction data can be used on the Flare blockchain. To use the data, you will need the response and Merkle proof, which can be queried from the attestation provider of your choice.
 
-5. **Submitting Merkle proof.** Submit the response and Merkle proof to your smart contract. The smart contract verifies the proof using a dedicated verification contract that checks the response against the stored Merkle root using the Merkle proof. This verification is available both on the chain and in the State Connector repository.
+5. **Submitting Merkle proof.** Submit the response and Merkle proof to your smart contract. The smart contract verifies the proof using a dedicated verification contract that checks the response against the stored Merkle root using the Merkle proof. This verification is available both on the chain and in the Data Connector repository.
 
 Let's understand each of these steps in detail in the following sections.
 
@@ -83,11 +83,11 @@ Start by picking your favourite transaction on [Blockstream's Bitcoin Testnet ex
 
 :::note
 
-State Connector's confirmation requirements are different for each [connected blockchain](https://github.com/flare-foundation/songbird-state-connector-protocol/tree/main/specs/attestations/configs.md).
+Data Connector's confirmation requirements are different for each [connected blockchain](https://github.com/flare-foundation/songbird-state-connector-protocol/tree/main/specs/attestations/configs.md).
 
 :::
 
-Keep in mind that there is a strict separation between testing and production environments. The State Connector is configured as follows:
+Keep in mind that there is a strict separation between testing and production environments. The Data Connector is configured as follows:
 
 - Songbird Canary-Network and Flare Mainnet: Connected to Bitcoin, Dogecoin, and XRP Ledger.
 - Songbird Testnet Coston and Flare Testnet Coston2: Connected to Bitcoin Testnet, Dogecoin Testnet, and XRP Ledger Testnet.
@@ -158,7 +158,7 @@ If the selected verifier successfully finds the transaction, the API will return
 
 The `status` field indicates that the verifier recognized this transaction as valid (it was included in a block within the correct time range). The `abiEncodedRequest` contains all the data necessary for the attestation clients to include it in the final Merkle root.
 
-This encoded request is what you'll submit to the State Connector contract. Once submitted, it will be emitted as an event, picked up by attestation clients, verified, and used on the blockchain.
+This encoded request is what you'll submit to the Data Connector contract. Once submitted, it will be emitted as an event, picked up by attestation clients, verified, and used on the blockchain.
 
 <details>
 <summary>Understanding the structure of `abiEncodedRequest`.</summary>
@@ -190,9 +190,9 @@ Breaking it down line-by-line:
 
 ### Make attestation request
 
-The next step is to request attestation on the State Connector smart contract, thus broadcasting to the entire network that you want this transaction to be proven. This will be your first interaction with the blockchain and will involve making a transaction. For this, you'll need a small amount of CFLR to cover gas fees. You can obtain testnet CFLR using the [CFLR faucet](https://faucet.flare.network/).
+The next step is to request attestation on the Data Connector smart contract, thus broadcasting to the entire network that you want this transaction to be proven. This will be your first interaction with the blockchain and will involve making a transaction. For this, you'll need a small amount of CFLR to cover gas fees. You can obtain testnet CFLR using the [CFLR faucet](https://faucet.flare.network/).
 
-Once the attestation is requested you can calculate the `roundId` - The State Connector round that was in the collect phase the moment the attestation was requested. You now have to wait for the corresponding Reveal round to end to be able to get the proof. This takes between 3 and 4.5 minutes.
+Once the attestation is requested you can calculate the `roundId` - The Data Connector round that was in the collect phase the moment the attestation was requested. You now have to wait for the corresponding Reveal round to end to be able to get the proof. This takes between 3 and 4.5 minutes.
 
 :::note
 
@@ -219,7 +219,7 @@ async function submitRequest() {
     const blockNumber = receipt.blockNumber;
     const block = await ethers.provider.getBlock(blockNumber);
 
-    // Get constants from State connector smart contract
+    // Get constants from Data Connector smart contract
     const BUFFER_TIMESTAMP_OFFSET = Number(await stateConnector.BUFFER_TIMESTAMP_OFFSET());
     const BUFFER_WINDOW = Number(await stateConnector.BUFFER_WINDOW());
 
@@ -240,13 +240,13 @@ async function submitRequest() {
 
 Both the **choose** and **commit** phases last 45 seconds, totaling 90 seconds, and coincide with the **collect** phase of the subsequent round. Finally, the CCCR transitions to the **reveal** phase, lasting another 90 seconds, during which each provider submits their Merkle root.
 
-Upon achieving consensus, the State Connector smart contract concludes the round by publicizing the final Merkle root, designating it as the attested Merkle root for that specific round.
+Upon achieving consensus, the Data Connector smart contract concludes the round by publicizing the final Merkle root, designating it as the attested Merkle root for that specific round.
 
 ### Merkle proof extraction
 
-After the conclusion of the reveal phase, the round in which the attestation has been finalized, and consequently, a Merkle root is now stored within the State Connector smart contract. As previously explained, this Merkle root serves as the apex of a Merkle tree, encompassing hashes of responses to attestation requests, including the one you aim to validate.
+After the conclusion of the reveal phase, the round in which the attestation has been finalized, and consequently, a Merkle root is now stored within the Data Connector smart contract. As previously explained, this Merkle root serves as the apex of a Merkle tree, encompassing hashes of responses to attestation requests, including the one you aim to validate.
 
-Our next step entails acquiring a Merkle proof—verification that the hash of our transaction indeed resides within the accepted Merkle tree, thereby confirming its acceptance by both the group of attestors and the State Connector smart contract. The most straightforward approach is to leverage one of the attestation clients, as they possess the complete Merkle tree structure already assembled.
+Our next step entails acquiring a Merkle proof—verification that the hash of our transaction indeed resides within the accepted Merkle tree, thereby confirming its acceptance by both the group of attestors and the Data Connector smart contract. The most straightforward approach is to leverage one of the attestation clients, as they possess the complete Merkle tree structure already assembled.
 
 To extract the merkle proof you use the API endpoint:
 
@@ -397,7 +397,7 @@ Type (struct) and interpretation is determined by the `attestationType`.
      * @notice Toplevel response
      * @param attestationType Extracted from the request.
      * @param sourceId Extracted from the request.
-     * @param votingRound The ID of the State Connector round in which the request was considered.
+     * @param votingRound The ID of the Data Connector round in which the request was considered.
      * @param lowestUsedTimestamp The lowest timestamp used to generate the response.
      * @param requestBody Extracted from the request.
      * @param responseBody Data defining the response.
@@ -508,7 +508,7 @@ The transaction hash is not explicitly included in the `ResponseBody` as it's pa
 
 Let's explore the `Payment` interface in detail. Each attestation type, including any you encounter in the future, follows a similar structure, making it crucial to grasp its components.
 
-1. `Request`: This part defines the structure of the request, comprising fields like `attestationType`, `sourceId`, `messageIntegrityCode`, and `requestBody`. While the first three fields remain consistent across all attestation types, `requestBody` varies based on the type. In our case, the request body includes the initially requested data - the transaction hash and utxo indices. Interestingly, the unpacking of the request made to the state connector mirrors the ABI-encoded version of the `requestBody` within the `Request` structure. This standardization aids attestation providers in unpacking the request effortlessly.
+1. `Request`: This part defines the structure of the request, comprising fields like `attestationType`, `sourceId`, `messageIntegrityCode`, and `requestBody`. While the first three fields remain consistent across all attestation types, `requestBody` varies based on the type. In our case, the request body includes the initially requested data - the transaction hash and utxo indices. Interestingly, the unpacking of the request made to the data connector mirrors the ABI-encoded version of the `requestBody` within the `Request` structure. This standardization aids attestation providers in unpacking the request effortlessly.
 
 2. `Response`: This section outlines the complete response structure. The first four fields are standardized across all attestation types, while `responseBody` is specific to each type. The initial fields identify the attestation request and chain. `votingRound` helps determine the round in which the request was submitted, crucial for obtaining the correct Merkle root for proof validation. `lowestUsedTimestamp` denotes the lowest timestamp utilized to generate the response.
 
@@ -522,9 +522,9 @@ Let's explore the `Payment` interface in detail. Each attestation type, includin
 
 In the typical interaction with a contract on the Flare chain, there are two main aspects:
 
-1. **Validation of Relay Information**: The contract needs to verify that the relayed information contains sufficient details to execute the intended action. For instance, it might need to confirm that the payment amount is adequate to mint an NFT. As discussed earlier, the necessary information for this validation is provided by the State Connector.
+1. **Validation of Relay Information**: The contract needs to verify that the relayed information contains sufficient details to execute the intended action. For instance, it might need to confirm that the payment amount is adequate to mint an NFT. As discussed earlier, the necessary information for this validation is provided by the Data Connector.
 
-2. **Verification of Relay Authenticity**: Once the relayed information is deemed sufficient, the contract must verify its authenticity by confirming that it was indeed relayed by the State Connector and that the accompanying Merkle proof is valid. This verification is performed by submitting the Merkle proof to the verification contract. This contract, which will be explored further in the next section, acts as a wrapper around OpenZeppelin's Merkle proof verification contract. To ascertain whether the round in which the request was submitted has been finalized, one can check the `lastFinalizedRoundId` method on the State Connector smart contract. The finalization occurs after the reveal phase of the round has ended, signifying the completion of the round's processing. The verification process typically commences with the first request to the State Connector smart contract following the conclusion of the reveal phase.
+2. **Verification of Relay Authenticity**: Once the relayed information is deemed sufficient, the contract must verify its authenticity by confirming that it was indeed relayed by the Data Connector and that the accompanying Merkle proof is valid. This verification is performed by submitting the Merkle proof to the verification contract. This contract, which will be explored further in the next section, acts as a wrapper around OpenZeppelin's Merkle proof verification contract. To ascertain whether the round in which the request was submitted has been finalized, one can check the `lastFinalizedRoundId` method on the Data Connector smart contract. The finalization occurs after the reveal phase of the round has ended, signifying the completion of the round's processing. The verification process typically commences with the first request to the Data Connector smart contract following the conclusion of the reveal phase.
 
 Regarding the Verifier contract, it's essentially a straightforward wrapper around OpenZeppelin's Merkle proof verification contract. While the code for these verifier contracts can be found in the [verification subfolder](https://github.com/flare-foundation/songbird-state-connector-protocol/tree/main/contracts/generated/verification), they've been deployed on the Songbird Testnet Coston for ease of use and are already included in the Periphery Library Unofficial Contract Registry.
 
@@ -543,7 +543,7 @@ interface IPaymentVerification {
 
 The `verifyPayment` function accepts the `Payment.Proof` structure as its argument and returns a boolean value indicating whether the provided proof is correct.
 
-Essentially, the contract serves as a wrapper that retrieves the Merkle root from the State Connector contract and verifies the proof against it. This process ensures the authenticity and integrity of the relayed payment information.
+Essentially, the contract serves as a wrapper that retrieves the Merkle root from the Data Connector contract and verifies the proof against it. This process ensures the authenticity and integrity of the relayed payment information.
 
 ```solidity title="PaymentVerification.sol"
 // SPDX-License-Identifier: MIT
@@ -652,10 +652,10 @@ contract PaymentAggregationExample {
     }
 
     function addPayment(Payment.Proof calldata payment) public {
-        // Check with state connector
+        // Check with data connector
         require(
             isPaymentValid(payment),
-            "Payment is not confirmed by the State Connector"
+            "Payment is not confirmed by the Data Connector"
         );
 
         // Additional dApp dependent checks
@@ -693,22 +693,22 @@ contract PaymentAggregationExample {
 
 Let's break down the key functions:
 
-- `isPaymentValid`: This view function verifies if the provided payment is valid by checking if it's included in the State Connector. We utilize the Flare-provided PaymentVerification contract in conjunction with the periphery library to directly access the verifier contract. The function is straightforward—we call the `verifyPayment` method on the verifier contract. Remember, this is a view function, so there are no costs associated with checking the proof on the chain.
+- `isPaymentValid`: This view function verifies if the provided payment is valid by checking if it's included in the Data Connector. We utilize the Flare-provided PaymentVerification contract in conjunction with the periphery library to directly access the verifier contract. The function is straightforward—we call the `verifyPayment` method on the verifier contract. Remember, this is a view function, so there are no costs associated with checking the proof on the chain.
 
-- `addPayment`: This function is called by users to add payments to the contract. Remember, using the State Connector on the chain typically involves a two-step process. Firstly, you validate the proof and data using the verifier contract, ensuring that the provided payment is valid. Then, you verify that the provided data meets our specific use case—such as being a payment in `testBTC`. Once you are certain of the payment's validity, you can tally the total received amount and store the proof for future reference.
+- `addPayment`: This function is called by users to add payments to the contract. Remember, using the Data Connector on the chain typically involves a two-step process. Firstly, you validate the proof and data using the verifier contract, ensuring that the provided payment is valid. Then, you verify that the provided data meets our specific use case—such as being a payment in `testBTC`. Once you are certain of the payment's validity, you can tally the total received amount and store the proof for future reference.
 
 ## Conclusion
 
-In the broader scope of a comprehensive application, this pipeline would integrate and execute whenever your decentralized application requires data from an external blockchain. By employing an innovative approach, utilizing independent attestation providers and the overlapped CCCR protocol, the State Connector ensures decentralized and secure access to data.
+In the broader scope of a comprehensive application, this pipeline would integrate and execute whenever your decentralized application requires data from an external blockchain. By employing an innovative approach, utilizing independent attestation providers and the overlapped CCCR protocol, the Data Connector ensures decentralized and secure access to data.
 
-This guide has offered an in-depth exploration of attestation rounds, the Merkle tree structure, and practical implementation of the State Connector for transaction verification on external chains. With its effective data bridging capabilities, the State Connector is poised to redefine decentralized collaboration by enabling trustless interactions among diverse blockchain networks.
+This guide has offered an in-depth exploration of attestation rounds, the Merkle tree structure, and practical implementation of the Data Connector for transaction verification on external chains. With its effective data bridging capabilities, the Data Connector is poised to redefine decentralized collaboration by enabling trustless interactions among diverse blockchain networks.
 
-For those interested in exploring further, the entire codebase is available on [flare-foundation/flare-demo-examples](https://github.com/flare-foundation/flare-demo-examples), where additional examples and helpful scripts are provided for running the setup independently. Feel free to dive in and explore!
+For those interested in exploring further, the entire codebase is available on [flare-demo-examples](https://github.com/flare-foundation/flare-demo-examples), where additional examples and helpful scripts are provided for running the setup independently. Feel free to dive in and explore!
 
 <details>
 <summary>Obtain response data without proof.</summary>
 
-There are scenarios where you may simply need the response data without the accompanying proof or any State Connector confirmation procedure details. This could be useful for debugging or verifying the data obtained from the State Connector.
+There are scenarios where you may simply need the response data without the accompanying proof or any Data Connector confirmation procedure details. This could be useful for debugging or verifying the data obtained from the Data Connector.
 
 To obtain only the response data, without the proof, you can query the prepareResponse endpoint with the same data as you would for prepareRequest. In doing so, you'll receive solely the response part. This enables you to verify locally whether the response is correct and aligns with what you intend to have proven.
 
@@ -780,13 +780,13 @@ When you query the `prepareResponse` endpoint, you receive only the response par
 <details>
 <summary>Automations for XRPL, Bitcoin and Dogecoin.</summary>
 
-Let's automate this process and create a script, that creates a transaction on external chain and immediately try to see what request you would get from the state connector.
+Let's automate this process and create a script, that creates a transaction on external chain and immediately try to see what request you would get from the data connector.
 
 **XRP Ledger**
 
 In the `tryXRPLTransactionVerification.ts` file, a script initiates an XRPL transaction to a predefined address. Upon running the script after populating the `.env` file with an `XRPL_PRIVATE_KEY` containing testnet XRP ([Faucet](https://test.bithomp.com/faucet/)), the transaction is executed.
 
-Subsequently, you can immediately examine the request you would receive from the state connector. The script is straightforward, with the critical aspect being the proper encoding and padding of the standard payment reference to 32 bytes. If the standard payment reference adheres to the specification, it will also be included in the response from the State Connector.
+Subsequently, you can immediately examine the request you would receive from the data connector. The script is straightforward, with the critical aspect being the proper encoding and padding of the standard payment reference to 32 bytes. If the standard payment reference adheres to the specification, it will also be included in the response from the Data Connector.
 
 An example result of this process:
 
@@ -827,7 +827,7 @@ Hello world!
 
 The process is analogous: create a basic transaction with an `OP_RETURN` containing the payment reference. However, due to security considerations, you can't immediately verify the response as you do with XRPL transactions. Bitcoin requires 6 confirmations, and Dogecoin requires 60, typically taking just under an hour.
 
-As a result, the script solely generates the transaction and prints the transaction hash. Alternatively, it can use a provided transaction hash to query the response from the State Connector.
+As a result, the script solely generates the transaction and prints the transaction hash. Alternatively, it can use a provided transaction hash to query the response from the Data Connector.
 
 {/* <!--TODO:finish this code--> */}
 
@@ -837,5 +837,5 @@ As a result, the script solely generates the transaction and prints the transact
 
 - Flare [Hardhat](https://github.com/flare-foundation/flare-hardhat-starter) and [Foundry](https://github.com/flare-foundation/flare-foundry-starter) starter packs.
 - [Demo repository](https://github.com/flare-foundation/flare-demo-examples) for this guide.
-- [State connector specification](https://git.aflabs.org/flare-external/state-connector-protocol-public/-/tree/main).
-- State Connector deployment on [Songbird Testnet Coston](https://coston-explorer.flare.network/address/0x0c13aDA1C7143Cf0a0795FFaB93eEBb6FAD6e4e3).
+- [Data Connector specification](https://git.aflabs.org/flare-external/state-connector-protocol-public/-/tree/main).
+- Data Connector deployment on [Songbird Testnet Coston](https://coston-explorer.flare.network/address/0x0c13aDA1C7143Cf0a0795FFaB93eEBb6FAD6e4e3).
