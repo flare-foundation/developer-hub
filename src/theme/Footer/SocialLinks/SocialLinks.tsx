@@ -24,10 +24,6 @@ const socialLinks: Array<SocialLinkProps> = [
     icon: YouTube,
   },
   {
-    href: "https://www.linkedin.com/company/flarenetwork/",
-    icon: LinkedIn,
-  },
-  {
     href: "https://discord.com/invite/flarenetwork",
     icon: Discord,
   },
