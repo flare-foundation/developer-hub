@@ -11,7 +11,7 @@ sol!(
 #[tokio::main]
 async fn main() -> Result<()> {
     // Relay address where the secure RNG is served (Flare Testnet Coston2)
-    // See https://dev.flare.network/ftso/scaling/solidity-reference
+    // See https://dev.flare.network/network/solidity-reference
     let relay_address = "0x5CdF9eAF3EB8b44fB696984a1420B56A7575D250".parse()?;
     let rpc_url = "https://rpc.ankr.com/flare_coston2".parse()?;
     // Connect to an RPC node
