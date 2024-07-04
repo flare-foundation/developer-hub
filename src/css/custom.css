@@ -5,6 +5,17 @@
  */
 
 /* You can override the default Infima variables here. */
+
+/* @font-face {
+  font-family: "Satoshi";
+  src: url("/fonts/Satoshi/Satoshi-Variable.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Satoshi-Italic";
+  src: url("/fonts/Satoshi/Satoshi-VariableItalic.woff2") format("woff2");
+} */
+
 :root {
   --ifm-color-primary: #e7125e;
   --ifm-color-primary-dark: #d01055;
@@ -15,6 +26,7 @@
   --ifm-color-primary-lightest: #f2528b;
   --ifm-font-size-base: 16px;
   --ifm-card-background-color: #ffe4e8;
+  /* --ifm-font-family-base: "Satoshi"; */
   --ifm-font-family-base: "Helvetica";
   --ifm-heading-font-weight: 500;
   --ifm-navbar-padding-vertical: 1rem;
@@ -23,10 +35,21 @@
   --ifm-menu-color-background-active: #fff1f3;
   --ifm-menu-color-active: #000000;
   --ifm-navbar-link-color: #777777;
-  --search-local-highlight-color: #fd738f;
+  --search-local-highlight-color: #8a113e;
+  --ifm-breadcrumb-item-background-active: none;
+  --ifm-breadcrumb-color-active: #777777;
+  --ifm-breadcrumb-border-radius: 2rem;
+  --ifm-breadcrumb-padding-vertical: 0.2rem;
+  --ifm-global-radius: 0.625rem;
 }
 
 /* For readability concerns, you should choose a lighter palette in dark mode. */
+
+html[data-theme="dark"] {
+  /* --ifm-color-content: #999999;
+  --ifm-color-white: #999999; */
+}
+
 [data-theme="dark"] {
   --ifm-color-primary: #ef4a82;
   --ifm-color-primary-dark: #ec2d6e;
@@ -43,6 +66,7 @@
   --ifm-navbar-search-input-icon: url('data:image/svg+xml;utf8,<svg fill="white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" height="16px" width="16px"><path d="M6.02945,10.20327a4.17382,4.17382,0,1,1,4.17382-4.17382A4.15609,4.15609,0,0,1,6.02945,10.20327Zm9.69195,4.2199L10.8989,9.59979A5.88021,5.88021,0,0,0,12.058,6.02856,6.00467,6.00467,0,1,0,9.59979,10.8989l4.82338,4.82338a.89729.89729,0,0,0,1.29912,0,.89749.89749,0,0,0-.00087-1.29909Z" /></svg>');
   --ifm-menu-color-background-active: #34101c;
   --ifm-menu-color-active: #f0f0f0;
+  --search-local-highlight-color: #fd738f;
 }
 
 /* Add GitHub logo to navbar. */
@@ -88,6 +112,10 @@
   outline: solid 1px #ffffff;
 }
 
+input:focus-visible {
+  outline: solid 1px #ffffff;
+}
+
 [data-theme="dark"] .menu__link--active {
   border-left: 4px solid #fd738f;
 }
@@ -107,6 +135,7 @@
   color: var(--ifm-menu-color-active);
   background-color: var(--ifm-menu-color-background-active);
 }
+
 .table-of-contents__link--active {
   color: var(--ifm-menu-color-active);
   background-color: var(--ifm-menu-color-background-active);
@@ -129,10 +158,113 @@
 .navbar__title {
   color: #8a113e;
 }
+
 [data-theme="dark"] .navbar__title {
   color: #ffe4e8;
 }
 
 .navbar__items {
   color: var(--ifm-navbar-link-color);
+}
+
+.menu__caret:before {
+  background: var(--ifm-menu-link-sublist-icon) 50% / 2rem 1.5rem;
+}
+
+.breadcrumbs__item {
+  text-transform: uppercase;
+}
+.breadcrumbs__item a {
+  border: 1px solid var(--ifm-navbar-link-color);
+  text-transform: uppercase;
+}
+
+.breadcrumbs__item a svg {
+  stroke: var(--ifm-color-content);
+  stroke-width: 1.5;
+  color: transparent;
+}
+
+.breadcrumbs__item:not(:last-child):after {
+  opacity: 1;
+}
+
+.pagination-nav__label:before,
+.pagination-nav__label:after {
+  content: "" !important;
+}
+
+.menu {
+  background-color: #fbfbfb;
+  margin-bottom: 0px !important;
+}
+
+[data-theme="dark"] .menu {
+  background-color: #1d1d1d;
+}
+
+a[href*="/ftso/overview"].menu__link::before {
+  display: block;
+  content: " ";
+  background-repeat: no-repeat;
+  background-image: url("/img/menu/FTSO_light.svg");
+  background-size: 26px 26px;
+  width: 26px;
+  height: 26px;
+  padding-left: 10px;
+}
+
+[data-theme="dark"] a[href*="/ftso/overview"].menu__link::before {
+  display: block;
+  content: " ";
+  background-repeat: no-repeat;
+  background-image: url("/img/menu/FTSO_dark.svg");
+  background-size: 26px 26px;
+  width: 26px;
+  height: 26px;
+  padding-left: 10px;
+}
+
+a[href*="/fdc/overview"].menu__link::before {
+  display: block;
+  content: " ";
+  background-repeat: no-repeat;
+  background-image: url("/img/menu/DATACONNECTOR_light.svg");
+  background-size: 26px 26px;
+  width: 26px;
+  height: 26px;
+  padding-left: 10px;
+}
+
+[data-theme="dark"] a[href*="/fdc/overview"].menu__link::before {
+  display: block;
+  content: " ";
+  background-repeat: no-repeat;
+  background-image: url("/img/menu/DATACONNECTOR_dark.svg");
+  background-size: 26px 26px;
+  width: 26px;
+  height: 26px;
+  padding-left: 10px;
+}
+
+a[href*="/fassets/overview"].menu__link::before {
+  display: block;
+  content: " ";
+  background-repeat: no-repeat;
+  background-image: url("/img/menu/FASSETS_light.svg");
+  background-size: 26px 26px;
+  width: 26px;
+  height: 26px;
+  padding-left: 10px;
+}
+
+[data-theme="dark"] a[href*="/fassets/overview"].menu__link::before {
+  display: block;
+  content: " ";
+  background-repeat: no-repeat;
+  background-image: url("/img/menu/FASSETS_dark.svg");
+  background-size: 26px 26px;
+  width: 26px;
+  height: 26px;
+  padding-left: 10px;
 }
