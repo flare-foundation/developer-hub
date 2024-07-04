@@ -83,12 +83,12 @@ const config: Config = {
         height: 32,
       },
       items: [
-        {
-          type: "docSidebar",
-          sidebarId: "networkSidebar",
-          position: "left",
-          label: "Flare ☀️",
-        },
+        // {
+        //   type: "docSidebar",
+        //   sidebarId: "networkSidebar",
+        //   position: "left",
+        //   label: "Flare ☀️",
+        // },
         // {
         //   href: "https://t.me/FlareNetwork",
         //   className: "header-telegram-link",
