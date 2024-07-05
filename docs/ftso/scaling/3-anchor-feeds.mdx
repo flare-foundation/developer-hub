@@ -5,3 +5,60 @@ title: Anchor Feeds
 description: Scaling anchor feeds update every voting epoch on Flare, approximately every 90s.
 keywords: [ftso, oracle, flare-time-series-oracle, flare-network, feeds]
 ---
+
+Scaling's anchor feeds update every 90 seconds with each new voting epoch on Flare. These feeds, accessible off-chain using ScalingLayer, support various asset classes including equities, commodities, and cryptocurrencies.
+
+Each anchor feed is uniquely identified by an ID composed of three components:
+
+1. **Category:** Indicates the type of asset:
+
+   - Crypto: `01`
+   - Forex: `02`
+   - Commodity: `03`
+   - Stock: `04`
+
+2. **Hex-Encoded Feed Name:** The name of the feed is converted to a hexadecimal format.
+
+3. **Zero Padding:** The combined category and hex-encoded feed name are padded with zeros to a length of 21 bytes.
+
+The resulting string is then prefixed with `0x`.
+
+:::warning
+
+The Feed IDs are not addresses, they are simply a structured encoding of the category and feed name to ensure that each anchor feed has a unique ID.
+
+:::
+
+<details>
+<summary>Example of the structured encoding process.</summary>
+
+Taking the feed name `FLR/USD`:
+
+- **Category**: `01` (Crypto)
+- **Hex-Encoded Feed Name**: `464c522f555344` (hexadecimal representation of `FLR/USD`)
+- **Zero Padding**: The category and hex-encoded feed name combined and padded: `01464c522f55534400000000000000000000000000`
+- **Final ID**: Adding the prefix results in `0x01464c522f55534400000000000000000000000000`
+
+</details>
+
+| **Feed Name** | **Feed ID**                                    | **Base Asset Name** | **Decimals** | **Category** |
+| ------------- | ---------------------------------------------- | ------------------- | ------------ | ------------ |
+| FLR/USD       | `0x01464c522f55534400000000000000000000000000` | Flare               | 7            | Crypto       |
+| SGB/USD       | `0x015347422f55534400000000000000000000000000` | Songbird            | 7            | Crypto       |
+| BTC/USD       | `0x014254432f55534400000000000000000000000000` | Bitcoin             | 2            | Crypto       |
+| XRP/USD       | `0x015852502f55534400000000000000000000000000` | XRP                 | 6            | Crypto       |
+| LTC/USD       | `0x014c54432f55534400000000000000000000000000` | Litecoin            | 5            | Crypto       |
+| XLM/USD       | `0x01584c4d2f55534400000000000000000000000000` | Stellar             | 6            | Crypto       |
+| DOGE/USD      | `0x01444f47452f555344000000000000000000000000` | Dogecoin            | 6            | Crypto       |
+| ADA/USD       | `0x014144412f55534400000000000000000000000000` | Cardano             | 6            | Crypto       |
+| ALGO/USD      | `0x01414c474f2f555344000000000000000000000000` | Algorand            | 6            | Crypto       |
+| ETH/USD       | `0x014554482f55534400000000000000000000000000` | Ethereum            | 3            | Crypto       |
+| FIL/USD       | `0x0146494c2f55534400000000000000000000000000` | Filecoin            | 5            | Crypto       |
+| ARB/USD       | `0x014152422f55534400000000000000000000000000` | Arbitrum            | 5            | Crypto       |
+| AVAX/USD      | `0x01415641582f555344000000000000000000000000` | Avalanche           | 5            | Crypto       |
+| BNB/USD       | `0x01424e422f55534400000000000000000000000000` | BNB                 | 4            | Crypto       |
+| MATIC/USD     | `0x014d415449432f5553440000000000000000000000` | Polygon             | 5            | Crypto       |
+| SOL/USD       | `0x01534f4c2f55534400000000000000000000000000` | Solana              | 4            | Crypto       |
+| USDC/USD      | `0x01555344432f555344000000000000000000000000` | USDC                | 5            | Crypto       |
+| USDT/USD      | `0x01555344542f555344000000000000000000000000` | Tether USDt         | 5            | Crypto       |
+| XDC/USD       | `0x015844432f55534400000000000000000000000000` | XDC Network         | 7            | Crypto       |
