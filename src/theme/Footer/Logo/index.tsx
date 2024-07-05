@@ -20,7 +20,7 @@ function LogoImage({ logo }: Props) {
       sources={sources}
       width={logo.width}
       height={logo.height}
-      // style={logo.style}
+      style={logo.style}
     />
   );
 }
