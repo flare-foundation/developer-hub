@@ -24,6 +24,14 @@ const socialLinks: Array<SocialLinkProps> = [
     icon: YouTube,
   },
   {
+    href: "https://www.linkedin.com/company/flarenetwork/",
+    icon: LinkedIn,
+  },
+  {
+    href: "https://medium.com/flarenetwork",
+    icon: Medium,
+  },
+  {
     href: "https://discord.com/invite/flarenetwork",
     icon: Discord,
   },
@@ -31,10 +39,7 @@ const socialLinks: Array<SocialLinkProps> = [
     href: "https://twitter.com/FlareNetworks",
     icon: X,
   },
-  {
-    href: "https://medium.com/flarenetwork",
-    icon: Medium,
-  },
+
   {
     href: "https://t.me/FlareNetwork",
     icon: Telegram,
