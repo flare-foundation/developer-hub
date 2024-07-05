@@ -94,7 +94,7 @@ Accounts need to be funded for gas fees. The delegation account is used of estab
 
 :::warning
 
-Protocol operation uses normalized weights, and the delegation account should have **at least 150 WCFLR** to obtain a non-zero vote power.
+Protocol operation uses normalized weights, and the delegation account should have at least 150 WC2FLR on Flare Testnet Coston2 (or WCFLR on Songbird Testnet Coston) to obtain a non-zero vote power.
 
 :::
 
@@ -302,7 +302,13 @@ new images need to be pulled with `docker compose pull`
 
 ### Feed value provider
 
-Start your own feed value provider, or (for testing only) use the example test provider:
+:::warning
+
+The reference implementation of **Feed Value Provider** is only provided for testing purposes and should not be relied on. Data providers are expected to reimplement this with their own data sources.
+
+:::
+
+Start your own feed value provider, or **(for testing only)** use the reference feed value provider:
 
 ```bash
 docker run --rm -it --publish "0.0.0.0:3101:3101" --network "ftso-v2-deployment_default" ghcr.io/flare-foundation/ftso-v2-example-value-provider
@@ -310,27 +316,31 @@ docker run --rm -it --publish "0.0.0.0:3101:3101" --network "ftso-v2-deployment_
 
 Once the container is running, you can find the API spec at: http://localhost:3101/api-doc
 
-:::note
+<details>
+<summary>Issues with starting the reference feed value provider?</summary>
 
-Some users reported issues with getting the example test provider to start. For initial testing a "fixed" value provider can be used that simply returns a constant instead of reading data from external data sources. It can be started by setting an extra env variable `VALUE_PROVIDER_IMPL=fixed`:
+Some data providers reported issues with getting the reference feed value provider to start. 
+
+For initial testing a fixed value provider can be used that simply returns a constant instead of reading data from external data sources. It can be started by setting the variable `VALUE_PROVIDER_IMPL=fixed`:
 
 ```bash
 docker run --rm -it --env VALUE_PROVIDER_IMPL=fixed --publish "0.0.0.0:3101:3101" --network "ftso-v2-deployment_default" ghcr.io/flare-foundation/ftso-v2-example-value-provider
 ```
 
-You should see the following in the logs:
+You should see the following line in the logs:
 
 ```plaintext
 WARN [FixedFeed] Initializing FixedFeed, will return 0.01 for all feeds.
 ```
 
-:::
+</details>
+
 
 ## Is it working?
 
 You will see various errors initially on `ftso-scaling` and `flare-system-client`, since the data provider will not be registered as a voter for the current reward epoch. There is a time window for voter registration on every reward epoch, and if you leave things running you should eventually see `RegisterVoter success` logged by `flare-system-client`. It should then start submitting data successfully in the **following** reward epoch.
 
-`flare-system-client` log samples indicating successful operation:
+**`flare-system-client` log samples indicating successful operation:**
 
 ```plaintext
 [03-04|06:58:20.000]	DEBUG	protocol/submitter.go:142	submitter submit1 running epoch 567838
@@ -358,11 +368,19 @@ You will see various errors initially on `ftso-scaling` and `flare-system-client
 [03-04|06:59:21.604]	DEBUG	chain/tx_utils.go:139	Receipt status: 1
 ```
 
-`fast-updates` log samples indicating successful operation:
+**`fast-updates` log samples indicating successful operation:**
 
-:::note
+Depending on your weight it may take some time until you are selected for the fast-updates. 
 
-Depending on your weight it may take some time until you are selected for the fast-updates.
+:::info
+
+During this waiting time, you may see log messages like:
+
+```plaintext
+Public key not registered
+```
+
+No intervention is required here, your provider client is simply waiting until the next reward epoch starts to register its keys. 
 
 :::
 
