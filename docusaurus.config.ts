@@ -123,10 +123,6 @@ const config: Config = {
               to: "/support/faqs",
             },
             {
-              label: "Terminology",
-              to: "/support/terminology",
-            },
-            {
               label: "Audits",
               to: "/support/audits",
             },
