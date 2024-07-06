@@ -56,13 +56,13 @@ const config: Config = {
   ],
 
   themeConfig: {
-    announcementBar: {
-      content:
-        'Flare Developer Hub v0.8. Track the latest updates on <a target="_blank" rel="noopener noreferrer" href="https://github.com/flare-foundation/developer-hub">GitHub</a>.',
-      backgroundColor: "#fafbfc",
-      textColor: "#091E42",
-      isCloseable: true,
-    },
+    // announcementBar: {
+    //   content:
+    //     'Flare Developer Hub v0.8. Track the latest updates on <a target="_blank" rel="noopener noreferrer" href="https://github.com/flare-foundation/developer-hub">GitHub</a>.',
+    //   backgroundColor: "#fafbfc",
+    //   textColor: "#091E42",
+    //   isCloseable: true,
+    // },
     colorMode: {
       defaultMode: "light",
       respectPrefersColorScheme: true,
@@ -121,10 +121,6 @@ const config: Config = {
             {
               label: "FAQs",
               to: "/support/faqs",
-            },
-            {
-              label: "Terminology",
-              to: "/support/terminology",
             },
             {
               label: "Audits",
