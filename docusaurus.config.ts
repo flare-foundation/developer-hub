@@ -63,6 +63,7 @@ const config: Config = {
     //   textColor: "#091E42",
     //   isCloseable: true,
     // },
+    image: "img/landing/dev_hub_ani_noblur.png",
     colorMode: {
       defaultMode: "light",
       respectPrefersColorScheme: true,
