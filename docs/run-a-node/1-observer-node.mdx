@@ -74,84 +74,173 @@ You have two options for setting up an observer node, each with its own pros and
 
 Ensure you have the following tools installed:
 
-- [Go](https://golang.org/doc/install)
-- [GCC](https://gcc.gnu.org/install/)
-- [jq](https://stedolan.github.io/jq/download/)
+<Tabs groupId="network" block>
+  <TabItem value="flare" label="Flare Mainnet" default>
 
-<Tabs>
-  <TabItem value="macos" label="MacOS" default>
-
-    ```bash
-    brew install go gcc jq
-    ```
-
-  </TabItem>
-  <TabItem value="ubuntu" label="Ubuntu">
-
-    ```bash
-    apt install golang gcc jq
-    ```
+    |                                                   | **Version**    |
+    | :------------------------------------------------ | :------------- |
+    | **[Go](https://golang.org/doc/install)**          | >= 1.18.5      |
+    | **[GCC](https://gcc.gnu.org/install/)**           | latest         |
+    | **[jq](https://stedolan.github.io/jq/download/)** | latest         |
+    | **[Ubuntu](https://ubuntu.com)**                  | 18.04 or 20.04 |
 
   </TabItem>
-  <TabItem value="arch" label="Arch">
+  <TabItem value="coston2" label="Flare Testnet Coston2">
 
-    ```bash
-    pacman -S go gcc jq
-    ```
+    |                                                   | **Version**    |
+    | :------------------------------------------------ | :------------- |
+    | **[Go](https://golang.org/doc/install)**          | >= 1.18.5      |
+    | **[GCC](https://gcc.gnu.org/install/)**           | latest         |
+    | **[jq](https://stedolan.github.io/jq/download/)** | latest         |
+    | **[Ubuntu](https://ubuntu.com)**                  | 18.04 or 20.04 |
+
+  </TabItem>
+  <TabItem value="songbird" label="Songbird Canary-Network">
+
+    |                                                   | **Version**    |
+    | :------------------------------------------------ | :------------- |
+    | **[Go](https://golang.org/doc/install)**          | >= 1.16.8      |
+    | **[GCC](https://gcc.gnu.org/install/)**           | latest         |
+    | **[jq](https://stedolan.github.io/jq/download/)** | latest         |
+    | **[Ubuntu](https://ubuntu.com)**                  | 18.04 or 20.04 |
+
+  </TabItem>
+  <TabItem value="coston" label="Songbird Testnet Coston">
+
+    |                                                   | **Version**    |
+    | :------------------------------------------------ | :------------- |
+    | **[Go](https://golang.org/doc/install)**          | >= 1.21        |
+    | **[GCC](https://gcc.gnu.org/install/)**           | latest         |
+    | **[jq](https://stedolan.github.io/jq/download/)** | latest         |
+    | **[Ubuntu](https://ubuntu.com)**                  | 20.04 or 22.04 |
 
   </TabItem>
 </Tabs>
 
 ### Configure the node
 
-Clone the [go-flare](https://github.com/flare-foundation/go-flare) repository and run the `build.sh` script:
+Clone the repository and run the `build.sh` script:
 
-```bash
-git clone https://github.com/flare-foundation/go-flare.git
-cd go-flare/avalanchego
-chmod +x scripts/build.sh
-./scripts/build.sh
-```
+<Tabs groupId="network" block>
+  <TabItem value="flare" label="Flare Mainnet" default>
 
-The resulting executable will be stored in `build/avalanchego`.
+    ```bash
+    git clone https://github.com/flare-foundation/go-flare.git
+    cd go-flare/avalanchego
+    chmod +x scripts/build.sh
+    ./scripts/build.sh
+    ```
 
-:::note
+    The resulting executable will be stored in `build/avalanchego`.
 
-You can verify the installation by running:
+  </TabItem>
+  <TabItem value="coston2" label="Flare Testnet Coston2">
 
-```bash
-go test $(go list ./... | grep -v /tests/) # avalanchego unit tests
-cd ../coreth
-go test ./... # coreth unit tests
-cd ../avalanchego
-```
+    ```bash
+    git clone https://github.com/flare-foundation/go-flare.git
+    cd go-flare/avalanchego
+    chmod +x scripts/build.sh
+    ./scripts/build.sh
+    ```
 
-:::
+    The resulting executable will be stored in `build/avalanchego`.
 
-<details>
-<summary>Whitelisting nodes for Songbird Canary-Network</summary>
+  </TabItem>
+  <TabItem value="songbird" label="Songbird Canary-Network">
 
-While the Songbird Canary-Network is being tested, all nodes wanting to peer with it, including observer nodes, need to have their IP address whitelisted.
+    ```bash
+    git clone https://github.com/flare-foundation/go-songbird.git
+    cd go-songbird/avalanchego
+    chmod +x scripts/build.sh
+    ./scripts/build.sh
+    ```
 
-To do this, make a whitelisting request by contacting **Tom T.** over:
+    The resulting executable will be stored in `build/flare`.
 
-- Discord (`Tom T#7603`)
-- Telegram (`@TampaBay7`)
-- Email ([tom@flare.network](mailto:tom@flare.network))
+  </TabItem>
+  <TabItem value="coston" label="Songbird Testnet Coston">
 
-To have greater redundancy, you can whitelist multiple nodes per single provider.
+    ```bash
+    git clone --branch v0.6.6-coston https://github.com/flare-foundation/go-flare.git
+    cd go-flare/avalanchego
+    chmod +x scripts/build.sh
+    ./scripts/build.sh
+    ```
 
-**Checking the status of your whitelisting request**
+    The resulting executable will be stored in `build/avalanchego`.
 
-```bash
-curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeIP" }' -H 'content-type:application/json;' https://songbird.flare.network/ext/info
-```
+  </TabItem>
+</Tabs>
 
-If your IP address is whitelisted, this command returns a JSON response. Otherwise you will get a 403 error ("Forbidden").
+Verify the installation by running:
 
-Note that whitelisting is **not required** on Flare Mainnet, Flare Testnet Coston2, or Songbird Testnet Coston.
+<Tabs groupId="network" block>
+  <TabItem value="flare" label="Flare Mainnet" default>
 
-</details>
+    ```bash
+    go test $(go list ./... | grep -v /tests/) # avalanchego unit tests
+    cd ../coreth
+    go test ./... # coreth unit tests
+    cd ../avalanchego
+    ```
+
+  </TabItem>
+  <TabItem value="coston2" label="Flare Testnet Coston2">
+
+    ```bash
+    go test $(go list ./... | grep -v /tests/) # avalanchego unit tests
+    cd ../coreth
+    go test ./... # coreth unit tests
+    cd ../avalanchego
+    ```
+
+  </TabItem>
+  <TabItem value="songbird" label="Songbird Canary-Network">
+
+    ```bash
+    go test $(go list ./... | grep -v /tests/) # avalanchego unit tests
+    cd coreth
+    go test ./... # coreth unit tests
+    cd ..
+    ```
+
+    <details>
+    <summary>Whitelisting nodes for Songbird Canary-Network</summary>
+
+    While the Songbird Canary-Network is being tested, all nodes wanting to peer with it, including observer nodes, need to have their IP address whitelisted.
+
+    To do this, make a whitelisting request by contacting **Tom T.** over:
+
+    - Discord (`Tom T#7603`)
+    - Telegram (`@TampaBay7`)
+    - Email ([tom@flare.network](mailto:tom@flare.network))
+
+    To have greater redundancy, you can whitelist multiple nodes per single provider.
+
+    **Checking the status of your whitelisting request**
+
+    ```bash
+    curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeIP" }' -H 'content-type:application/json;' https://songbird.flare.network/ext/info
+    ```
+
+    If your IP address is whitelisted, this command returns a JSON response. Otherwise you will get a 403 error ("Forbidden").
+
+    Note that whitelisting is **not required** on Flare Mainnet, Flare Testnet Coston2, or Songbird Testnet Coston.
+
+    </details>
+
+  </TabItem>
+  <TabItem value="coston" label="Songbird Testnet Coston">
+
+    ```bash
+    go test $(go list ./... | grep -v /tests/) # avalanchego unit tests
+    cd coreth
+    go test ./... # coreth unit tests
+    cd ..
+    ```
+
+  </TabItem>
+</Tabs>
 
 ### Run the node
 
@@ -175,14 +264,14 @@ This is the simplest command to quickly get your node up and running. The next s
   <TabItem value="songbird" label="Songbird Canary-Network">
 
     ```bash
-    ./build/avalanchego --network-id=songbird --http-host= --bootstrap-ips="$(curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeIP" }' -H 'content-type:application/json;' https://songbird.flare.network/ext/info | jq -r ".result.ip")" --bootstrap-ids="$(curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeID" }' -H 'content-type:application/json;' https://songbird.flare.network/ext/info | jq -r ".result.nodeID")"
+    ./build/flare --network-id=songbird --http-host= --bootstrap-ips="$(curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeIP" }' -H 'content-type:application/json;' https://songbird.flare.network/ext/info | jq -r ".result.ip")" --bootstrap-ids="$(curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeID" }' -H 'content-type:application/json;' https://songbird.flare.network/ext/info | jq -r ".result.nodeID")"
     ```
 
   </TabItem>
   <TabItem value="coston" label="Songbird Testnet Coston">
 
     ```bash
-    ./build/avalanchego --network-id=coston --http-host= --bootstrap-ips="$(curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeIP" }' -H 'content-type:application/json;' https://coston.flare.network/ext/info | jq -r ".result.ip")" --bootstrap-ids="$(curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeID" }' -H 'content-type:application/json;' https://coston.flare.network/ext/info | jq -r ".result.nodeID")"
+    ./build/flare --network-id=coston --http-host= --bootstrap-ips="$(curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeIP" }' -H 'content-type:application/json;' https://coston.flare.network/ext/info | jq -r ".result.ip")" --bootstrap-ids="$(curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeID" }' -H 'content-type:application/json;' https://coston.flare.network/ext/info | jq -r ".result.nodeID")"
     ```
 
   </TabItem>
@@ -200,7 +289,7 @@ Contains the field `"healthy" : true` in the returned JSON object.
 
 :::note
 
-If the node gets stuck during bootstrap (it takes far longer than the estimates given above), try adding the parameter `--bootstrap-retry-enabled=false`.
+If the node gets stuck during bootstrap (or it takes far longer than the estimates given above), try adding the parameter `--bootstrap-retry-enabled=false` when running the node.
 
 :::
 
@@ -457,9 +546,10 @@ The node can be run using:
 
     Use the Docker image at [go-flare](https://hub.docker.com/r/flarefoundation/go-flare). The **Overview** tab in the repository linked explains the configurable parameters.
 
-    Start the container:
+    Download and start the container:
 
     ```bash
+    docker pull flarefoundation/go-flare
     docker run -d --name flare-observer -e AUTOCONFIGURE_BOOTSTRAP="1" -e NETWORK_ID="costwo" -e AUTOCONFIGURE_PUBLIC_IP="1" -e AUTOCONFIGURE_BOOTSTRAP_ENDPOINT="https://flare.flare.network/ext/info" -v /mnt/db:/app/db -v /opt/flare/conf:/app/conf/C -v /opt/flare/logs:/app/logs -p 0.0.0.0:9650:9650 -p 0.0.0.0:9651:9651 flarefoundation/go-flare:v1.7.1807
     ```
 
@@ -475,9 +565,10 @@ The node can be run using:
 
     Use the Docker image at [go-flare](https://hub.docker.com/r/flarefoundation/go-flare). The **Overview** tab in the repository linked explains the configurable parameters.
 
-    Start the container:
+    Download and start the container:
 
     ```bash
+    docker pull flarefoundation/go-flare
     docker run -d --name coston2-observer -e AUTOCONFIGURE_BOOTSTRAP="1" -e NETWORK_ID="costwo" -e AUTOCONFIGURE_PUBLIC_IP="1" -e AUTOCONFIGURE_BOOTSTRAP_ENDPOINT="https://coston2.flare.network/ext/info" -v /mnt/db:/app/db -v /opt/flare/conf:/app/conf/C -v /opt/flare/logs:/app/logs -p 0.0.0.0:9650:9650 -p 0.0.0.0:9651:9651 flarefoundation/go-flare:v1.7.1807
     ```
 
@@ -493,9 +584,10 @@ The node can be run using:
 
     Use the Docker image at [go-songbird](https://hub.docker.com/r/flarefoundation/go-songbird). The **Overview** tab in the repository linked explains the configurable parameters.
 
-    Start the container:
+    Download and start the container:
 
     ```bash
+    docker pull flarefoundation/go-songbird
     docker run -d --name songbird-observer -e AUTOCONFIGURE_BOOTSTRAP="1" -e NETWORK_ID="songbird" -e AUTOCONFIGURE_PUBLIC_IP="1" -e AUTOCONFIGURE_BOOTSTRAP_ENDPOINT="https://songbird.flare.network/ext/info" -v /mnt/db:/app/db -v /opt/flare/conf:/app/conf/C -v /opt/flare/logs:/app/logs -p 0.0.0.0:9650:9650 -p 0.0.0.0:9651:9651 flarefoundation/go-songbird:v0.6.4
     ```
 
@@ -509,11 +601,12 @@ The node can be run using:
   </TabItem>
   <TabItem value="coston" label="Songbird Testnet Coston">
 
-    Use the Docker image at [go-songbird](https://hub.docker.com/r/flarefoundation/go-songbird). The **Overview** tab in the repository linked explains the configurable parameters.
+    Use the Docker image at [go-flare](https://hub.docker.com/layers/flarefoundation/go-flare/v0.6.6-coston/images/sha256-b88cf18baf5300a4e15b630dd6de669e48ab316a22cffd370961cdd68226ef0a?context=explore). The **Overview** tab in the repository linked explains the configurable parameters.
 
-    Start the container:
+    Download and start the container:
 
     ```bash
+    docker pull flarefoundation/go-flare:v0.6.6-coston
     docker run -d --name coston-observer -e AUTOCONFIGURE_BOOTSTRAP="1" -e NETWORK_ID="coston" -e AUTOCONFIGURE_PUBLIC_IP="1" -e AUTOCONFIGURE_BOOTSTRAP_ENDPOINT="https://coston.flare.network/ext/info" -v /mnt/db:/app/db -v /opt/flare/conf:/app/conf/C -v /opt/flare/logs:/app/logs -p 0.0.0.0:9650:9650 -p 0.0.0.0:9651:9651 flarefoundation/go-songbird:v0.6.4
     ```
 
@@ -694,7 +787,7 @@ Create the `docker-compose.yaml` file:
     services:
       observer:
         container_name: coston-observer
-        image: flarefoundation/go-songbird:v0.6.4
+        image: flarefoundation/go-flare:v0.6.6-coston
         restart: on-failure
         environment:
           - AUTOCONFIGURE_BOOTSTRAP=1
