@@ -84,18 +84,12 @@ const config: Config = {
         height: 32,
       },
       items: [
-        // {
-        //   type: "docSidebar",
-        //   sidebarId: "networkSidebar",
-        //   position: "left",
-        //   label: "Flare ☀️",
-        // },
-        // {
-        //   href: "https://t.me/FlareNetwork",
-        //   className: "header-telegram-link",
-        //   "aria-label": "Flare Telegram",
-        //   position: "right",
-        // },
+        {
+          type: "docSidebar",
+          sidebarId: "networkSidebar",
+          position: "left",
+          label: "Flare ☀️",
+        },
         {
           href: "https://github.com/flare-foundation/developer-hub",
           className: "header-github-link",
