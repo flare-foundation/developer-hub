@@ -5,11 +5,19 @@ description: Frequently asked questions when building on Flare.
 keywords: [faq, frequently-asked-questions, flare-network, support]
 ---
 
+import SetEvmVersionRemix from "/static/img/set-evm-version-remix.png";
+
 ### Why am I getting `invalid opcode: opcode 0x5f not defined`?
 
 Flare supports EVM versions up to London, which does not support the `PUSH0` opcode, leading to this error. To fix this:
 
-- In the standard Solidity JSON interface
+- **Using Remix:** Set EVM version to `london` in the **Advanced Configurations** section of the **Solidity Compiler** tab:
+
+  <img src={SetEvmVersionRemix} style={{ width: 300 }} />
+
+- **Using Hardhat or Foundry:** Set EVM version to `london` in [hardhat.config.ts](https://github.com/flare-foundation/flare-hardhat-starter/blob/master/hardhat.config.ts#L34) or [foundry.toml](https://github.com/flare-foundation/flare-foundry-starter/blob/master/foundry.toml).
+
+- **Using Standard Solidity JSON:** Set `evmVersion` to `london`:
 
   ```json
   {
@@ -22,13 +30,11 @@ Flare supports EVM versions up to London, which does not support the `PUSH0` opc
   }
   ```
 
-- In the `solc` CLI
+- **Using `solc` CLI:** Set `--evm-version` to `london`:
 
   ```bash
-  solc --evm-version london
+  solc --evm-version london <args>
   ```
-
-Learn more about how to set the EVM version for your compiler in the [Solidity documentation](https://docs.soliditylang.org/en/latest/using-the-compiler.html#setting-the-evm-version-to-target).
 
 ### Where can I get Flare testnet tokens?
 
@@ -44,7 +50,7 @@ To understand the difference between Coston and Coston2, see the [Network Config
 
 Yes! Grants from the Flare Foundation are designed to support innovative and impactful projects in order to accelerate the growth of the Flare ecosystem. Whether you're an independent innovator or part of a larger team, if you believe that you can make valuable contributions to the Flare ecosystem, we'd like to hear from you.
 
-Learn more about [Flare's Grants Program](https://flare.network/grants/).
+Learn more about [Grants](https://flare.network/grants/).
 
 ### Where can I get technical support?
 
