@@ -8,6 +8,27 @@ export default function HeroSection() {
   const { siteConfig } = useDocusaurusContext();
   return (
     <section className={classes.heroSection}>
+      <div className={clsx(classes.videoContainer, classes.videoLight)}>
+        <video
+          id="background-video"
+          autoPlay
+          loop
+          muted
+          playsInline
+          height={"100%"}
+          width={"100%"}
+          poster={"/img/landing/dev_hub_ani_noblur.png"}
+        >
+          <source
+            src={"/img/landing/dev_hub_ani_light.webm"}
+            type="video/webm"
+          ></source>
+          <source
+            src={"/img/landing/dev_hub_ani_light.mp4"}
+            type="video/mp4"
+          ></source>
+        </video>
+      </div>
       <div className={clsx(classes.videoContainer, classes.videoDark)}>
         <video
           id="background-video"
@@ -18,7 +39,6 @@ export default function HeroSection() {
           height={"100%"}
           width={"100%"}
           poster={"/img/landing/dev_hub_ani_noblur.png"}
-          // style={{ height: "100%", width: "100%" }}
         >
           <source
             src={"/img/landing/dev_hub_ani_dark.webm"}
@@ -26,27 +46,6 @@ export default function HeroSection() {
           ></source>
           <source
             src={"/img/landing/dev_hub_ani_dark.mp4"}
-            type="video/mp4"
-          ></source>
-        </video>
-      </div>
-      <div className={clsx(classes.videoContainer, classes.videoLight)}>
-        <video
-          id="background-video"
-          autoPlay
-          loop
-          muted
-          height={"100%"}
-          width={"100%"}
-          poster={"/img/landing/dev_hub_ani_noblur.png"}
-          // style={{ height: "100%", width: "100%" }}
-        >
-          <source
-            src={"/img/landing/dev_hub_ani_light.webm"}
-            type="video/webm"
-          ></source>
-          <source
-            src={"/img/landing/dev_hub_ani_light.mp4"}
             type="video/mp4"
           ></source>
         </video>
