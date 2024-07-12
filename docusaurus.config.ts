@@ -58,6 +58,10 @@ const config: Config = {
         googleTagManager: {
           containerId: "GTM-WX2D2TR",
         },
+        sitemap: {
+          lastmod: "date",
+          ignorePatterns: ["/tags/**"],
+        },
       } satisfies Preset.Options,
     ],
   ],
