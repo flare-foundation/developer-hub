@@ -84,12 +84,12 @@ const config: Config = {
         height: 32,
       },
       items: [
-        {
-          type: "docSidebar",
-          sidebarId: "networkSidebar",
-          position: "left",
-          label: "Flare ☀️",
-        },
+        // {
+        //   type: "docSidebar",
+        //   sidebarId: "networkSidebar",
+        //   position: "left",
+        //   label: "Flare ☀️",
+        // },
         {
           href: "https://github.com/flare-foundation/developer-hub",
           className: "header-github-link",
