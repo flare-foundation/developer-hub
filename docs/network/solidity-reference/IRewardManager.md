@@ -4,6 +4,8 @@ description: Interface for reward management.
 sidebar_position: 5
 ---
 
+Interface for reward management.
+
 Sourced from `IRewardManager.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/IRewardManager.sol).
 
 ## Functions

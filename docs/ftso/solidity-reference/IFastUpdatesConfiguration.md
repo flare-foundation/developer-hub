@@ -4,6 +4,8 @@ sidebar_position: 2
 description: Interface for the block-latency feed configuration.
 ---
 
+Interface for the block-latency feed configuration.
+
 Sourced from `IFastUpdatesConfiguration.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/IFastUpdatesConfiguration.sol).
 
 ## Functions

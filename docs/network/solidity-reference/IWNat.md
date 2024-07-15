@@ -4,6 +4,8 @@ description: Interface for wrapping and unwrapping.
 sidebar_position: 5
 ---
 
+Interface for wrapping and unwrapping.
+
 Sourced from `IWNat.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/IWNat.sol).
 
 ## Functions

@@ -4,6 +4,8 @@ sidebar_position: 1
 description: Registry interface with all Flare contract addresses.
 ---
 
+Registry interface with all Flare contract addresses.
+
 Sourced from `IFlareContractRegistry.sol` on [GitLab](https://gitlab.com/flarenetwork/flare-smart-contracts/-/blob/master/contracts/userInterfaces/IFlareContractRegistry.sol).
 
 ## Functions
