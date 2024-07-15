@@ -198,6 +198,13 @@ const config: Config = {
       crossorigin: "anonymous",
     },
   ],
+  scripts: [
+    {
+      defer: true,
+      src: "https://cdn-cookieyes.com/client_data/dedcd40fe7e8316d7512b294/script.js",
+      id: "cookieyes",
+    },
+  ],
 };
 
 export default config;
