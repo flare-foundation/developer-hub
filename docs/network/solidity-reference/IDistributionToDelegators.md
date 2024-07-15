@@ -4,6 +4,8 @@ sidebar_position: 4
 description: Interface for managing FlareDrop claims.
 ---
 
+Interface for managing FlareDrop claims.
+
 Sourced from `IDistributionToDelegators.sol` on [GitLab](https://gitlab.com/flarenetwork/flare-smart-contracts/-/blob/master/contracts/userInterfaces/IDistributionToDelegators.sol).
 
 Manages the ongoing distribution of tokens from the Delegation Incentive Pool (the "FlareDrop"). The approval of [FIP.01](https://proposals.flare.network/FIP/FIP_1) created this pool, that releases its tokens every 30 days, over a period of 36 months, to all accounts holding Wrapped FLR.

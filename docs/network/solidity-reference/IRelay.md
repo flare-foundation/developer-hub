@@ -4,6 +4,8 @@ sidebar_position: 2
 description: Interface for Merkle roots, secure RNG, signing policies etc.
 ---
 
+Interface for Merkle roots, secure RNG, signing policies etc.
+
 Sourced from `IRelay.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/IRelay.sol).
 
 ## Functions

@@ -4,6 +4,8 @@ sidebar_position: 3
 description: Interface for automating reward claiming setup.
 ---
 
+Interface for automating reward claiming setup.
+
 Sourced from `IClaimSetupManager.sol` on [GitLab](https://gitlab.com/flarenetwork/flare-smart-contracts/-/blob/master/contracts/userInterfaces/IClaimSetupManager.sol).
 
 ## Functions
