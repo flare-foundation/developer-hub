@@ -1,14 +1,14 @@
 # THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
-import os
 import asyncio
+import os
 
-from web3 import AsyncWeb3, AsyncHTTPProvider
+from web3 import AsyncHTTPProvider, AsyncWeb3
 from web3.middleware.geth_poa import async_geth_poa_middleware
 
 from utils import load_contract_interface
 
 
-async def main():
+async def main() -> None:
     account, private_key = os.getenv("ACCOUNT"), os.getenv("ACCOUNT_PRIVATE_KEY")
     contract_interface = load_contract_interface("FtsoV2FeedConsumer")
 
