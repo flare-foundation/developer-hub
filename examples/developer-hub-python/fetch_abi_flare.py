@@ -4,7 +4,7 @@ import json
 import aiohttp
 
 
-async def main():
+async def main() -> dict:
     params = {
         "module": "contract",
         "action": "getabi",

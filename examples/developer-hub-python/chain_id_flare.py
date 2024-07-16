@@ -3,7 +3,7 @@ import asyncio
 from web3 import AsyncHTTPProvider, AsyncWeb3
 
 
-async def main():
+async def main() -> int:
     w3 = AsyncWeb3(
         AsyncHTTPProvider("https://rpc.ankr.com/flare"),
     )
