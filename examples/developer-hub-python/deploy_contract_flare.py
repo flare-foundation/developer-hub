@@ -11,7 +11,7 @@ async def main() -> None:
     account, private_key = os.getenv("ACCOUNT"), os.getenv("ACCOUNT_PRIVATE_KEY")
     contract_interface = load_contract_interface("FtsoV2FeedConsumer")
 
-    w3 = AsyncWeb3(AsyncHTTPProvider("https://rpc.ankr.com/flare"))
+    w3 = AsyncWeb3(AsyncHTTPProvider("https://flare-api.flare.network/ext/C/rpc"))
     ftsoV2_feed_consumer = w3.eth.contract(
         abi=contract_interface["abi"],
         bytecode=contract_interface["evm"]["bytecode"]["object"],

@@ -19,7 +19,7 @@ async fn main() -> Result<()> {
     let provider = ProviderBuilder::new()
         .with_recommended_fillers()
         .wallet(wallet)
-        .on_http("https://rpc.ankr.com/flare".parse()?);
+        .on_http("https://flare-api.flare.network/ext/C/rpc".parse()?);
 
     let contract = FtsoV2FeedConsumer::deploy(&provider).await?;
     println!("Deployed contract at address: {}", contract.address());

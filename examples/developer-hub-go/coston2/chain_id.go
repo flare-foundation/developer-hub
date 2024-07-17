@@ -8,7 +8,7 @@ import (
 )
 
 func ChainId() {
-	cl, err := ethclient.Dial("https://rpc.ankr.com/flare_coston2")
+	cl, err := ethclient.Dial("https://coston2-api.flare.network/ext/C/rpc")
 	if err != nil {
 		panic(err)
 	}

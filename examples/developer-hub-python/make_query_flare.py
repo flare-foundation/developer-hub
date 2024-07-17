@@ -9,7 +9,7 @@ from web3.middleware.geth_poa import async_geth_poa_middleware
 async def main() -> str:
     registry_addr = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
     w3 = AsyncWeb3(
-        AsyncHTTPProvider("https://rpc.ankr.com/flare"),
+        AsyncHTTPProvider("https://flare-api.flare.network/ext/C/rpc"),
         middlewares=[async_geth_poa_middleware],
     )
     params = {

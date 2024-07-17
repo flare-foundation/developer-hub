@@ -3,7 +3,9 @@ import { Web3 } from "web3";
 import fs from "fs";
 
 const web3 = new Web3(
-  new Web3.providers.HttpProvider("https://rpc.ankr.com/flare_coston2"),
+  new Web3.providers.HttpProvider(
+    "https://coston2-api.flare.network/ext/C/rpc",
+  ),
 );
 
 const bytecode = fs.readFileSync("./build/FtsoV2FeedConsumer.bin", "utf8");

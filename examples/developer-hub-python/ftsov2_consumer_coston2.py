@@ -6,7 +6,7 @@ from web3 import AsyncHTTPProvider, AsyncWeb3
 # FastUpdater address (Flare Testnet Coston2)
 # See https://dev.flare.network/ftso/solidity-reference
 FTSO_ADDRESS = "0x58fb598EC6DB6901aA6F26a9A2087E9274128E59"
-RPC_URL = "https://rpc.ankr.com/flare_coston2"
+RPC_URL = "https://coston2-api.flare.network/ext/C/rpc"
 # Feed indexes: 0 = FLR/USD, 2 = BTC/USD, 9 = ETH/USD
 FEED_INDEXES = [0, 2, 9]
 # ABI for FastUpdater contract

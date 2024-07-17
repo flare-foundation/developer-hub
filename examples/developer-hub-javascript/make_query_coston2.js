@@ -9,7 +9,7 @@ const response = await fetch(base_url + params);
 const abi = JSON.parse((await response.json())["result"]);
 
 // Query contract
-const w3 = new Web3("https://rpc.ankr.com/flare_coston2");
+const w3 = new Web3("https://coston2-api.flare.network/ext/C/rpc");
 const registry = new w3.eth.Contract(abi, registry_addr);
 const res = await registry.methods.getContractAddressByName("WNat").call();
 

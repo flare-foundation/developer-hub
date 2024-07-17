@@ -7,7 +7,7 @@ from web3.middleware.geth_poa import async_geth_poa_middleware
 async def main() -> int:
     # Inject middleware to handle testnet PoA consensus
     w3 = AsyncWeb3(
-        AsyncHTTPProvider("https://rpc.ankr.com/flare_coston2"),
+        AsyncHTTPProvider("https://coston2-api.flare.network/ext/C/rpc"),
         middlewares=[async_geth_poa_middleware],
     )
     chain_id = await w3.eth.chain_id

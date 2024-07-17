@@ -13,7 +13,7 @@ async fn main() -> Result<()> {
     // FastUpdater address (Flare Testnet Coston2)
     // See https://dev.flare.network/ftso/solidity-reference
     let ftso_address = "0x58fb598EC6DB6901aA6F26a9A2087E9274128E59".parse()?;
-    let rpc_url = "https://rpc.ankr.com/flare_coston2".parse()?;
+    let rpc_url = "https://coston2-api.flare.network/ext/C/rpc".parse()?;
     // Feed indexes: 0 = FLR/USD, 2 = BTC/USD, 9 = ETH/USD
     let feed_indexes = vec![U256::from(0_u32), U256::from(2_u32), U256::from(9_u32)];
     // Connect to an RPC node

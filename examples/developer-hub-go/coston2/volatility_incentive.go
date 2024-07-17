@@ -21,7 +21,7 @@ func MakeVolatilityIncentive() {
 	// See https://dev.flare.network/ftso/solidity-reference
 	incentiveAddress := common.HexToAddress("0x003e9bD18f73e0B25BED0DC8382Bde6aa999525c")
 	// Connect to an RPC node
-	client, _ := ethclient.Dial("https://rpc.ankr.com/flare_coston2")
+	client, _ := ethclient.Dial("https://coston2-api.flare.network/ext/C/rpc")
 	// Set up contract instance
 	incentive, _ := NewFastUpdatesIncentiveManager(incentiveAddress, client)
 	// Get the current sample size, sample size increase price, precision, and scale

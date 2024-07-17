@@ -17,7 +17,7 @@ import (
 const key = ``
 
 func DeployContract() {
-	conn, err := ethclient.Dial("https://rpc.ankr.com/flare_coston2")
+	conn, err := ethclient.Dial("https://coston2-api.flare.network/ext/C/rpc")
 	if err != nil {
 		panic(err)
 	}

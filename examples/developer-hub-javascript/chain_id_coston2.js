@@ -1,5 +1,5 @@
 import { Web3 } from "web3";
 
-const web3 = new Web3("https://rpc.ankr.com/flare_coston2");
+const web3 = new Web3("https://coston2-api.flare.network/ext/C/rpc");
 web3.eth.getChainId().then(console.log);
 // 114

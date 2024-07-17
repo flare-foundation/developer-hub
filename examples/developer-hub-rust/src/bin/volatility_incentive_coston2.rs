@@ -24,7 +24,7 @@ async fn main() -> Result<()> {
     let provider = ProviderBuilder::new()
         .with_recommended_fillers()
         .wallet(wallet)
-        .on_http("https://rpc.ankr.com/flare_coston2".parse()?);
+        .on_http("https://coston2-api.flare.network/ext/C/rpc".parse()?);
     // Set up contract instance
     let incentive = FastUpdatesIncentiveManager::new(incentive_address, provider);
 
