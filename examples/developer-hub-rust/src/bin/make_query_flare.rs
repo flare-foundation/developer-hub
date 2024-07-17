@@ -9,7 +9,8 @@ sol!(
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let provider = ProviderBuilder::new().on_http("https://flare-api.flare.network/ext/C/rpc".parse()?);
+    let provider =
+        ProviderBuilder::new().on_http("https://flare-api.flare.network/ext/C/rpc".parse()?);
     let registry = FlareContractRegistry::new(
         "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019".parse()?,
         provider,
