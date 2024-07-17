@@ -13,7 +13,7 @@ async fn main() -> Result<()> {
     // FastUpdatesConfiguration address (Flare Testnet Coston2)
     // See https://dev.flare.network/ftso/solidity-reference
     let address = "0xE7d1D5D58cAE01a82b84989A931999Cb34A86B14".parse()?;
-    let rpc_url = "https://rpc.ankr.com/flare_coston2".parse()?;
+    let rpc_url = "https://coston2-api.flare.network/ext/C/rpc".parse()?;
     // Connect to an RPC node
     let provider = ProviderBuilder::new().on_http(rpc_url);
     // Set up contract instance

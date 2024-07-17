@@ -13,7 +13,7 @@ async def main() -> None:
     contract_interface = load_contract_interface("FtsoV2FeedConsumer")
 
     w3 = AsyncWeb3(
-        AsyncHTTPProvider("https://rpc.ankr.com/flare_coston2"),
+        AsyncHTTPProvider("https://coston2-api.flare.network/ext/C/rpc"),
         middlewares=[async_geth_poa_middleware],
     )
     account = w3.to_checksum_address(account)

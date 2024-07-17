@@ -14,7 +14,7 @@ func SecureRandom() {
 	// Relay address where the secure RNG is served (Flare Testnet Coston2)
 	// See https://dev.flare.network/network/solidity-reference
 	address := common.HexToAddress("0x5CdF9eAF3EB8b44fB696984a1420B56A7575D250")
-	rpcUrl := "https://rpc.ankr.com/flare_coston2"
+	rpcUrl := "https://coston2-api.flare.network/ext/C/rpc"
 	// Connect to an RPC node
 	client, _ := ethclient.Dial(rpcUrl)
 	// Set up contract instance

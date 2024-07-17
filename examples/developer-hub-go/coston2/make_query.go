@@ -10,7 +10,7 @@ import (
 )
 
 func MakeQuery() {
-	client, err := ethclient.Dial("https://rpc.ankr.com/flare_coston2")
+	client, err := ethclient.Dial("https://coston2-api.flare.network/ext/C/rpc")
 	if err != nil {
 		panic(err)
 	}
