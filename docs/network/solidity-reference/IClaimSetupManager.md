@@ -1,10 +1,10 @@
 ---
 title: IClaimSetupManager
 sidebar_position: 3
-description: Interface for automating reward claiming setup.
+description: Interface for managing reward claim setup.
 ---
 
-Interface for automating reward claiming setup.
+Interface for managing reward claim setup.
 
 Sourced from `IClaimSetupManager.sol` on [GitLab](https://gitlab.com/flarenetwork/flare-smart-contracts/-/blob/master/contracts/userInterfaces/IClaimSetupManager.sol).
 
