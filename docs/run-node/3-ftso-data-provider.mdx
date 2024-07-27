@@ -2,7 +2,7 @@
 sidebar_position: 3
 slug: ftso-data-provider
 title: FTSOv2 Data Provider
-description: Provide block-latency updates and Scaling for FTSOv2.
+description: Provide block-latency and anchor feeds for FTSOv2.
 ---
 
 import Tabs from "@theme/Tabs";
@@ -36,7 +36,7 @@ Reference implementations are provided for all five components.
 
 :::warning
 
-The reference implementation of **Feed Value Provider** is only provided for testing purposes and should not be relied on. Data providers are expected to reimplement this with their own data sources.
+The reference implementation of Feed Value Provider is **only provided for testing purposes and should not be relied on**. Data providers are expected to reimplement this with their own data sources.
 
 :::
 
@@ -52,7 +52,7 @@ The reference implementation of **Feed Value Provider** is only provided for tes
   }}
 />
 
-## Operation
+### Operation
 
 A simplified description of a single voting round operation:
 
@@ -70,17 +70,32 @@ Additionally, once in a reward epoch the **System Client** triggers voter regist
 
 **Data Provider** obtains all commit and reveal data straight from encoded transaction calldata recorded in the indexer database. All calls to `Submission` contract are simply empty function invocations, with the actual submission data provided as additional calldata in the transaction.
 
-## Generate sortition key
+## Prerequisites
 
-Generate a sortition key to use in Fast Updates, read more about this in [fast-updates](https://github.com/flare-foundation/fast-updates/tree/main/go-client). You can use the provided docker image to generate a key:
+Ensure you have the following tools installed:
+
+- [Docker Engine](https://docs.docker.com/engine/install/)
+- [yarn](https://yarnpkg.com/)
+
+## Setup
+
+### Generate sortition key
+
+Generate a sortition key to use in Fast Updates, read more about this in [fast-updates/go-client](https://github.com/flare-foundation/fast-updates/tree/main/go-client). You can use the provided docker image to generate a key:
 
 ```bash
 docker run --rm ghcr.io/flare-foundation/fast-updates/go-client:latest keygen
 ```
 
-Accounts for submission need to be generated and funded with gas fees. These can be any accounts **not used** for the five accounts above and don't need to be registered with the system. We suggest using **three** accounts to avoid nonce conflicts. You will need to pass their private keys in the `.env` file defined ahead in [Configure environment](#configure-environment).
+Accounts for submission need to be generated and funded with gas fees. These can be any accounts **not used** for the five accounts in [Registration](#registration). We suggest using **three** separate accounts to avoid nonce conflicts. You will need to pass their private keys in the `.env` file defined ahead in [Configure environment](#configure-environment).
 
-## Registration
+### Registration
+
+:::info
+
+Registration only needs to be performed once.
+
+:::
 
 Each data provider in the FTSOv2 system must set up and register the following five accounts:
 
@@ -99,17 +114,20 @@ Accounts need to be funded for gas fees. The delegation account is used of estab
 - [Development Portal](https://governance.dev.aflabs.org/) for Flare Testnet Coston2 and Songbird Testnet Coston
 - [Flare Portal](https://portal.flare.network) for Flare Mainnet and Songbird Canary-Network.
 
-Registration only needs to be done once.
-
 :::warning
 
-The protocol operation uses normalized weights, and the delegation account should have at least 150 WC2FLR on Flare Testnet Coston2 (or WCFLR on Songbird Testnet Coston) to obtain a non-zero vote power.
+The protocol operation uses normalized weights, and the delegation account should have at least 150 wrapped native tokens to obtain a non-zero vote power. Wrapped native tokens are - WFLR on Flare Mainnet, WC2FLR on Flare Testnet Coston2, WSGB on Songbird Canary-Network, and WCFLR on Songbird Testnet Coston.
 
 :::
 
-### Using Hardhat
+Registration can be performed in two ways, either:
 
-Clone and build [flare-smart-contracts-v2](https://github.com/flare-foundation/flare-smart-contracts-v2/).
+- [Using Hardhat](#register-using-hardhat): Simpler, but requires building local dependencies.
+- [Using the explorer](#register-using-the-explorer): More complex, but does not require any local dependencies.
+
+#### Register using Hardhat
+
+To register using Hardhat, start by cloning and building [flare-smart-contracts-v2](https://github.com/flare-foundation/flare-smart-contracts-v2/).
 
 ```bash
 git clone https://github.com/flare-foundation/flare-smart-contracts-v2/
@@ -139,6 +157,7 @@ Create an `entities.json` file with the following account addresses and private 
       "address": "0x9ffa9cf5f677e925b6ecacbf66caefd7e1b9883a",
       "privateKey": "<private key hex>"
     },
+    // delegation is optional
     "delegation": {
       "address": "0x95288e962ff1893ef6c32ad4143fffb12e1eb15f",
       "privateKey": "<private key hex>"
@@ -187,7 +206,7 @@ Setup the following variables in `.env`:
 
 :::
 
-Run registration tasks:
+Run the registration tasks:
 
 <Tabs groupId="network">
   <TabItem value="coston2" label="Flare Testnet Coston2" default>
@@ -202,6 +221,7 @@ Run registration tasks:
 
     ```bash
     yarn hardhat --network songbird register-entities
+    yarn hardhat --network songbird register-public-keys
     ```
 
   </TabItem>
@@ -215,24 +235,17 @@ Run registration tasks:
   </TabItem>
 </Tabs>
 
-### Using the explorer
+#### Register using the explorer
 
-Account registration can be performed manually using the `EntityManager` contract on:
+To register manually you can directly call the `EntityManager` contract. For the contract address, see the [Solidity Reference](/network/solidity-reference). The relevant functions on the `EntityManager` contract are:
 
-- [Flare Testnet Coston2](https://coston2-explorer.flare.network/address/0xB16C9bd0783D153a32029d3D8473532DE1A80A79/write-contract#address-tabs)
-- [Songbird Canary-Network](https://songbird-explorer.flare.network/address/0x46C417D0760198E94fee455CE0e223262a3D0049/write-contract#address-tabs)
-- [Songbird Testnet Coston](https://coston-explorer.flare.network/address/0x60A848E5Da796D741e559c170E851FC813061217/write-contract#address-tabs)
+- [`proposeSubmitAddress`](/network/solidity-reference/IEntityManger#proposesubmitaddress)
+- [`proposeSubmitSignaturesAddress`](/network/solidity-reference/IEntityManger#proposesubmitsignaturesaddress)
+- [`proposeSigningPolicyAddress`](/network/solidity-reference/IEntityManger#proposesigningpolicyaddress)
+- (optional) [`proposeDelegationAddress`](/network/solidity-reference/IEntityManger#proposedelegationaddress)
+- [`registerPublicKey`](/network/solidity-reference/IEntityManger#registerpublickey)
 
-The required functions on the `EntityManager` contract are:
-
-- `proposeSubmitAddress` and `confirmSubmitAddressRegistration`
-- `proposeSubmitSignaturesAddress` and `confirmSubmitSignaturesAddressRegistration`
-- `proposeSigningPolicyAddress` and `confirmSigningPolicyAddressRegistration`
-- `proposeDelegationAddress` and `confirmDelegationAddressRegistration`
-
-The required contract invocation steps can also be found in the [register-entities.ts](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/deployment/tasks/register-entities.ts#L33) deployment task.
-
-## Setup
+The required contract invocation steps can also be found in the [register-entities.ts](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/deployment/tasks/register-entities.ts#L33) and [register-public-keys.ts](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/deployment/tasks/register-public-keys.ts#L43) deployment tasks.
 
 ### Install dependencies
 
@@ -288,8 +301,8 @@ Set the following variables in `.env`:
 | `SUBMIT_PK`                          | Private key of account for sending commit and reveal transactions (see [Registration](#registration)).                                                                                                                                    |
 | `SIGNATURES_PK`                      | Private key of account for sending voting round result signature transactions (see [Registration](#registration)).                                                                                                                        |
 | `SIGNING_PK`                         | Private key of account used for signature generation during the voting round (see [Registration](#registration)).                                                                                                                         |
-| `FAST_UPDATES_ACCOUNTS`              | Comma separated private keys of fast updates submission accounts.                                                                                                                                                                         |
-| `FAST_UPDATES_SORTITION_PRIVATE_KEY` | Private key that was registered with the network (see [Generate sortition key](#generate-sortition-key)).                                                                                                                                 |
+| `FAST_UPDATES_ACCOUNTS`              | Comma separated private keys of fast updates submission accounts (see [Generate sortition key](#generate-sortition-key)).                                                                                                                 |
+| `FAST_UPDATES_SORTITION_PRIVATE_KEY` | Private key of the sortition address that was registered with the network (see [Registration](#registration)).                                                                                                                            |
 | `FAST_UPDATES_VALUE_PROVIDER_URL`    | Feed value provider endpoint for fast updates, by default it uses the same endpoint as Scaling, see [Obtaining Feed Values](https://github.com/flare-foundation/ftso-v2-example-value-provider?tab=readme-ov-file#obtaining-feed-values). |
 
 Populate the provider stack config:
@@ -305,20 +318,23 @@ You will need to re-run this command if you modify your `.env` file.
 
 :::
 
-## Deployment
+## Run
 
-### Start provider stack
+### Provider stack
 
-Since the `docker-compose.yaml` is already provided you can start everything with `docker compose up -d`
-and stop everything with `docker compose down`. Database is persisted in a named docker volume.
-If you need to wipe the database you will need to remove the volume manually. When the codebase is changed
-new images need to be pulled with `docker compose pull`
+The `docker-compose.yaml` is already provided, so you can start the provider stack with:
 
-### Feed value provider
+```bash
+docker compose up -d
+```
+
+To stop everything use `docker compose down`. The database is persisted in a named docker volume, if you need to wipe the database you will need to remove the volume manually. When the codebase is changed new images can be pulled with `docker compose pull`.
+
+### Feed Value Provider
 
 :::warning
 
-The reference implementation of **Feed Value Provider** is only provided for testing purposes and should not be relied on. Data providers are expected to reimplement this with their own data sources.
+The reference implementation of Feed Value Provider is **only provided for testing purposes and should not be relied on**. Data providers are expected to reimplement this with their own data sources.
 
 :::
 
