@@ -170,7 +170,7 @@ function getPublicKeyOf(
 #### Returns
 
 - ``: Public key.
-- ``: 
+- ``:
 
 ### getPublicKeyOfAt
 
@@ -194,7 +194,7 @@ function getPublicKeyOfAt(
 #### Returns
 
 - ``: Public key.
-- ``: 
+- ``:
 
 ### getVoterAddresses
 
@@ -646,4 +646,3 @@ struct VoterAddresses {
   address signingPolicyAddress;
 }
 ```
-
