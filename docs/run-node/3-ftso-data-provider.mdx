@@ -70,13 +70,17 @@ Additionally, once in a reward epoch the **System Client** triggers voter regist
 
 **Data Provider** obtains all commit and reveal data straight from encoded transaction calldata recorded in the indexer database. All calls to `Submission` contract are simply empty function invocations, with the actual submission data provided as additional calldata in the transaction.
 
+## Generate sortition key
+
+Generate a sortition key to use in Fast Updates, read more about this in [fast-updates](https://github.com/flare-foundation/fast-updates/tree/main/go-client). You can use the provided docker image to generate a key:
+
+```bash
+docker run --rm ghcr.io/flare-foundation/fast-updates/go-client:latest keygen
+```
+
+Accounts for submission need to be generated and funded with gas fees. These can be any accounts **not used** for the five accounts above and don't need to be registered with the system. We suggest using **three** accounts to avoid nonce conflicts. You will need to pass their private keys in the `.env` file defined ahead in [Configure environment](#configure-environment).
+
 ## Registration
-
-:::note
-
-Account registration with the `EntityManager` contract is required for FTSOv2 participation, and must be done before starting any further deployment steps.
-
-:::
 
 Each data provider in the FTSOv2 system must set up and register the following five accounts:
 
@@ -88,38 +92,24 @@ Each data provider in the FTSOv2 system must set up and register the following f
 
 - `SigningPolicy`. Used for signature generation during the voting round, and reward epoch signing policy signing (it's a system protocol ran once during reward epoch to establish reward epoch settings, including valid voters and their weights).
 
-- `Delegation`. Account to which community should delegate funds (using WNat contract) to increase the vote power of the voter (identity/entity) - and also to later get the rewards. If not set, the identity account will be used.
+- `Delegation`. Account to which community should delegate funds (using `WNat` contract) to increase the vote power of the voter (identity/entity) - and also to later get the rewards. If not set, the identity account will be used.
 
-Accounts need to be funded for gas fees. The delegation account is used of establishing voter power, which can be achieved by wrapping funds directly or by delegation from other accounts. Wrapping can be done via the [development portal](https://governance.dev.aflabs.org/) (make sure to pick the correct network for testnets) and via [portal](https://portal.flare.network) for mainnet.
+Accounts need to be funded for gas fees. The delegation account is used of establishing voter power, which can be achieved by wrapping funds directly or by delegation from other accounts. Wrapping can be done via:
+
+- [Development Portal](https://governance.dev.aflabs.org/) for Flare Testnet Coston2 and Songbird Testnet Coston
+- [Flare Portal](https://portal.flare.network) for Flare Mainnet and Songbird Canary-Network.
+
+Registration only needs to be done once.
 
 :::warning
 
-Protocol operation uses normalized weights, and the delegation account should have at least 150 WC2FLR on Flare Testnet Coston2 (or WCFLR on Songbird Testnet Coston) to obtain a non-zero vote power.
+The protocol operation uses normalized weights, and the delegation account should have at least 150 WC2FLR on Flare Testnet Coston2 (or WCFLR on Songbird Testnet Coston) to obtain a non-zero vote power.
 
 :::
 
-### Generate sortition key
-
-Generate a sortition key to use in Fast Updates, read more about this in [fast-updates](https://github.com/flare-foundation/fast-updates/tree/main/go-client). You can use the provided docker image to generate a key:
-
-```bash
-docker run --rm ghcr.io/flare-foundation/fast-updates/go-client:latest keygen
-```
-
-Accounts for submission need to be generated and funded with gas fees. These can be any accounts **not used** for the five accounts above and don't need to be registered with the system. We suggest using three accounts to avoid nonce conflicts. You will need to pass their private keys in the `.env` file defined ahead in [Configure environment](#configure-environment).
-
-### Using the contract
-
-Account registration is handled by the `EntityManager` smart contract:
-
-- [EntityManager Coston](https://coston-explorer.flare.network/address/0x60A848E5Da796D741e559c170E851FC813061217/write-contract#address-tabs)
-- [EntityManager Songbird](https://songbird-explorer.flare.network/address/0x46C417D0760198E94fee455CE0e223262a3D0049/write-contract#address-tabs)
-
-The required contract invocation steps can be found in the [register-entities.ts](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/deployment/tasks/register-entities.ts#L33) deployment task. You can checkout the repo and run the task, or register accounts manually via the explorer UI linked above. Registration only needs to be done once.
-
 ### Using Hardhat
 
-Clone and build [flare-smart-contracts-v2](https://github.com/flare-foundation/flare-smart-contracts-v2/)
+Clone and build [flare-smart-contracts-v2](https://github.com/flare-foundation/flare-smart-contracts-v2/).
 
 ```bash
 git clone https://github.com/flare-foundation/flare-smart-contracts-v2/
@@ -128,49 +118,40 @@ yarn
 yarn c
 ```
 
-Create a JSON file with account addresses and keys
+Create an `entities.json` file with the following account addresses and private keys:
 
 ```json title="entities.json"
 [
   {
-      "identity": {
-        "address": "0xca84d6086c5b32212a0cf1638803355d7be31482",
-        "privateKey": "<private key hex>"
-      },
-      "submit": {
-        "address": "0x7961de7ad159106a79187379a22d21c1e5a924db",
-        "privateKey": "<private key hex>"
-      },
-      "submitSignatures": {
-        "address": "0x7570c09c17f79aa50bab7ba385c0d5ca12c5b4d3",
-        "privateKey": "<private key hex>"
-      },
-      "signingPolicy": {
-        "address": "0x9ffa9cf5f677e925b6ecacbf66caefd7e1b9883a",
-        "privateKey": "<private key hex>"
-      },
-      "delegation": {
-        "address": "0x95288e962ff1893ef6c32ad4143fffb12e1eb15f",
-        "privateKey": "<private key hex>"
-      }
-      "sortitionPrivateKey": "<private key hex>"
+    "identity": {
+      "address": "0xca84d6086c5b32212a0cf1638803355d7be31482",
+      "privateKey": "<private key hex>"
+    },
+    "submit": {
+      "address": "0x7961de7ad159106a79187379a22d21c1e5a924db",
+      "privateKey": "<private key hex>"
+    },
+    "submitSignatures": {
+      "address": "0x7570c09c17f79aa50bab7ba385c0d5ca12c5b4d3",
+      "privateKey": "<private key hex>"
+    },
+    "signingPolicy": {
+      "address": "0x9ffa9cf5f677e925b6ecacbf66caefd7e1b9883a",
+      "privateKey": "<private key hex>"
+    },
+    "delegation": {
+      "address": "0x95288e962ff1893ef6c32ad4143fffb12e1eb15f",
+      "privateKey": "<private key hex>"
+    },
+    "sortitionPrivateKey": "<private key hex>"
   }
 ]
 ```
 
-Setup the following variables in `.env`
+Setup the following variables in `.env`:
 
-<Tabs>
-  <TabItem value="coston" label="Coston" default>
-
-    ```text title=".env"
-    ENTITIES_FILE_PATH="<path to entities.json>"
-    COSTON_RPC=<non-public Coston RPC>
-    CHAIN_CONFIG="coston"
-    ```
-
-  </TabItem>
-  <TabItem value="coston2" label="Coston2">
+<Tabs groupId="network">
+  <TabItem value="coston2" label="Flare Testnet Coston2" default>
 
     ```text title=".env"
     ENTITIES_FILE_PATH="<path to entities.json>"
@@ -179,12 +160,21 @@ Setup the following variables in `.env`
     ```
 
   </TabItem>
-  <TabItem value="songbird" label="Songbird">
+  <TabItem value="songbird" label="Songbird Canary-Network">
 
     ```text title=".env"
     ENTITIES_FILE_PATH="<path to entities.json>"
     SONGBIRD_RPC=<non-public Songbird RPC>
     CHAIN_CONFIG="songbird"
+    ```
+
+  </TabItem>
+  <TabItem value="coston" label="Songbird Testnet Coston">
+
+    ```text title=".env"
+    ENTITIES_FILE_PATH="<path to entities.json>"
+    COSTON_RPC=<non-public Coston RPC>
+    CHAIN_CONFIG="coston"
     ```
 
   </TabItem>
@@ -197,10 +187,25 @@ Setup the following variables in `.env`
 
 :::
 
-Run registration tasks
+Run registration tasks:
 
-<Tabs>
-  <TabItem value="coston" label="Coston" default>
+<Tabs groupId="network">
+  <TabItem value="coston2" label="Flare Testnet Coston2" default>
+
+    ```bash
+    yarn hardhat --network coston2 register-entities
+    yarn hardhat --network coston2 register-public-keys
+    ```
+
+  </TabItem>
+  <TabItem value="songbird" label="Songbird Canary-Network">
+
+    ```bash
+    yarn hardhat --network songbird register-entities
+    ```
+
+  </TabItem>
+  <TabItem value="coston" label="Songbird Testnet Coston">
 
     ```bash
     yarn hardhat --network coston register-entities
@@ -208,21 +213,24 @@ Run registration tasks
     ```
 
   </TabItem>
-  <TabItem value="coston2" label="Coston2">
-
-    ```bash
-    yarn hardhat --network coston2 register-entities
-    ```
-
-  </TabItem>
-  <TabItem value="songbird" label="Songbird">
-
-    ```bash
-    yarn hardhat --network songbird register-entities
-    ```
-
-  </TabItem>
 </Tabs>
+
+### Using the explorer
+
+Account registration can be performed manually using the `EntityManager` contract on:
+
+- [Flare Testnet Coston2](https://coston2-explorer.flare.network/address/0xB16C9bd0783D153a32029d3D8473532DE1A80A79/write-contract#address-tabs)
+- [Songbird Canary-Network](https://songbird-explorer.flare.network/address/0x46C417D0760198E94fee455CE0e223262a3D0049/write-contract#address-tabs)
+- [Songbird Testnet Coston](https://coston-explorer.flare.network/address/0x60A848E5Da796D741e559c170E851FC813061217/write-contract#address-tabs)
+
+The required functions on the `EntityManager` contract are:
+
+- `proposeSubmitAddress` and `confirmSubmitAddressRegistration`
+- `proposeSubmitSignaturesAddress` and `confirmSubmitSignaturesAddressRegistration`
+- `proposeSigningPolicyAddress` and `confirmSigningPolicyAddressRegistration`
+- `proposeDelegationAddress` and `confirmDelegationAddressRegistration`
+
+The required contract invocation steps can also be found in the [register-entities.ts](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/deployment/tasks/register-entities.ts#L33) deployment task.
 
 ## Setup
 
@@ -254,7 +262,7 @@ Run registration tasks
 
 ### Clone the repository
 
-Clone [ftso-v2-provider-deployment](https://github.com/flare-foundation/ftso-v2-provider-deployment.git)
+Clone [ftso-v2-provider-deployment](https://github.com/flare-foundation/ftso-v2-provider-deployment.git):
 
 ```bash
 git clone https://github.com/flare-foundation/ftso-v2-provider-deployment.git
@@ -263,7 +271,7 @@ cd ftso-v2-provider-deployment
 
 ### Configure environment
 
-Use `.env.example` to create a `.env` file
+Use `.env.example` to create a `.env` file:
 
 ```bash
 cp .env.example .env
@@ -271,12 +279,18 @@ cp .env.example .env
 
 Set the following variables in `.env`:
 
-- Private keys for required accounts.
-- `NETWORK` to `coston` `coston2` or `songbird`.
-- `NODE_RPC_URL` and `NODE_API_KEY` (optional) with your Coston or Songbird node RPC endpoint.
-- `VALUE_PROVIDER_URL` to the endpoint of your feed value provider. Leave default if using the example provider for testing.
-- `FAST_UPDATES_ACCOUNTS` for the private keys of fast updates submission accounts separated by commas.
-- `FAST_UPDATES_SORTITION_PRIVATE_KEY` to the key that was registered with the network
+| **Variable**                         | **Details**                                                                                                                                                                                                                               |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NODE_RPC_URL`                       | URL of your RPC endpoint.                                                                                                                                                                                                                 |
+| `NODE_API_KEY`                       | API key of your RPC endpoint.                                                                                                                                                                                                             |
+| `VALUE_PROVIDER_URL`                 | Endpoint of your feed value provider, leave default if using the test provider.                                                                                                                                                           |
+| `IDENTITY`                           | Address of main identity account of the voter (see [Registration](#registration)).                                                                                                                                                        |
+| `SUBMIT_PK`                          | Private key of account for sending commit and reveal transactions (see [Registration](#registration)).                                                                                                                                    |
+| `SIGNATURES_PK`                      | Private key of account for sending voting round result signature transactions (see [Registration](#registration)).                                                                                                                        |
+| `SIGNING_PK`                         | Private key of account used for signature generation during the voting round (see [Registration](#registration)).                                                                                                                         |
+| `FAST_UPDATES_ACCOUNTS`              | Comma separated private keys of fast updates submission accounts.                                                                                                                                                                         |
+| `FAST_UPDATES_SORTITION_PRIVATE_KEY` | Private key that was registered with the network (see [Generate sortition key](#generate-sortition-key)).                                                                                                                                 |
+| `FAST_UPDATES_VALUE_PROVIDER_URL`    | Feed value provider endpoint for fast updates, by default it uses the same endpoint as Scaling, see [Obtaining Feed Values](https://github.com/flare-foundation/ftso-v2-example-value-provider?tab=readme-ov-file#obtaining-feed-values). |
 
 Populate the provider stack config:
 
@@ -297,7 +311,7 @@ You will need to re-run this command if you modify your `.env` file.
 
 Since the `docker-compose.yaml` is already provided you can start everything with `docker compose up -d`
 and stop everything with `docker compose down`. Database is persisted in a named docker volume.
-If you need to wipe the database you will need to remove the volume manually. When codebase is changed
+If you need to wipe the database you will need to remove the volume manually. When the codebase is changed
 new images need to be pulled with `docker compose pull`
 
 ### Feed value provider
@@ -369,11 +383,9 @@ You will see various errors initially on `ftso-scaling` and `flare-system-client
 
 **`fast-updates` log samples indicating successful operation:**
 
-Depending on your weight it may take some time until you are selected for the fast-updates.
-
 :::info
 
-During this waiting time, you may see log messages like:
+Depending on your weight it may take some time until you are selected for the fast-updates. During this waiting time, you may see log messages like:
 
 ```plaintext
 Public key not registered
