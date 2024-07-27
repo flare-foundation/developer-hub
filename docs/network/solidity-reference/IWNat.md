@@ -1,10 +1,10 @@
 ---
 title: IWNat
-description: Interface for wrapping and unwrapping.
-sidebar_position: 5
+description: Interface for wrapping and unwrapping native tokens.
+sidebar_position: 6
 ---
 
-Interface for wrapping and unwrapping.
+Interface for wrapping and unwrapping native tokens.
 
 Sourced from `IWNat.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/IWNat.sol).
 
