@@ -50,7 +50,12 @@ export default function SocialLinks() {
   return (
     <div className={classes.socialLinksList}>
       {socialLinks.map((social) => (
-        <Link to={social.href} className={classes.link} target="_blank">
+        <Link
+          to={social.href}
+          className={classes.link}
+          target="_blank"
+          key={social.href}
+        >
           <social.icon role="img" className={classes.socialSvg} />
         </Link>
       ))}
