@@ -22,10 +22,12 @@ export default function HeroSection() {
           <source
             src={"/img/landing/dev_hub_ani_light.webm"}
             type="video/webm"
+            media="(min-width: 996px)"
           ></source>
           <source
             src={"/img/landing/dev_hub_ani_light.mp4"}
             type="video/mp4"
+            media="(min-width: 996px)"
           ></source>
         </video>
       </div>
@@ -43,13 +45,22 @@ export default function HeroSection() {
           <source
             src={"/img/landing/dev_hub_ani_dark.webm"}
             type="video/webm"
+            media="(min-width: 996px)"
           ></source>
           <source
             src={"/img/landing/dev_hub_ani_dark.mp4"}
             type="video/mp4"
+            media="(min-width: 996px)"
           ></source>
         </video>
       </div>
+      <picture className={classes.mobileImage}>
+        <source
+          srcSet="/img/landing/dev_hub_hero_mobile.webp"
+          media="(max-width: 996px)"
+        />
+        <img src="" />
+      </picture>
       <div className={clsx(classes.content, "container")}>
         <div className={classes.callToAction}>
           <Heading as="h1" className={classes.heading}>
