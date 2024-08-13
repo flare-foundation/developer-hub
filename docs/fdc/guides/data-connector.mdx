@@ -26,33 +26,6 @@ Starter packs for [Hardhat](https://github.com/flare-foundation/flare-hardhat-st
 
 The Data Connector is a protocol on the Flare Network that enables any smart contract on the network to query non-changing, verifiable information from other blockchains such as Bitcoin or the XRP Ledger (XRPL). The Data Connector provides data in a decentralized and secure manner. This is achieved through a set of independent attestation providers that retrieve the required information from another blockchain and deliver it to the Flare Network. The Data Connector smart contract then verifies if there is sufficient consensus among the received answers and publishes the results.
 
-## CCCR protocol
-
-Flare's Data Connector protocol operates in **attestation rounds**, each consisting of five consecutive phases:
-
-- **Collect.** Users send their requests to the Data Connector contract, which emits events. Attestation providers gather these requests, assign them to a voting round based on the emission timestamp, and attempt to compile a response.
-
-- **Choose.** Attestation providers vote on which requests they can provide valid responses for in the current round.
-
-- **Commit.** Attestation providers send transactions committing to the attested data for the round without making the information public, preventing copying.
-
-- **Reveal.** Attestation providers disclose the attestation data.
-
-- **Count.** The Data Connector contract verifies the revealed attestation data against the committed data. If a majority consensus is reached, the result is published and stored on the blockchain.
-
-During each round, attestation providers create a Merkle tree, with the leaves containing all the attestation responses for requests marked valid in the choose phase. In the reveal phase, only the Merkle root is used as the attestation data. This approach ensures the consensus process remains lightweight and efficient. To act upon an attested request, the end user must provide the response and the Merkle proof demonstrating the inclusion of the response in the Merkle tree.
-
-![Collect-Choose-Commit](/img/how-to-state-connector/CCCR.png)
-
-<details>
-<summary>What is a Merkle Tree?</summary>
-
-[Merkle trees](https://en.wikipedia.org/wiki/Merkle_tree) are binary trees where each leaf represents a hash of some data, which in our case is the full response to the attestation request. Each internal node, with two children, represents a hash of the concatenation of the hashes of its children. This structure allows all responses to be securely and efficiently represented by a single hash, the Merkle root.
-
-Furthermore, verifying if a specific leaf is part of the tree is straightforward by constructing a Merkle proof. A Merkle proof is a list of hashes that, when combined with the Merkle root, proves that a particular leaf is indeed part of the tree. The size of this proof is logarithmic relative to the number of leaves in the tree. This logarithmic size ensures that proving the inclusion of a specific leaf is highly efficient, even for large trees. For instance, proving a leaf in a tree with 1 million leaves requires only 20 hashes, as opposed to 1 million hashes if all the leaves were stored in a list.
-
-</details>
-
 ## Transferring external data to Flare
 
 This guide focuses on the [**Payment attestation type**](https://github.com/flare-foundation/songbird-state-connector-protocol/blob/main/specs/attestations/active-types/Payment.md), an attestation type designed to prove and relay data about a transaction that happened on an external chain. You will write a simple script that allows a smart contract deployed on Songbird Testnet Coston to act upon a Bitcoin transaction without a centralized oracle.
@@ -71,7 +44,7 @@ For example, suppose you have a transaction on the Bitcoin (BTC) network and wan
 
 Let's understand each of these steps in detail in the following sections.
 
-### Verifying the transaction
+### 1. Verifying the transaction
 
 Start by picking your favourite transaction on [Blockstream's Bitcoin Testnet explorer](https://blockstream.info/testnet/tx/recent).
 
@@ -186,7 +159,7 @@ Breaking it down line-by-line:
 
 </details>
 
-### Make attestation request
+### 2. Make attestation request
 
 The next step is to request attestation on the Data Connector smart contract, thus broadcasting to the entire network that you want this transaction to be proven. This will be your first interaction with the blockchain and will involve making a transaction. For this, you'll need a small amount of CFLR to cover gas fees. You can obtain testnet CFLR using the [CFLR faucet](https://faucet.flare.network/).
 
@@ -228,7 +201,7 @@ async function submitRequest() {
 }
 ```
 
-### CCCR phases
+### 3. CCCR phases
 
 - During the attestation request submission in a fixed `roundId` within the CCCR protocol, the system enters the **collect** phase. In this phase, all attestation providers gather and store attestation requests, a process that spans 90 seconds.
 
@@ -238,9 +211,53 @@ async function submitRequest() {
 
 Both the **choose** and **commit** phases last 45 seconds, totaling 90 seconds, and coincide with the **collect** phase of the subsequent round. Finally, the CCCR transitions to the **reveal** phase, lasting another 90 seconds, during which each provider submits their Merkle root.
 
+### CCCR Protocol
+
+Flare's Data Connector protocol operates in **attestation rounds**, each consisting of five consecutive phases:
+
+<details>
+  <summary>**Collect**</summary>
+  <p>
+    Users send their requests to the Data Connector contract, which emits events. Attestation providers gather these requests, assign them to a voting round based on the emission timestamp, and attempt to compile a response.
+  </p>
+</details>
+
+<details>
+  <summary>**Choose**</summary>
+  <p>
+    Attestation providers vote on which requests they can provide valid responses for in the current round.
+  </p>
+</details>
+
+<details>
+  <summary>**Commit**</summary>
+  <p>
+    Attestation providers send transactions committing to the attested data for the round without making the information public, preventing copying.
+  </p>
+</details>
+
+<details>
+  <summary>**Reveal**</summary>
+  <p>
+    Attestation providers disclose the attestation data.
+  </p>
+</details>
+
+<details>
+  <summary>**Count**</summary>
+  <p>
+    The Data Connector contract verifies the revealed attestation data against the committed data. If a majority consensus is reached, the result is published and stored on the blockchain.
+  </p>
+</details>
+
+During each round, attestation providers create a Merkle tree, with the leaves containing all the attestation responses for requests marked valid in the choose phase. In the reveal phase, only the Merkle root is used as the attestation data. This approach ensures the consensus process remains lightweight and efficient. To act upon an attested request, the end user must provide the response and the Merkle proof demonstrating the inclusion of the response in the Merkle tree.
+
+![Collect-Choose-Commit](/img/how-to-state-connector/CCCR.png)
+
+
 Upon achieving consensus, the Data Connector smart contract concludes the round by publicizing the final Merkle root, designating it as the attested Merkle root for that specific round.
 
-### Merkle proof extraction
+### 4. Merkle proof extraction
 
 After the conclusion of the reveal phase, the round in which the attestation has been finalized, and consequently, a Merkle root is now stored within the Data Connector smart contract. As previously explained, this Merkle root serves as the apex of a Merkle tree, encompassing hashes of responses to attestation requests, including the one you aim to validate.
 
@@ -516,7 +533,7 @@ Let's explore the `Payment` interface in detail. Each attestation type, includin
 
 5. `ResponseBody`: This part outlines the structure of the response body, unique to each attestation type and containing data intended for on-chain use. It can be as complex as required, allowing for the inclusion of lists, nested structures, etc. However, simplicity is key to facilitate efficient processing, as nested structures can be challenging and resource-intensive to work with.
 
-### Submitting Merkle proof
+### 5. Submitting Merkle proof
 
 In the typical interaction with a contract on the Flare chain, there are two main aspects:
 
