@@ -11,7 +11,7 @@ function SimpleLinkItem({ item }: { item: Props["links"][number] }) {
     <span
       className="footer__link-item"
       // Developer provided the HTML, so assume it's safe.
-      // eslint-disable-next-line react/no-danger
+      // eslint-disable-next-line
       dangerouslySetInnerHTML={{ __html: item.html }}
     />
   ) : (
