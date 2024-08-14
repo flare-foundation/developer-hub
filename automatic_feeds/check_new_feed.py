@@ -25,10 +25,9 @@ CURRENT_FEEDS = [
 ]
 
 header = """---
-title: New Feed Request
+title: "[auto_req]: New Feed"
 assignees: dineshpinto
 labels: "enhancement"
-title: "[auto_req]: New Feed"
 ---
 """
 
