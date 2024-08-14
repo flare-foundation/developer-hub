@@ -1,0 +1,34 @@
+name: Automatic Feed Request
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  issues: write
+jobs:
+  check_feeds:
+    name: Run automatic feed request
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./automatic_feeds
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Set up poetry
+        uses: Gr1N/setup-poetry@v9
+      - name: Install dependencies
+        run: poetry install
+      - name: Generate issues file
+        run: poetry run python check_new_feed.py
+      - uses: JasonEtco/create-an-issue@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          filename: automatic_feeds/issues.md
