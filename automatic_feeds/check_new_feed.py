@@ -25,7 +25,7 @@ CURRENT_FEEDS = [
 ]
 
 header = """---
-title: "[auto_req]: New Feed"
+title: "[auto_req]: Potential New Feeds"
 assignees: dineshpinto
 labels: "enhancement"
 ---
@@ -40,11 +40,11 @@ def format_dict_to_str(coin_item: dict) -> str:
         "price_change_percentage_24h": coin_item["data"]["price_change_percentage_24h"][
             "usd"
         ],
-        "thumbnail": coin_item["thumb"],
+        "total_volume": coin_item["data"]["total_volume"],
+        "coingecko_link": f"https://www.coingecko.com/en/coins/{coin_item["id"]}",
         "description": coin_item["data"]["content"]["description"]
         if coin_item["data"]["content"]
         else "",
-        "total_volume": coin_item["data"]["total_volume"],
     }
     return "\n".join(f"{k}: {v}" for k, v in newdict.items())
 
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     with Path.open("issues.md", "w") as f:
         f.write(header)
         selected_coin_data = []
-        f.write("Coins that meet criteria:" + "\n\n")
+        f.write("Coins matching criteria:" + "\n\n")
         for coin in trending["coins"]:
             if (
                 coin["item"]["market_cap_rank"] < MAX_MARKET_CAP_RANK
