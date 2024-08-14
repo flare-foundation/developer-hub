@@ -218,42 +218,45 @@ Flare's Data Connector protocol operates in **attestation rounds**, each consist
 <details>
   <summary>**Collect**</summary>
   <p>
-    Users send their requests to the Data Connector contract, which emits events. Attestation providers gather these requests, assign them to a voting round based on the emission timestamp, and attempt to compile a response.
+    Users send their requests to the Data Connector contract, which emits
+    events. Attestation providers gather these requests, assign them to a voting
+    round based on the emission timestamp, and attempt to compile a response.
   </p>
 </details>
 
 <details>
   <summary>**Choose**</summary>
   <p>
-    Attestation providers vote on which requests they can provide valid responses for in the current round.
+    Attestation providers vote on which requests they can provide valid
+    responses for in the current round.
   </p>
 </details>
 
 <details>
   <summary>**Commit**</summary>
   <p>
-    Attestation providers send transactions committing to the attested data for the round without making the information public, preventing copying.
+    Attestation providers send transactions committing to the attested data for
+    the round without making the information public, preventing copying.
   </p>
 </details>
 
 <details>
   <summary>**Reveal**</summary>
-  <p>
-    Attestation providers disclose the attestation data.
-  </p>
+  <p>Attestation providers disclose the attestation data.</p>
 </details>
 
 <details>
   <summary>**Count**</summary>
   <p>
-    The Data Connector contract verifies the revealed attestation data against the committed data. If a majority consensus is reached, the result is published and stored on the blockchain.
+    The Data Connector contract verifies the revealed attestation data against
+    the committed data. If a majority consensus is reached, the result is
+    published and stored on the blockchain.
   </p>
 </details>
 
 During each round, attestation providers create a Merkle tree, with the leaves containing all the attestation responses for requests marked valid in the choose phase. In the reveal phase, only the Merkle root is used as the attestation data. This approach ensures the consensus process remains lightweight and efficient. To act upon an attested request, the end user must provide the response and the Merkle proof demonstrating the inclusion of the response in the Merkle tree.
 
 ![Collect-Choose-Commit](/img/how-to-state-connector/CCCR.png)
-
 
 Upon achieving consensus, the Data Connector smart contract concludes the round by publicizing the final Merkle root, designating it as the attested Merkle root for that specific round.
 
@@ -590,50 +593,6 @@ contract PaymentVerification is IPaymentVerification {
 }
 ```
 
-## Off-chain verification
-
-You can first check the proof off-chain (recall that verification is just a view method) and then create a simple contract that will store the verifications and verify them on-chain.
-
-```typescript title="checkMerkleProof.ts"
-export async function checkMerkleProof(scRound: number) {
-  // Check that the round is already finalized
-  const stateConnector = await ethers.getContractAt(
-    flareLib.nameToAbi("IStateConnector", "coston").data,
-    flareLib.nameToAddress("StateConnector", "coston"),
-  );
-
-  const lastFinalized = await stateConnector.lastFinalizedRoundId();
-
-  if (scRound > lastFinalized) {
-    console.log("scRound:", scRound, "is not finalized yet");
-    return;
-  }
-
-  const response = await requestMerkleProof(scRound);
-
-  const paymentVerifier = await ethers.getContractAt(
-    flareLib.nameToAbi("IPaymentVerification", "coston").data,
-    flareLib.nameToAddress("IPaymentVerification", "coston"),
-  );
-  const payment = {
-    data: response.data.response,
-    merkleProof: response.data.merkleProof,
-  };
-
-  const tx = await paymentVerifier.verifyPayment(payment);
-  console.log("Verification tx:", tx);
-  return payment;
-}
-```
-
-Running this you should result in:
-
-```text
-Verification tx: true
-```
-
-Hooray! This means that the verifier has accepted your Merkle proof and concluded the entire process.
-
 ## On-chain verification
 
 The on-chain verification process is equally straightforward. You simply ask the verifier, just as you did off-chain. Verification doesn't incur any costs to verify the proof on-chain, apart from minimal gas expenses.
@@ -711,6 +670,50 @@ Let's break down the key functions:
 - `isPaymentValid`: This view function verifies if the provided payment is valid by checking if it's included in the Data Connector. We utilize the Flare-provided PaymentVerification contract in conjunction with the periphery library to directly access the verifier contract. The function is straightforward—we call the `verifyPayment` method on the verifier contract. Remember, this is a view function, so there are no costs associated with checking the proof on the chain.
 
 - `addPayment`: This function is called by users to add payments to the contract. Remember, using the Data Connector on the chain typically involves a two-step process. Firstly, you validate the proof and data using the verifier contract, ensuring that the provided payment is valid. Then, you verify that the provided data meets our specific use case—such as being a payment in `testBTC`. Once you are certain of the payment's validity, you can tally the total received amount and store the proof for future reference.
+
+## Off-chain verification
+
+You can first check the proof off-chain (recall that verification is just a view method) and then create a simple contract that will store the verifications and verify them on-chain.
+
+```typescript title="checkMerkleProof.ts"
+export async function checkMerkleProof(scRound: number) {
+  // Check that the round is already finalized
+  const stateConnector = await ethers.getContractAt(
+    flareLib.nameToAbi("IStateConnector", "coston").data,
+    flareLib.nameToAddress("StateConnector", "coston"),
+  );
+
+  const lastFinalized = await stateConnector.lastFinalizedRoundId();
+
+  if (scRound > lastFinalized) {
+    console.log("scRound:", scRound, "is not finalized yet");
+    return;
+  }
+
+  const response = await requestMerkleProof(scRound);
+
+  const paymentVerifier = await ethers.getContractAt(
+    flareLib.nameToAbi("IPaymentVerification", "coston").data,
+    flareLib.nameToAddress("IPaymentVerification", "coston"),
+  );
+  const payment = {
+    data: response.data.response,
+    merkleProof: response.data.merkleProof,
+  };
+
+  const tx = await paymentVerifier.verifyPayment(payment);
+  console.log("Verification tx:", tx);
+  return payment;
+}
+```
+
+Running this you should result in:
+
+```text
+Verification tx: true
+```
+
+Hooray! This means that the verifier has accepted your Merkle proof and concluded the entire process.
 
 ## Conclusion
 
