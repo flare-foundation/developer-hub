@@ -1,62 +1,55 @@
-import Web3 from "web3";
-
-jest.mock("web3");
-
+import { main } from "../ftsov2_config_coston2_web3";
+const mockedResponse = [
+  {
+    0: "0x01464c522f55534400000000000000000000000000",
+    1: 5000n,
+    2: 10000n,
+    __length__: 3,
+    feedId: "0x01464c522f55534400000000000000000000000000",
+    rewardBandValue: 5000n,
+    inflationShare: 10000n,
+  },
+  {
+    0: "0x015347422f55534400000000000000000000000000",
+    1: 5000n,
+    2: 10000n,
+    __length__: 3,
+    feedId: "0x015347422f55534400000000000000000000000000",
+    rewardBandValue: 5000n,
+    inflationShare: 10000n,
+  },
+  {
+    0: "0x014254432f55534400000000000000000000000000",
+    1: 5000n,
+    2: 10000n,
+    __length__: 3,
+    feedId: "0x014254432f55534400000000000000000000000000",
+    rewardBandValue: 5000n,
+    inflationShare: 10000n,
+  },
+  {
+    0: "0x015852502f55534400000000000000000000000000",
+    1: 5000n,
+    2: 10000n,
+    __length__: 3,
+    feedId: "0x015852502f55534400000000000000000000000000",
+    rewardBandValue: 5000n,
+    inflationShare: 10000n,
+  },
+  {
+    0: "0x014c54432f55534400000000000000000000000000",
+    1: 5000n,
+    2: 10000n,
+    __length__: 3,
+    feedId: "0x014c54432f55534400000000000000000000000000",
+    rewardBandValue: 5000n,
+    inflationShare: 10000n,
+  },
+];
 describe("Fetch Feed Configurations", () => {
-  let mockContract;
-  let consoleSpy;
-
-  beforeEach(() => {
-    // Mock the contract and its methods
-    mockContract = {
-      methods: {
-        getFeedConfigurations: jest.fn().mockReturnThis(),
-        call: jest.fn().mockResolvedValue([
-          {
-            feedId: "0x666565646964", // "feedid" in hex
-            rewardBandValue: 1000n,
-            inflationShare: 500n,
-          },
-        ]),
-      },
-    };
-
-    // Mock the Web3 instance and Contract constructor
-    Web3.mockImplementation(() => ({
-      eth: {
-        Contract: jest.fn().mockImplementation(() => mockContract),
-      },
-    }));
-
-    // Spy on console.log
-    consoleSpy = jest.spyOn(console, "log").mockImplementation(() => {});
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
   test("should fetch feed configurations and log them", async () => {
     // Require the main function and await its execution
-    await require("../ftsov2_config_coston2_web3.js");
-
-    // Check that Web3 was initialized with the correct RPC URL
-    expect(Web3).toHaveBeenCalledWith(
-      "https://coston2-api.flare.network/ext/C/rpc",
-    );
-
-    // Check that the getFeedConfigurations method was called
-    expect(mockContract.methods.getFeedConfigurations).toHaveBeenCalled();
-    expect(mockContract.methods.call).toHaveBeenCalled();
-
-    // Check that console.log was called with the expected values
-    expect(consoleSpy).toHaveBeenCalledWith(
-      "feedId:",
-      "feedid", // Convert hex to UTF-8 string
-      "rewardBandValue:",
-      1000n,
-      "inflationShare:",
-      500n,
-    );
+    const res = await main();
+    expect(res).toEqual(expect.arrayContaining(mockedResponse));
   });
 });
