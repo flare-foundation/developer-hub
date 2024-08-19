@@ -1,4 +1,5 @@
 import { main } from "../ftsov2_config_coston2_web3";
+
 const mockedResponse = [
   {
     0: "0x01464c522f55534400000000000000000000000000",
@@ -46,6 +47,7 @@ const mockedResponse = [
     inflationShare: 10000n,
   },
 ];
+
 describe("Fetch Feed Configurations", () => {
   test("should fetch feed configurations and log them", async () => {
     // Require the main function and await its execution

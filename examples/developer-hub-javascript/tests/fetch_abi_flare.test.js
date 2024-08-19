@@ -1,4 +1,5 @@
 import { main } from "../fetch_abi_flare";
+
 const mockedAbi = [
   {
     inputs: [
@@ -8,6 +9,7 @@ const mockedAbi = [
     type: "constructor",
   },
 ];
+
 describe("Fetch  ABI", () => {
   test("Should Fetch Abi", async () => {
     const responseAbi = await main();
