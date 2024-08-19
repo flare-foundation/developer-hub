@@ -10,6 +10,23 @@ import Tabs from "@theme/Tabs";
 import TabItem from "@theme/TabItem";
 import IconExternalLink from "@theme/Icon/ExternalLink";
 import IconCopy from "@theme/Icon/Copy";
+import CodeBlock from "@theme/CodeBlock";
+import BlockNumCostonJS from "!!raw-loader!/examples/developer-hub-javascript/block_number_coston.js";
+import BlockNumFlareJS from "!!raw-loader!/examples/developer-hub-javascript/block_number_flare.js";
+import BlockNumCoston2JS from "!!raw-loader!/examples/developer-hub-javascript/block_number_coston2.js";
+import BlockNumSongbirdJS from "!!raw-loader!/examples/developer-hub-javascript/block_number_songbird.js";
+import BlockNumCostonPy from "!!raw-loader!/examples/developer-hub-python/block_number_coston.py";
+import BlockNumFlarePy from "!!raw-loader!/examples/developer-hub-python/block_number_flare.py";
+import BlockNumCoston2Py from "!!raw-loader!/examples/developer-hub-python/block_number_coston2.py";
+import BlockNumSongbirdPy from "!!raw-loader!/examples/developer-hub-python/block_number_songbird.py";
+import BlockNumCostonRs from "!!raw-loader!/examples/developer-hub-rust/src/bin/block_number_coston.rs";
+import BlockNumFlareRs from "!!raw-loader!/examples/developer-hub-rust/src/bin/block_number_flare.rs";
+import BlockNumCoston2Rs from "!!raw-loader!/examples/developer-hub-rust/src/bin/block_number_coston2.rs";
+import BlockNumSongbirdRs from "!!raw-loader!/examples/developer-hub-rust/src/bin/block_number_songbird.rs";
+import BlockNumCostonGo from "!!raw-loader!/examples/developer-hub-go/coston/block_number.go";
+import BlockNumFlareGo from "!!raw-loader!/examples/developer-hub-go/flare/block_number.go";
+import BlockNumCoston2Go from "!!raw-loader!/examples/developer-hub-go/coston2/block_number.go";
+import BlockNumSongbirdGo from "!!raw-loader!/examples/developer-hub-go/songbird/block_number.go";
 
 Flare has four networks, each serving different purposes, so choosing the right one is crucial. All of these networks operate on a permissionless basis:
 
@@ -31,53 +48,209 @@ The most common development tracks are:
 
 Configuration for all Flare networks, along with public and private RPCs, blockchain explorers, and faucets.
 
-<Tabs block>
+<Tabs block groupId="network">
   <TabItem value="flare" label="Flare Mainnet" default>
 
-    |             Chain ID | 14                                                                                                                                                                       |
+    |         Network name | Flare Mainnet                                                                                                                                                            |
     | :------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-    |            Gas token | FLR                                                                                                                                                                      |
-    |   Gas token decimals | 18                                                                                                                                                                       |
-    | Blockchain Explorers | [Flarescan](https://flarescan.com), [Flare Explorer](https://flare-explorer.flare.network)                                                                               |
-    |          Public RPCs | `https://flare-api.flare.network/ext/C/rpc` <br></br>  `wss://flare-api.flare.network/ext/bc/C/ws`                                                                       |
+    |             RPC URLs | `https://flare-api.flare.network/ext/C/rpc` <br></br>  `wss://flare-api.flare.network/ext/bc/C/ws`                                                                       |
+    |             Chain ID | 14                                                                                                                                                                       |
+    |      Currency symbol | FLR                                                                                                                                                                      |
+    |    Currency decimals | 18                                                                                                                                                                       |
+    | Blockchain Explorers | [`https://flarescan.com`](https://flarescan.com) <br></br> [`https://flare-explorer.flare.network`](https://flare-explorer.flare.network)                                |
     |         Private RPCs | [API Portal](https://api-portal.flare.network/apis/flare-api)                                                                                                            |
     |              Faucets | -                                                                                                                                                                        |
+
+    <Tabs>
+      <TabItem value="curl" label="curl" default>
+
+        ```bash
+        curl https://flare-api.flare.network/ext/C/rpc -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
+        ```
+
+      </TabItem>
+      <TabItem value="web3js" label="web3.js">
+
+        <CodeBlock language="javascript">
+          {BlockNumFlareJS}
+        </CodeBlock>
+
+      </TabItem>
+      <TabItem value="web3py" label="web3.py">
+
+        <CodeBlock language="python">
+          {BlockNumFlarePy}
+        </CodeBlock>
+
+      </TabItem>
+      <TabItem value="geth" label="geth">
+
+        <CodeBlock language="go">
+          {BlockNumFlareGo}
+        </CodeBlock>
+
+      </TabItem>
+      <TabItem value="alloyrs" label="alloy-rs">
+
+        <CodeBlock language="rust">
+          {BlockNumFlareRs}
+        </CodeBlock>
+
+      </TabItem>
+    </Tabs>
 
   </TabItem>
   <TabItem value="coston2" label="Flare Testnet Coston2">
 
-    |             Chain ID | 114                                                                                                                                                   |
-    | :------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------- |
-    |            Gas token | C2FLR                                                                                                                                                 |
-    |   Gas token decimals | 18                                                                                                                                                    |
-    | Blockchain Explorers | [Coston2 Flarescan](https://coston2.testnet.flarescan.com), [Coston2 Explorer](https://coston2-explorer.flare.network)                                |
-    |          Public RPCs | `https://coston2-api.flare.network/ext/C/rpc` <br></br>  `wss://coston2-api.flare.network/ext/bc/C/ws`                                                |
-    |         Private RPCs | [API Portal](https://api-portal.flare.network/apis/coston2-api)                                                                                       |
-    |              Faucets | [Coston2 Faucet](https://faucet.flare.network/coston2)                                                                                                |
+    |         Network name | Flare Testnet Coston2                                                                                                                                                        |
+    | :------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+    |             RPC URLs | `https://coston2-api.flare.network/ext/C/rpc` <br></br>  `wss://coston2-api.flare.network/ext/bc/C/ws`                                                                       |
+    |             Chain ID | 114                                                                                                                                                                          |
+    |      Currency symbol | C2FLR                                                                                                                                                                        |
+    |    Currency decimals | 18                                                                                                                                                                           |
+    | Blockchain Explorers | [`https://coston2.testnet.flarescan.com`](https://coston2.testnet.flarescan.com) <br></br> [`https://coston2-explorer.flare.network`](https://coston2-explorer.flare.network)|
+    |         Private RPCs | [API Portal](https://api-portal.flare.network/apis/coston2-api)                                                                                                              |
+    |              Faucets | [Coston2 Faucet](https://faucet.flare.network/coston2)                                                                                                                       |
+
+    <Tabs>
+      <TabItem value="curl" label="curl" default>
+
+        ```bash
+        curl https://coston2-api.flare.network/ext/C/rpc -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
+        ```
+
+      </TabItem>
+      <TabItem value="web3js" label="web3.js">
+
+        <CodeBlock language="javascript">
+          {BlockNumCoston2JS}
+        </CodeBlock>
+
+      </TabItem>
+      <TabItem value="web3py" label="web3.py">
+
+        <CodeBlock language="python">
+          {BlockNumCoston2Py}
+        </CodeBlock>
+
+      </TabItem>
+      <TabItem value="geth" label="geth">
+
+        <CodeBlock language="go">
+          {BlockNumCoston2Go}
+        </CodeBlock>
+
+      </TabItem>
+      <TabItem value="alloyrs" label="alloy-rs">
+
+        <CodeBlock language="rust">
+          {BlockNumCoston2Rs}
+        </CodeBlock>
+
+      </TabItem>
+    </Tabs>
 
   </TabItem>
     <TabItem value="songbird" label="Songbird Canary-Network">
     
-    |             Chain ID | 19                                                                                                                                                                          |
+    |         Network name | Songbird Canary-Network                                                                                                                                                     |
     | :------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-    |            Gas token | SGB                                                                                                                                                                         |
-    |   Gas token decimals | 18                                                                                                                                                                          |
-    | Blockchain Explorers | [Songbird Flarescan](https://songbird.flarescan.com), [Songbird Explorer](https://songbird-explorer.flare.network)                                                          |
-    |          Public RPCs | `https://songbird-api.flare.network/ext/C/rpc` <br></br>  `wss://songbird-api.flare.network/ext/bc/C/ws`                                                                    |
+    |             RPC URLs | `https://songbird-api.flare.network/ext/C/rpc` <br></br>  `wss://songbird-api.flare.network/ext/bc/C/ws`                                                                    |
+    |             Chain ID | 19                                                                                                                                                                          |
+    |      Currency symbol | SGB                                                                                                                                                                         |
+    |    Currency decimals | 18                                                                                                                                                                          |
+    | Blockchain Explorers | [`https://songbird.flarescan.com`](https://songbird.flarescan.com) <br></br> [`https://songbird-explorer.flare.network`](https://songbird-explorer.flare.network)           |
     |         Private RPCs | [API Portal](https://api-portal.flare.network/apis/songbird-api)                                                                                                            |
     |              Faucets | -                                                                                                                                                                           |
+
+    <Tabs>
+      <TabItem value="curl" label="curl" default>
+
+        ```bash
+        curl https://songbird-api.flare.network/ext/C/rpc -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
+        ```
+
+      </TabItem>
+      <TabItem value="web3js" label="web3.js">
+
+        <CodeBlock language="javascript">
+          {BlockNumSongbirdJS}
+        </CodeBlock>
+
+      </TabItem>
+      <TabItem value="web3py" label="web3.py">
+
+        <CodeBlock language="python">
+          {BlockNumSongbirdPy}
+        </CodeBlock>
+
+      </TabItem>
+      <TabItem value="geth" label="geth">
+
+        <CodeBlock language="go">
+          {BlockNumSongbirdGo}
+        </CodeBlock>
+
+      </TabItem>
+      <TabItem value="alloyrs" label="alloy-rs">
+
+        <CodeBlock language="rust">
+          {BlockNumSongbirdRs}
+        </CodeBlock>
+
+      </TabItem>
+    </Tabs>
 
   </TabItem>
   <TabItem value="coston" label="Songbird Testnet Coston">
 
-    |             Chain ID | 16                                                                                                                                                 |
-    | :------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------- |
-    |            Gas token | CFLR                                                                                                                                               |
-    |   Gas token decimals | 18                                                                                                                                                 |
-    | Blockchain Explorers | [Coston Flarescan](https://coston.testnet.flarescan.com), [Coston Explorer](https://coston-explorer.flare.network)                                 |
-    |          Public RPCs | `https://coston-api.flare.network/ext/C/rpc` <br></br>  `wss://coston-api.flare.network/ext/bc/C/ws`                                               |
-    |         Private RPCs | [API Portal](https://api-portal.flare.network/apis/coston-api)                                                                                     |
-    |              Faucets | [Coston Faucet](https://faucet.flare.network/coston)                                                                                               |
+    |         Network name | Songbird Testnet Coston                                                                                                                                                   |
+    | :------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+    |             RPC URLs | `https://coston-api.flare.network/ext/C/rpc` <br></br>  `wss://coston-api.flare.network/ext/bc/C/ws`                                                                      |
+    |             Chain ID | 16                                                                                                                                                                        |
+    |      Currency symbol | CFLR                                                                                                                                                                      |
+    |    Currency decimals | 18                                                                                                                                                                        |
+    | Blockchain Explorers | [`https://coston.testnet.flarescan.com`](https://coston.testnet.flarescan.com) <br></br> [`https://coston-explorer.flare.network`](https://coston-explorer.flare.network) |
+    |         Private RPCs | [API Portal](https://api-portal.flare.network/apis/coston-api)                                                                                                            |
+    |              Faucets | [Coston Faucet](https://faucet.flare.network/coston)                                                                                                                      |
+
+    <Tabs>
+      <TabItem value="curl" label="curl" default>
+
+        ```bash
+        curl https://coston-api.flare.network/ext/C/rpc -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
+        ```
+
+      </TabItem>
+      <TabItem value="web3js" label="web3.js">
+
+        <CodeBlock language="javascript">
+          {BlockNumCostonJS}
+        </CodeBlock>
+
+      </TabItem>
+      <TabItem value="web3py" label="web3.py">
+
+        <CodeBlock language="python">
+          {BlockNumCostonPy}
+        </CodeBlock>
+
+      </TabItem>
+      <TabItem value="geth" label="geth">
+
+        <CodeBlock language="go">
+          {BlockNumCostonGo}
+        </CodeBlock>
+
+      </TabItem>
+      <TabItem value="alloyrs" label="alloy-rs">
+
+        <CodeBlock language="rust">
+          {BlockNumCostonRs}
+        </CodeBlock>
+
+      </TabItem>
+    </Tabs>
 
   </TabItem>
 
@@ -87,7 +260,7 @@ Configuration for all Flare networks, along with public and private RPCs, blockc
 
 Developer tools for Flare built by the community including RPCs, bridges, indexers, account abstraction, wallet SDKs, and more.
 
-<Tabs block>
+<Tabs block groupId="network">
   <TabItem value="flare" label="Flare Mainnet" default>
 
     |                 RPCs | [Ankr](https://rpc.ankr.com/flare), [Thirdweb](https://14.rpc.thirdweb.com), [ChainList<IconExternalLink/>](https://ChainList.org/chain/14)                              |
@@ -189,7 +362,7 @@ Several desktop, browser and mobile app based wallets support Flare. Discover su
 
 Flare is just like Ethereum. To add it to your exchange:
 
-- Set up an [observer node](/run-node/observer-node)
+- Set up an [RPC node](/run-node/rpc-node)
 - Use the appropriate [network configuration](#configuration) for Flare Mainnet
 
 Additional info: [Media & Branding](https://flare.network/media/), [Flare source code](https://github.com/flare-foundation/go-flare)
