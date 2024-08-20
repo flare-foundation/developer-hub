@@ -1,7 +1,7 @@
 // THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
 import { ethers } from "ethers";
 
-// Relay address where the secure RNG is served(Flare Testnet Coston2)
+// Relay address where the secure RNG is served (Flare Testnet Coston2)
 // See https://dev.flare.network/network/solidity-reference
 const ADDRESS = "0x5CdF9eAF3EB8b44fB696984a1420B56A7575D250";
 const RPC_URL = "https://coston2-api.flare.network/ext/C/rpc";
