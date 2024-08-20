@@ -1,5 +1,6 @@
+const base_url = "https://coston2-explorer.flare.network/api";
+
 export async function main() {
-  const base_url = "https://coston2-explorer.flare.network/api";
   const params =
     "?module=contract&action=getabi&address=0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019";
 
