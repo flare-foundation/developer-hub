@@ -147,11 +147,11 @@ const config: Config = {
             },
             {
               label: "Flare Systems Explorer",
-              href: "https://coston2-systems-explorer.flare.rocks",
+              href: "https://songbird-systems-explorer.flare.rocks",
             },
             {
-              label: "Flare FTSO Monitor",
-              href: "https://flare-ftso-monitor.flare.network/",
+              label: "FTSO Feed Explorer",
+              href: "https://songbird-systems-explorer.flare.rocks/ftso-feeds",
             },
             {
               label: "Flare P-Chain Explorer",
@@ -160,10 +160,6 @@ const config: Config = {
             {
               label: "Grants",
               href: "https://flare.network/grants/",
-            },
-            {
-              label: "Flare Builders (community)",
-              href: "https://www.flare.builders",
             },
           ],
         },
