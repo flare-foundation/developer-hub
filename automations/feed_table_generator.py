@@ -29,6 +29,7 @@ if __name__ == "__main__":
     w3 = Web3(Web3.HTTPProvider(RPC_URL))
     cg = CoinGeckoAPI()
 
+    # Set up contracts
     fast_updater = w3.eth.contract(
         address=Web3.to_checksum_address(FASTUPDATER_ADDRESS),
         abi=get_contract_abi(FASTUPDATER_ADDRESS),
@@ -38,16 +39,18 @@ if __name__ == "__main__":
         abi=get_contract_abi(FTSOFEEDIDCONVERTER_ADDRESS),
     )
 
+    # Query block latency feeds
     block_latency_feeds = fast_updater.functions.fetchAllCurrentFeeds().call()
     feed_names = block_latency_feeds[0]
     feed_names = [
-        feed_name.decode().replace("\x00", "").replace("\x01", "")
-        for feed_name in feed_names
+        feed_name[1:].decode("utf-8").rstrip("\x00") for feed_name in feed_names
     ]
     decimals = block_latency_feeds[2]
 
+    # Query CoinGecko
     coins_list = cg.get_coins_markets(vs_currency="usd")
 
+    # Write block-latency feeds to file
     with Path.open("block_latency_feeds.md", "w") as f:
         f.write(
             "| **Feed Name** | **Feed Index** | **Base Asset Name** | **Decimals** | **Category** |\n"
@@ -56,7 +59,7 @@ if __name__ == "__main__":
             "| ------------- | -------------- | ------------------- | ------------ | ------------ |\n"
         )
         for idx, (name, decimal) in enumerate(zip(feed_names, decimals)):
-            # Path for tokens not returned by CoinGecko
+            # Patch for tokens not returned by CoinGecko
             if name == "SGB/USD":
                 f.write(f"| {name} | `{idx}` | Songbird | {decimal} | Crypto |\n")
                 continue
@@ -77,6 +80,7 @@ if __name__ == "__main__":
                     )
                     break
 
+    # Write anchor feeds to file
     with Path.open("anchor_feeds.md", "w") as f:
         f.write(
             "| **Feed Name** | **Feed ID** | **Base Asset Name** | **Decimals** | **Category** |\n"
@@ -84,14 +88,18 @@ if __name__ == "__main__":
         f.write(
             "| ------------- | ----------- | ------------------- | ------------ | ------------ |\n"
         )
-        for idx, (name, decimal) in enumerate(zip(feed_names, decimals)):
-            feed_id = "0x" + ftso_feedid_converter.functions.getFeedId(1, name).call().hex()
+        for name, decimal in zip(feed_names, decimals):
+            feed_id = (
+                "0x" + ftso_feedid_converter.functions.getFeedId(1, name).call().hex()
+            )
             # Path for tokens not returned by CoinGecko
             if name == "SGB/USD":
                 f.write(f"| {name} | `{feed_id}` | Songbird | {decimal} | Crypto |\n")
                 continue
             if name == "XDC/USD":
-                f.write(f"| {name} | `{feed_id}` | XDC Network | {decimal} | Crypto |\n")
+                f.write(
+                    f"| {name} | `{feed_id}` | XDC Network | {decimal} | Crypto |\n"
+                )
                 continue
             if name == "ETHFI/USD":
                 f.write(f"| {name} | `{feed_id}` | Ether.fi | {decimal} | Crypto |\n")
