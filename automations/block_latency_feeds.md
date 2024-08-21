@@ -1,25 +1,3 @@
----
-slug: feeds
-title: Block-Latency Feeds
-description: FTSOv2's block-latency feeds update incrementally with each new block on Flare, approximately every 1.8 seconds.
-keywords:
-  [ftso, oracle, flare-time-series-oracle, flare-network, feeds, block-latency]
----
-
-FTSOv2's block-latency feeds update incrementally with each new block on Flare, approximately every 1.8 seconds. These feeds have a single entrypoint function and primarily support cryptocurrency price feeds. Moreover, they come with the added advantage of being completely free to query and utilize in your decentralized application on Flare, with no gas costs involved.
-
-The feed indexes listed below serve as inputs to the [`fetchCurrentFeeds`](solidity-reference/IFastUpdater#fetchcurrentfeeds) entrypoint function. By passing an array of feed indexes to the function, you can query any number of feeds in a single call. However, attempting to query feeds outside of the supported indexes will result in the entire transaction reverting.
-
-```solidity title="Entrypoint function signature"
-function fetchCurrentFeeds(
-    uint256[] _indices
-) external view returns (
-    uint256[] _feeds,
-    int8[] _decimals,
-    uint64 _timestamp
-);
-```
-
 | **Feed Name** | **Feed Index** | **Base Asset Name** | **Decimals** | **Category** |
 | ------------- | -------------- | ------------------- | ------------ | ------------ |
 | FLR/USD       | `0`            | Flare               | 7            | Crypto       |
@@ -60,20 +38,3 @@ function fetchCurrentFeeds(
 | ETHFI/USD     | `35`           | Ether.fi            | 5            | Crypto       |
 | ENA/USD       | `36`           | Ethena              | 6            | Crypto       |
 | PYTH/USD      | `37`           | Pyth Network        | 6            | Crypto       |
-
-:::info Looking for more feeds?
-
-Block-latency feeds comprise a subset of the feeds available on Flare. If you require additional feeds, you can raise a [New Feed Request Issue](https://github.com/flare-foundation/developer-hub/issues/new/choose) on GitHub.
-
-With Scaling, FTSOv2 supports up to 1000 feeds including equities, commodities, and cryptocurrencies, updating every ≈90 seconds. Learn more about how to use [Scaling](./scaling/overview).
-
-:::
-
-:::tip[What's next?]
-
-Learn how to
-
-- [Read feeds offchain](./guides/read-feeds-offchain) in languages like JavaScript, Python, Rust, and Go.
-- [Change quote feed](./guides/change-quote-feed) using an on-chain Solidity contract.
-
-:::

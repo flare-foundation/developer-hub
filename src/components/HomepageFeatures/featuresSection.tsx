@@ -1,8 +1,8 @@
 import classes from "./featuresSection.module.css";
 
-import DataConnector from "@site/static/img/DATACONNECTOR.svg";
-import FAssets from "@site/static/img/FASSETS.svg";
-import FTSO from "@site/static/img/FTSO.svg";
+import DataConnector from "@site/static/img/DATACONNECTOR_new.svg";
+import FAssets from "@site/static/img/FASSETS_new.svg";
+import FTSO from "@site/static/img/FTSO_new.svg";
 import FeatureCard from "./featureCard";
 
 export type FeatureItem = {

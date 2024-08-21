@@ -1,55 +1,64 @@
+import BrowserOnly from "@docusaurus/BrowserOnly";
 import Link from "@docusaurus/Link";
+import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
 import Heading from "@theme/Heading";
 import clsx from "clsx";
 import classes from "./hero.module.css";
-import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
+import VideoComponent from "./videoComponent";
 
 export default function HeroSection() {
   const { siteConfig } = useDocusaurusContext();
   return (
     <section className={classes.heroSection}>
       <div className={clsx(classes.videoContainer, classes.videoLight)}>
-        <video
-          id="background-video"
-          autoPlay
-          loop
-          muted
-          playsInline
-          height={"100%"}
-          width={"100%"}
-          poster={"/img/landing/dev_hub_ani_noblur.png"}
-        >
-          <source
-            src={"/img/landing/dev_hub_ani_light.webm"}
-            type="video/webm"
-          ></source>
-          <source
-            src={"/img/landing/dev_hub_ani_light.mp4"}
-            type="video/mp4"
-          ></source>
-        </video>
+        <BrowserOnly>
+          {() => (
+            <VideoComponent
+              posterSrc={"/img/landing/dev_hub_ani_noblur.png"}
+              videoSrc={[
+                {
+                  src: "/img/landing/dev_hub_ani_light.webm",
+                  type: "video/webm",
+                  media: "(min-width: 996px)",
+                },
+                {
+                  src: "/img/landing/dev_hub_ani_light.mp4",
+                  type: "video/mp4",
+                  media: "(min-width: 996px)",
+                },
+              ]}
+            />
+          )}
+        </BrowserOnly>
       </div>
       <div className={clsx(classes.videoContainer, classes.videoDark)}>
-        <video
-          id="background-video"
-          autoPlay
-          loop
-          muted
-          playsInline
-          height={"100%"}
-          width={"100%"}
-          poster={"/img/landing/dev_hub_ani_noblur.png"}
-        >
-          <source
-            src={"/img/landing/dev_hub_ani_dark.webm"}
-            type="video/webm"
-          ></source>
-          <source
-            src={"/img/landing/dev_hub_ani_dark.mp4"}
-            type="video/mp4"
-          ></source>
-        </video>
+        <BrowserOnly>
+          {() => (
+            <VideoComponent
+              posterSrc={"/img/landing/dev_hub_ani_noblur.png"}
+              videoSrc={[
+                {
+                  src: "/img/landing/dev_hub_ani_dark.webm",
+                  type: "video/webm",
+                  media: "(min-width: 996px)",
+                },
+                {
+                  src: "/img/landing/dev_hub_ani_dark.mp4",
+                  type: "video/mp4",
+                  media: "(min-width: 996px)",
+                },
+              ]}
+            />
+          )}
+        </BrowserOnly>
       </div>
+      <picture className={classes.mobileImage}>
+        <source
+          srcSet="/img/landing/dev_hub_hero_mobile.webp"
+          media="(max-width: 996px)"
+        />
+        <img src="" />
+      </picture>
       <div className={clsx(classes.content, "container")}>
         <div className={classes.callToAction}>
           <Heading as="h1" className={classes.heading}>
