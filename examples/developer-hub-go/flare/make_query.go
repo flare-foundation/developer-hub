@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
-func MakeQuery() {
+func MakeQuery() []common.Address {
 	client, err := ethclient.Dial("https://flare-api.flare.network/ext/C/rpc")
 	if err != nil {
 		panic(err)
@@ -26,4 +26,5 @@ func MakeQuery() {
 	}
 	fmt.Println("WNat contract address is", addr)
 	// WNat contract address is [0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d]
+	return addr
 }

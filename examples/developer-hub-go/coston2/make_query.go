@@ -3,13 +3,12 @@ package coston2
 import (
 	"context"
 	"fmt"
-
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
-func MakeQuery() {
+func MakeQuery() []common.Address {
 	client, err := ethclient.Dial("https://coston2-api.flare.network/ext/C/rpc")
 	if err != nil {
 		panic(err)
@@ -26,4 +25,5 @@ func MakeQuery() {
 	}
 	fmt.Println("WNat contract address is", addr)
 	// WNat contract address is [0xC67DCE33D7A8efA5FfEB961899C73fe01bCe9273]
+	return addr
 }
