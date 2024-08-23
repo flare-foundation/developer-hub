@@ -39,6 +39,7 @@ export default function VideoComponent({
       playsInline
       height={"100%"}
       width={"100%"}
+      preload="auto"
       poster={isDesktop ? posterSrc : undefined}
     >
       {videoSrc.map((video) => (
