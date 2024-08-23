@@ -19,7 +19,7 @@ export default function VideoComponent({
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(min-width: 996px)");
-    const handleMediaQueryChange = (event) => {
+    const handleMediaQueryChange = (event: MediaQueryListEvent) => {
       setIsDesktop(event.matches);
     };
 
@@ -30,6 +30,7 @@ export default function VideoComponent({
       mediaQuery.removeEventListener("change", handleMediaQueryChange);
     };
   }, []);
+
   return (
     <video
       id="background-video"
@@ -37,13 +38,13 @@ export default function VideoComponent({
       loop
       muted
       playsInline
-      height={"100%"}
-      width={"100%"}
+      height="100%"
+      width="100%"
       preload="auto"
       poster={isDesktop ? posterSrc : undefined}
     >
       {videoSrc.map((video) => (
-        <source key={video.src} {...video}></source>
+        <source key={video.src} {...video} />
       ))}
     </video>
   );
