@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestSecureRandomn(t *testing.T) {
+func TestSecureRandom(t *testing.T) {
 	output := SecureRandom()
 
 	if output == nil {
