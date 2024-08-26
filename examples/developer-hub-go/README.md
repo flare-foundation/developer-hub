@@ -38,5 +38,6 @@ golangci-lint run
 ## Test
 
 ```bash
-go test
+go test ./coston2 -v
+go test ./flare -v
 ```
