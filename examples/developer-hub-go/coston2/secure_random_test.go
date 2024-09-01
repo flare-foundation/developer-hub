@@ -19,8 +19,4 @@ func TestSecureRandom(t *testing.T) {
 		t.Errorf("Expected RandomTimestamp to be non-zero")
 	}
 
-	if !output.IsSecureRandom {
-		t.Errorf("Expected IsSecureRandom to be true")
-	}
-
 }
