@@ -51,7 +51,7 @@ if __name__ == "__main__":
     coins_list = cg.get_coins_markets(vs_currency="usd")
 
     # Write block-latency feeds to file
-    with Path.open("block_latency_feeds.md", "w") as f:
+    with Path.open("_block_latency_feeds.md", "w") as f:
         f.write(
             "| **Feed Name** | **Feed Index** | **Base Asset Name** | **Decimals** | **Category** |\n"
         )
@@ -81,7 +81,7 @@ if __name__ == "__main__":
                     break
 
     # Write anchor feeds to file
-    with Path.open("anchor_feeds.md", "w") as f:
+    with Path.open("_anchor_feeds.md", "w") as f:
         f.write(
             "| **Feed Name** | **Feed ID** | **Base Asset Name** | **Decimals** | **Category** |\n"
         )
