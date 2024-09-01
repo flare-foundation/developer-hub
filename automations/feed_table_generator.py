@@ -72,10 +72,10 @@ if __name__ == "__main__":
     logger.info("Writing block-latency feeds to `%s`", block_latency_feeds_path)
     with Path.open(block_latency_feeds_path, "w") as f:
         f.write(
-            "| **Feed** | **Feed Index** | **Feed ID** | **Base Asset** | **Decimals** | **Category** |\n"
+            "| **Feed Name** | **Feed Index** | **Feed ID** | **Base Asset** | **Decimals** | **Category** |\n"
         )
         f.write(
-            "| -------- | -------------- | ----------- |--------------- | ------------ | ------------ |\n"
+            "| ------------- | -------------- | ----------- |--------------- | ------------ | ------------ |\n"
         )
         for idx, (name, decimal) in enumerate(zip(feed_names, decimals)):
             feed_id = (
@@ -114,10 +114,10 @@ if __name__ == "__main__":
     logger.info("Writing anchor feeds to `%s`", anchor_feeds_path)
     with Path.open(anchor_feeds_path, "w") as f:
         f.write(
-            "| **Feed** | **Feed ID** | **Base Asset** | **Decimals** | **Category** |\n"
+            "| **Feed Name** | **Feed ID** | **Base Asset** | **Decimals** | **Category** |\n"
         )
         f.write(
-            "| -------- | ----------- | -------------- | ------------ | ------------ |\n"
+            "| ------------- | ----------- | -------------- | ------------ | ------------ |\n"
         )
         for name, decimal in zip(feed_names, decimals):
             feed_id = (
