@@ -520,7 +520,7 @@ This is precisely what the `ResponseBody` encapsulates. Let's delve deeper into 
 
 - `status`: An integer denoting the transaction status: 0 for successful transactions, 1 for unsuccessful transactions due to sender fault, and 2 for unsuccessful transactions due to receiver fault (specifically applicable to XRPL transactions). [Full specification](https://github.com/flare-foundation/songbird-state-connector-protocol/tree/main/specs/attestations/external-chains/transactions.md#transaction-success-status).
 
-The transaction hash is not explicitly included in the `ResponseBody` as it's part of the request body to avoid redundancy. However, it's incorporated into the Merkle proof. For on-chain usage, ensuring the uniqueness of the proof (e.g., by checking that the transaction hash hasn't been used before) can prevent double spending unless the sender differs.
+The transaction hash is not explicitly included in the `ResponseBody` as it's part of the request body to avoid redundancy. However, it's incorporated into the Merkle proof. For onchain usage, ensuring the uniqueness of the proof (e.g., by checking that the transaction hash hasn't been used before) can prevent double spending unless the sender differs.
 
 #### Type structure
 
@@ -534,7 +534,7 @@ Let's explore the `Payment` interface in detail. Each attestation type, includin
 
 4. `RequestBody`: This defines the structure of the request body, specific to the attestation type, containing data used to construct the response. While it can be as intricate as necessary, it's essential to maintain simplicity to ease processing and reduce complexity.
 
-5. `ResponseBody`: This part outlines the structure of the response body, unique to each attestation type and containing data intended for on-chain use. It can be as complex as required, allowing for the inclusion of lists, nested structures, etc. However, simplicity is key to facilitate efficient processing, as nested structures can be challenging and resource-intensive to work with.
+5. `ResponseBody`: This part outlines the structure of the response body, unique to each attestation type and containing data intended for onchain use. It can be as complex as required, allowing for the inclusion of lists, nested structures, etc. However, simplicity is key to facilitate efficient processing, as nested structures can be challenging and resource-intensive to work with.
 
 ### 5. Submitting Merkle proof
 
@@ -593,12 +593,12 @@ contract PaymentVerification is IPaymentVerification {
 }
 ```
 
-## On-chain verification
+## Onchain verification
 
-The on-chain verification process is equally straightforward. You simply ask the verifier, just as you did off-chain. Verification doesn't incur any costs to verify the proof on-chain, apart from minimal gas expenses.
+The onchain verification process is equally straightforward. You simply ask the verifier, just as you did offchain. Verification doesn't incur any costs to verify the proof onchain, apart from minimal gas expenses.
 
 <details>
-<summary>Solidity code to verify proof on-chain and keep track of total transaction values.</summary>
+<summary>Solidity code to verify proof onchain and keep track of total transaction values.</summary>
 
 ```solidity title="PaymentAggregationExample.sol"
 // SPDX-License-Identifier: MIT
@@ -671,9 +671,9 @@ Let's break down the key functions:
 
 - `addPayment`: This function is called by users to add payments to the contract. Remember, using the Data Connector on the chain typically involves a two-step process. Firstly, you validate the proof and data using the verifier contract, ensuring that the provided payment is valid. Then, you verify that the provided data meets our specific use case—such as being a payment in `testBTC`. Once you are certain of the payment's validity, you can tally the total received amount and store the proof for future reference.
 
-## Off-chain verification
+## Offchain verification
 
-You can first check the proof off-chain (recall that verification is just a view method) and then create a simple contract that will store the verifications and verify them on-chain.
+You can first check the proof offchain (recall that verification is just a view method) and then create a simple contract that will store the verifications and verify them onchain.
 
 ```typescript title="checkMerkleProof.ts"
 export async function checkMerkleProof(scRound: number) {

@@ -3,8 +3,9 @@ package flare
 import (
 	"context"
 	"fmt"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"math/big"
+
+	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 func ChainId() *big.Int {

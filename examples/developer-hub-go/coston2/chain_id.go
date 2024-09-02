@@ -3,8 +3,9 @@ package coston2
 import (
 	"context"
 	"fmt"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"math/big"
+
+	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 func ChainId() *big.Int {
@@ -16,7 +17,6 @@ func ChainId() *big.Int {
 	if err != nil {
 		panic(err)
 	}
-
 	fmt.Println("Chain ID is", chainid)
 	// Chain ID is 114
 	return chainid

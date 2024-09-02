@@ -26,9 +26,9 @@ Out of the [full specification](https://github.com/flare-foundation/songbird-sta
 
 The specification also includes `EVMTransaction`, which is more complex and powerful. This will be covered in [Part 3](evm-connectivity) of this series.
 
-Each attestation type is designed to prove a specific aspect, whether it be about transactions, blocks, or offloading expensive computations off-chain to have the results available on-chain. The team has carefully studied the most important use cases and designed the attestation types to be safe, well-defined, and efficient.
+Each attestation type is designed to prove a specific aspect, whether it be about transactions, blocks, or offloading expensive computations offchain to have the results available onchain. The team has carefully studied the most important use cases and designed the attestation types to be safe, well-defined, and efficient.
 
-Each type has an associated off-chain verifier that deconstructs the encoded request, executes the verification procedure, and returns the proper response. To understand more about how verifiers work, you can read the [verifier spec](https://github.com/flare-foundation/songbird-state-connector-protocol/tree/main/contracts/generated/verification). Each attestation type also comes with a verification contract that verifies the correctness of the response and the Merkle proof, ensuring the response was included in the Merkle tree for the round. These contracts are available in the [specification repository](https://github.com/flare-foundation/songbird-state-connector-protocol/tree/main/contracts/generated/verification), but for this guide, you will use the ones already deployed and made available by the periphery library. Remember, verifying the proof is just the first step. You still need to ensure that the response matches your dapp's requirements (e.g., the payment is large enough, the address is correct, the transaction was successful, the time range is sufficient).
+Each type has an associated offchain verifier that deconstructs the encoded request, executes the verification procedure, and returns the proper response. To understand more about how verifiers work, you can read the [verifier spec](https://github.com/flare-foundation/songbird-state-connector-protocol/tree/main/contracts/generated/verification). Each attestation type also comes with a verification contract that verifies the correctness of the response and the Merkle proof, ensuring the response was included in the Merkle tree for the round. These contracts are available in the [specification repository](https://github.com/flare-foundation/songbird-state-connector-protocol/tree/main/contracts/generated/verification), but for this guide, you will use the ones already deployed and made available by the periphery library. Remember, verifying the proof is just the first step. You still need to ensure that the response matches your dapp's requirements (e.g., the payment is large enough, the address is correct, the transaction was successful, the time range is sufficient).
 
 As usual, the full code is available on [flare-demo-examples](https://github.com/flare-foundation/flare-demo-examples), and you are encouraged to follow along and try it out on your own.
 
@@ -1318,9 +1318,9 @@ Successful non existence proofs:
 
 And there is a sub-specification for each chain that specifies the rules for the address validity for each chain. Be careful: Bitcoin and Dogecoin have different rules for validity on the mainnet and testnet, so make sure to check the correct specification with the correct verifier.
 
-This is a very simple attestation type that can prove that a string constitutes a valid address on the specified chain. Importantly, unlike the `Payment` type we saw in [Part 1](data-connector), this type does not require a transaction to be proven. It just offloads the computation of the address validity to the verifier so that expensive computation does not have to be done on-chain.
+This is a very simple attestation type that can prove that a string constitutes a valid address on the specified chain. Importantly, unlike the `Payment` type we saw in [Part 1](data-connector), this type does not require a transaction to be proven. It just offloads the computation of the address validity to the verifier so that expensive computation does not have to be done onchain.
 
-This is useful if you want to ensure that the address is valid before using it in your protocol. For example, fAssets need to make sure that an address is valid before they can be used in the protocol, and this is a good way to offload difficult computation regarding when the bitcoin address is valid to off-chain entities.
+This is useful if you want to ensure that the address is valid before using it in your protocol. For example, fAssets need to make sure that an address is valid before they can be used in the protocol, and this is a good way to offload difficult computation regarding when the bitcoin address is valid to offchain entities.
 
 For more information on Bitcoin address validity, see the [Bitcoin design guide glossary](https://bitcoin.design/guide/glossary/address/).
 
@@ -1422,13 +1422,13 @@ The response body contains all the important details. Generally, the request can
 - **`standardAddressHash`**: If `isValid`, this is the standard address hash of the validated address; otherwise, it is a zero bytes32 string.
   - This is useful to verify with the standard address hash returned by `Payment` and `ReferencedPaymentNonexistence`.
 
-Think of this as an example of what can be offloaded to off-chain computation (and verification). Try to imagine other tasks that are prohibitively expensive (or impossible due to data unavailability) on-chain that can be offloaded to off-chain computation.
+Think of this as an example of what can be offloaded to offchain computation (and verification). Try to imagine other tasks that are prohibitively expensive (or impossible due to data unavailability) onchain that can be offloaded to offchain computation.
 
 ### Example
 
 The script for address validity (`tryAddressValidity.ts`) is simpler than the scripts we've seen so far. There's no need to create a transaction or anything complex; you just call the `prepareResponse` endpoint and see the result. In actual use, you will first prepare a request for the Data Connector, wait for it to be confirmed, and then use the response in your smart contract together with the proof. This means your smart contract will receive the result of a potentially large and expensive calculation (the response body part) along with proof that it was included in the Merkle root. This attests that it has been calculated and verified by the network validator.
 
-This setup ensures that your smart contract gets a verified result without having to perform the expensive calculation on-chain, thereby saving computational resources and improving efficiency.
+This setup ensures that your smart contract gets a verified result without having to perform the expensive calculation onchain, thereby saving computational resources and improving efficiency.
 
 ```typescript title="tryAddressValidity.ts"
 const { ATTESTATION_URL, ATTESTATION_API_KEY } = process.env;
@@ -1676,7 +1676,7 @@ One might ask what use such an attestation type is and why all the checks are ne
 - **Data Contains Request and Response**: This setup makes it possible to observe both the input (request) and output (response) of the computation. The computation can be very complex and expensive, but for our purposes, we only need to know the result (and, of course, the input we want to be observed), and we can act on it.
 - **Merkle Proof**: The Merkle proof is used to verify that the response was included in the committed root and was confirmed by the verifiers. The "being confirmed" part is crucial because it means the verifiers have indeed seen the request, performed the computation (arriving at the same result), and included the result in the Merkle root, which we base our actions on.
 
-This approach ensures that complex and resource-intensive computations can be performed off-chain while still providing verifiable and trustworthy results that can be used on-chain.
+This approach ensures that complex and resource-intensive computations can be performed offchain while still providing verifiable and trustworthy results that can be used onchain.
 
 {/* <!-- TODO: A lahko na to gledamo kot na ZK proof nekega izračuna? - a bi se dal iz tega čist lepo na ta AI dal vezat stvari - mogoče very simple classification a je nek address fishing al pa blacklisted kje? --> */}
 
