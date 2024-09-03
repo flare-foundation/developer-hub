@@ -12,37 +12,45 @@ import classes from "./socialLinks.module.css";
 type SocialLinkProps = {
   href: string;
   icon: React.ComponentType<React.ComponentProps<"svg">>;
+  label: string;
 };
 
 const socialLinks: Array<SocialLinkProps> = [
   {
     href: "https://github.com/flare-foundation",
     icon: GitHub,
+    label: "GitHub",
   },
   {
     href: "https://www.youtube.com/c/Flare_Networks",
     icon: YouTube,
+    label: "YouTube",
   },
   {
     href: "https://www.linkedin.com/company/flarenetwork/",
     icon: LinkedIn,
+    label: "YouTube",
   },
   {
     href: "https://medium.com/flarenetwork",
     icon: Medium,
+    label: "Medium",
   },
   {
     href: "https://discord.com/invite/flarenetwork",
     icon: Discord,
+    label: "Discord",
   },
   {
     href: "https://twitter.com/FlareNetworks",
     icon: X,
+    label: "X",
   },
 
   {
     href: "https://t.me/FlareNetwork",
     icon: Telegram,
+    label: "Telegram",
   },
 ];
 
@@ -53,6 +61,7 @@ export default function SocialLinks() {
         <Link
           to={social.href}
           className={classes.link}
+          aria-label={social.label}
           target="_blank"
           key={social.href}
         >
