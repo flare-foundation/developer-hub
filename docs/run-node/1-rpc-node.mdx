@@ -99,10 +99,10 @@ Ensure you have the following tools installed:
 
     |                                                   | **Version** |
     | :------------------------------------------------ | :---------- |
-    | **[Go](https://golang.org/doc/install)**          | `>=1.16.8`  |
+    | **[Go](https://golang.org/doc/install)**          | `>=1.21.0`  |
     | **[GCC](https://gcc.gnu.org/install/)**           | `latest`    |
     | **[jq](https://stedolan.github.io/jq/download/)** | `latest`    |
-    | **[Ubuntu](https://ubuntu.com)**                  | `>=18.04`   |
+    | **[Ubuntu](https://ubuntu.com)**                  | `>=20.04`   |
 
   </TabItem>
   <TabItem value="coston" label="Songbird Testnet Coston">
@@ -149,13 +149,13 @@ Clone the repository and run the `build.sh` script:
   <TabItem value="songbird" label="Songbird Canary-Network">
 
     ```bash
-    git clone https://github.com/flare-foundation/go-songbird.git
-    cd go-songbird/avalanchego
+    git clone --branch v0.6.6-songbird https://github.com/flare-foundation/go-flare.git
+    cd go-flare/avalanchego
     chmod +x scripts/build.sh
     ./scripts/build.sh
     ```
 
-    The resulting executable will be stored in `build/flare`.
+    The resulting executable will be stored in `build/avalanchego`.
 
   </TabItem>
   <TabItem value="coston" label="Songbird Testnet Coston">
@@ -264,7 +264,7 @@ This is the simplest command to quickly get your node up and running. The next s
   <TabItem value="songbird" label="Songbird Canary-Network">
 
     ```bash
-    ./build/flare --network-id=songbird --http-host= --bootstrap-ips="$(curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeIP" }' -H 'content-type:application/json;' https://songbird.flare.network/ext/info | jq -r ".result.ip")" --bootstrap-ids="$(curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeID" }' -H 'content-type:application/json;' https://songbird.flare.network/ext/info | jq -r ".result.nodeID")"
+    ./build/avalanchego --network-id=songbird --http-host= --bootstrap-ips="$(curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeIP" }' -H 'content-type:application/json;' https://songbird.flare.network/ext/info | jq -r ".result.ip")" --bootstrap-ids="$(curl -m 10 -sX POST --data '{ "jsonrpc":"2.0", "id":1, "method":"info.getNodeID" }' -H 'content-type:application/json;' https://songbird.flare.network/ext/info | jq -r ".result.nodeID")"
     ```
 
   </TabItem>
@@ -582,13 +582,13 @@ The node can be run using:
   </TabItem>
   <TabItem value="songbird" label="Songbird Canary-Network">
 
-    Use the Docker image at [go-songbird](https://hub.docker.com/r/flarefoundation/go-songbird). The **Overview** tab in the repository linked explains the configurable parameters.
+    Use the Docker image at [go-flare](https://hub.docker.com/layers/flarefoundation/go-flare/v0.6.6-songbird/images/sha256-86b90c8aeb91d5fe6efaeebf71ddd028405ff99bf4ed7c31e992dd170f063363?context=explore). The **Overview** tab in the repository linked explains the configurable parameters.
 
     Download and start the container:
 
     ```bash
-    docker pull flarefoundation/go-songbird
-    docker run -d --name songbird-observer -e AUTOCONFIGURE_BOOTSTRAP="1" -e NETWORK_ID="songbird" -e AUTOCONFIGURE_PUBLIC_IP="1" -e AUTOCONFIGURE_BOOTSTRAP_ENDPOINT="https://songbird.flare.network/ext/info" -v /mnt/db:/app/db -v /opt/flare/conf:/app/conf/C -v /opt/flare/logs:/app/logs -p 0.0.0.0:9650:9650 -p 0.0.0.0:9651:9651 flarefoundation/go-songbird:v0.6.4
+    docker pull flarefoundation/go-flare:v0.6.6-songbird
+    docker run -d --name songbird-observer -e AUTOCONFIGURE_BOOTSTRAP="1" -e NETWORK_ID="songbird" -e AUTOCONFIGURE_PUBLIC_IP="1" -e AUTOCONFIGURE_BOOTSTRAP_ENDPOINT="https://songbird.flare.network/ext/info" -v /mnt/db:/app/db -v /opt/flare/conf:/app/conf/C -v /opt/flare/logs:/app/logs -p 0.0.0.0:9650:9650 -p 0.0.0.0:9651:9651 flarefoundation/go-flare:v0.6.6-songbird
     ```
 
     Confirm your container is running and inspect that logs are printing:
@@ -607,7 +607,7 @@ The node can be run using:
 
     ```bash
     docker pull flarefoundation/go-flare:v0.6.6-coston
-    docker run -d --name coston-observer -e AUTOCONFIGURE_BOOTSTRAP="1" -e NETWORK_ID="coston" -e AUTOCONFIGURE_PUBLIC_IP="1" -e AUTOCONFIGURE_BOOTSTRAP_ENDPOINT="https://coston.flare.network/ext/info" -v /mnt/db:/app/db -v /opt/flare/conf:/app/conf/C -v /opt/flare/logs:/app/logs -p 0.0.0.0:9650:9650 -p 0.0.0.0:9651:9651 flarefoundation/go-songbird:v0.6.4
+    docker run -d --name coston-observer -e AUTOCONFIGURE_BOOTSTRAP="1" -e NETWORK_ID="coston" -e AUTOCONFIGURE_PUBLIC_IP="1" -e AUTOCONFIGURE_BOOTSTRAP_ENDPOINT="https://coston.flare.network/ext/info" -v /mnt/db:/app/db -v /opt/flare/conf:/app/conf/C -v /opt/flare/logs:/app/logs -p 0.0.0.0:9650:9650 -p 0.0.0.0:9651:9651 flarefoundation/go-flare:v0.6.6-coston
     ```
 
     Confirm your container is running and inspect that logs are printing:
@@ -762,7 +762,7 @@ Create the `docker-compose.yaml` file:
     services:
       observer:
         container_name: songbird-observer
-        image: flarefoundation/go-songbird:v0.6.4
+        image: flarefoundation/go-flare:v0.6.6-songbird
         restart: on-failure
         environment:
           - AUTOCONFIGURE_BOOTSTRAP=1
