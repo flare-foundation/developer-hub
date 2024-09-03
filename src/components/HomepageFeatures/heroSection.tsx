@@ -57,7 +57,7 @@ export default function HeroSection() {
           srcSet="/img/landing/dev_hub_hero_mobile.webp"
           media="(max-width: 996px)"
         />
-        <img src="" alt="Flare Developer Hub Landing Image" />
+        <img src="" alt="" />
       </picture>
       <div className={clsx(classes.content, "container")}>
         <div className={classes.callToAction}>
