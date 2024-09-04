@@ -54,32 +54,44 @@ This example smart contract queries the latest feed values for FLR/USD, BTC/USD,
 
 - **Dependencies**:
 
-  - `IFlareContractRegistry`: Interface to get contract addresses from the Flare Network registry.
-  - `IFastUpdater`: Interface to fetch current feed values.
+  - `ContractRegistry.sol`: Used to get the addresses of various contracts on the Flare network.
+  - `FtsoV2Interface.sol`: This interface allows interaction with the FTSOv2 contract, which provides real-time price feeds for various assets.
 
 - **State Variables**:
 
-  - `contractRegistry`: Instance of `IFlareContractRegistry` to access the contract registry.
-  - `ftsoV2`: Instance of `IFastUpdater` to fetch feed values.
-  - `feedIndexes`: Array of feed indexes ([0, 2, 9]) representing FLR/USD, BTC/USD, ETH/USD.
+  - `ftsoV2`: This is a state variable of type `FtsoV2Interface`. It will hold the address of the FTSO V2 contract once initialized.
+  - `feedIndexes`: An array of indexes corresponding to different price feeds. In this example:
+    - Index 0 corresponds to FLR/USD
+    - Index 2 corresponds to BTC/USD
+    - Index 9 corresponds to ETH/USD
 
 - **Constructor**:
 
-  - Initializes `contractRegistry` with a hardcoded address. This address is the same on mainnet and testnet.
-  - Retrieves and sets the `ftsoV2` contract address using the contract registry.
+  - The constructor is a special function that runs only once when the contract is deployed. It initializes the `ftsoV2` state variable by fetching the FTSO V2 contract address using the `ContractRegistry`.
 
 - **Function `getFtsoV2CurrentFeedValues`**:
 
-  - Fetches the current feed values, decimals, and timestamp.
-  - Returns the fetched values.
+  - It is marked as `external`, meaning it can be called from outside the contract.
+  - It is also marked as `payable`, allowing it to receive Ether when called, though in this example, the Ether is not used.
+  - It returns three values:
+    - `_feedValues`: The latest price values for the specified feeds.
+    - `_decimals`: The decimal precision of each feed value.
+    - `_timestamp`: The timestamp when the prices were fetched.
+
+  Inside the function:
+
+  - The `ftsoV2.getFeedsByIndex(feedIndexes)` call retrieves the latest prices for the indexes specified in `feedIndexes`.
+  - These values are then returned to the caller.
 
 </details>
 
-## Compile, deploy, and run the contract
+## Compile and deploy the contract
 
-If you have not already configured your MetaMask wallet to support Flare Testnet Coston2 and funded it with testnet C2FLR, learn how to [deploy your first smart contract](/network/getting-started).
+:::info[Configure and fund your wallet]
 
-You can get testnet C2FLR from the [Coston2 Faucet](https://faucet.flare.network/coston2).
+If you have not already configured your MetaMask wallet to support Flare Testnet Coston2 and funded it with testnet C2FLR, learn how to [deploy your first smart contract](/network/getting-started). You can get testnet C2FLR from the [Coston2 Faucet](https://faucet.flare.network/coston2).
+
+:::
 
 {/* prettier-ignore */}
 1. <Remix gist="d6181b71e7932701efbc6c3c78898f5a">Open contract in Remix</Remix>
