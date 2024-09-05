@@ -806,7 +806,7 @@ It means that you can now observe any state on the external blockchain without h
 
 ### State Observation and Decoding
 
-The last example showed how you can observe the state on another blockchain and use it in TypeScript. Now, we will also see how to properly decode the event in a smart contract. We will use the same contract on-chain as before to emit events, `CallResult`, and then decode them in the contract. The result will then be passed to the contract on Coston, which will first decode the full event, ensure that the correct function was called, and then decode the returned data (which is the state you want to observe).
+The last example showed how you can observe the state on another blockchain and use it in TypeScript. Now, we will also see how to properly decode the event in a smart contract. We will use the same contract onchain as before to emit events, `CallResult`, and then decode them in the contract. The result will then be passed to the contract on Coston, which will first decode the full event, ensure that the correct function was called, and then decode the returned data (which is the state you want to observe).
 
 The full contract that does this is in `contracts/ERC20BalanceMonitor.sol` and the accompanying script is in the `scripts/evm/tryStateCheckingAndSave.ts` file. What you want to do is simple: query the ERC20 balance of a specific address and save it in the contract storage. Here, you need to be careful, as this query is valid only at the time of the transaction; it might be different at the time of block creation and confirmation. Plus, keep in mind that emitting an event means executing a transaction, and that means gas, so you should be careful with how often you do this.
 

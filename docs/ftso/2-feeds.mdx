@@ -8,23 +8,38 @@ keywords:
 
 import BlockLatencyFeeds from "/automations/_block_latency_feeds.md";
 
-FTSOv2's block-latency feeds update incrementally with each new block on Flare, approximately every 1.8 seconds. These feeds have a single entrypoint function and primarily support cryptocurrency price feeds. Moreover, they come with the added advantage of being completely free to query and utilize in your decentralized application on Flare, with no gas costs involved.
+FTSOv2's block-latency feeds update incrementally with each new block on Flare, approximately every 1.8 seconds. Every feed leverages Flare's network of 100 independent data providers. These feeds primarily support cryptocurrency price data and are free to query on Flare, enabling decentralized applications to access up-to-date information without incurring additional costs.
 
-The feed indexes listed below serve as inputs to the [`fetchCurrentFeeds`](solidity-reference/IFastUpdater#fetchcurrentfeeds) entrypoint function. By passing an array of feed indexes to the function, you can query any number of feeds in a single call. However, attempting to query feeds outside of the supported indexes will result in the entire transaction reverting.
+You can query block-latency feeds onchain using two equivalent methods:
 
-<BlockLatencyFeeds />
+- **By Feed Index**:
 
-:::info Looking for more feeds?
+  Use the functions `getFeedByIndex` or `getFeedsByIndex` to query feeds by their index.
 
-Block-latency feeds comprise a subset of the feeds available on Flare. If you require additional feeds, you can raise a [New Feed Request Issue](https://github.com/flare-foundation/developer-hub/issues/new/choose) on GitHub.
+  **OR**
+
+- **By Feed ID**:
+
+  Use the functions `getFeedById` or `getFeedsById` to query feeds by their ID.
+
+:::warning
+
+Feed IDs are not addresses. They are `bytes21` structured encodings that combine the category and feed name to ensure each feed has a unique identifier.
 
 :::
 
+<BlockLatencyFeeds />
+
+## Need more feeds?
+
+Block-latency feeds are just one subset of the feeds available on Flare. If you need additional feeds beyond what is currently available, you can raise a [New Feed Request Issue](https://github.com/flare-foundation/developer-hub/issues/new/choose) on GitHub.
+
+When a feed request is submitted, it is reviewed by the FTSO Management Group, which is comprised of the FTSO data providers as outlined in [FIP.08](https://proposals.flare.network/FIP/FIP_8.html#222-through-the-ftso-management-group).
 :::tip[What's next?]
 
 Learn how to:
 
 - [Read feeds offchain](./guides/read-feeds-offchain) in languages like JavaScript, Python, Rust, and Go.
-- [Change quote feed](./guides/change-quote-feed) using an on-chain Solidity contract.
+- [Change quote feed](./guides/change-quote-feed) using an onchain Solidity contract.
 
 :::

@@ -1,8 +1,9 @@
 package coston2
 
 import (
-	"github.com/ethereum/go-ethereum/common"
 	"testing"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 func TestMakeQuery(t *testing.T) {
