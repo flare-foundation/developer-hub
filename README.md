@@ -15,7 +15,6 @@ Ensure you have the following tools installed:
 - [Node.js v20](https://nodejs.org/en/)
 - [nvm](https://github.com/nvm-sh/nvm) for managing multiple Node.js versions
 
-
 Once you have Node.js v20 installed, you can set up the project dependencies:
 
 ```bash
@@ -86,8 +85,6 @@ To generate the Solidity contract documentation from the `flare-smart-contracts-
    ```bash
    nvm use 20
    ```
-
-
 
 ## Contributing
 
