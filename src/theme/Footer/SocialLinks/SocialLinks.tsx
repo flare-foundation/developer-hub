@@ -29,7 +29,7 @@ const socialLinks: Array<SocialLinkProps> = [
   {
     href: "https://www.linkedin.com/company/flarenetwork/",
     icon: LinkedIn,
-    label: "YouTube",
+    label: "LinkedIn",
   },
   {
     href: "https://medium.com/flarenetwork",
@@ -44,9 +44,8 @@ const socialLinks: Array<SocialLinkProps> = [
   {
     href: "https://twitter.com/FlareNetworks",
     icon: X,
-    label: "X",
+    label: "X (formerly Twitter)",
   },
-
   {
     href: "https://t.me/FlareNetwork",
     icon: Telegram,
@@ -61,11 +60,15 @@ export default function SocialLinks() {
         <Link
           to={social.href}
           className={classes.link}
-          aria-label={social.label}
           target="_blank"
           key={social.href}
+          aria-label={social.label}
         >
-          <social.icon role="img" className={classes.socialSvg} />
+          <social.icon
+            role="img"
+            aria-label={social.label}
+            className={classes.socialSvg}
+          />
         </Link>
       ))}
     </div>
