@@ -22,10 +22,9 @@ export async function main() {
   // Fetch current feeds
   const res = await ftsov2.methods.getFeedsById(FEED_IDS).call();
   // Log results
-  console.log("Feeds:", res["_feeds"]);
-  console.log("Decimals:", res["_decimals"]);
-  console.log("Timestamp:", res["_timestamp"]);
-  console.log(res);
+  console.log("Feeds:", res["0"]);
+  console.log("Decimals:", res["1"]);
+  console.log("Timestamp:", res["2"]);
   return res;
 }
 
