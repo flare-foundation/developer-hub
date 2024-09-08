@@ -3,14 +3,14 @@ import json
 
 import aiohttp
 from web3 import AsyncHTTPProvider, AsyncWeb3
-from web3.middleware.geth_poa import async_geth_poa_middleware
+from web3.middleware import ExtraDataToPOAMiddleware
 
 
 async def main() -> str:
     registry_addr = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
     w3 = AsyncWeb3(
         AsyncHTTPProvider("https://coston2-api.flare.network/ext/C/rpc"),
-        middlewares=[async_geth_poa_middleware],
+        middleware=[ExtraDataToPOAMiddleware],
     )
     params = {
         "module": "contract",

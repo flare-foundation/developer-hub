@@ -1,30 +1,29 @@
 # developer-hub-python
 
-## Tooling (recommended)
+## Tooling
 
-- [pyenv](https://github.com/pyenv/pyenv)
-- [poetry](https://python-poetry.org)
+- [uv](https://docs.astral.sh/uv/)
 
 ## Install dependencies
 
 ```bash
-poetry install
+uv sync --all-extras --dev
 ```
 
 ## Format
 
 ```bash
-poetry run ruff format
+uv run ruff format
 ```
 
 ## Lint
 
 ```bash
-poetry run ruff check
+uv run ruff check
 ```
 
 ## Test
 
 ```bash
-poetry run pytest
+uv run pytest -v
 ```
