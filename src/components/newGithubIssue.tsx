@@ -2,7 +2,7 @@ import React from "react";
 import Link from "@docusaurus/Link";
 
 export default function NewGithubIssue({ children, issueType }): JSX.Element {
-  var baseUrl = "https://github.com/flare-foundation/developer-hub/issues/new?";
+  let baseUrl = "https://github.com/flare-foundation/developer-hub/issues/new?";
   if (issueType == "development_issue") {
     baseUrl +=
       "assignees=&labels=bug&projects=&template=development_issue.yml&title=%5Bdev%5D%3A+";
