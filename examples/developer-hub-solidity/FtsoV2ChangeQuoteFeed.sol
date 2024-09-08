@@ -1,28 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 
-import {IFlareContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/util-contracts/userInterfaces/IFlareContractRegistry.sol";
-import {IFastUpdater} from "@flarenetwork/flare-periphery-contracts/coston2/ftso/userInterfaces/IFastUpdater.sol";
+import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/flare/ContractRegistry.sol";
+import {FtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/flare/FtsoV2Interface.sol";
 
 /**
  * THIS IS AN EXAMPLE CONTRACT.
  * DO NOT USE THIS CODE IN PRODUCTION.
  */
 contract FtsoV2ChangeQuoteFeed {
-    IFlareContractRegistry internal contractRegistry;
-    IFastUpdater internal ftsoV2;
+    FtsoV2Interface internal ftsoV2;
 
     /**
      * Constructor initializes the FTSOv2 contract.
      * The contract registry is used to fetch the FTSOv2 contract address.
      */
     constructor() {
-        contractRegistry = IFlareContractRegistry(
-            0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019
-        );
-        ftsoV2 = IFastUpdater(
-            contractRegistry.getContractAddressByName("FastUpdater")
-        );
+        ftsoV2 = ContractRegistry.getFtsoV2();
     }
 
     /**
@@ -63,7 +57,7 @@ contract FtsoV2ChangeQuoteFeed {
         );
         // Fetch current feeds
         (uint256[] memory feedValues, int8[] memory decimals, ) = ftsoV2
-            .fetchCurrentFeeds(_baseAndQuoteFeedIndexes);
+            .getFeedsByIndex(_baseAndQuoteFeedIndexes);
         uint8 newQuoteDecimals = uint8(decimals[1]);
         // Scale the base feed value to match the quote feed decimals
         uint256 scaledBaseFeedValue = _scaleBaseFeedValue(
