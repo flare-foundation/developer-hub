@@ -52,13 +52,20 @@ export default function HeroSection() {
           )}
         </BrowserOnly>
       </div>
-      <picture className={classes.mobileImage}>
+
+      <picture className={`${classes.mobileImage}`}>
         <source
           srcSet="/img/landing/dev_hub_hero_mobile.webp"
           media="(max-width: 996px)"
         />
-        <img src="" />
+        <img
+          src=""
+          alt=""
+          className={classes.mobileOnly}
+          sizes="(max-width: 996px) 305px"
+        />
       </picture>
+
       <div className={clsx(classes.content, "container")}>
         <div className={classes.callToAction}>
           <Heading as="h1" className={classes.heading}>
