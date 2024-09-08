@@ -77,7 +77,7 @@ if __name__ == "__main__":
         f.write(
             "| ------------- | -------------- | ----------- |--------------- | ------------ | ------------ |\n"
         )
-        for idx, (name, decimal) in enumerate(zip(feed_names, decimals)):
+        for idx, (name, decimal) in enumerate(zip(feed_names, decimals, strict=True)):
             feed_id = (
                 "0x" + ftso_feedid_converter.functions.getFeedId(1, name).call().hex()
             )
@@ -119,7 +119,7 @@ if __name__ == "__main__":
         f.write(
             "| ------------- | ----------- | -------------- | ------------ | ------------ |\n"
         )
-        for name, decimal in zip(feed_names, decimals):
+        for name, decimal in zip(feed_names, decimals, strict=True):
             feed_id = (
                 "0x" + ftso_feedid_converter.functions.getFeedId(1, name).call().hex()
             )
