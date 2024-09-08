@@ -19,6 +19,7 @@ import (
 /* Note: Call `go generate` before executing these functions. */
 
 func main() {
+	getFeedID("01", "FLR/USD")
 	coston2.ChainId()
 	flare.ChainId()
 	coston2.MakeQuery()
