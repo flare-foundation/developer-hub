@@ -78,6 +78,12 @@ const config: Config = {
       defaultMode: "light",
       respectPrefersColorScheme: true,
     },
+
+    announcementBar: {
+      id: `announcementBar`,
+      content: `🎉️ <b><a target="_blank" href="https://dev.flare.network/ftso/overview/">FTSOv2 </a> is out!</b> 🥳️`,
+    },
+
     docs: {
       sidebar: {
         autoCollapseCategories: false,
