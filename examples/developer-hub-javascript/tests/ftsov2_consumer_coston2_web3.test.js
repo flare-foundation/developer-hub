@@ -6,9 +6,9 @@ describe("Fetch Current Feeds Configurations", () => {
     const res = await main();
     expect(res).toEqual(
       expect.objectContaining({
-        _feeds: expect.anything(Array),
-        _decimals: expect.anything(Array),
-        _timestamp: expect.anything(Number),
+        0: expect.anything(Array),
+        1: expect.anything(Array),
+        2: expect.anything(Number),
       }),
     );
   });
