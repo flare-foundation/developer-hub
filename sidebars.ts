@@ -113,6 +113,7 @@ const sidebars: SidebarsConfig = {
             },
           ],
         },
+        "ftso/migration",
       ],
     },
     {
