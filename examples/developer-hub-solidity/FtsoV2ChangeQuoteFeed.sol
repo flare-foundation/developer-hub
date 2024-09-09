@@ -1,28 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 
-import {IFlareContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/util-contracts/userInterfaces/IFlareContractRegistry.sol";
-import {IFastUpdater} from "@flarenetwork/flare-periphery-contracts/coston2/ftso/userInterfaces/IFastUpdater.sol";
+import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
+import {FtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/FtsoV2Interface.sol";
 
 /**
  * THIS IS AN EXAMPLE CONTRACT.
  * DO NOT USE THIS CODE IN PRODUCTION.
  */
 contract FtsoV2ChangeQuoteFeed {
-    IFlareContractRegistry internal contractRegistry;
-    IFastUpdater internal ftsoV2;
+    FtsoV2Interface internal ftsoV2;
 
     /**
-     * Constructor initializes the FTSOv2 contract.
-     * The contract registry is used to fetch the FTSOv2 contract address.
+     * Initializing an instance with FtsoV2Interface.
+     * The contract registry is used to fetch the contract address.
      */
     constructor() {
-        contractRegistry = IFlareContractRegistry(
-            0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019
-        );
-        ftsoV2 = IFastUpdater(
-            contractRegistry.getContractAddressByName("FastUpdater")
-        );
+        ftsoV2 = ContractRegistry.getFtsoV2();
     }
 
     /**
@@ -51,19 +45,19 @@ contract FtsoV2ChangeQuoteFeed {
 
     /**
      * @dev Function to compute the new quote feed value based on the base and quote feed values.
-     * @param _baseAndQuoteFeedIndexes Array containing the indexes of the base and quote feeds.
+     * @param _baseAndQuoteFeedIds Array containing the IDs of the base and quote feeds.
      * @return The computed new quote feed value.
      */
     function getNewQuoteFeedValue(
-        uint256[] calldata _baseAndQuoteFeedIndexes
-    ) external view returns (uint256) {
+        bytes21[] calldata _baseAndQuoteFeedIds
+    ) external payable returns (uint256) {
         require(
             _baseAndQuoteFeedIndexes.length == 2,
             "Invalid feed indexes. Please provide exactly two indexes."
         );
         // Fetch current feeds
         (uint256[] memory feedValues, int8[] memory decimals, ) = ftsoV2
-            .fetchCurrentFeeds(_baseAndQuoteFeedIndexes);
+            .getFeedsById(_baseAndQuoteFeedIndexes);
         uint8 newQuoteDecimals = uint8(decimals[1]);
         // Scale the base feed value to match the quote feed decimals
         uint256 scaledBaseFeedValue = _scaleBaseFeedValue(

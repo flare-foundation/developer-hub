@@ -7,28 +7,33 @@ interface IFlareContractRegistry {
     ) external view returns (address);
 }
 
-interface IFastUpdater {
-    function fetchCurrentFeeds(
-        uint256[] calldata _feedIndexes
+interface FtsoV2Interface {
+    function getFeedsById(
+        bytes21[] calldata _feedIds
     )
         external
-        view
+        payable
         returns (
-            uint256[] memory _feedValues,
+            uint256[] memory _values,
             int8[] memory _decimals,
             uint64 _timestamp
         );
 }
 
 /**
- * THIS IS AN EXAMPLE CONTRACT USING HARDCODED VALUES.
+ * THIS IS AN EXAMPLE CONTRACT.
  * DO NOT USE THIS CODE IN PRODUCTION.
  */
 contract FtsoV2FeedConsumer {
     IFlareContractRegistry internal contractRegistry;
-    IFastUpdater internal ftsoV2;
-    // Feed indexes: 0 = FLR/USD, 2 = BTC/USD, 9 = ETH/USD
-    uint256[] public feedIndexes = [0, 2, 9];
+    FtsoV2Interface internal ftsoV2;
+
+    // Feed IDs, see https://dev.flare.network/ftso/feeds for full list
+    bytes21[] public feedIds = [
+        bytes21(0x01464c522f55534400000000000000000000000000), // FLR/USD
+        bytes21(0x014254432f55534400000000000000000000000000), // BTC/USD
+        bytes21(0x014554482f55534400000000000000000000000000) // ETH/USD
+    ];
 
     /**
      * Constructor initializes the contract registry and fetches the FTSOv2 contract address.
@@ -37,8 +42,8 @@ contract FtsoV2FeedConsumer {
         contractRegistry = IFlareContractRegistry(
             0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019
         );
-        ftsoV2 = IFastUpdater(
-            contractRegistry.getContractAddressByName("FastUpdater")
+        ftsoV2 = FtsoV2Interface(
+            contractRegistry.getContractAddressByName("FtsoV2")
         );
     }
 
@@ -47,7 +52,7 @@ contract FtsoV2FeedConsumer {
      */
     function getFtsoV2CurrentFeedValues()
         external
-        view
+        payable
         returns (
             uint256[] memory _feedValues,
             int8[] memory _decimals,
@@ -58,7 +63,7 @@ contract FtsoV2FeedConsumer {
             uint256[] memory feedValues,
             int8[] memory decimals,
             uint64 timestamp
-        ) = ftsoV2.fetchCurrentFeeds(feedIndexes);
+        ) = ftsoV2.getFeedsById(feedIds);
         /* Your custom feed consumption logic. */
         /* In this example the feed values, decimals and last updated timestamp are just returned. */
         return (feedValues, decimals, timestamp);

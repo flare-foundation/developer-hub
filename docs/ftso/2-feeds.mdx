@@ -6,21 +6,70 @@ keywords:
   [ftso, oracle, flare-time-series-oracle, flare-network, feeds, block-latency]
 ---
 
+import NewGithubIssue from "@site/src/components/newGithubIssue";
 import BlockLatencyFeeds from "/automations/_block_latency_feeds.md";
+import TabItem from "@theme/TabItem";
+import Tabs from "@theme/Tabs";
+import CodeBlock from "@theme/CodeBlock";
+import GetFeedIdPy from "!!raw-loader!/examples/developer-hub-python/get_feed_id.py";
+import GetFeedIdJS from "!!raw-loader!/examples/developer-hub-javascript/get_feed_id.js";
+import GetFeedIdRs from "!!raw-loader!/examples/developer-hub-rust/src/bin/get_feed_id.rs";
+import GetFeedIdGo from "!!raw-loader!/examples/developer-hub-go/get_feed_id.go";
 
 FTSOv2's block-latency feeds update incrementally with each new block on Flare, approximately every 1.8 seconds. Every feed leverages Flare's network of 100 independent data providers. These feeds primarily support cryptocurrency price data and are free to query on Flare, enabling decentralized applications to access up-to-date information without incurring additional costs.
 
-You can query block-latency feeds onchain using two equivalent methods:
+Each block-latency feed is uniquely identified by an ID composed of three components in a structured encoding process:
 
-- **By Feed Index**:
+1. **Category:** Indicates the type of asset - Crypto: `01`, Forex: `02`, Commodity: `03`, Stock: `04`
 
-  Use the functions `getFeedByIndex` or `getFeedsByIndex` to query feeds by their index.
+2. **Hex-Encoded Feed Name:** The name of the feed is converted to a hexadecimal format.
 
-  **OR**
+3. **Zero Padding:** The combined category and hex-encoded feed name are padded with zeros to a length of 21 bytes.
 
-- **By Feed ID**:
+The resulting string is then prefixed with `0x`.
 
-  Use the functions `getFeedById` or `getFeedsById` to query feeds by their ID.
+<details>
+<summary>Example of the structured encoding process.</summary>
+
+Taking the feed name `FLR/USD`:
+
+- **Category**: `01` (Crypto)
+- **Hex-Encoded Feed Name**: `464c522f555344` (hexadecimal representation of `FLR/USD`)
+- **Zero Padding**: The category and hex-encoded feed name combined and padded: `01464c522f55534400000000000000000000000000`
+- **Final ID**: Adding the `0x` prefix results in `0x01464c522f55534400000000000000000000000000`
+
+<Tabs block>
+  <TabItem value="Javascript" label="Javascript" default>
+
+    <CodeBlock language="javascript" title="get_feed_id.js">
+      {GetFeedIdJS}
+    </CodeBlock>
+
+  </TabItem>
+  <TabItem value="Python" label="Python">
+
+    <CodeBlock language="python" title="get_feed_id.py">
+      {GetFeedIdPy}
+    </CodeBlock>
+
+  </TabItem>
+    <TabItem value="Rust" label="Rust">
+
+    <CodeBlock language="rust" title="get_feed_id.rs">
+      {GetFeedIdRs}
+    </CodeBlock>
+
+  </TabItem>
+    <TabItem value="Go" label="Go">
+
+    <CodeBlock language="go" title="get_feed_id.go">
+      {GetFeedIdGo}
+    </CodeBlock>
+
+  </TabItem>
+</Tabs>
+
+</details>
 
 :::warning
 
@@ -32,9 +81,12 @@ Feed IDs are not addresses. They are `bytes21` structured encodings that combine
 
 ## Need more feeds?
 
-Block-latency feeds are just one subset of the feeds available on Flare. If you need additional feeds beyond what is currently available, you can raise a [New Feed Request Issue](https://github.com/flare-foundation/developer-hub/issues/new/choose) on GitHub.
+FTSOv2 can scale up to 1000 feeds. If you need additional FTSOv2 feeds beyond what is currently available, you can raise a New Feed Request Issue on GitHub. When a feed request is submitted, it is reviewed by the FTSO Management Group, which is comprised of the FTSO data providers as outlined in [FIP.08](https://proposals.flare.network/FIP/FIP_8.html#222-through-the-ftso-management-group).
 
-When a feed request is submitted, it is reviewed by the FTSO Management Group, which is comprised of the FTSO data providers as outlined in [FIP.08](https://proposals.flare.network/FIP/FIP_8.html#222-through-the-ftso-management-group).
+{/* prettier-ignore */}
+<NewGithubIssue issueType="feed_request">Request New Feed</NewGithubIssue>
+<br></br>
+
 :::tip[What's next?]
 
 Learn how to:
