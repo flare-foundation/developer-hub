@@ -4,5 +4,5 @@ def get_feed_id(category: str, feed_name: str) -> str:
     return f"0x{padded_hex_string}"
 
 
-feed_id = get_feed_id(category="01", feed_name="FLR/USD")
+feed_id = get_feed_id("01", "FLR/USD")
 print(feed_id)
