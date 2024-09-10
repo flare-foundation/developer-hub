@@ -1,6 +1,6 @@
 ---
 title: IRelay
-sidebar_position: 2
+sidebar_position: 5
 description: Interface for Merkle roots, secure RNG, signing policies etc.
 ---
 

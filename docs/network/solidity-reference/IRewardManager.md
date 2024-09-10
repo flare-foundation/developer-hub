@@ -1,7 +1,7 @@
 ---
 title: IRewardManager
 description: Interface for reward management.
-sidebar_position: 5
+sidebar_position: 8
 ---
 
 Interface for reward management.
