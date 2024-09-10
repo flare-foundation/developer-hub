@@ -1,7 +1,7 @@
 ---
 title: IWNat
 description: Interface for wrapping and unwrapping native tokens.
-sidebar_position: 6
+sidebar_position: 9
 ---
 
 Interface for wrapping and unwrapping native tokens.
