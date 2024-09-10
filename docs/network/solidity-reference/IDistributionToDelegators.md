@@ -1,6 +1,6 @@
 ---
 title: IDistributionToDelegators
-sidebar_position: 4
+sidebar_position: 7
 description: Interface for managing FlareDrop claims.
 ---
 

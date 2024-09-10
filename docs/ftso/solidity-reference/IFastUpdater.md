@@ -1,10 +1,10 @@
 ---
 title: IFastUpdater
-sidebar_position: 1
-description: Primary interface for interacting with block-latency feeds.
+sidebar_position: 3
+description: Interface for updating block-latency feeds.
 ---
 
-Primary interface for interacting with block-latency feeds.
+Interface for updating block-latency feeds.
 
 Sourced from `IFastUpdater.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/IFastUpdater.sol).
 
