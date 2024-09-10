@@ -29,7 +29,7 @@ If you were using `PriceSubmitter` for the following purposes, here are the reco
 - **Accessing other important contracts**: Use the `IFlareContractRegistry` instead. Refer to the [Flare Contract Registry](#flarecontractregistry) for details.
 - **Voting-related functionalities**: These are now integrated into the new FTSO system.
 
-- **Random number generation** (`getCurrentRandom` or `getRandom`, applicable to Flare only): Switch to the new [`RandomNumberV2Interface`](#randomnumberv2interface). The new protocol updates random numbers every 90 seconds (aligned with the voting epoch duration, as returned by `votingEpochDurationSeconds`). This setting is immutable but could change if the protocol configuration is updated. In contrast, the old protocol updated random numbers every 180 seconds.
+- **Random number generation** (`getCurrentRandom` or `getRandom`, applicable to Flare only): Switch to the new [`RandomNumberV2Interface`](#lts-interfaces). The new protocol updates random numbers every 90 seconds (aligned with the voting epoch duration, as returned by `votingEpochDurationSeconds`). This setting is immutable but could change if the protocol configuration is updated. In contrast, the old protocol updated random numbers every 180 seconds.
 
 #### Required Changes:
 
@@ -44,11 +44,11 @@ The legacy `FTSO` contract is being deprecated and replaced. A minimal proxy wil
 
 #### Recommended Changes:
 
-- **Random number retrieval**: Switch to the new [`RandomNumberV2Interface`](#randomnumberv2interface). The proxy contract will still return current and historical random numbers, but they will be uniform across all `FTSO` contracts, and randomness will be sourced from the new provider.
+- **Random number retrieval**: Switch to the new [`RandomNumberV2Interface`](#lts-interfaces). The proxy contract will still return current and historical random numbers, but they will be uniform across all `FTSO` contracts, and randomness will be sourced from the new provider.
 
-- **Fetching the current price**: For methods like `getCurrentPrice`, `getCurrentPriceDetails`, or `getCurrentPriceWithDecimals`, switch to the [`FTSOv2Interface`](#ftsov2interface) interface. While the proxy interface will continue to function temporarily, it will not receive future updates.
+- **Fetching the current price**: For methods like `getCurrentPrice`, `getCurrentPriceDetails`, or `getCurrentPriceWithDecimals`, switch to the [`FTSOv2Interface`](#lts-interfaces). While the proxy interface will continue to function temporarily, it will not receive future updates.
 
-- **Fetching historical prices**: For methods such as `getEpochPrice`, or retrieving prices for specific voters or trusted data providers, the proxy contract **WILL REVERT**. It is essential to migrate to the new `FTSOv2` interface for these functionalities.
+- **Fetching historical prices**: For methods such as `getEpochPrice`, or retrieving prices for specific voters or trusted data providers, the proxy contract **WILL REVERT**. It is essential to migrate to the new `FTSOv2Interface` for these functionalities.
 
 ### FTSORegistry
 
@@ -56,11 +56,11 @@ The `FTSORegistry` (`IFTSORegistry`) is being deprecated. While you can continue
 
 #### Recommended Changes:
 
-- **Getting FTSOs**: The methods `getFtso`, `getFtsoBySymbol`, `getFtsoIndex`, `getFtsoSymbol`, and `getSupportedIndices/Symbols/Ftsos` are now deprecated. They will still return the proxy implementation of FTSO, but these proxies will not be maintained moving forward. It is recommended to update your code to use the [FTSOv2](#ftsov2interface) interface for price retrieval. Additional details like decimals and timestamps for individual FTSOs are now considered deprecated and can be obtained by querying prices directly through `FTSOv2`.
+- **Getting FTSOs**: The methods `getFtso`, `getFtsoBySymbol`, `getFtsoIndex`, `getFtsoSymbol`, and `getSupportedIndices/Symbols/Ftsos` are now deprecated. They will still return the proxy implementation of FTSO, but these proxies will not be maintained moving forward. It is recommended to update your code to use the [FTSOv2Interface](#lts-interfaces) for price retrieval. Additional details like decimals and timestamps for individual FTSOs are now considered deprecated and can be obtained by querying prices directly through `FTSOv2`.
 
-- **Reading prices** using methods such as `getCurrentPrice(_ftso_index/_symbol)` or their array and decimal implementations is also deprecated. Although these methods will still return correct values, they will not be updated in the future. Use the [FTSOv2](#ftsov2interface) interface instead to ensure future compatibility.
+- **Reading prices** using methods such as `getCurrentPrice(_ftso_index/_symbol)` or their array and decimal implementations is also deprecated. Although these methods will still return correct values, they will not be updated in the future. Use the [FTSOv2Interface](#lts-interfaces) instead to ensure future compatibility.
 
-- **Getting supported FTSOs**: This function will return correct results for legacy price pairs but will not be updated for new pairs introduced in the FTSOv2 system. To retrieve information about available pairs in the new system, you should transition to the [FTSOv2](#ftsov2interface) interface.
+- **Getting supported FTSOs**: This function will return correct results for legacy price pairs but will not be updated for new pairs introduced in the FTSOv2 system. To retrieve information about available pairs in the new system, you should transition to the [FTSOv2Interface](#lts-interfaces) interface.
 
 - **Read prices directly from `FtsoV2Interface`**: This will give you up-to-date prices and more detailed information. Additionally, the `FtsoV2Interface` is part of the Long Term Support (LTS) system, ensuring it will be maintained for an extended period.
 
@@ -75,11 +75,11 @@ The reward system is undergoing significant changes. While an implementation of 
 
 #### Recommended Changes:
 
-- **Claiming rewards**: Switch to the new [`RewardsV2Interface`](#rewardsv2interface). The proxy contract will still allow you to claim rewards from the FTSO system, but it will not support claiming fees for data providers.
+- **Claiming rewards**: Switch to the new [`RewardsV2Interface`](#lts-interfaces). The proxy contract will still allow you to claim rewards from the FTSO system, but it will not support claiming fees for data providers.
 
 - **Claiming rewards when delegating by amount**: This feature is no longer supported in the new system.
 
-## LTS interfaces (v2)
+## LTS interfaces
 
 The primary goal of the Long Term Support (LTS) interfaces is to offer a stable and reliable way to access essential data and metadata within the Flare ecosystem. These interfaces are designed for long-term maintenance, ensuring continuity even as underlying contracts evolve or protocols migrate to new versions. Each LTS interface is aligned with a specific product within the Flare ecosystem, providing consistency and ease of use over time.
 
