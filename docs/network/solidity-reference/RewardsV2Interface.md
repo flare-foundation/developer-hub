@@ -1,10 +1,10 @@
 ---
 title: RewardsV2Interface
-description: Primary interface for managing rewards.
+description: Primary interface for managing all protocol rewards.
 sidebar_position: 4
 ---
 
-Primary interface for managing rewards.
+Primary interface for managing all protocol rewards.
 
 Sourced from `RewardsV2Interface.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/LTS/RewardsV2Interface.sol).
 
