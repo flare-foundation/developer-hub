@@ -17,9 +17,9 @@ async def main() -> list[int, bool, int]:
         AsyncHTTPProvider(RPC_URL),
     )
     # Set up contract instance
-    randomV2 = w3.eth.contract(address=w3.to_checksum_address(ADDRESS), abi=ABI)
+    random_v2 = w3.eth.contract(address=w3.to_checksum_address(ADDRESS), abi=ABI)
     # Fetch secure random number
-    res = await randomV2.functions.getRandomNumber().call()
+    res = await random_v2.functions.getRandomNumber().call()
     # Print results
     print("Random Number:", res[0])
     print("Is secure random:", res[1])

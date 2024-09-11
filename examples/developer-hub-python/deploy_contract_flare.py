@@ -12,12 +12,12 @@ async def main() -> None:
     contract_interface = load_contract_interface("FtsoV2FeedConsumer")
 
     w3 = AsyncWeb3(AsyncHTTPProvider("https://flare-api.flare.network/ext/C/rpc"))
-    ftsoV2_feed_consumer = w3.eth.contract(
+    ftso_v2_feed_consumer = w3.eth.contract(
         abi=contract_interface["abi"],
         bytecode=contract_interface["evm"]["bytecode"]["object"],
     )
     account = w3.to_checksum_address(account)
-    tx = ftsoV2_feed_consumer.constructor().build_transaction(
+    tx = ftso_v2_feed_consumer.constructor().build_transaction(
         {
             "from": account,
             "nonce": await w3.eth.get_transaction_count(account),

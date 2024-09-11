@@ -12,18 +12,18 @@ sol!(
 async fn main() -> Result<()> {
     // Relay address where the secure RNG is served (Flare Testnet Coston2)
     // See https://dev.flare.network/network/solidity-reference
-    let randomV2_address = "0x5CdF9eAF3EB8b44fB696984a1420B56A7575D250".parse()?;
+    let random_v2_address = "0x5CdF9eAF3EB8b44fB696984a1420B56A7575D250".parse()?;
     let rpc_url = "https://coston2-api.flare.network/ext/C/rpc".parse()?;
     // Connect to an RPC node
     let provider = ProviderBuilder::new().on_http(rpc_url);
     // Set up contract instance
-    let randomV2 = RandomNumberV2::new(randomV2_address, provider);
+    let random_v2 = RandomNumberV2::new(random_v2_address, provider);
     // Fetch secure random number
     let RandomNumberV2::getRandomNumberReturn {
         _randomNumber,
         _isSecureRandom,
         _randomTimestamp,
-    } = randomV2.getRandomNumber().call().await?;
+    } = random_v2.getRandomNumber().call().await?;
     // Print results
     println!("Random Number: {:?} ", _randomNumber);
     println!("Is secure random: {:?} ", _isSecureRandom);
