@@ -33,7 +33,7 @@ If you were using `PriceSubmitter` for the following purposes, here are the reco
 
 #### Required Changes:
 
-- **Use `RandomNumberV2`** instead of `PriceSubmitter` (ensure you update to the new contract address and interface).
+- Use `RandomNumberV2` instead of `PriceSubmitter` (ensure you update to the new contract address and interface).
 - **Method updates**:
   - `getCurrentRandom` → `getRandomNumber`
   - `getRandom(epochId)` → `getRandomNumberHistorical(epochId)`
@@ -486,46 +486,10 @@ This proxy only supports the most basic reward claim types and requires that rew
 
 ## Usable existing interfaces
 
-### FlareContractRegistry
-
-[`FlareContractRegistry`](/network/solidity-reference) provides access to the addresses of all key contracts within the Flare system. It is deployed at a fixed address on all networks, with addresses updated through governance. This registry serves as the recommended entry point for interacting with contracts across the Flare ecosystem.
-
-For a more user-friendly experience, you can use the `ContractLibrary` available in the [flare-periphery-contracts](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts?activeTab=readme) library. This library wraps `IFlareContractRegistry` and simplifies interactions with the system.
-
-### FeeCalculator
-
-Prices that are directly available on-chain are now subject to potential fees. While the initial fees are set to `0`, this system is designed to be flexible for future use cases where fees may be introduced.
-
-Fees are calculated by the `FeeCalculator` contract, which determines the cost of accessing data using the `calculateFeeByIds` and `calculateFeeByIndices` methods. It is recommended to use the `FeeCalculator` contract to stay prepared for any future changes to the fee structure.
-
-<details>
-<summary>`FeeCalculator` interface</summary>
-
-```solidity title="IFeeCalculator.sol"
-// SPDX-License-Identifier: MIT
-pragma solidity >=0.7.6 <0.9;
-
-
-/**
- * FeeCalculator interface.
- */
-interface IFeeCalculator {
-    /**
-     * Calculates a fee that needs to be paid to fetch feeds' data.
-     * @param _feedIds List of feed ids.
-    */
-    function calculateFeeByIds(bytes21[] memory _feedIds) external view returns (uint256 _fee);
-
-    /**
-     * Calculates a fee that needs to be paid to fetch feeds' data.
-     * @param _indices Indices of the feeds, corresponding to feed ids in
-     * the FastUpdatesConfiguration contract.
-    */
-    function calculateFeeByIndices(uint256[] memory _indices) external view returns (uint256 _fee);
-}
-```
-
-</details>
+| **Interface**                                                                 | **Description**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`FlareContractRegistry`](/network/solidity-reference/IFlareContractRegistry) | Provides access to the addresses of all essential contracts within the Flare ecosystem. It is deployed at a fixed address across all networks, with updates to addresses managed through governance. This registry is the recommended entry point for contract interactions on all Flare networks. For easier use, consider utilizing the `ContractLibrary` from the [flare-periphery-contracts](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts?activeTab=readme) package, which wraps the IFlareContractRegistry and simplifies interactions with Flare's smart contracts. |
+| [`FeeCalculator`](/ftso/solidity-reference/IFeeCalculator)                     | On-chain prices are now subject to potential fees, though initial fees are set to `0`. The `FeeCalculator` contract is designed to be flexible, allowing for the introduction of fees in future use cases. It calculates fees for accessing data using the `calculateFeeByIds` and `calculateFeeByIndices` methods. To stay prepared for future updates to the fee structure, it is advisable to use the FeeCalculator contract in relevant applications.                                                                                                                                          |
 
 ## Example migration contract
 
