@@ -6,7 +6,7 @@ import (
 )
 
 // coston2 package ABIs
-//go:generate abigen --abi Relay.abi --pkg coston2 --type Relay --out coston2/Relay.go
+//go:generate abigen --abi RandomNumberV2.abi --pkg coston2 --type RandomNumberV2 --out coston2/Relay.go
 //go:generate abigen --abi FlareContractRegistry.abi --pkg coston2 --type FlareContractRegistry --out coston2/FlareContractRegistry.go
 //go:generate abigen --bin=build/FtsoV2FeedConsumer.bin --abi=build/FtsoV2FeedConsumer.abi --pkg coston2 --type FtsoV2FeedConsumer --out coston2/FtsoV2FeedConsumer.go
 //go:generate abigen --abi FastUpdatesIncentiveManager.abi --pkg coston2 --type FastUpdatesIncentiveManager --out coston2/FastUpdatesIncentiveManager.go
