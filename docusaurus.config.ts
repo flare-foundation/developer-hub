@@ -166,7 +166,7 @@ const config: Config = {
       copyright: `Copyright © Flare Networks ${new Date().getFullYear()}`,
     },
     prism: {
-      additionalLanguages: ["solidity", "bash", "json", "toml"],
+      additionalLanguages: ["solidity", "bash", "json", "toml", "diff"],
       theme: prismThemes.oneDark,
       darkTheme: prismThemes.oneDark,
     },
