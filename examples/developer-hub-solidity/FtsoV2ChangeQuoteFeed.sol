@@ -2,21 +2,27 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
-import {FtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/FtsoV2Interface.sol";
+/** THIS IS A TEST IMPORT, in production use:
+ * import {FtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/FtsoV2Interface.sol";  
+ */
+import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/TestFtsoV2Interface.sol";
 
 /**
  * THIS IS AN EXAMPLE CONTRACT.
  * DO NOT USE THIS CODE IN PRODUCTION.
  */
 contract FtsoV2ChangeQuoteFeed {
-    FtsoV2Interface internal ftsoV2;
+    TestFtsoV2Interface internal ftsoV2;
 
     /**
      * Initializing an instance with FtsoV2Interface.
      * The contract registry is used to fetch the contract address.
      */
     constructor() {
-        ftsoV2 = ContractRegistry.getFtsoV2();
+        /** THIS IS A TEST METHOD, in production use:
+         * ftsoV2 = ContractRegistry.getFtsoV2();
+         */
+        ftsoV2 = ContractRegistry.getTestFtsoV2();
     }
 
     /**
@@ -50,14 +56,14 @@ contract FtsoV2ChangeQuoteFeed {
      */
     function getNewQuoteFeedValue(
         bytes21[] calldata _baseAndQuoteFeedIds
-    ) external payable returns (uint256) {
+    ) external view returns (uint256) {
         require(
-            _baseAndQuoteFeedIndexes.length == 2,
+            _baseAndQuoteFeedIds.length == 2,
             "Invalid feed indexes. Please provide exactly two indexes."
         );
         // Fetch current feeds
         (uint256[] memory feedValues, int8[] memory decimals, ) = ftsoV2
-            .getFeedsById(_baseAndQuoteFeedIndexes);
+            .getFeedsById(_baseAndQuoteFeedIds);
         uint8 newQuoteDecimals = uint8(decimals[1]);
         // Scale the base feed value to match the quote feed decimals
         uint256 scaledBaseFeedValue = _scaleBaseFeedValue(

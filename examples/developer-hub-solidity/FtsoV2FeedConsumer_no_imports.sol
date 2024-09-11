@@ -7,12 +7,16 @@ interface IFlareContractRegistry {
     ) external view returns (address);
 }
 
-interface FtsoV2Interface {
+/**
+ * THIS IS A TEST INTERFACE.
+ * Functions are payable in the production interface.
+ */
+interface TestFtsoV2Interface {
     function getFeedsById(
         bytes21[] calldata _feedIds
     )
         external
-        payable
+        view
         returns (
             uint256[] memory _values,
             int8[] memory _decimals,
@@ -26,7 +30,7 @@ interface FtsoV2Interface {
  */
 contract FtsoV2FeedConsumer {
     IFlareContractRegistry internal contractRegistry;
-    FtsoV2Interface internal ftsoV2;
+    TestFtsoV2Interface internal ftsoV2;
 
     // Feed IDs, see https://dev.flare.network/ftso/feeds for full list
     bytes21[] public feedIds = [
@@ -36,13 +40,14 @@ contract FtsoV2FeedConsumer {
     ];
 
     /**
-     * Constructor initializes the contract registry and fetches the FTSOv2 contract address.
+     * Constructor initializes the FTSOv2 contract.
+     * The contract registry is used to fetch the FtsoV2 contract address.
      */
     constructor() {
         contractRegistry = IFlareContractRegistry(
             0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019
         );
-        ftsoV2 = FtsoV2Interface(
+        ftsoV2 = TestFtsoV2Interface(
             contractRegistry.getContractAddressByName("FtsoV2")
         );
     }
@@ -52,20 +57,14 @@ contract FtsoV2FeedConsumer {
      */
     function getFtsoV2CurrentFeedValues()
         external
-        payable
+        view
         returns (
             uint256[] memory _feedValues,
             int8[] memory _decimals,
             uint64 _timestamp
         )
     {
-        (
-            uint256[] memory feedValues,
-            int8[] memory decimals,
-            uint64 timestamp
-        ) = ftsoV2.getFeedsById(feedIds);
-        /* Your custom feed consumption logic. */
-        /* In this example the feed values, decimals and last updated timestamp are just returned. */
-        return (feedValues, decimals, timestamp);
+        /* Your custom feed consumption logic. In this example the values are just returned. */
+        return ftsoV2.getFeedsById(feedIds);
     }
 }
