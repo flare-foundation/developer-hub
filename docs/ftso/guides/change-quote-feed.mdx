@@ -23,12 +23,6 @@ import SetEvmVersionRemix from "/static/img/set-evm-version-remix.png";
 
 This guide will show you how to fetch the latest feed values for two feeds and convert them to a new quote feed. For example, if you need the price of `BTC/ETH`, you can fetch the latest feed values for `BTC/USD` and `ETH/USD` and calculate the price of `BTC/ETH = (BTC/USD) / (ETH/USD)`.
 
-In the following smart contract, for `BTC/USD` (feed index `2`) and `ETH/USD` (feed index `9`), returning the value of `BTC/ETH`, the function signature would be:
-
-```solidity
-getNewQuoteFeedValue([2, 9])
-```
-
 <CodeBlock language="solidity" title="FtsoV2ChangeQuoteFeed.sol">
   {FtsoV2ChangeQuoteFeed}
 </CodeBlock>
@@ -40,7 +34,7 @@ getNewQuoteFeedValue([2, 9])
 :::warning[Don't use test interfaces in production]
 
 The `TestFtsoV2Interface` is for **testing only**, with all methods as `view` to allow rapid development without gas costs or state changes. For production, use [`FtsoV2Interface`](/ftso/solidity-reference/FtsoV2Interface), which includes `payable` methods required for real transactions and state modifications.
-To avoid issues during production make the following changes:
+Make the following changes:
 
 ```diff
 - import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/TestFtsoV2Interface.sol";
