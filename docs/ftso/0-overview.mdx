@@ -78,6 +78,24 @@ The selected data providers submit the new feed update, which is a fixed increme
   }}
 />
 
+<details>
+<summary>The mathematics of incremental delta updates.</summary>
+
+The FTSOv2 protocol utilizes block-latency feeds, denoted as $P(t)$, which are continuously updated following the formula,
+
+$$
+P(t + 1) = (1 + p)^{\delta(t)}P(t)
+$$
+
+where,
+
+- $p$ is the protocol parameter named _precision_, and
+- $\delta$ is the update provided by a data provider, with $\delta(t)$ being one of the three options $\{-1, 0, 1\}$.
+
+The precision parameter is set to a default value of $p = 1/2^{13} ≈  0.0122\%$, which has been rigorously tested against price feeds from centralized exchanges. Another key protocol parameter is the average number of updates submitted per block, with a default value of $e = 1$. The average number of updates submitted per block $e$ can be temporarily increased in exchange for a fee using the volatility incentive mechanism.
+
+</details>
+
 ### Volatility Incentive Mechanism
 
 From statistical analysis, FTSOv2's mechanism is capable of capturing over 99% of all price movements under normal market conditions. However, during periods of high market volatility, the small size of each increment may be slower to reflect large price movements. To address this, FTSOv2 introduces volatility incentives, which allows for a temporary increase in the sample size of data providers in exchange for a fee. The volatility incentive mechanism is permissionless, enabling anyone on Flare to trigger it by paying the required fee.
