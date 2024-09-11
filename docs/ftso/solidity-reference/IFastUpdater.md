@@ -1,6 +1,6 @@
 ---
 title: IFastUpdater
-sidebar_position: 3
+sidebar_position: 4
 description: Interface for updating block-latency feeds.
 ---
 
