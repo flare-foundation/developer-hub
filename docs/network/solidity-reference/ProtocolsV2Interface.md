@@ -4,7 +4,7 @@ description: Primary interface for managing protocol related metadata.
 sidebar_position: 2
 ---
 
-Primary interface for managing protocol related metadata.
+Primary interface for managing protocol related metadata. This is a long-term support (LTS) interface, designed to ensure continuity even as underlying contracts evolve or protocols migrate to new versions.
 
 Sourced from `ProtocolsV2Interface.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/LTS/ProtocolsV2Interface.sol).
 
