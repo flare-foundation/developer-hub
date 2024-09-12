@@ -145,6 +145,10 @@ const config: Config = {
               href: "https://flarescan.com/",
             },
             {
+              label: "Grants",
+              href: "https://flare.network/grants",
+            },
+            {
               label: "Flare Systems Explorer",
               href: "https://flare-systems-explorer.flare.network",
             },
@@ -154,11 +158,12 @@ const config: Config = {
             },
             {
               label: "Flare P-Chain Explorer",
-              href: "https://flare.space/dapp/p-chain-explorer/",
+              href: "https://flare.space/dapp/p-chain-explorer",
             },
+
             {
-              label: "Grants",
-              href: "https://flare.network/grants/",
+              label: "Flare Governance Proposals",
+              href: "https://proposals.flare.network",
             },
           ],
         },
