@@ -17,12 +17,12 @@ async def main() -> None:
         middleware=[ExtraDataToPOAMiddleware],
     )
     account = w3.to_checksum_address(account)
-    ftsoV2_feed_consumer = w3.eth.contract(
+    ftso_v2_feed_consumer = w3.eth.contract(
         abi=contract_interface["abi"],
         bytecode=contract_interface["evm"]["bytecode"]["object"],
     )
 
-    tx = ftsoV2_feed_consumer.constructor().build_transaction(
+    tx = ftso_v2_feed_consumer.constructor().build_transaction(
         {
             "from": account,
             "nonce": await w3.eth.get_transaction_count(account),

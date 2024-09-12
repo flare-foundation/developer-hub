@@ -1,7 +1,7 @@
 ---
 title: IRNat
 description: Interface for managing rFLR.
-sidebar_position: 12
+sidebar_position: 10
 ---
 
 Interface for managing rFLR.

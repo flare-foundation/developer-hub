@@ -1,7 +1,7 @@
 ---
 title: IWNatDelegationFee
 description: Provider interface for setting fee percentage.
-sidebar_position: 11
+sidebar_position: 9
 ---
 
 Provider interface for setting fee percentage.

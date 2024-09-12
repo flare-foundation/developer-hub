@@ -1,6 +1,6 @@
 ---
 title: IFastUpdateIncentiveManager
-sidebar_position: 3
+sidebar_position: 6
 description: Interface for making volatility incentive offers.
 ---
 
