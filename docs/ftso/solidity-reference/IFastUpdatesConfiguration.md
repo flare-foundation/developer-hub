@@ -1,6 +1,6 @@
 ---
 title: IFastUpdatesConfiguration
-sidebar_position: 4
+sidebar_position: 5
 description: Interface for the block-latency feed configuration.
 ---
 

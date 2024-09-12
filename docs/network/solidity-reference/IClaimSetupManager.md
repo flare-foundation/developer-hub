@@ -1,6 +1,6 @@
 ---
 title: IClaimSetupManager
-sidebar_position: 6
+sidebar_position: 5
 description: Interface for managing reward claim setup.
 ---
 

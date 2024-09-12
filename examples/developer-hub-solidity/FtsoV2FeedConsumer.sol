@@ -2,9 +2,7 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
-/** THIS IS A TEST IMPORT, in production use:
- * import {FtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/FtsoV2Interface.sol";
- */
+/* THIS IS A TEST IMPORT, in production use: import {FtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/FtsoV2Interface.sol"; */
 import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/TestFtsoV2Interface.sol";
 
 /**
@@ -25,9 +23,7 @@ contract FtsoV2FeedConsumer {
      * The contract registry is used to fetch the FtsoV2 contract address.
      */
     constructor() {
-        /** THIS IS A TEST METHOD, in production use:
-         * ftsoV2 = ContractRegistry.getFtsoV2();
-         */
+        /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
         ftsoV2 = ContractRegistry.getTestFtsoV2();
     }
 

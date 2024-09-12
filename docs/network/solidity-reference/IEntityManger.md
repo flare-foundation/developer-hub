@@ -1,6 +1,6 @@
 ---
 title: IEntityManager
-sidebar_position: 10
+sidebar_position: 8
 description: Interface for provider entity management.
 ---
 

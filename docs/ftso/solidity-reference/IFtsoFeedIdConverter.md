@@ -1,8 +1,11 @@
 ---
 title: IFtsoFeedIdConverter
+description: Interface for converting feed names to feed ids.
+sidebar_position: 3
 ---
 
-IFtsoFeedIdConverter interface.
+Interface for converting feed names to feed ids.
+
 Sourced from `IFtsoFeedIdConverter.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/IFtsoFeedIdConverter.sol).
 
 ## Functions
