@@ -4,7 +4,7 @@ sidebar_position: 1
 description: Primary interface for interacting with FTSOv2.
 ---
 
-Primary interface for interacting with FTSOv2.
+Primary interface for interacting with FTSOv2. This is a long-term support (LTS) interface, designed to ensure continuity even as underlying contracts evolve or protocols migrate to new versions.
 
 Sourced from `FtsoV2Interface.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/LTS/FtsoV2Interface.sol).
 

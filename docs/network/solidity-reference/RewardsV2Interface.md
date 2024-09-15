@@ -4,7 +4,7 @@ description: Primary interface for managing all protocol rewards.
 sidebar_position: 4
 ---
 
-Primary interface for managing all protocol rewards.
+Primary interface for managing all protocol rewards. This is a long-term support (LTS) interface, designed to ensure continuity even as underlying contracts evolve or protocols migrate to new versions.
 
 Sourced from `RewardsV2Interface.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/LTS/RewardsV2Interface.sol).
 

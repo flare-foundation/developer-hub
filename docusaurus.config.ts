@@ -145,20 +145,25 @@ const config: Config = {
               href: "https://flarescan.com/",
             },
             {
-              label: "Flare Systems Explorer",
-              href: "https://songbird-systems-explorer.flare.rocks",
+              label: "Grants",
+              href: "https://flare.network/grants",
             },
             {
-              label: "FTSO Feed Explorer",
-              href: "https://songbird-systems-explorer.flare.rocks/ftso-feeds",
+              label: "Flare Systems Explorer",
+              href: "https://flare-systems-explorer.flare.network",
+            },
+            {
+              label: "Songbird Systems Explorer",
+              href: "https://songbird-systems-explorer.flare.network",
             },
             {
               label: "Flare P-Chain Explorer",
-              href: "https://flare.space/dapp/p-chain-explorer/",
+              href: "https://flare.space/dapp/p-chain-explorer",
             },
+
             {
-              label: "Grants",
-              href: "https://flare.network/grants/",
+              label: "Flare Governance Proposals",
+              href: "https://proposals.flare.network",
             },
           ],
         },
