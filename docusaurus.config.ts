@@ -72,6 +72,11 @@ const config: Config = {
       respectPrefersColorScheme: true,
     },
 
+    announcementBar: {
+      id: `announcementBar`,
+      content: `<a href="https://dev.flare.network/ftso/overview/">FTSOv2</a> is live on mainnet! ☀️`,
+    },
+
     docs: {
       sidebar: {
         autoCollapseCategories: false,
