@@ -66,18 +66,12 @@ const config: Config = {
   ],
 
   themeConfig: {
-    // announcementBar: {
-    //   content:
-    //     'Flare Developer Hub v0.8. Track the latest updates on <a target="_blank" rel="noopener noreferrer" href="https://github.com/flare-foundation/developer-hub">GitHub</a>.',
-    //   backgroundColor: "#fafbfc",
-    //   textColor: "#091E42",
-    //   isCloseable: true,
-    // },
     image: "img/landing/dev_hub_ani_noblur.png",
     colorMode: {
       defaultMode: "light",
       respectPrefersColorScheme: true,
     },
+
     docs: {
       sidebar: {
         autoCollapseCategories: false,
@@ -147,14 +141,6 @@ const config: Config = {
             {
               label: "Grants",
               href: "https://flare.network/grants",
-            },
-            {
-              label: "Flare Systems Explorer",
-              href: "https://flare-systems-explorer.flare.network",
-            },
-            {
-              label: "Songbird Systems Explorer",
-              href: "https://songbird-systems-explorer.flare.network",
             },
             {
               label: "Flare P-Chain Explorer",
