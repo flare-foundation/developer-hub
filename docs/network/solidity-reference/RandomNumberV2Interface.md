@@ -4,7 +4,7 @@ description: Primary interface for random number generation.
 sidebar_position: 3
 ---
 
-Primary interface for random number generation.
+Primary interface for random number generation. This is a long-term support (LTS) interface, designed to ensure continuity even as underlying contracts evolve or protocols migrate to new versions.
 
 Sourced from `RandomNumberV2Interface.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/LTS/RandomNumberV2Interface.sol).
 
