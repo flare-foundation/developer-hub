@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function YoutubeEmbed({ _, embedLink }): JSX.Element {
+export default function YoutubeEmbed({ embedLink }): JSX.Element {
   const src = "https://www.youtube.com/embed/" + embedLink;
   return (
     <div style={{ display: "flex", justifyContent: "center", margin: "30px" }}>
