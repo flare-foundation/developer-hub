@@ -88,7 +88,7 @@ contract FtsoV2FeedConsumer {
 
         // Fetch feed values in Wei and timestamp from FtsoV2 contract
         (uint256[] memory feedValues, uint64 timestamp) = ftsoV2
-            .getFeedsByIdInWei(feedIds);
+            .getFeedsByIdInWei{value: msg.value}(feedIds);
 
         return (feedValues, timestamp);
     }
