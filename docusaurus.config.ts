@@ -143,18 +143,22 @@ const config: Config = {
               label: "Flarescan",
               href: "https://flarescan.com/",
             },
+
             {
               label: "Grants",
               href: "https://flare.network/grants",
             },
             {
-              label: "Flare P-Chain Explorer",
-              href: "https://flare.space/dapp/p-chain-explorer",
+              label: "Flare Systems Explorer",
+              href: "https://flare-systems-explorer.flare.network",
             },
-
             {
               label: "Flare Governance Proposals",
               href: "https://proposals.flare.network",
+            },
+            {
+              label: "Flare P-Chain Explorer",
+              href: "https://flare.space/dapp/p-chain-explorer",
             },
           ],
         },
