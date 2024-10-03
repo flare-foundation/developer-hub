@@ -16,6 +16,19 @@ keywords:
 sidebar_position: 6
 ---
 
+import Remix from "@site/src/components/remix";
+import CodeBlock from "@theme/CodeBlock";
+import FTSOV2FeedById from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedById.sol";
+import FTSOV2FeedByIdWei from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedByIdWei.sol";
+import FTSOVFeedByIndex from "!!raw-loader!/examples/developer-hub-solidity/FTSOVFeedByIndex.sol";
+import FTSOVFeedByIndexWei from "!!raw-loader!/examples/developer-hub-solidity/FTSOVFeedByIndexWei.sol";
+import FTSOV2FeedByIdIndex from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedByIdIndex.sol";
+import FTSOV2FeedsById from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedsById.sol";
+import FTSOV2FeedsByIdWei from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedsByIdWei.sol";
+import FTSOV2FeedsByIndex from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedsByIndex.sol";
+import FTSOV2FeedsByIndexWei from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedsByIndexWei.sol";
+import FTSOV2VerifyProof from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2VerifyProof.sol";
+
 ## FTSOv2 Smart Contract Examples
 
 In this section, you'll find Solidity code examples that demonstrate how to interact with the Flare Time Series Oracle (FTSO) Version 2. These examples cover a variety of scenarios, such as retrieving feed data, calculating fees, and verifying proofs. Each example explains the function being used and how it can be applied in a real-world contract.
@@ -30,674 +43,118 @@ The examples below demonstrate how to implement some key functions in your own S
 
 This contract interacts with the Flare Network's FtsoV2Interface to fetch the current feed value for a specific cryptocurrency pair using its feed ID.
 
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.9.0;
+<CodeBlock language="solidity" title="RandomNumberV2.sol">
+  {RandomNumberV2}
+</CodeBlock>
 
-import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
-/* THIS IS A TEST IMPORT, in production use: import {FtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/FtsoV2Interface.sol"; */
-import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/TestFtsoV2Interface.sol";
-
-/**
- * THIS IS AN EXAMPLE CONTRACT.
- * DO NOT USE THIS CODE IN PRODUCTION.
- */
-contract FtsoV2FeedConsumerById {
-    TestFtsoV2Interface internal ftsoV2;
-    // Example Feed ID for FLR/USD
-    bytes21 public feedId = bytes21(0x01464c522f55534400000000000000000000000000); // FLR/USD
-
-    /**
-     * Constructor initializes the FTSOv2 contract.
-     * The contract registry is used to fetch the FtsoV2 contract address.
-     */
-    constructor() {
-        /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
-        ftsoV2 = ContractRegistry.getTestFtsoV2();
-    }
-
-    /**
-     * Get the current value of a specific feed by its ID.
-     * @return _feedValue The latest price value of the feed.
-     * @return _decimals The decimal precision of the feed value.
-     * @return _timestamp The timestamp of the last feed update.
-     */
-    function getFtsoV2FeedValueById()
-        external
-        payable
-        returns (
-            uint256 _feedValue,
-            int8 _decimals,
-            uint64 _timestamp
-        )
-    {
-        /* Retrieves the latest value, decimals, and timestamp for the specified feed ID. */
-        return ftsoV2.getFeedById(feedId);
-    }
-}
-```
+{/* prettier-ignore */}
+<Remix fileName="RandomNumberV2.sol">Open in Remix</Remix>
+<br></br>
 
 ### Example 2: Get Feed Value by ID in Wei
 
 This example demonstrates how to retrieve the latest value of a feed, represented in Wei (the smallest unit of Ether), along with the timestamp of the last update. The contract also tracks and stores feed data by index, and keeps track of the feed with the highest value retrieved. Note: Because we use Wei, there are no need for decimal conversations.
 
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.9.0;
+<CodeBlock language="solidity" title="FTSOV2FeedByIdWei.sol">
+  {FTSOV2FeedByIdWei}
+</CodeBlock>
 
-import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
-/* THIS IS A TEST IMPORT, in production use: import {FtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/FtsoV2Interface.sol"; */
-import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/TestFtsoV2Interface.sol";
-
-/**
- * THIS IS AN EXAMPLE CONTRACT.
- * DO NOT USE THIS CODE IN PRODUCTION.
- */
-contract FtsoV2FeedTracker {
-    TestFtsoV2Interface internal ftsoV2;
-
-    // Feed data structure to store multiple feed values with timestamps
-    struct FeedInfo {
-        uint256 valueInWei;
-        uint64 timestamp;
-    }
-
-    // Mapping to store the latest feed data for a given index
-    mapping(uint256 => FeedInfo) public feedDataByIndex;
-    uint256 public highestValueIndex;
-    uint256 public highestValueInWei;
-
-    // Event to track feed retrieval
-    event FeedFetched(uint256 index, uint256 valueInWei, uint64 timestamp);
-
-    /**
-     * Constructor initializes the FTSOv2 contract.
-     * The contract registry is used to fetch the FtsoV2 contract address.
-     */
-    constructor() {
-        /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
-        ftsoV2 = ContractRegistry.getTestFtsoV2();
-    }
-
-    /**
-     * Get the current value of a specific feed by its index, in wei.
-     * @param _index The index of the feed to retrieve.
-     * @return _feedValue The latest price value of the feed in wei.
-     * @return _timestamp The timestamp of the last update for the feed.
-     */
-    function getFeedValueByIndexInWei(uint256 _index)
-        external
-        payable
-        returns (uint256 _feedValue, uint64 _timestamp)
-    {
-        // Retrieve feed value and timestamp from the FtsoV2 contract
-        (_feedValue, _timestamp) = ftsoV2.getFeedByInWei{value: msg.value}(_index);
-
-        // Store the feed value and timestamp in the contract's storage
-        feedDataByIndex[_index] = FeedInfo({
-            valueInWei: _feedValue,
-            timestamp: _timestamp
-        });
-
-        // Update the highest value feed if applicable
-        if (_feedValue > highestValueInWei) {
-            highestValueInWei = _feedValue;
-            highestValueIndex = _index;
-        }
-
-        // Emit an event to log the feed retrieval
-        emit FeedFetched(_index, _feedValue, _timestamp);
-    }
-
-}
-```
+{/* prettier-ignore */}
+<Remix fileName="FTSOV2FeedByIdWei.sol">Open in Remix</Remix>
+<br></br>
 
 ### Example 3: Get Feed By Index
 
 This contract interacts with the Flare Network's FtsoV2Interface to fetch the current feed value for a specific feed by its index (in this case, an example feed at index 1, which could correspond to FLR/USD).
 
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.9.0;
+<CodeBlock language="solidity" title="FTSOVFeedByIndex.sol">
+  {FTSOVFeedByIndex}
+</CodeBlock>
 
-import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
-/* THIS IS A TEST IMPORT, in production use: import {FtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/FtsoV2Interface.sol"; */
-import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/TestFtsoV2Interface.sol";
-
-/**
- * THIS IS AN EXAMPLE CONTRACT.
- * DO NOT USE THIS CODE IN PRODUCTION.
- */
-contract FtsoV2FeedConsumerByIndex {
-    TestFtsoV2Interface internal ftsoV2;
-    // Example index for a feed (corresponding to a feed id)
-    uint256 public feedIndex = 1; // Example: FLR/USD
-
-    /**
-     * Constructor initializes the FTSOv2 contract.
-     * The contract registry is used to fetch the FtsoV2 contract address.
-     */
-    constructor() {
-        /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
-        ftsoV2 = ContractRegistry.getTestFtsoV2();
-    }
-
-    /**
-     * Get the current value of a specific feed by its index.
-     * @return _feedValue The latest price value of the feed.
-     * @return _decimals The decimal precision of the feed value.
-     * @return _timestamp The timestamp of the last feed update.
-     */
-    function getFtsoV2FeedValueByIndex()
-        external
-        payable
-        returns (
-            uint256 _feedValue,
-            int8 _decimals,
-            uint64 _timestamp
-        )
-    {
-        /* Retrieves the latest value, decimals, and timestamp for the specified feed index. */
-        return ftsoV2.getFeedByIndex(feedIndex);
-    }
-}
-```
+{/* prettier-ignore */}
+<Remix fileName="FTSOVFeedByIndex.sol">Open in Remix</Remix>
+<br></br>
 
 ### Example 4: Get Feed By Index in Wei
 
 This contract not only retrieves feed values in wei and timestamps via the getFeedByIndexInWei function.
 
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.9.0;
+<CodeBlock language="solidity" title="FTSOVFeedByIndexWei.sol">
+  {FTSOVFeedByIndexWei}
+</CodeBlock>
 
-import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
-/* THIS IS A TEST IMPORT, in production use: import {FtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/FtsoV2Interface.sol"; */
-import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/TestFtsoV2Interface.sol";
-
-/**
- * THIS IS AN EXAMPLE CONTRACT.
- * DO NOT USE THIS CODE IN PRODUCTION.
- */
-contract FtsoV2FeedTracker {
-    TestFtsoV2Interface internal ftsoV2;
-
-    // Feed data structure to store multiple feed values with timestamps
-    struct FeedInfo {
-        uint256 valueInWei;
-        uint64 timestamp;
-    }
-
-    // Mapping to store the latest feed data for a given index
-    mapping(uint256 => FeedInfo) public feedDataByIndex;
-    uint256 public highestValueIndex;
-    uint256 public highestValueInWei;
-
-    // Event to track feed retrieval
-    event FeedFetched(uint256 index, uint256 valueInWei, uint64 timestamp);
-
-    /**
-     * Constructor initializes the FTSOv2 contract.
-     * The contract registry is used to fetch the FtsoV2 contract address.
-     */
-    constructor() {
-        /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
-        ftsoV2 = ContractRegistry.getTestFtsoV2();
-    }
-
-    /**
-     * Get the current value of a specific feed by its index, in wei.
-     * @param _index The index of the feed to retrieve.
-     * @return _feedValue The latest price value of the feed in wei.
-     * @return _timestamp The timestamp of the last update for the feed.
-     */
-    function getFeedValueByIndexInWei(uint256 _index)
-        external
-        payable
-        returns (uint256 _feedValue, uint64 _timestamp)
-    {
-        // Retrieve feed value and timestamp from the FtsoV2 contract
-        (_feedValue, _timestamp) = ftsoV2.getFeedByInWei{value: msg.value}(_index);
-
-        // Store the feed value and timestamp in the contract's storage
-        feedDataByIndex[_index] = FeedInfo({
-            valueInWei: _feedValue,
-            timestamp: _timestamp
-        });
-
-        // Update the highest value feed if applicable
-        if (_feedValue > highestValueInWei) {
-            highestValueInWei = _feedValue;
-            highestValueIndex = _index;
-        }
-
-        // Emit an event to log the feed retrieval
-        emit FeedFetched(_index, _feedValue, _timestamp);
-    }
-
-}
-```
+{/* prettier-ignore */}
+<Remix fileName="FTSOVFeedByIndexWei.sol">Open in Remix</Remix>
+<br></br>
 
 ### Example 5: Get Feed ID At A Given Index
 
 This contract not only retrieves feed IDs via the getFeedId function from the FtsoV2Interface, but also introduces features for storing, tracking, and analyzing the feed usage, which can be useful for optimizing future queries.
 
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.9.0;
+<CodeBlock language="solidity" title="FTSOV2FeedByIdIndex.sol">
+  {FTSOV2FeedByIdIndex}
+</CodeBlock>
 
-import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
-/* THIS IS A TEST IMPORT, in production use: import {FtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/FtsoV2Interface.sol"; */
-import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/TestFtsoV2Interface.sol";
-
-/**
- * THIS IS AN EXAMPLE CONTRACT.
- * DO NOT USE THIS CODE IN PRODUCTION.
- */
-contract FtsoV2FeedIdManager {
-    TestFtsoV2Interface internal ftsoV2;
-
-    // Mapping to store the feed IDs for each index
-    mapping(uint256 => bytes21) public feedIdByIndex;
-
-    // Mapping to track the number of times each feed index was accessed
-    mapping(uint256 => uint256) public feedAccessCount;
-
-    // State variables to track the most frequently accessed feed
-    uint256 public mostAccessedFeedIndex;
-    uint256 public mostAccessedFeedCount;
-
-    // Event to track feed ID retrieval
-    event FeedIdFetched(uint256 indexed index, bytes21 feedId);
-
-    /**
-     * Constructor initializes the FTSOv2 contract.
-     * The contract registry is used to fetch the FtsoV2 contract address.
-     */
-    constructor() {
-        /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
-        ftsoV2 = ContractRegistry.getTestFtsoV2();
-    }
-
-    /**
-     * Get the feed ID for a given index and track usage statistics.
-     * @param _index The index of the feed.
-     * @return _feedId The feed ID for the given index.
-     */
-    function getFeedIdForIndex(uint256 _index)
-        external
-        view
-        returns (bytes21 _feedId)
-    {
-        // Retrieve feed ID from the FtsoV2 contract
-        _feedId = ftsoV2.getFeedId(_index);
-
-        // If the feed ID is not zero (i.e., it is valid), store it and update access count
-        if (_feedId != bytes21(0)) {
-            // Update access count for this feed index
-            feedAccessCount[_index]++;
-
-            // Check if this feed index is now the most accessed
-            if (feedAccessCount[_index] > mostAccessedFeedCount) {
-                mostAccessedFeedCount = feedAccessCount[_index];
-                mostAccessedFeedIndex = _index;
-            }
-
-            // Emit an event for external monitoring
-            emit FeedIdFetched(_index, _feedId);
-        }
-    }
-
-    /**
-     * Fetch feed IDs for multiple indices and store them.
-     * @param _indices An array of feed indices.
-     * @return _feedIds An array of corresponding feed IDs.
-     */
-    function getMultipleFeedIds(uint256[] calldata _indices)
-        external
-        view
-        returns (bytes21[] memory _feedIds)
-    {
-        _feedIds = new bytes21[](_indices.length);
-
-        for (uint256 i = 0; i < _indices.length; i++) {
-            _feedIds[i] = getFeedIdForIndex(_indices[i]);
-        }
-    }
-
-    /**
-     * Get the most accessed feed's index and the access count.
-     * @return _mostAccessedIndex The index of the most accessed feed.
-     * @return _mostAccessedCount The number of times the most accessed feed has been queried.
-     */
-    function getMostAccessedFeed()
-        external
-        view
-        returns (uint256 _mostAccessedIndex, uint256 _mostAccessedCount)
-    {
-        return (mostAccessedFeedIndex, mostAccessedFeedCount);
-    }
-
-    /**
-     * View the number of times a particular feed has been accessed.
-     * @param _index The index of the feed.
-     * @return _accessCount The number of times the feed has been accessed.
-     */
-    function getFeedAccessCount(uint256 _index)
-        external
-        view
-        returns (uint256 _accessCount)
-    {
-        return feedAccessCount[_index];
-    }
-}
-```
+{/* prettier-ignore */}
+<Remix fileName="FTSOV2FeedByIdIndex.sol">Open in Remix</Remix>
+<br></br>
 
 ### Example 6: Get Feeds By Id
 
 This example smart contract queries the latest feed values for FLR/USD, BTC/USD, and ETH/USD from FTSOv2 on Flare Testnet Coston2.
 
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.9.0;
+<CodeBlock language="solidity" title="FTSOV2FeedsById.sol">
+  {FTSOV2FeedsById}
+</CodeBlock>
 
-import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
-/* THIS IS A TEST IMPORT, in production use: import {FtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/FtsoV2Interface.sol"; */
-import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/TestFtsoV2Interface.sol";
-
-/**
- * THIS IS AN EXAMPLE CONTRACT.
- * DO NOT USE THIS CODE IN PRODUCTION.
- */
-contract FtsoV2FeedConsumer {
-    TestFtsoV2Interface internal ftsoV2;
-    // Feed IDs, see https://dev.flare.network/ftso/feeds for full list
-    bytes21[] public feedIds = [
-        bytes21(0x01464c522f55534400000000000000000000000000), // FLR/USD
-        bytes21(0x014254432f55534400000000000000000000000000), // BTC/USD
-        bytes21(0x014554482f55534400000000000000000000000000) // ETH/USD
-    ];
-
-    /**
-     * Constructor initializes the FTSOv2 contract.
-     * The contract registry is used to fetch the FtsoV2 contract address.
-     */
-    constructor() {
-        /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
-        ftsoV2 = ContractRegistry.getTestFtsoV2();
-    }
-
-    /**
-     * Get the current value of the feeds.
-     */
-    function getFtsoV2CurrentFeedValues()
-        external
-        view
-        returns (
-            uint256[] memory _feedValues,
-            int8[] memory _decimals,
-            uint64 _timestamp
-        )
-    {
-        /* Your custom feed consumption logic. In this example the values are just returned. */
-        return ftsoV2.getFeedsById(feedIds);
-    }
-}
-```
+{/* prettier-ignore */}
+<Remix fileName="FTSOV2FeedsById.sol">Open in Remix</Remix>
+<br></br>
 
 ### Example 7: Get Feeds By ID in Wei
 
 This contract serves to retrieve the values of specified cryptocurrency feeds in wei, providing users with the latest market data while managing fees that may be associated with some feeds.
 
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.9.0;
+<CodeBlock language="solidity" title="FTSOV2FeedsByIdWei.sol">
+  {FTSOV2FeedsByIdWei}
+</CodeBlock>
 
-import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
-/* THIS IS A TEST IMPORT, in production use: import {FtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/FtsoV2Interface.sol"; */
-import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/TestFtsoV2Interface.sol";
-
-/**
- * THIS IS AN EXAMPLE CONTRACT.
- * DO NOT USE THIS CODE IN PRODUCTION.
- */
-contract FtsoV2FeedConsumer {
-    TestFtsoV2Interface internal ftsoV2;
-
-    // Feed IDs, see https://dev.flare.network/ftso/feeds for full list
-    bytes21[] public feedIds = [
-        bytes21(0x01464c522f55534400000000000000000000000000), // FLR/USD
-        bytes21(0x014254432f55534400000000000000000000000000), // BTC/USD
-        bytes21(0x014554482f55534400000000000000000000000000)  // ETH/USD
-    ];
-
-    // Event to log feed values retrieval
-    event FeedValuesRetrieved(bytes21[] indexed feedIds, uint256[] values, uint64 timestamp);
-
-    /**
-     * Constructor initializes the FTSOv2 contract.
-     * The contract registry is used to fetch the FtsoV2 contract address.
-     */
-    constructor() {
-        /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
-        ftsoV2 = ContractRegistry.getTestFtsoV2();
-    }
-
-    /**
-     * Get the current value of the feeds in wei.
-     * A fee may be required for certain feeds, calculated by the FeeCalculator contract.
-     * @param _feedIds The IDs of the feeds to retrieve values for.
-     * @return _values The list of values for the requested feeds in wei.
-     * @return _timestamp The timestamp of the last update.
-     */
-    function getFeedsByIdInWei(bytes21[] calldata _feedIds)
-        external
-        payable
-        returns (uint256[] memory _values, uint64 _timestamp)
-    {
-        // Ensure that the length of the feed IDs is non-zero
-        require(_feedIds.length > 0, "No feed IDs provided");
-
-        // Retrieve the feed values and timestamp from the FTSOv2 contract
-        (_values, _timestamp) = ftsoV2.getFeedsByIdInWei(_feedIds);
-
-        // Emit an event to log the retrieved feed values
-        emit FeedValuesRetrieved(_feedIds, _values, _timestamp);
-    }
-}
-```
+{/* prettier-ignore */}
+<Remix fileName="FTSOV2FeedsByIdWei.sol">Open in Remix</Remix>
+<br></br>
 
 ### Example 8: Get Feeds By Index
 
 This contract enables users to retrieve stored data for multiple cryptocurrency feeds based on their indices, incorporating fee management and event logging for transparency.
 
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.9.0;
+<CodeBlock language="solidity" title="FTSOV2FeedsByIndex.sol">
+  {FTSOV2FeedsByIndex}
+</CodeBlock>
 
-import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
-/* THIS IS A TEST IMPORT, in production use: import {FtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/FtsoV2Interface.sol"; */
-import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/TestFtsoV2Interface.sol";
-
-/**
- * THIS IS AN EXAMPLE CONTRACT.
- * DO NOT USE THIS CODE IN PRODUCTION.
- */
-contract FtsoV2FeedConsumer {
-    TestFtsoV2Interface internal ftsoV2;
-
-    // Event to log feed retrievals
-    event FeedsRetrieved(uint256[] indices, uint256[] values, int8[] decimals, uint64 timestamp);
-
-    /**
-     * Constructor initializes the FTSOv2 contract.
-     * The contract registry is used to fetch the FtsoV2 contract address.
-     */
-    constructor() {
-        /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
-        ftsoV2 = ContractRegistry.getTestFtsoV2();
-    }
-
-    /**
-     * Get the values and decimals of feeds by their indices.
-     * A fee may be required for certain feeds, calculated by the FeeCalculator contract.
-     * @param _indices The indices of the feeds to retrieve values for.
-     * @return _values The list of values for the requested feeds.
-     * @return _decimals The list of decimal places for the requested feeds.
-     * @return _timestamp The timestamp of the last update.
-     */
-    function getFeedsByIndex(uint256[] calldata _indices)
-        external
-        payable
-        returns (uint256[] memory _values, int8[] memory _decimals, uint64 _timestamp)
-    {
-        // Ensure that the length of the indices is non-zero
-        require(_indices.length > 0, "No indices provided");
-
-        // Retrieve the feed values, decimals, and timestamp from the FTSOv2 contract
-        (_values, _decimals, _timestamp) = ftsoV2.getFeedsByIndex(_indices);
-
-        // Emit an event to log the retrieved feed values
-        emit FeedsRetrieved(_indices, _values, _decimals, _timestamp);
-    }
-
-    /**
-     * Get the current feed values for a specific index.
-     * This function is helpful to verify values before making a payment for feeds.
-     */
-    function previewFeedValues(uint256[] calldata _indices)
-        external
-        view
-        returns (uint256[] memory _values, int8[] memory _decimals)
-    {
-        // Ensure that the length of the indices is non-zero
-        require(_indices.length > 0, "No indices provided");
-
-        // Call the FTSOv2 contract to get the feed values and decimals
-        (_values, _decimals) = ftsoV2.getFeedsByIndex(_indices);
-    }
-}
-```
+{/* prettier-ignore */}
+<Remix fileName="FTSOV2FeedsByIndex.sol">Open in Remix</Remix>
+<br></br>
 
 ### Example 9: Get Feeds By Index in Wei
 
 This contract retrieves values in wei for multiple cryptocurrency feeds based on their indices while managing associated fees.
 
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.9.0;
+<CodeBlock language="solidity" title="FTSOV2FeedsByIndexWei.sol">
+  {FTSOV2FeedsByIndexWei}
+</CodeBlock>
 
-import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
-/* THIS IS A TEST IMPORT, in production use: import {FtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/FtsoV2Interface.sol"; */
-import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/TestFtsoV2Interface.sol";
-
-/**
- * THIS IS AN EXAMPLE CONTRACT.
- * DO NOT USE THIS CODE IN PRODUCTION.
- */
-contract FtsoV2FeedConsumer {
-    TestFtsoV2Interface internal ftsoV2;
-
-    // Fee percentage that will be deducted from the payment
-    uint256 public feePercentage = 1; // 1%
-
-    /**
-     * Constructor initializes the FTSOv2 contract.
-     * The contract registry is used to fetch the FtsoV2 contract address.
-     */
-    constructor() {
-        /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
-        ftsoV2 = ContractRegistry.getTestFtsoV2();
-    }
-
-    /**
-     * Get the values of feeds in wei by their indices.
-     * A fee may need to be paid for certain feeds, calculated by the FeeCalculator contract.
-     * @param _indices The indices of the feeds to retrieve values for.
-     * @return _values The list of values for the requested feeds in wei.
-     * @return _timestamp The timestamp of the last update.
-     */
-    function getFeedsByIndexInWei(uint256[] calldata _indices)
-        external
-        payable
-        returns (uint256[] memory _values, uint64 _timestamp)
-    {
-        // Ensure that the length of the indices is non-zero
-        require(_indices.length > 0, "No indices provided");
-
-        // Calculate total fee based on the number of indices
-        uint256 totalFee = calculateFee(_indices.length);
-        require(msg.value >= totalFee, "Insufficient fee paid");
-
-        // Retrieve the feed values and timestamp from the FTSOv2 contract
-        (_values, _timestamp) = ftsoV2.getFeedsByIndexInWei(_indices);
-
-        // Refund excess Ether paid (if any)
-        if (msg.value > totalFee) {
-            payable(msg.sender).transfer(msg.value - totalFee);
-        }
-    }
-
-    /**
-     * Calculate the fee based on the number of feeds requested.
-     * @param _numFeeds The number of feeds requested.
-     * @return The calculated fee in wei.
-     */
-    function calculateFee(uint256 _numFeeds) internal view returns (uint256) {
-        return (_numFeeds * 1 ether * feePercentage) / 100; // Example: 1% of the total requested amount
-    }
-}
-```
+{/* prettier-ignore */}
+<Remix fileName="FTSOV2FeedsByIndexWei.sol">Open in Remix</Remix>
+<br></br>
 
 ### Example 10: Verify Feed Data with Proof
 
 This contract provides functionality to verify feed data against a Merkle tree proof, ensuring that the data has not been tampered with and is part of the confirmed data set.
 
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.9.0;
+<CodeBlock language="solidity" title="FTSOV2VerifyProof.sol">
+  {FTSOV2VerifyProof}
+</CodeBlock>
 
-import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
-import {FtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/FtsoV2Interface.sol";
-import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-
-/**
- * @title FtsoV2FeedVerifier
- * @notice A contract to verify the validity of feed data against a confirmed Merkle tree.
- */
-contract FtsoV2FeedVerifier {
-    FtsoV2Interface internal ftsoV2;
-
-    /**
-     * Constructor initializes the FTSOv2 contract.
-     */
-    constructor() {
-        // THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2();
-        ftsoV2 = ContractRegistry.getTestFtsoV2();
-    }
-
-    /**
-     * @notice Verify if the provided feed data is valid based on the Merkle proof.
-     * @param _feedData The FeedDataWithProof structure containing feed data and proof.
-     * @return isValid Returns true if the feed data is valid, false otherwise.
-     */
-    function verifyFeedData(FtsoV2Interface.FeedDataWithProof calldata _feedData)
-        external
-        view
-        returns (bool isValid)
-    {
-        // Pack the relevant feed data fields into a hash
-        bytes32 leaf = keccak256(abi.encodePacked(
-            _feedData.body.votingRoundId,
-            _feedData.body.id,
-            _feedData.body.value,
-            _feedData.body.turnoutBIPS,
-            _feedData.body.decimals
-        ));
-
-        // Verify the Merkle proof against the leaf and root
-        isValid = MerkleProof.verify(_feedData.proof, _feedData.merkleRoot, leaf);
-    }
-
-}
-```
+{/* prettier-ignore */}
+<Remix fileName="FTSOV2VerifyProof.sol">Open in Remix</Remix>
+<br></br>
