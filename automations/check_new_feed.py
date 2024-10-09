@@ -13,23 +13,20 @@ from web3.contract import Contract
 RPC_URL = "https://songbird-api.flare.network/ext/C/rpc"
 FAST_UPDATER_ADDRESS = "0x70e8870ef234EcD665F96Da4c669dc12c1e1c116"
 EXPLORER_API_URL = "https://songbird-explorer.flare.network/api"
-ISSUES_FILE = "issues.md"
+ISSUES_FILE = Path("issues.md")
 MAX_MARKET_CAP_RANK = 100
-
-# Logging configuration
-logging.basicConfig(
-    encoding="utf-8",
-    level=logging.INFO,
-    handlers=[logging.StreamHandler(stream=sys.stdout)],
-)
-logger = logging.getLogger(__name__)
-
 HEADER_TEMPLATE = """---
 title: "[auto_req]: Potential New Feeds"
 assignees: dineshpinto
 labels: "enhancement"
 ---
 """
+logging.basicConfig(
+    encoding="utf-8",
+    level=logging.INFO,
+    handlers=[logging.StreamHandler(stream=sys.stdout)],
+)
+logger = logging.getLogger(__name__)
 
 
 def get_contract_abi(contract_address: str) -> dict[str, Any]:
@@ -79,16 +76,16 @@ def get_current_feeds(contract: Contract) -> list[str]:
         sys.exit(1)
 
 
-def write_issues_file(coins: list[dict[str, Any]]) -> None:
+def write_issues_file(path: Path, header: str, coins: list[dict[str, Any]]) -> None:
     """Write coin data to the issues.md file."""
-    with Path(ISSUES_FILE).open("w", encoding="utf-8") as file:
-        file.write(HEADER_TEMPLATE)
+    with path.open("w", encoding="utf-8") as file:
+        file.write(header)
         file.write("Coins matching criteria:\n\n")
         for coin in coins:
             file.write(f"## {coin['name']}\n")
             file.write(format_coin_info(coin))
             file.write("\n\n")
-    logger.info("New feeds written to %s", ISSUES_FILE)
+    logger.info("New feeds written to %s", path)
 
 
 if __name__ == "__main__":
@@ -119,4 +116,4 @@ if __name__ == "__main__":
     ]
 
     # Write results to issues file
-    write_issues_file(selected_coins)
+    write_issues_file(ISSUES_FILE, HEADER_TEMPLATE, selected_coins)

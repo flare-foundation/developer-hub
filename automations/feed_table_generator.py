@@ -7,19 +7,18 @@ import requests
 from pycoingecko import CoinGeckoAPI
 from web3 import Web3
 
+# Configuration
 RPC_URL = "https://songbird-api.flare.network/ext/C/rpc"
 FAST_UPDATER_ADDRESS = "0x70e8870ef234EcD665F96Da4c669dc12c1e1c116"
-FTSO_FEED_ID_CONVERTER_ADDRESS = "0x9c20c3F1fC39F14ad0D09DE91B74a16c12a36C61"
 EXPLORER_API_URL = "https://songbird-explorer.flare.network/api"
-BLOCK_LATENCY_FEEDS_PATH = "_block_latency_feeds.md"
-ANCHOR_FEEDS_PATH = "_anchor_feeds.md"
+BLOCK_LATENCY_FEEDS_PATH = Path("_block_latency_feeds.md")
+ANCHOR_FEEDS_PATH = Path("_anchor_feeds.md")
 TABLE_HEADERS = {
     "block_latency": "| **Feed Name** | **Feed Index** | **Feed ID** | **Base Asset** | **Decimals** | **Category** |\n"
     "| ------------- | -------------- | ----------- | -------------- | ------------ | ------------ |\n",
     "anchor": "| **Feed Name** | **Feed ID** | **Base Asset** | **Decimals** | **Category** |\n"
     "| ------------- | ----------- | -------------- | ------------ | ------------ |\n",
 }
-
 logging.basicConfig(
     encoding="utf-8",
     level=logging.INFO,
@@ -52,10 +51,10 @@ def get_feed_id(category: str, feed_name: str) -> str:
     return f"0x{padded_hex_string}"
 
 
-def write_table_to_file(file_path: str, header: str, rows: list[str]) -> None:
+def write_table_to_file(file_path: Path, header: str, rows: list[str]) -> None:
     """Write a markdown table to a file."""
     try:
-        with Path(file_path).open("w", encoding="utf-8") as f:
+        with file_path.open("w", encoding="utf-8") as f:
             f.write(header)
             f.writelines(rows)
         logger.info("Successfully wrote data to %s", file_path)
