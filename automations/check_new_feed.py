@@ -1,50 +1,30 @@
+import json
+import logging
+import sys
 from pathlib import Path
+from typing import Any
 
+import requests
 from pycoingecko import CoinGeckoAPI
+from web3 import Web3
+from web3.contract import Contract
 
-feed_ids = [
-    {"category": 1, "name": "FLR/USD"},
-    {"category": 1, "name": "SGB/USD"},
-    {"category": 1, "name": "BTC/USD"},
-    {"category": 1, "name": "XRP/USD"},
-    {"category": 1, "name": "LTC/USD"},
-    {"category": 1, "name": "XLM/USD"},
-    {"category": 1, "name": "DOGE/USD"},
-    {"category": 1, "name": "ADA/USD"},
-    {"category": 1, "name": "ALGO/USD"},
-    {"category": 1, "name": "ETH/USD"},
-    {"category": 1, "name": "FIL/USD"},
-    {"category": 1, "name": "ARB/USD"},
-    {"category": 1, "name": "AVAX/USD"},
-    {"category": 1, "name": "BNB/USD"},
-    {"category": 1, "name": "MATIC/USD"},
-    {"category": 1, "name": "SOL/USD"},
-    {"category": 1, "name": "USDC/USD"},
-    {"category": 1, "name": "USDT/USD"},
-    {"category": 1, "name": "XDC/USD"},
-    {"category": 1, "name": "TRX/USD"},
-    {"category": 1, "name": "LINK/USD"},
-    {"category": 1, "name": "ATOM/USD"},
-    {"category": 1, "name": "DOT/USD"},
-    {"category": 1, "name": "TON/USD"},
-    {"category": 1, "name": "ICP/USD"},
-    {"category": 1, "name": "SHIB/USD"},
-    {"category": 1, "name": "DAI/USD"},
-    {"category": 1, "name": "BCH/USD"},
-    {"category": 1, "name": "NEAR/USD"},
-    {"category": 1, "name": "LEO/USD"},
-    {"category": 1, "name": "UNI/USD"},
-    {"category": 1, "name": "ETC/USD"},
-    {"category": 1, "name": "WIF/USD"},
-    {"category": 1, "name": "BONK/USD"},
-    {"category": 1, "name": "JUP/USD"},
-    {"category": 1, "name": "ETHFI/USD"},
-    {"category": 1, "name": "ENA/USD"},
-    {"category": 1, "name": "PYTH/USD"},
-]
-CURRENT_FEEDS = [feed["name"].split("/")[0] for feed in feed_ids]
+# Configuration
+RPC_URL = "https://songbird-api.flare.network/ext/C/rpc"
+FAST_UPDATER_ADDRESS = "0x70e8870ef234EcD665F96Da4c669dc12c1e1c116"
+EXPLORER_API_URL = "https://songbird-explorer.flare.network/api"
+ISSUES_FILE = "issues.md"
+MAX_MARKET_CAP_RANK = 100
 
-header = """---
+# Logging configuration
+logging.basicConfig(
+    encoding="utf-8",
+    level=logging.INFO,
+    handlers=[logging.StreamHandler(stream=sys.stdout)],
+)
+logger = logging.getLogger(__name__)
+
+HEADER_TEMPLATE = """---
 title: "[auto_req]: Potential New Feeds"
 assignees: dineshpinto
 labels: "enhancement"
@@ -52,40 +32,91 @@ labels: "enhancement"
 """
 
 
-def format_dict_to_str(coin_item: dict) -> str:
-    newdict = {
-        "name": coin_item["name"],
-        "symbol": coin_item["symbol"],
-        "coingecko_id": coin_item["id"],
-        "price_change_percentage_24h": coin_item["data"]["price_change_percentage_24h"][
-            "usd"
-        ],
-        "total_volume": coin_item["data"]["total_volume"],
-        "coingecko_link": f"https://www.coingecko.com/en/coins/{coin_item["id"]}",
-        "description": coin_item["data"]["content"]["description"]
-        if coin_item["data"]["content"]
-        else "",
+def get_contract_abi(contract_address: str) -> dict[str, Any]:
+    """Fetch the ABI for a contract from the Chain Explorer API."""
+    params = {"module": "contract", "action": "getabi", "address": contract_address}
+    headers = {"accept": "application/json"}
+
+    try:
+        response = requests.get(
+            EXPLORER_API_URL, params=params, headers=headers, timeout=10
+        )
+        response.raise_for_status()
+        result = response.json().get("result")
+        return json.loads(result)
+    except (requests.RequestException, ValueError, json.JSONDecodeError):
+        logger.exception("Error fetching ABI for contract")
+        sys.exit(1)
+
+
+def format_coin_info(coin_data: dict[str, Any]) -> str:
+    """Format coin data dictionary to a readable string."""
+    coin_info = {
+        "name": coin_data.get("name", "N/A"),
+        "symbol": coin_data.get("symbol", "N/A"),
+        "coingecko_id": coin_data.get("id", "N/A"),
+        "price_change_percentage_24h": coin_data.get("data", {})
+        .get("price_change_percentage_24h", {})
+        .get("usd", "N/A"),
+        "total_volume": coin_data.get("data", {}).get("total_volume", "N/A"),
+        "coingecko_link": f"https://www.coingecko.com/en/coins/{coin_data.get('id', '')}",
+        "description": coin_data.get("data", {})
+        .get("content", {})
+        .get("description", ""),
     }
-    return "\n".join(f"{k}: {v}" for k, v in newdict.items())
+    return "\n".join(f"{key}: {value}" for key, value in coin_info.items())
+
+
+def get_current_feeds(contract: Contract) -> list[str]:
+    """Fetch the current block latency feeds from the contract."""
+    try:
+        feeds = contract.functions.fetchAllCurrentFeeds().call()
+        return [
+            feed[1:].decode("utf-8").rstrip("\x00").split("/")[0] for feed in feeds[0]
+        ]
+    except Exception:
+        logger.exception("Error fetching current feeds")
+        sys.exit(1)
+
+
+def write_issues_file(coins: list[dict[str, Any]]) -> None:
+    """Write coin data to the issues.md file."""
+    with Path(ISSUES_FILE).open("w", encoding="utf-8") as file:
+        file.write(HEADER_TEMPLATE)
+        file.write("Coins matching criteria:\n\n")
+        for coin in coins:
+            file.write(f"## {coin['name']}\n")
+            file.write(format_coin_info(coin))
+            file.write("\n\n")
+    logger.info("New feeds written to %s", ISSUES_FILE)
 
 
 if __name__ == "__main__":
-    MAX_MARKET_CAP_RANK = 100
+    w3 = Web3(Web3.HTTPProvider(RPC_URL))
+    logger.info("Connected to RPC `%s`", RPC_URL)
 
+    # Set up contract
+    contract_abi = get_contract_abi(FAST_UPDATER_ADDRESS)
+    fast_updater = w3.eth.contract(
+        address=Web3.to_checksum_address(FAST_UPDATER_ADDRESS),
+        abi=contract_abi,
+    )
+    logger.info("Connected to FastUpdater contract `%s`", FAST_UPDATER_ADDRESS)
+
+    # Query block latency feeds
+    current_feeds = get_current_feeds(fast_updater)
+
+    # Fetch trending coins
     cg = CoinGeckoAPI()
     trending = cg.get_search_trending()
 
-    with Path.open("issues.md", "w") as f:
-        f.write(header)
-        selected_coin_data = []
-        f.write("Coins matching criteria:" + "\n\n")
-        for coin in trending["coins"]:
-            if (
-                coin["item"]["market_cap_rank"] < MAX_MARKET_CAP_RANK
-                and coin["item"]["symbol"] not in CURRENT_FEEDS
-            ):
-                item_data = coin["item"]
-                selected_coin_data.append(coin["item"])
-                f.write(f"## {coin["item"]["name"]}" + "\n")
-                f.write(format_dict_to_str(coin["item"]))
-                f.write("\n\n")
+    # Filter coins based on criteria
+    selected_coins = [
+        coin["item"]
+        for coin in trending["coins"]
+        if coin["item"].get("market_cap_rank", float("inf")) < MAX_MARKET_CAP_RANK
+        and coin["item"].get("symbol") not in current_feeds
+    ]
+
+    # Write results to issues file
+    write_issues_file(selected_coins)
