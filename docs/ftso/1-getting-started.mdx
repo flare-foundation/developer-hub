@@ -53,55 +53,57 @@ The `TestFtsoV2Interface` is for **testing only**, with all methods as `view` to
 
 Make the following changes to `FtsoV2FeedConsumer.sol`:
 
-```diff
-- import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/TestFtsoV2Interface.sol";
-+ import {FtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/FtsoV2Interface.sol";
+```solidity
+import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol"
+import {FtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/FtsoV2Interface.sol";
 
 contract FtsoV2FeedConsumer {
+  FtsoV2Interface internal ftsoV2;
+  //...
     constructor() {
--     ftsoV2 = ContractRegistry.getTestFtsoV2();
-+     ftsoV2 = ContractRegistry.getFtsoV2();
+     ftsoV2 = ContractRegistry.getFtsoV2();
     }
+  //...
 }
 ```
 
 :::
 
 <details>
-<summary>Breaking down the contract.</summary>
+    <summary>Breaking down the contract.</summary>
 
-- **Purpose**: Interacts with the Flare Network to fetch current feed values for specific cryptocurrency pairs (FLR/USD, BTC/USD, ETH/USD).
+    - **Purpose**: Interacts with the Flare Network to fetch current feed values for specific cryptocurrency pairs (FLR/USD, BTC/USD, ETH/USD).
 
-- **Dependencies**:
+    - **Dependencies**:
 
-  - `ContractRegistry.sol`: Used to get the addresses of various contracts on the Flare network.
-  - `TestFtsoV2Interface.sol`: This interface allows interaction with the FTSOv2 contract, which provides real-time price feeds for various assets.
+    - `ContractRegistry.sol`: Used to get the addresses of various contracts on the Flare network.
+    - `TestFtsoV2Interface.sol`: This interface allows interaction with the FTSOv2 contract, which provides real-time price feeds for various assets.
 
-- **State Variables**:
+    - **State Variables**:
 
-  - `ftsoV2`: This is a state variable of type `TestFtsoV2Interface`. It will hold the address of the FTSO V2 contract once initialized.
-  - `feedIndexes`: An array of indexes corresponding to different price feeds. In this example:
+    - `ftsoV2`: This is a state variable of type `TestFtsoV2Interface`. It will hold the address of the FTSO V2 contract once initialized.
+    - `feedIndexes`: An array of indexes corresponding to different price feeds. In this example:
     - Index 0 corresponds to FLR/USD
     - Index 2 corresponds to BTC/USD
     - Index 9 corresponds to ETH/USD
 
-- **Constructor**:
+    - **Constructor**:
 
-  - The constructor is a special function that runs only once when the contract is deployed. It initializes the `ftsoV2` state variable by fetching the FTSO V2 contract address using the `ContractRegistry`.
+    - The constructor is a special function that runs only once when the contract is deployed. It initializes the `ftsoV2` state variable by fetching the FTSO V2 contract address using the `ContractRegistry`.
 
-- **Function `getFtsoV2CurrentFeedValues`**:
+    - **Function `getFtsoV2CurrentFeedValues`**:
 
-  - It is marked as `external`, meaning it can be called from outside the contract.
-  - It is also marked as `payable`, allowing it to receive Ether when called, though in this example, the Ether is not used.
-  - It returns three values:
+    - It is marked as `external`, meaning it can be called from outside the contract.
+    - It is also marked as `payable`, allowing it to receive Ether when called, though in this example, the Ether is not used.
+    - It returns three values:
     - `_feedValues`: The latest price values for the specified feeds.
     - `_decimals`: The decimal precision of each feed value.
     - `_timestamp`: The timestamp when the prices were fetched.
 
-  Inside the function:
+    Inside the function:
 
-  - The `ftsoV2.getFeedsByIndex(feedIndexes)` call retrieves the latest prices for the indexes specified in `feedIndexes`.
-  - These values are then returned to the caller.
+    - The `ftsoV2.getFeedsByIndex(feedIndexes)` call retrieves the latest prices for the indexes specified in `feedIndexes`.
+    - These values are then returned to the caller.
 
 </details>
 
@@ -120,35 +122,35 @@ If you have not already configured your MetaMask wallet to support Flare Testnet
 
 2. On the left side of Remix, click the **Solidity Compiler** tab to view the compiler settings.
 
-   <img src={OpenSolidityCompiler} style={{ width: 300 }} />
+<img src={OpenSolidityCompiler} style={{ width: 300 }} />
 
 3. Expand the **Advanced Configurations** section and make sure the **EVM Version** is set to `london`.
 
-   <img src={SetEvmVersion} style={{ width: 300 }} />
+<img src={SetEvmVersion} style={{ width: 300 }} />
 
 3. Click the **Compile FtsoV2FeedConsumer.sol** button to compile the contract.
 
-    <img src={CompileContract} style={{ width: 300 }} />
+<img src={CompileContract} style={{ width: 300 }} />
 
 4. On the left side of Remix, click the **Deploy & Run transactions** tab to view the deployment settings.
 
-   <img src={OpenDeploy} style={{ width: 300 }} />
+<img src={OpenDeploy} style={{ width: 300 }} />
 
 5. Select the **Injected Provider - MetaMask** environment.
 
-   <img src={SetInjectedProvider} style={{ width: 300 }} />
+<img src={SetInjectedProvider} style={{ width: 300 }} />
 
 6. Click **Deploy** to deploy the contract to Flare Testnet Coston2. MetaMask opens and asks you to confirm payment for deploying the contract. Make sure MetaMask is set to Flare Testnet Coston2 before you confirm the transaction.
 
-    <img src={DeployContract} style={{ width: 300 }} />
+<img src={DeployContract} style={{ width: 300 }} />
 
 7. In the MetaMask prompt, click **Confirm** to approve the transaction and spend your testnet C2FLR required to deploy the contract.
 
-    <img src={ConfirmDeployInMetamask} style={{ width: 300 }} />
+<img src={ConfirmDeployInMetamask} style={{ width: 300 }} />
 
 8. After a few seconds, the transaction completes and your contract appears under the **Deployed/Unpinned Contracts** list in Remix. Click the contract dropdown to view its variables and functions. Click on **getFtsoV2CurrentFeedValues** to show the latest feed values and decimals.
 
-    <img src={QueryLatestFeeds} style={{ width: 300 }} />
+<img src={QueryLatestFeeds} style={{ width: 300 }} />
 
 #### Function Returns
 
