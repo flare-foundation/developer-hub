@@ -34,7 +34,7 @@ const sidebars: SidebarsConfig = {
         },
         {
           type: "category",
-          label: "Solidity Reference",
+          label: "Network Solidity Reference",
           collapsed: true,
           link: { type: "doc", id: "network/solidity-reference" },
           items: [
@@ -65,7 +65,7 @@ const sidebars: SidebarsConfig = {
         },
         {
           type: "category",
-          label: "Solidity Reference",
+          label: "FTSO Solidity Reference",
           collapsed: true,
           link: { type: "doc", id: "ftso/solidity-reference" },
           items: [
@@ -98,7 +98,7 @@ const sidebars: SidebarsConfig = {
             // },
             {
               type: "category",
-              label: "Solidity Reference",
+              label: "FTSO Scaling Solidity Reference",
               collapsed: true,
               link: {
                 type: "doc",

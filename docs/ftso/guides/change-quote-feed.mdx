@@ -36,15 +36,16 @@ This guide will show you how to fetch the latest feed values for two feeds and c
 The `TestFtsoV2Interface` is for **testing only**, with all methods as `view` to allow rapid development without gas costs or state changes. For production, use [`FtsoV2Interface`](/ftso/solidity-reference/FtsoV2Interface), which includes `payable` methods required for real transactions and state modifications.
 Make the following changes to `FtsoV2ChangeQuoteFeed.sol`:
 
-```diff
-- import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/TestFtsoV2Interface.sol";
-+ import {FtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/FtsoV2Interface.sol";
+```solidity
+import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
+import {FtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/FtsoV2Interface.sol";
 
 contract FtsoV2ChangeQuoteFeed {
-    constructor() {
--     ftsoV2 = ContractRegistry.getTestFtsoV2();
-+     ftsoV2 = ContractRegistry.getFtsoV2();
-    }
+  FtsoV2Interface internal ftsoV2;
+  constructor() {
+    ftsoV2 = ContractRegistry.getFtsoV2();
+  }
+  //...
 }
 ```
 
@@ -54,63 +55,27 @@ contract FtsoV2ChangeQuoteFeed {
 
 - **Using Remix:** Set EVM version to `london` in the **Advanced Configurations** section of the **Solidity Compiler** tab:
 
-  <img src={SetEvmVersionRemix} style={{ width: 300 }} />
+<img src={SetEvmVersionRemix} style={{ width: 300 }} />
 
 - **Using Hardhat or Foundry:** Set EVM version to `london` in [hardhat.config.ts](https://github.com/flare-foundation/flare-hardhat-starter/blob/master/hardhat.config.ts#L34) or [foundry.toml](https://github.com/flare-foundation/flare-foundry-starter/blob/master/foundry.toml).
 
 - **Using Standard Solidity JSON:** Set `evmVersion` to `london`:
 
-  ```json
-  {
-    "settings": {
-      "optimizer": {
-        /* ... */
-      },
-      "evmVersion": "london"
-    }
+```json
+{
+  "settings": {
+    "optimizer": {
+      /* ... */
+    },
+    "evmVersion": "london"
   }
-  ```
+}
+```
 
 - **Using `solc` CLI:** Set `--evm-version` to `london`:
 
-  ```bash
-  solc --evm-version london <args>
-  ```
+```bash
+solc --evm-version london <args>
+```
 
 :::
-
-<details>
-<summary>Didn't understand the Solidity code?</summary>
-
-- **Purpose**: This contract interacts with the Flare Network to fetch feed values and compute a new quote feed value based on the base and quote feed values.
-
-- **Dependencies**:
-
-  - `ContractRegistry.sol`: Used to get the addresses of various contracts on the Flare network.
-  - `TestFtsoV2Interface.sol`: This interface allows interaction with the FTSOv2 contract, which provides real-time price feeds for various assets.
-
-- **State Variables**:
-
-  - `ftsoV2`: This is a state variable of type `TestFtsoV2Interface`. It will hold the address of the FTSO V2 contract once initialized.
-
-- **Constructor**:
-
-  - The constructor is a special function that runs only once when the contract is deployed. It initializes the `ftsoV2` state variable by fetching the FTSO V2 contract address using the `ContractRegistry`.
-
-- **Internal Function `_scaleBaseFeedValue`**:
-
-  - Scales the base feed value to match the decimals of the quote feed.
-  - Adjusts the feed value by scaling up or down depending on the difference in decimals.
-
-- **External Function `getNewQuoteFeedValue`**:
-
-  - Accepts an array of base and quote feed IDs.
-  - Fetches current feed values and decimals using `ftsoV2`.
-  - Scales the base feed value to match the quote feed decimals.
-  - Computes and returns the new quote feed value by adjusting for the decimal differences and performing a calculation.
-
-- **Key Validations**:
-  - Ensures exactly two feed indexes are provided.
-  - Prevents division by zero during the computation of the new quote feed value.
-
-</details>
