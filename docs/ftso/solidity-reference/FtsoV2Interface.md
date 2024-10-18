@@ -8,8 +8,8 @@ import Remix from "@site/src/components/remix";
 import CodeBlock from "@theme/CodeBlock";
 import FTSOV2FeedById from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedById.sol";
 import FTSOV2FeedByIdWei from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedByIdWei.sol";
-import FTSOVFeedByIndex from "!!raw-loader!/examples/developer-hub-solidity/FTSOVFeedByIndex.sol";
-import FTSOVFeedByIndexWei from "!!raw-loader!/examples/developer-hub-solidity/FTSOVFeedByIndexWei.sol";
+import FTSOV2FeedByIndex from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedByIndex.sol";
+import FTSOV2FeedByIndexWei from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedByIndexWei.sol";
 import FTSOV2FeedByIdIndex from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedByIdIndex.sol";
 import FTSOV2FeedsById from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedsById.sol";
 import FTSOV2FeedsByIdWei from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedsByIdWei.sol";
@@ -123,13 +123,13 @@ function getFeedByIndex(
 <details>
 <summary>Sample contract usage</summary>
 
-<CodeBlock language="solidity" title="FTSOVFeedByIndex.sol">
-  {FTSOVFeedByIndex}
+<CodeBlock language="solidity" title="FTSOV2FeedByIndex.sol">
+  {FTSOV2FeedByIndex}
 </CodeBlock>
 
 </details>
 
-<Remix fileName="FTSOVFeedByIndex.sol">Open sample in Remix</Remix>
+<Remix fileName="FTSOV2FeedByIndex.sol">Open sample in Remix</Remix>
 <br></br>
 
 ### getFeedByIndexInWei
@@ -158,13 +158,13 @@ function getFeedByIndexInWei(
 <details>
 <summary>Sample contract usage</summary>
 
-<CodeBlock language="solidity" title="FTSOVFeedByIndexWei.sol">
-  {FTSOVFeedByIndexWei}
+<CodeBlock language="solidity" title="FTSOV2FeedByIndexWei.sol">
+  {FTSOV2FeedByIndexWei}
 </CodeBlock>
 
 </details>
 
-<Remix fileName="FTSOVFeedByIndexWei.sol">Open sample in Remix</Remix>
+<Remix fileName="FTSOV2FeedByIndexWei.sol">Open sample in Remix</Remix>
 <br></br>
 
 ### getFeedId
