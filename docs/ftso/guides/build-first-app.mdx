@@ -88,9 +88,9 @@ Install the Flare periphery package to interact with [FTSOv2 contracts](/ftso/so
    npm i @flarenetwork/flare-periphery-contracts
    ```
 
-2. Create a file `contracts/remappings.txt`, and add the following remappings to ensure Foundry can locate the installed packages:
+2. Create a file `remappings.txt` in the main directory, and add the following remappings to ensure Foundry can locate the installed packages:
 
-   ```plaintext title="contracts/remappings.txt"
+   ```plaintext title="remappings.txt"
    @flarenetwork/flare-periphery-contracts/=node_modules/@flarenetwork/flare-periphery-contracts/
    @openzeppelin/contracts/=node_modules/@openzeppelin/contracts
    ```
@@ -187,15 +187,15 @@ You can now deploy your contract to Flare Testnet Coston2.
     :::
 
     ```bash
-    export ADDRESS=<address above>
-    export PRIVATE_KEY=<private key above>
+    export ACCOUNT=<address above>
+    export ACCOUNT_PRIVATE_KEY=<private key above>
     export RPC_URL="https://coston2-api.flare.network/ext/C/rpc"
     ```
 
 3.  Use the [Coston2 Faucet](https://faucet.flare.network/coston2) to get some testnet C2FLR tokens. You can verify that the 100 C2FLR has arrived in your wallet:
 
     ```bash
-    cast balance $ADDRESS -r $RPC_URL -e
+    cast balance $ACCOUNT -r $RPC_URL -e
     ```
 
 4.  The final step before deploying is to set the constructor arguments with the address of [`FtsoV2`](/ftso/solidity-reference) and [`FeeCalculator`](/ftso/solidity-reference) on Flare Testnet Coston2 and the [feed ID](/ftso/feeds) of FLR/USD:
@@ -209,7 +209,7 @@ You can now deploy your contract to Flare Testnet Coston2.
     You can now deploy the contract:
 
     ```bash
-    forge create src/FtsoV2FeedConsumer.sol:FtsoV2FeedConsumer --private-key $PRIVATE_KEY --rpc-url $RPC_URL --constructor-args $FTSOV2_COSTON2 $FEECALCULATOR_COSTON2 $FLRUSD_FEED_ID
+    forge create src/FtsoV2FeedConsumer.sol:FtsoV2FeedConsumer --private-key $ACCOUNT_PRIVATE_KEY --rpc-url $RPC_URL --constructor-args $FTSOV2_COSTON2 $FEECALCULATOR_COSTON2 $FLRUSD_FEED_ID
     ```
 
     If the deployment is successful, the output will display the contract address, save that for later use:
@@ -231,7 +231,7 @@ You can now deploy your contract to Flare Testnet Coston2.
 5.  Use `cast` to interact with the contract, note that this command uses the environment variables defined in the sections above.:
 
     ```bash
-    cast send --private-key $PRIVATE_KEY --rpc-url $RPC_URL -j --value 0 $DEPLOYMENT_ADDRESS "getFlrUsdPrice()"
+    cast send --private-key $ACCOUNT_PRIVATE_KEY --rpc-url $RPC_URL -j --value 0 $DEPLOYMENT_ADDRESS "getFlrUsdPrice()"
     ```
 
     <details>
