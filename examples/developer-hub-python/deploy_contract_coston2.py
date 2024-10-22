@@ -22,17 +22,17 @@ async def main() -> None:
         bytecode=contract_interface["evm"]["bytecode"]["object"],
     )
 
-    tx = ftso_v2_feed_consumer.constructor().build_transaction(
+    tx = await ftso_v2_feed_consumer.constructor().build_transaction(
         {
             "from": account,
             "nonce": await w3.eth.get_transaction_count(account),
             "gasPrice": await w3.eth.gas_price,
         }
     )
-    signed_tx = await w3.eth.account.sign_transaction(tx, private_key=private_key)
+    signed_tx = w3.eth.account.sign_transaction(tx, private_key=private_key)
 
     print("Deploying Contract...")
-    tx_hash = await w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+    tx_hash = await w3.eth.send_raw_transaction(signed_tx.raw_transaction)
     tx_receipt = await w3.eth.wait_for_transaction_receipt(tx_hash)
     print(f"Contract deployed at {tx_receipt['contractAddress']}")
 
