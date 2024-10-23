@@ -13,6 +13,8 @@ FTSO_FEED_ID_CONVERTER_ADDRESS = "0x9c20c3F1fC39F14ad0D09DE91B74a16c12a36C61"
 EXPLORER_API_URL = "https://songbird-explorer.flare.network/api"
 block_latency_feeds_path = "_block_latency_feeds.md"
 anchor_feeds_path = "_anchor_feeds.md"
+block_latency_json_path = "block_latency_feeds.json"
+anchor_json_path = "anchor_feeds.json"
 
 logging.basicConfig(
     encoding="utf-8",
@@ -68,7 +70,10 @@ if __name__ == "__main__":
     # Query CoinGecko
     coins_list = cg.get_coins_markets(vs_currency="usd")
 
-    # Write block-latency feeds to file
+    # Prepare JSON data for block-latency feeds
+    block_latency_data = []
+
+    # Write block-latency feeds to file and JSON
     logger.info("Writing block-latency feeds to `%s`", block_latency_feeds_path)
     with Path.open(block_latency_feeds_path, "w") as f:
         f.write(
@@ -81,36 +86,65 @@ if __name__ == "__main__":
             feed_id = (
                 "0x" + ftso_feedid_converter.functions.getFeedId(1, name).call().hex()
             )
+            feed_data = {
+                "feed_name": name,
+                "feed_index": idx,
+                "feed_id": feed_id,
+                "decimals": decimal,
+            }
             # Patch for tokens not returned by CoinGecko
             if name == "SGB/USD":
+                feed_data["base_asset"] = "Songbird"
+                feed_data["category"] = "Crypto"
                 f.write(
                     f"| {name} | `{idx}` | `{feed_id}` | Songbird | {decimal} | Crypto |\n"
                 )
-                continue
-            if name == "XDC/USD":
+            elif name == "XDC/USD":
+                feed_data["base_asset"] = "XDC Network"
+                feed_data["category"] = "Crypto"
                 f.write(
                     f"| {name} | `{idx}` | `{feed_id}` | XDC Network | {decimal} | Crypto |\n"
                 )
-                continue
-            if name == "ETHFI/USD":
+            elif name == "ETHFI/USD":
+                feed_data["base_asset"] = "Ether.fi"
+                feed_data["category"] = "Crypto"
                 f.write(
                     f"| {name} | `{idx}` | `{feed_id}` | Ether.fi | {decimal} | Crypto |\n"
                 )
-                continue
-            if name == "ENA/USD":
+            elif name == "ENA/USD":
+                feed_data["base_asset"] = "Ethena"
+                feed_data["category"] = "Crypto"
                 f.write(
                     f"| {name} | `{idx}` | `{feed_id}` | Ethena | {decimal} | Crypto |\n"
                 )
-                continue
-            for coin in coins_list:
-                symbol = name.split("/")[0].lower()
-                if symbol == coin["symbol"]:
-                    f.write(
-                        f"| {name} | `{idx}` | `{feed_id}` | {coin['name']} | {decimal} | Crypto |\n"
-                    )
-                    break
 
-    # Write anchor feeds to file
+            elif name == "FLR/USD":
+                feed_data["base_asset"] = "Flare"
+                feed_data["category"] = "Crypto"
+                f.write(
+                    f"| {name} | `{idx}` | `{feed_id}` | Flare | {decimal} | Crypto |\n"
+                )
+            else:
+                for coin in coins_list:
+                    symbol = name.split("/")[0].lower()
+                    if symbol == coin["symbol"]:
+                        feed_data["base_asset"] = coin["name"]
+                        feed_data["category"] = "Crypto"
+                        f.write(
+                            f"| {name} | `{idx}` | `{feed_id}` | {coin['name']} | {decimal} | Crypto |\n"
+                        )
+                        break
+            block_latency_data.append(feed_data)
+
+    # Write block-latency feeds to JSON file
+    with Path.open(block_latency_json_path, "w") as json_file:
+        json.dump(block_latency_data, json_file, indent=4)
+    logger.info("Block-latency feeds written to `%s`", block_latency_json_path)
+
+    # Prepare JSON data for anchor feeds
+    anchor_data = []
+
+    # Write anchor feeds to file and JSON
     logger.info("Writing anchor feeds to `%s`", anchor_feeds_path)
     with Path.open(anchor_feeds_path, "w") as f:
         f.write(
@@ -123,25 +157,48 @@ if __name__ == "__main__":
             feed_id = (
                 "0x" + ftso_feedid_converter.functions.getFeedId(1, name).call().hex()
             )
-            # Path for tokens not returned by CoinGecko
+            feed_data = {
+                "feed_name": name,
+                "feed_id": feed_id,
+                "decimals": decimal,
+            }
             if name == "SGB/USD":
+                feed_data["base_asset"] = "Songbird"
+                feed_data["category"] = "Crypto"
                 f.write(f"| {name} | `{feed_id}` | Songbird | {decimal} | Crypto |\n")
-                continue
-            if name == "XDC/USD":
+            elif name == "XDC/USD":
+                feed_data["base_asset"] = "XDC Network"
+                feed_data["category"] = "Crypto"
                 f.write(
                     f"| {name} | `{feed_id}` | XDC Network | {decimal} | Crypto |\n"
                 )
-                continue
-            if name == "ETHFI/USD":
+            elif name == "ETHFI/USD":
+                feed_data["base_asset"] = "Ether.fi"
+                feed_data["category"] = "Crypto"
                 f.write(f"| {name} | `{feed_id}` | Ether.fi | {decimal} | Crypto |\n")
-                continue
-            if name == "ENA/USD":
+            elif name == "ENA/USD":
+                feed_data["base_asset"] = "Ethena"
+                feed_data["category"] = "Crypto"
                 f.write(f"| {name} | `{feed_id}` | Ethena | {decimal} | Crypto |\n")
-                continue
-            for coin in coins_list:
-                symbol = name.split("/")[0].lower()
-                if symbol == coin["symbol"]:
-                    f.write(
-                        f"| {name} | `{feed_id}` | {coin['name']} | {decimal} | Crypto |\n"
-                    )
-                    break
+
+            elif name == "FLR/USD":
+                feed_data["base_asset"] = "Flare"
+                feed_data["category"] = "Crypto"
+                f.write(f"| {name} | `{feed_id}` | Flare | {decimal} | Crypto |\n")
+
+            else:
+                for coin in coins_list:
+                    symbol = name.split("/")[0].lower()
+                    if symbol == coin["symbol"]:
+                        feed_data["base_asset"] = coin["name"]
+                        feed_data["category"] = "Crypto"
+                        f.write(
+                            f"| {name} | `{feed_id}` | {coin['name']} | {decimal} | Crypto |\n"
+                        )
+                        break
+            anchor_data.append(feed_data)
+
+    # Write anchor feeds to JSON file
+    with Path.open(anchor_json_path, "w") as json_file:
+        json.dump(anchor_data, json_file, indent=4)
+    logger.info("Anchor feeds written to `%s`", anchor_json_path)
