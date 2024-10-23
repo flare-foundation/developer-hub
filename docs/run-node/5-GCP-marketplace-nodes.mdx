@@ -14,31 +14,26 @@ Deploy blockchain nodes without the need to install dependencies or manage confi
 
 ## Prerequisites
 
-An account with Google Cloud Marketplace is required. 
+An account with Google Cloud Marketplace is required.
 
 In addition to that, a service accounts with the following permissions at the minimum is required, you can either create this before or you can create it during the launch.
 
 - **roles/config.agent**
 - **roles/compute.admin**
 
-## Setup 
+## Setup
 
 ### Step 1: Find and Launch the Blockchain Machine Image
 
-Click [here](https://console.cloud.google.com/marketplace) to go to Google Cloud Marketplace and search for Blockchain Machine Image. 
+Click [here](https://console.cloud.google.com/marketplace) to go to Google Cloud Marketplace and search for Blockchain Machine Image.
 
 <ThemedImage
-    alt="GCP Marketplace website"
-    sources={{
-    light: useBaseUrl(
-      "/img/gcp-marketplace/step1-img.png",
-    ), 
-    dark: useBaseUrl(
-      "/img/gcp-marketplace/step1-img.png",
-    )
+  alt="GCP Marketplace website"
+  sources={{
+    light: useBaseUrl("/img/gcp-marketplace/step1-img.png"),
+    dark: useBaseUrl("/img/gcp-marketplace/step1-img.png"),
   }}
 />
-
 
 Click on the launch button.
 
@@ -47,56 +42,45 @@ Click on the launch button.
 Select the node, service account, region and network where you want the instance to be created. You can click on the “existing service accounts” button to choose an already existing service account.
 
 <ThemedImage
-    alt="GCP Marketplace website"
-    sources={{
-    light: useBaseUrl(
-      "/img/gcp-marketplace/step2-img.png",
-    ), 
-    dark: useBaseUrl(
-      "/img/gcp-marketplace/step2-img.png",
-    )
+  alt="GCP Marketplace website"
+  sources={{
+    light: useBaseUrl("/img/gcp-marketplace/step2-img.png"),
+    dark: useBaseUrl("/img/gcp-marketplace/step2-img.png"),
   }}
 />
 
 Select the network you want the node to be launched in as well as basic firewall rules, then click “Deploy”.
 
 <ThemedImage
-    alt="GCP Marketplace website"
-    sources={{
-    light: useBaseUrl(
-      "/img/gcp-marketplace/step2-1-img.png",
-    ), 
-    dark: useBaseUrl(
-      "/img/gcp-marketplace/step2-1-img.png",
-    )
+  alt="GCP Marketplace website"
+  sources={{
+    light: useBaseUrl("/img/gcp-marketplace/step2-1-img.png"),
+    dark: useBaseUrl("/img/gcp-marketplace/step2-1-img.png"),
   }}
 />
-
-
 
 This will launch a node with the “deployment name”, in the case above, flare-node.
 
 ### Step 3: Connect to The Machine
 
-All node operation are performed with the ```nodectl``` command. 
+All node operation are performed with the `nodectl` command.
 
 ```bash
 sudo nodectl help
 ```
 
-Configuration files can be found in  ```/etc/<node_name>``` folder, for example: ``` /etc/flare ``` .
+Configuration files can be found in `/etc/<node_name>` folder, for example: `/etc/flare` .
 
 To start the node, connect to the instance and run apply.
 
-
-```bash
+````bash
 # applies all services as configured in ``` /etc/<node_name>/config.yaml ```
 sudo nodectl apply --target all
-```
+````
 
-### How Do I Know Its Working? 
+### How Do I Know Its Working?
 
-The easiest way to check if the node is working is to utilise the health checks already built into the node. Additionally, some logs can be found in ``` /var/log/<node-name> ``` for example, ``` /var/log/flare ```. 
+The easiest way to check if the node is working is to utilise the health checks already built into the node. Additionally, some logs can be found in `/var/log/<node-name>` for example, `/var/log/flare`.
 
 ```bash
 # runs health checks
@@ -105,7 +89,7 @@ sudo nodectl health
 sudo nodectl status
 ```
 
-Use ``` nodectl ``` to folow the logs. For all the available options, look at ``` man journalctl ``` 
+Use `nodectl` to folow the logs. For all the available options, look at `man journalctl`
 
 ```bash
 sudo nodectl logs -f
