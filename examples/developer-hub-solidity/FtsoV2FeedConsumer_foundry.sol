@@ -25,7 +25,8 @@ contract FtsoV2FeedConsumer {
     }
 
     function getFlrUsdPrice() external payable returns (uint256, int8, uint64) {
-        (uint256 feedValue, int8 decimals, uint64 timestamp) = ftsoV2.getFeedById(flrUsdId);
+        (uint256 feedValue, int8 decimals, uint64 timestamp) = ftsoV2
+            .getFeedById{value: msg.value}(flrUsdId);
 
         if (fee != msg.value) {
             console2.log("msg.value %i doesn't match fee %i", msg.value, fee);
