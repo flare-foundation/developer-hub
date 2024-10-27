@@ -1,0 +1,108 @@
+---
+sidebar_position: 5
+slug: gcp-marketplace-nodes
+title: GCP Marketplace Nodes
+description: Pre-configured blockchain nodes in GCP marketplace
+---
+
+import Step1 from "/static/img/run-node-gcp-marketplace/step1-img.png";
+import Step2 from "/static/img/run-node-gcp-marketplace/step2-img.png";
+import Step2_1 from "/static/img/run-node-gcp-marketplace/step2-1-img.png";
+import ServiceAccountRole from "/static/img/run-node-gcp-marketplace/troubleshooting-missing-service-account-user-1.png";
+
+Deploy blockchain nodes without the need to install dependencies or manage configuration files. The nodes come with a copy of the databases locally which drastically reduces bootstrap times. The machine images will be available for Flare Mainnet, Flare Testnet Coston2, Songbird Canary-Network, Songbird Testnet Coston and several other networks.
+
+## Prerequisites
+
+Ensure you have will need:
+
+- A Google Cloud account
+
+- A service account with at least the following permissions (these can be created beforehand or during the launch process):
+
+  - **roles/config.agent**
+  - **roles/compute.admin**
+  - **roles/iam.serviceAccountUser**
+
+## Setup a node
+
+1. **Locate and launch the blockchain machine image**
+
+   Head to the [Google Cloud Marketplace](https://console.cloud.google.com/marketplace) and search for "Blockchain Machine Image".
+
+   <img src={Step1} style={{ width: 500 }} />
+
+   Click the **Launch** button to proceed.
+
+2. **Configure basic settings**
+
+   Choose the service account, source image, and region for your instance. To use an existing service account, click the **Existing account** button.
+
+   <img src={Step2} style={{ width: 500 }} />
+
+   Next, select the network where the node will be deployed, and configure basic firewall rules. Once done, click **Deploy**. This will launch a node with the deployment name, for example, `flare-node`.
+
+   <img src={Step2_1} style={{ width: 500 }} />
+
+## Connect to the node
+
+Node operations are managed using the `nodectl` CLI tool.
+
+```bash
+sudo nodectl help
+```
+
+Configuration files are located in the `/etc/<node_name>` directory. For instance, Flare nodes will have their configurations in `/etc/flare-node`.
+
+To start the node, connect to the instance and apply the services using:
+
+```bash
+# Applies all services configured in `/etc/<node_name>/config.yaml`
+sudo nodectl apply --target all
+```
+
+## Verify node operation
+
+The quickest way to verify that the node is running is by using the built-in health checks.
+Logs can also be accessed in the `/var/log/<node_name>` directory, for example, `/var/log/flare-node`.
+
+```bash
+# Run health checks
+sudo nodectl health
+# Display detailed node information
+sudo nodectl status
+```
+
+For live log monitoring, use `nodectl`:
+
+```bash
+sudo nodectl logs -f
+```
+
+For more log options, refer to the `journalctl` manual:
+
+```bash
+man journalctl
+```
+
+## Troubleshooting
+
+- **Deployment failure due to missing iam.serviceAccountUser role**
+
+  - **Symptom**: The deployment fails when deploying the solution for the first time and
+    creating the deployment service account through the UI. The logs display an error message similar to:
+    ```
+    Error: Error waiting for instance to create: The user does not have access to service account '184067570780-compute@developer.gserviceaccount.com'. User: 'bmi-deployer@starlit-ship-405818.iam.gserviceaccount.com'. Ask a project owner to grant you the iam.serviceAccountUser role on the service account.
+    ```
+  - **Solution**:
+    1.  Go to **IAM and Admin > Service Accounts**.
+    2.  Find the `<project_number>-compute@developer.gserviceaccount.com` (Default Compute Service Account).
+    3.  Click on the service account, then open the **Permissions** tab.
+    4.  Click **Grant Access**, and set the **Principal** as the email address of the deployment service account (your email differs from the example).
+    5.  Assign the **Service Account User** role, then save the changes.
+        <img src={ServiceAccountRole} style={{ width: 500 }} />
+    6.  Once done, return to the Marketplace, delete the current deployment, and redeploy using the newly configured service account.
+
+- **Deployment failure due to Terraform state lock**
+  - **Symptom**: The deployment fails, and clicking **Retry** leads to Terraform state lock errors.
+  - **Solution**: Instead of retrying, delete the failed deployment and start a new one.
