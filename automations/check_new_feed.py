@@ -57,10 +57,11 @@ def format_coin_info(coin_data: dict[str, Any]) -> str:
         .get("usd", "N/A"),
         "total_volume": coin_data.get("data", {}).get("total_volume", "N/A"),
         "coingecko_link": f"https://www.coingecko.com/en/coins/{coin_data.get('id', '')}",
-        "description": coin_data.get("data", {})
-        .get("content", {})
-        .get("description", ""),
+        "description": coin_data.get("data", {}).get("content", {}).get("description")
+        if coin_data.get("data", {}).get("content", {})
+        else "",
     }
+
     return "\n".join(f"{key}: {value}" for key, value in coin_info.items())
 
 
