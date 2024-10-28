@@ -4,6 +4,12 @@ slug: overview
 title: FAssets
 ---
 
+import FAssetsCollateral from "/static/img/fassets-overview/fassets-collateral.png";
+import CollateralRatio from "/static/img/fassets-overview/fassets-cr.png";
+import MintingProcess from "/static/img/fassets-overview/fassets-minting.png";
+import FAssetsFees from "/static/img/fassets-overview/fassets-fees.png";
+import RedeemingProcess from "/static/img/fassets-overview/fassets-redeeming.png";
+
 :::info
 
 FAssets is currently in open beta on Songbird Testnet Coston.
@@ -17,3 +23,1135 @@ FAssets is enabled by Flare's data enshrined data protocols, the [Flare Data Con
 Each FAsset will be backed by mixed onchain collateral held by an agent and in a community provided pool. This backing consists of three asset types: the underlying, stablecoin or ETH collateral, and Flare native token collateral, FLR or SGB. The minting and redeeming process will be supported by a number of agents. Their role in the system is secured through over-collateralization, such that the system is rendered trustless.
 
 Someone who wishes to mint FAssets starts by selecting an agent and paying a small fee to reserve the required collateral. The minter then sends the agent the underlying asset, with the Data Connector used to prove the transaction has taken place on the other chain. Once the payment has been verified, the FAssets are minted as ERC-20 tokens on Flare. These tokens can be used within DeFi on Flare or bridged to another chain.
+
+FAssets are wrapped versions of tokens from blockchains that don’t support smart contracts, which you can use to earn yield or rewards offered by dapps built on Flare networks. Enabled by the Flare Time Series Oracle and the Flare Data Connector, the FAssets system mints into your wallet wrapped versions of these tokens, and at any time you can redeem them, unwrapping them into their original form. For example, you might mint `FBTC`, the FAsset version of BTC, use it in a DeFi app on Flare, and later redeem it for BTC again.
+
+## Collateral
+
+FAssets collateral is locked in contracts that ensure the minted FAssets can always be redeemed for the underlying assets they represent or compensated by collateral.
+
+Along with Flare's native token, `$FLR`, any governance-approved ERC-20 token on the Flare blockchain can be used as collateral.
+
+## Collateral Types
+
+Two kinds of collateral secure FAssets: vault collateral and pool collateral.
+
+<img src={FAssetsCollateral} />
+
+Vault collateral is provided exclusively by agents and ensures they perform their duties.
+Pool collateral is provided by agents and `$FLR` holders who choose to contribute to the pool.
+It is a safeguard when a sudden drop in the price of the vault collateral makes it insufficient to back the underlying assets.
+
+The two types of collateral are explained next.
+Collateral pool tokens and minting fees are explained afterwards.
+
+### Vault Collateral
+
+Vault collateral consists of the types of collateral chosen by agents to store in their vault.
+Flare governance approves the valid types, which are generally stablecoins, such as `$USDC`, `$USDT`, or other highly liquid tokens on the Flare network.
+
+Agents choose one of the types defined by FAssets governance and use it as collateral in their vaults.
+Agents cannot switch to a different type after a vault is created, but they can create any number of vaults, with different types.
+
+Each collateral type defines an ERC-20 token to use as collateral, a series of collateral ratios, and information to retrieve the asset's price from the FTSO system.
+Governance reserves the right to add new types or deprecate existing types.
+If governance deprecates a type, agents must switch to a supported type.
+
+Each vault is associated with a single, unique address on the underlying chain called the agent's underlying address.
+It receives underlying assets when they are minted into FAssets and sends underlying assets to the redeemer's address when they are redeemed.
+
+When an agent creates a vault, the underlying address is checked for validity using the Data Connector.
+Otherwise, malicious agents could provide an address that systematically blocks payments and exploit the minting process to their advantage.
+
+### Pool Collateral
+
+When the price of the vault collateral changes in such a way that the vault collateral cannot fully back all the minted FAssets, a liquidation mechanism ensures enough FAssets are burned to restore balance.
+The pool collateral provides an additional source of backing for situations when the price fluctuates too rapidly for liquidations to correct the imbalance.
+
+Pool collateral is always native `$FLR` tokens or `$SGB` tokens on the Songbird network and can be used as an additional source of collateral for liquidations and failed redemptions.
+
+Anyone can participate in the FAssets system by providing native tokens to this pool.
+In return, providers receive **collateral pool tokens** (CPTs) as proof of the share of native tokens they provided to a specific pool from a specific agent.
+CPTs are ERC-20 tokens specific to both an agent and a pool.
+
+Providers can redeem their CPTs for `$FLR`, or even transfer or trade them, after a governance-defined time period has elapsed since they entered the pool.
+This **time lock** is necessary to reduce sandwiching attacks.
+
+Additionally, CPT holders are entitled to a share of any fee the agent earns from minting FAssets using this pool as explained in the next section.
+
+:::info 
+
+    The amount of collateral pool tokens a provider $p$ receives upon entering a pool is calculated as:
+
+    $$
+    received\_CPT_p = { added\_collateral_p \over collateral\_in\_pool } \times currently\_issued\_CPT
+    $$
+
+    where:
+
+    * $added\_collateral_p$ is the amount of `$FLR` tokens that provider $p$ is adding to the pool.
+    * $collateral\_in\_pool$ is the amount of `$FLR` tokens in the pool before adding the new tokens.
+    * $currently\_issued\_CPT$ is the circulating amount of collateral pool tokens.
+
+    When a pool is first created, $received\_CPT_p = added\_collateral_p$.
+
+    The amount of `$FLR` collateral a provider receives when they redeem their CPT is calculated using the opposite formula:
+
+    $$
+    received\_collateral_p = collateral\_in\_pool \times { redeemed\_CPT_p \over currently\_issued\_CPT }
+    $$
+
+    where:
+
+    * $redeemed\_CPT_p$ is the amount of CPT the provider is returning to the pool.
+
+:::
+
+The following example shows conversion of CPTs.
+:::example
+
+    |     |                                                                                          | `$FLR` in pool | Issued CPTs |
+    | --- | ---------------------------------------------------------------------------------------- | -------------: | ----------: |
+    | 1.  | An agent creates a new vault. The collateral pool is initially empty of `$FLR` and fees. |              0 |           0 |
+    | 2.  | Alice deposits 100 `$FLR` and gets 100 CPTs in return.                                   |            100 |         100 |
+    | 3.  | Bob deposits 200 `$FLR` and gets 200 CPTs in return.                                     |            300 |         300 |
+    | 4.  | Alice redeems 50 CPTs and receives 50 `$FLR` in return.                                  |            250 |         250 |
+
+    Note that in general 1 FLR does not always correspond to 1 CPT, because of mechanisms like the [top-up](#top-up), for example.
+:::
+
+## FAsset-Minting Fees and Debt
+
+As part of the minting process, users pay a minting fee on the underlying chain.
+The agent's share of this fee remains on the underlying chain, whereas the pool's share triggers the minting of an equivalent amount of FAssets on the Flare network.
+
+These FAssets coming from the minting fee are added to the collateral pool, where they are shared between collateral providers in proportion to the amount of CPTs that providers have.
+At any time, providers can claim their due share of the fees in the pool.
+When providers exit the collateral pool by redeeming their CPTs, any remaining unclaimed fee is automatically transferred to them.
+
+Providers are naturally only entitled to the minting fees accrued after they entered the pool.
+Therefore, providers entering a pool with preexisting fees are assigned a **fee debt**.
+The amount of fees a provider can actually withdraw from the pool is calculated by first subtracting their debt from the total amount of fees in the pool.
+In this way, the amount of fees that a provider can withdraw upon entering a pool is exactly zero.
+
+A provider's fee debt:
+
+<div class="table-with-dividers" markdown>
+| Increases when the provider                 | Decreases when the provider                    |
+| ------------------------------------------- | ---------------------------------------------- |
+| Enters a pool which already has fees in it. | Exits the pool, partially or completely.       |
+| Withdraws FAsset fees.                      | Deposits FAssets, paying off part of the debt. |
+</div>
+
+It is worth noting that:
+
+* When a provider withdraws fees, their debt increases by the same amount.
+* Since CPTs are ERC-20 tokens, a secondary market for them is expected to develop.
+    If CPTs become more valuable than the FAsset fees they represent, returning the FAssets and paying off part of their fee debt might be more lucrative for providers.
+
+:::info
+
+    The following formulas consider all the above information to calculate each provider's due share of FAsset minting fees.
+
+    The amount of debt a provider $p$ is assigned upon entering a pool is calculated as:
+
+    $$
+    fee\_debt_p = { added\_collateral_p \over collateral\_in\_pool } \times fees\_in\_pool
+    $$
+
+    where:
+
+    * $added\_collateral_p$ is the amount of `$FLR` tokens that provider $p$ is adding to the pool.
+    * $collateral\_in\_pool$ is the amount of `$FLR` tokens in the pool before adding the new tokens.
+    * $fees\_in\_pool$ is the amount of FAsset minting fees currently in the pool.
+
+    The following formulas are based on the concept of **virtual fees**, which are the fees that a provider would be entitled to if they had no fee debt.
+
+    The **total virtual fees** is the sum of all provider's virtual fees and can be expressed as:
+
+    $$
+    total\_virtual\_fees = fees\_in\_pool + total\_fee\_debt
+    $$
+
+    where:
+
+    * $total\_fee\_debt$ is the sum of the fee debt held by all providers $= \sum_p fee\_debt_p$
+
+    Then, the virtual fees due to a provider $p$, i.e., the amount of FAsset minting fees they would be entitled to if they had no debt, are:
+
+    $$
+    virtual\_fees_p = { CPT_p \over currently\_issued\_CPT } \times total\_virtual\_fees
+    $$
+
+    where:
+
+    * $CPT_p$ is the amount of CPTs provider $p$ holds.
+    * $currently\_issued\_CPT$ is the circulating amount of CPTs.
+
+    Finally, the amount of fees from the pool that a provider $p$ is free to withdraw at any given time is:
+
+    $$
+    free\_fees_p = virtual\_fees_p - fee\_debt_p
+    $$
+
+    where:
+
+    * $fee\_debt_p$ is the amount of fee debt that provider $p$ holds.
+:::
+
+The following example shows fee entitlement.
+:::example
+
+    |     |                                                                          | `$FLR` in pool | Fees in pool | Total fee debt | Total virtual fees |
+    | --- | ------------------------------------------------------------------------ | -------------: | -----------: | -------------: | -----------------: |
+    | 1.  | An agent creates a new vault.                                            |              0 |            0 |              0 |                  0 |
+    | 2.  | Alice deposits 100 `$FLR` and gets 100 CPTs in return.                   |        **100** |            0 |              0 |                  0 |
+    | 3.  | 10 FAssets of fees are added to the pool due to a mint.                  |            100 |       **10** |              0 |             **10** |
+    | 4.  | Bob deposits 100 `$FLR` and gets 100s CPT in return.                     |        **200** |           10 |         **10** |             **20** |
+    | 5.  | 10 more FAssets of fees are added to the pool due to another mint.       |            200 |       **20** |             10 |             **30** |
+    | 6.  | Alice withdraws 10 FAssets of fees.                                      |            200 |       **10** |         **20** |                 30 |
+    | 7.  | Bob exits the pool by returning the 100 CPTs and withdrawing 100 `$FLR`. |        **100** |        **5** |         **10** |             **15** |
+
+    After step **4**, Bob is not entitled to any of the fees in the pool:
+
+    * Bob is assigned an initial fee debt of 10 FAssets, according to the $fee\_debt_p$ formula in the box above.
+    * As a result, the total virtual fees are increased to 20 FAssets. 10 of them are in fees, and 10 of them are in debt.
+    * Each user now holds half the total CPTs, therefore they are allowed to withdraw half the virtual fees, this is, 10 FAssets each.
+    * Alice has no debt, so she can withdraw 10 FAssets, which is all the fees in the pool, because she was the only CPT holder when these fees were accrued.
+    * Conversely, Bob has 10 FAssets of debt, so he can't withdraw any of the fees.
+
+    After step **5**, the new fees are shared between both users, and the previous 10 FAssets still belong to Alice:
+
+    * The 10 FAssets in new fees increase the total virtual fees to 30.
+    * Both users are entitled to half of the total, which is 15 FAssets each.
+    * Alice has no debt, so she can withdraw 15 FAssets: the initial 10 plus half of the 10 that were added to the pool afterwards.
+    * Bob has 10 FAssets of debt, so he can only withdraw 5, this is, his entitlement (15) minus the debt (10).
+
+    After step **6**:
+
+    * The 10 FAssets that Alice has withdrawn have converted into debt for her.
+    * However, this action does not change the total virtual fees because the sum of fees in the pool and total debt remains constant.
+    * Therefore, both users are still entitled to 15 FAssets each.
+    * However, now Alice has 10 FAssets of debt, so she can withdraw only 5 more.
+    * Nothing has changed for Bob, who can still withdraw 5 FAssets.
+
+    In step **7**:
+
+    * Bob is returning 100 CPTs, which is 50% of the circulating CPTs, so he is entitled to half the total virtual fees, 15 FAssets.
+    * Because he is exiting the pool, all his debt, which is 10 FAssets, must be cancelled.
+    * He can withdraw the remaining 5 FAssets from the fees pool.
+    * After Bob withdraws his 5 FAssets, the pool contains only 5 FAssets, which correspond to the amount that Alice can withdraw.
+:::
+
+## Transferable and Locked CPTs
+
+CPTs can always be **redeemed** by exiting the pool, but only the portion of them above the fee debt can be **transferred** to another account.
+Therefore, CPTs held by providers are divided into two types:
+
+* **Transferable**: Tokens whose time lock has expired and are also free of fee debt.
+    These tokens are fungible, and they can be transferred or traded just like any other ERC-20 token.
+* **Locked**: The CPTs serve only as proof of ownership of some of the collateral in the pool, and they cannot be transferred nor traded.
+
+    Locked CPTs are one of the following types:
+
+    * **Time-locked**: Tokens whose time lock has not expired must wait to become transferable or redeemable.
+    * **Debt-locked**: Tokens corresponding to an amount of fees below the provider's fee debt cannot be transferred because they would need to carry the debt with them.
+        However, they can be redeemed.
+
+        As new fees arrive in the pool, some previously debt-locked tokens become transferable.
+
+        These CPTs can also become transferable by adding FAssets to the pool, which settles, either partially or completely, the fee debt.
+
+:::info
+
+    The amount of CPTs that a given provider $p$ can transfer is calculated as:
+
+    $$
+    transferable\_CPT_p = { free\_fees_p \over virtual\_fees_p } \times CPT_p
+    $$
+
+    where:
+
+    * $free\_fees_p$ is the amount of fees from the pool that a provider $p$ can withdraw, as defined in the previous formula box.
+    * $virtual\_fees_p$ is the amount of FAsset minting fees that provider $p$ would be entitled to if they had no debt, as defined in the previous formula box.
+    * $CPT_p$ is the amount of CPTs provider $p$ holds.
+
+    Accordingly, the amount of CPT that is locked and cannot be transferred is calculated as:
+
+    $$
+    locked\_CPT_p = { fee\_debt_p \over virtual\_fees_p } \times CPT_p
+    $$
+
+    As new minting fees arrive in the pool, the $transferable\_CPT_p$ of all providers also increases.
+
+    Conversely, when a provider withdraws fees from the pool, their debt increases in the same amount, and $total\_virtual\_fee$ remains the same.
+    Therefore, only that provider's $transferable\_CPT_p$ is reduced, without affecting the rest of the providers.
+:::
+
+The following example shows transferability of CPTs
+:::example
+    |     |                                                                    | Issued CPTs | Fees in pool | Total fee debt | Total virtual fees |
+    | --- | ------------------------------------------------------------------ | ----------: | -----------: | -------------: | -----------------: |
+    | 1.  | An agent creates a new vault.                                      |           0 |            0 |              0 |                  0 |
+    | 2.  | Alice deposits 100 `$FLR` and receives 100 CPTs.                   |     **100** |            0 |              0 |                  0 |
+    | 3.  | 10 FAssets of fees are added to the pool due to a mint.            |         100 |       **10** |              0 |             **10** |
+    | 4.  | Alice withdraws 5 FAssets of fees.                                 |         100 |        **5** |          **5** |                 10 |
+    | 5.  | 10 more FAssets of fees are added to the pool due to another mint. |         100 |       **15** |              5 |             **20** |
+    | 6.  | Alice transfers 75 CPTs to Bob.                                    |         100 |           15 |              5 |                 20 |
+    | 7.  | Alice exits the pool by returning her remaining 25 CPTs.           |      **75** |           15 |          **0** |             **15** |
+
+    After step **2**, all of Alice's CPTs are transferable because she has no debt.
+
+    After step **3**, all of Alice's CPTs continue to be transferable, and she is entitled to 100% of the fees in the pool.
+    If she transferred or traded his CPTs, the recipient of those CPTs would be entitled to the fees.
+
+    After step **4**, only half of Alice's CPTs are transferable (50 CPTs). The other half is debt-locked.
+
+    After step **5**, only 25% of Alice's CPTs remain locked (25 CPTs), which correspond to her 5 FAssets of debt.
+
+    After step **6**:
+
+    * Alice has 25 CPTs, which entitle her to 5 FAssets of virtual fees.
+      After subtracting her 5 FAssets of fees, her free fees are zero, which means she cannot withdraw any more fees.
+    * Bob has 75 CPTs and no debt, so he is entitled to 15 FAssets of fees, which are all the fees in the pool.
+
+    In step **7**:
+
+    * Alice is returning 25 CPTs, which is 25% of the circulating CPTs, so she is entitled to 25% of the total virtual fees, which is 5 FAssets.
+    * Because she is exiting the pool, all her debt, which is 5 FAssets, must be cancelled.
+    * Her $free\_fees_p$ are 0, so she cannot take any of the remaining fees in the pool.
+    * The 15 FAssets that remain in the fee pool now belong entirely to Bob, who holds 100% of all the issued CPTs, which is 75 CPTs.
+:::
+
+## The Collateral Ratio
+
+The collateral ratio (CR) is the ratio between the value of all the tokens used as collateral and the total value of the underlying assets held by an agent at any given time.
+The agent's vault and the collateral pool each has its own unique collateral ratio, which is constantly changing as the value of the underlying assets and the collateral change.
+These values are obtained using the FTSO system.
+
+The following example shows vault and pool CR
+:::example
+
+    Assume an amount of FAssets currently valued at $1000 USD, backed by $1500 worth of `$USDC` in vault collateral and $2000 worth of `$FLR` in pool collateral.
+
+    The resulting vault CR is then $\$1500 \over \$1000$ = 1.5.
+
+    The resulting pool CR is $\$2000 \over \$1000$ = 2.
+:::
+
+Several thresholds are defined for the collateral ratio, and they are used at different times during the FAsset operations.
+Some are set by the system, and others are set by the agent:
+
+<img src={CollateralRatio} />
+
+### System-wide Thresholds
+
+The following thresholds are set by the FAssets system's governance and are the same for all agents:
+
+* **Minimal CR**: The lowest collateral ratio the agent vault and the collateral pool must maintain so that enough collateral exists to insure the minted FAssets and to compensate for redemption payments that fail.
+    The minimal CR can be different for each type of collateral.
+
+    If an agent's CR remains below the minimal CR for longer than a governance-set amount of time, liquidations can start.
+
+* **Collateral call band CR (liquidation CR)**: An agent's position is unhealthy when the agent's vault CR or pool CR fall below their minimal CR.
+    However, as long as the CR remains above liquidation CR, the CR can briefly fall below the minimal CR.
+
+    During this time, the agent can either deposit more collateral or self-close some backed FAssets to improve the position.
+
+    However, if the CR falls below the liquidation CR, liquidations can start immediately.
+
+    The value of each liquidation CR is approximately 10% less than the minimal CR.
+
+    :::example
+        Assume the **minimal CR** is 1.4 and the **liquidation CR** is 1.3.
+
+        If the agent's vault CR drops below 1.3, the agent's position can be liquidated immediately.
+        If the agent's vault CR drops below 1.4 but not below 1.3, the agent has some time to amend the position before it can be liquidated.
+
+        Adjusted for the collateral pool's minimal CR, the same example applies to the collateral pool.
+    :::
+
+* **Safety CR**: If one or both of the collateral types fall below liquidation CR or below the minimum CR for a longer period of time, liquidation occurs.
+    When the offending collateral reaches a healthy CR again, the liquidation stops.
+    To prevent the agent from immediately reverting into liquidation after a small price change, the CR must reach the safety CR before it can start operating normally again and liquidation stops.
+
+    Each of the collateral types, the agent's vault and the collateral pool, has its own unique safety CR.
+
+### Agent Thresholds
+
+The following thresholds are set by each agent according to their own preferences:
+
+* **Minting CR**: For each mint done by an agent, the maximum amount allowed to be minted is calculated so that the CR for the agent's vault and the CR for the agent's collateral pool after the mint remain higher than the minting CR for each collateral type.
+    To reduce the threat of liquidation, agents should set the minting CR well above the minimal CR to accommodate price fluctuations that might occur before the CR falls below the minimal CR after the mint and minting is no longer possible.
+
+* **Exit CR**: After a user redeems CPTs, the pool CR must be more than the exit CR.
+    If the pool CR is already below the exit CR, redemption cannot occur.
+    The exit CR is for the collateral pool only.
+
+* **Top-up CR**: To incentivize healthy collateral pools, if the pool CR falls below the top-up CR, anyone can add collateral to the pool and receive CPTs at a reduced price.
+    This top-up mechanism decreases the likelihood of liquidations because of a low amount of pool collateral.
+
+## Redemption of CPTs
+
+When collateral providers exit the pool by redeeming their CPTs, the FAssets system burns them and returns the appropriate share of the collateral plus the share of FAsset-minting fees minus any FAsset-fee debt.
+
+Providers also have the option to exit the pool partially, by redeeming only some of their CPTs.
+In this case, they can choose one of the following options to manage their due FAsset fees: withdraw the fees, reduce the fee debt, or both, keeping the current fee-to-debt-ratio.
+
+However, providers can exit, either fully or partially, only when the collateral ratio CR is high enough.
+After they exit, the **CR** must be higher than the **exit CR** to prevent their exit from reducing the **CR** to a dangerous level.
+
+Therefore, exits are impossible when the **CR** is below the **exit CR**.
+In this case, if providers have enough FAssets, they can exit by **self-closing**, which burns enough of their FAssets, plus their fees, to release their collateral.
+
+Providers are mainly compensated in underlying assets for the burned FAssets, depending on the number of lots of FAssets that need to be redeemed:
+
+* If more than 1 lot needs to be redeemed, the value of the burned FAssets is redeemed through the standard redemption process.
+* If less than 1 lot needs to be redeemed, the agent buys the underlying funds from the user using vault collateral, at the price reported by the FTSO system minus a percentage defined by the agent.
+    This purchase by the agent occurs because fees on underlying chains can be expensive, which makes redemption of small quantities too expensive for the agent.
+
+    Providers can always request this option instead of receiving underlying tokens.
+    Also, if enough vault collateral is not available, pool collateral is used instead.
+
+:::warning
+    In the case where the agent does not redeem in the underlying asset, the FAssets system pays the provider in collateral from the agent's vault because the pool collateral backing the redeemed FAssets is already withdrawn.
+
+    When this type of redemption occurs, users might receive less collateral than they would have received if they had made a normal redemption.
+:::
+
+## Agent's Stake in the Collateral Pool
+
+Agents must have a stake in their collateral pools, which means they must hold the amount of CPTs proportional, by a system-defined constant, to the backed amount of FAssets.
+The maximum amount of minting is limited by the amount of collateral pool tokens held by the agents.
+The agents' tokens are locked, which means they cannot be redeemed or transferred, while agents back these FAssets.
+
+When the agent's portion of the collateral pool is below the threshold, new mintings are not allowed.
+However, this situation does not trigger a liquidation because only the total pool stake matters when collateral needs to be redeemed or a liquidation payment needs to be made.
+
+If an agent's actions force a payment to be made from the collateral pool, the agent's CPTs, valued by the paid native tokens and recalculated by the collateral-pool-price formula, are burned.
+These actions can cause the agent's CPTs to be burned:
+
+* When a redemption payment fails, when enough vault collateral to compensate the redeemer is not available, or when the system is set to automatically pay for redemption failures from the collateral pool.
+* Liquidation because the CR of the vault collateral is too low.
+* Full liquidation because of an agent infraction during a transfer on an underlying chain.
+
+## Top-up
+
+To reduce the likelihood of liquidations because the pool collateral is too low, the pool can be topped up at a reduced price when the **CR** is above the **top-up CR**.
+
+A top-up mechanism for vault collateral is not available.
+To prevent liquidation, agents can add vault collateral any time.
+
+## Minting
+
+
+Minting FAssets is the process of wrapping underlying tokens from connected blockchains into FAssets to be used on the Flare blockchain.
+Any user can mint FAssets.
+
+## Minting Process
+
+This is the summary of the minting process:
+
+<img src={MintingProcess} />
+
+1. The minter chooses an agent from the publicly available agent list.
+    The choice is based on the minting fee or the amount of free collateral, which must be enough to back the amount to be minted.
+2. The minter sends to the Asset Manager contract a collateral reservation transaction (CRT). The CRT includes:
+
+    * The address of the chosen agent
+    * The amount to mint, which must be a whole number of lots
+    * The [collateral reservation fee CRF to compensate for the locked collateral
+
+3. The Asset Manager contract locks the agent's collateral in the amount needed to back the whole minting until the underlying payment is proved or disproved.
+    The collateral reservation response is an event issued by the contract, which includes:
+
+    * The agent's address to which the minter must send funds on the underlying chain.
+    * The amount to be paid on the underlying chain, which corresponds to the amount to be minted plus the agent's fee.
+    * The payment reference, which is a unique 32-byte number the minter must include as a memo in the payment on the underlying chain.
+    * The last underlying block and the last underlying timestamp to pay.
+        Valid payments occur either before the last block or before the last timestamp, both inclusive.
+
+        The time to pay is measured both in the underlying chain's block numbers and block times because the underlying chain might halt for a long time.
+      In this situation, the block numbers do not increment but the block timestamps do.
+
+4. After this event is emitted, the minter must pay the full underlying amount plus the fee to the agent on the underlying chain in a certain amount of time.
+5. Using the Data Connector, the minter proves the payment on Flare.
+6. After the payment is proved, the minter executes the minting process, which sends FAssets to the minter's account.
+
+When minting is executed, the minting fee is split between the agent and the pool:
+
+* The percentage split is set by the agent.
+* The agent's share increases the free balance on the agent's underlying address.
+  The free balance is the part of the balance in an agent's underlying address that the agent can withdraw.
+  It is composed of minting fees, redemption fees, and self-closed FAssets.
+* The pool share gets minted as FAssets and credited to the collateral pool contract.
+
+After minting is complete, the Asset Manager creates a redemption ticket, which includes the mint amount and the name of the agent backing the minting.
+
+## Fees
+
+The following fees are paid to mint FAssets:
+
+* The **collateral reservation fee (CRF)** is paid in native tokens by the minter at the same time the CRT is made.
+  The CRF is defined by governance as a percentage of the minted value, and the same fee applies to all agents.
+
+    When the minter does not pay on the underlying chain, this fee compensates the agent and the CPT holders for the time their collateral was locked while the mint processed.
+    If the minter pays on the underlying chain, the CRF is burned.
+
+    For underlying chains on which proving payments takes a long time, the fee might be higher than the fee on chains that quickly prove payments.
+
+* The **minting fee** is paid by the minter with the underlying currency as a percentage of the minted amount, and each agent can declare a different fee value.
+  This fee is the main source of revenue for the agent and the CPT holders.
+
+    The minting fee is further divided in two shares:
+
+    <img src={FAssetsFees} />
+
+    * **Agent's share**: This share remains in the agent's underlying account but is not marked as being in use.
+        The agent can use this balance freely.
+    * **Pool's share**: This share is minted as FAssets and sent to the collateral pool.
+        The percentage of this share is defined by the agent and can be changed by the agent after a delay that provides time for minters to notice the change.
+
+## Payment Failure
+
+To finalize the minting, the minter must pay the agent on the underlying chain and prove the payment was received.
+If the payment is not completed in the time frame defined by the underlying chain block and timestamp, the agent must prove nonpayment to release the locked collateral.
+After nonpayment is proved, the agent's collateral that was reserved by the CRT is released, and the agent receives the CRF.
+
+The agent's registration process verifies that the agent's underlying address does not purposefully block payments and illegally collects the CRF.
+
+The following example shows proof of nonpayment.
+:::example
+    The following example shows how the nonpayment proof works.
+
+    The Data Connector's payment nonexistence attestation type proves nonpayment.
+
+    1. The minter sends a request to mint `$FBTC`.
+        At the time the request is received, the last mined block on the Bitcoin chain is number 92, with timestamp 09:00 AM.
+
+        The Asset Manager answers with the following threshold settings to complete the payment:
+
+        * Block 100
+        * Timestamp 11:00 AM
+
+    3. Block 101 is mined with timestamp 10:59 AM.
+       At this point, the payment can still happen.
+    4. Block 102 is mined with timestamp 11:04 AM.
+       Payment did not occur.
+       After this block is finalized, nonpayment can be proved.
+
+    5. Block 109 is mined.
+       In this case, 7 blocks on the Bitcoin blockchain are enough blocks to assume finality.
+    6. The agent sends a nonpayment attestation request, which includes the payment reference, the underlying amount that was expected, the last block (100), and the last timestamp (11:00).
+    7. Attestation providers attest to the following facts:
+
+        * Block 102 is finalized and has both the number and timestamp larger than required.
+        * Until this block, the required payment either was not made or was not sufficient.
+
+    Now, the mint-payment failure and the nonpayment proof can be submitted to the FAssets system.
+:::
+
+## Edge Cases
+
+* **Unresponsive minter**: After a successful payment, the minter might not provide the payment proof needed to complete the minting process.
+    In this case, the agent can present the payment proof and execute minting at any time.
+    FAssets are still transferred to the minter's account, and the agent's collateral becomes redeemable.
+
+* **Expired proof**: Proofs provided by the Data Connector are available for only 24 hours, approximately.
+    If neither the minter nor the agent presents the proof of payment or nonpayment within 24 hours, the regular minting process cannot continue, and the agent's collateral could be locked indefinitely.
+
+    In this case, the agent can still recover the collateral by buying it back with native tokens.
+    The recovery is accomplished with the following procedure:
+
+    1. Request the proof from the time when the deposit should have happened.
+        The Data Connector's answer will indicate that payments proofs are no longer available for that time.
+    2. Provide the amount of `$FLR` collateral equivalent to the price of the underlying assets that should have been deposited.
+    3. Present the proof.
+
+    Because a successful deposit cannot be proven, the FAssets system burns the amount of collateral in native tokens provided by the agent.
+    After the burn is complete, the rest of the agent's collateral is released, both from his vault and the collateral pool.
+
+    :::warning
+        Note that this procedure should be used only in rare cases because providing timely payment or nonpayment proofs is always more advantageous for agents.
+    :::
+
+## Duration of the Minting Process
+
+The duration of the minting process depends mainly on the speed of the underlying chain.
+The maximum duration of the process is the sum of:
+
+* A system-defined maximum time for deposit.
+    It is either a few blocks on the underlying chain or a few minutes, whichever is longer.
+* The underlying chain's finalization time.
+* The Data Connector proof time, which is approximately 3 - 5 minutes, independent of the underlying chain.
+
+On fast chains like XRPL, the maximum total time is less than 10 minutes, while on Bitcoin it is approximately 1.5 hours.
+For payment failures, the agent needs to wait the maximum time, as defined above, before the nonpayment proof can be retrieved.
+
+## Minting Payment Reference
+
+The system generates a unique payment reference at the time of the collateral reservation request.
+The minter must include the payment reference in a memo field when the underlying payment transaction is made.
+
+The payment reference ensures the payment transaction cannot be used by another entity that might claim to have made the payment on the underlying chain and receive the minted FAssets in return.
+Additionally, if the payment time expires before payment is done, the agent can prove that no payment with that reference was made.
+
+A similar payment reference for the same purposes is generated for redemptions.
+
+## Redemption Tickets and the Redemption Queue
+
+For every minting operation, a redemption ticket is created.
+This ticket references the minted amount and the agent that is backing the minting.
+
+The redemption tickets are ordered in a queue that determines the next agent to be redeemed against according to the first in, first out method (FIFO).
+In other words, the first redemption ticket created will be the first redemption ticket processed.
+The FIFO queue impartially ensures that all agents have the opportunity to fulfill the duties of their role.
+
+The following example shows the redemption queue.
+
+:::example "Example: Redemption Queue"
+    The following example shows how the redemption queue works.
+
+    1. Bob mints 10 `$FXRP` with Agent 1.
+    2. Alice mints 20 `$FXRP` with Agent 2.
+    3. Charlie mints 5 `$FXRP` with Agent 1.
+
+        After Bob, Alice, and Charlie have minted their FAssets, the redemption queue according to the FIFO method is:
+
+         1. Agent 1 with 10 `$FXRP`.
+         2. Agent 2 with 20 `$FXRP`.
+         3. Agent 1 with 5 `$FXRP`.
+
+    4. Dana redeems 25 `$FXRP`.
+       To redeem 25 `$FXRP`:
+
+        1. Agent 1 pays 10 `$FXRP`.
+        2. Agent 2 pays 15 `$FXPR`.
+
+        Now, the redemption queue according to the FIFO method is:
+
+        1. Agent 2 with 5 `$FXRP`.
+        2. Agent 1 with 5 `$FXRP`.
+:::
+
+## Lots
+
+Every minting and redemption must be made in a whole number of lots.
+Lots serve the following purposes:
+
+* They prevent underlying transaction fees from exceeding minting or redemption fees.
+* They restrict large numbers of very small redemption tickets from being submitted, which would increase gas costs.
+
+Therefore, the amount of tokens in a lot (the _lot size_) varies for each underlying chain.
+For example, on the XRPL chain, a lot can be as small as 10 `$XRP` because transaction fees are low.
+On the other hand, on the Bitcoin chain, lots might need to be as big as 0.25 `$BTC` or more because transactions are far more expensive.
+
+Over time, the lot size can be updated to reflect price fluctuations of the underlying asset.
+Only a governance call can update the lot size, and it can be updated only by a limited amount per day.
+
+:::info
+
+    Some processes generate a fractional number of lots:
+
+    * On minting, part of the minting fee is minted as the FAsset fee to the collateral pool.
+      This value is usually less than 1 lot.
+    * When the lot size is changed, redemptions close only a whole number of lots of each redemption ticket, which leaves the remainder unredeemed.
+
+    These amounts, known as dust, cannot be redeemed directly because redemption requires a whole number of lots.
+
+    In such cases, the generated dust is not included in any redemption ticket.
+    Instead, each agent's dust is accumulated until the dust amounts to a whole lot.
+    When that happens, another redemption ticket is automatically created.
+
+    Therefore, the dust can be recovered or destroyed in the following ways:
+
+    * If the dust exceeds 1 lot during minting, the part that is a whole multiple of a lot is automatically added to the created redemption ticket.
+    * If an agent does not mint any FAssets for a while but the lot size changes and several redemptions occur, enough dust might accumulate to more than 1 lot.
+
+        In this case, the part that is a whole multiple of a lot can be converted to a redemption ticket by request.
+        To prevent an inactive agent making FAssets less fungible, this request can be made by any address.
+
+    * Self-closing can work with fractional lots, so it can be used to remove dust.
+    * Liquidation can work with fractional lots too, so it can also be used to remove dust.
+:::
+
+## Self-Minting
+
+Agents can also act as minters and mint FAssets from their own vaults.
+This process is called self-minting and is simpler than regular minting because neither the CRT nor the agent's fee are necessary.
+
+When an agent self-mints FAssets:
+
+* The agent still needs to pay the amount to mint on the underlying chain and execute the minting.
+* The self-minting operation also adds a ticket to the redemption queue, alongside tickets added by mints done by other users.
+    All tickets are processed by the FIFO queue.
+* Only the pool's share of the fee must be paid.
+
+Because self-minting is done without a collateral reservation request, in some cases, a change between the underlying deposit and the execution, such as another collateral reservation, price change which reduces the amount of free lots, or lot-size change, might prohibit the intended number of lots to be minted.
+If one of these changes occurs, the agent can self-mint a smaller number of lots, even 0 lots, and the remainder of the deposited underlying assets is added to the free underlying balance.
+
+Additionally, when agents create a vault, they can choose not to make it public, so the vault can only be used to self-mint.
+
+## Redemption
+
+Any holder of FAssets can redeem their FAssets for the underlying original asset.
+To do so, these holders, known as redeemers, send FAssets to the Asset Manager smart contract, and the redeemed amount is paid with the underlying asset from an agent's address.
+
+## Redemption Process
+
+This is the summary of the redemption process:
+
+<img src={RedeemingProcess} />
+
+1. The redeemer starts the redemption for a whole number of lots by issuing a request to the Asset Manager smart contract.
+
+    The FAssets system chooses one or more redemption tickets from the front of the FIFO redemption queue.
+    The number of chosen redemption tickets is capped to avoid high gas consumption.
+    If the redemption amount requires too many tickets, only a partial redemption is done.
+
+2. The system burns FAssets from the redeemer’s account in the amount of the total of the selected redemption tickets.
+    If the redeemer's account does not contain enough FAssets, the redemption fails immediately.
+
+3. Each chosen ticket belongs to an agent.
+    For every agent participating in the redemption, the system issues an event with the following redemption payment information:
+
+    * Redeemer’s underlying address.
+
+        Agents can use the Data Connector to ensure the validity of this address.
+        Otherwise, malicious redeemers could provide an address that systematically blocks payments and exploit the redeeming process to their advantage.
+
+    * Amount to pay minus the fee that was already subtracted.
+    * A payment reference.
+        This payment reference is different for each agent and each redemption.
+    * The last underlying block and the last underlying timestamp to complete the payment.
+
+4. Every agent pays the redeemer on the underlying chain and includes the payment reference in the memo field of the payment transaction.
+
+    Agents can pay the redemption from any address they control on the underlying chain.
+    It does not need to be the same address where they receive minting payments.
+
+5. After the payment is finalized, the agent uses the Data Connector to prove the payment and obtain a payment proof.
+
+6. After the payment proof is presented to the FAssets system, the agent's vault collateral and pool collateral that were backing those FAssets are released.
+
+    After the collateral is released, it can either back the minting of more FAssets or be withdrawn.
+
+## Redemption-Payment Failure
+
+Agents have a limited time to pay the redeemer on the underlying chain.
+The amount of time is defined by the last block and the last timestamp on the underlying chain.
+If the payment is not made in time, the redeemer has to prove nonpayment to be compensated.
+After the redeemer presents the nonpayment proof, he is paid with the agent's collateral plus a _redemption default premium_.
+The premium is intended to encourage the agent to complete redemptions by paying with the underlying asset instead of collateral.
+
+If a payment fails and the failed transaction is recorded on the underlying chain, the agent must submit a proof of failed payment.
+In this way, the gas costs of the failed transaction can be accounted for by the FAssets system.
+If the transaction was not recorded, then no gas was spent and reporting is not necessary.
+
+If the agent does not report the failed payment in time, anyone can report the failed payment and receive a reward from the agent's vault.
+
+:::info
+
+    When payment fails because of the redeemer, the agent can obtain a proof of the failed payment from the Data Connector and present it to the FAssets system.
+    The agent's obligation is then fulfilled, and he can keep both the collateral and the underlying.
+
+    Two different proofs can be used:
+
+    * Proof of invalid address, due to a wrong syntax or checksum, for example.
+    * Proof of blocked payment: Even if the address is valid, it might contain a contract that blocks the payment.
+        This can only happen on underlying networks supporting smart contracts.
+
+        The agent must still try to pay and, if the payment is blocked, the agent can request this proof from the Data Connector and present it to the FAssets system.
+:::
+
+During step 4 above, if any agent does not to pay on the underlying chain, the redeemer completes the following procedure separately for each nonpaying agent:
+
+1. The redeemer obtains a proof of nonpayment from the Data Connector.
+2. The redeemer presents the nonpayment proofs to the FAssets system, which triggers a redemption failure.
+3. The redeemer is paid with collateral, according to the current price plus a premium.
+4. FAssets are overcollateralized, so, even after paying the redeemer with a premium, a remainder is released.
+   This remainder is derived by the system-wide collateral ratio settings specified by governance.
+5. The underlying assets backing the redeemed FAssets are marked as free and can be withdrawn by the agent later.
+
+## Edge Cases
+
+* **Unresponsive redeemer**: After a redemption nonpayment, the redeemer might not report the failure for some reason.
+  In this case, the agent can present a nonpayment proof, and the redeemer receives collateral plus a premium.
+  After this operation, the underlying backing collateral and the remaining local collateral are released.
+* **Unresponsive agent**: After a successful payment, the agent might not present the payment proof.
+  Because the agent has already paid, the redeemer is not affected.
+  However, the system still requires the payment proof to correctly track the agent's balance on the underlying chain.
+  After enough time for the agent to present the proof has elapsed, anyone can present the payment proof and receive collateral from the agent’s vault.
+* **Expired proof**: Proofs provided by the Data Connector are available for only 24 hours, approximately.
+  If neither the redeemer nor the agent presents the proof of payment or nonpayment within 24 hours, the regular redeeming process cannot continue, and the agent's collateral could be locked indefinitely.
+
+    The procedure to recover this collateral is the same as the procedure in the minting case.
+
+## Redemption Fee
+
+The redemption fee is the amount of the underlying asset that the agent can keep for doing the redemption.
+This fee is meant only to cover the agent’s transaction fee on the underlying chain, so it is not shared with the collateral pool.
+The fee percentage is defined by governance, is the same for all agents, and is typically smaller than the minting fee.
+
+Governance calculates the percentage so that the fee to redeem 1 lot pays for a typical transaction fee on the underlying chain.
+Therefore, when larger amounts on a single address are redeemed, the agent accrues some extra fees because the underlying fee for small and large transactions is the same.
+However, when underlying fees are very high, the agent might still lose funds when a redemption for a small amount, such as 1 lot, is made.
+If this situation occurs frequently, governance will increase the redemption-fee percentage.
+
+## Self-redemption
+
+Agents can also act as users and redeem FAssets from their own vaults.
+This process is called self-redemption or self-closing, and it is simplified because payment on the underlying chain is not required.
+
+As shown in the following process, agents can self-redeem for any reason, including to stop liquidations because it reduces the amount of FAssets the agent is backing.
+
+1. An agent sends FAssets to their account.
+2. FAssets are burned.
+3. The collateral that was backing those assets is released.
+4. The underlying collateral is released and can be withdrawn from the underlying address later.
+
+The self-redeemed amount is not limited to a whole number of lots and can be less than 1 lot, which makes self-closing ideal for redeeming an agent's dust.
+
+## Liquidation
+
+Liquidation is the process of selling assets to bring the FAssets system back to health after an agent becomes undercollateralized.
+
+The following types of liquidation can occur:
+
+* **Unhealthy position liquidation**: Occurs when the collateral ratio (CR) of either the agent's vault or collateral pool falls below its respective minimal CR.
+  In this case, the agent's position is liquidated until the collateral ratio reaches the safety CR or all of the backed FAssets are liquidated.
+* **Full liquidation**: Occurs when the agent makes an illegal payment from the underlying chain address.
+  In this case, all the FAssets backed by the agent are liquidated, and the liquidation cannot be stopped.
+
+In both cases, liquidators, who can be anyone who holds FAssets, are encouraged to sell their FAssets back to the system.
+They will be paid with the agent's collateral plus a premium, as a penalty against the agent for unhealthy positions or misconduct.
+
+## Liquidation Process
+
+When liquidation starts, any liquidator can send FAssets and get paid with a combination of vault collateral and pool collateral at the current asset price multiplied by a premium factor greater than 1.
+The maximum amount of FAssets that is accepted is the amount required to make the agent's position healthy again, rounded up to the next lot.
+
+The premium is a system-defined percentage, and it can increase through the duration of the liquidation.
+The premium is limited to the agent's combined collateral ratio, which is the sum of the current value of the vault collateral and pool collateral divided by the current value of the backed FAsset amount.
+However, if this limit is reached, all the agent's backed FAssets are liquidated, and all the vault collateral and pool collateral are paid to the liquidators.
+The liquidation-collateral payment is divided between the agent and the collateral pool.
+
+A fixed ratio (≥ 1.0) of the payment is paid from the agent's collateral, and the remainder is paid from the pool collateral.
+If not enough of one type of collateral exists, more is paid from the other type.
+
+:::info
+
+    Illegal payments trigger a full liquidation, which involves the following additional actions:
+
+    * The liquidated agent's vault is locked so that it cannot be used to mint again.
+        If the agent wants to continue to mint FAssets, he must create a new agent vault with a new underlying address.
+    * Ongoing mintings against this agent's locked vault continue, but the minted FAssets are immediately added to the liquidation process.
+    * Ongoing redemptions continue.
+        New redemptions can start until all the agent's redemption tickets are liquidated.
+        Unfortunately, if the agent's underlying backing is unhealthy, redeemers are more likely to be paid in native tokens from the collateral pool.
+
+    This liquidation process includes the time-increasing premium, and it only stops when all the agent's collateral is liquidated.
+:::
+
+## Stopping Liquidations
+
+After liquidation of an unhealthy position starts, it can be stopped by depositing enough collateral or self-closing FAssets to reach the safety CR.
+Also, if a change in the price pushes the CR above the safety CR, anyone can stop the liquidation by notifying the FAssets system.
+
+To maintain a healthy account, agents should track positions and automatically top up or self-close FAssets when liquidation approaches.
+Otherwise, the agent and the liquidators compete to try to stop the liquidation.
+To stop a liquidation, the agent's vault must reach the safety CR, which is above the minimal CR that triggered the liquidation.
+
+The top-up mechanism can prevent liquidations caused by a low CR in the collateral pool, but full liquidations cannot be stopped.
+However, an agent can still self-close positions to avoid paying a premium to liquidators.
+
+The following example shows a small price movement.
+:::example
+
+    Using `$BTC` as underlying and `$USDC` as collateral, an agent creates a vault to mint `$FBTC` FAssets.
+
+    1. Initial conditions:
+
+        * The agent is backing 1 `$FBTC`, currently valued at $20K, according to the FTSO system.
+        * The minimal CR is **1.3** for the vault collateral and **2.5** for pool collateral.
+        * The agent must hold 20% of the pool's minimal CR.
+            In this case, 20% of 2.5 times \$20K is **\$10K**.
+        * The underlying backing factor is 50%, so the agent needs to hold only **0.5** `$BTC`.
+        * The liquidation premium factor is 1.1, of which 1.0 is paid in vault collateral, and 0.1 is paid in pool collateral.
+
+        At this point, the 1 `$FBTC` is backed by:
+
+        * 0.5 `$BTC` underlying.
+        * $26K worth of `$USDC` vault collateral.
+
+            The vault CR is $\$26K \over \$20K$ = 1.3, equal to the vault's minimal CR.
+
+        * $60K worth of `$FLR` in pool collateral, of which $10K belongs to the agent.
+
+            The pool CR is $\$60K \over \$20K$ = 3, above the pool's minimal CR.
+
+    2. Now the price of `$BTC` increases from $20K to $21K.
+        As a result:
+
+        * The vault CR is $\$26K \over \$21K$ ≈ 1.24, **below the vault's 1.3 minimal CR**.
+        * The pool CR is $\$60K \over \$21K$ ≈ 2.86, still above the pool's 2.5 minimal CR.
+
+       :::warning
+            Because one of the CRs is below the minimal CR, liquidation can start after a system-defined wait period.
+
+            If any of the CRs go below the liquidation CR, liquidations can start immediately.
+       :::
+
+    3. A liquidator notices the CR levels and decides to liquidate $10K worth of FAssets by returning 0.48 `$FBTC` to the FAssets system.
+
+        The liquidation premium factor is 1.1, so the liquidator receives $11K worth of assets:
+
+        * $10K worth of `$USDC` from the agent's vault collateral.
+        * $1K worth of `$FLR` from the agent's portion of the collateral pool.
+
+            The corresponding $1K worth of CPTs are burned, so their price is unaffected.
+
+        At this point, the agent is backing 0.52 `$FBTC` with:
+
+        * 0.5 `$BTC` underlying.
+
+            The ratio is $0.5 \over 0.52$ ≈ 0.96, well above the 50% underlying backing factor.
+
+        * $16K worth of `$USDC` vault collateral.
+
+            The vault CR is $\$16K \over \$11K$ ≈ 1.45, now above the vault's minimal CR.
+
+        * $59K worth of `$FLR` in pool collateral, of which $9K belong to the agent.
+
+            The pool CR is $\$59K \over \$11K$ ≈ 5.36, still well above the pool's minimal CR.
+
+        :::info
+            Both CRs are now above the minimal CR values, but liquidation does not stop until the CRs further increase up to the safety CR.
+        :::
+    
+    In summary, as a result of the price increase and the liquidation, around 50% of the backed `$FBTC` was burned.
+    The actual amount of FAssets that need to be burned, though, depends on the safety CR setting.
+:::
+
+The following example shows a large price movement.
+:::example
+
+    The same setup and initial conditions as in Example 1 are used:
+    Using `$BTC` as underlying and `$USDC` as collateral, an agent creates a vault to mint `$FBTC` FAssets.
+
+    1. Initial conditions:
+
+        * The agent is backing 1 `$FBTC`, currently valued at $20K, according to the FTSO system.
+        * The minimal CR is **1.3** for the vault collateral and **2.5** for pool collateral.
+        * The agent must hold 20% of the pool's minimal CR.
+            In this case, 20% of 2.5 times \$20K is **\$10K**.
+        * The underlying backing factor is 50%, so the agent needs to hold only **0.5** `$BTC`.
+        * The liquidation premium factor is 1.1, of which 1.0 is paid in vault collateral, and 0.1 is paid in pool collateral.
+
+        At this point, the 1 `$FBTC` is backed by:
+
+        * 0.5 `$BTC` underlying.
+        * $26K worth of `$USDC` vault collateral.
+
+            The vault CR is $\$26K \over \$20K$ = 1.3, equal to the vault's minimal CR.
+
+        * $60K worth of `$FLR` in pool collateral, of which $10K belongs to the agent.
+
+            The pool CR is $\$60K \over \$20K$ = 3, above the pool's minimal CR.
+
+    2. Now the price of `$BTC` increases from $20K to $30K.
+        As a result:
+
+        * The vault CR is $\$26K \over \$30K$ ≈ 0.87, **way below the vault's 1.3 minimal CR**.
+        * The pool CR is $\$60K \over \$30K$ = 2, **below the vault's 2.5 minimal CR**.
+
+        To comply with the vault's 1.3 minimal CR, the agent needs 1.3 * $30K = $39K of `$USDC` vault collateral, which he does not have.
+
+        :::warning
+
+            At this point, all the agent's FAssets backed by this vault must be liquidated.
+        :::
+
+    3. A liquidator notices this situation and decides to liquidate 1 `$FBTC`, currently worth $30K.
+
+        The liquidation premium factor is 1.1, so the liquidator receives $33K worth of assets:
+
+        * $26K worth of `$USDC`, which is all of the collateral in the agent's vault.
+        * $7K worth of `$FLR`.
+
+        Note that the portion of payment in `$FLR` is higher than in Example 1 because enough `$USDC` in collateral did not exist.
+
+        At this point, the agent is backing 0 `$FBTC`, and the remaining collateral is:
+
+        * 0.5 `$BTC` underlying.
+        * $0 worth of `$USDC` in vault collateral.
+        * $53K worth of `$FLR` in pool collateral, of which $3K belongs to the agent.
+
+            All this collateral can be freely withdrawn by its owners.
+            Because this collateral is not backing any FAssets anymore, no part of it is locked.
+:::
+
+The following example shows a very large price movement.
+:::example
+
+      A price increment such that the vault plus the pool collateral is not enough to back the minted FAssets results in a combined CR lower than 1.
+      By design, liquidation payments will never exceed the combined CR times the liquidated amount, so, in this case, liquidation is not a profitable operation.
+
+      Moreover, the collateral locked in the FAssets system might not be a strong enough deterrent for agents that want to dispose of the higher-valued underlying in an illegal way.
+:::
+
+## Liquidation Triggers
+
+Some events related to liquidation are not detected automatically and must be triggered by entities external to the blockchain.
+These entities are liquidators and challengers.
+
+Anyone can be a liquidator or a challenger and earn rewards for contributing to the correct working of the FAssets system.
+
+Some triggers put an agent in liquidation mode, and some others get agents out of liquidation mode.
+
+### Liquidation-Enabling Triggers
+
+* A valid liquidation request is submitted, triggering the liquidation automatically.
+* A liquidator triggers a liquidation manually, but does not submit a liquidation request immediately, seeking a better premium, because the premium might increase as time passes.
+* A liquidator detects that the CR is below the liquidation CR and sets the start time for an agent.
+    This operation does not immediately trigger the liquidation.
+    Instead, it starts a timer that enables the liquidation to be triggered after a system-defined time has elapsed.
+* A proof of illegal activity is presented, which immediately triggers a full liquidation.
+
+### Liquidation-Disabling Triggers
+
+After an agent enters the liquidation state, it remains there until its CR exceeds the safety CR again.
+
+The following operations can increase an agent's CR and can, therefore, potentially get the agent out of the liquidation state:
+
+* Redemptions.
+* A liquidation improves the agent's position.
+* The agent deposits more collateral.
+* The agent self-closes a position.
+* After the price has moved so that the agent's position is healthy again, the agent, or someone on the agent's behalf, manually sets the liquidation state to false.
+
+Exiting the liquidation state as soon as possible is in the agent's best interest, even if the agent might re-enter it again soon.
+Premiums paid to liquidators might depend on how long the agent has been in liquidation, for example.
+Also, exiting the liquidation state resets the CCB timer.
+
+## Tracking the Underlying Balance
+
+Agents are required to keep a certain percentage of underlying asset for each backed FAsset.
+This percentage, called the backing factor, is stored at an address on the underlying chain controlled by the agent.
+
+This requirement is enforced by balance-tracking in the FAsset contract.
+To track balances, the system must receive reports for each payment sent and received at the agent's address:
+
+* Incoming payments are part of the minting process and are updated as the process occurs.
+* Outgoing payments are either part of the redemption process or illegal payments, which are penalized.
+
+Challengers maintain the health of the FAssets system by monitoring the agent's underlying address to identify illegal operations that can make the agent's underlying backing too low.
+Challengers that correctly report illegal operations receive rewards from the agent's vault collateral.
+
+The following subsections contain details about all the topics that must be considered when monitoring an agent's underlying balance.
+
+### Chain Fees
+
+Fees for gas on the underlying chain can create issues for the FAssets system, so part of tracking an agent's underlying balance involves tracking the amount spent on fees on the underlying chain.
+
+Expensive gas fees can cause an address to have fewer assets than it should have and trigger a liquidation.
+Therefore, consider these actions:
+
+* **Cap the gas usage on underlying chains**: On smart-contract chains, the Data Connector defines a cap on the gas amount to enable any simple transaction to pass.
+    If senders limit their gas amount to this cap and a transaction still fails due to insufficient gas, the failure is considered the receiver's fault, and the transaction is labeled as blocked.
+
+    The gas cap is defined by the Data Connector, not the FAssets system, because it is the Data Connector that labels transactions as blocked.
+
+* **Maintain the underlying balance**: Agents must ensure that the payment plus the transaction fee for a redemption never reduce their balance to an amount lower than the amount required to back the FAssets.
+    Agents can ensure that redemptions do not reduce that balance in several ways:
+
+    * They can honor redemptions from some other address.
+        On UTXO chains, they can also honor redemptions from a combination of addresses.
+    * They can top up the underlying address and then send proof of payment to update the tracked balance.
+        After a redemption begins, the agent has a limited time to comply, so topping-up is time-sensitive.
+
+### Underlying Withdrawals
+
+Agents might legally withdraw part of the funds on their underlying address in several ways:
+
+* **Minting fees**: A part of a minter's payment is the mint fee in the underlying asset.
+* **Failed redemptions**: When an address is backing assets and those assets were redeemed, but the agent does not pay the redeemer, the redeemer is paid with collateral, and the agent can withdraw the assets.
+* **Liquidated assets**: If an agent's position was partially or fully liquidated, the agent can withdraw the assets.
+* **Self-closed assets**: After an agent self-closes, the closed assets can be withdrawn.
+
+The FAssets system must keep track of the agent's underlying funds, so when performing the above legal withdrawals, agents must still adhere to the following process:
+
+1. Announce the withdrawal to the FAssets system and obtain a payment reference.
+2. Perform the withdrawal, using the payment reference.
+3. Use the Data Connector to obtain a proof of payment.
+4. Present the proof of payment to the FAssets system, which clears the announcement.
+
+    If the agent does not present the proof of payment, anyone can present it after a while and receive a reward from the agent's vault.
+    Enabling nonagents to present this proof helps the FAssets system keep track of underlying balances.
+
+Only one withdrawal announcement can be active per agent at any time to prevent the agent from overwhelming the balance-tracking system with many simultaneous small withdrawals.
+
+### Illegal Payments
+
+Any challenger can report illegal payments from an underlying address and receive rewards in return.
+
+An illegal payment always triggers a full liquidation, which cannot be stopped.
+An agent can still escape paying the liquidation premium by self-closing before liquidators submit their liquidation requests, but the agent's vault remains unusable and must be closed.
+To resume operations, the agent must open a new vault with a different underlying address.
+
+The challenge system ensures that all minted FAssets are always backed by the assets on the agent's underlying address in the required percentage.
+Malicious agents might try to remove those assets in different ways.
+Therefore, challengers can report illegal activities by using these different _challenges_:
+
+#### Illegal Payment Challenge
+
+A payment from the agent's underlying address without a payment reference or with a payment reference that does not correspond to any open redemption or announced withdrawal.
+
+This challenge is performed in the following way:
+
+1. The challenger obtains proof of the illegal payment using the Data Connector.
+2. The challenger presents the proof to the FAssets system, which triggers:
+
+    * A vault collateral payment from the agent's vault to the challenger's address as a reward.
+    * The agent's state for the address is set to full liquidation.
+
+#### Double Payment Challenge
+
+An agent might try to abuse a redemption request to pay to the redeemer and use the same payment reference to pay an amount to the agent's own address.
+An agent might even try to pay the redeemer multiple times when he is redeeming against himself.
+
+This activity is easy to detect after the first payment is reported in step 6 of the redemption process, because then the request is deleted and the second payment becomes illegal.
+However, a malicious agent might try to issue the second payment before reporting the completion of the first one.
+
+The double payment challenge catches this attempt as soon as the payments are finalized, regardless of whether they have been reported to the FAssets system.
+
+This challenge is performed in the following way:
+
+1. The challenger detects two seemingly legal payments from the same agent's underlying address and with equal payment reference, and obtains proofs for both using the Data Connector.
+2. The challenger presents the two proofs to the FAssets system and triggers the reward payment and full liquidation.
+
+#### Negative Balance Challenge
+
+One or more legal payments can make the balance on the agent's underlying address too small or equivalently make the free underlying balance negative.
+This situation can happen because gas fees might be unknown when redemptions are approved.
+
+This situation would normally be detected after all payments are reported, but in this way it can be caught as soon as the payments are finalized on the underlying chain:
+
+1. The challenger detects one or more legal payments from the same agent's underlying address and the total outgoing amount exceeds the sum of all redemption values plus the total free balance.
+    The challenger obtains proofs for all of them using the Data Connector.
+2. The challenger presents all the proofs to the FAssets system, which checks that the transactions are from the agent's underlying address, that they have not been confirmed yet, and that their total really makes the free balance negative.
+    Then, it triggers reward payment and full liquidation.
+
+### Time Lock for Withdrawing Collateral
+
+The agent's collateral backs minted FAssets but also pays challenge fees and possibly illegal payment penalties.
+Because finalization on some underlying chains takes a long time, challenges can sometimes be proved to be valid only after an agent's position is already closed and enough collateral to pay them is not available.
+
+For this reason, collateral withdrawals are locked for a certain amount of time before they become effective.
+The amount of time varies depending on the underlying chain and the time frame required for achieving finality on that chain.
+
+For agents, any collateral withdrawals must be announced, and then the amount is locked for some time before it can be withdrawn.
+The locked collateral is also ineligible for minting.
+
+Agents must announce the closing of their vaults.
+They become unusable until the lock expires, and then they can be closed.
