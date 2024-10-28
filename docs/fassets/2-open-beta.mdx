@@ -1,0 +1,135 @@
+---
+sidebar_position: 2
+slug: open-beta
+title: Open Beta
+description: Participate in the FAssets open beta period.
+tags: [intermediate, fassets, xrp]
+keywords: [fassets, xrp, flare-network, flare-network, beta]
+---
+
+The FAssets system is currently in the open-beta period on the Coston test network.
+To ensure a seamless experience for open-beta participants, the FAssets codebase was updated based on the results of the closed-beta period.
+
+The open-beta period currently supports minting and redeeming XRP and BTC assets.
+
+## Objectives
+
+* Test the FAssets system in a live environment
+* Gather feedback from users to improve the FAssets functionality and documentation
+* Continue the education of the various roles supporting FAssets, such as agents, liquidators, and challengers, so that they can get practical experience and prepare themselves for the general launch of the FAssets system
+* Identify and resolve any remaining inconsistencies to ensure the system is as robust as possible before adding real user funds
+
+## Phases
+
+* **Phase One**: Agents will be onboarded and can interact with the FAssets system only via the command-line interface.
+* **Phase Two**: A graphical user interface will be released for everyone to use instead of the command line.
+
+After the Coston open beta ends, FAssets will launch on the Songbird network.
+
+## Operational Parameters
+
+### Minting and Redeeming
+
+| Parameter                             | XRP                                                                                                       | BTC                                                                                                       |
+|---------------------------------------|-----------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
+| **Minting cap**                       | none                                                                                                      | none                                                                                                      |
+| **Lot size**                          | 20 XRP                                                                                                    | 0.0004 BTC                                                                                                |
+| **Collateral reservation fee (CRF)**  | 0.1%                                                                                                      | 0.1%                                                                                                      |
+| **Redemption fee**                    | 0.1%                                                                                                      | 0.1%                                                                                                      |
+| **Redemption default premium**        | 10%                                                                                                       | 10%                                                                                                       |
+| **Redemption default premium source** | If the vault CR > 1.1, from the agent's vault. Otherwise, from the agent's vault and the collateral pool. | If the vault CR > 1.1, from the agent's vault. Otherwise, from the agent's vault and the collateral pool. |
+
+### Payment Times
+
+| Parameter                               | XRP        | BTC        |
+|-----------------------------------------|------------|------------|
+| **Underlying blocks for payment**       | 500        | 10         |
+| **Underlying seconds for payment**      | 15 minutes | 2 hours    |
+| **Average block time**                  | 2 seconds  | 10 minutes |
+| **Time of proof availability**          | 1 day      | 1 day      |
+| **Amount of extra time per redemption** | 30 seconds | 60 seconds |
+
+### Collateral Ratios
+
+| Parameter                                        | XRP                                 | BTC                                 |
+|--------------------------------------------------|-------------------------------------|-------------------------------------|
+| **Backing factor**                               | 100%                                | 95%                                 |
+| **Vault collateral**                             |                                     |                                     |
+| &emsp;&bullet;&emsp; **Supported types**         | `$USDC`, `$USDT`, simulated `$WETH` | `$USDC`, `$USDT`, simulated `$WETH` |
+| &emsp;&bullet;&emsp; **Minimal CR**              | 1.4                                 | 1.4                                 |
+| &emsp;&bullet;&emsp; **Collateral call band CR** | 1.3                                 | 1.3                                 |
+| &emsp;&bullet;&emsp; **Safety CR**               | 1.5                                 | 1.5                                 |
+| **Pool collateral**                              |                                     |                                     |
+| &emsp;&bullet;&emsp; **Supported types**         | `$CFLR`                             | `$CFLR`                             |
+| &emsp;&bullet;&emsp; **Minimal CR**              | 2.0                                 | 2.0                                 |
+| &emsp;&bullet;&emsp; **Collateral call band CR** | 1.9                                 | 1.9                                 |
+| &emsp;&bullet;&emsp; **Safety CR**               | 2.1                                 | 2.1                                 |
+| **Minting pool holdings required**               | 50%                                 | 50%                                 |
+
+### Liquidation
+
+| Parameter                             | XRP                                  | BTC                                  |
+|---------------------------------------|--------------------------------------|--------------------------------------|
+| **CCB time**                          | 180 seconds                          | 180 seconds                          |
+| **Liquidation premium**               | Step 1: 5%, Step 2: 10%, Step 3: 15% | Step 1: 5%, Step 2: 10%, Step 3: 15% |
+| **Liquidation step time**             | 180 seconds                          | 180 seconds                          |
+| **Liquidation source**                |                                      |                                      |
+| &emsp;&bullet;&emsp; Liquidated value | The agent's vault                    | The agent's vault                    |
+| &emsp;&bullet;&emsp; Premium          | The collateral pool                  | The collateral pool                  |
+
+
+### Default Agent Settings
+
+These are the default values for the agent bot provided by the Flare foundation.
+Agents are free to adjust these settings as they see fit.
+
+| Parameter                                | XRP   | BTC   |
+|------------------------------------------|-------|-------|
+| **Minting fee**                          | 0.25% | 0.25% |
+| **Pool share**                           | 40%   | 40%   |
+| **Minting CR**                           |       |       |
+| &emsp;&bullet;&emsp; **Agent vault**     | 1.6   | 1.6   |
+| &emsp;&bullet;&emsp; **Collateral pool** | 2.3   | 2.3   |
+| **Exit CR**                              | 2.3   | 2.3   |
+| **Top-up CR**                            | 2.1   | 2.1   |
+| &emsp;&bullet;&emsp; **Top-up discount** | 10%   | 10%   |
+| **Discount for agent self-close**        | 1%    | 1%    |
+
+### Rewarding
+
+| Parameter                             | XRP                                      | BTC                                      |
+|---------------------------------------|------------------------------------------|------------------------------------------|
+| **Challenger reward**                 | 300 `$USD` converted to vault collateral | 300 `$USD` converted to vault collateral |
+| **Confirmation by others**            |                                          |                                          |
+| &emsp;&bullet;&emsp; **Minimum time** | 2 hours                                  | 4 hours                                  |
+| &emsp;&bullet;&emsp; **Reward**       | 100 `$USD` converted to vault collateral | 100 `$USD` converted to vault collateral |
+
+### Time Locks
+
+These settings are far shorter in the beta phases than in the final version, in order to be able to perform quick experiments.
+
+| Parameter                                 | XRP         | BTC         |
+|-------------------------------------------|-------------|-------------|
+| **Agent withdrawal time lock**            | 60 seconds  | 60 seconds  |
+| **Maximum governance update frequency**   | 60 seconds  | 60 seconds  |
+| **Token invalidation time**               | 1 day       | 1 day       |
+| **Agent exit available time lock**        | 60 seconds  | 60 seconds  |
+| **Agent fee change time lock**            | 120 seconds | 120 seconds |
+| **Agent minting CR change time lock**     | 120 seconds | 120 seconds |
+| **Pool exit and top-up change time lock** | 120 seconds | 120 seconds |
+| **Agent time-locked operation window**    | 1 hour      | 1 hour      |
+| **Collateral pool token time lock**       | 60 seconds  | 60 seconds  |
+
+### Emergency Pause
+
+| Parameter                 | XRP    | BTC    |
+|---------------------------|--------|--------|
+| **Emergency pause**       | 1 day  | 1 day  |
+| **Emergency pause reset** | 1 week | 1 week |
+
+### FAssets Upgrade
+
+| Parameter                      | XRP  | BTC  |
+|--------------------------------|------|------|
+| **Buyback collateral premium** | 0.3% | 0.3% |
+| **Burn collateral premium**    | 0%   | 0%   |

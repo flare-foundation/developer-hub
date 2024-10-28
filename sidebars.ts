@@ -166,6 +166,7 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       link: { type: "doc", id: "fassets/overview" },
       items: [
+        "fassets/open-beta",
         // "fassets/getting-started",
         {
           type: "category",
