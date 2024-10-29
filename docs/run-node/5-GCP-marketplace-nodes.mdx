@@ -10,11 +10,35 @@ import Step2 from "/static/img/run-node-gcp-marketplace/step2-img.png";
 import Step2_1 from "/static/img/run-node-gcp-marketplace/step2-1-img.png";
 import ServiceAccountRole from "/static/img/run-node-gcp-marketplace/troubleshooting-missing-service-account-user-1.png";
 
-Deploy blockchain nodes without the need to install dependencies or manage configuration files. The nodes come with a copy of the databases locally which drastically reduces bootstrap times. The machine images will be available for Flare Mainnet, Flare Testnet Coston2, Songbird Canary-Network, Songbird Testnet Coston and several other networks.
+Deploy blockchain nodes without the need to install dependencies or manage configuration files. The nodes come with a copy of the databases locally which drastically reduces bootstrap times. The machine images are available for Flare Mainnet, Flare Testnet Coston2, Songbird Canary-Network, Songbird Testnet Coston and several other networks.
+
+## Supported Blockchain Nodes
+
+| Name                | Config Dir             | vCPUs | RAM   | Disk Size | Disk Type |
+| :------------------ | :--------------------- | :---- | :---- | :-------- | :-------- |
+| Algorand            | `/etc/algorand`        | 8     | 13 GB | 70 GB     | Balanced  |
+| Avalanche           | `/etc/avalanche`       | 8     | 16 GB | 530 GB    | Balanced  |
+| Bitcoin             | `/etc/bitcoin`         | 2     | 16 GB | 1,030 GB  | Balanced  |
+| Binance Smart Chain | `/etc/bsc`             | 8     | 32 GB | 2,030 GB  | SSD       |
+| Cosmos Hub          | `/etc/cosmos`          | 4     | 16 GB | 1,030 GB  | Balanced  |
+| Coston              | `/etc/coston`          | 4     | 16 GB | 280 GB    | Balanced  |
+| Coston 2            | `/etc/coston2`         | 4     | 16 GB | 280 GB    | Balanced  |
+| Coston 2 Rosetta    | `/etc/coston2_rosetta` | 4     | 16 GB | 280 GB    | Balanced  |
+| Dogecoin            | `/etc/dogecoin`        | 2     | 11 GB | 380 GB    | Balanced  |
+| Ethereum            | `/etc/ethereum`        | 8     | 32 GB | 2,230 GB  | Balanced  |
+| Ethereum Holesky    | `/etc/ethereum`        | 8     | 32 GB | 430 GB    | Balanced  |
+| Ethereum Sepolia    | `/etc/ethereum`        | 8     | 32 GB | 730 GB    | Balanced  |
+| Filecoin Lotus      | `/etc/filecoin`        | 16    | 32 GB | 1,030 GB  | SSD       |
+| Flare               | `/etc/flare`           | 4     | 16 GB | 830 GB    | Balanced  |
+| Flare Rosetta       | `/etc/flare_rosetta`   | 4     | 16 GB | 830 GB    | Balanced  |
+| Litecoin            | `/etc/litecoin`        | 2     | 12 GB | 330 GB    | Balanced  |
+| Polygon             | `/etc/polygon`         | 16    | 64 GB | 6,030 GB  | SSD       |
+| Songbird            | `/etc/songbird`        | 8     | 32 GB | 2,730 GB  | Balanced  |
+| XRPL                | `/etc/xrpl`            | 8     | 32 GB | 375 GB    | Local SSD |
 
 ## Prerequisites
 
-Ensure you have will need:
+Ensure you have:
 
 - A Google Cloud account
 
@@ -23,6 +47,8 @@ Ensure you have will need:
   - **roles/config.agent**
   - **roles/compute.admin**
   - **roles/iam.serviceAccountUser**
+
+- Verify that the [Quotas and System Limits](https://cloud.google.com/docs/quotas/view-manage), located in **IAM and admin > Quotas and system limits**, meet the resource requirements for the intended blockchain node
 
 ## Setup a node
 
@@ -52,7 +78,7 @@ Node operations are managed using the `nodectl` CLI tool.
 sudo nodectl help
 ```
 
-Configuration files are located in the `/etc/<node_name>` directory. For instance, Flare nodes will have their configurations in `/etc/flare-node`.
+Configuration files are located in the `/etc/<node_name>` directory. For instance, Flare nodes will have their configurations in `/etc/flare`.
 
 To start the node, connect to the instance and apply the services using:
 
@@ -64,7 +90,7 @@ sudo nodectl apply --target all
 ## Verify node operation
 
 The quickest way to verify that the node is running is by using the built-in health checks.
-Logs can also be accessed in the `/var/log/<node_name>` directory, for example, `/var/log/flare-node`.
+Logs can also be accessed in the `/var/log/<node_name>` directory, for example, `/var/log/flare`.
 
 ```bash
 # Run health checks
