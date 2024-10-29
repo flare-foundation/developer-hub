@@ -118,7 +118,9 @@ man journalctl
   - **Symptom**: The deployment fails when deploying the solution for the first time and
     creating the deployment service account through the UI. The logs display an error message similar to:
     ```
-    Error: Error waiting for instance to create: The user does not have access to service account '184067570780-compute@developer.gserviceaccount.com'. User: 'bmi-deployer@starlit-ship-405818.iam.gserviceaccount.com'. Ask a project owner to grant you the iam.serviceAccountUser role on the service account.
+    Error: Error waiting for instance to create: The user does not have access to service account '184067570780-compute@developer.gserviceaccount.com'.
+    User: 'bmi-deployer@starlit-ship-405818.iam.gserviceaccount.com'.
+    Ask a project owner to grant you the iam.serviceAccountUser role on the service account.
     ```
   - **Solution**:
     1.  Go to **IAM and Admin > Service Accounts**.
@@ -130,5 +132,18 @@ man journalctl
     6.  Once done, return to the Marketplace, delete the current deployment, and redeploy using the newly configured service account.
 
 - **Deployment failure due to Terraform state lock**
+
   - **Symptom**: The deployment fails, and clicking **Retry** leads to Terraform state lock errors.
   - **Solution**: Instead of retrying, delete the failed deployment and start a new one.
+
+- **Deployment failure due to quotas exceeded**
+
+  - **Symptom**: The deployment fails, displaying an error message in the logs similar to:
+    ```
+    Error: Error waiting for instance to create: Quota 'SSD_TOTAL_GB' exceeded.  Limit: 500.0 in region us-west1.
+    metric name = compute.googleapis.com/ssd_total_storage
+    limit name = SSD-TOTAL-GB-per-project-region
+    limit = 500
+    dimensions = map[region:us-west1]
+    ```
+  - **Solution**: Resource quotas need to be increased manually. To do this, refer to the [Quotas and System Limits documentation](https://cloud.google.com/docs/quotas/view-manage) and navigate to **IAM & Admin > Quotas**. After adjusting the quotas, delete the failed deployment and deploy a new one.
