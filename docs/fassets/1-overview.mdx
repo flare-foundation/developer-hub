@@ -27,8 +27,8 @@ Someone who wishes to mint FAssets starts by selecting an agent and paying a sma
 FAssets are wrapped versions of tokens from blockchains that don’t support smart contracts, which you can use to earn yield or rewards offered by dapps built on Flare networks. Enabled by the FTSO and the FDC, the FAssets system mints into your wallet wrapped versions of these tokens, and at any time you can redeem them, unwrapping them into their original form. For example, you might mint `FBTC`, the FAsset version of BTC, use it in a DeFi app on Flare, and later redeem it for BTC again.
 
 Anyone on the Flare blockchain can mint FAssets as wrapped versions of the original tokens from other blockchains, known as underlying networks.
-The original tokens from these chains, such as `$BTC`, `$LTC`, `$DOGE`, and `$XRP`, are called underlying assets.
-For example, the FAsset version of `$BTC` is `$FBTC`.
+The original tokens from these chains, such as `BTC`, `LTC`, `DOGE`, and `XRP`, are called underlying assets.
+For example, the FAsset version of `BTC` is `FBTC`.
 
 You can then use these FAssets in smart contracts and decentralized applications on Flare, and at any time you can redeem them for the underlying asset.
 
@@ -55,7 +55,7 @@ The following roles participate in the FAssets system:
 The main purpose of agents is to keep the underlying assets while the minted FAssets are circulating.
 Agents are off-chain programs, or bots, that:
 
-* Manage the account that holds an underlying asset, like `$BTC`.
+* Manage the account that holds an underlying asset, like `BTC`.
 * Provide the main part of the collateral.
 * Repay the underlying assets when users redeem them.
 
@@ -97,7 +97,7 @@ In the future, a mechanism might be implemented to allow agents to reject mintin
 
 ### Collateral Providers
 
-Anyone can participate in the FAssets system by providing native `$FLR` tokens to an agent's collateral pool and becoming a collateral provider.
+Anyone can participate in the FAssets system by providing native FLR tokens to an agent's collateral pool and becoming a collateral provider.
 
 For as long as these tokens remain locked in the pool, the collateral provider receives a share of every fee produced by FAssets minted using that pool.
 
@@ -127,7 +127,7 @@ Anyone can be a challenger, contribute to the health of the FAssets system, and 
 
 FAssets collateral is locked in contracts that ensure the minted FAssets can always be redeemed for the underlying assets they represent or compensated by collateral.
 
-Along with Flare's native token, `$FLR`, any governance-approved ERC-20 token on the Flare blockchain can be used as collateral.
+Along with Flare's native token, FLR, any governance-approved ERC-20 token on the Flare blockchain can be used as collateral.
 
 ## Collateral Types
 
@@ -136,7 +136,7 @@ Two kinds of collateral secure FAssets: vault collateral and pool collateral.
 <img src={FAssetsCollateral} />
 
 Vault collateral is provided exclusively by agents and ensures they perform their duties.
-Pool collateral is provided by agents and `$FLR` holders who choose to contribute to the pool.
+Pool collateral is provided by agents and FLR holders who choose to contribute to the pool.
 It is a safeguard when a sudden drop in the price of the vault collateral makes it insufficient to back the underlying assets.
 
 The two types of collateral are explained next.
@@ -145,7 +145,7 @@ Collateral pool tokens and minting fees are explained afterwards.
 ### Vault Collateral
 
 Vault collateral consists of the types of collateral chosen by agents to store in their vault.
-Flare governance approves the valid types, which are generally stablecoins, such as `$USDC`, `$USDT`, or other highly liquid tokens on the Flare network.
+Flare governance approves the valid types, which are generally stablecoins, such as USDC, USDT, or other highly liquid tokens on the Flare network.
 
 Agents choose one of the types defined by FAssets governance and use it as collateral in their vaults.
 Agents cannot switch to a different type after a vault is created, but they can create any number of vaults, with different types.
@@ -165,13 +165,13 @@ Otherwise, malicious agents could provide an address that systematically blocks 
 When the price of the vault collateral changes in such a way that the vault collateral cannot fully back all the minted FAssets, a liquidation mechanism ensures enough FAssets are burned to restore balance.
 The pool collateral provides an additional source of backing for situations when the price fluctuates too rapidly for liquidations to correct the imbalance.
 
-Pool collateral is always native `$FLR` tokens or `$SGB` tokens on the Songbird network and can be used as an additional source of collateral for liquidations and failed redemptions.
+Pool collateral is always native FLR tokens or SGB tokens on the Songbird network and can be used as an additional source of collateral for liquidations and failed redemptions.
 
 Anyone can participate in the FAssets system by providing native tokens to this pool.
 In return, providers receive **collateral pool tokens** (CPTs) as proof of the share of native tokens they provided to a specific pool from a specific agent.
 CPTs are ERC-20 tokens specific to both an agent and a pool.
 
-Providers can redeem their CPTs for `$FLR`, or even transfer or trade them, after a governance-defined time period has elapsed since they entered the pool.
+Providers can redeem their CPTs for FLR, or even transfer or trade them, after a governance-defined time period has elapsed since they entered the pool.
 This **time lock** is necessary to reduce sandwiching attacks.
 
 Additionally, CPT holders are entitled to a share of any fee the agent earns from minting FAssets using this pool as explained in the next section.
@@ -186,13 +186,13 @@ Additionally, CPT holders are entitled to a share of any fee the agent earns fro
 
     where:
 
-    * $added\_collateral_p$ is the amount of `$FLR` tokens that provider $p$ is adding to the pool.
-    * $collateral\_in\_pool$ is the amount of `$FLR` tokens in the pool before adding the new tokens.
+    * $added\_collateral_p$ is the amount of FLR tokens that provider $p$ is adding to the pool.
+    * $collateral\_in\_pool$ is the amount of FLR tokens in the pool before adding the new tokens.
     * $currently\_issued\_CPT$ is the circulating amount of collateral pool tokens.
 
     When a pool is first created, $received\_CPT_p = added\_collateral_p$.
 
-    The amount of `$FLR` collateral a provider receives when they redeem their CPT is calculated using the opposite formula:
+    The amount of FLR collateral a provider receives when they redeem their CPT is calculated using the opposite formula:
 
     $$
     received\_collateral_p = collateral\_in\_pool \times { redeemed\_CPT_p \over currently\_issued\_CPT }
@@ -207,12 +207,12 @@ Additionally, CPT holders are entitled to a share of any fee the agent earns fro
 The following example shows conversion of CPTs.
 :::example
 
-    |     |                                                                                          | `$FLR` in pool | Issued CPTs |
+    |     |                                                                                          | FLR in pool | Issued CPTs |
     | --- | ---------------------------------------------------------------------------------------- | -------------: | ----------: |
-    | 1.  | An agent creates a new vault. The collateral pool is initially empty of `$FLR` and fees. |              0 |           0 |
-    | 2.  | Alice deposits 100 `$FLR` and gets 100 CPTs in return.                                   |            100 |         100 |
-    | 3.  | Bob deposits 200 `$FLR` and gets 200 CPTs in return.                                     |            300 |         300 |
-    | 4.  | Alice redeems 50 CPTs and receives 50 `$FLR` in return.                                  |            250 |         250 |
+    | 1.  | An agent creates a new vault. The collateral pool is initially empty of FLR and fees. |              0 |           0 |
+    | 2.  | Alice deposits 100 FLR and gets 100 CPTs in return.                                   |            100 |         100 |
+    | 3.  | Bob deposits 200 FLR and gets 200 CPTs in return.                                     |            300 |         300 |
+    | 4.  | Alice redeems 50 CPTs and receives 50 FLR in return.                                  |            250 |         250 |
 
     Note that in general 1 FLR does not always correspond to 1 CPT, because of mechanisms like the [top-up](#top-up), for example.
 :::
@@ -258,8 +258,8 @@ It is worth noting that:
 
     where:
 
-    * $added\_collateral_p$ is the amount of `$FLR` tokens that provider $p$ is adding to the pool.
-    * $collateral\_in\_pool$ is the amount of `$FLR` tokens in the pool before adding the new tokens.
+    * $added\_collateral_p$ is the amount of FLR tokens that provider $p$ is adding to the pool.
+    * $collateral\_in\_pool$ is the amount of FLR tokens in the pool before adding the new tokens.
     * $fees\_in\_pool$ is the amount of FAsset minting fees currently in the pool.
 
     The following formulas are based on the concept of **virtual fees**, which are the fees that a provider would be entitled to if they had no fee debt.
@@ -299,15 +299,15 @@ It is worth noting that:
 The following example shows fee entitlement.
 :::example
 
-    |     |                                                                          | `$FLR` in pool | Fees in pool | Total fee debt | Total virtual fees |
+    |     |                                                                          | FLR in pool | Fees in pool | Total fee debt | Total virtual fees |
     | --- | ------------------------------------------------------------------------ | -------------: | -----------: | -------------: | -----------------: |
     | 1.  | An agent creates a new vault.                                            |              0 |            0 |              0 |                  0 |
-    | 2.  | Alice deposits 100 `$FLR` and gets 100 CPTs in return.                   |        **100** |            0 |              0 |                  0 |
+    | 2.  | Alice deposits 100 FLR and gets 100 CPTs in return.                   |        **100** |            0 |              0 |                  0 |
     | 3.  | 10 FAssets of fees are added to the pool due to a mint.                  |            100 |       **10** |              0 |             **10** |
-    | 4.  | Bob deposits 100 `$FLR` and gets 100s CPT in return.                     |        **200** |           10 |         **10** |             **20** |
+    | 4.  | Bob deposits 100 FLR and gets 100s CPT in return.                     |        **200** |           10 |         **10** |             **20** |
     | 5.  | 10 more FAssets of fees are added to the pool due to another mint.       |            200 |       **20** |             10 |             **30** |
     | 6.  | Alice withdraws 10 FAssets of fees.                                      |            200 |       **10** |         **20** |                 30 |
-    | 7.  | Bob exits the pool by returning the 100 CPTs and withdrawing 100 `$FLR`. |        **100** |        **5** |         **10** |             **15** |
+    | 7.  | Bob exits the pool by returning the 100 CPTs and withdrawing 100 FLR. |        **100** |        **5** |         **10** |             **15** |
 
     After step **4**, Bob is not entitled to any of the fees in the pool:
 
@@ -390,7 +390,7 @@ The following example shows transferability of CPTs
     |     |                                                                    | Issued CPTs | Fees in pool | Total fee debt | Total virtual fees |
     | --- | ------------------------------------------------------------------ | ----------: | -----------: | -------------: | -----------------: |
     | 1.  | An agent creates a new vault.                                      |           0 |            0 |              0 |                  0 |
-    | 2.  | Alice deposits 100 `$FLR` and receives 100 CPTs.                   |     **100** |            0 |              0 |                  0 |
+    | 2.  | Alice deposits 100 FLR and receives 100 CPTs.                   |     **100** |            0 |              0 |                  0 |
     | 3.  | 10 FAssets of fees are added to the pool due to a mint.            |         100 |       **10** |              0 |             **10** |
     | 4.  | Alice withdraws 5 FAssets of fees.                                 |         100 |        **5** |          **5** |                 10 |
     | 5.  | 10 more FAssets of fees are added to the pool due to another mint. |         100 |       **15** |              5 |             **20** |
@@ -429,7 +429,7 @@ These values are obtained using the FTSO system.
 The following example shows vault and pool CR
 :::example
 
-    Assume an amount of FAssets currently valued at $1000 USD, backed by $1500 worth of `$USDC` in vault collateral and $2000 worth of `$FLR` in pool collateral.
+    Assume an amount of FAssets currently valued at $1000 USD, backed by $1500 worth of USDC in vault collateral and $2000 worth of FLR in pool collateral.
 
     The resulting vault CR is then $\$1500 \over \$1000$ = 1.5.
 
@@ -623,7 +623,7 @@ The following example shows proof of nonpayment.
 
     The Data Connector's payment nonexistence attestation type proves nonpayment.
 
-    1. The minter sends a request to mint `$FBTC`.
+    1. The minter sends a request to mint FBTC.
         At the time the request is received, the last mined block on the Bitcoin chain is number 92, with timestamp 09:00 AM.
 
         The Asset Manager answers with the following threshold settings to complete the payment:
@@ -662,7 +662,7 @@ The following example shows proof of nonpayment.
 
     1. Request the proof from the time when the deposit should have happened.
         The Data Connector's answer will indicate that payments proofs are no longer available for that time.
-    2. Provide the amount of `$FLR` collateral equivalent to the price of the underlying assets that should have been deposited.
+    2. Provide the amount of FLR collateral equivalent to the price of the underlying assets that should have been deposited.
     3. Present the proof.
 
     Because a successful deposit cannot be proven, the FAssets system burns the amount of collateral in native tokens provided by the agent.
@@ -709,26 +709,26 @@ The following example shows the redemption queue.
 :::example "Example: Redemption Queue"
     The following example shows how the redemption queue works.
 
-    1. Bob mints 10 `$FXRP` with Agent 1.
-    2. Alice mints 20 `$FXRP` with Agent 2.
-    3. Charlie mints 5 `$FXRP` with Agent 1.
+    1. Bob mints 10 FXRP with Agent 1.
+    2. Alice mints 20 FXRP with Agent 2.
+    3. Charlie mints 5 FXRP with Agent 1.
 
         After Bob, Alice, and Charlie have minted their FAssets, the redemption queue according to the FIFO method is:
 
-         1. Agent 1 with 10 `$FXRP`.
-         2. Agent 2 with 20 `$FXRP`.
-         3. Agent 1 with 5 `$FXRP`.
+         1. Agent 1 with 10 FXRP.
+         2. Agent 2 with 20 FXRP.
+         3. Agent 1 with 5 FXRP.
 
-    4. Dana redeems 25 `$FXRP`.
-       To redeem 25 `$FXRP`:
+    4. Dana redeems 25 FXRP.
+       To redeem 25 FXRP:
 
-        1. Agent 1 pays 10 `$FXRP`.
-        2. Agent 2 pays 15 `$FXPR`.
+        1. Agent 1 pays 10 FXRP.
+        2. Agent 2 pays 15 FXRP.
 
         Now, the redemption queue according to the FIFO method is:
 
-        1. Agent 2 with 5 `$FXRP`.
-        2. Agent 1 with 5 `$FXRP`.
+        1. Agent 2 with 5 FXRP.
+        2. Agent 1 with 5 FXRP.
 :::
 
 ## Lots
@@ -740,8 +740,8 @@ Lots serve the following purposes:
 * They restrict large numbers of very small redemption tickets from being submitted, which would increase gas costs.
 
 Therefore, the amount of tokens in a lot (the _lot size_) varies for each underlying chain.
-For example, on the XRPL chain, a lot can be as small as 10 `$XRP` because transaction fees are low.
-On the other hand, on the Bitcoin chain, lots might need to be as big as 0.25 `$BTC` or more because transactions are far more expensive.
+For example, on the XRPL chain, a lot can be as small as 10 XRP because transaction fees are low.
+On the other hand, on the Bitcoin chain, lots might need to be as big as 0.25 BTC or more because transactions are far more expensive.
 
 Over time, the lot size can be updated to reflect price fluctuations of the underlying asset.
 Only a governance call can update the lot size, and it can be updated only by a limited amount per day.
@@ -965,29 +965,29 @@ However, an agent can still self-close positions to avoid paying a premium to li
 The following example shows a small price movement.
 :::example
 
-    Using `$BTC` as underlying and `$USDC` as collateral, an agent creates a vault to mint `$FBTC` FAssets.
+    Using BTC as underlying and USDC as collateral, an agent creates a vault to mint FBTC FAssets.
 
     1. Initial conditions:
 
-        * The agent is backing 1 `$FBTC`, currently valued at $20K, according to the FTSO system.
+        * The agent is backing 1 FBTC, currently valued at $20K, according to the FTSO system.
         * The minimal CR is **1.3** for the vault collateral and **2.5** for pool collateral.
         * The agent must hold 20% of the pool's minimal CR.
             In this case, 20% of 2.5 times \$20K is **\$10K**.
-        * The underlying backing factor is 50%, so the agent needs to hold only **0.5** `$BTC`.
+        * The underlying backing factor is 50%, so the agent needs to hold only **0.5** BTC.
         * The liquidation premium factor is 1.1, of which 1.0 is paid in vault collateral, and 0.1 is paid in pool collateral.
 
-        At this point, the 1 `$FBTC` is backed by:
+        At this point, the 1 FBTC is backed by:
 
-        * 0.5 `$BTC` underlying.
-        * $26K worth of `$USDC` vault collateral.
+        * 0.5 BTC underlying.
+        * $26K worth of USDC vault collateral.
 
             The vault CR is $\$26K \over \$20K$ = 1.3, equal to the vault's minimal CR.
 
-        * $60K worth of `$FLR` in pool collateral, of which $10K belongs to the agent.
+        * $60K worth of FLR in pool collateral, of which $10K belongs to the agent.
 
             The pool CR is $\$60K \over \$20K$ = 3, above the pool's minimal CR.
 
-    2. Now the price of `$BTC` increases from $20K to $21K.
+    2. Now the price of BTC increases from $20K to $21K.
         As a result:
 
         * The vault CR is $\$26K \over \$21K$ ≈ 1.24, **below the vault's 1.3 minimal CR**.
@@ -999,26 +999,26 @@ The following example shows a small price movement.
             If any of the CRs go below the liquidation CR, liquidations can start immediately.
        :::
 
-    3. A liquidator notices the CR levels and decides to liquidate $10K worth of FAssets by returning 0.48 `$FBTC` to the FAssets system.
+    3. A liquidator notices the CR levels and decides to liquidate $10K worth of FAssets by returning 0.48 FBTC to the FAssets system.
 
         The liquidation premium factor is 1.1, so the liquidator receives $11K worth of assets:
 
-        * $10K worth of `$USDC` from the agent's vault collateral.
-        * $1K worth of `$FLR` from the agent's portion of the collateral pool.
+        * $10K worth of USDC from the agent's vault collateral.
+        * $1K worth of FLR from the agent's portion of the collateral pool.
 
             The corresponding $1K worth of CPTs are burned, so their price is unaffected.
 
-        At this point, the agent is backing 0.52 `$FBTC` with:
+        At this point, the agent is backing 0.52 FBTC with:
 
-        * 0.5 `$BTC` underlying.
+        * 0.5 BTC underlying.
 
             The ratio is $0.5 \over 0.52$ ≈ 0.96, well above the 50% underlying backing factor.
 
-        * $16K worth of `$USDC` vault collateral.
+        * $16K worth of USDC vault collateral.
 
             The vault CR is $\$16K \over \$11K$ ≈ 1.45, now above the vault's minimal CR.
 
-        * $59K worth of `$FLR` in pool collateral, of which $9K belong to the agent.
+        * $59K worth of FLR in pool collateral, of which $9K belong to the agent.
 
             The pool CR is $\$59K \over \$11K$ ≈ 5.36, still well above the pool's minimal CR.
 
@@ -1026,7 +1026,7 @@ The following example shows a small price movement.
             Both CRs are now above the minimal CR values, but liquidation does not stop until the CRs further increase up to the safety CR.
         :::
     
-    In summary, as a result of the price increase and the liquidation, around 50% of the backed `$FBTC` was burned.
+    In summary, as a result of the price increase and the liquidation, around 50% of the backed FBTC was burned.
     The actual amount of FAssets that need to be burned, though, depends on the safety CR setting.
 :::
 
@@ -1034,55 +1034,55 @@ The following example shows a large price movement.
 :::example
 
     The same setup and initial conditions as in Example 1 are used:
-    Using `$BTC` as underlying and `$USDC` as collateral, an agent creates a vault to mint `$FBTC` FAssets.
+    Using BTC as underlying and USDC as collateral, an agent creates a vault to mint FBTC FAssets.
 
     1. Initial conditions:
 
-        * The agent is backing 1 `$FBTC`, currently valued at $20K, according to the FTSO system.
+        * The agent is backing 1 FBTC, currently valued at $20K, according to the FTSO system.
         * The minimal CR is **1.3** for the vault collateral and **2.5** for pool collateral.
         * The agent must hold 20% of the pool's minimal CR.
             In this case, 20% of 2.5 times \$20K is **\$10K**.
-        * The underlying backing factor is 50%, so the agent needs to hold only **0.5** `$BTC`.
+        * The underlying backing factor is 50%, so the agent needs to hold only **0.5** BTC.
         * The liquidation premium factor is 1.1, of which 1.0 is paid in vault collateral, and 0.1 is paid in pool collateral.
 
-        At this point, the 1 `$FBTC` is backed by:
+        At this point, the 1 FBTC is backed by:
 
-        * 0.5 `$BTC` underlying.
-        * $26K worth of `$USDC` vault collateral.
+        * 0.5 BTC underlying.
+        * $26K worth of USDC vault collateral.
 
             The vault CR is $\$26K \over \$20K$ = 1.3, equal to the vault's minimal CR.
 
-        * $60K worth of `$FLR` in pool collateral, of which $10K belongs to the agent.
+        * $60K worth of FLR in pool collateral, of which $10K belongs to the agent.
 
             The pool CR is $\$60K \over \$20K$ = 3, above the pool's minimal CR.
 
-    2. Now the price of `$BTC` increases from $20K to $30K.
+    2. Now the price of BTC increases from $20K to $30K.
         As a result:
 
         * The vault CR is $\$26K \over \$30K$ ≈ 0.87, **way below the vault's 1.3 minimal CR**.
         * The pool CR is $\$60K \over \$30K$ = 2, **below the vault's 2.5 minimal CR**.
 
-        To comply with the vault's 1.3 minimal CR, the agent needs 1.3 * $30K = $39K of `$USDC` vault collateral, which he does not have.
+        To comply with the vault's 1.3 minimal CR, the agent needs 1.3 * $30K = $39K of USDC vault collateral, which he does not have.
 
         :::warning
 
             At this point, all the agent's FAssets backed by this vault must be liquidated.
         :::
 
-    3. A liquidator notices this situation and decides to liquidate 1 `$FBTC`, currently worth $30K.
+    3. A liquidator notices this situation and decides to liquidate 1 FBTC, currently worth $30K.
 
         The liquidation premium factor is 1.1, so the liquidator receives $33K worth of assets:
 
-        * $26K worth of `$USDC`, which is all of the collateral in the agent's vault.
-        * $7K worth of `$FLR`.
+        * $26K worth of USDC, which is all of the collateral in the agent's vault.
+        * $7K worth of FLR.
 
-        Note that the portion of payment in `$FLR` is higher than in Example 1 because enough `$USDC` in collateral did not exist.
+        Note that the portion of payment in FLR is higher than in Example 1 because enough USDC in collateral did not exist.
 
-        At this point, the agent is backing 0 `$FBTC`, and the remaining collateral is:
+        At this point, the agent is backing 0 FBTC, and the remaining collateral is:
 
-        * 0.5 `$BTC` underlying.
-        * $0 worth of `$USDC` in vault collateral.
-        * $53K worth of `$FLR` in pool collateral, of which $3K belongs to the agent.
+        * 0.5 BTC underlying.
+        * $0 worth of USDC in vault collateral.
+        * $53K worth of FLR in pool collateral, of which $3K belongs to the agent.
 
             All this collateral can be freely withdrawn by its owners.
             Because this collateral is not backing any FAssets anymore, no part of it is locked.
