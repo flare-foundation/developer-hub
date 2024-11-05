@@ -15,8 +15,12 @@ unlisted: true
 ---
 
 import CodeBlock from "@theme/CodeBlock";
-import QueryDAandPushOnchain from "!!raw-loader!/examples/developer-hub-javascript/query_da_and_push_onchain.js";
-import QueryDataProvider from "!!raw-loader!/examples/developer-hub-javascript/query_data_provider.js";
+import TabItem from "@theme/TabItem";
+import Tabs from "@theme/Tabs";
+import Remix from "@site/src/components/remix";
+import QueryDALayer from "!!raw-loader!/examples/developer-hub-javascript/query_dalayer.js";
+import QueryDALayerAndPushOnchain from "!!raw-loader!/examples/developer-hub-javascript/query_dalayer_and_push_onchain.js";
+import QueryProviderAndPushOnchain from "!!raw-loader!/examples/developer-hub-javascript/query_provider_and_push_onchain.js";
 import FTSOV2FeedConsumerScaling from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedConsumerScaling.sol";
 
 Scaling provides offchain access to anchor feeds, using Flare's network of 100 independent data providers and a full commit-reveal process every 90 seconds.
@@ -28,33 +32,47 @@ This section demonstrates how to consume anchor feeds on Flare. The key steps to
 
 2. **Push the feed and proof to the onchain smart contract:**
 
-   **Verification**: The smart contract must validate the feed and proof data against the on-chain Merkle root.
+   **Verification**: The smart contract must validate the feed and proof data against the onchain Merkle root.
 
    **Usage**: Once verified, the feed can be used in the smart contract according to your application logic.
 
 :::info[Efficiency optimizations in Scaling]
-Scaling stores only a commitment to feed data on-chain, while the complete feed data remains off-chain. However, this data can be verified on-chain against the Merkle root, ensuring data integrity and resilience against tampering.
+Scaling stores only a commitment to feed data onchain, while the complete feed data remains offchain. However, this data can be verified onchain against the Merkle root, ensuring data integrity and resilience against tampering.
 :::
 
 {/* TODO: Add links where to get the DA-Layer API and FTSO scaling API from official Flare infrastructure. */}
 
 ## Querying DA Layer API
 
-The standardized DA Layer API allows you to query the value and proof for multiple feeds from the same voting epoch at once. To obtain pricing data from DA Layer, use the `anchor-feeds-with-proof` POST endpoint. For example, to get the feed value of `BTC/USD`:
+The standardized DA Layer API allows you to query the value and proof for multiple feeds from the same voting epoch at once. To obtain pricing data from DA Layer, use the `anchor-feeds-with-proof` POST endpoint. For example, to get the feed value of `BTC/USD` at voting round ID `802550`:
 
-```bash
-curl -X 'POST' \
-  'https://API_URL/api/v0/ftso/anchor-feeds-with-proof?voting_round_id=802550' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
-  -d '{
-  "feed_ids": [
-    "0x014254432f55534400000000000000000000000000"
-  ]
-}'
-```
+<Tabs>
+  <TabItem value="curl" label="curl" default>
 
-Response example:
+    ```bash
+    curl -X 'POST' \
+      'https://API_URL/api/v0/ftso/anchor-feeds-with-proof?voting_round_id=802550' \
+      -H 'accept: application/json' \
+      -H 'Content-Type: application/json' \
+      -d '{
+      "feed_ids": [
+        "0x014254432f55534400000000000000000000000000"
+      ]
+    }'
+    ```
+
+  </TabItem>
+  <TabItem value="javascript" label="Javascript">
+
+    <CodeBlock language="javascript" title="query_dalayer.js">
+      {QueryDALayer}
+    </CodeBlock>
+
+  </TabItem>
+
+</Tabs>
+
+The response will look something like:
 
 ```json
 [
@@ -79,21 +97,13 @@ Response example:
 
 You can request multiple feed IDs in a single query by providing a list of `feed_ids`. A list of valid feed IDs is available on the [Anchor Feeds](/ftso/scaling/anchor-feeds) page.
 
-### Pushing anchor feeds onchain
-
-The following TypeScript example shows how to query feed and proof data from DA Layer and submit it to the smart contract:
-
-<CodeBlock language="javascript" title="query_da_and_push_onchain.js">
-  {QueryDAandPushOnchain}
-</CodeBlock>
-
-### Using anchor feeds onchain
+### Defining onchain consumer
 
 To verify and use anchor feed data onchain, [`FtsoV2Interface`](/ftso/solidity-reference/FtsoV2Interface) provides an easy-to-use Solidity interface. You can access this interface in two ways:
 
 - Using the `getFtsoV2()` method from [@flarenetwork/flare-periphery-contracts](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts) package.
 
-- Using the [`getContractAddressByName()`](/network/solidity-reference/IFlareContractRegistry#getcontractaddressbyname) with key `FtsoV2`.
+- Using the [`getContractAddressByName()`](/network/solidity-reference/IFlareContractRegistry#getcontractaddressbyname) method on the Flare Contract Registry with name `FtsoV2`.
 
 [`FtsoV2Interface`](/ftso/solidity-reference/FtsoV2Interface) provides a method [`verifyFeedData`](/ftso/solidity-reference/FtsoV2Interface#verifyfeeddata), which validates the feed data and proof against the Merkle root stored onchain.
 The function requires a single input struct [`FeedDataWithProof`](/ftso/solidity-reference/FtsoV2Interface#feeddatawithproof), which includes the feed data and voting round ID within the [`FeedData`](/ftso/solidity-reference/FtsoV2Interface#feeddata) struct, and a Merkle proof.
@@ -104,14 +114,26 @@ This sample contract verifies feed data and stores it onchain if the proof is va
   {FTSOV2FeedConsumerScaling}
 </CodeBlock>
 
-## Querying a data provider
+{/* prettier-ignore */}
+<Remix fileName="FTSOV2FeedConsumerScaling.sol">Open in Remix</Remix>
+<br></br>
+
+### Pushing anchor feeds onchain
+
+The following example shows how to query feed and proof data from DA Layer and submit it to the onchain consumer:
+
+<CodeBlock language="javascript" title="query_dalayer_and_push_onchain.js">
+  {QueryDALayerAndPushOnchain}
+</CodeBlock>
+
+## Querying data provider API
 
 Data providers can also query their own API for specific feed data. This onchain verification is similar to the DA-Layer but the offchain query is different:
 
-<CodeBlock language="javascript" title="query_data_provider.js">
-  {QueryDataProvider}
+<CodeBlock language="javascript" title="query_provider_and_push_onchain.js">
+  {QueryProviderAndPushOnchain}
 </CodeBlock>
 
-{/* Verifying the price and proof off-chain */}
+{/* Verifying the price and proof offchain */}
 
 {/* ## The `FeedData` struct */}
