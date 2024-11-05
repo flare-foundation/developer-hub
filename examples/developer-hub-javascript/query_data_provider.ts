@@ -29,3 +29,5 @@ async function main() {
     `Saved price: ${nicePrice}$ at voting round: ${savedPrice.votingRoundId.toString()}`,
   );
 }
+
+main();
