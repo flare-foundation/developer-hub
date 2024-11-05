@@ -1,11 +1,11 @@
-async function getDataProviderData(feedId: string, voting_round_id: number) {
+async function getDataProviderData(feedId, voting_round_id) {
   return await (
     await fetch(
       DATA_PROVIDER_URL + `specific-feed/${feedIds}/${voting_round_id}`,
       {
         method: "GET",
         headers: {
-          "X-API-KEY": API_KEY as string,
+          "X-API-KEY": API_KEY,
           "Content-Type": "application/json",
         },
       },

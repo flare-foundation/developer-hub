@@ -1,16 +1,13 @@
 import "dotenv/config";
 import { artifacts } from "hardhat";
-import { FtsoV2FeedConsumerDAContract } from "../typechain-types";
-const FtsoV2FeedConsumerDA: FtsoV2FeedConsumerDAContract = artifacts.require(
-  "FtsoV2FeedConsumerDA",
-);
+const FtsoV2FeedConsumerDA = artifacts.require("FtsoV2FeedConsumerDA");
 
 const { DA_API_URL, API_KEY } = process.env;
 
 const BTC_USD_FEED_ID = "0x014254432f55534400000000000000000000000000";
 const TARGET_VOTING_ROUND = 802550;
 
-async function getDALayerData(feedIds: string, voting_round_id: number) {
+async function getDALayerData(feedIds, voting_round_id) {
   return await (
     await fetch(
       DA_API_URL +
@@ -18,7 +15,7 @@ async function getDALayerData(feedIds: string, voting_round_id: number) {
       {
         method: "POST",
         headers: {
-          "X-API-KEY": API_KEY as string,
+          "X-API-KEY": API_KEY,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
