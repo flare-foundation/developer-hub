@@ -78,7 +78,7 @@ const sidebars: SidebarsConfig = {
           collapsed: true,
           link: { type: "doc", id: "ftso/scaling/overview" },
           items: [
-            // "ftso/scaling/getting-started",
+            "ftso/scaling/getting-started",
             "ftso/scaling/anchor-feeds",
             // {
             //   type: "category",
