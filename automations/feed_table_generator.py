@@ -8,7 +8,6 @@ from pycoingecko import CoinGeckoAPI
 from web3 import Web3
 
 # Configuration
-# Configuration
 RPC_URL = "https://songbird-api.flare.network/ext/C/rpc"
 FAST_UPDATER_ADDRESS = "0x70e8870ef234EcD665F96Da4c669dc12c1e1c116"
 EXPLORER_API_URL = "https://songbird-explorer.flare.network/api"
@@ -18,13 +17,11 @@ logging.basicConfig(
     encoding="utf-8",
     level=logging.INFO,
     handlers=[logging.StreamHandler(stream=sys.stdout)],
-    handlers=[logging.StreamHandler(stream=sys.stdout)],
 )
 logger = logging.getLogger(__name__)
 
 
 def get_contract_abi(contract_address: str) -> dict:
-    """Get the ABI for a contract from the Chain Explorer API."""
     """Get the ABI for a contract from the Chain Explorer API."""
     params = {"module": "contract", "action": "getabi", "address": contract_address}
     headers = {"accept": "application/json"}
@@ -120,7 +117,6 @@ if __name__ == "__main__":
     logger.info("Connected to RPC `%s`", RPC_URL)
 
     # Set up contract
-    # Set up contract
     fast_updater = w3.eth.contract(
         address=Web3.to_checksum_address(FAST_UPDATER_ADDRESS),
         abi=get_contract_abi(FAST_UPDATER_ADDRESS),
@@ -130,7 +126,6 @@ if __name__ == "__main__":
     # Query block latency feeds
     block_latency_feeds = fast_updater.functions.fetchAllCurrentFeeds().call()
     feed_names = [
-        feed[1:].decode("utf-8").rstrip("\x00") for feed in block_latency_feeds[0]
         feed[1:].decode("utf-8").rstrip("\x00") for feed in block_latency_feeds[0]
     ]
     decimals = block_latency_feeds[2]
