@@ -2,9 +2,7 @@
 slug: fsp
 title: Flare Systems Protocol
 description: Foundational architecture supporting Flare's enshrined protocols.
-keywords:
-  [flare-network, configuration, blockchain, data, smart-contracts, wallets]
-unlisted: true
+keywords: [flare-network, configuration, blockchain, data, smart-contracts]
 ---
 
 import DocCardList from "@theme/DocCardList";
@@ -118,7 +116,7 @@ like the [Flare Time Series Oracle](/ftso/overview) and the [Flare Data Connecto
   - **Random Number Acquisition**: Begins before the end of the current reward epoch to obtain a secure random number.
   - **Vote Power Block Selection**: A specific block is selected to determine vote power snapshots, ensuring consistency in weight calculations.
   - **Voter Registration**: Potential voters register for the upcoming epoch, declaring their addresses and node IDs.
-  - **Signing Policy Snapshot**: The new signing policy is finalized and stored on-chain, marking the start of the new reward epoch.
+  - **Signing Policy Snapshot**: The new signing policy is finalized and stored on-chain, which enables the start of the new reward epoch.
 - **Incentivization**:
   - Penalties are applied for delays or failure to participate in the signing process.
   - **Burn Factors**: Calculated penalties that reduce rewards for non-compliance or tardiness.
@@ -263,9 +261,9 @@ like the [Flare Time Series Oracle](/ftso/overview) and the [Flare Data Connecto
 
 **Process**
 
-- **Data Collection**: Voters collect stake and delegation data from the P-chain that started in a voting epoch.
+- **Data Collection**: A subset of voters collect stake and delegation data from the P-chain that started in a voting epoch.
 - **Merkle Tree Construction**: Organize the data into a Merkle tree for efficient storage and verification.
-- **Signing and Finalization**: Voters sign the Merkle root, and upon reaching the threshold, the root is finalized on the Relay Contract.
+- **Signing and Finalization**: The voters then sign the Merkle root, and upon reaching the threshold, the root is finalized on the Relay Contract.
 
 **Incentivization**
 
@@ -326,8 +324,8 @@ like the [Flare Time Series Oracle](/ftso/overview) and the [Flare Data Connecto
   - Uptime criteria are defined, typically requiring at least 80% uptime.
 
 - **Consensus Mechanism**:
-  - Voters sign a hash of the aggregated list of node IDs.
-  - Confirmation requires signatures exceeding the threshold weight.
+  - A subset of voters sign a hash of the aggregated list of node IDs.
+  - Confirmation requires signatures exceeding the threshold.
 
 **Incentivization**
 
@@ -346,7 +344,7 @@ like the [Flare Time Series Oracle](/ftso/overview) and the [Flare Data Connecto
 
 - **Data Collection**:
 
-  - Voters collect partial reward claims from each sub-protocol.
+  - Partial reward claims are collected off-chain from each sub-protocol.
   - The claims are aggregated and organized into a Merkle tree.
 
 - **Voting and Finalization**:
@@ -359,61 +357,6 @@ like the [Flare Time Series Oracle](/ftso/overview) and the [Flare Data Connecto
 - **Penalty Mechanisms**:
   - Delays or non-participation can block rewards for all participants.
   - The importance of the protocol ensures that voters are motivated to participate.
-
-## Off-Chain Services
-
-### Protocol Manager Service
-
-**Function**
-
-- **Automation**: Manages the periodic submission of protocol data to the blockchain.
-- **Transaction Handling**: Sends transactions such as `submit1`, `submit2`, `submitSignatures`, and `submit3` in each voting epoch.
-
-**Transactions**
-
-- **submit1**: Used for initial data submissions, often commits in a commit-reveal scheme.
-- **submit2**: For additional data or reveal phases.
-- **submitSignatures**: Submits signed data, such as Merkle roots or protocol messages.
-- **submit3**: Reserved for future protocol needs.
-
-**Data Handling**
-
-- **Data Collection**: Queries specific Protocol Data Providers for the necessary data.
-- **Encoding**: Processes and encodes data into byte sequences for submission.
-- **Prioritization**: Uses prioritized submission addresses for efficient processing.
-
-### Protocol Data Provider APIs
-
-**Purpose**
-
-- **Data Supply**: Provide the necessary data for off-chain services to submit to the blockchain.
-- **Standardization**: Ensure consistent data formats and structures across voters.
-
-**Endpoints**
-
-- **GET submit1**: Retrieves data for the first submission phase.
-- **GET submit2**: Retrieves data for the second phase.
-- **GET submitSignatures**: Retrieves data for signing and submission.
-- **GET submit3**: Future expansion.
-
-**Data Structure**
-
-- **Response Fields**:
-  - **Status**: Indicates whether data is available.
-  - **Data**: The payload to be submitted.
-  - **AdditionalData**: Any extra information required.
-
-### Reward Aggregator Service
-
-**Function**
-
-- **Data Aggregation**: Collects reward claims from all sub-protocols.
-- **Preparation**: Prepares the aggregated data for the Reward Voting Protocol.
-
-**Process**
-
-- **Querying Calculators**: Obtains partial reward claims from each protocol's reward calculator.
-- **Merkle Tree Construction**: Organizes claims into a Merkle tree for efficient storage and verification.
 
 ### Signing Policy Voter Service
 
@@ -451,6 +394,61 @@ like the [Flare Time Series Oracle](/ftso/overview) and the [Flare Data Connecto
   - Voters can earn rewards by finalizing results promptly.
   - The service determines if it's the voter's turn to finalize based on random selection and weight.
 
+### Protocol Manager Service
+
+**Function**
+
+- **Automation**: Manages the periodic submission of protocol data to the blockchain.
+- **Transaction Handling**: Sends transactions such as `submit1`, `submit2`, `submitSignatures`, and `submit3` in each voting epoch.
+
+**Transactions**
+
+- **submit1**: Used for initial data submissions, often commits in a commit-reveal scheme.
+- **submit2**: For additional data or reveal phases.
+- **submitSignatures**: Submits signed data, such as Merkle roots or protocol messages.
+- **submit3**: Reserved for future protocol needs.
+
+**Data Handling**
+
+- **Data Collection**: Queries specific Protocol Data Providers for the necessary data.
+- **Encoding**: Processes and encodes data into byte sequences for submission.
+- **Prioritization**: Uses prioritized submission addresses for efficient processing.
+
+### Reward Aggregator Service
+
+**Function**
+
+- **Data Aggregation**: Collects reward claims from all sub-protocols.
+- **Preparation**: Prepares the aggregated data for the Reward Voting Protocol.
+
+**Process**
+
+- **Querying Calculators**: Obtains partial reward claims from each protocol's reward calculator.
+- **Merkle Tree Construction**: Organizes claims into a Merkle tree for efficient storage and verification.
+
+## Off-Chain Services
+
+### Protocol Data Provider APIs
+
+**Purpose**
+
+- **Data Supply**: Provide the necessary data for off-chain services to submit to the blockchain.
+- **Standardization**: Ensure consistent data formats and structures across voters.
+
+**Endpoints**
+
+- **GET submit1**: Retrieves data for the first submission phase.
+- **GET submit2**: Retrieves data for the second phase.
+- **GET submitSignatures**: Retrieves data for signing and submission.
+- **GET submit3**: Future expansion.
+
+**Data Structure**
+
+- **Response Fields**:
+  - **Status**: Indicates whether data is available.
+  - **Data**: The payload to be submitted.
+  - **AdditionalData**: Any extra information required.
+
 ## Smart Contracts
 
 ### `EntityManager`
@@ -468,6 +466,7 @@ like the [Flare Time Series Oracle](/ftso/overview) and the [Flare Data Connecto
   - **Submit Address**: Used for submitting data in prioritized transactions.
   - **Submit Signatures Address**: Used for submitting signatures.
   - **Signing Policy Address**: The address used for signing policies and protocol messages.
+- **Public Key Registration:** The public key used in the FTSOv2 Fast Updates sortition protocol.
 
 **Security Mechanism**
 
@@ -482,7 +481,7 @@ like the [Flare Time Series Oracle](/ftso/overview) and the [Flare Data Connecto
 **Functions**
 
 - **submit1**, **submit2**, **submit3**, **submitSignatures**: Functions with no parameters that accept data in the transaction's calldata.
-- **submitAndPass**: A general-purpose function that proxies calls to external functions.
+- **submitAndPass**: A general-purpose function that proxies calls to external functions, used in FTSOv2 Fast Updates.
 
 **Mechanism**
 
@@ -530,7 +529,7 @@ like the [Flare Time Series Oracle](/ftso/overview) and the [Flare Data Connecto
 
 **Purpose**
 
-- **Reward Distribution**: Facilitates the claiming and distribution of rewards to voters, delegators, and stakers.
+- **Reward Distribution**: Facilitates direct reward distribution distribution of rewards.
 
 **Functions**
 
