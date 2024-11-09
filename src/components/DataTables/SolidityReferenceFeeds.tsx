@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import Link from "@docusaurus/Link";
 import tableData from "../../../automations/solidity_reference.json";
 
@@ -27,17 +27,50 @@ const SolidityReferenceFeeds = ({ network, contractNames = [] }) => {
   };
 
   const networkData = tableData[network] || [];
+  const links = networkLinks[network];
 
-  const displayedData = contractNames.map((name) => {
-    const contract = networkData.find((contract) => contract.name === name);
-    return contract
-      ? {
-          name: contract.name,
-          address: contract.address,
-          abiLink: `${networkLinks[network]?.abiLinkPrefix}${contract.address}&format=raw`,
-        }
-      : { name, address: "-", abiLink: "-" };
-  });
+  // Memoize the displayed data to avoid unnecessary recomputations
+  const displayedData = useMemo(() => {
+    if (!links) return [];
+    return contractNames.map((name) => {
+      const contract = networkData.find((contract) => contract.name === name);
+      return contract
+        ? {
+            name: contract.name,
+            address: contract.address,
+            abiLink: `${links.abiLinkPrefix}${contract.address}&format=raw`,
+          }
+        : { name, address: "-", abiLink: "-" };
+    });
+  }, [network, contractNames, networkData]);
+
+  const renderAddress = (address: string) =>
+    address !== "-" ? (
+      <Link
+        href={`${links.addressLinkPrefix}${address}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="feed-address-link"
+      >
+        <code>{address}</code>
+      </Link>
+    ) : (
+      <span className="no-address">-</span>
+    );
+
+  const renderAbiLink = (abiLink: string) =>
+    abiLink !== "-" ? (
+      <Link
+        href={abiLink}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="abi-link"
+      >
+        ABI
+      </Link>
+    ) : (
+      <span className="no-abi">-</span>
+    );
 
   return (
     <table className="data-table">
@@ -52,35 +85,9 @@ const SolidityReferenceFeeds = ({ network, contractNames = [] }) => {
         {displayedData.length > 0 ? (
           displayedData.map((row, index) => (
             <tr key={index} className="table-row">
-              <td className="regular-font">{row.name}</td>
-              <td className="feed-id mono-font">
-                {row.address !== "-" ? (
-                  <Link
-                    href={`${networkLinks[network]?.addressLinkPrefix}${row.address}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="feed-id-text light-theme-text"
-                  >
-                    {row.address}
-                  </Link>
-                ) : (
-                  <span className="center-text">-</span>
-                )}
-              </td>
-              <td className="regular-font">
-                {row.abiLink !== "-" ? (
-                  <Link
-                    href={row.abiLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="abi-link"
-                  >
-                    ABI
-                  </Link>
-                ) : (
-                  <span>-</span>
-                )}
-              </td>
+              <td className="contract-name">{row.name}</td>
+              <td className="contract-address">{renderAddress(row.address)}</td>
+              <td className="contract-abi">{renderAbiLink(row.abiLink)}</td>
             </tr>
           ))
         ) : (
