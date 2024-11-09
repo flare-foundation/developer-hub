@@ -2,36 +2,72 @@ import React, { useMemo } from "react";
 import Link from "@docusaurus/Link";
 import tableData from "../../../automations/solidity_reference.json";
 
-const SolidityReferenceFeeds = ({ network, contractNames = [] }) => {
-  const networkLinks = {
-    FlareMainnet: {
-      addressLinkPrefix: "https://flarescan.com/address/",
-      abiLinkPrefix:
-        "https://api.routescan.io/v2/network/mainnet/evm/14/etherscan/api?module=contract&action=getabi&address=",
-    },
-    FlareTestnetCoston2: {
-      addressLinkPrefix: "https://coston2.testnet.flarescan.com/address/",
-      abiLinkPrefix:
-        "https://api.routescan.io/v2/network/testnet/evm/114/etherscan/api?module=contract&action=getabi&address=",
-    },
-    SongbirdCanaryNetwork: {
-      addressLinkPrefix: "https://songbird.flarescan.com/address/",
-      abiLinkPrefix:
-        "https://api.routescan.io/v2/network/mainnet/evm/19/etherscan/api?module=contract&action=getabi&address=",
-    },
-    SongbirdTestnetCoston: {
-      addressLinkPrefix: "https://coston.testnet.flarescan.com/address/",
-      abiLinkPrefix:
-        "https://api.routescan.io/v2/network/testnet/evm/16/etherscan/api?module=contract&action=getabi&address=",
-    },
-  };
+interface ContractData {
+  name: string;
+  address: string;
+}
 
-  const networkData = tableData[network] || [];
+interface DisplayedDataItem {
+  name: string;
+  address: string;
+  abiLink: string;
+}
+
+interface NetworkLinks {
+  addressLinkPrefix: string;
+  abiLinkPrefix: string;
+}
+
+interface NetworkLinksMap {
+  [network: string]: NetworkLinks;
+}
+
+interface SolidityReferenceProps {
+  network: string;
+  contractNames: string[];
+}
+
+const networkLinks: NetworkLinksMap = {
+  FlareMainnet: {
+    addressLinkPrefix: "https://flarescan.com/address/",
+    abiLinkPrefix:
+      "https://api.routescan.io/v2/network/mainnet/evm/14/etherscan/api?module=contract&action=getabi&address=",
+  },
+  FlareTestnetCoston2: {
+    addressLinkPrefix: "https://coston2.testnet.flarescan.com/address/",
+    abiLinkPrefix:
+      "https://api.routescan.io/v2/network/testnet/evm/114/etherscan/api?module=contract&action=getabi&address=",
+  },
+  SongbirdCanaryNetwork: {
+    addressLinkPrefix: "https://songbird.flarescan.com/address/",
+    abiLinkPrefix:
+      "https://api.routescan.io/v2/network/mainnet/evm/19/etherscan/api?module=contract&action=getabi&address=",
+  },
+  SongbirdTestnetCoston: {
+    addressLinkPrefix: "https://coston.testnet.flarescan.com/address/",
+    abiLinkPrefix:
+      "https://api.routescan.io/v2/network/testnet/evm/16/etherscan/api?module=contract&action=getabi&address=",
+  },
+};
+
+const SolidityReference: React.FC<SolidityReferenceProps> = ({
+  network,
+  contractNames,
+}) => {
   const links = networkLinks[network];
+  const networkData: ContractData[] = tableData[network] || [];
+
+  // Handle unsupported networks
+  if (!links) {
+    return (
+      <div className="unsupported-network">
+        Network <strong>{network}</strong> is not supported.
+      </div>
+    );
+  }
 
   // Memoize the displayed data to avoid unnecessary recomputations
-  const displayedData = useMemo(() => {
-    if (!links) return [];
+  const displayedData: DisplayedDataItem[] = useMemo(() => {
     return contractNames.map((name) => {
       const contract = networkData.find((contract) => contract.name === name);
       return contract
@@ -42,7 +78,7 @@ const SolidityReferenceFeeds = ({ network, contractNames = [] }) => {
           }
         : { name, address: "-", abiLink: "-" };
     });
-  }, [network, contractNames, networkData]);
+  }, [links, contractNames, networkData]);
 
   const renderAddress = (address: string) =>
     address !== "-" ? (
@@ -102,4 +138,4 @@ const SolidityReferenceFeeds = ({ network, contractNames = [] }) => {
   );
 };
 
-export default SolidityReferenceFeeds;
+export default SolidityReference;
