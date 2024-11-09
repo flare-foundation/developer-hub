@@ -2,7 +2,6 @@ import json
 import logging
 from pathlib import Path
 
-from eth_typing import ChecksumAddress
 from web3 import Web3
 
 logging.basicConfig(level=logging.INFO)
@@ -15,9 +14,7 @@ NETWORK_RPCS = {
     "SongbirdTestnetCoston": "https://coston-api.flare.network/ext/C/rpc",
 }
 # Flare Contract Registry is the same address on all networks
-REGISTRY_ADDRESS = Web3.to_checksum_address(
-    "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
-)
+REGISTRY_ADDRESS = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
 REGISTRY_ABI = [
     {
         "inputs": [],
@@ -34,7 +31,7 @@ REGISTRY_ABI = [
 
 def get_solidity_reference(
     network_rpcs: dict[str, str],
-    registry_address: ChecksumAddress,
+    registry_address: str,
     registry_abi: list[dict],
 ) -> dict[str, list]:
     solidity_reference = {}
@@ -48,7 +45,9 @@ def get_solidity_reference(
             )
             continue
 
-        contract = web3.eth.contract(address=registry_address, abi=registry_abi)
+        contract = web3.eth.contract(
+            address=Web3.to_checksum_address(registry_address), abi=registry_abi
+        )
 
         try:
             res = contract.functions.getAllContracts().call()
