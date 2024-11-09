@@ -9,10 +9,10 @@ logging.basicConfig(level=logging.INFO)
 
 
 NETWORK_RPCS = {
-    "Flare Mainnet": "https://flare-api.flare.network/ext/C/rpc",
-    "Flare Testnet Coston2": "https://coston2-api.flare.network/ext/C/rpc",
-    "Songbird Canary Network": "https://songbird-api.flare.network/ext/C/rpc",
-    "Songbird Testnet Coston": "https://coston-api.flare.network/ext/C/rpc",
+    "FlareMainnet": "https://flare-api.flare.network/ext/C/rpc",
+    "FlareTestnetCoston2": "https://coston2-api.flare.network/ext/C/rpc",
+    "SongbirdCanaryNetwork": "https://songbird-api.flare.network/ext/C/rpc",
+    "SongbirdTestnetCoston": "https://coston-api.flare.network/ext/C/rpc",
 }
 # Flare Contract Registry is the same address on all networks
 REGISTRY_ADDRESS = Web3.to_checksum_address(

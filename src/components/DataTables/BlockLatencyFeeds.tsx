@@ -1,5 +1,5 @@
 import React from "react";
-import CopyButton from "../CopyButton"; // Assuming the CopyButton component is in the same directory
+import CopyButton from "../CopyButton";
 import tableData from "../../../automations/block_latency_feeds.json";
 
 const BlockLatencyFeeds = () => {
