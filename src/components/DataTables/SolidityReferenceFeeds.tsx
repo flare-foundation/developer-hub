@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "@docusaurus/Link";
 import tableData from "../../../automations/solidity_reference.json";
 
 const SolidityReferenceFeeds = ({ network, contractNames = [] }) => {
@@ -54,28 +55,28 @@ const SolidityReferenceFeeds = ({ network, contractNames = [] }) => {
               <td className="regular-font">{row.name}</td>
               <td className="feed-id mono-font">
                 {row.address !== "-" ? (
-                  <a
+                  <Link
                     href={`${networkLinks[network]?.addressLinkPrefix}${row.address}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="feed-id-text light-theme-text"
                   >
                     {row.address}
-                  </a>
+                  </Link>
                 ) : (
                   <span className="center-text">-</span>
                 )}
               </td>
               <td className="regular-font">
                 {row.abiLink !== "-" ? (
-                  <a
+                  <Link
                     href={row.abiLink}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="abi-link"
                   >
                     ABI
-                  </a>
+                  </Link>
                 ) : (
                   <span>-</span>
                 )}
@@ -84,7 +85,7 @@ const SolidityReferenceFeeds = ({ network, contractNames = [] }) => {
           ))
         ) : (
           <tr>
-            <td className="no-data">
+            <td className="no-data" colSpan={3}>
               No data available for the specified contracts in this network.
             </td>
           </tr>
