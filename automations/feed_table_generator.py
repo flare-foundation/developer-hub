@@ -13,11 +13,8 @@ REGISTRY_ADDRESS = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
 EXPLORER_API_URL = "https://flare-explorer.flare.network/api"
 BLOCK_LATENCY_FEEDS_PATH = Path("block_latency_feeds.json")
 ANCHOR_FEEDS_PATH = Path("anchor_feeds.json")
-logging.basicConfig(
-    encoding="utf-8",
-    level=logging.INFO,
-    handlers=[logging.StreamHandler(stream=sys.stdout)],
-)
+
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -50,7 +47,7 @@ def write_data_to_file(file_path: Path, data: list[dict]) -> None:
     try:
         with file_path.open("w") as f:
             json.dump(data, f, indent=4)
-        logger.info("Successfully wrote data to %s", file_path)
+        logger.debug("Successfully wrote data to %s", file_path)
     except OSError:
         logger.exception("Failed to write to %s: ", file_path)
 
@@ -113,8 +110,10 @@ def generate_feed_data(
 
 
 if __name__ == "__main__":
+    logging.info("Running Feed Table automation...")
+
     w3 = Web3(Web3.HTTPProvider(RPC_URL))
-    logger.info("Connected to RPC `%s`", RPC_URL)
+    logger.debug("Connected to RPC `%s`", RPC_URL)
 
     # Get contract registry
     registry = w3.eth.contract(
@@ -130,7 +129,7 @@ if __name__ == "__main__":
         address=Web3.to_checksum_address(fast_updater_address),
         abi=get_contract_abi(fast_updater_address),
     )
-    logger.info("Connected to FastUpdater contract `%s`", fast_updater_address)
+    logger.debug("Connected to FastUpdater contract `%s`", fast_updater_address)
 
     # Query block latency feeds
     block_latency_feeds = fast_updater.functions.fetchAllCurrentFeeds().call()
@@ -138,7 +137,7 @@ if __name__ == "__main__":
         feed[1:].decode("utf-8").rstrip("\x00") for feed in block_latency_feeds[0]
     ]
     decimals = block_latency_feeds[2]
-    logger.info("Found %d block-latency feeds", len(feed_names))
+    logger.debug("Found %d block-latency feeds", len(feed_names))
 
     # Query CoinGecko for top 750 coins
     coins_list = get_coins_list(pages=[1, 2, 3])
@@ -152,3 +151,8 @@ if __name__ == "__main__":
     # Write anchor feeds to file
     anchor_data = generate_feed_data(feed_names, decimals, coins_list)
     write_data_to_file(ANCHOR_FEEDS_PATH, anchor_data)
+    logging.info(
+        "Feed Table automation: Data successfully saved to %s and %s",
+        BLOCK_LATENCY_FEEDS_PATH,
+        ANCHOR_FEEDS_PATH,
+    )

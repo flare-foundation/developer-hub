@@ -65,6 +65,8 @@ def get_solidity_reference(
 
 
 if __name__ == "__main__":
+    logging.info("Running Solidity Reference automation...")
+
     solidity_reference = get_solidity_reference(
         NETWORK_RPCS, REGISTRY_ADDRESS, REGISTRY_ABI
     )
@@ -73,4 +75,6 @@ if __name__ == "__main__":
     with output_file.open("w") as f:
         json.dump(solidity_reference, f, indent=4)
 
-    logging.info("Data successfully saved to %s", output_file)
+    logging.info(
+        "Solidity Reference automation: Data successfully saved to %s", output_file
+    )
