@@ -1,10 +1,10 @@
 ---
 title: IWNatDelegationFee
-description: Provider interface for setting fee percentage.
-sidebar_position: 9
+description: Manages the delegation fees set by voters for WFLR delegations.
+sidebar_position: 8
 ---
 
-Provider interface for setting fee percentage.
+Manages the delegation fees set by voters for WFLR delegations.
 
 Sourced from `IWNatDelegationFee.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/IWNatDelegationFee.sol).
 

@@ -1,0 +1,632 @@
+---
+slug: fsp
+title: Flare Systems Protocol
+description: Foundational architecture supporting Flare's enshrined protocols.
+keywords: [flare-network, configuration, blockchain, data, smart-contracts]
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import DocCardList from "@theme/DocCardList";
+import SolidityReference from "@site/src/components/DataTables/SolidityReference";
+
+The Flare Systems Protocol (FSP) is a foundational infrastructure designed to support Flare's enshrined protocols (technically referred to as sub-protocols).
+Its primary goal is to facilitate secure, efficient, and decentralized consensus mechanisms through weighted voting by a select group of entities known as voters.
+These voters are off-chain participants who accrue vote power from the Flare community via delegations of wrapped FLR tokens (WFLR) or stakes.
+
+FSP ensures that agreements on off-chain data or calculations are reached securely and fairly, enabling the reliable operation of sub-protocols
+like the [Flare Time Series Oracle](/ftso/overview) and the [Flare Data Connector](/fdc/overview).
+
+**Key FSP Features:**
+
+- **Decentralized Governance**: Through a weighted voting system involving a diverse set of voters.
+- **Efficient Data Management**: By offloading complex calculations off-chain and minimizing on-chain storage requirements.
+- **Robust Reward Mechanisms**: Incentivizing participation and penalizing delays or non-compliance to maintain network health.
+- **Extensibility**: Designed to support additional sub-protocols and future enhancements like C-chain staking.
+- **Security**: Implements mechanisms to prevent malicious behavior and ensures data integrity through Merkle proofs.
+
+## Key Components
+
+### Voters
+
+**Role and Selection**
+
+- **Participants**: Voters are off-chain entities that play a crucial role in the consensus mechanism by participating in threshold weighted voting across all sub-protocols.
+- **Selection Criteria**: They are anticipated to be up to 100 entities, selected in a decentralized manner from validators with the highest vote power. The vote power is determined by the combination of stakes and WFLR delegations they receive from the community.
+
+**Vote Power Sources**
+
+- **P-chain Stake**: Voters can obtain vote power by staking FLR tokens on the P-chain. Stakes are bound for a specific period and cannot be removed prematurely.
+- **C-chain Stake**: Not currently implemented, however this could allow for slashable stakes.
+- **WFLR Delegation**: Community members can delegate their WFLR tokens to voters, contributing to the voter's vote power. These delegations are fluid and can change frequently.
+
+**Addresses and Identity**
+
+- **Identity Address**: This is a cold wallet used for administrative purposes, providing the voter's identity on the network. It's responsible for setting fees, managing associated addresses, and declaring node IDs.
+- **Signing Address**: A hot wallet used for signing data in protocols and for submitting signatures. This address is set by the voter and is crucial for participating in consensus mechanisms.
+- **Delegation Address**: The address to which the community delegates their WFLR, directly affecting the voter's vote power.
+- **Prioritized Submission Addresses**: Addresses used for efficient communication with the blockchain, particularly for submitting data and signatures.
+
+**Rewards and Fees**
+
+- **Direct Rewards**: Voters receive rewards from sub-protocols either as direct rewards or based on their participation weight.
+- **Fee Structure**: Voters can set fees for delegators and stakers, influencing the attractiveness of participating with them.
+
+### Voting Periods
+
+**Voting Epochs**
+
+- **Duration**: Each voting epoch lasts 90 seconds, serving as the fundamental time unit in the voting process.
+- **Identification**: Voting epochs are identified by a unique ID, starting from 0 and incrementing by 1 for each subsequent epoch.
+- **Function**: Voting rounds for sub-protocols occur within these epochs, allowing for frequent and timely consensus decisions.
+
+**Reward Epochs**
+
+- **Composition**: Reward epochs consist of multiple voting epochs, typically lasting 3.5 days or 3360 voting epochs.
+- **Identification**: Each reward epoch is identified by a reward epoch ID.
+- **Purpose**: Used to fix voters, their weights, and the signing policy for a specific period, ensuring stability in the consensus mechanism.
+
+### Voting Process and Finalization
+
+**Merkle Root Agreement**
+
+- **Process**: Voters independently calculate candidate Merkle roots based on protocol data, which may include off-chain data verification or consensus on off-chain calculations.
+- **Signing**: Voters sign these Merkle roots and publish the signatures on-chain.
+- **Data Integrity**: The use of Merkle roots ensures data integrity and allows for efficient verification of large datasets.
+
+**Confirmation Threshold**
+
+- **Threshold Value**: A Merkle root is confirmed when it is signed by voters whose combined weight exceeds a predefined threshold, typically over 50% of the total voting weight.
+- **Security**: The threshold ensures that no single voter or small group can unilaterally confirm data, maintaining network security.
+
+**Finalization**
+
+- **Relay Contract**: Finalization involves aggregating sufficient signatures and submitting them to the **Relay Contract**.
+- **Verification**: The Relay Contract verifies signatures, checks voter eligibility, and confirms that the combined weight meets the threshold.
+- **Authoritative Storage**: Once finalized, the Merkle root is stored on the Relay Contract, serving as the authoritative source for that protocol's results.
+
+### Use of Confirmed Voting Results
+
+**Verification Process**
+
+- **Data Required**:
+  1. **Protocol Data Result Record**: A record (usually in JSON format) containing the data relevant to the protocol.
+  2. **Voting Round ID**: The ID of the voting round in which the Merkle root was confirmed.
+  3. **Merkle Proof**: A sequence of hashes linking the data record to the Merkle root.
+- **Contract Verification**:
+  - The smart contract hashes the data record and applies the Merkle proof to obtain the candidate Merkle root.
+  - It retrieves the confirmed Merkle root from the Relay Contract.
+  - If the roots match, the data is considered valid, and the contract can act upon it.
+- **Efficiency**: This mechanism allows smart contracts to verify large amounts of data securely and efficiently without storing all the data on-chain.
+
+### Voting (Signing) Policies
+
+**Definition and Purpose**
+
+- **Signing Policy**: A set of rules defined for each reward epoch, specifying eligible voters, their weights, and the confirmation threshold.
+- **Purpose**: Ensures that the consensus mechanism operates with an agreed-upon set of participants and rules, providing predictability and security.
+
+**Components Explained**
+
+- **Eligible Voters**: The list of voters who are permitted to participate in the consensus process for the reward epoch.
+- **Weights**: Normalized weights assigned to each voter based on their aggregated stakes and delegations.
+- **Threshold**: The minimum combined weight of voters required to confirm a Merkle root.
+- **Seed**: A secure random seed used for operations within the epoch, such as random number generation.
+
+**Signing Policy Definition Protocol**
+
+- **Process**:
+  - **Random Number Acquisition**: Begins before the end of the current reward epoch to obtain a secure random number.
+  - **Vote Power Block Selection**: A specific block is selected to determine vote power snapshots, ensuring consistency in weight calculations.
+  - **Voter Registration**: Potential voters register for the upcoming epoch, declaring their addresses and node IDs.
+  - **Signing Policy Snapshot**: The new signing policy is finalized and stored on-chain, which enables the start of the new reward epoch.
+- **Incentivization**:
+  - Penalties are applied for delays or failure to participate in the signing process.
+  - **Burn Factors**: Calculated penalties that reduce rewards for non-compliance or tardiness.
+
+### Weight Definition
+
+**Participation Weights**
+
+- **WM (Mirrored Stake Weight)**: Represents stakes from the P-chain mirrored onto the C-chain for use in smart contracts.
+- **WC (C-chain Stake Weight)**: Planned for future implementation; represents stakes directly on the C-chain.
+- **WWFLR (WFLR Delegation Weight)**: Represents wrapped FLR tokens delegated by the community to voters.
+
+**Aggregation Function**
+
+- **Purpose**: Combines the various participation weights to determine a voter's total signing weight.
+- **Calculation**:
+  - Caps are applied to prevent any single voter from having excessive influence.
+  - The function considers the total weight and normalizes individual weights accordingly.
+
+### Weight Participation and Fees
+
+**Delegators and Stakers**
+
+- **Community Involvement**: Members can contribute to a voter's weight by delegating WFLR or staking FLR tokens.
+- **Influence**: Their participation directly affects the voter's vote power and potential rewards.
+
+**Fees**
+
+- **Setting Fees**: Voters set fees for their delegators and stakers, influencing how attractive they are to the community.
+- **Impact on Rewards**: Fees are deducted from rewards before distribution to participants.
+
+**Rewards**
+
+- **Distribution**: Rewards are distributed proportionally based on each participant's contribution to the voter's weight.
+- **Incentivization**: Encourages community members to support reliable and efficient voters.
+
+### Signing Threshold and Signatures
+
+**Threshold Determination**
+
+- **Standard Threshold**: Typically set at over 50% of the total voting weight to confirm a Merkle root.
+- **Adjustments**: May vary depending on the protocol's security requirements or network conditions.
+
+**Signature Mechanism**
+
+- **ECDSA Signatures**: Standard cryptographic signatures used for signing protocol messages.
+- **Protocol Messages**: Contain essential data such as protocol ID, voting round ID, random quality score, and Merkle root.
+- **Verification**: Signatures are verified during finalization to ensure they are from eligible voters and meet the threshold.
+
+### Random Number Generation
+
+**Mechanism**
+
+- **FTSO Scaling Sub-protocol**: Provides secure random numbers using a commit-reveal scheme.
+- **Commit-Reveal Scheme**:
+  - **Commit Phase**: Voters commit to a value without revealing it.
+  - **Reveal Phase**: Voters reveal their committed values, which are combined to produce a random number.
+
+**Usage**
+
+- **Protocol Operations**: Random numbers are essential for operations like selecting voters for rewards or determining the order of finalization.
+- **Security**: Ensures fairness and prevents predictability in the consensus process.
+
+**Access**
+
+- **Relay Contract**: The random number is included in the Merkle roots stored on the Relay Contract.
+- **Quality Score**: Indicates whether the random number is fully secure or has issues due to network delays or potential attacks.
+
+## Rewarding and Claiming
+
+### Reward Claims
+
+**Types of Claims**
+
+- **Direct Claims**: Rewards owed solely to a specific beneficiary, typically a voter's identity address.
+- **Fee Claims**: Similar to direct claims but specifically for the fees collected from delegations and stakes.
+- **Weight-Based Claims**:
+  - **WFLR Claims**: For rewards distributed to WFLR delegators.
+  - **Mirror Claims**: For rewards distributed to P-chain stakers.
+  - **C-chain Claims**: For future distribution based on C-chain stakes.
+
+**Reward Calculation**
+
+- **Partial Claims**: Each sub-protocol calculates partial reward claims based on participation and protocol-specific rules.
+- **Aggregation**: Partial claims are aggregated across all sub-protocols during the Reward Voting Protocol.
+- **Merkle Tree**: The aggregated claims are organized into a Merkle tree for efficient storage and verification.
+
+### Reward Claiming Process
+
+**Initialization**
+
+- **Merkle Root Confirmation**: Requires the Merkle root for the reward epoch to be confirmed through the Reward Voting Protocol.
+- **Variables Tracked**:
+  - **Unclaimed Weight**: The total participation weight that has not yet been claimed.
+  - **Unclaimed Amount**: The total reward amount that remains unclaimed.
+
+**Weight-Based Claiming**
+
+- **Delegator Claims**: Delegators claim rewards proportional to their participation in the voter's weight.
+- **Process**:
+  - Delegators submit a claim, and the contract calculates their share based on their contribution.
+  - The unclaimed weight and amount are updated accordingly.
+
+**Fees**
+
+- **Deduction**: Voter fees are deducted from the total reward amount before distribution to delegators and stakers.
+- **Fee Setting**: Voters can adjust their fees, influencing delegator participation.
+
+### Rewarding Architecture
+
+**Unified Claiming**
+
+- **Reward Manager Contract**: A single contract through which all rewards are claimed, simplifying the process.
+- **Support**: Handles both direct and weight-based claims, as well as fee distributions.
+
+**Funding Rewards**
+
+- **Reward Offering Contracts**: Sub-protocol-specific contracts that receive reward offers, potentially including inflation-based rewards.
+- **Sources**: Funding can come from fees collected, inflation, or other mechanisms specific to the sub-protocol.
+
+**Incentives**
+
+- **Fast Signing and Finalization**:
+  - **Encouragement**: Voters are incentivized to submit signatures and finalize results promptly through reward mechanisms.
+  - **Grace Periods**: Defined periods during which voters can earn additional rewards for timely actions.
+- **Penalties**:
+  - **Burn Factors**: Penalties applied to rewards if voters delay participation, calculated based on the duration of the delay.
+  - **Blocked Claiming**: Severe delays can result in blocking the ability to claim rewards altogether.
+
+## System Protocols
+
+### P-chain Stake Voting Protocol
+
+**Purpose**
+
+- **Stake Mirroring**: Mirrors stakes and delegations from the P-chain onto the C-chain for use in smart contracts and consensus mechanisms.
+- **Accuracy**: Ensures that participation weights reflect actual stakes, maintaining fairness and security.
+
+**Frequency**
+
+- **Per Voting Epoch**: Occurs every voting epoch to capture the latest stake changes.
+
+**Process**
+
+- **Data Collection**: A subset of voters collect stake and delegation data from the P-chain that started in a voting epoch.
+- **Merkle Tree Construction**: Organize the data into a Merkle tree for efficient storage and verification.
+- **Signing and Finalization**: The voters then sign the Merkle root, and upon reaching the threshold, the root is finalized on the Relay Contract.
+
+**Incentivization**
+
+- **Rewards**: Provided from inflation or other sources to encourage participation.
+- **Focus**: Incentives are aimed at timely signing and finalization.
+
+### Signing Policy Definition Protocol
+
+**Purpose**
+
+- **Define Signing Policies**: Establishes the eligible voters and their weights for each reward epoch.
+- **Ensure Consensus**: Provides a structured approach to agree on the rules governing the next reward epoch.
+
+**Phases**
+
+1. **Random Number Acquisition**:
+
+   - Begins two hours before the end of the current reward epoch.
+   - A secure random number is obtained for use in voter selection.
+
+2. **Vote Power Block Selection**:
+
+   - A specific block within a defined interval is selected to determine vote power.
+   - Ensures that weight calculations are based on consistent and verifiable data.
+
+3. **Voter Registration**:
+
+   - Potential voters register on-chain during a 30-minute window.
+   - Voters declare their addresses, node IDs, and other relevant information.
+
+4. **Signing Policy Snapshot**:
+   - The new signing policy is finalized and stored on-chain.
+   - Marks the beginning of the new reward epoch and defines the set of eligible voters.
+
+**Incentivization**
+
+- **Penalties for Delays**:
+
+  - Burn factors are applied to reduce rewards for voters who delay signing.
+  - Encourages prompt participation to avoid penalties.
+
+- **Threshold Requirements**:
+  - The signing policy is only valid after being signed by voters exceeding the threshold weight.
+  - This ensures that the policy has broad support among voters.
+
+### Validator Uptime Voting Protocol
+
+**Purpose**
+
+- **Network Reliability**: Ensures that validators maintain sufficient uptime, contributing to the overall health of the network.
+- **Reward Eligibility**: Only validators with acceptable uptime are considered for rewards.
+
+**Process**
+
+- **Data Submission**:
+
+  - After the end of a reward epoch, voters submit lists of node IDs they deem to have sufficient uptime.
+  - Uptime criteria are defined, typically requiring at least 80% uptime.
+
+- **Consensus Mechanism**:
+  - A subset of voters sign a hash of the aggregated list of node IDs.
+  - Confirmation requires signatures exceeding the threshold.
+
+**Incentivization**
+
+- **Indirect Penalties**:
+  - Failure to participate can block reward claiming, affecting all participants.
+  - Encourages voters to contribute to the process to avoid impacting their rewards.
+
+### Reward Voting Protocol
+
+**Purpose**
+
+- **Aggregate Rewards**: Combines reward claims from all sub-protocols into a single Merkle tree.
+- **Finalize Claims**: Confirms the rewards for distribution in the reward epoch.
+
+**Process**
+
+- **Data Collection**:
+
+  - Partial reward claims are collected off-chain from each sub-protocol.
+  - The claims are aggregated and organized into a Merkle tree.
+
+- **Voting and Finalization**:
+  - Voters sign the Merkle root of the reward claims.
+  - Upon reaching the threshold, the root is finalized on the Relay Contract.
+
+**Incentivization**
+
+- **No Direct Rewards**: There are no additional rewards for participating in this protocol.
+- **Penalty Mechanisms**:
+  - Delays or non-participation can block rewards for all participants.
+  - The importance of the protocol ensures that voters are motivated to participate.
+
+### Signing Policy Voter Service
+
+**Function**
+
+- **Policy Signing**: Manages the process of signing new signing policies.
+- **Event Monitoring**: Watches for events indicating a new signing policy needs to be signed.
+
+**Process**
+
+- **Automation**: Automatically signs the new policy when required.
+- **Threshold Awareness**: Monitors whether the signing threshold has been reached.
+
+### Voter Registration Service
+
+**Function**
+
+- **Registration Management**: Automates voter registration for upcoming reward epochs.
+- **Ensures Eligibility**: Helps voters remain eligible for participation and rewards.
+
+**Process**
+
+- **Event Monitoring**: Watches for the start of the voter registration period.
+- **Transaction Submission**: Registers the voter on the Voter Registry Contract.
+
+### Finalizer Service
+
+**Function**
+
+- **Result Finalization**: Monitors signature submissions and finalizes protocol results when sufficient signatures are collected.
+
+**Incentivization**
+
+- **Reward Opportunities**:
+  - Voters can earn rewards by finalizing results promptly.
+  - The service determines if it's the voter's turn to finalize based on random selection and weight.
+
+### Protocol Manager Service
+
+**Function**
+
+- **Automation**: Manages the periodic submission of protocol data to the blockchain.
+- **Transaction Handling**: Sends transactions such as `submit1`, `submit2`, `submitSignatures`, and `submit3` in each voting epoch.
+
+**Transactions**
+
+- **submit1**: Used for initial data submissions, often commits in a commit-reveal scheme.
+- **submit2**: For additional data or reveal phases.
+- **submitSignatures**: Submits signed data, such as Merkle roots or protocol messages.
+- **submit3**: Reserved for future protocol needs.
+
+**Data Handling**
+
+- **Data Collection**: Queries specific Protocol Data Providers for the necessary data.
+- **Encoding**: Processes and encodes data into byte sequences for submission.
+- **Prioritization**: Uses prioritized submission addresses for efficient processing.
+
+### Reward Aggregator Service
+
+**Function**
+
+- **Data Aggregation**: Collects reward claims from all sub-protocols.
+- **Preparation**: Prepares the aggregated data for the Reward Voting Protocol.
+
+**Process**
+
+- **Querying Calculators**: Obtains partial reward claims from each protocol's reward calculator.
+- **Merkle Tree Construction**: Organizes claims into a Merkle tree for efficient storage and verification.
+
+## Off-Chain Services
+
+### Protocol Data Provider APIs
+
+**Purpose**
+
+- **Data Supply**: Provide the necessary data for off-chain services to submit to the blockchain.
+- **Standardization**: Ensure consistent data formats and structures across voters.
+
+**Endpoints**
+
+- **GET submit1**: Retrieves data for the first submission phase.
+- **GET submit2**: Retrieves data for the second phase.
+- **GET submitSignatures**: Retrieves data for signing and submission.
+- **GET submit3**: Future expansion.
+
+**Data Structure**
+
+- **Response Fields**:
+  - **Status**: Indicates whether data is available.
+  - **Data**: The payload to be submitted.
+  - **AdditionalData**: Any extra information required.
+
+## Smart Contracts
+
+### `EntityManager`
+
+**Purpose**
+
+- **Voter Management**: Manages voter entities, including addresses and node IDs.
+- **Configuration**: Allows voters to set and update their associated addresses.
+
+**Features**
+
+- **Node ID Assignment**: Voters can register and unregister node IDs associated with their entities.
+- **Address Management**:
+  - **Delegation Address**: Where WFLR delegations are received.
+  - **Submit Address**: Used for submitting data in prioritized transactions.
+  - **Submit Signatures Address**: Used for submitting signatures.
+  - **Signing Policy Address**: The address used for signing policies and protocol messages.
+- **Public Key Registration:** The public key used in the FTSOv2 Fast Updates sortition protocol.
+
+**Security Mechanism**
+
+- **Propose-Confirm Model**: Ensures that address changes are secure by requiring confirmation from both the identity and the new address.
+
+### `Submission`
+
+**Purpose**
+
+- **Prioritized Submission**: Allows for subsidized and prioritized submission of protocol data by eligible voters.
+
+**Functions**
+
+- **submit1**, **submit2**, **submit3**, **submitSignatures**: Functions with no parameters that accept data in the transaction's calldata.
+- **submitAndPass**: A general-purpose function that proxies calls to external functions, used in FTSOv2 Fast Updates.
+
+**Mechanism**
+
+- **Subsidization**: Validators prioritize these transactions and subsidize gas fees, reducing costs for voters.
+- **Eligibility**: Only eligible voters can use the subsidized functions, and limitations apply to prevent abuse.
+
+### `FlareSystemsManager`
+
+**Purpose**
+
+- **Protocol Management**: Manages system protocols like the Signing Policy Definition Protocol, Uptime Voting Protocol, and Reward Voting Protocol.
+
+**Lifecycle Management**
+
+- **Event Emission**: Emits events to signal the start and end of protocol phases.
+- **Action Triggers**: Contains functions that are triggered by the FlareDaemon to perform time-sensitive actions.
+
+**Functions**
+
+- **daemonize**: Triggers protocol actions based on timing and conditions.
+- **signNewSigningPolicy**: Allows voters to sign new signing policies.
+- **signRewards**: Used for the Reward Voting Protocol.
+- **submitUptimeVote** and **signUptimeVote**: Functions for the Uptime Voting Protocol.
+
+### `Relay`
+
+**Purpose**
+
+- **Data Storage**: Stores confirmed Merkle roots and signing policies.
+- **Finalization and Relaying**: Handles the finalization of protocol results and relays them to other EVM blockchains if needed.
+
+**Functions**
+
+- **setSigningPolicy**: Sets the signing policy (on Flare only).
+- **relay**: Finalizes Merkle roots for sub-protocols or relays signing policies.
+- **getConfirmedMerkleRoot**: Retrieves confirmed Merkle roots.
+- **getRandomNumber**: Provides access to the secure random number.
+
+**Mechanism**
+
+- **Signature Verification**: Validates signatures against the current signing policy.
+- **Threshold Enforcement**: Ensures that the combined weight of signatures meets the required threshold.
+
+### `RewardManager`
+
+**Purpose**
+
+- **Reward Distribution**: Facilitates direct reward distribution distribution of rewards.
+
+**Functions**
+
+- **claim**: Allows users to claim rewards with or without proofs, depending on the type of claim.
+- **autoClaim**: Enables batch claiming for multiple reward epochs or beneficiaries.
+- **setDataProviderFeePercentage**: Voters can set or update their delegation fee percentages.
+
+**Mechanism**
+
+- **Burn Factors**: Applies penalties to rewards based on delays or non-compliance.
+- **Weight Tracking**: Manages unclaimed weights and amounts for accurate reward distribution.
+
+### `VoterRegistry`
+
+**Purpose**
+
+- **Voter Registration**: Manages the registration of voters for upcoming reward epochs.
+- **Eligibility List**: Maintains the list of eligible voters and their weights.
+
+**Functions**
+
+- **registerVoter**: Allows voters to register by providing necessary information and signatures.
+- **Governance Controls**: Supports functions like chilling voters or setting maximum voter counts.
+
+### `FlareSystemCalculator`
+
+**Purpose**
+
+- **Calculations**: Performs calculations for weights and burn factors used by other contracts.
+
+**Functions**
+
+- **calculateRegistrationWeight**: Determines a voter's weight for registration purposes.
+- **calculateBurnFactorPPM**: Calculates burn factors in parts per million for penalties.
+
+### `WNATDelegationFee`
+
+**Purpose**
+
+- **Fee Management**: Manages the delegation fees set by voters for WFLR delegations.
+
+**Function**
+
+- **setVoterFeePercentage**: Allows voters to set or update their fee percentages, influencing delegator participation.
+
+## Deployed Contracts
+
+export const contracts = [
+  "EntityManager",
+  "Submission",
+  "FlareSystemsManager",
+  "Relay",
+  "VoterRegistry",
+  "FlareSystemsCalculator",
+  "WNatDelegationFee",
+];
+
+<Tabs block>
+    <TabItem value="flare" label="Flare Mainnet" default>
+
+        <SolidityReference
+            network="FlareMainnet"
+            contractNames={contracts}
+        />
+
+    </TabItem>
+    <TabItem value="coston2" label="Flare Testnet Coston2">
+
+        <SolidityReference
+            network="FlareTestnetCoston2"
+            contractNames={contracts}
+        />
+
+    </TabItem>
+    <TabItem value="songbird" label="Songbird Canary-Network">
+
+        <SolidityReference
+            network="SongbirdCanaryNetwork"
+            contractNames={contracts}
+        />
+
+    </TabItem>
+    <TabItem value="coston" label="Songbird Testnet Coston">
+
+
+        <SolidityReference
+            network="SongbirdTestnetCoston"
+            contractNames={contracts}
+        />
+
+    </TabItem>
+
+</Tabs>
+
+## Contract Interfaces
+
+<DocCardList />
