@@ -8,7 +8,6 @@ description: Pre-configured blockchain nodes in GCP marketplace
 import Step1 from "/static/img/run-node-gcp-marketplace/step1-img.png";
 import Step2 from "/static/img/run-node-gcp-marketplace/step2-img.png";
 import Step2_1 from "/static/img/run-node-gcp-marketplace/step2-1-img.png";
-import ServiceAccountRole from "/static/img/run-node-gcp-marketplace/troubleshooting-missing-service-account-user-1.png";
 
 Deploy blockchain nodes without the need to install dependencies or manage configuration files. The nodes come with a copy of the databases locally which drastically reduces bootstrap times. The machine images are available for Flare Mainnet, Flare Testnet Coston2, Songbird Canary-Network, Songbird Testnet Coston and several other networks.
 
@@ -42,7 +41,6 @@ Head to [Google Cloud Marketplace](https://console.cloud.google.com/marketplace/
 | Filecoin Lotus      | `/etc/filecoin`  | 16    | 32 GB | 1,030 GB  | SSD       |
 | Litecoin            | `/etc/litecoin`  | 2     | 12 GB | 330 GB    | Balanced  |
 | Polygon             | `/etc/polygon`   | 16    | 64 GB | 6,030 GB  | SSD       |
-| Songbird            | `/etc/songbird`  | 8     | 32 GB | 2,730 GB  | Balanced  |
 | XRPL                | `/etc/xrpl`      | 8     | 32 GB | 375 GB    | Local SSD |
 
 </details>
@@ -127,24 +125,6 @@ man journalctl
 ```
 
 ## Troubleshooting
-
-- **Deployment failure due to missing iam.serviceAccountUser role**
-
-  - **Symptom**: The deployment fails when deploying the solution for the first time and
-    creating the deployment service account through the UI. The logs display an error message similar to:
-    ```
-    Error: Error waiting for instance to create: The user does not have access to service account '184067570780-compute@developer.gserviceaccount.com'.
-    User: 'bmi-deployer@starlit-ship-405818.iam.gserviceaccount.com'.
-    Ask a project owner to grant you the iam.serviceAccountUser role on the service account.
-    ```
-  - **Solution**:
-    1.  Go to **IAM and Admin > Service Accounts**.
-    2.  Find the `<project_number>-compute@developer.gserviceaccount.com` (Default Compute Service Account).
-    3.  Click on the service account, then open the **Permissions** tab.
-    4.  Click **Grant Access**, and set the **Principal** as the email address of the deployment service account (your email differs from the example).
-    5.  Assign the **Service Account User** role, then save the changes.
-        <img src={ServiceAccountRole} style={{ width: 500 }} />
-    6.  Once done, return to the Marketplace, delete the current deployment, and redeploy using the newly configured service account.
 
 - **Deployment failure due to Terraform state lock**
 
