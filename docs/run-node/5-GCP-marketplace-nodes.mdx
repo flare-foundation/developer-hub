@@ -124,9 +124,128 @@ For more log options, refer to the `journalctl` manual:
 man journalctl
 ```
 
+## Advanced Deployment with Terraform
+
+Blockchain machine images can also be deployed using Terraform to meet advanced requirements,
+such as replicating nodes, automating configuration, and scaling.
+
+In this section, we provide an example which deploys two replicas of Flare nodes in the EU and US regions.
+Source code is available in the [flare-foundation/bmi-terraform-examples](https://github.com/flare-foundation/bmi-terraform-examples) repository.
+
+The first step is to obtain the latest blockchain machine image.
+Start by navigating to the [Google Cloud Marketplace](https://console.cloud.google.com/marketplace/product/flare-public/blockchain-machine-image-flare-network) and click `LAUNCH`.
+Then, switch to the `COMMAND-LINE DEPLOYMENT` tab and scroll down to the VM Image section, where you will find a table containing the latest images.
+Copy the name of the latest image and update the locals in the `instance.tf` file accordingly.
+Additionally, ensure that all required variables are correctly set in the `terraform.tfvars`, such as GCP project name, before proceeding.
+
+```hcl
+locals {
+  replicas = {
+    1 = {
+      # update here
+      image = "projects/mpi-flare-public/global/images/flare---v1-..."
+      zone  = "europe-west1-c"
+    },
+    2 = {
+      # update here
+      image = "projects/mpi-flare-public/global/images/flare---v1-..."
+      zone  = "us-west1-a"
+    }
+  }
+}
+```
+
+Next, configure a firewall rule to allow external traffic from other peers in the network to access port `9651`.
+
+```hcl
+resource "google_compute_firewall" "peering" {
+  project = var.gcp_project_name
+  name    = "flare-example-peering-tcp"
+  network = "default"
+
+  allow {
+    protocol = "tcp"
+    ports    = ["9651"]
+  }
+
+  source_ranges = ["0.0.0.0/0"]
+  target_tags   = ["flare-example-peering"]
+  priority      = "600"
+}
+```
+
+Optionally, you can create a service account with the necessary permissions to access a Slack webhook stored in GCP Secret Manager.
+The node uses the secret's name to obtain the webhook and sends health alerts to Slack.
+
+Each instance must define both startup and shutdown scripts.
+The startup script handles node configuration tasks, such as enabling Promtail log scraping, node metrics, and Slack alerts.
+Use tools such as `jq`, `yq` and `sed` to perform the configuration.
+
+```bash
+#!/bin/bash
+
+#### Configure node ####
+# Example
+yq eval '.health_checks.slack_alerts.webhook_secret_name = "example_slack_webhook_secret_name"' -i /etc/flare/config.yaml
+yq eval '.health_checks.slack_alerts.enabled = true' -i /etc/flare/config.yaml
+
+#### Start node ####
+nodectl apply --target all
+```
+
+The shutdown script ensures the node shuts down gracefully.
+
+```bash
+#!/bin/bash
+
+nodectl stop
+```
+
+Finally, all the previously mentioned files and resources are used to define instance resources,
+which tie together the configuration, scripts, replication and permissions necessary for the node deployment.
+
+```hcl
+resource "google_compute_instance" "this" {
+  for_each = local.replicas
+
+  project = var.gcp_project_name
+  name    = "flare-node-example-replica-${each.key}"
+  zone    = each.value.zone
+
+  machine_type = "n2d-standard-4"
+
+  metadata = {
+    startup-script = templatefile("${path.module}/templates/startup.sh", {})
+    shutdown-script = templatefile("${path.module}/templates/shutdown.sh", {})
+  }
+
+
+  boot_disk {
+    initialize_params {
+      image = each.value.image
+      type  = "pd-balanced"
+    }
+  }
+
+  network_interface {
+    network = "default"
+    access_config {
+      // Ephemeral public IP
+    }
+  }
+
+  tags = google_compute_firewall.peering.target_tags
+
+  service_account {
+    email  = google_service_account.this.email
+    scopes = ["cloud-platform"]
+  }
+}
+```
+
 ## Troubleshooting
 
-- **Deployment failure due to Terraform state lock**
+- **Deployment via UI failure due to Terraform state lock**
 
   - **Symptom**: The deployment fails, and clicking **Retry** leads to Terraform state lock errors.
   - **Solution**: Instead of retrying, delete the failed deployment and start a new one.
