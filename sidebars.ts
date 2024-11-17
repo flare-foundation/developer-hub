@@ -136,6 +136,7 @@ const sidebars: SidebarsConfig = {
       items: [
         "fdc/getting-started",
         "fdc/attestation-types",
+        "fdc/chain-configuration",
         {
           type: "category",
           label: "FDC Guides",

@@ -1,10 +1,10 @@
 ---
-title: Create Attestation Type
+title: Create attestation type
 authors: [lukaavbreht, dineshpinto]
 description: Learn how to create a new attestation type.
-tags: [advanced, fdc]
-keywords: [advanced, flare-data-connector, flare-network]
-sidebar_position: 2
+tags: [intermediate, fdc]
+keywords: [intermediate, flare-data-connector, flare-network]
+sidebar_position: 6
 unlisted: true
 ---
 
@@ -12,7 +12,13 @@ import Remix from "@site/src/components/remix";
 import CodeBlock from "@theme/CodeBlock";
 import ITypeTemplate from "!!raw-loader!/examples/developer-hub-solidity/ITypeTemplate.sol";
 
-FDC supports creating new attestation types.
+This guide is for developers who want to extend FDC by creating a new attestation type. In this guide, you will learn how to:
+
+- Setup a new attestation type definition in Solidity.
+
+- Generate a attestation type verifier server in TypeScript with controllers and services.
+
+- Create an onchain attestation verifier contract in Solidity.
 
 ## Prerequisites
 
@@ -49,7 +55,9 @@ Ensure you have the following tools installed:
 
 4. **Define request and response structs:** Define the inputs to the `RequestBody` and `ResponseBody` structs. All fields should be commented with `@param fieldName` as in the template.
 
-5. **Generate verifier server template:**
+## Generate verifier server
+
+1. **Generate verifier server template:**
 
    ```bash
    yarn generate server -t ICustomType
@@ -61,7 +69,7 @@ Ensure you have the following tools installed:
    `generate server`.
    :::
 
-6. **Define data sources:**
+2. **Define data sources:**
 
    - **Single data source:** Change the source in the constructor of `ICustomType.service.ts` to the one specified in the type definition.
      Modify the `verifyRequest` function to match the verification rules defined by your attestation type.
@@ -78,21 +86,19 @@ Ensure you have the following tools installed:
 
      3. **Add services and controllers to module:** In `ICustomType.module.ts`, add all new services and controllers to the respective arrays.
 
-## Generate verifier server
-
-1. **Generate Dockerfile:** Run the following command to create a Dockerfile inside `server/ICustomType/` that prepares the server to be run inside a Docker container.
+3. **Generate Dockerfile:** Run the following command to create a Dockerfile inside `server/ICustomType/` that prepares the server to be run inside a Docker container.
 
    ```bash
    yarn build
    ```
 
-2. **Build server image:** Run the following to build an image for `ICustomType`
+4. **Build server image:** Run the following to build an image for `ICustomType`
 
    ```bash
    docker build -t library/verifier-indexer-api-CustomType -f server/ICustomType/Dockerfile .
    ```
 
-3. **Start server:** Run the following to start the server and expose port `<PORT>`
+5. **Start server:** Run the following to start the server and expose port `<PORT>`
 
    ```bash
    docker run --rm --publish <PORT>:8000  library/verifier-indexer-api-CustomType
@@ -100,5 +106,10 @@ Ensure you have the following tools installed:
 
 ## Create verifier contract
 
-After completing the last steps a mock verification contract is generated with a `verifyCustomType` that accepts an attestation response with Merkle proof (see struct `Proof` in `ICustomType.sol`) and always confirms it.
-In production use, this contract would validate the response with proof against the Merkle root stored on the [`Relay`](/network/fsp/IRelay) contract
+:::warning[In production]
+
+In production use, the verifier contract should validate the response with proof against the Merkle root stored on the [`Relay`](/network/fsp/IRelay) contract.
+
+:::
+
+After completing the last steps a mock verification contract is generated with a `verifyCustomType` method that accepts an attestation response with Merkle proof (see the `Proof` struct in `ICustomType.sol`) and always confirms it.
