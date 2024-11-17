@@ -134,8 +134,9 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       link: { type: "doc", id: "fdc/overview" },
       items: [
-        // "fdc/getting-started",
-        // "fdc/attestation-types",
+        "fdc/getting-started",
+        "fdc/attestation-types",
+        "fdc/chain-configuration",
         {
           type: "category",
           label: "FDC Guides",

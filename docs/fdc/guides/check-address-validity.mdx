@@ -1,0 +1,377 @@
+---
+title: Check address validity
+authors: [lukaavbreht, filipkoprivec]
+description: Check the validity of a Bitcoin, Dogecoin or XRPL address.
+tags: [intermediate, ethereum, fdc]
+keywords: [ethereum, flare-data-connector, evm, flare-network]
+sidebar_position: 1
+unlisted: true
+---
+
+## Address Validity
+
+[Full specification on GitHub](https://github.com/flare-foundation/songbird-state-connector-protocol/blob/main/specs/attestations/active-types/AddressValidity.md).
+
+And there is a sub-specification for each chain that specifies the rules for the address validity for each chain. Be careful: Bitcoin and Dogecoin have different rules for validity on the mainnet and testnet, so make sure to check the correct specification with the correct verifier.
+
+This is a very simple attestation type that can prove that a string constitutes a valid address on the specified chain. Importantly, unlike the `Payment` type we saw in [Part 1](data-connector), this type does not require a transaction to be proven. It just offloads the computation of the address validity to the verifier so that expensive computation does not have to be done onchain.
+
+This is useful if you want to ensure that the address is valid before using it in your protocol. For example, fAssets need to make sure that an address is valid before they can be used in the protocol, and this is a good way to offload difficult computation regarding when the bitcoin address is valid to offchain entities.
+
+For more information on Bitcoin address validity, see the [Bitcoin design guide glossary](https://bitcoin.design/guide/glossary/address/).
+
+### Type Definition
+
+```solidity title="AddressValidity.sol"
+// SPDX-License-Identifier: MIT
+pragma solidity >=0.7.6 <0.9;
+
+/**
+ * @custom:name AddressValidity
+ * @custom:id 0x05
+ * @custom:supported BTC, DOGE, XRP, testBTC, testDOGE, testXRP
+ * @author Flare
+ * @notice An assertion whether a string represents a valid address on an external chain.
+ * @custom:verification The address is checked against all validity criteria of the chain with `sourceId`.
+ * Indicator of validity is provided.
+ * If the address is valid, its standard form and standard hash are computed.
+ * Validity criteria for each supported chain:
+ * - [BTC](/specs/attestations/external-chains/address-validity/BTC.md)
+ * - [DOGE](/specs/attestations/external-chains/address-validity/DOGE.md)
+ * - [XRPL](/specs/attestations/external-chains/address-validity/XRPL.md)
+ * @custom:lut `0xffffffffffffffff` ($2^{64}-1$ in hex)
+ */
+interface AddressValidity {
+    /**
+     * @notice Toplevel request
+     * @param attestationType ID of the attestation type.
+     * @param sourceId Id of the data source.
+     * @param messageIntegrityCode `MessageIntegrityCode` that is derived from the expected response.
+     * @param requestBody Data defining the request. Type (struct) and interpretation is determined by the `attestationType`.
+     */
+    struct Request {
+        bytes32 attestationType;
+        bytes32 sourceId;
+        bytes32 messageIntegrityCode;
+        RequestBody requestBody;
+    }
+
+    /**
+     * @notice Toplevel response
+     * @param attestationType Extracted from the request.
+     * @param sourceId Extracted from the request.
+     * @param votingRound The ID of the Data Connector round in which the request was considered.
+     * @param lowestUsedTimestamp The lowest timestamp used to generate the response.
+     * @param requestBody Extracted from the request.
+     * @param responseBody Data defining the response. The verification rules for the construction of the response body and the type are defined per specific `attestationType`.
+     */
+    struct Response {
+        bytes32 attestationType;
+        bytes32 sourceId;
+        uint64 votingRound;
+        uint64 lowestUsedTimestamp;
+        RequestBody requestBody;
+        ResponseBody responseBody;
+    }
+
+    /**
+     * @notice Toplevel proof
+     * @param merkleProof Merkle proof corresponding to the attestation response.
+     * @param data Attestation response.
+     */
+    struct Proof {
+        bytes32[] merkleProof;
+        Response data;
+    }
+
+    /**
+     * @notice Request body for AddressValidity attestation type
+     * @param addressStr Address to be verified.
+     */
+    struct RequestBody {
+        string addressStr;
+    }
+
+    /**
+     * @notice Response body for AddressValidity attestation type
+     * @param isValid Boolean indicator of the address validity.
+     * @param standardAddress If `isValid`, standard form of the validated address. Otherwise an empty string.
+     * @param standardAddressHash If `isValid`, standard address hash of the validated address. Otherwise a zero bytes32 string.
+     */
+    struct ResponseBody {
+        bool isValid;
+        string standardAddress;
+        bytes32 standardAddressHash;
+    }
+}
+```
+
+The request body is very simple—it just contains the `addressStr`, which is the address to be verified according to the chain's rules.
+
+The response body contains all the important details. Generally, the request can always be confirmed. Here are the specific fields to look at:
+
+- **`isValid`**: A boolean indicator of the address validity.
+  - If this is true, the address is valid according to the chain's rules.
+  - Remember, the Merkle proof is about the validity of this request (if it was confirmed by the verifiers), not about the meaning of its response—whether the address is valid or not.
+- **`standardAddress`**: If `isValid`, this is the standard form of the validated address; otherwise, it is an empty string.
+  - This is useful if you want to use the address in your protocol, as you can use the standard form of the address and not worry about different representations of the same address.
+- **`standardAddressHash`**: If `isValid`, this is the standard address hash of the validated address; otherwise, it is a zero bytes32 string.
+  - This is useful to verify with the standard address hash returned by `Payment` and `ReferencedPaymentNonexistence`.
+
+Think of this as an example of what can be offloaded to offchain computation (and verification). Try to imagine other tasks that are prohibitively expensive (or impossible due to data unavailability) onchain that can be offloaded to offchain computation.
+
+### Example
+
+The script for address validity (`tryAddressValidity.ts`) is simpler than the scripts we've seen so far. There's no need to create a transaction or anything complex; you just call the `prepareResponse` endpoint and see the result. In actual use, you will first prepare a request for the Data Connector, wait for it to be confirmed, and then use the response in your smart contract together with the proof. This means your smart contract will receive the result of a potentially large and expensive calculation (the response body part) along with proof that it was included in the Merkle root. This attests that it has been calculated and verified by the network validator.
+
+This setup ensures that your smart contract gets a verified result without having to perform the expensive calculation onchain, thereby saving computational resources and improving efficiency.
+
+```typescript title="tryAddressValidity.ts"
+const { ATTESTATION_URL, ATTESTATION_API_KEY } = process.env;
+const exampleXRPLAddress = "r9RLXvWuRro3RX33pk4xsN58tefYZ8Tvbj";
+const someDogecoinAddress = "njyMWWyh1L7tSX6QkWRgetMVCVyVtfoDta";
+const someBTCAddress = "tb1qq3fm2kdklehk545c5rgfxzfhe7ph5tt640cayu";
+
+function toHex(data: string): string {
+  var result = "";
+  for (var i = 0; i < data.length; i++) {
+    result += data.charCodeAt(i).toString(16);
+  }
+  return "0x" + result.padEnd(64, "0");
+}
+
+function fromHex(data: string): string {
+  data = data.replace(/^(0x\.)/, "");
+  return data
+    .split(/(\w\w)/g)
+    .filter((p) => !!p)
+    .map((c) => String.fromCharCode(parseInt(c, 16)))
+    .join("");
+}
+
+async function prepareAttestationResponse(
+  attestationType: string,
+  network: string,
+  sourceId: string,
+  requestBody: any,
+): Promise<AttestationResponse> {
+  const response = await fetch(
+    `${ATTESTATION_URL}/verifier/${network}/${attestationType}/prepareResponse`,
+    {
+      method: "POST",
+      headers: {
+        "X-API-KEY": ATTESTATION_API_KEY as string,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        attestationType: toHex(attestationType),
+        sourceId: toHex(sourceId),
+        requestBody: requestBody,
+      }),
+    },
+  );
+  const data = await response.json();
+  return data;
+}
+
+async function main() {
+  console.log(
+    await prepareAttestationResponse("AddressValidity", "xrp", "testXRP", {
+      addressStr: exampleXRPLAddress,
+    }),
+  );
+  console.log(
+    await prepareAttestationResponse("AddressValidity", "xrp", "testXRP", {
+      addressStr: "0xhahahahaha",
+    }),
+  );
+  console.log(
+    await prepareAttestationResponse("AddressValidity", "xrp", "testXRP", {
+      addressStr: "Hello world!",
+    }),
+  );
+
+  console.log(
+    await prepareAttestationResponse("AddressValidity", "btc", "testBTC", {
+      addressStr: someBTCAddress,
+    }),
+  );
+  console.log(
+    await prepareAttestationResponse("AddressValidity", "btc", "testBTC", {
+      addressStr: "0xhahahahaha",
+    }),
+  );
+  console.log(
+    await prepareAttestationResponse("AddressValidity", "btc", "testBTC", {
+      addressStr: "Hello world!",
+    }),
+  );
+
+  console.log(
+    await prepareAttestationResponse("AddressValidity", "doge", "testDOGE", {
+      addressStr: someDogecoinAddress,
+    }),
+  );
+  console.log(
+    await prepareAttestationResponse("AddressValidity", "doge", "testDOGE", {
+      addressStr: "0xhahahahaha",
+    }),
+  );
+  console.log(
+    await prepareAttestationResponse("AddressValidity", "doge", "testDOGE", {
+      addressStr: "Hello world!",
+    }),
+  );
+}
+
+main().then(() => process.exit(0));
+```
+
+and the response
+
+```json
+{
+  status: 'VALID',
+  response: {
+    attestationType: '0x4164647265737356616c69646974790000000000000000000000000000000000',
+    sourceId: '0x7465737458525000000000000000000000000000000000000000000000000000',
+    votingRound: '0',
+    lowestUsedTimestamp: '0xffffffffffffffff',
+    requestBody: { addressStr: 'r9RLXvWuRro3RX33pk4xsN58tefYZ8Tvbj' },
+    responseBody: {
+      isValid: true,
+      standardAddress: 'r9RLXvWuRro3RX33pk4xsN58tefYZ8Tvbj',
+      standardAddressHash: '0x0555194538763da400394fc7184432e9a006565fa710392ea1a86486eb83920f'
+    }
+  }
+}
+{
+  status: 'VALID',
+  response: {
+    attestationType: '0x4164647265737356616c69646974790000000000000000000000000000000000',
+    sourceId: '0x7465737458525000000000000000000000000000000000000000000000000000',
+    votingRound: '0',
+    lowestUsedTimestamp: '0xffffffffffffffff',
+    requestBody: { addressStr: '0xhahahahaha' },
+    responseBody: {
+      isValid: false,
+      standardAddress: '',
+      standardAddressHash: '0x0000000000000000000000000000000000000000000000000000000000000000'
+    }
+  }
+}
+{
+  status: 'VALID',
+  response: {
+    attestationType: '0x4164647265737356616c69646974790000000000000000000000000000000000',
+    sourceId: '0x7465737458525000000000000000000000000000000000000000000000000000',
+    votingRound: '0',
+    lowestUsedTimestamp: '0xffffffffffffffff',
+    requestBody: { addressStr: 'Hello world!' },
+    responseBody: {
+      isValid: false,
+      standardAddress: '',
+      standardAddressHash: '0x0000000000000000000000000000000000000000000000000000000000000000'
+    }
+  }
+}
+{
+  status: 'VALID',
+  response: {
+    attestationType: '0x4164647265737356616c69646974790000000000000000000000000000000000',
+    sourceId: '0x7465737442544300000000000000000000000000000000000000000000000000',
+    votingRound: '0',
+    lowestUsedTimestamp: '0xffffffffffffffff',
+    requestBody: { addressStr: 'tb1qq3fm2kdklehk545c5rgfxzfhe7ph5tt640cayu' },
+    responseBody: {
+      isValid: true,
+      standardAddress: 'tb1qq3fm2kdklehk545c5rgfxzfhe7ph5tt640cayu',
+      standardAddressHash: '0x085f152e9e9ebd6c009827678785b1b3667733fa3f6b5d78bb462bd1978825ff'
+    }
+  }
+}
+{
+  status: 'VALID',
+  response: {
+    attestationType: '0x4164647265737356616c69646974790000000000000000000000000000000000',
+    sourceId: '0x7465737442544300000000000000000000000000000000000000000000000000',
+    votingRound: '0',
+    lowestUsedTimestamp: '0xffffffffffffffff',
+    requestBody: { addressStr: '0xhahahahaha' },
+    responseBody: {
+      isValid: false,
+      standardAddress: '',
+      standardAddressHash: '0x0000000000000000000000000000000000000000000000000000000000000000'
+    }
+  }
+}
+{
+  status: 'VALID',
+  response: {
+    attestationType: '0x4164647265737356616c69646974790000000000000000000000000000000000',
+    sourceId: '0x7465737442544300000000000000000000000000000000000000000000000000',
+    votingRound: '0',
+    lowestUsedTimestamp: '0xffffffffffffffff',
+    requestBody: { addressStr: 'Hello world!' },
+    responseBody: {
+      isValid: false,
+      standardAddress: '',
+      standardAddressHash: '0x0000000000000000000000000000000000000000000000000000000000000000'
+    }
+  }
+}
+{
+  status: 'VALID',
+  response: {
+    attestationType: '0x4164647265737356616c69646974790000000000000000000000000000000000',
+    sourceId: '0x74657374444f4745000000000000000000000000000000000000000000000000',
+    votingRound: '0',
+    lowestUsedTimestamp: '0xffffffffffffffff',
+    requestBody: { addressStr: 'njyMWWyh1L7tSX6QkWRgetMVCVyVtfoDta' },
+    responseBody: {
+      isValid: true,
+      standardAddress: 'njyMWWyh1L7tSX6QkWRgetMVCVyVtfoDta',
+      standardAddressHash: '0xfc8d6252c5132f771fc711fe13cb3c6e768ed9290ce199efd87d5ec1b6094df6'
+    }
+  }
+}
+{
+  status: 'VALID',
+  response: {
+    attestationType: '0x4164647265737356616c69646974790000000000000000000000000000000000',
+    sourceId: '0x74657374444f4745000000000000000000000000000000000000000000000000',
+    votingRound: '0',
+    lowestUsedTimestamp: '0xffffffffffffffff',
+    requestBody: { addressStr: '0xhahahahaha' },
+    responseBody: {
+      isValid: false,
+      standardAddress: '',
+      standardAddressHash: '0x0000000000000000000000000000000000000000000000000000000000000000'
+    }
+  }
+}
+{
+  status: 'VALID',
+  response: {
+    attestationType: '0x4164647265737356616c69646974790000000000000000000000000000000000',
+    sourceId: '0x74657374444f4745000000000000000000000000000000000000000000000000',
+    votingRound: '0',
+    lowestUsedTimestamp: '0xffffffffffffffff',
+    requestBody: { addressStr: 'Hello world!' },
+    responseBody: {
+      isValid: false,
+      standardAddress: '',
+      standardAddressHash: '0x0000000000000000000000000000000000000000000000000000000000000000'
+    }
+  }
+}
+```
+
+One might ask what use such an attestation type is and why all the checks are necessary. Consider it in two ways:
+
+- **Data Contains Request and Response**: This setup makes it possible to observe both the input (request) and output (response) of the computation. The computation can be very complex and expensive, but for our purposes, we only need to know the result (and, of course, the input we want to be observed), and we can act on it.
+- **Merkle Proof**: The Merkle proof is used to verify that the response was included in the committed root and was confirmed by the verifiers. The "being confirmed" part is crucial because it means the verifiers have indeed seen the request, performed the computation (arriving at the same result), and included the result in the Merkle root, which we base our actions on.
+
+This approach ensures that complex and resource-intensive computations can be performed offchain while still providing verifiable and trustworthy results that can be used onchain.
+
+{/* <!-- TODO: A lahko na to gledamo kot na ZK proof nekega izračuna? - a bi se dal iz tega čist lepo na ta AI dal vezat stvari - mogoče very simple classification a je nek address fishing al pa blacklisted kje? --> */}
