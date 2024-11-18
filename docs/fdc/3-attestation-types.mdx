@@ -59,10 +59,10 @@ If the address is invalid:
 
 #### Chain-Specific Validation Criteria
 
-- [Bitcoin (`Base58`)](/fdc/chain-configuration#bitcoin-base58)
-- [Bitcoin (`Bech32`)](/fdc/chain-configuration#bitcoin-bech32)
-- [Dogecoin (`Base58`)](/fdc/chain-configuration#dogecoin-base58)
-- [XRPL (`Base58`)](/fdc/chain-configuration#xrpl-base58)
+- [Bitcoin (`Base58`)](/fdc/chain-configurations#bitcoin-base58)
+- [Bitcoin (`Bech32`)](/fdc/chain-configurations#bitcoin-bech32)
+- [Dogecoin (`Base58`)](/fdc/chain-configurations#dogecoin-base58)
+- [XRPL (`Base58`)](/fdc/chain-configurations#xrpl-base58)
 
 :::note[Lowest used timestamp]
 
@@ -106,7 +106,7 @@ A transaction is considered “balance decreasing” for the specified address i
 ### Verification Process
 
 1. The transaction identified by `transactionId` is fetched from the **source blockchain node** or a relevant indexer.
-2. If the transaction cannot be fetched or is in a block with insufficient [confirmations](/fdc/chain-configuration#finality), the attestation request is rejected.
+2. If the transaction cannot be fetched or is in a block with insufficient [confirmations](/fdc/chain-configurations#finality), the attestation request is rejected.
 3. Once the transaction is retrieved, the response fields are extracted if it qualifies as **balance decreasing** for the specified address.
 
 The verification process is chain-specific, with details described below.
@@ -121,7 +121,7 @@ The verification process is chain-specific, with details described below.
 
 #### XRPL (XRP Ledger)
 
-- `sourceAddressIndicator`: The [standard address hash](/fdc/chain-configuration#standard-address-hash) of the address in question.
+- `sourceAddressIndicator`: The [standard address hash](/fdc/chain-configurations#standard-address-hash) of the address in question.
   - If the indicated address is not among the transaction signers and its balance was not decreased, the attestation request is rejected.
 - `spentAmount`: Difference between the balance **after** and **before** the transaction. Can be negative.
 - `blockTimestamp`: Uses the **close_time** of the ledger, converted to Unix time.
@@ -165,7 +165,7 @@ This function verifies whether a block with the specified `blockNumber` is **con
    - If the block does not meet this requirement, the request is rejected.
    - A block at the tip of the chain has exactly **1 confirmation**.
 2. The lowestQueryWindowBlock` is identified, and its block number and timestamp are extracted.
-3. The required confirmations are defined based on chain-specific [finality](/fdc/chain-configuration#finality).
+3. The required confirmations are defined based on chain-specific [finality](/fdc/chain-configurations#finality).
 4. The returned `timestamp` is:
    - `mediantime` for Bitcoin and Dogecoin.
    - `close_time` for XRPL.
@@ -183,7 +183,7 @@ This function fetches and relays information about an Ethereum Virtual Machine (
 **Supported Chains**:
 
 - `ETH` (Ethereum)
-- `FLR` (Flare)
+- `FLR` (Flare Mainnet)
 - Test networks: `testETH` (Ethereum Sepolia), `testFLR` (Flare Testnet Coston2)
 
 ### Request
@@ -279,15 +279,15 @@ This attestation relays information about a transaction on an external chain tha
 | `intendedSpentAmount`          | `int256`      | Intended amount (in minimal units) to be spent by the source address, relevant if the transaction status is unsuccessful.      |
 | `receivedAmount`               | `int256`      | Amount (in minimal units) received by the receiving address.                                                                   |
 | `intendedReceivedAmount`       | `int256`      | Intended amount (in minimal units) to be received by the receiving address if the transaction failed.                          |
-| `standardPaymentReference`     | `bytes32`     | [Standard payment reference](/fdc/chain-configuration#standard-payment-reference).                                             |
+| `standardPaymentReference`     | `bytes32`     | [Standard payment reference](/fdc/chain-configurations#standard-payment-reference).                                            |
 | `oneToOne`                     | `bool`        | Indicates if the transaction involves only one source and one receiver.                                                        |
-| `status`                       | `uint8`       | [Transaction success status](/fdc/chain-configuration#transaction-success-status).                                             |
+| `status`                       | `uint8`       | [Transaction success status](/fdc/chain-configurations#transaction-success-status).                                            |
 
 ### Verification Process
 
 1. The transaction identified by `transactionId` is fetched from the relevant blockchain node or indexer.
-2. If the transaction cannot be retrieved or is in a block with insufficient [confirmations](/fdc/chain-configuration#finality), the attestation request is rejected.
-3. Once the transaction data is fetched, a [payment summary](/fdc/chain-configuration#payment-summary) is computed according to the chain-specific rules.
+2. If the transaction cannot be retrieved or is in a block with insufficient [confirmations](/fdc/chain-configurations#finality), the attestation request is rejected.
+3. Once the transaction data is fetched, a [payment summary](/fdc/chain-configurations#payment-summary) is computed according to the chain-specific rules.
    - If the payment summary is successfully generated, the response is populated using this data.
    - If the summary cannot be computed, the attestation request is rejected.
 4. The fields `blockNumber` and `blockTimestamp` are extracted from the block data if they are not directly available in the transaction data.
@@ -339,7 +339,7 @@ This attestation can be used, for example, to justify the liquidation of funds l
 
 1. **Block Confirmation**:
 
-   - If the `firstOverflowBlock` cannot be determined or lacks the required [number of confirmations](/fdc/chain-configuration#finality), the request is rejected.
+   - If the `firstOverflowBlock` cannot be determined or lacks the required [number of confirmations](/fdc/chain-configurations#finality), the request is rejected.
    - The request is also rejected if `firstOverflowBlockNumber` is less than or equal to `minimalBlockNumber`.
 
 2. **Search Range**:
@@ -357,7 +357,7 @@ The verification process is chain-specific, with details described below.
 
 - **Transaction Criteria**:
   - The transaction **must not be a coinbase transaction**.
-  - The transaction must include the specified [standard payment reference](/fdc/chain-configuration#standard-payment-reference).
+  - The transaction must include the specified [standard payment reference](/fdc/chain-configurations#standard-payment-reference).
   - The sum of all output values sent to the specified address **minus** the sum of all input values from the same address must be **greater than the specified `amount`**.
     - Typically, the sum of input values for the specified address is zero.
 - **Timestamp**: Uses the **mediantime** of the block.
@@ -366,7 +366,7 @@ The verification process is chain-specific, with details described below.
 
 - **Transaction Criteria**:
   - The transaction must be of type **Payment**.
-  - The transaction must include the specified [standard payment reference](/fdc/chain-configuration#standard-payment-reference).
+  - The transaction must include the specified [standard payment reference](/fdc/chain-configurations#standard-payment-reference).
   - One of the following conditions must hold:
     - The transaction status is `SUCCESS` and the amount received by the specified address is greater than the specified `amount`.
     - The transaction status is `RECEIVER_FAILURE` and the specified address would have received an amount greater than the specified `amount` if the transaction had succeeded.
