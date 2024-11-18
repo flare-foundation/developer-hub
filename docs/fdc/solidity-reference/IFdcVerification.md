@@ -2,6 +2,7 @@
 title: IFdcVerification
 sidebar_position: 2
 description: Interface for verifying FDC requests.
+unlisted: true
 ---
 
 Interface for verifying FDC requests.
