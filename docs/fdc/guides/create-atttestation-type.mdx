@@ -25,6 +25,7 @@ This guide is for developers who want to extend FDC by creating a new attestatio
 Ensure you have the following tools installed:
 
 - [yarn](https://yarnpkg.com/)
+- [Docker](https://www.docker.com)
 
 ## Setup type definition
 
@@ -35,7 +36,12 @@ Ensure you have the following tools installed:
    yarn
    ```
 
-2. **Create a definition file:** In the root of the cloned repo a template definition file (`ITypeTemplate.sol.example`) is provided. Rename the file to `ICustomType.sol` and the interface to `ICustomType`. You can use any name in place of `CustomType` upto 32 ASCII characters.
+2. **Create a definition file:** In the root of the cloned repo a template definition file (`ITypeTemplate.sol.example`) is provided. Rename the file to `ICustomType.sol` and the interface defined within the file to to `ICustomType`. You can use any name in place of `CustomType` upto 32 ASCII characters.
+
+   ```bash
+   mkdir contracts/interfaces/types
+   cp ICustomType.sol contracts/interfaces/types
+   ```
 
    <details>
      <summary>Definition file template</summary>
@@ -44,12 +50,10 @@ Ensure you have the following tools installed:
      </CodeBlock>
    </details>
 
-   Place `ICustomType.sol` under `contracts/interfaces/types/`.
-
 3. **Modify `@custom` props:**
 
    - `@custom:name`: Rename to `@custom:CustomType`.
-   - `@custom:supported`: Indicate the data source, currently supported sources - `BTC`, `DOGE` ,`XRP`, `FLR`, `SGB`, `ETH` and `WEB2`. A single type support multiple data sources.
+   - `@custom:supported`: Indicate the data source, currently supported sources - `BTC`, `DOGE` ,`XRP`, `FLR`, `SGB`, `ETH` and `WEB2`. A single type can support multiple data sources.
    - `@custom:verification`: Add instructions on how to construct a response from the request.
    - `@custom:lut`: Leave as default, this will be used later.
 
