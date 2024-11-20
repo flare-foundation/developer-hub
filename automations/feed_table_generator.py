@@ -169,7 +169,7 @@ if __name__ == "__main__":
     write_data_to_file(BLOCK_LATENCY_FEEDS_PATH, block_latency_data)
 
     # Write anchor feeds to file
-    anchor_risk = read_data_from_file(BLOCK_LATENCY_RISK_PATH)
+    anchor_risk = read_data_from_file(ANCHOR_RISK_PATH)
     anchor_data = generate_feed_data(feed_names, anchor_risk, decimals, coins_list)
     write_data_to_file(ANCHOR_FEEDS_PATH, anchor_data)
     
