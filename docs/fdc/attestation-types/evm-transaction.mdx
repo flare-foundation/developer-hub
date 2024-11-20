@@ -1,25 +1,25 @@
 ---
 title: EVMTransaction
-description: Fetches information about an EVM transaction, including details on associated events if specified.
+description: Information about an EVM transaction, including details on associated events if specified.
 keywords: [fdc, oracle, flare-data-connector, flare-network]
 sidebar_position: 4
 unlisted: true
 ---
 
-This function fetches and relays information about an Ethereum Virtual Machine (EVM) transaction, including details on associated events if specified.
+Information about an Ethereum Virtual Machine (EVM) transaction, including details on associated events if specified.
 
 ## Supported chains
 
-- `ETH` (Ethereum)
-- `FLR` (Flare Mainnet)
-- `SGB` (Songbird Canary-Network)
-- Test networks: `testETH` (Ethereum Sepolia), `testFLR` (Flare Testnet Coston2), `testSGB` (Songbird Testnet Coston)
+-   `ETH` (Ethereum)
+-   `FLR` (Flare Mainnet)
+-   `SGB` (Songbird Canary-Network)
+-   Test networks: `testETH` (Ethereum Sepolia), `testFLR` (Flare Testnet Coston2), `testSGB` (Songbird Testnet Coston)
 
 ## Request
 
 | Field                   | Solidity Type | Description                                                                                                                                                                                                                                                     |
 | ----------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `transactionHash`       | `bytes32`     | The hash of the transaction to be verified.                                                                                                                                                                                                                     |
+| `transactionHash`       | `bytes32`     | The hash of the transaction.                                                                                                                                                                                                                                    |
 | `requiredConfirmations` | `uint16`      | The number of confirmations required for the block containing the transaction to be considered final by the requestor.                                                                                                                                          |
 | `provideInput`          | `bool`        | If set to `true`, the `input` data field of the transaction will be included in the response.                                                                                                                                                                   |
 | `listEvents`            | `bool`        | If `true`, events specified by `logIndices` will be included in the response. If `false`, no events are included.                                                                                                                                               |
@@ -27,9 +27,8 @@ This function fetches and relays information about an Ethereum Virtual Machine (
 
 :::note[Using Event Logs Correctly]
 
-- Events (logs) are indexed at the **block level**, not at the transaction level.
-- The contract using this attestation should define the order of event logs, and the requestor should ensure `logIndices` are sorted according to these specifications.
-- If possible, it is recommended that contracts require only a single `logIndex` to simplify processing.
+-   Events (logs) are indexed at the **block level**, not at the transaction level.
+-   The contract using this attestation should define the order of event logs, and the requestor should ensure `logIndices` are sorted according to these specifications.
 
 :::
 
@@ -70,8 +69,8 @@ Each `Event` struct represents a log entry similar to EVM event logs:
 
 :::note[Event handling]
 
-- Ensure `logIndices` are sorted as required by the consuming contract.
-- If `logIndices` is not empty while `listEvents` is set to `false`, the request will be rejected.
-- Events are capped at a maximum of **50 entries** to optimize performance.
+-   Ensure `logIndices` are sorted as required by the consuming contract.
+-   If `logIndices` is not empty while `listEvents` is set to `false`, the request will be rejected.
+-   Events are capped at a maximum of **50 entries** to optimize performance.
 
 :::
