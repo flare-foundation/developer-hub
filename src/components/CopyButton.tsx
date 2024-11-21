@@ -25,7 +25,7 @@ const CopyButton = ({ textToCopy }) => {
           viewBox="0 0 24 24"
           width="22px"
           height="22px"
-          fill="currentColor"
+          style={{ fill: "#00d600" }}
         >
           <path d="M9 16.17L4.83 12l-1.42 1.41L9 19l12-12-1.41-1.41z" />
         </svg>
