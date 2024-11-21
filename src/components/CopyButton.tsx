@@ -23,8 +23,8 @@ const CopyButton = ({ textToCopy }) => {
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 24 24"
-          width="25px"
-          height="25px"
+          width="22px"
+          height="22px"
           fill="currentColor"
         >
           <path d="M9 16.17L4.83 12l-1.42 1.41L9 19l12-12-1.41-1.41z" />
