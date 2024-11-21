@@ -11,7 +11,9 @@ from web3 import Web3
 RPC_URL = "https://flare-api.flare.network/ext/C/rpc"
 REGISTRY_ADDRESS = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
 EXPLORER_API_URL = "https://flare-explorer.flare.network/api"
+BLOCK_LATENCY_RISK_PATH = Path("block_latency_risk.json")
 BLOCK_LATENCY_FEEDS_PATH = Path("block_latency_feeds.json")
+ANCHOR_RISK_PATH = Path("anchor_risk.json")
 ANCHOR_FEEDS_PATH = Path("anchor_feeds.json")
 
 logging.basicConfig(level=logging.INFO)
@@ -52,6 +54,20 @@ def write_data_to_file(file_path: Path, data: list[dict]) -> None:
         logger.exception("Failed to write to %s: ", file_path)
 
 
+def read_data_from_file(file_path: Path) -> list[dict]:
+    """Write a markdown table to a file."""
+    try:
+        data = []
+        with file_path.open("r") as f:
+            data = json.load(f)
+        logger.debug("Successfully read data from %s", file_path)
+    except OSError:
+        logger.exception("Failed to read from %s: ", file_path)
+        raise
+    else:
+        return data
+
+
 def get_coins_list(pages: list) -> list[dict]:
     """Get the top 500 coins from CoinGecko."""
     cg = CoinGeckoAPI()
@@ -75,6 +91,7 @@ def find_coin_by_symbol(coins: list[dict], symbol: str) -> dict | None:
 
 def generate_feed_data(
     feed_names: list[str],
+    feed_risk: list[dict[str, int]],
     decimals: list[int],
     coins: list[dict],
     include_index: bool = False,  # noqa: FBT001,FBT002
@@ -96,6 +113,7 @@ def generate_feed_data(
                 "decimals": decimal,
                 "base_asset": coin["name"],
                 "category": "Crypto",
+                "risk": feed_risk[idx].get("volatility", -1),
             }
         else:
             feed_data = {
@@ -104,6 +122,7 @@ def generate_feed_data(
                 "decimals": decimal,
                 "base_asset": coin["name"],
                 "category": "Crypto",
+                "risk": feed_risk[idx].get("volatility", -1),
             }
         data.append(feed_data)
     return data
@@ -143,14 +162,17 @@ if __name__ == "__main__":
     coins_list = get_coins_list(pages=[1, 2, 3])
 
     # Write block-latency feeds to file
+    block_latency_risk = read_data_from_file(BLOCK_LATENCY_RISK_PATH)
     block_latency_data = generate_feed_data(
-        feed_names, decimals, coins_list, include_index=True
+        feed_names, block_latency_risk, decimals, coins_list, include_index=True
     )
     write_data_to_file(BLOCK_LATENCY_FEEDS_PATH, block_latency_data)
 
     # Write anchor feeds to file
-    anchor_data = generate_feed_data(feed_names, decimals, coins_list)
+    anchor_risk = read_data_from_file(ANCHOR_RISK_PATH)
+    anchor_data = generate_feed_data(feed_names, anchor_risk, decimals, coins_list)
     write_data_to_file(ANCHOR_FEEDS_PATH, anchor_data)
+    
     logging.info(
         "Feed Table automation: Data successfully saved to %s and %s",
         BLOCK_LATENCY_FEEDS_PATH,
