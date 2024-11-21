@@ -1,6 +1,6 @@
 ---
 title: Payment
-description: Relays information about a transaction on an external chain that is classified as a native currency payment.
+description: Information about a transaction on an external chain that is classified as a native currency payment.
 keywords: [fdc, oracle, flare-data-connector, flare-network]
 sidebar_position: 5
 unlisted: true
@@ -11,7 +11,8 @@ import StandardPaymentReference from "./_standard_payment_reference.mdx";
 import TransactionSuccessStatus from "./_transaction_success_status.mdx";
 import Finality from "./_finality.mdx";
 
-This attestation relays information about a transaction on an external chain that is classified as a **native currency payment**. Each supported blockchain specifies how a payment transaction should be formatted to be provable using this attestation type. These provable payments mimic traditional banking transactions where entity A sends a native currency to entity B, with an optional payment reference.
+Information about a transaction on an external chain that is classified as a **native currency payment**.
+Each supported blockchain specifies how a payment transaction should be formatted to be provable using this attestation type. These provable payments mimic traditional banking transactions where entity A sends a native currency to entity B, with an optional payment reference.
 
 ## Supported chains
 
@@ -35,6 +36,7 @@ This attestation relays information about a transaction on an external chain tha
 | `blockNumber`                  | `uint64`      | The block number in which the transaction is included.                                                                         |
 | `blockTimestamp`               | `uint64`      | The timestamp of the block containing the transaction.                                                                         |
 | `sourceAddressHash`            | `bytes32`     | Standardized address hash of the source address.                                                                               |
+| `sourceAddressesRoot`          | `bytes32`     | The root of the Merkle tree of the source addresses.                                                                           |
 | `receivingAddressHash`         | `bytes32`     | Standardized address hash of the receiving address. Returns a zero 32-byte string if the transaction status is not successful. |
 | `intendedReceivingAddressHash` | `bytes32`     | Standardized address hash of the intended receiving address if the transaction failed.                                         |
 | `spentAmount`                  | `int256`      | Amount (in minimal units) spent by the source address.                                                                         |
@@ -71,7 +73,9 @@ A **payment summary** consolidates all relevant data about a transaction that re
 
 ### Structure
 
-The summary includes the fields detailed in the table below. The interpretation of certain fields may vary based on the blockchain. Chain-specific explanations are provided in the sections that follow.
+The summary includes the fields detailed in the table below.
+The interpretation of certain fields may vary based on the blockchain.
+Chain-specific explanations are provided in the sections that follow.
 
 | Field                      | Description                                                                           |
 | -------------------------- | ------------------------------------------------------------------------------------- |
@@ -80,6 +84,7 @@ The summary includes the fields detailed in the table below. The interpretation 
 | `standardPaymentReference` | A reference defined in the [standard payment reference](#standard-payment-reference). |
 | `oneToOne`                 | Indicates if the transaction involves a single sender and a single receiver.          |
 | `sourceAddress`            | The originating address involved in the transaction.                                  |
+| `sourceAddressesRoot`      | The root of the Merkle tree of the source addresses.                                  |
 | `spentAmount`              | The total amount spent by the source address.                                         |
 | `intendedSourceAmount`     | The expected amount intended to be sent from the source address.                      |
 | `receivingAddress`         | The target address receiving the payment.                                             |
@@ -91,6 +96,7 @@ The summary includes the fields detailed in the table below. The interpretation 
 
 - **Standard Address Hashes**: [Standard address hashes](#standard-address-hash) can be derived from addresses.
 - If `transactionStatus` is not `SUCCESS`, the `receivingAddress` is set to an empty string, and its hash defaults to a zeroed 32-byte string.
+- **Standard Addresses Root** is the root of the Merkle tree build on double keccak256 hashes of the all source addresses of the transaction.
 
 :::
 
