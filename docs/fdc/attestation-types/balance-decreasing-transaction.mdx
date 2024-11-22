@@ -11,7 +11,7 @@ import StandardAddressHash from "./_standard_address_hash.mdx";
 import TransactionSuccessStatus from "./_transaction_success_status.mdx";
 import StandardPaymentReference from "./_standard_payment_reference.mdx";
 
-This function detects a transaction that either **decreases the balance** of a specified address or is signed by the address itself.
+Information describing a transaction that either **decreases the balance** for a specified address.
 
 A transaction is considered “balance decreasing” for the specified address if:
 
@@ -56,14 +56,14 @@ The verification process is chain-specific and can be computed with a [balance d
   - If the specified input does not exist or lacks an associated address, the attestation request is rejected.
 - `sourceAddress`: Address associated with the specified transaction input.
 - `spentAmount`: Calculated as `Sum of all inputs with sourceAddress - Sum of all outputs with sourceAddress`. The value can be negative.
-- `blockTimestamp`: Uses the **mediantime** of the block.
+- `blockTimestamp`: The **mediantime** of the block.
 
 ### Account-based chains (XRPL)
 
 - `sourceAddressIndicator`: The [standard address hash](#standard-address-hash) of the address in question.
   - If the indicated address is not among the transaction signers and its balance was not decreased, the attestation request is rejected.
-- `spentAmount`: Difference between the balance **after** and **before** the transaction. Can be negative.
-- `blockTimestamp`: Uses the **close_time** of the ledger, converted to Unix time.
+- `spentAmount`: Difference between the balance of the address **after** and **before** the transaction. Can be negative.
+- `blockTimestamp`: The **close_time** of the ledger, converted to Unix time.
 
 :::note[Lowest used timestamp]
 
@@ -104,7 +104,7 @@ In particular, no summary is made for coinbase transactions.
 
 | Field           | Description                                                                                                                        |
 | --------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `transactionId` | The transaction ID found in the field `txidz`. For segwit transactions, this is not the same as _hash_.                            |
+| `transactionId` | The transaction ID found in the field `txid`. For segwit transactions, this is not the same as _hash_.                             |
 | `sourceAddress` | Address of the indicated input.                                                                                                    |
 | `spentAmount`   | The sum of values of all inputs with `sourceAddress` minus the sum of values of all outputs with `sourceAddress`. Can be negative. |
 
