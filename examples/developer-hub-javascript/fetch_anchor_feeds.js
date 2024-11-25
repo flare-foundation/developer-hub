@@ -8,9 +8,9 @@ const FEED_IDS = [
 ];
 
 async function fetchAnchorFeeds(feedIds, votingRoundId = null) {
-  const url = votingRoundId 
-  ? `${BASE_URL}api/v0/ftso/anchor-feeds-with-proof?voting_round_id=${votingRoundId}` 
-  : `${BASE_URL}api/v0/ftso/anchor-feeds-with-proof`;
+  const url = votingRoundId
+    ? `${BASE_URL}api/v0/ftso/anchor-feeds-with-proof?voting_round_id=${votingRoundId}`
+    : `${BASE_URL}api/v0/ftso/anchor-feeds-with-proof`;
 
   return await (
     await fetch(url, {
