@@ -8,7 +8,7 @@ import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/
  * THIS IS AN EXAMPLE CONTRACT.
  * DO NOT USE THIS CODE IN PRODUCTION.
  */
-contract FTSOV2FeedConsumerScaling {
+contract FtsoV2AnchorFeedConsumer {
     mapping(uint32 => mapping(bytes21 => FtsoV2Interface.FeedData))
         public provenFeeds;
 
@@ -18,8 +18,8 @@ contract FTSOV2FeedConsumerScaling {
             ContractRegistry.getFtsoV2().verifyFeedData(data),
             "Invalid proof"
         );
-        // Add applications specific logic
-        // Step 2: Use the feed data
+        // Step 2: Use the feed data with app specific logic
+        // Here the feeds are saved
         provenFeeds[data.body.votingRoundId][data.body.id] = data.body;
     }
 }
