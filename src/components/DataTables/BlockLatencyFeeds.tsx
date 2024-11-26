@@ -57,8 +57,7 @@ const BlockLatencyFeeds = () => {
                 </div>
               </td>
               <td className="regular-font">
-                Base Asset: {row.base_asset} <br /> Decimals: {row.decimals}{" "}
-                <br /> Category: {row.category}
+                Base Asset: {row.base_asset} <br /> Category: {row.category}
               </td>
               <td className="regular-font">
                 <Tippy
