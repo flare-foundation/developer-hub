@@ -33,8 +33,7 @@ async def fetch_anchor_feeds(
 
 
 async def main() -> None:
-    while True:
-        data = await fetch_anchor_feeds(FEED_IDS)
+    data = await fetch_anchor_feeds(FEED_IDS)
     print("Anchor feeds data:", data)
 
 
