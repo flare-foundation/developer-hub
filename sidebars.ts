@@ -164,6 +164,12 @@ const sidebars: SidebarsConfig = {
           link: { type: "doc", id: "fdc/open-api" },
           items: [],
         },
+        {
+          type: "category",
+          label: "FDC Client API Docs",
+          link: { type: "doc", id: "fdc/fdc-client-api" },
+          items: [],
+        },
       ],
     },
     {
