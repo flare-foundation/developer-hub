@@ -20,7 +20,7 @@ import Tabs from "@theme/Tabs";
 import Remix from "@site/src/components/remix";
 import FetchAnchorFeedsJs from "!!raw-loader!/examples/developer-hub-javascript/fetch_anchor_feeds.js";
 import FetchAnchorFeedsPy from "!!raw-loader!/examples/developer-hub-python/fetch_anchor_feeds.py";
-import FetchAndPushAnchorOnchain from "!!raw-loader!/examples/developer-hub-javascript/fetch_and_push_anchor_onchain.js";
+import FetchAndVerifyAnchorOnchainJs from "!!raw-loader!/examples/developer-hub-javascript/fetch_and_verify_anchor_onchain.js";
 import QueryProviderAndPushOnchain from "!!raw-loader!/examples/developer-hub-javascript/query_provider_and_push_onchain.js";
 import FtsoV2AnchorFeedConsumer from "!!raw-loader!/examples/developer-hub-solidity/FtsoV2AnchorFeedConsumer.sol";
 
@@ -51,7 +51,7 @@ You are encouraged to explore its features and share any feedback, report bugs, 
 
 :::
 
-The DA Layer provides a set of permissionless API endpoints for querying offchain data from Flare protocols.
+The DA Layer provides a set of API endpoints for querying offchain data from Flare protocols.
 
 | Network                 | Base URL                                       |
 | ----------------------- | ---------------------------------------------- |
@@ -103,9 +103,11 @@ The response contains JSON objects for each feed, structured as follows:
 
 - `votingRoundId`: ID of the current voting round (see the [Flare Systems Explorer](https://flare-systems-explorer.flare.network/voting-epoch)).
 - `id`: Feed ID (see [list of anchor feeds](/ftso/scaling/anchor-feeds)).
-- `value`: Integer values of the feed.
+- `value`: Integer value of the feed.
 - `decimals`: Number of decimal places.
 - `proof`: Merkle proof array for data verification.
+
+An example response for BTC/USD:
 
 ```json
 [
@@ -143,10 +145,6 @@ An example contract verifying and consuming anchor feeds onchain
 
 The following example shows how to query feed and proof data from DA Layer and submit it to the onchain consumer:
 
-<CodeBlock language="javascript" title="fetch_and_push_anchor_onchain.js">
-  {FetchAndPushAnchorOnchain}
+<CodeBlock language="javascript" title="fetch_and_verify_anchor_onchain.js">
+  {FetchAndVerifyAnchorOnchainJs}
 </CodeBlock>
-
-{/* Verifying the price and proof offchain */}
-
-{/* ## The `FeedData` struct */}
