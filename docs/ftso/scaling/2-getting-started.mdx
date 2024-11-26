@@ -11,7 +11,6 @@ keywords:
     smart-contracts,
     solidity,
   ]
-unlisted: true
 ---
 
 import CodeBlock from "@theme/CodeBlock";
@@ -21,7 +20,6 @@ import Remix from "@site/src/components/remix";
 import FetchAnchorFeedsJs from "!!raw-loader!/examples/developer-hub-javascript/fetch_anchor_feeds.js";
 import FetchAnchorFeedsPy from "!!raw-loader!/examples/developer-hub-python/fetch_anchor_feeds.py";
 import FetchAndVerifyAnchorOnchainJs from "!!raw-loader!/examples/developer-hub-javascript/fetch_and_verify_anchor_onchain.js";
-import QueryProviderAndPushOnchain from "!!raw-loader!/examples/developer-hub-javascript/query_provider_and_push_onchain.js";
 import FtsoV2AnchorFeedConsumer from "!!raw-loader!/examples/developer-hub-solidity/FtsoV2AnchorFeedConsumer.sol";
 
 Scaling provides offchain access to anchor feeds, using Flare's network of 100 independent data providers and a full commit-reveal process every 90 seconds.
@@ -44,19 +42,18 @@ Scaling only stores **commitments to feed data** onchain. The complete feed data
 
 ## DA Layer API URLs
 
-:::warning[Data Availability Layer: Beta Release]
+:::warning[Rate limits]
 
-The Data Availability (DA) Layer is currently in beta.
-You are encouraged to explore its features and share any feedback, report bugs, or suggest improvements on the [flare-foundation/data-availability](https://github.com/flare-foundation/data-availability) GitHub.
+The public DA Layer endpoints are rate-limited. To request an API key for higher limits, create an [API Key Request Issue](https://github.com/flare-foundation/developer-hub/issues/new/choose).
 
 :::
 
 The DA Layer provides a set of API endpoints for querying offchain data from Flare protocols.
 
-| Network                 | Base URL                                       |
-| ----------------------- | ---------------------------------------------- |
-| Flare Mainnet           | `https://flr-data-availability.flare.network/` |
-| Songbird Canary-Network | `https://sgb-data-availability.flare.network/` |
+| Network                 | Base URL                                       | API Reference                                                      |
+| ----------------------- | ---------------------------------------------- | ------------------------------------------------------------------ |
+| Flare Mainnet           | `https://flr-data-availability.flare.network/` | [Reference](https://flr-data-availability.flare.network/api-doc#/) |
+| Songbird Canary-Network | `https://sgb-data-availability.flare.network/` | [Reference](https://sgb-data-availability.flare.network/api-doc#/) |
 
 ## Fetching anchor feed data
 
@@ -71,6 +68,7 @@ For example, to get the feed value of `FLR/USD`, `BTC/USD` and `ETH/USD` at the 
     curl -X 'POST' \
       'https://flr-data-availability.flare.network/api/v0/ftso/anchor-feeds-with-proof' \
       -H 'accept: application/json' \
+      -H 'Content-Type: application/json' \
       -d '{
       "feed_ids": [
         "0x01464c522f55534400000000000000000000000000",
@@ -99,12 +97,13 @@ For example, to get the feed value of `FLR/USD`, `BTC/USD` and `ETH/USD` at the 
 
 ### API Response
 
-The response contains JSON objects for each feed, structured as follows:
+The response contains JSON objects for each feed, with the following fields:
 
-- `votingRoundId`: ID of the current voting round (see the [Flare Systems Explorer](https://flare-systems-explorer.flare.network/voting-epoch)).
-- `id`: Feed ID (see [list of anchor feeds](/ftso/scaling/anchor-feeds)).
+- `votingRoundId`: ID of the current voting round, each lasting 90s (see the [Flare Systems Explorer](https://flare-systems-explorer.flare.network/voting-epoch)).
+- `id`: ID of the feed (see [list of anchor feeds](/ftso/scaling/anchor-feeds)).
 - `value`: Integer value of the feed.
-- `decimals`: Number of decimal places.
+- `turnoutBIPS`: Percentage (in basis points) of voting weight which contributed towards the finalized value.
+- `decimals`: Number of decimal places for the feed.
 - `proof`: Merkle proof array for data verification.
 
 An example response for BTC/USD:
@@ -126,6 +125,8 @@ An example response for BTC/USD:
   }
 ]
 ```
+
+The floating point value of a feed can be calculated by dividing the `value` by 10^`decimals`. For example, if the feed value of BTC/USD is `6900420` and the decimal is `2`, the floating point feed value is `69004.20`.
 
 ## Verifying proof onchain
 
