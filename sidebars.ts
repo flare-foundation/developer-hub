@@ -166,12 +166,15 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       link: { type: "doc", id: "fassets/overview" },
       items: [
+        "fassets/collateral",
+        "fassets/minting",
+        "fassets/redemption",
+        "fassets/liquidation",
         "fassets/open-beta",
-        // "fassets/getting-started",
         {
           type: "category",
           label: "FAssets Guides",
-          collapsed: false,
+          collapsed: true,
           link: {
             type: "generated-index",
           },
