@@ -1,3 +1,4 @@
+// THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
 import { artifacts } from "hardhat";
 import { fetchAnchorFeeds } from "./fetch_anchor_feeds";
 
@@ -14,7 +15,10 @@ async function main() {
   const feedConsumer = await FtsoV2AnchorFeedConsumer.new();
 
   // Fetch price from DA Layer
-  const feedData = await fetchAnchorFeeds(BTC_USD_FEED_ID, TARGET_VOTING_ROUND);
+  const feedData = await fetchAnchorFeeds(
+    [BTC_USD_FEED_ID],
+    TARGET_VOTING_ROUND,
+  );
 
   // Save fetched price to contract
   await feedConsumer.savePrice({
