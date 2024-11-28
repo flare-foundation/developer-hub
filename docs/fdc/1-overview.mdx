@@ -7,16 +7,62 @@ title: FDC
 :::info
 
 FDC is currently under development.
-
 Get involved in alpha testing on Flare Testnet Coston2 by following the [FDC Guides](/category/fdc-guides).
 
 :::
 
-The **F**lare **D**ata **C**onnector **(FDC)** achieves consensus on information from external blockchains and the internet, ensuring it can be securely and trustlessly utilized by smart contracts on Flare.
+The **F**lare **D**ata **C**onnector **(FDC)** is an enshrined verification oracle designed to validate data external to Flare's EVM state.
+FDC enables users to provide attested data that smart contracts can trust without directly relying on the user's integrity.
+The FDC validates data based on attestation requests, processing these requests in batches during verification rounds.
 
-FDC employs a network of independent attestation providers to retrieve necessary information from other blockchains and deliver it to the Flare network. The FDC smart contract then verifies consensus among the received data, making the results available to the network when consensus is achieved.
+- **Merkle Tree Representation:** Verified data is represented in a Merkle tree, and only the Merkle root is stored on-chain.
+- **Data Availability Layer (DA Layer):** Data providers serve attestation responses and Merkle proofs through a DA Layer.
+- **Proof Verification:** Smart contracts verify attestation responses with Merkle proofs against the stored Merkle root to ensure data integrity before acting on it.
+- **Extensible Attestation Types:** Only supported attestation types and data sources are processed. New attestation types can be added if data providers reach a consensus.
 
-FDC operates in two modes:
+### Process Overview
 
-1. Reading the state of other blockchains, such as verifying if a deposit has been made by a given block height.
-2. Providing data proofs from open internet APIs, like confirming if a specific tweet was sent, a particular sporting result occurred, or if a bank transaction was completed.
+1. **Data Verification:** FDC validates user-provided data requests.
+2. **Merkle Representation:** Data is organized into a Merkle tree per verification round, with only the Merkle root stored on-chain.
+3. **Attestation Usage:** Users retrieve attestation responses and proofs from data providers to interact with smart contracts securely.
+
+## Workflows
+
+### User Workflow
+
+1. **Identify Data Needs:** Determine the data and attestation type required by a smart contract.
+2. **Prepare Attestation Request:** Format the request based on the required attestation type and expected response hash (MIC).
+   Data providers can assist in generating the request.
+3. **Submit Request:** Use the [`requestAttestation`](/fdc/solidity-reference/IFdcHub#requestattestation) function of the [`FdcHub`](/fdc/solidity-reference/IFdcHub) smart contract, providing the encoded request and at least base fee.
+   Fees vary by attestation type and source, and can be queried from the `FdcRequestFeeConfigurations` contract.
+4. **Track Request:** Record the timestamp of the block where the transaction is included.
+   Calculate the voting round for processing based on this timestamp.
+5. **Wait for Finalization:** Wait for the voting round to finalize.
+   The [`Relay`](/network/fsp/IRelay) contract event signals finalization.
+6. **Retrieve Data:** Query a data provider's DAL for the attestation response and Merkle proof.
+7. **Submit Data to Smart Contract:** Provide the attestation response and Merkle proof for verification and use.
+
+### Smart Contract Workflow
+
+1. **Define Triggers:** Specify data that triggers actions, either passively or on-demand.
+2. **Receive Data:** Accept attestation responses and proofs from users.
+3. **Verify Data:** Use the [`FdcVerification`](/fdc/solidity-reference/IFdcVerification) contract to check the response against the stored Merkle root for the corresponding voting round.
+4. **Act on Data:** Use the verified data for computation or decision-making.
+
+### Data Provider Workflow
+
+1. **Collect Requests:** Group attestation requests into a voting round based on emission timestamps.
+2. **Retrieve Data:** Obtain responses from verifier servers for the requests.
+3. **Validate Responses:** Ensure responses meet validity criteria (MIC and LUT checks).
+4. **Submit BitVectors:** During the "choose phase" (90-135 seconds into the round), submit a BitVector indicating verified requests.
+5. **Consensus Building:** Compute the consensus BitVector after the choose phase.
+6. **Merkle Tree Creation:** Create a Merkle tree from the hashes of validated responses indicated in the consensus BitVector.
+7. **Sign and Submit Merkle Root:** Sign the Merkle root and submit signatures.
+   When 50%+ weight is reached, a chosen provider submits the finalized signatures to the [`Relay`](/network/fsp/IRelay) contract.
+8. **Serve Data:** After finalization, provide verified attestation responses and Merkle proofs through the DAL.
+
+#### Notes
+
+- **Consensus Weight:** Finalization requires signatures representing 50%+ of the total weight.
+- **Data Availability:** Users can fetch attestation responses and proofs from any data provider's DAL.
+- **Extensibility:** New attestation types and sources can be added with data provider consensus.
