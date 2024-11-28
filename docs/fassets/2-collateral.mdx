@@ -1,5 +1,7 @@
 ---
 title: Collateral
+description: Understand how collateral works in FAssets.
+keywords: [fassets, xrp, bitcoin, dogecoin, flare-network]
 ---
 
 import FAssetsCollateral from "/static/img/fassets-overview/fassets-collateral.png";
@@ -31,7 +33,7 @@ Flare governance approves the valid types, which are generally stablecoins, such
 Agents choose one of the types defined by FAssets governance and use it as collateral in their vaults.
 Agents cannot switch to a different type after a vault is created, but they can create any number of vaults, with different types.
 
-Each collateral type defines an ERC-20 token to use as collateral, a series of [collateral ratios](#the-collateral-ratio), and information to retrieve the asset's price from the FTSO system.
+Each collateral type defines an ERC-20 token to use as collateral, a series of [collateral ratios](#collateral-ratio), and information to retrieve the asset's price from the FTSO system.
 Governance reserves the right to add new types or deprecate existing types.
 If governance deprecates a type, agents must switch to a supported type.
 
@@ -39,14 +41,14 @@ Each vault is associated with a single, unique address on the underlying chain c
 It receives underlying assets when they are minted into FAssets and sends underlying assets to the redeemer's address when they are redeemed.
 
 When an agent creates a vault, the underlying address is checked for validity using the Data Connector.
-Otherwise, malicious agents could provide an address that systematically blocks payments and exploit the [minting process](#minting) to their advantage.
+Otherwise, malicious agents could provide an address that systematically blocks payments and exploit the [minting process](/fassets/minting) to their advantage.
 
 ### Pool Collateral
 
-When the price of the vault collateral changes in such a way that the vault collateral cannot fully back all the minted FAssets, a [liquidation](#liquidation) mechanism ensures enough FAssets are burned to restore balance.
+When the price of the vault collateral changes in such a way that the vault collateral cannot fully back all the minted FAssets, a [liquidation](/fassets/liquidation) mechanism ensures enough FAssets are burned to restore balance.
 The pool collateral provides an additional source of backing for situations when the price fluctuates too rapidly for liquidations to correct the imbalance.
 
-Pool collateral is always native FLR tokens or SGB tokens on the Songbird network and can be used as an additional source of collateral for [liquidations](#liquidation) and [failed redemptions](#redemption-payment-failure).
+Pool collateral is always native FLR tokens or SGB tokens on the Songbird network and can be used as an additional source of collateral for [liquidations](/fassets/liquidation) and [failed redemptions](/fassets/redemption#redemption-payment-failure).
 
 Anyone can participate in the FAssets system by providing native tokens to this pool.
 In return, providers receive **collateral pool tokens** (CPTs) as proof of the share of native tokens they provided to a specific pool from a specific agent.
@@ -118,60 +120,71 @@ The resulting pool CR is (\$2000 / \$1000) = 2.
 Several thresholds are defined for the collateral ratio, and they are used at different times during the FAsset operations.
 Some are set by the system, and others are set by the agent:
 
-<img src={CollateralRatio} />
+{/* <img src={CollateralRatio} /> */}
 
 ### System-Wide Thresholds
 
 The following thresholds are set by the FAssets system's governance and are the same for all agents:
 
-- **Minimal CR**: The lowest collateral ratio the agent vault and the collateral pool must maintain so that enough collateral exists to insure the minted FAssets and to compensate for redemption payments that fail.
-  The minimal CR can be different for each type of collateral.
+#### Minimal CR
 
-  If an agent's CR remains below the minimal CR for longer than a governance-set amount of time, [liquidations](#liquidation) can start.
+The lowest collateral ratio the agent vault and the collateral pool must maintain so that enough collateral exists to insure the minted FAssets and to compensate for redemption payments that fail. The minimal CR can be different for each type of collateral.
 
-- **Collateral call band CR (liquidation CR)**: An agent's position is unhealthy when the agent's vault CR or pool CR fall below their minimal CR.
-  However, as long as the CR remains above liquidation CR, the CR can briefly fall below the minimal CR.
+If an agent's CR remains below the minimal CR for longer than a governance-set amount of time, [liquidations](/fassets/liquidation) can start.
 
-  During this time, the agent can either deposit more collateral or self-close some backed FAssets to improve the position.
+#### Collateral Call Band CR
 
-  However, if the CR falls below the liquidation CR, liquidations can start immediately.
+**Collateral call band CR (liquidation CR)**: An agent's position is unhealthy when the agent's vault CR or pool CR fall below their minimal CR.
+However, as long as the CR remains above liquidation CR, the CR can briefly fall below the minimal CR.
 
-  The value of each liquidation CR is approximately 10% less than the minimal CR.
+During this time, the agent can either deposit more collateral or self-close some backed FAssets to improve the position.
 
-  :::info[Example liquidation CR]
+However, if the CR falls below the liquidation CR, liquidations can start immediately.
 
-  Assume the **minimal CR** is 1.4 and the **liquidation CR** is 1.3.
+The value of each liquidation CR is approximately 10% less than the minimal CR.
 
-        If the agent's vault CR drops below 1.3, the agent's position can be liquidated immediately.
-        If the agent's vault CR drops below 1.4 but not below 1.3, the agent has some time to amend the position before it can be liquidated.
+:::info[Example liquidation CR]
 
-        Adjusted for the collateral pool's minimal CR, the same example applies to the collateral pool.
+Assume the **minimal CR** is 1.4 and the **liquidation CR** is 1.3.
 
-  :::
+  If the agent's vault CR drops below 1.3, the agent's position can be liquidated immediately.
+  If the agent's vault CR drops below 1.4 but not below 1.3, the agent has some time to amend the position before it can be liquidated.
 
-- **Safety CR**: If one or both of the collateral types fall below liquidation CR or below the minimum CR for a longer period of time, liquidation occurs.
-  When the offending collateral reaches a healthy CR again, the liquidation stops.
-  To prevent the agent from immediately reverting into liquidation after a small price change, the CR must reach the safety CR before it can start operating normally again and liquidation stops.
+  Adjusted for the collateral pool's minimal CR, the same example applies to the collateral pool.
 
-  Each of the collateral types, the agent's vault and the collateral pool, has its own unique safety CR.
+:::
+
+#### Safety CR
+
+If one or both of the collateral types fall below liquidation CR or below the minimum CR for a longer period of time, liquidation occurs.
+When the offending collateral reaches a healthy CR again, the liquidation stops.
+To prevent the agent from immediately reverting into liquidation after a small price change, the CR must reach the safety CR before it can start operating normally again and liquidation stops.
+
+Each of the collateral types, the agent's vault and the collateral pool, has its own unique safety CR.
 
 ### Agent Thresholds
 
 The following thresholds are set by each agent according to their own preferences:
 
+#### Minting CR
+
 - **Minting CR**: For each mint done by an agent, the maximum amount allowed to be minted is calculated so that the CR for the agent's vault and the CR for the agent's collateral pool after the mint remain higher than the minting CR for each collateral type.
   To reduce the threat of liquidation, agents should set the minting CR well above the minimal CR to accommodate price fluctuations that might occur before the CR falls below the minimal CR after the mint and minting is no longer possible.
+
+#### Exit CR
 
 - **Exit CR**: After a user redeems CPTs, the pool CR must be more than the exit CR.
   If the pool CR is already below the exit CR, redemption cannot occur.
   The exit CR is for the collateral pool only.
 
+#### Top-up CR
+
 - **Top-up CR**: To incentivize healthy collateral pools, if the pool CR falls below the top-up CR, anyone can add collateral to the pool and receive [CPTs](#pool-collateral) at a reduced price.
   This [top-up mechanism](#top-up) decreases the likelihood of liquidations because of a low amount of pool collateral.
 
-## Fee Entitlement and Debt
+## Minting Fees and Debt
 
-As part of the minting process, users pay a [minting fee](#minting-fee) on the underlying chain.
+As part of the minting process, users pay a [minting fee](/fassets/minting#fees) on the underlying chain.
 The agent's share of this fee remains on the underlying chain, whereas the pool's share triggers the minting of an equivalent amount of FAssets on the Flare network.
 
 These FAssets coming from the minting fee are added to the collateral pool, where they are shared between collateral providers in proportion to the amount of CPTs that providers have.
@@ -295,15 +308,15 @@ In step **7**:
 CPTs can always be **redeemed** by exiting the pool, but only the portion of them above the fee debt can be **transferred** to another account.
 Therefore, CPTs held by providers are divided into two types:
 
-- **Transferable**: Tokens whose [time lock](#time-lock) has expired and are also free of fee debt.
+- **Transferable**: Tokens whose time lock has expired and are also free of fee debt.
   These tokens are fungible, and they can be transferred or traded just like any other ERC-20 token.
 - **Locked**: The CPTs serve only as proof of ownership of some of the collateral in the pool, and they cannot be transferred nor traded.
 
   Locked CPTs are one of the following types:
 
-  - **Time-locked**: Tokens whose [time lock](#time-lock) has not expired must wait to become transferable or redeemable.
+  - **Time-locked**: Tokens whose time lock has not expired must wait to become transferable or redeemable.
   - **Debt-locked**: Tokens corresponding to an amount of fees below the provider's fee debt cannot be transferred because they would need to carry the debt with them.
-    However, they can be [redeemed](#redemption-of-cpts).
+    However, they can be [redeemed](#cpt-redemption).
 
     As new fees arrive in the pool, some previously debt-locked tokens become transferable.
 
@@ -373,20 +386,20 @@ In step **7**:
 
 ## CPT Redemption
 
-When collateral providers exit the pool by redeeming their CPTs, the FAssets system burns them and returns the appropriate share of the collateral plus the share of [FAsset-minting fees minus any FAsset-fee debt](#fasset-minting-fees-and-debt).
+When collateral providers exit the pool by redeeming their CPTs, the FAssets system burns them and returns the appropriate share of the collateral plus the share of [FAsset-minting fees minus any FAsset-fee debt](#minting-fees-and-debt).
 
 Providers also have the option to exit the pool partially, by redeeming only some of their CPTs.
 In this case, they can choose one of the following options to manage their due FAsset fees: withdraw the fees, reduce the fee debt, or both, keeping the current fee-to-debt-ratio.
 
-However, providers can exit, either fully or partially, only when the [collateral ratio CR](#the-collateral-ratio) is high enough.
+However, providers can exit, either fully or partially, only when the [collateral ratio CR](#collateral-ratio) is high enough.
 After they exit, the **CR** must be higher than the **exit CR** to prevent their exit from reducing the **CR** to a dangerous level.
 
 Therefore, exits are impossible when the **CR** is below the **exit CR**.
 In this case, if providers have enough FAssets, they can exit by **self-closing**, which burns enough of their FAssets, plus their fees, to release their collateral.
 
-Providers are mainly compensated in underlying assets for the burned FAssets, depending on the [number of lots](#lots) of FAssets that need to be redeemed:
+Providers are mainly compensated in underlying assets for the burned FAssets, depending on the [number of lots](/fassets/minting#lots) of FAssets that need to be redeemed:
 
-- If more than 1 lot needs to be redeemed, the value of the burned FAssets is redeemed through the standard [redemption process](#redemption).
+- If more than 1 lot needs to be redeemed, the value of the burned FAssets is redeemed through the standard [redemption process](/fassets/redemption).
 - If less than 1 lot needs to be redeemed, the agent buys the underlying funds from the user using vault collateral, at the price reported by the [FTSO](/ftso/overview) minus a percentage defined by the agent.
   This purchase by the agent occurs because fees on underlying chains can be expensive, which makes redemption of small quantities too expensive for the agent.
 
@@ -414,9 +427,9 @@ These actions can cause the agent's CPTs to be burned:
 
 - When a redemption payment fails, when enough vault collateral to compensate the redeemer is not available, or when the system is set to automatically pay for redemption failures from the collateral pool.
 - Liquidation because the CR of the vault collateral is too low.
-- Full liquidation because of an [agent infraction](#redemption-payment-failure) during a transfer on an underlying chain.
+- Full liquidation because of an [agent infraction](/fassets/redemption#redemption-payment-failure) during a transfer on an underlying chain.
 
-## Liquidations and Top-ups
+## Top-up
 
 To reduce the likelihood of liquidations because the pool collateral is too low, the pool can be topped up at a reduced price when the **CR** is above the **top-up CR**.
 

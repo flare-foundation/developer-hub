@@ -1,5 +1,7 @@
 ---
 title: Redemption
+description: Understand how redemptions work in FAssets.
+keywords: [fassets, xrp, bitcoin, dogecoin, flare-network]
 ---
 
 import RedeemingProcess from "/static/img/fassets-overview/fassets-redeeming.png";
@@ -11,27 +13,27 @@ To do so, these holders, known as redeemers, send FAssets to the Asset Manager s
 
 This is the summary of the redemption process:
 
-<img src={RedeemingProcess} />
+{/* <img src={RedeemingProcess} /> */}
 
 1. The redeemer starts the redemption for a whole number of lots by issuing a request to the Asset Manager smart contract.
 
-   The FAssets system chooses one or more redemption tickets from the front of the [FIFO redemption queue](#redemption-tickets-and-the-redemption-queue).
+   The FAssets system chooses one or more redemption tickets from the front of the [FIFO redemption queue](/fassets/minting#redemption-tickets-and-the-redemption-queue).
    The number of chosen redemption tickets is capped to avoid high gas consumption.
    If the redemption amount requires too many tickets, only a partial redemption is done.
 
-2. The system burns FAssets from the redeemer’s account in the amount of the total of the selected redemption tickets.
+2. The system burns FAssets from the redeemer's account in the amount of the total of the selected redemption tickets.
    If the redeemer's account does not contain enough FAssets, the redemption fails immediately.
 
 3. Each chosen ticket belongs to an agent.
    For every agent participating in the redemption, the system issues an event with the following redemption payment information:
 
-   - Redeemer’s underlying address.
+   - Redeemer's underlying address.
 
      Agents can use the Data Connector to ensure the validity of this address.
      Otherwise, malicious redeemers could provide an address that systematically blocks payments and exploit the redeeming process to their advantage.
 
    - Amount to pay minus the fee that was already subtracted.
-   - [A payment reference](#minting-payment-reference).
+   - [A payment reference](/fassets/minting#minting-payment-reference).
      This payment reference is different for each agent and each redemption.
    - The last underlying block and the last underlying timestamp to complete the payment.
 
@@ -81,7 +83,7 @@ During step 4 above, if any agent does not to pay on the underlying chain, the r
 2. The redeemer presents the nonpayment proofs to the FAssets system, which triggers a redemption failure.
 3. The redeemer is paid with collateral, according to the current price plus a premium.
 4. FAssets are overcollateralized, so, even after paying the redeemer with a premium, a remainder is released.
-   This remainder is derived by the [system-wide collateral ratio settings](#system-wide-thresholds) specified by governance.
+   This remainder is derived by the [system-wide collateral ratio settings](/fassets/collateral#system-wide-thresholds) specified by governance.
 5. The underlying assets backing the redeemed FAssets are marked as free and can be withdrawn by the agent later.
 
 ## Edge Cases
@@ -92,7 +94,7 @@ During step 4 above, if any agent does not to pay on the underlying chain, the r
 - **Unresponsive agent**: After a successful payment, the agent might not present the payment proof.
   Because the agent has already paid, the redeemer is not affected.
   However, the system still requires the payment proof to correctly track the agent's balance on the underlying chain.
-  After enough time for the agent to present the proof has elapsed, anyone can present the payment proof and receive collateral from the agent’s vault.
+  After enough time for the agent to present the proof has elapsed, anyone can present the payment proof and receive collateral from the agent's vault.
 - **Expired proof**: Proofs provided by the Data Connector are available for only 24 hours, approximately.
   If neither the redeemer nor the agent presents the proof of payment or nonpayment within 24 hours, the regular redeeming process cannot continue, and the agent's collateral could be locked indefinitely.
 
@@ -101,7 +103,7 @@ During step 4 above, if any agent does not to pay on the underlying chain, the r
 ## Redemption Fee
 
 The redemption fee is the amount of the underlying asset that the agent can keep for doing the redemption.
-This fee is meant only to cover the agent’s transaction fee on the underlying chain, so it is not shared with the collateral pool.
+This fee is meant only to cover the agent's transaction fee on the underlying chain, so it is not shared with the collateral pool.
 The fee percentage is defined by governance, is the same for all agents, and is typically smaller than the minting fee.
 
 Governance calculates the percentage so that the fee to redeem 1 lot pays for a typical transaction fee on the underlying chain.

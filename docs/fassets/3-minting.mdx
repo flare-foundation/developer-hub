@@ -1,5 +1,7 @@
 ---
 title: Minting
+description: Understand how minting works in FAssets.
+keywords: [fassets, xrp, bitcoin, dogecoin, flare-network]
 ---
 
 import MintingProcess from "/static/img/fassets-overview/fassets-minting.png";
@@ -12,14 +14,14 @@ Any user can mint FAssets.
 
 This is the summary of the minting process:
 
-<img src={MintingProcess} />
+{/* <img src={MintingProcess} /> */}
 
-1. The minter chooses an agent from the publicly available [agent list](#agents).
+1. The minter chooses an agent from the publicly available [agent list](/fassets/overview#agents).
    The choice is based on the minting fee or the amount of free collateral, which must be enough to back the amount to be minted.
 2. The minter sends to the Asset Manager contract a collateral reservation transaction (CRT). The CRT includes:
 
    - The address of the chosen agent
-   - The amount to mint, which must be a whole number of [lots](#lots)
+   - The amount to mint, which must be a whole number of [lots](/fassets/minting#lots)
    - The [collateral reservation fee (CRF)](#fees) to compensate for the locked collateral
 
 3. The Asset Manager contract locks the agent's collateral in the amount needed to back the whole minting until the underlying payment is proved or disproved.
@@ -52,35 +54,39 @@ After minting is complete, the Asset Manager creates a [redemption ticket](#rede
 
 The following fees are paid to mint FAssets:
 
-- The **collateral reservation fee (CRF)** is paid in native tokens by the minter at the same time the [CRT](#minting-process) is made.
-  The CRF is defined by governance as a percentage of the minted value, and the same fee applies to all agents.
+### Collateral Reservation Fee
 
-  When the minter does not pay on the underlying chain, this fee compensates the agent and the CPT holders for the time their collateral was locked while the mint processed.
-  If the minter pays on the underlying chain, the CRF is burned.
+The **collateral reservation fee (CRF)** is paid in native tokens by the minter at the same time the [CRT](#minting-process) is made.
+The CRF is defined by governance as a percentage of the minted value, and the same fee applies to all agents.
 
-  For underlying chains on which proving payments takes a long time, the fee might be higher than the fee on chains that quickly prove payments.
+When the minter does not pay on the underlying chain, this fee compensates the agent and the CPT holders for the time their collateral was locked while the mint processed.
+If the minter pays on the underlying chain, the CRF is burned.
 
-- The **minting fee** is paid by the minter with the underlying currency as a percentage of the minted amount, and each agent can declare a different fee value.
-  This fee is the main source of revenue for the agent and the CPT holders.
+For underlying chains on which proving payments takes a long time, the fee might be higher than the fee on chains that quickly prove payments.
 
-  The minting fee is further divided in two shares:
+### Minting Fee
+The **minting fee** is paid by the minter with the underlying currency as a percentage of the minted amount, and each agent can declare a different fee value.
+This fee is the main source of revenue for the agent and the CPT holders.
 
-  {" "}
+{/* <img src={FAssetsFees} /> */}
 
-  <img src={FAssetsFees} />
+The minting fee is further divided in two shares:
 
-  - **Agent's share**: This share remains in the agent's underlying account but is not marked as being in use.
-    The agent can use this balance freely.
-  - **Pool's share**: This share is minted as FAssets and sent to the [collateral pool](#pool-collateral).
-    The percentage of this share is defined by the agent and can be changed by the agent after a delay that provides time for minters to notice the change.
+#### Agent share
+
+This share remains in the agent's underlying account but is not marked as being in use. The agent can use this balance freely.
+
+#### Pool share
+
+This share is minted as FAssets and sent to the [collateral pool](/fassets/collateral#pool-collateral). The percentage of this share is defined by the agent and can be changed by the agent after a delay that provides time for minters to notice the change.
 
 ## Payment Failure
 
 To finalize the minting, the minter must pay the agent on the underlying chain and prove the payment was received.
 If the payment is not completed in the time frame defined by the underlying chain block and timestamp, the agent must prove nonpayment to release the locked collateral.
-After nonpayment is proved, the agent's collateral that was reserved by the [CRT](#minting-process) is released, and the agent receives the [CRF](#crf).
+After nonpayment is proved, the agent's collateral that was reserved by the [CRT](#minting-process) is released, and the agent receives the [CRF](#collateral-reservation-fee).
 
-The [agent's registration process](#agents) verifies that the agent's underlying address does not purposefully block payments and illegally collects the CRF.
+The [agent's registration process](/fassets/overview#agents) verifies that the agent's underlying address does not purposefully block payments and illegally collects the CRF.
 
 The following example shows proof of nonpayment.
 
@@ -162,14 +168,14 @@ The minter must include the payment reference in a memo field when the underlyin
 The payment reference ensures the payment transaction cannot be used by another entity that might claim to have made the payment on the underlying chain and receive the minted FAssets in return.
 Additionally, if the payment time expires before payment is done, the agent can prove that no payment with that reference was made.
 
-A similar payment reference for the same purposes is generated for [redemptions](#redemption).
+A similar payment reference for the same purposes is generated for [redemptions](/fassets/redemption).
 
 ## Redemption Tickets and the Redemption Queue
 
 For every minting operation, a redemption ticket is created.
 This ticket references the minted amount and the agent that is backing the minting.
 
-The redemption tickets are ordered in a queue that determines the next agent to be [redeemed](#redemption) against according to the first in, first out method (FIFO).
+The redemption tickets are ordered in a queue that determines the next agent to be [redeemed](/fassets/redemption) against according to the first in, first out method (FIFO).
 In other words, the first redemption ticket created will be the first redemption ticket processed.
 The FIFO queue impartially ensures that all agents have the opportunity to fulfill the duties of their role.
 

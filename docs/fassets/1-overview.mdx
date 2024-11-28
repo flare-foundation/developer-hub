@@ -1,7 +1,7 @@
 ---
-sidebar_position: 1
-slug: overview
 title: FAssets
+description: FAssets is a trustless over-collateralized bridge to non smart contract networks to Flare.
+keywords: [fassets, xrp, bitcoin, dogecoin, flare-network]
 ---
 
 :::info
@@ -12,105 +12,93 @@ Get involved in testing by following the [FAssets Guides](/category/fassets-guid
 
 :::
 
-FAssets is enabled by Flare's data enshrined data protocols, the [Flare Data Connector](/fdc/overview) and [Flare Time Series Oracle](/ftso/overview). The FTSO provides decentralised price feeds for all the tokens involved, and the Data Connector can verify that a required action has taken place on a different chain.
+FAssets is a trustless, over-collateralized bridge connecting non smart contract networks to Flare.
+It enables the creation of wrapped tokens (`FAssets`) for assets like BTC, DOGE and XRP.
+These tokens can participate in Flare's DeFi ecosystem or be redeemed for their original assets.
 
-Each FAsset will be backed by mixed onchain collateral held by an agent and in a community provided pool. This backing consists of three asset types: the underlying, stablecoin or ETH collateral, and Flare native token collateral, FLR or SGB. The minting and redeeming process will be supported by a number of agents. Their role in the system is secured through over-collateralization, such that the system is rendered trustless.
+FAssets are powered by Flare's enshrined data protocols:
 
-Someone who wishes to mint FAssets starts by selecting an agent and paying a small fee to reserve the required collateral. The minter then sends the agent the underlying asset, with the Data Connector used to prove the transaction has taken place on the other chain. Once the payment has been verified, the FAssets are minted as ERC-20 tokens on Flare. These tokens can be used within DeFi on Flare or bridged to another chain.
+- **[Flare Time Series Oracle (FTSO)](/ftso/overview):** Provides decentralized price feeds.
+- **[Flare Data Connector (FDC)](/fdc/overview):** Verifies off-chain actions, such as transactions on other blockchains.
 
-FAssets are wrapped versions of tokens from blockchains that don’t support smart contracts, which you can use to earn yield or rewards offered by dapps built on Flare networks. Enabled by the FTSO and the FDC, the FAssets system mints into your wallet wrapped versions of these tokens, and at any time you can redeem them, unwrapping them into their original form. For example, you might mint `FBTC`, the FAsset version of BTC, use it in a DeFi app on Flare, and later redeem it for BTC again.
+Each FAsset is backed by a mix of collateral, including:
 
-Anyone on the Flare blockchain can mint FAssets as wrapped versions of the original tokens from other blockchains, known as underlying networks.
-The original tokens from these chains, such as `BTC`, `LTC`, `DOGE`, and `XRP`, are called underlying assets.
-For example, the FAsset version of `BTC` is `FBTC`.
+1. The underlying asset itself.
+2. Stablecoin or ETH collateral.
+3. FLR (Flare's native token) or SGB (Songbird's native token) collateral.
 
-You can then use these FAssets in smart contracts and decentralized applications on Flare, and at any time you can redeem them for the underlying asset.
+Agents and a community-provided collateral pool ensure trustlessness through over-collateralization.
 
-The system is enabled by these Flare protocols:
+## FAsset Workflow
 
-- [FTSO](/ftso/overview), whose contracts provide decentralized price feeds for multiple tokens.
-- [FDC](/fdc/overview), which brings payment data from any connected chain into Flare.
+1. **Minting:**
 
-FAssets are backed by collateral provided by entities in the following roles that maintain the infrastructure of the system and hold Flare's native assets.
-All these entities are independent of the Flare Foundation.
+   - A user (minter) selects an agent and pays a fee to reserve collateral.
+   - The user sends the underlying asset (e.g., BTC) to the agent.
+   - The FDC verifies the transaction.
+   - The equivalent FAssets (e.g., `FBTC`) are minted as ERC-20 tokens on Flare.
 
-The following roles participate in the FAssets system:
+2. **Usage:**
 
-- [Agents](#agents)
-- [Users](#users)
-- [Collateral Providers](#collateral-providers)
-- [Liquidators](#liquidators)
-- [Challengers](#challengers)
+   - Minted FAssets can be used in DeFi applications on Flare or bridged to other chains.
 
-## Agents
+3. **Redeeming:**
+   - Users can redeem FAssets for the original underlying assets at any time.
 
-The main purpose of agents is to keep the underlying assets while the minted FAssets are circulating.
-Agents are off-chain programs, or bots, that:
+## Key Participants
 
-- Manage the account that holds an underlying asset, like `BTC`.
-- Provide the main part of the [collateral](#collateral).
-- Repay the underlying assets when users redeem them.
+### Agents
 
-Each agent has an owner, a person who controls the following addresses associated with the agent.
-These addresses enable owners to manage their agents and run FAsset operations.
+Agents manage the infrastructure and operations of the FAssets system, including:
 
-- **Work address**: Used by programs permanently online to execute operations like paying for redemptions.
-  Because the private key for this address resides on a server, it is vulnerable to theft.
-  To keep it secure, owners should regularly change the private key and its corresponding work address.
-  It is also known as a hot wallet.
-- **Management address**: Used when the owner wants to change the work address.
-  This address can never change and will typically be a multisignature account.
-  It is also known as a cold wallet.
+- Holding the underlying assets.
+- Providing collateral for minting and redemption.
+- Redeeming underlying assets for users.
 
-Before agents can participate in the FAssets system, they must be verified by governance.
-To be verified by governance, owners submit the agent's management address and, during the initial stages, some sort of off-chain personal information for KYC purposes.
-After the agent is verified, its management address is added to a list of allowed agents.
+Each agent is verified through governance and uses the following addresses:
 
-The **backing factor** is a system-wide setting that specifies how much of the kept assets must be locked, i.e., not freely used by agents.
-This factor is currently 100%, meaning that agents should not transfer out of their account any underlying that is backing FAssets, unless they receive a [redemption request](#redemption).
-Decreasing the underlying below the backing factor is an [illegal action](#illegal-payments) and is reported by [challengers](#challengers).
+- **Work Address:** A hot wallet for executing operations.
+- **Management Address:** A cold wallet for secure administrative actions.
 
-## Users
+Agents must comply with the **backing factor**, which ensures sufficient collateral is locked to back FAssets.
 
-Users interact with the FAssets system in the following ways:
+### Users
 
-- [**Minting**](#minting): Depositing underlying assets to an agent's address in exchange for the equivalent amount of FAssets minus a minting fee.
-  The minting fee is split between the agent and the [collateral pool](#pool-collateral), which receives fees as FAssets.
-  During this operation, users are called minters.
+Users interact with the system by:
 
-- [**Redeeming**](#redemption): Returning FAssets to the FAssets system in exchange for the equivalent amount of underlying assets, paid from an agent's address.
-  If the agent fails to pay the underlying assets in time, the FAssets system pays the redeemer from the vault or the collateral pool plus a premium.
-  To ensure redemption is always possible, even after fluctuating price changes, the total collateral is always higher than the value of the backed FAssets.
-  During this operation, users are called redeemers.
+- **Minting:** Depositing underlying assets to mint FAssets.
+- **Redeeming:** Exchanging FAssets for the original underlying assets.
 
-No eligibility requirements apply.
-Anyone can use the FAssets system to mint and redeem.
-In the future, a mechanism might be implemented to allow agents to reject minting requests according to their respective countries' KYC laws.
+Eligibility:
 
-## Collateral Providers
+- No restrictions—anyone can mint or redeem FAssets.
 
-Anyone can participate in the FAssets system by providing native FLR tokens to an agent's [collateral pool](#pool-collateral) and becoming a collateral provider.
+### Collateral Providers
 
-For as long as these tokens remain locked in the pool, the collateral provider receives a share of every fee produced by FAssets minted using that pool.
+Collateral providers supply native FLR tokens to an agent's collateral pool and earn a share of minting fees as long as their tokens remain locked.
 
-## Liquidators
+### Liquidators
 
-When an agent's collateral falls below the required minimum, it enters the [liquidation state](#liquidation).
-In this state, liquidators send FAssets into the system in exchange for collateral from the agent's vault and collateral pool.
-The collateral they receive has the same value as the FAssets they send plus a premium.
-The FAssets sent by liquidators are burned, which reduces the amount of FAssets that the agent's collateral needs to back.
+Liquidators maintain system health by:
 
-Once the agent's collateral is above a safety margin, the liquidation state ends.
+- Burning FAssets in exchange for collateral when an agent's collateral drops below the required minimum.
+- Earning rewards, including premiums on the collateral received.
 
-No eligibility requirements apply.
-Anyone can be a liquidator, contribute to the health of the FAssets system, and earn rewards in the process.
+Eligibility:
 
-## Challengers
+- Open to all—anyone can become a liquidator.
 
-Challengers monitor an agent's underlying address to detect illegal transactions that reduce the amount of underlying assets below the [backing factor](#agents).
-When challengers detect an illegal transaction, they provide the proof to the FAssets system in exchange for a reward from the agent's vault.
+### Challengers
 
-Then, the offending agent enters [full liquidation](#liquidation), and the agent's vault is permanently locked against new mintings.
+Challengers monitor agents for illegal transactions that reduce collateral below the backing factor. They:
 
-No eligibility requirements apply.
-Anyone can be a challenger, contribute to the health of the FAssets system, and earn rewards in the process.
+- Submit proof of illegal actions to the system.
+- Earn rewards from the agent's vault upon successful challenges.
+
+If an agent is found in violation, they enter **full liquidation**, permanently restricting them from new minting operations.
+
+:::tip[What's next]
+
+Learn more about the different components and processes involved in FAssets - [collateral](/fassets/collateral), [minting](/fassets/minting), [redemptions](/fassets/redemption), and [liquidations](/fassets/liquidation).
+
+:::

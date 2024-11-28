@@ -1,15 +1,17 @@
 ---
 title: Liquidation
+description: Understand how liquidations work in FAssets.
+keywords: [fassets, xrp, bitcoin, dogecoin, flare-network]
 ---
 
-Liquidation is the process of selling assets to bring the FAssets system back to health after an [agent](#agents) becomes undercollateralized. The following types of liquidation can occur:
+Liquidation is the process of selling assets to bring the FAssets system back to health after an [agent](/fassets/overview#agents) becomes undercollateralized. The following types of liquidation can occur:
 
-- **Unhealthy position liquidation**: Occurs when the [collateral ratio (CR)](#the-collateral-ratio) of either the agent's vault or collateral pool falls below its respective [minimal CR](#system-wide-thresholds).
-  In this case, the agent's position is liquidated until the collateral ratio reaches the [safety CR](#system-wide-thresholds) or all of the backed FAssets are liquidated.
+- **Unhealthy position liquidation**: Occurs when the [collateral ratio (CR)](/fassets/collateral#collateral-ratio) of either the agent's vault or collateral pool falls below its respective [minimal CR](/fassets/collateral#system-wide-thresholds).
+  In this case, the agent's position is liquidated until the collateral ratio reaches the [safety CR](/fassets/collateral#system-wide-thresholds) or all of the backed FAssets are liquidated.
 - **Full liquidation**: Occurs when the agent makes an [illegal payment](#illegal-payments) from the underlying chain address.
   In this case, all the FAssets backed by the agent are liquidated, and the liquidation cannot be stopped.
 
-In both cases, [liquidators](#liquidators), who can be anyone who holds FAssets, are encouraged to sell their FAssets back to the system.
+In both cases, [liquidators](/fassets/overview#liquidators), who can be anyone who holds FAssets, are encouraged to sell their FAssets back to the system.
 They will be paid with the agent's collateral plus a premium, as a penalty against the agent for unhealthy positions or misconduct.
 
 ## Liquidation Process
@@ -42,12 +44,12 @@ If not enough of one type of collateral exists, more is paid from the other type
 
 ## Stopping Liquidations
 
-After liquidation of an unhealthy position starts, it can be stopped by depositing enough collateral or self-closing FAssets to reach the [safety CR](#system-wide-thresholds).
-Also, if a change in the price pushes the CR above the [safety CR](#system-wide-thresholds), anyone can stop the liquidation by notifying the FAssets system.
+After liquidation of an unhealthy position starts, it can be stopped by depositing enough collateral or self-closing FAssets to reach the [safety CR](/fassets/collateral#system-wide-thresholds).
+Also, if a change in the price pushes the CR above the [safety CR](/fassets/collateral#system-wide-thresholds), anyone can stop the liquidation by notifying the FAssets system.
 
 To maintain a healthy account, agents should track positions and automatically top up or self-close FAssets when liquidation approaches.
 Otherwise, the agent and the liquidators compete to try to stop the liquidation.
-To stop a liquidation, the agent's vault must reach the [safety CR](#system-wide-thresholds), which is above the minimal CR that triggered the liquidation.
+To stop a liquidation, the agent's vault must reach the [safety CR](/fassets/collateral#system-wide-thresholds), which is above the minimal CR that triggered the liquidation.
 
 The top-up mechanism can prevent liquidations caused by a low CR in the collateral pool, but full liquidations cannot be stopped.
 However, an agent can still self-close positions to avoid paying a premium to liquidators.
@@ -191,7 +193,7 @@ Moreover, the collateral locked in the FAssets system might not be a strong enou
 ## Liquidation Triggers
 
 Some events related to liquidation are not detected automatically and must be triggered by entities external to the blockchain.
-These entities are [liquidators](#liquidators) and [challengers](#challengers).
+These entities are [liquidators](/fassets/overview#liquidators) and [challengers](/fassets/overview#challengers).
 
 Anyone can be a liquidator or a challenger and earn rewards for contributing to the correct working of the FAssets system.
 
@@ -201,14 +203,14 @@ Some triggers put an agent in liquidation mode, and some others get agents out o
 
 - A valid liquidation request is submitted, triggering the liquidation automatically.
 - A liquidator triggers a liquidation manually, but does not submit a liquidation request immediately, seeking a better premium, because the premium might increase as time passes.
-- A liquidator detects that the CR is below the [CCB](#system-wide-thresholds) and sets the start time for an agent.
+- A liquidator detects that the CR is below the [CCB](/fassets/collateral#system-wide-thresholds) and sets the start time for an agent.
   This operation does not immediately trigger the liquidation.
   Instead, it starts a timer that enables the liquidation to be triggered after a system-defined time has elapsed.
 - A [proof of illegal activity](#illegal-payments) is presented, which immediately triggers a full liquidation.
 
 ### Liquidation-Disabling Triggers
 
-After an agent enters the liquidation state, it remains there until its CR exceeds the [safety CR](#system-wide-thresholds) again.
+After an agent enters the liquidation state, it remains there until its CR exceeds the [safety CR](/fassets/collateral#system-wide-thresholds) again.
 
 The following operations can increase an agent's CR and can, therefore, potentially get the agent out of the liquidation state:
 
@@ -225,13 +227,13 @@ Also, exiting the liquidation state resets the CCB timer.
 ## Tracking the Underlying Balance
 
 Agents are required to keep a certain percentage of underlying asset for each backed FAsset.
-This percentage, called the [backing factor](#agents), is stored at an address on the underlying chain controlled by the agent.
+This percentage, called the [backing factor](/fassets/overview#agents), is stored at an address on the underlying chain controlled by the agent.
 
 This requirement is enforced by balance-tracking in the FAsset contract.
 To track balances, the system must receive reports for each payment sent and received at the agent's address:
 
-- Incoming payments are part of the [minting process](#minting) and are updated as the process occurs.
-- Outgoing payments are either part of the [redemption process](#redemption) or illegal payments, which are penalized.
+- Incoming payments are part of the [minting process](/fassets/minting) and are updated as the process occurs.
+- Outgoing payments are either part of the [redemption process](/fassets/redemption) or illegal payments, which are penalized.
 
 Challengers maintain the health of the FAssets system by monitoring the agent's underlying address to identify illegal operations that can make the agent's underlying backing too low.
 Challengers that correctly report illegal operations receive rewards from the agent's vault collateral.
@@ -262,10 +264,10 @@ Therefore, consider these actions:
 
 Agents might legally withdraw part of the funds on their underlying address in several ways:
 
-- **Minting fees**: A part of a minter's payment is the [mint fee](#fees) in the underlying asset.
-- **Failed redemptions**: When an address is backing assets and those assets were redeemed, but the agent [does not pay the redeemer](#redemption-payment-failure)), the redeemer is paid with collateral, and the agent can withdraw the assets.
+- **Minting fees**: A part of a minter's payment is the [mint fee](/fassets/minting#fees) in the underlying asset.
+- **Failed redemptions**: When an address is backing assets and those assets were redeemed, but the agent [does not pay the redeemer](/fassets/redemption#redemption-payment-failure), the redeemer is paid with collateral, and the agent can withdraw the assets.
 - **Liquidated assets**: If an agent's position was partially or fully liquidated, the agent can withdraw the assets.
-- **Self-closed assets**: After an agent [self-closes](#self-minting), the closed assets can be withdrawn.
+- **Self-closed assets**: After an agent [self-closes](/fassets/minting#self-minting), the closed assets can be withdrawn.
 
 The FAssets system must keep track of the agent's underlying funds, so when performing the above legal withdrawals, agents must still adhere to the following process:
 
@@ -293,7 +295,7 @@ Therefore, challengers can report illegal activities by using these different _c
 
 #### Illegal Payment Challenge
 
-A payment from the agent's underlying address without a payment reference or with a payment reference that does not correspond to any open [redemption](#redemption) or [announced withdrawal](#underlying-withdrawals).
+A payment from the agent's underlying address without a payment reference or with a payment reference that does not correspond to any open [redemption](/fassets/redemption) or [announced withdrawal](#underlying-withdrawals).
 
 This challenge is performed in the following way:
 
@@ -308,7 +310,7 @@ This challenge is performed in the following way:
 An agent might try to abuse a redemption request to pay to the redeemer and use the same payment reference to pay an amount to the agent's own address.
 An agent might even try to pay the redeemer multiple times when he is redeeming against himself.
 
-This activity is easy to detect after the first payment is reported in [step 6 of the redemption process](#redemption-process), because then the request is deleted and the second payment becomes illegal.
+This activity is easy to detect after the first payment is reported in [step 6 of the redemption process](/fassets/redemption#redemption-process), because then the request is deleted and the second payment becomes illegal.
 However, a malicious agent might try to issue the second payment before reporting the completion of the first one.
 
 The double payment challenge catches this attempt as soon as the payments are finalized, regardless of whether they have been reported to the FAssets system.
