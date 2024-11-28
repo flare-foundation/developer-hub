@@ -43,53 +43,53 @@ Additionally, please ensure there is sufficient collateral for vault and pool re
 Setting up and running the FAssets agent is accomplished by using Docker containers, so knowledge of Docker is essential. Using Docker eliminates the need to manage tool versions and their compatibilities.
 
 1. Clone the repository in your Linux server:
-  
-    ```bash
-    git clone https://gitlab.com/flarenetwork/fasset-bots-deploy
-    cd fasset-bots-deploy
-    ```
+
+   ```bash
+   git clone https://gitlab.com/flarenetwork/fasset-bots-deploy
+   cd fasset-bots-deploy
+   ```
 
 2. Set up the environment file:
 
-    ```bash
-    cp .env.template .env
-    ```
+   ```bash
+   cp .env.template .env
+   ```
 
 3. Set up the configuration file:
 
-    ```bash
-    cp config.json.template config.json
-    ```
+   ```bash
+   cp config.json.template config.json
+   ```
 
 4. Login into GitHub Container Registry:
 
-    ```bash
-    docker login ghcr.io
-    ```
+   ```bash
+   docker login ghcr.io
+   ```
 
 5. Get the latest docker containers from the registry:
-    
-    ```bash
-    docker compose pull
-    ```
+
+   ```bash
+   docker compose pull
+   ```
 
 ### Setting Environment Variables
 
 To begin using the FAssets Docker infrastructure, you must configure the settings in the environment file called `.env`.
 
-* Make sure to set the machine address in the `.env` file using the `MACHINE_ADDRESS` variable.
-* Set the database password `FASSET_DB_PASSWORD`. Once the database is created, the password will not change if you modify it in the `.env` file.
+- Make sure to set the machine address in the `.env` file using the `MACHINE_ADDRESS` variable.
+- Set the database password `FASSET_DB_PASSWORD`. Once the database is created, the password will not change if you modify it in the `.env` file.
 
 #### Optional Settings
 
 You can configure several optional settings in the `.env` environment file.
 
-* Choose which profiles of the FAssets agent you want to run in `COMPOSE_PROFILES`. By default, these profiles include the FAssets agent bot, the agent user interface, and the liquidator bot.
-* The frontend interface operates on the port designated as `FRONTEND_PORT`, which is set to `3000` by default.
-* The link for the agent frontend user interface, referred to as `FRONTEND_URL`, is empty by default.
-* The password for the agent frontend user interface is `FRONTEND_PASSWORD`.
-* The backend port is `BACKEND_PORT`, which defaults to `4000`.
-* The backend URL is `BACKEND_URL`, which defaults to `/fasset-backend`.
+- Choose which profiles of the FAssets agent you want to run in `COMPOSE_PROFILES`. By default, these profiles include the FAssets agent bot, the agent user interface, and the liquidator bot.
+- The frontend interface operates on the port designated as `FRONTEND_PORT`, which is set to `3000` by default.
+- The link for the agent frontend user interface, referred to as `FRONTEND_URL`, is empty by default.
+- The password for the agent frontend user interface is `FRONTEND_PASSWORD`.
+- The backend port is `BACKEND_PORT`, which defaults to `4000`.
+- The backend URL is `BACKEND_URL`, which defaults to `/fasset-backend`.
 
 ## Setting up Secret Keys
 
@@ -97,28 +97,28 @@ The FAsset agents operate with multiple keys for the Flare and underlying networ
 
 1. Create a new management wallet or use an existing one as the management address for your agent.
 2. Generate the secrets using this command by replacing the `MANAGEMENT_WALLET_ADDRESS` with your cold wallet address:
-	
-    ```bash
-	./generateSecrets.sh MANAGEMENT_WALLET_ADDRESS
-	```
+
+   ```bash
+   ./generateSecrets.sh MANAGEMENT_WALLET_ADDRESS
+   ```
 
 3. Copy the `secrets.new.json` to `secrets.json`:
-	
-    ```bash
-	cp secrets.new.json secrets.json
-	```
+
+   ```bash
+   cp secrets.new.json secrets.json
+   ```
 
 4. Prevent other users from reading the secrets.json file:
-	
-    ```bash
-	chmod 600 secrets.json
-	```
+
+   ```bash
+   chmod 600 secrets.json
+   ```
 
 5. Change the file ownership to the user with ID 1000:
-	
-    ```bash
-	chown 1000:1000 secrets.json
-	```
+
+   ```bash
+   chown 1000:1000 secrets.json
+   ```
 
 6. Make a backup of the `secrets.json` file and store it securely.
 
