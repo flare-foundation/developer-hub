@@ -1,8 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 
+interface ATL_JQ_PAGE_PROPS {
+  triggerFunction: (showCollectorDialog: () => void) => void;
+}
+
 declare global {
   interface Window {
-    ATL_JQ_PAGE_PROPS: any;
+    ATL_JQ_PAGE_PROPS: ATL_JQ_PAGE_PROPS;
     showCollectorDialog: () => void;
   }
 }
