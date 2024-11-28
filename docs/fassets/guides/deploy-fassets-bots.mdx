@@ -24,7 +24,7 @@ The server should have a minimum of 2 CPUs and 4 GB of RAM and must operate on a
 
 Please ensure you have installed Docker version 25.0.4 or higher and Docker Compose version v2.24.7 or higher.
 
-### Financial
+### Financials
 
 To participate, please ensure you meet the following minimum deposit requirements:
 
@@ -44,31 +44,22 @@ These are important FAssets smart contract addresses representing test tokens an
 
 ### Tokens
 
-These are ERC-20 representations of test tokens to be used by the FAssets system:
+These are ERC-20 representations of test tokens to be used by the FAssets system.
 
-* `testUSDC`: [0xd20D9284E8b43C60365BcA90662C67B5A0B91dd6](https://coston-explorer.flare.network/address/0xd20D9284E8b43C60365BcA90662C67B5A0B91dd6)
-
-* `testUSDT`: [0x18bd7bE80F76055aeB4F1575A99d0c4d7893B8b5](https://coston-explorer.flare.network/address/0x18bd7bE80F76055aeB4F1575A99d0c4d7893B8b5)
-
-* `testETH`: [0x17c3E6318cb45B4267998940d7D65BA95A32954F](https://coston-explorer.flare.network/address/0x17c3E6318cb45B4267998940d7D65BA95A32954F)
+|  **Token** | **Address**                                                                                                                              |
+| ---------: | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `testUSDC` | [`0xd20D9284E8b43C60365BcA90662C67B5A0B91dd6`](https://coston-explorer.flare.network/address/0xd20D9284E8b43C60365BcA90662C67B5A0B91dd6) |
+| `testUSDT` | [`0x18bd7bE80F76055aeB4F1575A99d0c4d7893B8b5`](https://coston-explorer.flare.network/address/0x18bd7bE80F76055aeB4F1575A99d0c4d7893B8b5) |
+|  `testETH` | [`0x17c3E6318cb45B4267998940d7D65BA95A32954F`](https://coston-explorer.flare.network/address/0x17c3E6318cb45B4267998940d7D65BA95A32954F) |
 
 ### FAssets System Contracts
 
-* `AgentOwnerRegistry`: [0x88278079a62db08fEb125f270102651BbE8F9984](https://coston-explorer.flare.network/address/0x88278079a62db08fEb125f270102651BbE8F9984)
-
-    Allows whitelisting agents, and setting, and retrieving information like their work and management address, name, description and icon.
-
-* `FTestXRP`: [0x51B1ac96027e55c29Ece8a6fD99DdDdd01F22F6c](https://coston-explorer.flare.network/address/0x51B1ac96027e55c29Ece8a6fD99DdDdd01F22F6c)
-
-    The FAsset-wrapped TestXRP token, ready to be used on Coston.
-
-* `FTestBTC`: [0xe01b2151b684b83C771449D8A6D1d1764f03829e](https://coston-explorer.flare.network/token/0xe01b2151b684b83C771449D8A6D1d1764f03829e)
-
-    The FAsset-wrapped TextBTC token, ready to be used on Coston.
-
-* `FTestDOGE`: [0x353D20c6eB0C7bfcE3B828665C992DE995eF67bd](https://coston-explorer.flare.network/token/0x353D20c6eB0C7bfcE3B828665C992DE995eF67bd)
-
-    The FAsset-wrapped TextDOGE token, ready to be used on Coston.
+|         **Contract** | **Address**                                                                                                                              | **Description**                                                                                                                          |
+| -------------------: | ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `AgentOwnerRegistry` | [`0x88278079a62db08fEb125f270102651BbE8F9984`](https://coston-explorer.flare.network/address/0x88278079a62db08fEb125f270102651BbE8F9984) | Manages agent whitelisting and allows setting and retrieving details such as work and management addresses, name, description, and icon. |
+|           `FTestXRP` | [`0x5905Df703221d4Ea311E85edEa860734b2072C7d`](https://coston-explorer.flare.network/address/0x5905Df703221d4Ea311E85edEa860734b2072C7d) | The FAsset-wrapped TestXRP token, ready for use on Songbird Testnet Coston.                                                              |
+|           `FTestBTC` | [`0xe01b2151b684b83C771449D8A6D1d1764f03829e`](https://coston-explorer.flare.network/token/0xe01b2151b684b83C771449D8A6D1d1764f03829e)   | The FAsset-wrapped TestBTC token, ready for use on Songbird Testnet Coston.                                                              |
+|          `FTestDOGE` | [`0x353D20c6eB0C7bfcE3B828665C992DE995eF67bd`](https://coston-explorer.flare.network/token/0x353D20c6eB0C7bfcE3B828665C992DE995eF67bd)   | The FAsset-wrapped TestDOGE token, ready for use on Songbird Testnet Coston.                                                             |
 
 ## Setting Up
 
@@ -110,7 +101,11 @@ Setting up and running the FAssets agent is accomplished by using Docker contain
 To begin using the FAssets Docker infrastructure, you must configure the settings in the environment file called `.env`.
 
 - Make sure to set the machine address in the `.env` file using the `MACHINE_ADDRESS` variable.
-- Set the database password `FASSET_DB_PASSWORD`. Once the database is created, the password will not change if you modify it in the `.env` file.
+- Set the database password `FASSET_DB_PASSWORD`.
+
+:::warning
+Once the database is created, the password will not change if you modify it in the `.env` file.
+:::
 
 #### Optional Settings
 
@@ -172,7 +167,7 @@ You can obtain the `xrp_rpc` for the XRP Ledger, `btc_rpc` for Bitcoin, and `dog
 
 Set up the FAssets backend and frontend access by configuring the NGINX server.
 
-```
+```plaintext
 location /fasset-backend { # use BACKEND_URL
     rewrite /fasset-backend/(.*) /api/$1  break;
     proxy_set_header Host $http_host;
