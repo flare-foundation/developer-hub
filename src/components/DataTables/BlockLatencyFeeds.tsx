@@ -2,17 +2,26 @@ import React from "react";
 import CopyButton from "../CopyButton";
 import tableData from "../../../automations/block_latency_feeds.json";
 
+const getRiskIcon = (value: number): string => {
+  const riskMap: Record<number, string> = {
+    0: "🟢",
+    1: "🟢",
+    2: "🟡",
+    3: "🔴",
+  };
+  return riskMap[value];
+};
+
 const BlockLatencyFeeds = () => {
   return (
     <table className="data-table">
       <thead>
         <tr className="table-header">
-          <th>Feed Name</th>
-          <th>Feed Index</th>
+          <th>Name</th>
+          <th>Index</th>
           <th>Feed ID</th>
-          <th>Base Asset</th>
-          <th>Decimals</th>
-          <th>Category</th>
+          <th>Details</th>
+          <th>Risk</th>
         </tr>
       </thead>
       <tbody>
@@ -28,9 +37,11 @@ const BlockLatencyFeeds = () => {
                 <CopyButton textToCopy={row.feed_id} />
               </div>
             </td>
-            <td className="regular-font">{row.base_asset}</td>
-            <td className="regular-font">{row.decimals}</td>
-            <td className="regular-font">{row.category}</td>
+            <td className="regular-font">
+              Base Asset: {row.base_asset} <br></br> Decimals: {row.decimals}{" "}
+              <br></br> Category: {row.category}
+            </td>
+            <td className="regular-font">{getRiskIcon(row.risk)}</td>
           </tr>
         ))}
       </tbody>
