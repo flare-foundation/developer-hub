@@ -22,25 +22,27 @@ The server should have a minimum of 2 CPUs and 4 GB of RAM and must operate on a
 
 ### Software
 
-Please ensure you have installed Docker version 25.0.4 or higher and Docker Compose version v2.24.7 or higher.
+Ensure you have installed Docker version 25.0.4 or higher and Docker Compose version v2.24.7 or higher.
+Setting up and running the FAssets agent is accomplished by using Docker containers, so knowledge of Docker is essential.
+Using Docker eliminates the need to manage tool versions and their compatibilities.
 
 ### Financials
 
-To participate, please ensure you meet the following minimum deposit requirements:
+To participate, ensure you meet the following minimum deposit requirements:
 
-1. **Songbird Tokens (SGB):** Deposit a minimum of 1,000 SGB into the `owner.native.address` specified in the `secrets.json` file.
+- **Songbird Tokens (SGB):** Deposit a minimum of 1,000 SGB into the `owner.native.address` specified in the `secrets.json` file.
 
-2. **XRP Tokens:** For XRP agents, you need to deposit 500 XRP Ledger native tokens (XRP) into the `owner.testXRP.address`.
+- **XRP Tokens:** For XRP agents, you need to deposit 500 XRP Ledger native tokens (XRP) into the `owner.testXRP.address`.
 
-3. **Bitcoin (BTC):** Bitcoin agents should hold at least 0.005 BTC to cover potential high transaction fees in the `owner.testBTC.address`.
+- **Bitcoin (BTC):** Bitcoin agents should hold at least 0.005 BTC to cover potential high transaction fees in the `owner.testBTC.address`.
 
-4. **Dogecoin (DOGE):** Doge agents should maintain a minimum balance of 100 DOGE to cover potential high transaction fees in the `owner.testDOGE.address`.
+- **Dogecoin (DOGE):** Doge agents should maintain a minimum balance of 100 DOGE to cover potential high transaction fees in the `owner.testDOGE.address`.
 
 Additionally, please ensure there is sufficient collateral for vault and pool requirements at the `owner.native.address`.
 
 ### Contract Addresses
 
-These are important FAssets smart contract addresses representing test tokens and notable system components, provided for your convenience during the Open Beta on the Coston test network. Please note that these addresses are exclusive to the Coston test network and unavailable on other Flare networks.
+These are important FAssets smart contract addresses representing test tokens and notable system components, provided for your convenience during the Open Beta on the Coston test network.
 
 ### Tokens
 
@@ -63,7 +65,7 @@ These are ERC-20 representations of test tokens to be used by the FAssets system
 
 ## Setting Up
 
-Setting up and running the FAssets agent is accomplished by using Docker containers, so knowledge of Docker is essential. Using Docker eliminates the need to manage tool versions and their compatibilities.
+Follow these steps to set up the FAssets agent using Docker:
 
 1. Clone the repository in your Linux server:
 
@@ -98,7 +100,7 @@ Setting up and running the FAssets agent is accomplished by using Docker contain
 
 ### Setting Environment Variables
 
-To begin using the FAssets Docker infrastructure, you must configure the settings in the environment file called `.env`.
+To begin using the FAssets Docker infrastructure, you must configure the settings in the `.env` environment file.
 
 - Make sure to set the machine address in the `.env` file using the `MACHINE_ADDRESS` variable.
 - Set the database password `FASSET_DB_PASSWORD`.
@@ -111,7 +113,7 @@ Once the database is created, the password will not change if you modify it in t
 
 You can configure several optional settings in the `.env` environment file.
 
-- Choose which profiles of the FAssets agent you want to run in `COMPOSE_PROFILES`. By default, these profiles include the FAssets agent bot, the agent user interface, and the liquidator bot.
+- Choose the profiles of the FAssets agent to run in `COMPOSE_PROFILES`, which by default include the FAssets agent bot, the agent user interface, and the liquidator bot.
 - The frontend interface operates on the port designated as `FRONTEND_PORT`, which is set to `3000` by default.
 - The link for the agent frontend user interface, referred to as `FRONTEND_URL`, is empty by default.
 - The password for the agent frontend user interface is `FRONTEND_PASSWORD`.
@@ -120,16 +122,16 @@ You can configure several optional settings in the `.env` environment file.
 
 ## Setting up Secret Keys
 
-The FAsset agents operate with multiple keys for the Flare and underlying network chains. You should generate these keys to make the agent operational.
+The FAsset agents require multiple keys for the Flare and underlying network chains, which must be generated to make the agent operational.
 
-1. Create a new management wallet or use an existing one as the management address for your agent.
-2. Generate the secrets using this command by replacing the `MANAGEMENT_WALLET_ADDRESS` with your cold wallet address:
+1. Create a new management wallet or use an existing one, preferably a cold wallet, as the management address for your agent.
+2. Generate the secrets using this command by replacing the `MANAGEMENT_WALLET_ADDRESS` with your management wallet address:
 
    ```bash
    ./generateSecrets.sh MANAGEMENT_WALLET_ADDRESS
    ```
 
-3. Copy the `secrets.new.json` to `secrets.json`:
+3. Copy the `secrets.new.json` to `secrets.json`:
 
    ```bash
    cp secrets.new.json secrets.json
@@ -141,7 +143,7 @@ The FAsset agents operate with multiple keys for the Flare and underlying networ
    chmod 600 secrets.json
    ```
 
-5. Change the file ownership to the user with ID 1000:
+5. Set file ownership to user ID 1000, the default Linux user ID, for proper permissions:
 
    ```bash
    chown 1000:1000 secrets.json
@@ -154,12 +156,12 @@ The FAsset agents operate with multiple keys for the Flare and underlying networ
 Configuring the native address links your agent's work address to the management address and grants access.
 
 1. Navigate with the Songbird block explorer to the `AgentOwnerRegistry` smart contract on address [0x88278079a62db08fEb125f270102651BbE8F9984](https://coston-explorer.flare.network/address/0x88278079a62db08fEb125f270102651BbE8F9984/write-contract#address-tabs) and open the Write Contract tab.
-2. Connect the Management address wallet you used to generate the access keys.
+2. Connect the management address wallet you used to generate the access keys above.
 3. Register the work address by executing the `setWorkAddress` function with the value of `owner.native.address` from the `secrets.json` file.
 
 ## Configure the RPCs
 
-In order to connect to various blockchains you need to configure the Remote Procedure Call (RPC).
+In order to connect to various blockchains, you need to configure the Remote Procedure Call (RPC) configurations.
 
 You can obtain the `xrp_rpc` for the XRP Ledger, `btc_rpc` for Bitcoin, and `doge_rpc` for Dogecoin from the Flare team, configured in the `secrets.json` file under the `apiKey` key.
 
@@ -169,14 +171,14 @@ Set up the FAssets backend and frontend access by configuring the NGINX server.
 
 ```plaintext
 location /fasset-backend { # use BACKEND_URL
-    rewrite /fasset-backend/(.*) /api/$1  break;
-    proxy_set_header Host $http_host;
-    proxy_pass         http://localhost:4000; # use BACKEND_PORT
+   rewrite /fasset-backend/(.*) /api/$1  break;
+   proxy_set_header Host $http_host;
+   proxy_pass         http://localhost:4000; # use BACKEND_PORT
 }
 
 location / { # use FRONTEND_URL
-    proxy_set_header Host $http_host;
-    proxy_pass         http://localhost:3000; # use FRONTEND_PORT
+   proxy_set_header Host $http_host;
+   proxy_pass         http://localhost:3000; # use FRONTEND_PORT
 }
 ```
 
