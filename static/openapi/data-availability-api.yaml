@@ -1,0 +1,287 @@
+openapi: 3.0.3
+info:
+  title: Data Availability API
+  version: 1.0.0
+  description: OpenAPI specification for Data Availability API.
+servers:
+  - url: "https://flr-data-availability.flare.network/"
+  - url: "https://sgb-data-availability.flare.network/"
+paths:
+  /api/health:
+    get:
+      operationId: api_health_retrieve
+      tags:
+        - api
+      security:
+        - {}
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+          description: ""
+  /api/v0/fdc:
+    get:
+      operationId: fdc_list
+      parameters:
+        - in: query
+          name: voting_round_id
+          schema:
+            type: integer
+          description: Voting round. Defaults to latest.
+      tags:
+        - fdc
+      security:
+        - {}
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AttestationMinimalProof"
+          description: ""
+  /api/v0/fdc/get-proof-round-id-bytes:
+    post:
+      operationId: fdc_get_proof_round_id_bytes_create
+      tags:
+        - fdc
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AttestationTypeGetByRoundIdBytesRequestRequest"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/AttestationTypeGetByRoundIdBytesRequestRequest"
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/AttestationTypeGetByRoundIdBytesRequestRequest"
+        required: true
+      security:
+        - {}
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttestationMinimalProof"
+          description: ""
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttestationTypeGetByRoundIdBytesError"
+          description: ""
+  /api/v0/fsp/latest-voting-round:
+    get:
+      operationId: fsp_latest_voting_round_retrieve
+      tags:
+        - fsp
+      security:
+        - {}
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VotingRound"
+          description: ""
+  /api/v0/fsp/status:
+    get:
+      operationId: fsp_status_retrieve
+      tags:
+        - fsp
+      security:
+        - {}
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VotingRoundStatus"
+          description: ""
+  /api/v0/ftso/anchor-feed-names:
+    get:
+      operationId: ftso_anchor_feed_names_list
+      parameters:
+        - in: query
+          name: voting_round_id
+          schema:
+            type: integer
+          description: Voting round. Defaults to latest.
+      tags:
+        - ftso
+      security:
+        - {}
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FeedValueName"
+          description: ""
+  /api/v0/ftso/anchor-feeds-with-proof:
+    post:
+      operationId: ftso_anchor_feeds_with_proof_create
+      parameters:
+        - in: query
+          name: voting_round_id
+          schema:
+            type: integer
+          description: Voting round. Defaults to latest.
+      tags:
+        - ftso
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FeedResultFeedsWithProofsRequestRequest"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/FeedResultFeedsWithProofsRequestRequest"
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/FeedResultFeedsWithProofsRequestRequest"
+        required: true
+      security:
+        - {}
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MerkleProofValue"
+          description: ""
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttestationTypeGetByRoundIdBytesError"
+          description: ""
+components:
+  schemas:
+    AttestationMinimalProof:
+      type: object
+      properties:
+        response:
+          type: string
+          readOnly: true
+        proof:
+          type: array
+          items:
+            type: string
+      required:
+        - proof
+        - response
+    AttestationTypeGetByRoundIdBytesError:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+    AttestationTypeGetByRoundIdBytesRequestRequest:
+      type: object
+      properties:
+        votingRoundId:
+          type: integer
+          description: Voting round when the request was made
+        requestBytes:
+          type: string
+          minLength: 1
+          description: Request bytes that were send (emitted)
+      required:
+        - requestBytes
+        - votingRoundId
+    FeedResultFeedsWithProofsRequestRequest:
+      type: object
+      properties:
+        feed_ids:
+          type: array
+          items:
+            type: string
+            minLength: 1
+          description: List of feed ids with 0x prefixes included
+      required:
+        - feed_ids
+    FeedValueName:
+      type: object
+      properties:
+        feed_id:
+          type: string
+        feed_name:
+          type: string
+      required:
+        - feed_id
+        - feed_name
+    FeedValueStruct:
+      type: object
+      description:
+        Serializer that returns the feed in a json format that matches
+        ABI definition
+      properties:
+        votingRoundId:
+          type: integer
+        id:
+          type: string
+        value:
+          type: integer
+        turnoutBIPS:
+          type: integer
+        decimals:
+          type: integer
+      required:
+        - decimals
+        - id
+        - turnoutBIPS
+        - value
+        - votingRoundId
+    Health:
+      type: object
+      properties:
+        healthy:
+          type: boolean
+      required:
+        - healthy
+    MerkleProofValue:
+      type: object
+      properties:
+        body:
+          $ref: "#/components/schemas/FeedValueStruct"
+        proof:
+          type: array
+          items:
+            type: string
+      required:
+        - body
+        - proof
+    VotingRound:
+      type: object
+      properties:
+        voting_round_id:
+          type: integer
+        start_timestamp:
+          type: integer
+      required:
+        - start_timestamp
+        - voting_round_id
+    VotingRoundStatus:
+      type: object
+      properties:
+        active:
+          $ref: "#/components/schemas/VotingRound"
+        latest_fdc:
+          $ref: "#/components/schemas/VotingRound"
+        latest_ftso:
+          $ref: "#/components/schemas/VotingRound"
+      required:
+        - active
+        - latest_fdc
+        - latest_ftso
