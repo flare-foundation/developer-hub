@@ -170,6 +170,7 @@ const sidebars: SidebarsConfig = {
         "fassets/minting",
         "fassets/redemption",
         "fassets/liquidation",
+        "fassets/operational-parameters",
         "fassets/open-beta",
         {
           type: "category",
