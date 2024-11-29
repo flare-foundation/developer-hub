@@ -29,7 +29,7 @@ The FDC validates data based on attestation requests, processing these requests 
 
 ### General
 
-1. **Attestation Request Submission:** A user submits an attestation request to the [`FdcHub`](/fdc/solidity-reference/IFdcHub) smart contract.
+1. **Attestation Request Submission:** A user submits an attestation request to the [`FdcHub`](/fdc/reference/IFdcHub) smart contract.
 2. **Batch Processing:** Data providers batch and process requests based on emission timestamps.
 3. **Data Retrieval and Merkle Construction:** Data providers fetch data, format responses, and create a Merkle tree of hashed responses.
 4. **Consensus and Relay Storage:** Once 50%+ weight of signatures is reached for a Merkle root, it is stored in the [`Relay`](/network/fsp/IRelay) contract.
@@ -40,7 +40,7 @@ The FDC validates data based on attestation requests, processing these requests 
 
 1. **Identify Data Needs:** Determine the data and attestation type required by a smart contract.
 2. **Prepare Attestation Request:** Format the request based on the required attestation type and expected response hash (MIC). Data providers can assist in generating the request.
-3. **Submit Request:** Use the [`requestAttestation`](/fdc/solidity-reference/IFdcHub#requestattestation) function of the [`FdcHub`](/fdc/solidity-reference/IFdcHub) smart contract, providing the encoded request and base fee. Fees vary by attestation type and source and can be queried from the `FdcRequestFeeConfigurations` contract.
+3. **Submit Request:** Use the [`requestAttestation`](/fdc/reference/IFdcHub#requestattestation) function of the [`FdcHub`](/fdc/reference/IFdcHub) smart contract, providing the encoded request and base fee. Fees vary by attestation type and source and can be queried from the `FdcRequestFeeConfigurations` contract.
 4. **Track Request:** Record the timestamp of the block where the transaction is included. Calculate the voting round for processing based on this timestamp.
 5. **Wait for Finalization:** Wait for the voting round to finalize. A [`Relay`](/network/fsp/IRelay) contract event signals finalization.
 6. **Retrieve Data:** Query a data provider's DAL for the attestation response and Merkle proof.
@@ -50,7 +50,7 @@ The FDC validates data based on attestation requests, processing these requests 
 
 1. **Define Triggers:** Specify data that triggers actions, either passively or on-demand.
 2. **Receive Data:** Accept attestation responses and proofs from users.
-3. **Verify Data:** Use the [`FdcVerification`](/fdc/solidity-reference/IFdcVerification) contract to check the response against the stored Merkle root for the corresponding voting round.
+3. **Verify Data:** Use the [`FdcVerification`](/fdc/reference/IFdcVerification) contract to check the response against the stored Merkle root for the corresponding voting round.
 4. **Act on Data:** Use the verified data for computation or decision-making.
 
 ### Data Provider Workflow
