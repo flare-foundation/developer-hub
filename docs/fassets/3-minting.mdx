@@ -69,8 +69,6 @@ For underlying chains on which proving payments takes a long time, the fee might
 The **minting fee** is paid by the minter with the underlying currency as a percentage of the minted amount, and each agent can declare a different fee value.
 This fee is the main source of revenue for the agent and the CPT holders.
 
-{/* <img src={FAssetsFees} /> */}
-
 The minting fee is further divided in two shares:
 
 #### Agent share
@@ -126,27 +124,31 @@ Now, the mint-payment failure and the nonpayment proof can be submitted to the F
 
 ## Edge Cases
 
-- **Unresponsive minter**: After a successful payment, the minter might not provide the payment proof needed to complete the minting process.
-  In this case, the agent can present the payment proof and execute minting at any time.
-  FAssets are still transferred to the minter's account, and the agent's collateral becomes redeemable.
+### Unresponsive minter
 
-- **Expired proof**: Proofs provided by the Data Connector are available for only 24 hours, approximately.
-  If neither the minter nor the agent presents the proof of payment or nonpayment within 24 hours, the regular minting process cannot continue, and the agent's collateral could be locked indefinitely.
+After a successful payment, the minter might not provide the payment proof needed to complete the minting process.
+In this case, the agent can present the payment proof and execute minting at any time.
+FAssets are still transferred to the minter's account, and the agent's collateral becomes redeemable.
 
-  In this case, the agent can still recover the collateral by buying it back with native tokens.
-  The recovery is accomplished with the following procedure:
+### Expired proof
 
-  1. Request the proof from the time when the deposit should have happened.
+Proofs provided by the Data Connector are available for only 24 hours, approximately.
+If neither the minter nor the agent presents the proof of payment or nonpayment within 24 hours, the regular minting process cannot continue, and the agent's collateral could be locked indefinitely.
+
+In this case, the agent can still recover the collateral by buying it back with native tokens.
+The recovery is accomplished with the following procedure:
+
+    1. Request the proof from the time when the deposit should have happened.
      The Data Connector's answer will indicate that payments proofs are no longer available for that time.
-  2. Provide the amount of FLR collateral equivalent to the price of the underlying assets that should have been deposited.
-  3. Present the proof.
+    2. Provide the amount of FLR collateral equivalent to the price of the underlying assets that should have been deposited.
+    3. Present the proof.
 
-  Because a successful deposit cannot be proven, the FAssets system burns the amount of collateral in native tokens provided by the agent.
-  After the burn is complete, the rest of the agent's collateral is released, both from his vault and the collateral pool.
+Because a successful deposit cannot be proven, the FAssets system burns the amount of collateral in native tokens provided by the agent.
+After the burn is complete, the rest of the agent's collateral is released, both from his vault and the collateral pool.
 
-  :::warning
-  Note that this procedure should be used only in rare cases because providing timely payment or nonpayment proofs is always more advantageous for agents.
-  :::
+:::warning
+Note that this procedure should be used only in rare cases because providing timely payment or nonpayment proofs is always more advantageous for agents.
+:::
 
 ## Duration of the Minting Process
 
@@ -223,8 +225,7 @@ On the other hand, on the Bitcoin chain, lots might need to be as big as 0.25 BT
 Over time, the lot size can be updated to reflect price fluctuations of the underlying asset.
 Only a governance call can update the lot size, and it can be updated only by a limited amount per day.
 
-<details>
-<summary>Handling dust.</summary>
+## Dust
 
 Some processes generate a fractional number of lots:
 
@@ -248,8 +249,6 @@ Therefore, the dust can be recovered or destroyed in the following ways:
 
 - Self-closing can work with fractional lots, so it can be used to remove dust.
 - Liquidation can work with fractional lots too, so it can also be used to remove dust.
-
-</details>
 
 ## Self-Minting
 
