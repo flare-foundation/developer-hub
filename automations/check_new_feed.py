@@ -11,7 +11,7 @@ from web3.contract import Contract
 
 # Configuration
 RPC_URL = "https://songbird-api.flare.network/ext/C/rpc"
-FAST_UPDATER_ADDRESS = "0x70e8870ef234EcD665F96Da4c669dc12c1e1c116"
+REGISTRY_ADDRESS = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
 EXPLORER_API_URL = "https://songbird-explorer.flare.network/api"
 ISSUES_FILE = Path("issues.md")
 MAX_MARKET_CAP_RANK = 100
@@ -93,13 +93,21 @@ if __name__ == "__main__":
     w3 = Web3(Web3.HTTPProvider(RPC_URL))
     logger.info("Connected to RPC `%s`", RPC_URL)
 
-    # Set up contract
-    contract_abi = get_contract_abi(FAST_UPDATER_ADDRESS)
-    fast_updater = w3.eth.contract(
-        address=Web3.to_checksum_address(FAST_UPDATER_ADDRESS),
-        abi=contract_abi,
+    # Get contract registry
+    registry = w3.eth.contract(
+        address=Web3.to_checksum_address(REGISTRY_ADDRESS),
+        abi=get_contract_abi(REGISTRY_ADDRESS),
     )
-    logger.info("Connected to FastUpdater contract `%s`", FAST_UPDATER_ADDRESS)
+
+    # Set up contract
+    fast_updater_address = registry.functions.getContractAddressByName(
+        "FastUpdater"
+    ).call()
+    fast_updater = w3.eth.contract(
+        address=Web3.to_checksum_address(fast_updater_address),
+        abi=get_contract_abi(fast_updater_address),
+    )
+    logger.info("Connected to FastUpdater contract `%s`", fast_updater_address)
 
     # Query block latency feeds
     current_feeds = get_current_feeds(fast_updater)

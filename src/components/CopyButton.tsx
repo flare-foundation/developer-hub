@@ -23,22 +23,19 @@ const CopyButton = ({ textToCopy }) => {
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 24 24"
-          width="25px"
-          height="25px"
-          fill="currentColor"
+          width="22px"
+          height="22px"
+          style={{ fill: "#00d600" }}
         >
           <path d="M9 16.17L4.83 12l-1.42 1.41L9 19l12-12-1.41-1.41z" />
         </svg>
       ) : (
         // Copy icon when not copied
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          width="25px"
-          height="25px"
-          fill="currentColor"
-        >
-          <path d="M19 9h-6c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2v-6c0-1.1-.9-2-2-2zm-6 8v-6h6v6h-6zm4-15h-10c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h2v-2h-2v-10h10v2h2v-2c0-1.1-.9-2-2-2z" />
+        <svg viewBox="0 0 24 24" width="22px" height="22px">
+          <path
+            fill="currentColor"
+            d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+          />
         </svg>
       )}
     </button>

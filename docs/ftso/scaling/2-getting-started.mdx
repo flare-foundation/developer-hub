@@ -1,6 +1,5 @@
 ---
 sidebar_position: 2
-slug: getting-started
 title: Getting Started
 description: Learn how to consume Scaling feeds on Flare.
 keywords:
@@ -12,110 +11,141 @@ keywords:
     smart-contracts,
     solidity,
   ]
-unlisted: true
 ---
 
-To read an anchor feed, you need to follow three key steps:
+import CodeBlock from "@theme/CodeBlock";
+import TabItem from "@theme/TabItem";
+import Tabs from "@theme/Tabs";
+import Remix from "@site/src/components/remix";
+import FetchAnchorFeedsJs from "!!raw-loader!/examples/developer-hub-javascript/fetch_anchor_feeds.js";
+import FetchAnchorFeedsPy from "!!raw-loader!/examples/developer-hub-python/fetch_anchor_feeds.py";
+import FetchAndVerifyAnchorOnchainJs from "!!raw-loader!/examples/developer-hub-javascript/fetch_and_verify_anchor_onchain.js";
+import FtsoV2AnchorFeedConsumer from "!!raw-loader!/examples/developer-hub-solidity/FtsoV2AnchorFeedConsumer.sol";
 
-1. **Query ScalingLayer:** You can use any of the URLs listed under, or even run you own ScalingLayer by following the ScalingLayer guide.
-   The ScalingLayer will return the anchor feeds along with a proof.
+Scaling provides offchain access to anchor feeds, using Flare's network of 100 independent data providers and a full commit-reveal process every 90 seconds.
 
-2. **Verify ScalingLayer Result:** Since the ScalingLayer result is served offchain, you can either:
+This section demonstrates how to consume anchor feeds on Flare. The key steps to read an anchor feed are:
 
-   Verify the proofs onchain using the `FtsoFeedVerifier` contract.
+1. **Fetch anchor feed data offchain:**
 
-   **OR**
+   Query the Data Availability (DA) Layer to retrieve anchor feeds along with cryptographic proofs.
 
-   Verify the proofs offchain by reading the output of the `Relay` contract.
+2. **Verify the proof onchain:**
 
-## Query ScalingLayer
+   Validate the proof provided by the DA Layer onchain, ensuring it matches the finalized version recorded by [Scaling](/ftso/scaling/overview).
 
-With Scaling, you have to fetch the price and the proof offchain. This can be acheived using ScalingLayer.
-For example, to get the prices for FLR/USD, ETH/USD and BTC/USD, query the `feeds-with-proof` GET endpoint follows:
+3. **Use the feed data onchain:**
 
-```bash
-curl -X 'GET' 'https://API_URL//feeds-with-proof/0x014254432f55534400000000000000000000000000/648538' -H 'accept: application/json'
-```
+   After verification, integrate the feed data into your onchain application logic.
 
-This will return something like the following JSON responce:
+Scaling only stores **commitments to feed data** onchain. The complete feed data resides offchain but can be verified onchain against a Merkle root. This ensures data integrity and guards against tampering.
+
+## DA Layer API URLs
+
+:::warning[Rate limits]
+
+The public DA Layer endpoints are rate-limited. To request an API key for higher limits, create an [API Key Request Issue](https://github.com/flare-foundation/developer-hub/issues/new/choose).
+
+:::
+
+The DA Layer provides a set of API endpoints for querying offchain data from Flare protocols.
+
+| Network                 | Base URL                                       | API Reference                                                      |
+| ----------------------- | ---------------------------------------------- | ------------------------------------------------------------------ |
+| Flare Mainnet           | `https://flr-data-availability.flare.network/` | [Reference](https://flr-data-availability.flare.network/api-doc#/) |
+| Songbird Canary-Network | `https://sgb-data-availability.flare.network/` | [Reference](https://sgb-data-availability.flare.network/api-doc#/) |
+
+## Fetching anchor feed data
+
+The DA Layer API allows querying the value and proof for multiple feeds from the same voting epoch in a single request. Use the `anchor-feeds-with-proof` POST endpoint to retrieve pricing data.
+
+For example, to get the feed value of `FLR/USD`, `BTC/USD` and `ETH/USD` at the latest voting round:
+
+<Tabs>
+  <TabItem value="curl" label="curl" default>
+
+    ```bash
+    curl -X 'POST' \
+      'https://flr-data-availability.flare.network/api/v0/ftso/anchor-feeds-with-proof' \
+      -H 'accept: application/json' \
+      -H 'Content-Type: application/json' \
+      -d '{
+      "feed_ids": [
+        "0x01464c522f55534400000000000000000000000000",
+        "0x014254432f55534400000000000000000000000000",
+        "0x014554482f55534400000000000000000000000000"
+      ]
+    }'
+    ```
+
+  </TabItem>
+  <TabItem value="javascript" label="Javascript">
+
+    <CodeBlock language="javascript" title="fetch_anchor_feeds.js">
+      {FetchAnchorFeedsJs}
+    </CodeBlock>
+
+  </TabItem>
+  <TabItem value="python" label="Python">
+
+    <CodeBlock language="python" title="fetch_anchor_feeds.py">
+      {FetchAnchorFeedsPy}
+    </CodeBlock>
+
+  </TabItem>
+</Tabs>
+
+### API Response
+
+The response contains JSON objects for each feed, with the following fields:
+
+- `votingRoundId`: ID of the current voting round, each lasting 90s (see the [Flare Systems Explorer](https://flare-systems-explorer.flare.network/voting-epoch)).
+- `id`: ID of the feed (see [list of anchor feeds](/ftso/scaling/anchor-feeds)).
+- `value`: Integer value of the feed.
+- `turnoutBIPS`: Percentage (in basis points) of voting weight which contributed towards the finalized value.
+- `decimals`: Number of decimal places for the feed.
+- `proof`: Merkle proof array for data verification.
+
+An example response for BTC/USD:
 
 ```json
-{
-  "status": "OK",
-  "feedWithProof": {
+[
+  {
     "body": {
-      "votingRoundId": 648538,
+      "votingRoundId": 823386,
       "id": "0x014254432f55534400000000000000000000000000",
-      "value": 6885054,
-      "turnoutBIPS": 9999,
+      "value": 9837867,
+      "turnoutBIPS": 9442,
       "decimals": 2
     },
     "proof": [
-      "0xa2da758620f31407933462306a2d45120e70a3db971d95486a3d69cbc497f6bc",
-      "0xa453ae63c3b84dc8239f1bff59a41c2a9833add385266808423463b9edaa7cbd",
-      "0xbdd2d87b8335993031a643c22e1a45d7745902e929e655f04a044b248b9302c7",
-      "0xcf94c0655b58f0a74bcc97cea9a6e8556cf0849871b9b868268e0e80a223ef1f",
-      "0x92d7c8921dadfbf8c4521bdcc38ba240e51830972929185b2b1e8aaba707fa4c",
-      "0xc2d4e23727d8d90b95b85e8c1c437f69ece3f378a72773260457ba2d4040e41a"
+      "0x79b8a56bf66ae571ed4c0e3e1317825277c43f5ca3b5a85b834fb6407de03b63",
+      "...additional proof hashes..."
     ]
   }
-}
+]
 ```
 
-You can use the `proof` parameter to verify the prices on- or off-offchain.
+The floating point value of a feed can be calculated by dividing the `value` by 10^`decimals`. For example, if the feed value of BTC/USD is `6900420` and the decimal is `2`, the floating point feed value is `69004.20`.
 
-## Verify ScalingLayer Result
+## Verifying proof onchain
 
-### Verify onchain
+To verify feed data onchain, use the [`FtsoV2Interface`](/ftso/solidity-reference/FtsoV2Interface). This interface offers the [`verifyFeedData`](/ftso/solidity-reference/FtsoV2Interface#verifyfeeddata) method to validate feed data and proof against the onchain Merkle root.
+The function requires a single input struct [`FeedDataWithProof`](/ftso/solidity-reference/FtsoV2Interface#feeddatawithproof), which includes the feed data and voting round ID within the [`FeedData`](/ftso/solidity-reference/FtsoV2Interface#feeddata) struct, and a Merkle proof.
 
-#### IFTSOFeedVerifier
+An example contract verifying and consuming anchor feeds onchain
 
-Let's take a look at the `IFTSOFeedVerifier` interface that is used to verify the price data.
+<CodeBlock language="solidity" title="FtsoV2AnchorFeedConsumer.sol">
+  {FtsoV2AnchorFeedConsumer}
+</CodeBlock>
 
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity >=0.7.6 <0.9;
+{/* prettier-ignore */}
+<Remix fileName="FtsoV2AnchorFeedConsumer.sol">Open in Remix</Remix>
 
-interface IFTSOFeedVerifier {
-    struct Feed {
-        uint32 votingRoundId;
-        bytes21 id;
-        int32 value;
-        uint16 turnoutBIPS;
-        int8 decimals;
-    }
+## Fetching and verifying feeds
 
-    struct FeedWithProof {
-        bytes32[] proof;
-        Feed body;
-    }
+The following example shows how to query feed and proof data from DA Layer and submit it to the onchain consumer:
 
-    function get_ftso_protocol_feed_id() external view returns (uint256);
-
-    function verifyPrice(
-        FeedWithProof calldata _feed_data
-    ) external view returns (bool);
-}
-```
-
-This interface is used to verify the price data that is provided by the FTSO protocol.
-Don't worry, the implementation is already available on chain ([coston link](https://coston-explorer.flare.network/address/0x206e99eC6598aC89F6Ce84bDdBd71b40BD874BF1)) and the interface is available in the updated periphery package, from where the code above is copied.
-FTSO is now part of the FSP protocol and has a specific protocol feed id that distinguishes it from other feeds.
-In our case, that id is `100`, but it's recommended to use the provided getter to get the correct id - so you don't need to remember it.
-
-The most important thing to us is the `FeedWithProof` struct that contains the price data and the Merkle proof that can be used to verify the price data.
-The struct contains two fields, where `Feed` is the price data and `proof` is the Merkle proof that can be used to verify the price data.
-The `Feed` part should be easy to decipher.
-Compared to the FTSOv1 it contains a lot more information.
-Now, you can access the price and decimals easily in the same struct, while also getting the voting round id (when the price was selected), the turnout - how many data providers actively provided the price and the id of the feed.
-If id of the field is a bit confusing, don't worry, we will come back to it later and explain exactly how to use it.
-Importantly, the price can now be negative, as the protocol can now support assets that have a negative value (EURIBOR looking at you).
-
-So we now have a struct from where we get the price data and the proof to verify it.
-But how do we do that?
-Well, we have to make sure, that the Merkle proof together with feed data hashes to exactly the root accepted in the FTSO protocol.
-One can do this by himself, but you can also used the provided `verifyPrice` function that does this for you.
-As the feed already contains the voting round id, the method already knows which root it has to use and we don't need to provide any additional information.
-For those that are interested in the implementation, it's available in the periphery package and can be found [here](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts?activeTab=code), but it just calls `openzeppelin`'s `MerkleProof` library to verify the proof and `Relay` to get the root.
-
-### Verify offchain
+<CodeBlock language="javascript" title="fetch_and_verify_anchor_onchain.js">
+  {FetchAndVerifyAnchorOnchainJs}
+</CodeBlock>

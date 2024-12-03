@@ -1,10 +1,10 @@
 ---
 title: IEntityManager
-sidebar_position: 8
-description: Interface for provider entity management.
+sidebar_position: 1
+description: Manages voter entities, including addresses and node IDs.
 ---
 
-Interface for provider entity management.
+Manages voter entities, including addresses and node IDs.
 
 Sourced from `IEntityManager.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/IEntityManager.sol).
 

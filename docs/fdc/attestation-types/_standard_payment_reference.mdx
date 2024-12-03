@@ -1,0 +1,17 @@
+A standard payment reference is defined as a 32-byte sequence that can be added to a payment transaction, in the same way that a payment reference is attached to a traditional banking transaction.
+
+### Bitcoin and Dogecoin
+
+- Uses `OP_RETURN` to store references.
+- A transaction is considered to have a `standardPaymentReference` defined if it has:
+  - Exactly one output UTXO with `OP_RETURN` script, and
+  - The script is of the form `OP_RETURN <reference\>` or `6a<lengthOfReferenceInHex\><reference\> `in hex, where the length of the reference is 32 bytes.
+- Then `0x<reference\>` is the `standardPaymentReference`.
+
+### XRPL
+
+- Uses the `memoData` field.
+- A transaction has a `standardPaymentReference` if it has:
+  - Exactly one [Memo](https://xrpl.org/transaction-common-fields.html#memos-field), and
+  - The `memoData` of this field is a hex string that represents a byte sequence of exactly 32 bytes.
+- This 32-byte sequence defines the `standardPaymentReference`.

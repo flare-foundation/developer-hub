@@ -1,0 +1,136 @@
+---
+title: BalanceDecreasingTransaction
+description: Detects a transaction that either decreases the balance of a specified address.
+keywords: [fdc, oracle, flare-data-connector, flare-network]
+sidebar_position: 2
+unlisted: true
+---
+
+import Finality from "./_finality.mdx";
+import StandardAddressHash from "./_standard_address_hash.mdx";
+import TransactionSuccessStatus from "./_transaction_success_status.mdx";
+import StandardPaymentReference from "./_standard_payment_reference.mdx";
+
+Information describing a transaction that either **decreases the balance** for a specified address.
+
+A transaction is considered “balance decreasing” for the specified address if:
+
+1. The balance **after the transaction** is lower than **before**.
+2. The address is among the **signers** of the transaction (even if its balance is not reduced).
+
+## Supported chains
+
+- `BTC` (Bitcoin)
+- `DOGE` (Dogecoin)
+- `XRP` (XRP Ledger)
+- Test networks: `testBTC` (Bitcoin Testnet v3), `testDOGE`, `testXRP`
+
+## Request
+
+| Field                    | Solidity Type | Description                                                     |
+| ------------------------ | ------------- | --------------------------------------------------------------- |
+| `transactionId`          | `bytes32`     | Unique ID of the transaction to be verified.                    |
+| `sourceAddressIndicator` | `bytes32`     | Indicator of the address whose balance may have been decreased. |
+
+## Response
+
+| Field                      | Solidity Type | Description                                                            |
+| -------------------------- | ------------- | ---------------------------------------------------------------------- |
+| `blockNumber`              | `uint64`      | Block number containing the transaction.                               |
+| `blockTimestamp`           | `uint64`      | Timestamp of the block containing the transaction.                     |
+| `sourceAddressHash`        | `bytes32`     | Standard hash of the address indicated by `sourceAddressIndicator`.    |
+| `spentAmount`              | `int256`      | Amount spent by the source address in minimal units (can be negative). |
+| `standardPaymentReference` | `bytes32`     | Standardized payment reference of the transaction, if available.       |
+
+## Verification process
+
+1. The transaction identified by `transactionId` is fetched from the **source blockchain node** or a relevant indexer.
+2. If the transaction cannot be fetched or is in a block with insufficient [confirmations](#finality), the attestation request is rejected.
+3. Once the transaction is retrieved, the response fields are extracted if it qualifies as **balance decreasing** for the specified address.
+
+The verification process is chain-specific and can be computed with a [balance decreasing summary](#balance-decreasing-summary), with details described below.
+
+### UTXO chains (Bitcoin and Dogecoin)
+
+- `sourceAddressIndicator`: Represents the index of the transaction input, formatted as a **0x-prefixed 32-byte string**.
+  - If the specified input does not exist or lacks an associated address, the attestation request is rejected.
+- `sourceAddress`: Address associated with the specified transaction input.
+- `spentAmount`: Calculated as `Sum of all inputs with sourceAddress - Sum of all outputs with sourceAddress`. The value can be negative.
+- `blockTimestamp`: The **mediantime** of the block.
+
+### Account-based chains (XRPL)
+
+- `sourceAddressIndicator`: The [standard address hash](#standard-address-hash) of the address in question.
+  - If the indicated address is not among the transaction signers and its balance was not decreased, the attestation request is rejected.
+- `spentAmount`: Difference between the balance of the address **after** and **before** the transaction. Can be negative.
+- `blockTimestamp`: The **close_time** of the ledger, converted to Unix time.
+
+:::note[Lowest used timestamp]
+
+For the `lowestUsedTimestamp` parameter, the `blockTimestamp` of the transaction is used.
+
+:::
+
+## Balance decreasing summary
+
+A balance-decreasing summary analyses a transaction that has decreased or could possibly decrease the balance of an account.
+
+A balance-decreasing summary is calculated for a given transaction and source address indicator (`sourceAddressIndicator`).
+The summary contains the fields as stated in the table below.
+The interpretation of some fields is chain dependent.
+Descriptions of these fields are left empty and are later explained for each specific blockchain.
+
+For a given transaction and an address indicator, the balance-decreasing summary can only be calculate if the transaction is considered to be balance-decreasing for the indicated address
+When implemented, the function that calculates the balance-decreasing summary
+tries to calculate it.
+If it is successful, it returns a success status and the summary itself.
+If not, it returns an error status.
+
+| Field                      | Description                                                |
+| -------------------------- | ---------------------------------------------------------- |
+| `transactionId`            | -                                                          |
+| `transactionStatus`        | [Transaction success status](#transaction-success-status). |
+| `sourceAddress`            | -                                                          |
+| `spentAmount`              | -                                                          |
+| `standardPaymentReference` | [Standard payment reference](#standard-payment-reference). |
+
+The following are detailed descriptions of fields for each supported chain.
+
+### Bitcoin and Dogecoin
+
+For Bitcoin and Dogecoin, `sourceAddressIndicator` is the index of a transaction input (in hex zero padded on the left to 0x prefixed 32 bytes).
+If the input with the given index does not exist or the indicated input does not have an address, no summary is made.
+In particular, no summary is made for coinbase transactions.
+
+| Field           | Description                                                                                                                        |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `transactionId` | The transaction ID found in the field `txid`. For segwit transactions, this is not the same as _hash_.                             |
+| `sourceAddress` | Address of the indicated input.                                                                                                    |
+| `spentAmount`   | The sum of values of all inputs with `sourceAddress` minus the sum of values of all outputs with `sourceAddress`. Can be negative. |
+
+### XRPL
+
+For XRPL, `sourceAddressIndicator` is [standardAddressHash](#standard-address-hash) of the indicated address.
+If the `sourceAddressIndicator` does not match any of the addresses who signed the transaction or whose balance was decreased by the transaction, the summary is not made.
+
+| Field           |                                                                                                   |
+| --------------- | ------------------------------------------------------------------------------------------------- |
+| `transactionId` | Hash of the transaction found in the field `hash`.                                                |
+| `sourceAddress` | Address whose [standardAddressHash](#standard-address-hash) matches the `sourceAddressIndicator`. |
+| `spentAmount`   | The amount for which the balance of the `sourceAddress` has lowered. Can be negative.             |
+
+## Standard payment reference
+
+<StandardPaymentReference />
+
+## Transaction success status
+
+<TransactionSuccessStatus />
+
+## Standard address hash
+
+<StandardAddressHash />
+
+## Finality
+
+<Finality />

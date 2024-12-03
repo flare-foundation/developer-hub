@@ -86,6 +86,20 @@ To generate the Solidity contract documentation from the `flare-smart-contracts-
    nvm use 20
    ```
 
+## Run Automations
+
+To ensure [uv](https://docs.astral.sh/uv/) dependencies are synced, from within `automations/` run:
+
+```bash
+uv sync
+```
+
+To update contract addresses and FTSOv2 feed data, in the project root run:
+
+```bash
+npm run automations
+```
+
 ## Contributing
 
 Contributions to Flare Developer Hub are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before making your first PR.

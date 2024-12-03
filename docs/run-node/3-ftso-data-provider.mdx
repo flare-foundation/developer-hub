@@ -178,6 +178,15 @@ Create an `entities.json` file with the following account addresses and private 
 Setup the following variables in `.env`:
 
 <Tabs groupId="network">
+  <TabItem value="flare" label="Flare Mainnet" default>
+
+    :::danger
+
+    Register accounts on mainnet [using the explorer](./3-ftso-data-provider.mdx#register-using-the-explorer) to avoid exposing private keys.
+
+    :::
+
+  </TabItem>
   <TabItem value="coston2" label="Flare Testnet Coston2" default>
 
     ```text title=".env"
@@ -217,6 +226,15 @@ Setup the following variables in `.env`:
 Run the registration tasks:
 
 <Tabs groupId="network">
+  <TabItem value="flare" label="Flare Mainnet" default>
+
+    :::danger
+
+    Register accounts on mainnet [using the explorer](./3-ftso-data-provider.mdx#register-using-the-explorer) to avoid exposing private keys.
+
+    :::
+
+  </TabItem>
   <TabItem value="coston2" label="Flare Testnet Coston2" default>
 
     ```bash
@@ -247,13 +265,25 @@ Run the registration tasks:
 
 To register manually you can directly call the `EntityManager` contract. For the contract address, see the [Solidity Reference](/network/solidity-reference). The relevant functions on the `EntityManager` contract are:
 
-- [`proposeSubmitAddress`](/network/solidity-reference/IEntityManger#proposesubmitaddress)
-- [`proposeSubmitSignaturesAddress`](/network/solidity-reference/IEntityManger#proposesubmitsignaturesaddress)
-- [`proposeSigningPolicyAddress`](/network/solidity-reference/IEntityManger#proposesigningpolicyaddress)
-- [`proposeDelegationAddress`](/network/solidity-reference/IEntityManger#proposedelegationaddress)
-- [`registerPublicKey`](/network/solidity-reference/IEntityManger#registerpublickey)
+- [`proposeSubmitAddress`](/network/fsp/IEntityManager#proposesubmitaddress)
+- [`proposeSubmitSignaturesAddress`](/network/fsp/IEntityManager#proposesubmitsignaturesaddress)
+- [`proposeSigningPolicyAddress`](/network/fsp/IEntityManager#proposesigningpolicyaddress)
+- [`proposeDelegationAddress`](/network/fsp/IEntityManager#proposedelegationaddress)
+- [`registerPublicKey`](/network/fsp/IEntityManager#registerpublickey)
 
 The required contract invocation steps can also be found in the [register-entities.ts](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/deployment/tasks/register-entities.ts#L33) and [register-public-keys.ts](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/deployment/tasks/register-public-keys.ts#L43) deployment tasks.
+
+:::info
+
+When registering the sortition key using the explorer, you will need to manually create a signature and input this into the `_verificationData` parameter, as described [here](/network/fsp/IEntityManager#registerpublickey).
+
+Create the signature using the command below:
+
+```bash
+docker run --rm ghcr.io/flare-foundation/fast-updates/go-client:latest keygen --key <sortitionKeyPrivateKey> --address <entityAddress>
+```
+
+:::
 
 ### Install dependencies
 

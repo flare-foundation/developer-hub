@@ -1,19 +1,96 @@
 ---
-sidebar_position: 1
-slug: overview
 title: FAssets
+description: FAssets is a trustless over-collateralized bridge to non smart contract networks to Flare.
+keywords: [fassets, xrp, bitcoin, dogecoin, flare-network]
 ---
 
-:::info
+FAssets is a trustless, over-collateralized bridge connecting non smart contract networks to Flare.
+It enables the creation of wrapped tokens (`FAssets`) for assets like BTC, DOGE and XRP.
+These tokens can participate in Flare's DeFi ecosystem or be redeemed for their original assets.
 
-FAssets is currently in open beta on Songbird Testnet Coston.
+FAssets are powered by Flare's enshrined data protocols:
 
-Get involved in testing by following the [FAssets Guides](/category/fassets-guides).
+- **[Flare Time Series Oracle (FTSO)](/ftso/overview):** Provides decentralized price feeds.
+- **[Flare Data Connector (FDC)](/fdc/overview):** Verifies off-chain actions, such as transactions on other blockchains.
+
+Each FAsset is backed by a mix of collateral, including:
+
+1. Stablecoin or ETH collateral.
+2. FLR (Flare's native token) or SGB (Songbird's native token) collateral.
+
+Agents and a community-provided collateral pool ensure trustlessness through over-collateralization.
+
+## FAsset Workflow
+
+### Minting
+
+    - A user (minter) selects an agent and pays a fee to reserve collateral.
+    - The user sends the underlying asset (e.g., BTC) to the agent.
+    - The FDC verifies the transaction.
+    - The equivalent FAssets (e.g., FBTC) are minted as ERC-20 tokens on Flare.
+
+### Usage
+
+Minted FAssets can be used in DeFi applications on Flare or bridged to other chains.
+
+### Redeeming
+
+Users can redeem FAssets for the original underlying assets at any time.
+
+## Key Participants
+
+### Agents
+
+Agents manage the infrastructure and operations of the FAssets system, including:
+
+- Holding the underlying assets.
+- Providing collateral for minting and redemption.
+- Redeeming underlying assets for users.
+
+Each agent is verified through governance and uses the following addresses:
+
+- **Work Address:** A hot wallet for executing operations.
+- **Management Address:** A cold wallet for secure administrative actions.
+
+Agents must comply with the **backing factor**, which ensures sufficient collateral is locked to back FAssets.
+
+### Users
+
+Users interact with the system by:
+
+- **Minting:** Depositing underlying assets to mint FAssets.
+- **Redeeming:** Exchanging FAssets for the original underlying assets.
+
+Eligibility:
+
+- No restrictions—anyone can mint or redeem FAssets.
+
+### Collateral Providers
+
+Collateral providers supply native FLR tokens to an agent's collateral pool and earn a share of minting fees as long as their tokens remain locked.
+
+### Liquidators
+
+Liquidators maintain system health by:
+
+- Burning FAssets in exchange for collateral when an agent's collateral drops below the required minimum.
+- Earning rewards, including premiums on the collateral received.
+
+Eligibility:
+
+- Open to all—anyone can become a liquidator.
+
+### Challengers
+
+Challengers monitor agents for illegal transactions that reduce collateral below the backing factor. They:
+
+- Submit proof of illegal actions to the system.
+- Earn rewards from the agent's vault upon successful challenges.
+
+If an agent is found in violation, they enter **full liquidation**, permanently restricting them from new minting operations.
+
+:::tip[What's next]
+
+Learn more about the different components and processes involved in FAssets - [collateral](/fassets/collateral), [minting](/fassets/minting), [redemptions](/fassets/redemption), and [liquidations](/fassets/liquidation).
 
 :::
-
-FAssets is enabled by Flare's data enshrined data protocols, the [Flare Data Connector](/fdc/overview) and [Flare Time Series Oracle](/ftso/overview). The FTSO provides decentralised price feeds for all the tokens involved, and the Data Connector can verify that a required action has taken place on a different chain.
-
-Each FAsset will be backed by mixed onchain collateral held by an agent and in a community provided pool. This backing consists of three asset types: the underlying, stablecoin or ETH collateral, and Flare native token collateral, FLR or SGB. The minting and redeeming process will be supported by a number of agents. Their role in the system is secured through over-collateralization, such that the system is rendered trustless.
-
-Someone who wishes to mint FAssets starts by selecting an agent and paying a small fee to reserve the required collateral. The minter then sends the agent the underlying asset, with the Data Connector used to prove the transaction has taken place on the other chain. Once the payment has been verified, the FAssets are minted as ERC-20 tokens on Flare. These tokens can be used within DeFi on Flare or bridged to another chain.
