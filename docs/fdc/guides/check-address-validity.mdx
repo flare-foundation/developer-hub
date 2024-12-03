@@ -8,17 +8,18 @@ sidebar_position: 1
 unlisted: true
 ---
 
-## Address Validity
+This guide focuses on the [AddressValidity](/fdc/attestation-types/address-validity) attestation type, a straightforward and efficient way to verify the validity of a string as an address on a specified blockchain.
+The primary contract interface for this attestation type is [`IAddressValidity`](/fdc/reference/IFdcHub).
 
-[Full specification on GitHub](https://github.com/flare-foundation/songbird-state-connector-protocol/blob/main/specs/attestations/active-types/AddressValidity.md).
+AddressValidity is a simple and efficient solution for address verification. It does not require proving a transaction, which significantly reduces on-chain overhead. Instead, the computation for verifying an address is delegated to an off-chain verifier, ensuring that expensive computations are handled outside the blockchain. This approach is particularly useful for scenarios where address validity needs to be confirmed before further integration.
 
-And there is a sub-specification for each chain that specifies the rules for the address validity for each chain. Be careful: Bitcoin and Dogecoin have different rules for validity on the mainnet and testnet, so make sure to check the correct specification with the correct verifier.
+For example, in the case of FAssets, it is essential to validate an address before it can be used within the protocol. By leveraging AddressValidity attestations, complex and resource-intensive computations, such as verifying the validity of a Bitcoin address, can be offloaded to off-chain entities.
 
-This is a very simple attestation type that can prove that a string constitutes a valid address on the specified chain. Importantly, unlike the `Payment` type we saw in [Part 1](data-connector), this type does not require a transaction to be proven. It just offloads the computation of the address validity to the verifier so that expensive computation does not have to be done onchain.
+:::warning[Testnet and Mainnet]
 
-This is useful if you want to ensure that the address is valid before using it in your protocol. For example, fAssets need to make sure that an address is valid before they can be used in the protocol, and this is a good way to offload difficult computation regarding when the bitcoin address is valid to offchain entities.
+Bitcoin and Dogecoin have different rules for validity on the mainnet and testnet, so make sure to check the correct specification with the correct verifier.
 
-For more information on Bitcoin address validity, see the [Bitcoin design guide glossary](https://bitcoin.design/guide/glossary/address/).
+:::
 
 ### Type Definition
 
