@@ -41,3 +41,31 @@ do
     
     echo "Output documentation saved to: $OUTPUT_PATH"
 done < "repos.list"
+
+FDC_PATH="flare-smart-contracts-v2/contracts/userInterfaces/fdc"
+OUTPUT_FOLDER="$FDC_PATH/references"
+
+# Create the output folder if it doesn't exist
+mkdir -p "$OUTPUT_FOLDER"
+
+echo "Processing Solidity files in $FDC_PATH..."
+
+# Process files in the FDC_PATH
+for file in "$FDC_PATH"/*.sol; do
+    filename=$(basename "$file")
+    if [[ "$filename" != *"Verification"* ]]; then
+        name_without_extension="${filename%.sol}"
+        output_file="$OUTPUT_FOLDER/$name_without_extension.mdx"
+
+        echo "Processing $filename into $output_file"
+
+        # Copy the content of the Solidity file into the new .mdx file
+        echo '```solidity' > "$output_file"
+        cat "$file" >> "$output_file"
+        echo '```' >> "$output_file"
+    else
+        echo "Skipping $filename"
+    fi
+done
+
+echo "MDX files generated in $OUTPUT_FOLDER."
