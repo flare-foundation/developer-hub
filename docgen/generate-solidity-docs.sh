@@ -59,8 +59,16 @@ for file in "$FDC_PATH"/*.sol; do
 
         echo "Processing $filename into $output_file"
 
-        # Copy the content of the Solidity file into the new .mdx file
-        echo '```solidity' > "$output_file"
+        # Write metadata into the .mdx file
+        echo "---" > "$output_file"
+        echo "title: $name_without_extension" >> "$output_file"
+        echo "---" >> "$output_file"
+        echo >> "$output_file" # Blank line for readability
+        echo "Sourced from \`$filename\` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/fdc/$filename)." >> "$output_file"
+        echo >> "$output_file" # Blank line for readability
+
+        # Append the Solidity code to the .mdx file
+        echo '```solidity' >> "$output_file"
         cat "$file" >> "$output_file"
         echo '```' >> "$output_file"
     else
@@ -68,4 +76,4 @@ for file in "$FDC_PATH"/*.sol; do
     fi
 done
 
-echo "MDX files generated in $OUTPUT_FOLDER."
+echo "MDX files with metadata and Solidity code generated in $OUTPUT_FOLDER."
