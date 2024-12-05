@@ -1,0 +1,357 @@
+{
+  "components": {
+    "securitySchemes": {
+      "X-API-KEY": {
+        "in": "header",
+        "name": "X-API-KEY",
+        "type": "apiKey"
+      }
+    }
+  },
+  "info": {
+    "title": "FDC protocol data provider API",
+    "version": "0.0.0",
+    "description": "OpenAPI specification for FDC protocol data provider API"
+  },
+  "servers": [
+    {
+      "url": "https://coston2-api.flare.network"
+    }
+  ],
+  "openapi": "3.0.0",
+  "paths": {
+    "/da/getAttestations/{votingRoundID}": {
+      "get": {
+        "description": "Tries to retrieve the attestation proofs for a particular voting round. If successful returns a status OK and a payload data that contains attestation proofs and ABI responses.",
+        "parameters": [
+          {
+            "description": "The unique ID of the voting round. This represents a full voting sequence that starts in a particular voting epoch and usually extends to the next one.",
+            "in": "path",
+            "name": "votingRoundID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "Attestations": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "abi": {
+                            "type": "string"
+                          },
+                          "proof": {
+                            "items": {
+                              "type": "string"
+                            },
+                            "type": "array"
+                          },
+                          "request": {
+                            "type": "string"
+                          },
+                          "response": {
+                            "type": "string"
+                          },
+                          "roundId": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "roundId",
+                          "request",
+                          "response",
+                          "abi",
+                          "proof"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "Status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["Status", "Attestations"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "X-API-KEY": []
+          }
+        ],
+        "summary": "GetAttestations",
+        "tags": ["DA endpoints"]
+      }
+    },
+    "/da/getRequests/{votingRoundID}": {
+      "get": {
+        "description": "Tries to retrieve the attestation requests for a particular voting round. If successfull returns a response status OK and a payload data that contains attestation requests for a particular voting round.",
+        "parameters": [
+          {
+            "description": "The unique ID of the voting round. This represents a full voting sequence that starts in a particular voting epoch and usually extends to the next one.",
+            "in": "path",
+            "name": "votingRoundID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "Requests": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "consensus": {
+                            "type": "boolean"
+                          },
+                          "indexes": {
+                            "items": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "BlockNumber": {
+                                  "type": "integer"
+                                },
+                                "LogIndex": {
+                                  "type": "integer"
+                                }
+                              },
+                              "required": ["BlockNumber", "LogIndex"],
+                              "type": "object"
+                            },
+                            "type": "array"
+                          },
+                          "request": {
+                            "type": "string"
+                          },
+                          "response": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "request",
+                          "response",
+                          "status",
+                          "consensus",
+                          "indexes"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "Status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["Status", "Requests"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "X-API-KEY": []
+          }
+        ],
+        "summary": "GetRequests",
+        "tags": ["DA endpoints"]
+      }
+    },
+    "/fsp/submit1/{votingRoundID}/{submitAddress}": {
+      "get": {
+        "description": "Tries to retrieve bit-vector from data providers. Each bit-vector contains 1's on the attestation request the attestation providers can verify and 0's for others. On success, it returns a status OK and a JSON data.",
+        "parameters": [
+          {
+            "description": "The address used by participants in the Flare System Protocol to communicate with the blockchain.",
+            "in": "path",
+            "name": "submitAddress",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "The unique ID of the voting round. This represents a full voting sequence that starts in a particular voting epoch and usually extends to the next one.",
+            "in": "path",
+            "name": "votingRoundID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "additionalData": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["status", "data", "additionalData"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "X-API-KEY": []
+          }
+        ],
+        "summary": "Submit1",
+        "tags": ["FDC protocol data provider for FSP client"]
+      }
+    },
+    "/fsp/submit2/{votingRoundID}/{submitAddress}": {
+      "get": {
+        "description": "Retrieves commit data from data providers. On success, returns a status OK and a JSON data.",
+        "parameters": [
+          {
+            "description": "The address used by participants in the Flare System Protocol to communicate with the blockchain.",
+            "in": "path",
+            "name": "submitAddress",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "The unique ID of the voting round. This represents a full voting sequence that starts in a particular voting epoch and usually extends to the next one.",
+            "in": "path",
+            "name": "votingRoundID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "additionalData": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["status", "data", "additionalData"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "X-API-KEY": []
+          }
+        ],
+        "summary": "Submit2",
+        "tags": ["FDC protocol data provider for FSP client"]
+      }
+    },
+    "/fsp/submitSignatures/{votingRoundID}/{submitAddress}": {
+      "get": {
+        "description": "Retrieves signatures of computed Merkle root from data providers. On success, it returns a status OK and JSON data.",
+        "parameters": [
+          {
+            "description": "The address used by participants in the Flare System Protocol to communicate with the blockchain.",
+            "in": "path",
+            "name": "submitAddress",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "The unique ID of the voting round. This represents a full voting sequence that starts in a particular voting epoch and usually extends to the next one.",
+            "in": "path",
+            "name": "votingRoundID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "additionalData": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["status", "data", "additionalData"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "X-API-KEY": []
+          }
+        ],
+        "summary": "SubmitSignatures",
+        "tags": ["FDC protocol data provider for FSP client"]
+      }
+    }
+  }
+}
