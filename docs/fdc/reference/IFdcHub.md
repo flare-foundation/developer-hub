@@ -1,6 +1,6 @@
 ---
 title: IFdcHub
-sidebar_position: 1
+sidebar_position: 2
 description: Primary interface for interacting with FDC.
 unlisted: true
 ---

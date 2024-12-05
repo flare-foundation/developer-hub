@@ -1,6 +1,6 @@
 ---
 title: IFdcRequestFeeConfigurations
-sidebar_position: 3
+sidebar_position: 4
 description: Interface for managing FDC request fee configuration.
 unlisted: true
 ---
