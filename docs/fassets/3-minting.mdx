@@ -76,33 +76,39 @@ This share is minted as FAssets and sent to the [collateral pool](/fassets/colla
 
 ### Trailing Fees
 
-Trail fees are proportional charges applied to every FAsset transfer, intended to create a continuous yield for agents while their collateral is locked. These fees are collected and distributed monthly to agents based on their average FAssets during that period, encouraging participation and ensuring the system's sustainability.
+To ensure that agents and collateral pool providers receive steady income, the FAsset system offers an option to enable FAsset token transfer fees, also known as trailing fees.
 
-The trailing fee is shared between the agent and the pool in the same agent-defined percentage as the minting fee.
+Whenever FAssets are transferred, a small proportional fee is deducted and contributed to a common pool. In a regular transfer, this fee is subtracted from the payment, meaning the sender pays the exact amount specified in the transfer request, while the receiver ends up receiving a slightly lower amount.
 
-There are two methods for paying the trailing fee when making a transfer.
+There is also a method where the receiver gets the exact amount specified in the call, while the sender pays more. The fee percentage is a system setting and is typically quite small.
 
-#### Fee Included
+The fees are collected over a certain period, known as an epoch, after which they are distributed among all agents in proportion to each agent's average backed amount during that epoch.
 
-When using the regular transfer function, the fee is deducted from the amount sent. This means the sender covers the fee, resulting in the receiver receiving less than expected. This means that the fee is subtracted from the transfer amount.
-
-#### Fee Excluded
-
-The alternative transfer method allows the receiver to receive the specified amount while the sender covers the fee. This means that the fee is not included in the transfer amount.
+An agent can claim their portion of the fees for an epoch at any time after the epoch ends and before it expires. When making a claim, the fee is distributed between the agent and the pool in the same manner as the minting fee, based on the agent's settings.
 
 ## Handshake
 
 Certain jurisdictions may require agents to confirm that those minting or redeeming assets are not engaged in illegal activities. Although the FAsset system does not impose this requirement, it does provide agents with the option to utilize an external service to verify the identities of minters and redeemers before proceeding with minting or redemption.
 
-To enable the handshake, the agent must set this setting in agent settings. Once this is enabled, the minting and redemption involve an additional step.
+To enable the handshake, the agent must configure this setting in the agent settings. Once this is enabled, minting and redemption will involve an additional step.
 
 ### Minting
 
-The FAssets agent can decide to allow a mint transaction based on their knowledge of the address involved. There is a timeout period for an agent to review the address that is minting.
+The FAssets agent verifies the minter after the user completes the collateral reservation and pays the collateral reservation fee. The agent is responsible for confirming or rejecting the minter's status. If the agent does not respond within a certain timeframe, the minter has the option to cancel the reservation and receive a full refund of the collateral reservation fee.
+
+To enable the agent to verify the minter, the collateral reservation must include the address (or multiple addresses, in the case of UTXO chains) from which the payment will be made. If multiple addresses are provided, all of them must be used for the payment.
+
+The agent must respond quickly; otherwise, it depends on the user's willingness to wait. If not, the agent misses the chance to mint, which incurs in no token loss.
 
 ### Redemption
 
-The FAssets agent may reject the redemption, allowing another agent to perform it. If the redemption is rejected but not taken over, the agent pays a premium, but it is much smaller than for a regular redemption default.
+The agent has a few minutes to verify the redeemer's addresses and either approve or reject the redemption. If rejected, another agent can take over. If no one takes over, the minter receives the full amount plus a small premium from the rejecting agent, with the premium for a handshake rejection being smaller than for a redemption default.
+
+:::info
+
+An agent may only fulfill part of a request due to insufficient minting or too many small tickets. In these situations, the system allows for a “partial takeover”, where the remaining portion can either be taken over by another agent or covered by collateral from the agent who declined the redemption.
+
+:::
 
 ## Payment Failure
 
