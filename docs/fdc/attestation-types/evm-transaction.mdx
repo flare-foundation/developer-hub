@@ -1,0 +1,81 @@
+---
+title: EVMTransaction
+description: Information about an EVM transaction, including details on associated events if specified.
+keywords: [fdc, oracle, flare-data-connector, flare-network]
+sidebar_position: 4
+---
+
+import IEVMTransaction from "../reference/IEVMTransaction.mdx";
+
+Information about an Ethereum Virtual Machine (EVM) transaction, including details on associated events if specified.
+
+## Supported chains
+
+- `ETH` (Ethereum)
+- `FLR` (Flare Mainnet)
+- `SGB` (Songbird Canary-Network)
+- Test networks: `testETH` (Ethereum Sepolia), `testFLR` (Flare Testnet Coston2), `testSGB` (Songbird Testnet Coston)
+
+## Request
+
+| Field                   | Solidity Type | Description                                                                                                                                                                                                                                                     |
+| ----------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `transactionHash`       | `bytes32`     | The hash of the transaction.                                                                                                                                                                                                                                    |
+| `requiredConfirmations` | `uint16`      | The number of confirmations required for the block containing the transaction to be considered final by the requestor.                                                                                                                                          |
+| `provideInput`          | `bool`        | If set to `true`, the `input` data field of the transaction will be included in the response.                                                                                                                                                                   |
+| `listEvents`            | `bool`        | If `true`, events specified by `logIndices` will be included in the response. If `false`, no events are included.                                                                                                                                               |
+| `logIndices`            | `uint32[]`    | A list of event indices (`logIndex`) to be relayed if `listEvents` is `true`. Should be sorted by the requestor. Maximum of 50 indices allowed. An empty list indicates all events up to a maximum of 50. If `listEvents` is `false`, this field must be empty. |
+
+:::note[Using Event Logs Correctly]
+
+- Events (logs) are indexed at the **block level**, not at the transaction level.
+- The contract using this attestation should define the order of event logs, and the requestor should ensure `logIndices` are sorted according to these specifications.
+
+:::
+
+## Response
+
+The response fields align with EVM's [JSON-RPC API](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactionbyhash):
+
+| Field              | Solidity Type | Description                                                                                           |
+| ------------------ | ------------- | ----------------------------------------------------------------------------------------------------- |
+| `blockNumber`      | `uint64`      | The block number in which the transaction is included.                                                |
+| `timestamp`        | `uint64`      | The timestamp of the block in which the transaction is included.                                      |
+| `sourceAddress`    | `address`     | The address (`from`) that signed the transaction.                                                     |
+| `isDeployment`     | `bool`        | Indicates whether the transaction is a contract creation (`true`) or a regular transaction (`false`). |
+| `receivingAddress` | `address`     | The address (`to`) receiving the transaction. Zero address if `isDeployment` is `true`.               |
+| `value`            | `uint256`     | The value transferred in the transaction, in wei.                                                     |
+| `input`            | `bytes`       | Transaction input data if `provideInput` is `true`; otherwise, returns `0x00`.                        |
+| `status`           | `uint8`       | Transaction status: `1` for success, `0` for failure.                                                 |
+| `events`           | `Event[]`     | An array of requested events if `listEvents` is `true`; otherwise, an empty array.                    |
+
+### `Event` Struct
+
+Each `Event` struct represents a log entry similar to EVM event logs:
+
+| Field            | Solidity Type | Description                                                                                |
+| ---------------- | ------------- | ------------------------------------------------------------------------------------------ |
+| `logIndex`       | `uint32`      | The index of the event within the block.                                                   |
+| `emitterAddress` | `address`     | The address of the contract that emitted the event.                                        |
+| `topics`         | `bytes32[]`   | An array of up to four 32-byte strings representing indexed log arguments.                 |
+| `data`           | `bytes`       | Non-indexed log data, concatenated as 32-byte strings. Must be at least 32 bytes long.     |
+| `removed`        | `bool`        | `true` if the log was removed due to a chain reorganization; `false` if it is still valid. |
+
+## Verification process
+
+1. The function checks if the transaction with the given `transactionHash` is included in a block on the **main chain** with at least the specified `requiredConfirmations`.
+2. If the block has insufficient confirmations or if the transaction is not found, the request is rejected.
+3. If `listEvents` is enabled and an event specified by `logIndices` does not exist, the request is also rejected.
+4. The specified data (transaction details, input data, and events) is retrieved and relayed based on the request parameters.
+
+:::note[Event handling]
+
+- Ensure `logIndices` are sorted as required by the consuming contract.
+- If `logIndices` is not empty while `listEvents` is set to `false`, the request will be rejected.
+- Events are capped at a maximum of **50 entries** to optimize performance.
+
+:::
+
+## Contract interface
+
+<IEVMTransaction />

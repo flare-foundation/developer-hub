@@ -1,0 +1,110 @@
+---
+title: ReferencedPaymentNonexistence
+description: Assertion that a payment agreed to be completed by a certain deadline, has not been made.
+keywords: [fdc, oracle, flare-data-connector, flare-network]
+sidebar_position: 5
+---
+
+import StandardPaymentReference from "./_standard_payment_reference.mdx";
+import Finality from "./_finality.mdx";
+import IReferencedPaymentNonexistence from "../reference/IReferencedPaymentNonexistence.mdx";
+
+Assertion that a specific payment, agreed upon to be completed by a certain deadline, has **not been made**. If confirmed, it shows that no transaction meeting the specified criteria (address, amount, reference) was found within the given block range.
+
+This Information can be used, for example, to justify the liquidation of funds locked in a smart contract on Songbird if a payment is missed.
+
+**Supported Chains**:
+
+- `BTC` (Bitcoin)
+- `DOGE` (Dogecoin)
+- `XRP` (XRP Ledger)
+- Test networks: `testBTC` (Bitcoin Testnet v3), `testDOGE`, `testXRP`
+
+### Request
+
+| Field                      | Solidity Type | Description                                                                   |
+| -------------------------- | ------------- | ----------------------------------------------------------------------------- |
+| `minimalBlockNumber`       | `uint64`      | The block number to start the search range.                                   |
+| `deadlineBlockNumber`      | `uint64`      | The block number to include as the end of the search range.                   |
+| `deadlineTimestamp`        | `uint64`      | The timestamp to include as the end of the search range.                      |
+| `destinationAddressHash`   | `bytes32`     | The standard hash of the address where the payment was expected.              |
+| `amount`                   | `uint256`     | The required payment amount in minimal units.                                 |
+| `standardPaymentReference` | `bytes32`     | The standard payment reference associated with the payment. Must not be zero. |
+| `checkSourceAddresses`     | `bool`        | If true, the source addresses root is checked.                                |
+| `sourceAddressesRoot`      | `bytes32`     | The root of the Merkle tree of the source addresses.                          |
+
+:::note
+
+**Standard Addresses Root** is the root of the Merkle tree build on double keccak256 hashes of the all source addresses of the transaction.
+
+:::
+
+### Response
+
+| Field                         | Solidity Type | Description                                                   |
+| ----------------------------- | ------------- | ------------------------------------------------------------- |
+| `minimalBlockTimestamp`       | `uint64`      | The timestamp of the block at `minimalBlockNumber`.           |
+| `firstOverflowBlockNumber`    | `uint64`      | The block number immediately after the `deadlineBlockNumber`. |
+| `firstOverflowBlockTimestamp` | `uint64`      | The timestamp of the `firstOverflowBlockNumber`.              |
+
+- **`firstOverflowBlockNumber`**: This is the first block with a height greater than `deadlineBlockNumber` and a timestamp later than `deadlineTimestamp`.
+- The search range includes blocks from `minimalBlockNumber` (inclusive) to `firstOverflowBlockNumber` (exclusive).
+
+### Verification process
+
+1. **Block Confirmation**:
+
+   - If the `firstOverflowBlock` cannot be determined or lacks the required [number of confirmations](#finality), the request is rejected.
+   - The request is also rejected if `firstOverflowBlockNumber` is less than or equal to `minimalBlockNumber`.
+
+2. **Search Range**:
+
+   - The search range includes blocks from `minimalBlockNumber` to `firstOverflowBlockNumber` (exclusive).
+   - If the verifier does not have complete visibility of all blocks in this range, the request is rejected.
+
+3. **Transaction Validation**:
+   - The request is confirmed if **no transaction** meeting the specified criteria (address, source addresses root, amount, reference) is found within the specified block range.
+   - The criteria and timestamp interpretation are specific to each chain.
+
+The verification process is chain-specific, with details described below.
+
+#### UTXO chains (Bitcoin and Dogecoin)
+
+- **Transaction Criteria**:
+  - The transaction **must not be a coinbase transaction**.
+  - The transaction must include the specified [standard payment reference](#standard-payment-reference).
+  - If `checkSourceAddresses` is set to true, the `sourceAddressesRoot` of the transaction must match the specified `sourceAddressesRoot`.
+  - The sum of all output values sent to the specified address **minus** the sum of all input values from the same address must be **greater than the specified `amount`**.
+    - Typically, the sum of input values for the specified address is zero.
+- **Timestamp**: Uses the **mediantime** of the block.
+
+#### Account-based chains (XRPL)
+
+- **Transaction Criteria**:
+
+  - The transaction must be of type **Payment**.
+  - The transaction must include the specified [standard payment reference](#standard-payment-reference).
+  - If `checkSourceAddresses` is set to true, the `sourceAddressesRoot` of the transaction must match the specified `sourceAddressesRoot`.
+  - One of the following conditions must hold:
+    - The transaction status is `SUCCESS` and the amount received by the specified address is greater than the specified `amount`.
+    - The transaction status is `RECEIVER_FAILURE` and the specified address would have received an amount greater than the specified `amount` if the transaction had succeeded.
+
+- **Timestamp**: Uses the **close_time** of the ledger, converted to UNIX time.
+
+:::note[Lowest used timestamp]
+
+For the `lowestUsedTimestamp` parameter, the value of `minimalBlockTimestamp` is used.
+
+:::
+
+## Standard payment reference
+
+<StandardPaymentReference />
+
+## Finality
+
+<Finality />
+
+## Contract interface
+
+<IReferencedPaymentNonexistence />

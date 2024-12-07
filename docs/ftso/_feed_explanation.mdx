@@ -1,0 +1,77 @@
+import CodeBlock from "@theme/CodeBlock";
+import TabItem from "@theme/TabItem";
+import Tabs from "@theme/Tabs";
+import GetFeedIdSol from "!!raw-loader!/examples/developer-hub-solidity/GetFeedId.sol";
+import GetFeedIdPy from "!!raw-loader!/examples/developer-hub-python/get_feed_id.py";
+import GetFeedIdJS from "!!raw-loader!/examples/developer-hub-javascript/get_feed_id.js";
+import GetFeedIdRs from "!!raw-loader!/examples/developer-hub-rust/src/bin/get_feed_id.rs";
+import GetFeedIdGo from "!!raw-loader!/examples/developer-hub-go/get_feed_id.go";
+
+<details>
+    <summary>Example of the structured encoding process.</summary>
+
+    Taking the feed name `FLR/USD`:
+
+    - **Category**: `01` (Crypto)
+    - **Hex-Encoded Feed Name**: `464c522f555344` (hexadecimal representation of `FLR/USD`)
+    - **Zero Padding**: The category and hex-encoded feed name combined and padded: `01464c522f55534400000000000000000000000000`
+    - **Final ID**: Adding the `0x` prefix results in `0x01464c522f55534400000000000000000000000000`
+
+    <Tabs block>
+        <TabItem value="Solidity" label="Solidity" default>
+
+            <CodeBlock language="solidity" title="GetFeedId.sol">
+                {GetFeedIdSol}
+            </CodeBlock>
+
+        </TabItem>
+        <TabItem value="Javascript" label="Javascript">
+
+            <CodeBlock language="javascript" title="get_feed_id.js">
+                {GetFeedIdJS}
+            </CodeBlock>
+
+        </TabItem>
+        <TabItem value="Python" label="Python">
+
+            <CodeBlock language="python" title="get_feed_id.py">
+                {GetFeedIdPy}
+            </CodeBlock>
+
+        </TabItem>
+        <TabItem value="Rust" label="Rust">
+
+            <CodeBlock language="rust" title="get_feed_id.rs">
+                {GetFeedIdRs}
+            </CodeBlock>
+
+        </TabItem>
+        <TabItem value="Go" label="Go">
+
+            <CodeBlock language="go" title="get_feed_id.go">
+                {GetFeedIdGo}
+            </CodeBlock>
+
+        </TabItem>
+    </Tabs>
+
+</details>
+
+<details>
+<summary>🚦 Understanding feed risks.</summary>
+
+When building applications, developers must carefully evaluate the quality of the data they use. As a developer, you are responsible for identifying and assessing the accuracy, availability, and overall quality of the data you choose to integrate. It is important to understand that all data feeds carry inherent risks.
+
+The table below categorizes feeds into three risk levels based on their market integrity, ranging from lowest to highest, a feed is assigned a higher risk level if it fails to meet **all** the criteria required for classification within a lower risk level:
+
+| **Aspect**                  | 🟢 **Low Risk**                           | 🟡 **Medium Risk**                          | 🔴 **High Risk**                                       |
+| --------------------------- | ----------------------------------------- | ------------------------------------------- | ------------------------------------------------------ |
+| **Intrinsic Volatility**    | Low, stable price trends                  | Moderate price fluctuations                 | High, frequent price swings                            |
+| **Liquidity Variation**     | Abundant and consistent                   | Sufficient but variable                     | Limited and inconsistent                               |
+| **Liquidity Concentration** | Broad and well-distributed across venues  | Somewhat concentrated                       | Highly concentrated in a few sources                   |
+| **Asset Spread Risk**       | Tight spreads, minimal bid-ask gaps       | Moderate spreads, acceptable bid-ask gaps   | Wide spreads, significant bid-ask gaps                 |
+| **Cross Rate Risk**         | Low correlation, direct pricing available | Moderate correlation, indirect pricing used | High correlation, dependent on multiple intermediaries |
+
+Each feed undergoes a rigorous assessment process prior to deployment. The evaluation criteria may vary depending on the specific type of feed being implemented and can evolve over time as our understanding of market integrity risks improves.
+
+</details>

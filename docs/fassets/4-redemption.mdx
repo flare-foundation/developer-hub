@@ -1,0 +1,131 @@
+---
+title: Redemption
+description: Understand how redemptions work in FAssets.
+keywords: [fassets, xrp, bitcoin, dogecoin, flare-network]
+---
+
+Any holder of FAssets can redeem their FAssets for the underlying original asset.
+To do so, these holders, known as redeemers, send FAssets to the Asset Manager smart contract, and the redeemed amount is paid with the underlying asset from an agent's address.
+
+## Redemption Process
+
+This is the summary of the redemption process:
+
+1. The redeemer starts the redemption for a whole number of lots by issuing a request to the Asset Manager smart contract.
+
+   The FAssets system chooses one or more redemption tickets from the front of the [FIFO redemption queue](/fassets/minting#redemption-tickets-and-the-redemption-queue).
+   The number of chosen redemption tickets is capped to avoid high gas consumption.
+   If the redemption amount requires too many tickets, only a partial redemption is done.
+
+2. The system burns FAssets from the redeemer's account in the amount of the total of the selected redemption tickets.
+   If the redeemer's account does not contain enough FAssets, the redemption fails immediately.
+
+3. Each chosen ticket belongs to an agent.
+   For every agent participating in the redemption, the system issues an event with the following redemption payment information:
+
+   - Redeemer's underlying address.
+
+     Agents can use the Data Connector to ensure the validity of this address.
+     Otherwise, malicious redeemers could provide an address that systematically blocks payments and exploit the redeeming process to their advantage.
+
+   - Amount to pay minus the fee that was already subtracted.
+   - [A payment reference](/fassets/minting#minting-payment-reference).
+     This payment reference is different for each agent and each redemption.
+   - The last underlying block and the last underlying timestamp to complete the payment.
+
+4. Every agent pays the redeemer on the underlying chain and includes the payment reference in the memo field of the payment transaction.
+
+   Agents can pay the redemption from any address they control on the underlying chain.
+   It does not need to be the same address where they receive minting payments.
+
+5. After the payment is finalized, the agent uses the [FDC](/fdc/overview) to prove the payment and obtain a payment proof.
+
+6. After the payment proof is presented to the FAssets system, the agent's vault collateral and pool collateral that were backing those FAssets are released.
+
+   After the collateral is released, it can either back the minting of more FAssets or be withdrawn.
+
+## Redemption-Payment Failure
+
+Agents have a limited time to pay the redeemer on the underlying chain.
+The amount of time is defined by the last block and the last timestamp on the underlying chain.
+If the payment is not made in time, the redeemer has to prove nonpayment to be compensated.
+After the redeemer presents the nonpayment proof, he is paid with the agent's collateral plus a _redemption default premium_.
+The premium is intended to encourage the agent to complete redemptions by paying with the underlying asset instead of collateral.
+
+If a payment fails and the failed transaction is recorded on the underlying chain, the agent must submit a proof of failed payment.
+In this way, the gas costs of the failed transaction can be accounted for by the FAssets system.
+If the transaction was not recorded, then no gas was spent and reporting is not necessary.
+
+If the agent does not report the failed payment in time, anyone can report the failed payment and receive a reward from the agent's vault.
+
+:::info
+
+    When payment fails because of the redeemer, the agent can obtain a proof of the failed payment from the Data Connector and present it to the FAssets system.
+    The agent's obligation is then fulfilled, and he can keep both the collateral and the underlying.
+
+    Two different proofs can be used:
+
+    * Proof of invalid address, due to a wrong syntax or checksum, for example.
+    * Proof of blocked payment: Even if the address is valid, it might contain a contract that blocks the payment.
+        This can only happen on underlying networks supporting smart contracts.
+
+        The agent must still try to pay and, if the payment is blocked, the agent can request this proof from the Data Connector and present it to the FAssets system.
+
+:::
+
+During step 4 above, if any agent does not to pay on the underlying chain, the redeemer completes the following procedure separately for each nonpaying agent:
+
+1. The redeemer obtains a proof of nonpayment from the Data Connector.
+2. The redeemer presents the nonpayment proofs to the FAssets system, which triggers a redemption failure.
+3. The redeemer is paid with collateral, according to the current price plus a premium.
+4. FAssets are overcollateralized, so, even after paying the redeemer with a premium, a remainder is released.
+   This remainder is derived by the [system-wide collateral ratio settings](/fassets/collateral#system-wide-thresholds) specified by governance.
+5. The underlying assets backing the redeemed FAssets are marked as free and can be withdrawn by the agent later.
+
+## Edge Cases
+
+### Unresponsive redeemer
+
+After a redemption nonpayment, the redeemer might not report the failure for some reason.
+In this case, the agent can present a nonpayment proof, and the redeemer receives collateral plus a premium.
+After this operation, the underlying backing collateral and the remaining local collateral are released.
+
+### Unresponsive agent
+
+After a successful payment, the agent might not present the payment proof.
+
+Because the agent has already paid, the redeemer is not affected.
+However, the system still requires the payment proof to correctly track the agent's balance on the underlying chain.
+After enough time for the agent to present the proof has elapsed, anyone can present the payment proof and receive collateral from the agent's vault.
+
+### Expired proof
+
+Proofs provided by the Data Connector are available for only 24 hours, approximately.
+If neither the redeemer nor the agent presents the proof of payment or nonpayment within 24 hours, the regular redeeming process cannot continue, and the agent's collateral could be locked indefinitely.
+
+The procedure to recover this collateral is the same as the procedure in the minting case.
+
+## Redemption Fee
+
+The redemption fee is the amount of the underlying asset that the agent can keep for doing the redemption.
+This fee is meant only to cover the agent's transaction fee on the underlying chain, so it is not shared with the collateral pool.
+The fee percentage is defined by governance, is the same for all agents, and is typically smaller than the minting fee.
+
+Governance calculates the percentage so that the fee to redeem 1 lot pays for a typical transaction fee on the underlying chain.
+Therefore, when larger amounts on a single address are redeemed, the agent accrues some extra fees because the underlying fee for small and large transactions is the same.
+However, when underlying fees are very high, the agent might still lose funds when a redemption for a small amount, such as 1 lot, is made.
+If this situation occurs frequently, governance will increase the redemption-fee percentage.
+
+## Self-redemption
+
+Agents can also act as users and redeem FAssets from their own vaults.
+This process is called self-redemption or self-closing, and it is simplified because payment on the underlying chain is not required.
+
+As shown in the following process, agents can self-redeem for any reason, including to stop liquidations because it reduces the amount of FAssets the agent is backing.
+
+1. An agent sends FAssets to their account.
+2. FAssets are burned.
+3. The collateral that was backing those assets is released.
+4. The underlying collateral is released and can be withdrawn from the underlying address later.
+
+The self-redeemed amount is not limited to a whole number of lots and can be less than 1 lot, which makes self-closing ideal for redeeming an agent's dust.

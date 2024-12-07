@@ -1,0 +1,162 @@
+### Bitcoin
+
+An address on Bitcoin is derived from the locking script (`pkscript`).
+Only standard locking scripts get assigned an address.
+There are two formats of the Bitcoin addresses, `Base58` and `Bech32(m)`.
+The format is determined based on the type of locking script.
+
+#### `Base58`
+
+Bitcoin's **Base58** format uses the following encoding dictionary:
+
+```
+123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz
+```
+
+##### Address Structure
+
+Decoded addresses have the format:
+
+```
+<leadingByte><hash><checksum>
+```
+
+##### Components
+
+- **`leadingByte`**:
+  - On **mainnet**:
+    - `00` for Pay-to-PubKey (p2pk) and Pay-to-PubKey-Hash (p2pkh)
+    - `05` for Pay-to-Script-Hash (p2sh)
+  - On **testnet**:
+    - `6f` for p2pk and p2pkh
+    - `c4` for p2sh
+- **`hash`**: Represents either the public key, hash of the public key, or hash of a script.
+- **`checksum`**: The first four bytes of the double SHA-256 hash of `<leadingByte><hash>`.
+
+##### Validation Criteria
+
+1. Address contains only characters from the Base58 dictionary.
+2. Decoded hexadecimal form is exactly **25 bytes** long (address length varies between **26 to 34 characters**).
+3. Starts with a valid `leadingByte`.
+4. The checksum is valid and matches the first four bytes of the double SHA-256 hash.
+
+##### Resources
+
+- [Base58Check Encoding](https://en.bitcoin.it/wiki/Base58Check_encoding)
+- [BIP-0013](https://en.bitcoin.it/wiki/BIP_0013)
+- [BIP-0016](https://en.bitcoin.it/wiki/BIP_0016)
+
+#### `Bech32(m)`
+
+Bech32 is a newer address format using the character set:
+
+```
+qpzry9x8gf2tvdw0s3jn54khce6mua7l
+```
+
+##### Address Structure
+
+A Bech32 address has the following components:
+
+- **Human-Readable Part (HRP)**:
+  - `bc` for **mainnet**
+  - `tb` for **testnet**
+- **Separator**: Always `1`
+- **Data Part**:
+  - The first character indicates the **witness version** (0-16).
+  - The last six characters form a **checksum**.
+
+The checksum differs based on the witness version:
+
+- **Bech32** for witness version `0` ([BIP-0173](https://en.bitcoin.it/wiki/BIP_0173))
+- **Bech32m** for witness versions `1` to `16` ([BIP-0350](https://en.bitcoin.it/wiki/BIP_0350))
+
+##### Validation Criteria
+
+1. Address contains only characters from the Bech32 dictionary.
+2. All non-numeric characters must be either entirely uppercase or lowercase.
+3. Starts with a valid HRP followed by the separator (`1`).
+4. Length is between **14 to 74 characters**, with the length modulo 8 being **0, 3, or 5**.
+   - For witness version `0`, length must be **42 or 62 characters**.
+5. Checksum is validated based on the witness version.
+6. Addresses with witness versions `2` and above are unsupported and invalid.
+
+##### Resources
+
+- [Bech32](https://en.bitcoin.it/wiki/Bech32)
+- [SegWit](https://en.bitcoin.it/wiki/Segregated_Witness)
+- [BIP-0141](https://en.bitcoin.it/wiki/BIP_0141)
+- [BIP-0341](https://en.bitcoin.it/wiki/BIP_0341)
+- [BIP-0350](https://en.bitcoin.it/wiki/BIP_0350)
+
+### Dogecoin (`Base58`)
+
+Dogecoin uses a **Base58** dictionary, identical to Bitcoin's:
+
+```
+123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz
+```
+
+#### Address Structure
+
+Decoded addresses have the format:
+
+```
+<leadingByte><hash><checksum>
+```
+
+#### Components
+
+- **`leadingByte`**:
+  - On **mainnet**:
+    - `1e` for p2pk and p2pkh
+    - `16` for p2sh
+  - On **testnet**:
+    - `6f` for p2pk and p2pkh
+    - `71` for p2sh
+- **`hash`**: Represents either the public key, hash of the public key, or script hash.
+- **`checksum`**: First four bytes of the double SHA-256 hash of `<leadingByte><hash>`.
+
+#### Validation Criteria
+
+1. Address contains only characters from the Base58 dictionary.
+2. Length is **26 to 34 characters**. Decoded hex form is **25 bytes**.
+3. Valid leading byte:
+   - **Mainnet**: Starts with `D`, `A`, or `9`.
+   - **Testnet**: Starts with `n`, `m`, or `2`.
+4. The checksum is validated.
+
+### XRPL (`Base58`)
+
+The XRP Ledger uses a custom **Base58** dictionary:
+
+```
+rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz
+```
+
+#### Address Structure
+
+Decoded to hexadecimal:
+
+```
+<leadingByte><publicKeyHash><checksum>
+```
+
+#### Components
+
+- **`leadingByte`**:
+  - On **mainnet**: `00` (addresses start with `r`).
+- **`publicKeyHash`**: A **20-byte** hash of the public key.
+- **`checksum`**: The first four bytes of the double SHA-256 hash of `<leadingByte><publicKeyHash>`.
+
+#### Validation Criteria
+
+1. Address contains only characters from the XRPL Base58 dictionary.
+2. Length is **25 to 35 characters**. Decoded hex form is **25 bytes**.
+3. Address starts with `r`.
+4. The checksum is valid.
+
+#### Resources
+
+- [XRPL Base58 Encodings](https://xrpl.org/base58-encodings.html)
+- [XRPL Addresses](https://xrpl.org/accounts.html#addresses)

@@ -1,0 +1,59 @@
+---
+title: ConfirmedBlockHeightExists
+description: Assertion whether a specified block number is confirmed.
+keywords: [fdc, oracle, flare-data-connector, flare-network]
+sidebar_position: 3
+---
+
+import Finality from "./_finality.mdx";
+import IConfirmedBlockHeightExists from "../reference/IConfirmedBlockHeightExists.mdx";
+
+Assertion whether a block with the specified `blockNumber` is **confirmed** with additional data to compute the **block production rate** within a given time window.
+
+## Supported chains
+
+- `BTC` (Bitcoin)
+- `DOGE` (Dogecoin)
+- `XRP` (XRP Ledger)
+- Test networks: `testBTC` (Bitcoin Testnet v3), `testDOGE`, `testXRP`
+
+## Request
+
+| Field         | Solidity Type | Description                                                          |
+| ------------- | ------------- | -------------------------------------------------------------------- |
+| `blockNumber` | `uint64`      | The block number to confirm.                                         |
+| `queryWindow` | `uint64`      | The time period (in seconds) to calculate the block production rate. |
+
+## Response
+
+| Field                             | Solidity Type | Description                                                                                              |
+| --------------------------------- | ------------- | -------------------------------------------------------------------------------------------------------- |
+| `blockTimestamp`                  | `uint64`      | The timestamp of the block at `blockNumber`.                                                             |
+| `numberOfConfirmations`           | `uint64`      | The required number of confirmations for the block to be considered confirmed (chain-specific).          |
+| `lowestQueryWindowBlockNumber`    | `uint64`      | The block number of the latest block with a timestamp strictly less than `blockTimestamp - queryWindow`. |
+| `lowestQueryWindowBlockTimestamp` | `uint64`      | The timestamp of the block at `lowestQueryWindowBlockNumber`.                                            |
+
+## Verification process
+
+1. The function checks if the block with `blockNumber` is confirmed by at least the required `numberOfConfirmations` for the specified chain.
+   - If the block does not meet this requirement, the request is rejected.
+   - A block at the tip of the chain has exactly **1 confirmation**.
+2. The lowestQueryWindowBlock` is identified, and its block number and timestamp are extracted.
+3. The required confirmations are defined based on chain-specific [finality](#finality).
+4. The returned `timestamp` is:
+   - `mediantime` for Bitcoin and Dogecoin.
+   - `close_time` for XRPL.
+
+:::note[Lowest used timestamp]
+
+For the `lowestUsedTimestamp` parameter, the value of `lowestQueryWindowBlockTimestamp` is used.
+
+:::
+
+## Finality
+
+<Finality />
+
+## Contract interface
+
+<IConfirmedBlockHeightExists />
