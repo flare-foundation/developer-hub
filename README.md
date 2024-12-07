@@ -91,7 +91,20 @@ To generate the Solidity contract documentation from the `flare-smart-contracts-
 To ensure [uv](https://docs.astral.sh/uv/) dependencies are synced, from within `automations/` run:
 
 ```bash
+cd automations
 uv sync
+```
+
+To update feed IDs:
+
+```bash
+uv run feed_table_generator.py
+```
+
+To update contract addresses using the Contract Registry:
+
+```bash
+uv run solidity_reference_table_generator.py
 ```
 
 To update contract addresses and FTSOv2 feed data, in the project root run:

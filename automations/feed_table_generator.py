@@ -172,7 +172,7 @@ if __name__ == "__main__":
     anchor_risk = read_data_from_file(ANCHOR_RISK_PATH)
     anchor_data = generate_feed_data(feed_names, anchor_risk, decimals, coins_list)
     write_data_to_file(ANCHOR_FEEDS_PATH, anchor_data)
-    
+
     logging.info(
         "Feed Table automation: Data successfully saved to %s and %s",
         BLOCK_LATENCY_FEEDS_PATH,
