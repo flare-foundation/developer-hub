@@ -1,0 +1,95 @@
+---
+title: Rewarding
+description: Explains the structure for distributing rewards in FSP.
+keywords:
+  [flare-network, configuration, blockchain, data, smart-contracts, wallets]
+---
+
+Flare's sub-protocols utilize a uniform signing weight for decision-making; however, reward distribution is based on the delegators' participation weights. Each sub-protocol calculates rewards for various participation weight types, allowing delegators to claim rewards according to their specific contribution shares.
+
+All rewards are managed through the [`RewardManager`](/network/fsp/solidity-reference/IRewardManager) contract and are claimable after the reward epoch concludes. Sub-protocols implement their own contracts to gather rewarding inputs, which are passed to the Reward Manager for distribution. Funding is provided by sub-protocol-specific contracts, which may also handle inflation-based rewards through automated offers.
+
+## Claim Structure
+
+Rewards are distributed through **reward claims**, which are data records indicating the allocation of rewards. Each claim consists of the following fields:
+
+- `rewardEpochId`: Identifier for the reward epoch.
+- `beneficiary`: The reward recipient, specified by address or node ID (20 bytes).
+- `amount`: Reward amount in FLR.
+- `claimType`: The category of the reward claim, which can be one of the following:
+  - `direct`: Rewards directly attributed to the beneficiary (address). Used for undistributed rewards, fund providers, burn claims, or specific rewarding approaches within sub-protocols.
+  - `fee`: Similar to 'direct' but specific to eligible voters. Covers delegation fees (WFLR) and node staking fees.
+  - `wflr`: Rewards for eligible voters, distributed to delegators based on their participation in WWFLR.
+  - `mirror`: Rewards distributed to delegators based on their participation in WM.
+  - `cchain`: Rewards for eligible voters, distributed based on their share in WC.
+
+Weight-based claims (`wflr`, `mirror`, `cchain`) represent total rewards for voters, to be distributed according to the delegators' participation in the voters' weight.
+
+## Calculation Process
+
+Each sub-protocol is responsible for calculating its partial reward claims for each reward epoch by:
+
+1. **Data Input**: Determining the relevant data sources (indexers).
+2. **Data Retrieval**: Querying data from indexers.
+3. **Reward Calculation**: Implementing reward algorithms to produce partial reward claims.
+
+**Partial reward claims** may have a negative amount if penalization is applied. The **Reward Voting Protocol** aggregates these partial claims into a single claim per beneficiary and type. The final claims are structured into a Merkle tree, and the Merkle root is confirmed through a voting process.
+
+## Claiming Process
+
+Once the Merkle root is confirmed for a reward epoch, rewards can be claimed via the **Reward Manager contract**:
+
+- For `direct` or `fee` claims, rewards are transferred directly to the beneficiary upon proof verification.
+- For **weight-based claims**, the process involves two steps:
+  1. **Initialization**: Submission of a reward claim with a Merkle proof to initialize variables.
+  2. **Delegator Claims**: Delegators can then claim their share without needing additional proofs.
+
+Once initialized, delegators can claim rewards through the Reward Manager contract. The reward for a delegator `x` is calculated as:
+
+$$
+\text{reward} = \frac{U_{T,r,b}^{amount} \times w(r, T, x, b)}{U_{T,r,b}^{weight}}
+$$
+
+where:
+
+{/* prettier-ignore */}
+- $ U_{T,r,b}^{weight} $ is the unclaimed delegation weight for reward epoch $r$ and beneficiary $b$.
+{/* prettier-ignore */}
+- $ U_{T,r,b}^{amount} $ is the unclaimed reward amount for reward epoch $r$ and beneficiary $b$.
+- $ w(r, T, x, b) $ is the weight delegated by $x$ to $b$ for weight type $T$ during reward epoch $r$.
+- The claimed reward reduces the unclaimed amount and weight, and the payout is made directly to $x$.
+
+## Incentivizing Fast Signing and Finalization
+
+Sub-protocols are designed to encourage fast signature deposition and finalization:
+
+1. **Finalization Rewards**:
+
+   - The first entity to finalize a Merkle root earns the reward.
+   - To avoid centralization, rewards prioritize eligible voters and distribute based on their weight.
+   - A grace period (20s) allows selected data providers to finalize or attempt finalization before others.
+
+2. **Signing Deposition Rewards**:
+   - Voters submitting signatures within a grace period (10s) receive rewards.
+   - Signatures submitted until the block of finalization are also rewarded if they meet weight thresholds.
+
+### Finalization Incentives
+
+During the **grace period** for finalization (20s), selected data providers are rewarded based on a pseudo-random selection algorithm:
+
+- A hash value is used to determine which voters are eligible for finalization rewards based on their signing weight.
+- Voters are selected in proportion to their weights, and rewards are distributed among them.
+
+If finalization is not completed within the grace period, the first to finalize receives the full reward, provided it happens within the extended reward window (`i + 2` voting epochs).
+
+### Claim Generation and Reward Distribution
+
+Each sub-protocol allocates rewards for:
+
+1. **Finalization**: Rewards for submitting sufficient signatures to finalize a Merkle root.
+2. **Signing Deposition**: Rewards for voters who timely submit valid signatures.
+
+The reward amount attributed to a voter is split into:
+
+- **Fee Claims**: Deducted as delegation fees (WNat delegations).
+- **Weight Participation Claims**: Remaining rewards are distributed among delegators and stakers based on their weights.
