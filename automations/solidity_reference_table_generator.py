@@ -40,10 +40,8 @@ def get_solidity_reference(
         web3 = Web3(Web3.HTTPProvider(rpc_url))
 
         if not web3.is_connected():
-            logging.error(
-                "Could not connect to the %s with RPC: %s", network_name, rpc_url
-            )
-            continue
+            msg = f"Could not connect to the {network_name} with RPC: {rpc_url}"
+            raise ConnectionError(msg)
 
         contract = web3.eth.contract(
             address=Web3.to_checksum_address(registry_address), abi=registry_abi
