@@ -1,0 +1,115 @@
+---
+title: Protocol Components
+description: Defines the structure, voting, and weight calculations for FSP.
+keywords:
+  [flare-network, configuration, blockchain, data, smart-contracts, wallets]
+---
+
+## Voters
+
+Voters are off-chain participants in Flare's protocols, responsible for threshold-weighted voting across all sub-protocols. The system anticipates **100 voters**, selected among validators with the highest vote power.
+
+**Vote Power Sources**:
+
+- **P-chain Stake**: Adding FLR stake to a validator node.
+- **WNat Delegations**: Community members delegate vote power via the WNat smart contract.
+
+Each voter is identified by an **identity address** (managed securely via cold wallets), used for:
+
+- Establishing voter identity.
+- Conducting admin operations (e.g., setting fees, signing addresses, delegation addresses).
+- Enabling delegations to a voter's address for WNat and staking weight.
+
+**Signing and Prioritized Addresses**:
+
+- Voters can set a **signing address** (hot wallet) for protocol participation.
+- **Prioritized submission addresses** are used for on-chain communication, defaulting to the identity address.
+- Rewards are distributed either directly to the identity address or based on participation weights (delegation and node IDs).
+
+## Voting Periods
+
+- **Voting Epoch**: The shortest voting unit, lasting **90 seconds**. The first epoch starts at `T0` and increments by `i * 90s`.
+- **Reward Epoch**: Comprises **3360 voting epochs** (approx. 3.5 days). Identified by reward epoch IDs, with each reward epoch starting after the previous one concludes. However, reward epochs may be extended due to network delays.
+
+**Voting Rounds**:
+
+- Sub-protocols typically vote once per voting epoch.
+- System protocols may vote once per reward epoch.
+- Each voting round is identified by the ID of the epoch in which it started.
+
+## Voting Results and Finalization
+
+Each sub-protocol aims to reach consensus on a **Merkle root** for every voting round:
+
+- Voters independently compute candidate Merkle roots and submit signed roots on-chain.
+- A root is confirmed if it surpasses a **50%+ voting weight threshold**.
+- Finalization occurs when signatures exceeding the threshold are submitted to the [`Relay`](/network/fsp/solidity-reference/IRelay) contract, which verifies and stores confirmed Merkle roots. These are accessible for proof verification by other smart contracts.
+
+**Protocol Message Structure**:
+
+- (`pID`, `roundID`, `isSecureRandom`, `root`): Contains sub-protocol ID, voting round ID, random number status, and Merkle root.
+
+**Random Number Inclusion**:
+
+- Certain protocols (e.g., FTSO scaling) embed random numbers into Merkle trees, enabling secure random number generation for further use.
+
+## Using Confirmed Voting Results
+
+To verify data on-chain:
+
+1. Smart contracts receive:
+   - Protocol data (structured as a Solidity struct).
+   - Voting round ID.
+   - Merkle proof.
+2. The smart contract encodes the data and applies the Merkle proof to match the confirmed root from the **Relay contract**.
+3. If the roots match, the data is verified.
+
+## Voting (Signing) Policies
+
+Voter eligibility and weights are determined for each **reward epoch** (~3.5 days). The **Signing Policy Definition Protocol** sets the eligible voters, their weights, and the threshold required for confirmation before each reward epoch begins.
+
+**Sources of Voting Weight**:
+
+- **P-chain Stake ($W_P$)**: Long-term staked FLR.
+- **Mirrored Stake ($W_M$)**: Roughly similar to $W_P$
+- **C-chain Stake ($W_C$)**: Planned for future use.
+- **WNat Delegations ($W_{WFLR}$)**: Community-delegated vote power on the WNat contract.
+
+**Aggregated Voting Weight**:
+
+$$
+W(v, r) = A(W_{M}(v, r), W_{C}(v, r), W_{WFLR}(v, r))
+$$
+
+- **Capped WFLR**: Limited to 2.5% of total wrapped weight.
+- **Total Voting Weight**: Calculated by summing up the weights of all eligible voters.
+
+## Weight Participation and Fees
+
+- **P-chain Stake**: Requires a node ID and declared staking fee. Delegators contribute to the weight by staking on node IDs.
+- **WNat Delegations**: Voters set delegation fees on the [`EntityManager`](/network/fsp/solidity-reference/IEntityManager) contract. Community members delegate to addresses based on yields and fees.
+- **C-chain Stake**: Participation logic is under development.
+
+## Signing Policies and Thresholds
+
+A **signing policy** includes:
+
+- `rewardEpochId`: Reward epoch ID.
+- `startVotingRoundId`: Indicates the start of a reward epoch.
+- `voters`: Canonical list of voter addresses.
+- `weights`: Compressed, normalized weights (2-byte values).
+- `threshold`: Usually set to **50%+** of total weight.
+- `seed`: Secure random seed.
+
+**Threshold Adjustments**:
+
+- Regular threshold: **50%+**
+- In case of delays: **60%+**
+
+## Signature Verification
+
+Uses standard ECDSA signatures. The [`Relay`](/network/fsp/solidity-reference/IRelay) contract checks if the signing policy is supported by comparing stored hashes with the provided calldata, minimizing on-chain storage costs.
+
+## Random Number Generation
+
+Random numbers are generated as a byproduct of [FTSOv2 Scaling](/ftso/scaling/overview) using a commit-reveal process.

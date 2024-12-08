@@ -1,0 +1,154 @@
+---
+title: Offchain Services
+description: Outlines the architecture of off-chain services supporting FSP.
+keywords:
+  [flare-network, configuration, blockchain, data, smart-contracts, wallets]
+---
+
+The **Flare Systems Protocol** utilizes a set of off-chain services encapsulated within the **Flare Systems Client**. These services interact with blockchain smart contracts to support various protocols. Key components include:
+
+1. **Protocol Manager Service**: Handles periodic transactions (`submit1`, `submit2`, `submitSignatures`, and future `submit3`) for each voting round by querying protocol data providers.
+2. **Reward Aggregator Service**: Submits the Merkle root of combined reward claims once per reward epoch.
+3. **Signing Policy Voter Service**: Signs new signing policies after they are defined, once per reward epoch.
+4. **Voter Registration Service**: Registers voters on the [`VoterRegistry`](/network/fsp/solidity-reference/IVoterRegistry) contract.
+5. **Finalizer Service**: Submits finalization transactions when a voter is eligible to finalize a specific sub-protocol.
+6. **Scheduler**: Coordinates transaction scheduling across services.
+7. **Uptime Voting Client**: Submits validator uptime votes once per reward epoch.
+
+Each voter runs an independent instance of the **Flare Systems Client**, which manages private keys and transaction submissions, enabling participation across multiple sub-protocols.
+
+## Protocol Manager Service
+
+The **Protocol Manager Service** sends the following transactions within each voting epoch:
+
+- **submit1, submit2, submit3**: Data submission at scheduled times.
+- **submitSignatures**: Submits signatures once all required data is collected.
+
+**Data Flow**:
+
+1. The service queries protocol data providers via API to fetch data.
+2. The fetched data is processed, encoded, and sent in transaction calldata as:
+   ```
+   tx_data = function_selector + concatenated_data
+   ```
+   where each payload includes:
+   - `protocolId` (1 byte)
+   - `votingRoundId` (4 bytes)
+   - `size` (2 bytes)
+   - `payload` (encoded protocol data)
+
+**API Endpoints for Protocol Data Providers**:
+
+- `GET /submit1/:votingRoundId/:submitAddress`
+- `GET /submit2/:votingRoundId/:submitAddress`
+- `GET /submitSignatures/:votingRoundId/:submitSignaturesAddress`
+- `GET /submit3/:votingRoundId/:submitAddress`
+
+**Response Format**:
+
+```json
+{
+  "status": "OK",
+  "data": "0x1234...",
+  "additionalData": "0x5678..."
+}
+```
+
+The services are voter-agnostic, requiring only `votingRoundId` and `submitAddress` as inputs.
+
+## Reward Aggregator Service
+
+The **Reward Aggregator Service** calculates and submits the Merkle root of reward claims at the end of each reward epoch:
+
+- Fetches reward data from protocol reward calculators using C-chain and P-chain indexers.
+- Submits the final Merkle root via `signRewards`.
+
+**API for Reward Calculation**:
+
+- `GET /rewards/:rewardEpochId`
+- Response:
+  ```json
+  {
+    "status": "OK",
+    "data": "0xabc123..."
+  }
+  ```
+
+## Signing Policy Voter Service
+
+Monitors the `SigningPolicyInitialized` event on the Relay contract:
+
+- Signs the new policy using `signNewSigningPolicy`.
+- Tracks `SigningPolicySigned` events to determine if further signatures are needed.
+
+## Voter Registration Service
+
+- Listens for `VotePowerBlockSelected` events.
+- Registers the voter on the `VoterRegistry` contract before the `SigningPolicyInitialized` event signals the end of the registration period.
+
+## Finalizer Service
+
+The **Finalizer Service** handles finalizing votes:
+
+- Collects signatures from the `submitSignatures` transaction.
+- Once a sufficient weight of signatures is gathered, submits finalization data to the Relay contract.
+- Prioritizes finalization during the grace period to maximize rewards.
+
+**Finalization Strategy**:
+
+- Finalizes within the grace period if eligible.
+- Competes for first finalization if the grace period has expired.
+
+## Data Encoding and Payloads
+
+Data for `submitSignatures` is structured as follows:
+
+**Version 0**:
+
+- `type` (1 byte): Message type (0 for ECDSA).
+- `message` (38 bytes):
+  - `protocolId` (1 byte)
+  - `votingRoundId` (4 bytes)
+  - `randomQualityScore` (1 byte)
+  - `merkleRoot` (32 bytes)
+- `signature` (65 bytes): ECDSA signature components (`v`, `r`, `s`).
+- `unsignedMessage` (optional): Additional data (e.g., revealed random number).
+
+**Version 1**: Similar structure with adjusted payload format.
+
+## Data Availability and Merkle Trees
+
+Each sub-protocol assembles Merkle trees using off-chain data:
+
+- Data is obtained via the `GET /data/:votingRoundID` endpoint.
+- The API returns:
+  ```json
+  {
+      "status": "OK",
+      "data": [{"abiName": "StructName", "data": {...}}]
+  }
+  ```
+- ABI definitions are accessible via `GET /data-abis`.
+
+## Storage and Calculation Model
+
+**Data Sources**:
+
+- Events emitted by smart contracts.
+- Calldata from specific contract calls.
+- Immutable contract values, indexed by time.
+
+The **Flare blockchain indexer** enables querying by time intervals and event types. Voters use the indexer to fetch data and perform calculations, which are then encoded into Merkle roots.
+
+**Benefits**:
+
+- Supports complex calculations beyond Solidity’s capabilities.
+- Reduces storage costs by storing only Merkle roots on-chain.
+
+## Result Availability and APIs
+
+Voters assemble Merkle roots for voting and can provide services to access confirmed data. This data can be exposed via APIs, allowing users to obtain calculation results with full Merkle proofs for on-chain verification.
+
+## Transaction Prioritization
+
+The **Submission Smart Contract** prioritizes key transactions (`submit1`, `submit2`, `signatureDeposit`) to subsidize gas costs. Multiple sign transactions are allowed, but only one subsidized submission is permitted per voting round.
