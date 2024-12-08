@@ -1,23 +1,97 @@
-# Contributing Guidelines
+# Contributing Guidelines  
 
-_Pull requests, bug reports, and all other forms of contribution are welcomed!_
+We’re excited you want to contribute to the **Flare Developer Hub**! 🎉  
 
-This guide serves to set clear expectations for everyone involved with the project so that we can improve it together.
+Please follow these guidelines to ensure a smooth and productive collaboration.
 
-## Writing Commit Messages
+## 🤝  **How to Contribute**  
 
-Follow the [Conventional Commit style](https://www.conventionalcommits.org/en/v1.0.0/).
+We welcome:  
+- **Pull Requests (PRs)** for bug fixes, features, and documentation updates  
+- **Bug Reports** for issues found  
+- **Feature Requests** and suggestions
 
-## Submitting Pull Requests
+## 📝 **Commit Message Guidelines**  
 
-**Note: All contributions will be licensed under the project's license.**
+Use the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format for clear, structured commit messages:  
 
-- **Smaller is better.** Submit **one** pull request per bug fix or feature. A pull request should contain isolated changes pertaining to a single bug fix or feature implementation. **Do not** refactor or reformat code that is unrelated to your change. It is better to **submit many small pull requests** rather than a single large one. Enormous pull requests will take enormous amounts of time to review, or may be rejected altogether.
+**Format:**  
 
-- **Coordinate bigger changes.** For large and non-trivial changes, open an issue to discuss a strategy with the maintainers. Otherwise, you risk doing a lot of work for nothing!
+```  
+<type>(<scope>): <description>  
+```  
 
-- **Follow existing coding style and conventions.** Keep your code consistent with the style, formatting, and conventions in the rest of the code base. When possible, these will be enforced with a linter. Consistency makes it easier to review and modify in the future.
+**Examples:**  
+- `fix(api): correct response status for invalid input`  
+- `feat(docs): add section for new API usage`  
 
-- **Promptly address any CI failures**. If your pull request fails to build or pass tests, please push another commit to fix it.
+**Types:**  
+- `feat`: New feature  
+- `fix`: Bug fix  
+- `docs`: Documentation updates  
+- `chore`: Maintenance tasks  
+- `test`: Adding or improving tests  
+- `refactor`: Code improvements without feature changes  
 
-- **[Resolve any merge conflicts](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/resolving-a-merge-conflict-on-github)** that occur.
+## 🔄 **Submitting a Pull Request (PR)**  
+
+**Important: All contributions will be licensed under the project’s license.**  
+
+### **Best Practices**  
+
+1. **Keep PRs Small and Focused**:  
+   - Submit **one PR per feature or bug fix.**  
+   - Avoid combining unrelated changes.  
+
+2. **Discuss Large Changes First**:  
+   - For significant features or major changes, [open an issue](https://github.com/flare-foundation/developer-hub/issues) to discuss it with maintainers **before** submitting a PR.  
+
+3. **Follow the Code Style**:  
+   - Match the existing code style and structure.  
+   - Use the configured linter and formatter when applicable.  
+
+4. **Ensure Tests Pass**:  
+   - Run the test suite and address any **CI/CD pipeline failures.**  
+
+5. **Handle Merge Conflicts Early**:  
+   - If a merge conflict occurs, [resolve it](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/resolving-a-merge-conflict-on-github) promptly.  
+
+
+## 🎨 **Diagrams Style Guide**  
+
+When contributing diagrams, follow the established visual style:  
+
+| **Element**             | **Light Mode** | **Dark Mode** |
+|------------------------|----------------|---------------|
+| **Border Width**        | 1px            | 1px           |
+| **Border Color**        | `#E7125E`      | `#EF4A82`     |
+| **Arrow Width**         | 1px            | 1px           |
+| **Arrow Color**         | `#595959`      | `#FFFFFF`     |
+| **Onchain Border Style** | Solid          | Solid         |
+| **Offchain Border Style** | Dashed         | Dashed        |
+
+**Tip:** Use the dashed style **only if** both onchain and offchain elements are displayed.
+
+## 💡 **Contributing Workflow Summary**  
+
+1. **Fork the Repository** and create a new branch:  
+
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+2. **Commit Changes** using the Conventional Commit format:  
+
+   ```bash
+   git commit -m "feat(api): add support for new endpoints"
+   ```
+
+3. **Push the Branch** to your fork:  
+
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+
+4. **Open a Pull Request (PR)** on the main repository.  
+
+By following these guidelines, you’ll help maintain a high-quality, collaborative development environment. Thank you for contributing!

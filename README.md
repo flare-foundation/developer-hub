@@ -2,74 +2,98 @@
 
 The decentralized origin for Flare builders ☀️.
 
-This website is built using [Docusaurus](https://docusaurus.io/), a modern static site generator.
+This site is built with [Docusaurus](https://docusaurus.io/), a modern static site generator.
 
-## Code Examples
+## 🚀 **Getting Started**
 
-[developer-hub/examples](examples/) contains commonly used code snippets for Python, Javascript, Rust and Go.
+### Prerequisites
 
-## Getting Started
-
-Ensure you have the following tools installed:
+Ensure the following tools are installed:
 
 - [Node.js v20](https://nodejs.org/en/)
 - [nvm](https://github.com/nvm-sh/nvm) for managing multiple Node.js versions
 
-Once you have Node.js v20 installed, you can set up the project dependencies:
+### Installation
 
-```bash
-npm install
-```
+1. Clone the repository:
 
-To start the local development server:
+   ```bash
+   git clone https://github.com/flare-foundation/developer-hub.git
+   cd developer-hub
+   ```
 
-```bash
-npm run start
-```
+2. Install dependencies:
 
-This command will launch a development server and automatically open your default browser. Most changes you make in the project will be reflected live, without the need to restart the server.
+   ```bash
+   npm install
+   ```
 
-## Formatting
+3. Start the local development server:
 
-### Docs formatting
+   ```bash
+   npm run start
+   ```
 
-To ensure consistency across the project, you should format all docs using [Prettier](https://prettier.io/):
+   This launches the development server and automatically opens your default browser. Live reloading ensures changes appear instantly.
+
+## 🧑‍💻 **Code Examples**
+
+Browse commonly used snippets in [developer-hub/examples/](examples/).
+
+Supported languages:
+
+- **Python**
+- **JavaScript**
+- **Rust**
+- **Go**
+
+## 🛠️ **Development Guidelines**
+
+### Documentation Formatting
+
+Ensure consistent formatting using [Prettier](https://prettier.io/):
 
 ```bash
 npm run format
 ```
 
-**Important**: Prettier support for MDXv3 is still a work in progress (see [this issue](https://github.com/prettier/prettier/issues/12209)). If necessary, you can manually exclude sections from Prettier by adding `{/* prettier-ignore */}` in your code.
+**Note**: Prettier support for MDXv3 is evolving ([tracking issue](https://github.com/prettier/prettier/issues/12209)). If needed, bypass Prettier by using:
 
-### Code formatting
+```plaintext
+{/* prettier-ignore */}
+```
 
-All [developer-hub/examples](examples/) code snippets use language-specific formatting tools.
+### Code Formatting
 
-## Building the Project
+All code examples in [**examples/**](examples/) follow language-specific formatters.
 
-To create a production build of the Flare Developer Hub:
+## 🏗️ **Building for Production**
+
+To create a production-ready build:
 
 ```bash
 npm run build
 ```
 
-This will generate static content and place it in the `build` directory.
+The static files are generated in the `build` directory. To serve the production build locally:
 
-**Note**: The search functionality will only work with a production build, so make sure to test it using a production environment.
+```bash
+npm run serve
+```
 
-## Autogenerate Solidity Documentation
+**Tip**: Test search functionality using a production build.
 
-To generate the Solidity contract documentation from the `flare-smart-contracts-v2` repository:
+## 📄 **Autogenerate Solidity Documentation**
 
-1. **Switch Node.js Version**:  
-   The `flare-smart-contracts-v2` project requires Node.js v18, while the `developer-hub` requires Node.js v20. Use `nvm` to switch between versions:
+To generate Solidity documentation:
+
+1. **Switch to Node.js v18:**
 
    ```bash
    nvm use 18
    ```
 
-2. **Run the Documentation Generation Script**:  
-   Navigate to the `docgen` folder, make the script executable, and run it:
+2. **Run the Documentation Generator:**
 
    ```bash
    cd docgen
@@ -77,42 +101,49 @@ To generate the Solidity contract documentation from the `flare-smart-contracts-
    ./generate-solidity-docs.sh
    ```
 
-   This will pull the latest smart contracts and generate the documentation.
+   This pulls the latest smart contracts and generates docs.
 
-3. **Switch Back to Node.js v20**:  
-   After generating the Solidity documentation, switch back to Node.js v20 for `developer-hub`:
+3. **Switch Back to Node.js v20:**
 
    ```bash
    nvm use 20
    ```
 
-## Run Automations
+## 🔄 **Automations**
 
-To ensure [uv](https://docs.astral.sh/uv/) dependencies are synced, from within `automations/` run:
+Ensure [uv](https://docs.astral.sh/uv/) dependencies are synced:
 
 ```bash
 cd automations
 uv sync
 ```
 
-To update feed IDs:
+### Automated Tasks
 
-```bash
-uv run feed_table_generator.py
-```
+1. **Update Feed IDs:**
 
-To update contract addresses using the Contract Registry:
+   Generate and save feed IDs in `anchor_feeds.json` and `block_latency_feeds.json`:
 
-```bash
-uv run solidity_reference_table_generator.py
-```
+   ```bash
+   uv run feed_table_generator.py
+   ```
 
-To update contract addresses and FTSOv2 feed data, in the project root run:
+2. **Update Contract Addresses:**
 
-```bash
-npm run automations
-```
+   Fetch and save contract addresses in `solidity_reference.json`:
 
-## Contributing
+   ```bash
+   uv run solidity_reference_table_generator.py
+   ```
 
-Contributions to Flare Developer Hub are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before making your first PR.
+3. **Run All Automations:**
+
+   Execute all tasks at once:
+
+   ```bash
+   npm run automations
+   ```
+
+## 🤝 **Contributing**
+
+Contributions are welcome! Before your first PR, read the [**CONTRIBUTING.md**](CONTRIBUTING.md).
