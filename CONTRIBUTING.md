@@ -4,6 +4,18 @@ We’re excited you want to contribute to the **Flare Developer Hub**! 🎉
 
 Please follow these guidelines to ensure a smooth and productive collaboration.
 
+---
+
+## **Table of Contents**
+
+- [How to Contribute](#how-to-contribute)
+- [Commit Message Guidelines](#commit-message-guidelines)
+- [Submitting a Pull Request (PR)](#submitting-a-pull-request-pr)
+- [Diagrams Style Guide](#diagrams-style-guide)
+- [Contributing Workflow Summary](#contributing-workflow-summary)
+
+---
+
 ## 🤝 **How to Contribute**
 
 We welcome:
@@ -12,9 +24,25 @@ We welcome:
 - **Bug Reports** for issues found
 - **Feature Requests** and suggestions
 
+### Guidelines for Contributions
+
+1. **Open an Issue:**
+
+   - Before starting, check if an issue already exists in the [issue tracker](https://github.com/flare-foundation/developer-hub/issues).
+   - Comment on the issue you’re interested in working on to avoid duplication.
+
+2. **Good First Issues:**
+
+   - If you’re new to the project, check out issues tagged as `good first issue` to get started.
+
+3. **Collaborate:**
+   - Engage with maintainers in discussions to refine ideas and approaches.
+
+---
+
 ## 📝 **Commit Message Guidelines**
 
-Use the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format for clear, structured commit messages:
+Follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format for clear and structured commit messages:
 
 **Format:**
 
@@ -27,14 +55,23 @@ Use the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) f
 - `fix(api): correct response status for invalid input`
 - `feat(docs): add section for new API usage`
 
-**Types:**
+### **Types:**
 
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation updates
-- `chore`: Maintenance tasks
-- `test`: Adding or improving tests
-- `refactor`: Code improvements without feature changes
+| Type       | Description                               |
+| ---------- | ----------------------------------------- |
+| `feat`     | New feature                               |
+| `fix`      | Bug fix                                   |
+| `docs`     | Documentation updates                     |
+| `chore`    | Maintenance tasks                         |
+| `test`     | Adding or improving tests                 |
+| `refactor` | Code improvements without feature changes |
+
+### Additional Notes:
+
+- **Scope:** Indicates the area of the project affected (e.g., `api`, `docs`, `frontend`).
+- Keep commit messages concise but descriptive.
+
+---
 
 ## 🔄 **Submitting a Pull Request (PR)**
 
@@ -42,26 +79,28 @@ Use the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) f
 
 ### **Best Practices**
 
-1. **Keep PRs Small and Focused**:
+1. **Keep PRs Small and Focused:**
 
-   - Submit **one PR per feature or bug fix.**
+   - Submit **one PR per feature or bug fix**.
    - Avoid combining unrelated changes.
 
-2. **Discuss Large Changes First**:
+2. **Discuss Large Changes First:**
 
    - For significant features or major changes, [open an issue](https://github.com/flare-foundation/developer-hub/issues) to discuss it with maintainers **before** submitting a PR.
 
-3. **Follow the Code Style**:
+3. **Follow the Code Style:**
 
    - Match the existing code style and structure.
    - Use the configured linter and formatter when applicable.
 
-4. **Ensure Tests Pass**:
+4. **Ensure Tests Pass:**
 
    - Run the test suite and address any **CI/CD pipeline failures.**
 
-5. **Handle Merge Conflicts Early**:
+5. **Handle Merge Conflicts Early:**
    - If a merge conflict occurs, [resolve it](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/resolving-a-merge-conflict-on-github) promptly.
+
+---
 
 ## 🎨 **Diagrams Style Guide**
 
@@ -77,6 +116,8 @@ When contributing diagrams, follow the established visual style:
 | **Offchain Border Style** | Dashed         | Dashed        |
 
 **Tip:** Use the dashed style **only if** both onchain and offchain elements are displayed.
+
+---
 
 ## 💡 **Contributing Workflow Summary**
 
