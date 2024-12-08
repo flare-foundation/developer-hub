@@ -1,0 +1,45 @@
+name: Typo Check
+
+on:
+  pull_request:
+    paths:
+      - '**/*.md'
+      - '**/*.mdx'
+      - '**/*.txt'
+      - '**/*.json'
+      - '**/*.yml'
+      - '**/*.yaml'
+      - '**/*.rst'
+      - '**/*.py'
+      - '**/*.js'
+      - '**/*.ts'
+      - '**/*.html'
+
+jobs:
+  spell-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install codespell
+        run: pip install codespell
+
+      - name: Run Spell Check
+        run: |
+          codespell \
+            --ignore-words-list="teh,recieve,config,thru" \
+            --skip="*.svg,*.png,*.jpg,*.woff,*.woff2" \
+            --quiet-level=2 \
+            --check-filenames \
+            .
+
+      - name: Annotate spelling errors
+        if: failure()
+        run: echo "::error::Spelling errors detected. Please fix the typos."
