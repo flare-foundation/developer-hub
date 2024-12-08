@@ -2,7 +2,6 @@
 title: IFdcInflationConfigurations
 sidebar_position: 5
 description: Interface for managing FDC inflation configuration.
-unlisted: true
 ---
 
 Interface for managing FDC inflation configuration.

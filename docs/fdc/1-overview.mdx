@@ -9,8 +9,7 @@ import useBaseUrl from "@docusaurus/useBaseUrl";
 
 :::info
 
-FDC is currently under development.
-Get involved in alpha testing on Flare Testnet Coston2 by following the [FDC Guides](/category/fdc-guides).
+FDC is currently in testing on Flare Testnet Coston2 prior to its launch on Flare Mainnet.
 
 :::
 
@@ -46,7 +45,7 @@ For a detailed explanation of the FDC mechanism, read the [FDC whitepaper](https
 
 The DA Layer provides users with a standardized set of API endpoints to query offchain data from Flare's enshrined protocols such as FDC.
 Operating a DA Layer is permissionless, with the only requirement being access to data from an [FTSOv2 data provider](/run-node/ftso-data-provider) and [FDC attestation provider](/run-node/fdc-attestation-provider).
-In all cases, accessing data from the DA Layer is trustless, since the Merkle root of the data can be computed and compared by the end user with the version [finalized onchain](/network/fsp/IRelay#merkleroots).
+In all cases, accessing data from the DA Layer is trustless, since the Merkle root of the data can be computed and compared by the end user with the version [finalized onchain](/network/fsp/solidity-reference/IRelay#merkleroots).
 
 <ThemedImage
   alt="FTSO Price Comparison"
@@ -63,7 +62,7 @@ In all cases, accessing data from the DA Layer is trustless, since the Merkle ro
 1. **Attestation Request Submission:** A user submits an attestation request to the [`FdcHub`](/fdc/reference/IFdcHub) smart contract.
 2. **Batch Processing:** Data providers batch and process requests based on emission timestamps.
 3. **Data Retrieval and Merkle Construction:** Data providers fetch data, format responses, and create a Merkle tree of hashed responses.
-4. **Consensus and Relay Storage:** Once 50%+ weight of signatures is reached for a Merkle root, it is stored in the [`Relay`](/network/fsp/IRelay) contract.
+4. **Consensus and Relay Storage:** Once 50%+ weight of signatures is reached for a Merkle root, it is stored in the [`Relay`](/network/fsp/solidity-reference/IRelay) contract.
 5. **Response and Proof Usage:** Users fetch responses and Merkle proofs from the DA Layer and submit them to the smart contract.
 6. **Verification and Action:** The smart contract verifies the proof and uses the attested data if valid.
    test
@@ -74,7 +73,7 @@ In all cases, accessing data from the DA Layer is trustless, since the Merkle ro
 2. **Prepare Attestation Request:** Format the request based on the required attestation type and expected response hash (MIC). Data providers can assist in generating the request.
 3. **Submit Request:** Use the [`requestAttestation`](/fdc/reference/IFdcHub#requestattestation) function of the [`FdcHub`](/fdc/reference/IFdcHub) smart contract, providing the encoded request and base fee. Fees vary by attestation type and source and can be queried from the `FdcRequestFeeConfigurations` contract.
 4. **Track Request:** Record the timestamp of the block where the transaction is included. Calculate the voting round for processing based on this timestamp.
-5. **Wait for Finalization:** Wait for the voting round to finalize. A [`Relay`](/network/fsp/IRelay) contract event signals finalization.
+5. **Wait for Finalization:** Wait for the voting round to finalize. A [`Relay`](/network/fsp/solidity-reference/IRelay) contract event signals finalization.
 6. **Retrieve Data:** Query the DA Layer for the attestation response and Merkle proof.
 7. **Submit Data to Smart Contract:** Provide the attestation response and Merkle proof for verification and use.
 
@@ -93,7 +92,7 @@ In all cases, accessing data from the DA Layer is trustless, since the Merkle ro
 4. **Submit BitVectors:** During the "choose phase" (90-135 seconds into the round), submit a BitVector indicating verified requests.
 5. **Consensus Building:** Aggregate BitVectors to compute a consensus BitVector after the choose phase.
 6. **Merkle Tree Creation:** Create a Merkle tree from the hashes of validated responses for consensus requests.
-7. **Sign and Submit Merkle Root:** Sign the Merkle root and submit signatures. When 50%+ weight is reached, a chosen provider submits the finalized signatures to the [`Relay`](/network/fsp/IRelay) contract.
+7. **Sign and Submit Merkle Root:** Sign the Merkle root and submit signatures. When 50%+ weight is reached, a chosen provider submits the finalized signatures to the [`Relay`](/network/fsp/solidity-reference/IRelay) contract.
 8. **Serve Data:** After finalization, provide verified attestation responses and Merkle proofs through the DA Layer.
 
 #### Notes
