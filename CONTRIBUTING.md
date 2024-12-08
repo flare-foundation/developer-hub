@@ -4,17 +4,13 @@ We’re excited you want to contribute to the **Flare Developer Hub**! 🎉
 
 Please follow these guidelines to ensure a smooth and productive collaboration.
 
----
-
 ## **Table of Contents**
 
-- [How to Contribute](#how-to-contribute)
-- [Commit Message Guidelines](#commit-message-guidelines)
-- [Submitting a Pull Request (PR)](#submitting-a-pull-request-pr)
-- [Diagrams Style Guide](#diagrams-style-guide)
-- [Contributing Workflow Summary](#contributing-workflow-summary)
-
----
+- [🤝 How to Contribute](#-how-to-contribute)
+- [📝 Commit Message Guidelines](#-commit-message-guidelines)
+- [🔄 Submitting a Pull Request (PR)](#-submitting-a-pull-request-pr)
+- [🎨 Diagrams Style Guide](#-diagrams-style-guide)
+- [💡 Contributing Workflow Summary](#-contributing-workflow-summary)
 
 ## 🤝 **How to Contribute**
 
