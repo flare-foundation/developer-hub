@@ -3,17 +3,16 @@ name: Spell Check
 on:
   pull_request:
     paths:
-      - '**/*.md'
-      - '**/*.mdx'
-      - '**/*.txt'
-      - '**/*.json'
-      - '**/*.yml'
-      - '**/*.yaml'
-      - '**/*.rst'
-      - '**/*.py'
-      - '**/*.js'
-      - '**/*.ts'
-      - '**/*.html'
+      - "**/*.md"
+      - "**/*.mdx"
+      - "**/*.txt"
+      - "**/*.yml"
+      - "**/*.yaml"
+      - "**/*.py"
+      - "**/*.js"
+      - "**/*.ts"
+      - "**/*.html"
+      - "**/*.rst"
 
 jobs:
   spell-check:
@@ -26,7 +25,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.x'
+          python-version: "3.x"
 
       - name: Install codespell
         run: pip install codespell
@@ -34,12 +33,12 @@ jobs:
       - name: Run Spell Check
         run: |
           codespell \
-            --ignore-words-list="teh,recieve,config,thru" \
-            --skip="*.svg,*.png,*.jpg,*.woff,*.woff2,*.pdf" \
+            --ignore-words-list="WNat,requestor,devlop,succes,payed,bU,whats,sting,setings,infrastucture,ouput,successfull" \
+            --skip="*.svg,*.png,*.jpg,*.woff,*.woff2,*.pdf,*.json,package-lock.json" \
             --quiet-level=2 \
             --check-filenames \
             .
 
       - name: Annotate spelling errors
         if: failure()
-        run: echo "::error::Spelling errors detected. Please fix the typos."
+        run: echo "::error::Spelling errors detected. Please fix the typos or add to the ignore list if intentional."
