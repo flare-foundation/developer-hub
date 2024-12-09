@@ -6,6 +6,7 @@ import FooterLogo from "@theme/Footer/Logo";
 import FooterCopyright from "@theme/Footer/Copyright";
 import FooterLayout from "@theme/Footer/Layout";
 import CustomFooter from "./CustomFooter/customFooter";
+import ContentToInbox from "@site/src/components/contentToinbox";
 
 function Footer(): JSX.Element | null {
   const { footer } = useThemeConfig();
@@ -16,6 +17,7 @@ function Footer(): JSX.Element | null {
 
   return (
     <>
+      <ContentToInbox />
       {links.find((link) => link.title == "Developer links") &&
       links.find((link) => link.title == "Support") ? (
         <CustomFooter
