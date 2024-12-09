@@ -183,7 +183,7 @@ const sidebars: SidebarsConfig = {
         "fassets/redemption",
         "fassets/liquidation",
         "fassets/operational-parameters",
-        "fassets/open-beta",
+        "fassets/songbird-launch",
         {
           type: "category",
           label: "FAssets Guides",
