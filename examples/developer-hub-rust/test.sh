@@ -27,7 +27,7 @@ output=$(cargo run --bin ftsov2_config_coston2 | tr -d '\0' )
 if echo "$output" | grep -q "feedId:"; then
     echo "feedId matches in the output"
 else
-    echo "feedId does not match in ouput"
+    echo "feedId does not match in output"
     exit 1
 fi
 

@@ -87,7 +87,7 @@ function getVoterScheduledFeePercentageChanges(
 #### Returns
 
 - `_feePercentageBIPS`: Positional array of fee percentages in BIPS.
-- `_validFromEpochId`: Positional array of reward epoch ids the fee setings are effective from.
+- `_validFromEpochId`: Positional array of reward epoch ids the fee settings are effective from.
 - `_fixed`: Positional array of boolean values indicating if settings are subjected to change.
 
 ### setVoterFeePercentage

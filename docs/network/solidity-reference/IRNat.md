@@ -467,7 +467,7 @@ function transferFrom(
 );
 ```
 
-### wNat
+### WNat
 
 Returns the `WNat` contract.
 
