@@ -24,7 +24,7 @@ function active(
 ### autoClaim
 
 Claim rewards for `_rewardOwners` and their PDAs.
-Rewards are deposited to the WNAT (to reward owner or PDA if enabled).
+Rewards are deposited to the WNat (to reward owner or PDA if enabled).
 It can be called by reward owner or its authorized executor.
 Only claiming from weight based claims is supported.
 
@@ -64,7 +64,7 @@ function claim(
 - `_rewardOwner`: Address of the reward owner.
 - `_recipient`: Address of the reward recipient.
 - `_rewardEpochId`: Id of the reward epoch up to which the rewards are claimed.
-- `_wrap`: Indicates if the reward should be wrapped (deposited) to the WNAT contract.
+- `_wrap`: Indicates if the reward should be wrapped (deposited) to the WNat contract.
 - `_proofs`: Array of reward claims with merkle proofs.
 
 #### Returns
