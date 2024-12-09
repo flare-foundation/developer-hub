@@ -9,23 +9,18 @@ import useBaseUrl from "@docusaurus/useBaseUrl";
 
 :::info
 
-FDC is currently in testing on Flare Testnet Coston2 prior to its launch on Flare Mainnet.
+FDC is currently in testing on Flare Testnet Coston2 before its mainnet launch.
 
 :::
 
-The **F**lare **D**ata **C**onnector **(FDC)** is an [enshrined oracle](/support/terminology#enshrined-oracle) designed to validate external data for Flare's EVM state. FDC enables users to provide attested data that smart contracts can trust without directly relying on the user for integrity.
-The FDC validates data based on attestation requests, processing these requests in batches during verification rounds.
+The **F**lare **D**ata **C**onnector **(FDC)** is an [enshrined oracle](/support/terminology#enshrined-oracle) designed to validate external data for Flare's EVM state.
+It allows users to submit attested data that smart contracts can trust, eliminating the need for direct reliance on users for data integrity.
 
-- **Merkle Tree Representation:** Verified data is represented in a Merkle tree, and only the Merkle root is stored on-chain.
-- **Data Availability (DA) Layer:** Data providers serve attestation responses and Merkle proofs through a DA Layer.
-- **Proof Verification:** Smart contracts verify Merkle proofs against the stored Merkle root to ensure data integrity before acting on it.
-- **Extensible Attestation Types:** Only supported attestation types and data sources are processed. New attestation types can be added if data providers reach a consensus.
-
-:::tip[Interested in learning more?]
-
-For a detailed explanation of the FDC mechanism, read the [FDC whitepaper](https://flare.network/wp-content/uploads/FDC_WP_171024_02.pdf).
-
-:::
+- **Network-level security:** Data attestation requires reaching a 50%+ signature weight from data providers, ensuring decentralized consensus.
+- **Efficient onchain storage:** Verified data is represented in a Merkle tree, with only the Merkle root stored on-chain. This minimizes storage costs while preserving data integrity.
+- **Easy offchain accessibility:** Data providers serve attestation responses and Merkle proofs offchain through a Data Availability (DA) Layer, enabling efficient data retrieval without sacrificing trust.
+- **Proof-based verification:** Smart contracts validate Merkle proofs against the stored Merkle root, ensuring that only authentic data can trigger contract actions.
+- **Extensible attestation types:** Support for new attestation types and data sources can be added through provider consensus, ensuring the FDC remains adaptable to evolving data needs.
 
 ## Architecture
 
@@ -37,15 +32,21 @@ For a detailed explanation of the FDC mechanism, read the [FDC whitepaper](https
   }}
 />
 
-1. **Data Verification:** FDC validates user-provided data requests.
-2. **Merkle Representation:** Data is organized into a Merkle tree per verification round, with only the Merkle root stored on-chain.
-3. **Attestation Usage:** Users retrieve attestation responses and proofs from data providers to interact with smart contracts securely.
+1. **Data Verification:** The FDC verifies user-submitted attestation requests.
+2. **Merkle Representation:** Verified responses are organized into a Merkle tree. Only the Merkle root is stored on-chain.
+3. **Attestation Usage:** Users retrieve attestation responses and Merkle proofs from data providers and submit them to smart contracts.
 
-### DA Layer
+:::tip[Interested in learning more?]
 
-The DA Layer provides users with a standardized set of API endpoints to query offchain data from Flare's enshrined protocols such as FDC.
-Operating a DA Layer is permissionless, with the only requirement being access to data from an [FTSOv2 data provider](/run-node/ftso-data-provider) and [FDC attestation provider](/run-node/fdc-attestation-provider).
-In all cases, accessing data from the DA Layer is trustless, since the Merkle root of the data can be computed and compared by the end user with the version [finalized onchain](/network/fsp/solidity-reference/IRelay#merkleroots).
+For a detailed explanation of the FDC mechanism, read the [FDC whitepaper](https://flare.network/wp-content/uploads/FDC_WP_171024_02.pdf).
+
+:::
+
+### Data Availability Layer
+
+The Data Availability (DA) Layer provides API endpoints for querying offchain attestation data. Accessing this data is trustless, as users can independently compute and compare Merkle roots against the on-chain version.
+
+Operating a DA Layer is permissionless, Anyone can run a DA Layer service by sourcing data from an [FTSOv2 data provider](/run-node/ftso-data-provider) and [FDC attestation provider](/run-node/fdc-attestation-provider).
 
 <ThemedImage
   alt="FTSO Price Comparison"
@@ -55,48 +56,41 @@ In all cases, accessing data from the DA Layer is trustless, since the Merkle ro
   }}
 />
 
-## Workflows
+## Workflows Overview
 
-### General
+### General Workflow
 
-1. **Attestation Request Submission:** A user submits an attestation request to the [`FdcHub`](/fdc/reference/IFdcHub) smart contract.
-2. **Batch Processing:** Data providers batch and process requests based on emission timestamps.
-3. **Data Retrieval and Merkle Construction:** Data providers fetch data, format responses, and create a Merkle tree of hashed responses.
-4. **Consensus and Relay Storage:** Once 50%+ weight of signatures is reached for a Merkle root, it is stored in the [`Relay`](/network/fsp/solidity-reference/IRelay) contract.
-5. **Response and Proof Usage:** Users fetch responses and Merkle proofs from the DA Layer and submit them to the smart contract.
-6. **Verification and Action:** The smart contract verifies the proof and uses the attested data if valid.
-   test
+1. **Request Submission:** Users submit requests to the [`FdcHub`](/fdc/reference/IFdcHub) smart contract.
+2. **Batch Processing:** Data providers group requests by emission timestamps.
+3. **Data Retrieval:** Providers fetch and format responses, creating a Merkle tree of hashed responses.
+4. **Consensus Storage:** Once signatures representing 50%+ weight are collected, the Merkle root is submitted to the [`Relay`](/network/fsp/solidity-reference/IRelay) contract.
+5. **Proof Retrieval:** Users fetch attestation responses and proofs from the DA Layer.
+6. **Verification and Action:** Smart contracts verify proofs and use the attested data if valid.
 
 ### User Workflow
 
-1. **Identify Data Needs:** Determine the data and attestation type required by a smart contract.
-2. **Prepare Attestation Request:** Format the request based on the required attestation type and expected response hash (MIC). Data providers can assist in generating the request.
-3. **Submit Request:** Use the [`requestAttestation`](/fdc/reference/IFdcHub#requestattestation) function of the [`FdcHub`](/fdc/reference/IFdcHub) smart contract, providing the encoded request and base fee. Fees vary by attestation type and source and can be queried from the `FdcRequestFeeConfigurations` contract.
-4. **Track Request:** Record the timestamp of the block where the transaction is included. Calculate the voting round for processing based on this timestamp.
-5. **Wait for Finalization:** Wait for the voting round to finalize. A [`Relay`](/network/fsp/solidity-reference/IRelay) contract event signals finalization.
-6. **Retrieve Data:** Query the DA Layer for the attestation response and Merkle proof.
-7. **Submit Data to Smart Contract:** Provide the attestation response and Merkle proof for verification and use.
+1. **Identify Data Needs:** Determine the required attestation type and data source.
+2. **Prepare Request:** Format the request with the expected response hash (MIC).
+3. **Submit Request:** Use [`requestAttestation`](/fdc/reference/IFdcHub#requestattestation) from `FdcHub` and pay the base fee (fee varies by attestation type).
+4. **Track Submission:** Record the block timestamp and calculate the voting round.
+5. **Wait for Finalization:** Wait for the voting round to conclude. A relay contract event signals finalization.
+6. **Fetch Data:** Retrieve responses and proofs from the DA Layer.
+7. **Submit to Smart Contract:** Provide responses and proofs for verification.
 
 ### Smart Contract Workflow
 
-1. **Define Triggers:** Specify data that triggers actions, either passively or on-demand.
-2. **Receive Data:** Accept attestation responses and proofs from users.
-3. **Verify Data:** Use the [`FdcVerification`](/fdc/reference/IFdcVerification) contract to check the response against the stored Merkle root for the corresponding voting round.
-4. **Act on Data:** Use the verified data for computation or decision-making.
+1. **Define Triggers:** Define data events that trigger specific actions.
+2. **Receive Data:** Accept responses and proofs from users.
+3. **Verify Proofs:** Use the [`FdcVerification`](/fdc/reference/IFdcVerification) contract to validate the response against the Merkle root.
+4. **Act on Data:** Use the verified data for decision-making or computation.
 
 ### Data Provider Workflow
 
-1. **Collect Requests:** Group attestation requests into a voting round based on emission timestamps.
-2. **Retrieve Data:** Obtain responses from verifier servers for the requests.
-3. **Validate Responses:** Ensure responses meet validity criteria (MIC and LUT checks).
-4. **Submit BitVectors:** During the "choose phase" (90-135 seconds into the round), submit a BitVector indicating verified requests.
-5. **Consensus Building:** Aggregate BitVectors to compute a consensus BitVector after the choose phase.
-6. **Merkle Tree Creation:** Create a Merkle tree from the hashes of validated responses for consensus requests.
-7. **Sign and Submit Merkle Root:** Sign the Merkle root and submit signatures. When 50%+ weight is reached, a chosen provider submits the finalized signatures to the [`Relay`](/network/fsp/solidity-reference/IRelay) contract.
-8. **Serve Data:** After finalization, provide verified attestation responses and Merkle proofs through the DA Layer.
-
-#### Notes
-
-- **Consensus Weight:** Finalization requires signatures representing 50%+ of the total weight.
-- **Data Availability:** Users can fetch attestation responses and proofs from any data provider's DA Layer.
-- **Extensibility:** New attestation types and sources can be added with data provider consensus.
+1. **Collect Requests:** Group requests by emission timestamps.
+2. **Retrieve Data:** Fetch responses from verifier servers.
+3. **Validate Responses:** Ensure data validity using MIC and LUT checks.
+4. **Submit BitVectors:** Indicate valid requests using BitVectors during the "choose phase" (90-135 seconds into the round).
+5. **Achieve Consensus:** Aggregate BitVectors to form a consensus BitVector.
+6. **Create Merkle Tree:** Build a Merkle tree from validated responses.
+7. **Sign and Submit:** Collect signatures representing 50%+ weight and submit the Merkle root to the [`Relay`](/network/fsp/solidity-reference/IRelay) contract.
+8. **Serve Data:** Provide attestation responses and proofs through the DA Layer.
