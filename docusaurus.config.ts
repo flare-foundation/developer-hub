@@ -74,7 +74,8 @@ const config: Config = {
 
     announcementBar: {
       id: `announcementBar`,
-      content: `<a href="https://dev.flare.network/ftso/overview">FTSOv2</a> is live on mainnet! ☀️`,
+      content: `🚀 <a href="https://forms.gle/V2VqBm46yrMq5L6V6" target="_blank" rel="noopener noreferrer">
+                Join the Flare Developer Ambassadors Program.</a> Apply before Dec 31. ☀️`,
     },
 
     docs: {
