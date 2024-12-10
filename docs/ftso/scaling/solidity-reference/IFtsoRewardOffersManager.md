@@ -9,7 +9,7 @@ Sourced from `IFtsoRewardOffersManager.sol` on [GitHub](https://github.com/flare
 
 ### minimalRewardsOfferValueWei
 
-Mininal rewards offer value (in wei).
+Minimal rewards offer value (in wei).
 
 ```solidity
 function minimalRewardsOfferValueWei(

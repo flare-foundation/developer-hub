@@ -43,7 +43,7 @@ function claim(
 - `_rewardOwner`: Address of the reward owner.
 - `_recipient`: Address of the reward recipient.
 - `_rewardEpochId`: Id of the reward epoch up to which the rewards are claimed.
-- `_wrap`: Indicates if the reward should be wrapped (deposited) to the WNAT contract.
+- `_wrap`: Indicates if the reward should be wrapped (deposited) to the WNat contract.
 - `_proofs`: Array of reward claims with merkle proofs.
 
 #### Returns

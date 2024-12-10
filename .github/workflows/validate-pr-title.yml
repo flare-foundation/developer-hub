@@ -1,0 +1,39 @@
+name: Validate PR Title
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - synchronize
+
+jobs:
+  main:
+    name: Validate PR Title
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR Title with Conventional Commits
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Allowed types based on Conventional Commits
+          types: |
+            feat
+            fix
+            docs
+            chore
+            test
+            refactor
+            ci
+          # Scope is optional
+          requireScope: false
+          # Validate subject starts with an uppercase letter
+          subjectPattern: ^[A-Z].+$
+          subjectPatternError: |
+            The subject "{subject}" found in the pull request title "{title}"
+            didn't match the required pattern. Ensure the subject starts with an uppercase letter.
+          # Allow Work-in-Progress (WIP) PRs using the "[WIP]" prefix
+          wip: true
+          # Skip validation for single-commit PRs
+          validateSingleCommit: false

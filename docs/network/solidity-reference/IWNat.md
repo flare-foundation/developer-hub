@@ -252,7 +252,7 @@ function delegationModeOf(
 
 ### deposit
 
-Deposit Native and mint wNat ERC20.
+Deposit Native and mint WNat ERC20.
 
 ```solidity
 function deposit(
@@ -261,7 +261,7 @@ function deposit(
 
 ### depositTo
 
-Deposit Native from msg.sender and mints WNAT ERC20 to recipient address.
+Deposit Native from msg.sender and mints WNat ERC20 to recipient address.
 
 ```solidity
 function depositTo(
@@ -271,7 +271,7 @@ function depositTo(
 
 #### Parameters
 
-- `recipient`: An address to receive minted WNAT.
+- `recipient`: An address to receive minted WNat.
 
 ### governanceVotePower
 
@@ -674,7 +674,7 @@ function votePowerOfAtIgnoringRevocation(
 
 ### withdraw
 
-Withdraw Native and burn WNAT ERC20.
+Withdraw Native and burn WNat ERC20.
 
 ```solidity
 function withdraw(
@@ -688,7 +688,7 @@ function withdraw(
 
 ### withdrawFrom
 
-Withdraw WNAT from an owner and send native tokens to msg.sender given an allowance.
+Withdraw WNat from an owner and send native tokens to msg.sender given an allowance.
 
 ```solidity
 function withdrawFrom(
