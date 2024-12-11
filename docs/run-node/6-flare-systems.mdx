@@ -1,0 +1,112 @@
+---
+sidebar_position: 6
+slug: flare-systems
+title: Flare Systems
+description: Flare Systems
+---
+
+This guide contains sample deployment configuration for infrastructure providers to enable participation in Flare Systems Protocol ([FSP](https://dev.flare.network/network/fsp/)).
+
+Currently supported sub-protocols are [FTSOv2](https://flare.network/wp-content/uploads/FTSOv2-White-Paper.pdf) and [FDC](https://flare.network/wp-content/uploads/FDC_WP_171024_02.pdf).
+
+## Overview
+
+A data provider system for FSP consists of the following components:
+
+1. **Flare System Client**
+   Responsible for all interactions with FSO smart contracts, including voting round data collection and submission for all protocols, voter registration, and additional system tasks.
+2. **C-chain Indexer**
+   Captures FSP-related blockchain transactions and events. Used by clients for data calculation and action triggers.
+3. **FTSO Client**
+   Supports FTSO anchor feeds. Provides protocol votes and median data to System Client for submission.
+4. **Fast Updates Client**
+   Supports FTSO block-latency feeds. Collects and submits data to Fast Updates contracts.
+5. **Feed Value Provider**
+   Gathers data from exchanges and provides current values (prices) for a given set of feeds.
+6. **FDC Client**
+   Interacts with FDC suite and provides FDC protocol voting round data to SystemClient for submission.
+
+:::info
+
+Reference implementations are provided for all components except **Feed Value Provider**, providers are encouraged to use own implementation conforming to the [REST API spec](https://github.com/flare-foundation/ftso-v2-example-value-provider?tab=readme-ov-file#example-usage).
+
+:::
+
+## Deployment
+
+### Prerequisites
+
+:::warning
+
+Complete all key registration steps in [REGISTRATION.md](https://github.com/flare-foundation/flare-systems-deployment/blob/main/docs/REGISTRATION.md), or else deployed services will not work.
+
+:::
+
+1. Running FDC Client
+   This requires access to underlying chain infrastructure. You can perform the necessary deployment using information in [this repository](https://github.com/flare-foundation/fdc-suite-deployment).
+
+2. System Dependencies
+   The following system dependencies are required to run this deployment:
+   - [jq](https://jqlang.github.io/jq/)
+   - [envsubst](https://www.gnu.org/software/gettext/manual/html_node/envsubst-Invocation.html)
+   - [Docker](https://www.docker.com/)
+   - Bash (macOs only for updated version), install by running `brew install bash`
+
+### Generate configuration
+
+Copy the code in this [sample configuration file](https://github.com/flare-foundation/flare-systems-deployment/blob/main/.env.example) into a `.env` file at the root of your project and fill out the values as appropriate.
+
+Then copy the code in this [shell script](https://github.com/flare-foundation/flare-systems-deployment/blob/main/populate_config.sh) (`.sh` file) into a `populate_config.sh` file at your project's root directory.
+
+Run `./populate_config.sh` from your root to populate configs for provider stack.
+
+:::note
+
+You'll need to rerun this command if you change your `.env` file.
+
+:::
+
+### Start deployment
+
+Copy this [docker configuration code](https://github.com/flare-foundation/flare-systems-deployment/blob/main/docker-compose.yaml) into a `docker-compose.yaml` file at the root of your project.
+
+You can then everything up with `docker compose up -d` and stop everything with `docker compose down`.
+
+:::info
+
+Database is persisted in a named docker volume. If you need to wipe database you need to remove the volume manually.
+
+When the upstream codebase is changed new images need to be pulled with `docker compose pull`.
+
+:::
+
+### Feed Value Provider
+
+The Feed Value Provider instance for FTSO protocol is not part of `docker-compose.yaml` and needs to be created separately.
+
+Start your own implementation or alternatively use the example implementation for testing:
+
+```bash
+docker run --rm -it \
+  --publish "0.0.0.0:3101:3101" \
+  --network "ftso-v2-deployment_default" \
+  ghcr.io/flare-foundation/ftso-v2-example-value-provider
+```
+
+### FDC Suite
+
+Underlying infrastructure required for FDC protocol is not part of this project and needs to be setup seperately. This can be done via [fdc-suite-deployment](https://github.com/flare-foundation/fdc-suite-deployment).
+
+<details>
+    <summary>Potential Issues</summary>
+
+    1. `system-client` is not doing anything.
+        It is likely that your entity is not registered as a voter for the current reward epoch. There is a time window for voter registration on every reward epoch, and if you leave things running you should eventually see `RegisterVoter success` in the logs. It should then start submitting data successfully in the **following** reward epoch.
+
+    2. `system-client` fails to fetch sub-protocol data.
+        The `c-chain-indexer` may still be indexing data, once it's finished you should see `Indexer at block x` in the logs. If it's still processing blocks you will see various errors across all services.
+
+    3. `fast-updates` client is not doing anything.
+        If you have low weight it may take some time until you are selected to submit an update.
+
+    </details>
