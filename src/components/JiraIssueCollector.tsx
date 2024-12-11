@@ -56,21 +56,21 @@ function JiraIssueCollector() {
 
   function handleClick(event: React.MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
-    event.stopPropagation(); 
-  
+    event.stopPropagation();
+
     // Save current scroll position
     const scrollX = window.scrollX;
-    const scrollY = window.scrollY;  
+    const scrollY = window.scrollY;
     if (window.showCollectorDialog) {
       window.showCollectorDialog();
-  
+
       // Restore scroll position after a small delay
       setTimeout(() => {
         window.scrollTo(scrollX, scrollY);
       }, 10); // Adjust timeout if necessary
     } else {
       alert(
-        "The JIRA form script has not loaded yet. Please try again in a moment."
+        "The JIRA form script has not loaded yet. Please try again in a moment.",
       );
     }
   }
