@@ -120,7 +120,9 @@ You can configure several optional settings in the `.env` environment file.
 - The link for the agent frontend user interface, referred to as `FRONTEND_URL`, is empty by default.
 - The password for the agent frontend user interface is `FRONTEND_PASSWORD`.
 - The backend port is `BACKEND_PORT`, which defaults to `4000`.
-- The backend URL is `BACKEND_URL`, which defaults to `/fasset-backend`.
+- The `API_URL` is the default URL of the backend API for the agent user interface.
+- The backend URL is `BACKEND_URL`, which defaults to `/fasset-backend`. This change should also be reflected in the `config.json` file for `apiNotifierConfigs.apiUrl`.
+- The `ROOT_PATH` is the backend URL.
 
 ## Setting up Secret Keys
 
@@ -176,6 +178,17 @@ In order to connect to various blockchains, you need to configure the Remote Pro
 You can obtain the `xrp_rpc` for the XRP Ledger, `btc_rpc` for Bitcoin, and `doge_rpc` for Dogecoin from the Flare team, configured in the `secrets.json` file under the `apiKey` key.
 
 ## Configure the Server
+
+:::danger
+
+When configuring the NGINX server for FAssets, ensure all **security measures** are implemented to safeguard your system. Exposing the FAssets backend can lead to severe vulnerabilities.
+
+- **Never expose the FAssets agent interface (`/fasset-backend`) to the public network**.
+- As a rule of thumb, restrict access to the backend **only** within the local network.
+- Use firewalls and IP-based access controls to allow requests **only** from trusted IP addresses.
+- Consider enabling IP whitelisting for specific addresses to restrict access.
+
+:::
 
 Set up the FAssets backend and frontend access by configuring the NGINX server.
 
