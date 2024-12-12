@@ -22,23 +22,23 @@ import FetchAnchorFeedsPy from "!!raw-loader!/examples/developer-hub-python/fetc
 import FetchAndVerifyAnchorOnchainJs from "!!raw-loader!/examples/developer-hub-javascript/fetch_and_verify_anchor_onchain.js";
 import FtsoV2AnchorFeedConsumer from "!!raw-loader!/examples/developer-hub-solidity/FtsoV2AnchorFeedConsumer.sol";
 
-Scaling provides offchain access to anchor feeds, using Flare's network of 100 independent data providers and a full commit-reveal process every 90 seconds.
+Scaling enables offchain access to anchor feeds by leveraging Flare's network of 100 independent data providers and a robust commit-reveal process every 90 seconds.
 
-This section demonstrates how to consume anchor feeds on Flare. The key steps to read an anchor feed are:
+To read anchor feeds on Flare, follow these key steps:
 
 1. **Fetch anchor feed data offchain:**
 
-   Query the Data Availability (DA) Layer to retrieve anchor feeds along with cryptographic proofs.
+   Use the Data Availability (DA) Layer API to retrieve anchor feeds and their associated cryptographic proofs.
 
 2. **Verify the proof onchain:**
 
-   Validate the proof provided by the DA Layer onchain, ensuring it matches the finalized version recorded by [Scaling](/ftso/scaling/overview).
+   Validate the provided proof onchain to ensure the data matches the finalized version committed by [Scaling](/ftso/scaling/overview).
 
 3. **Use the feed data onchain:**
 
    After verification, integrate the feed data into your onchain application logic.
 
-Scaling only stores **commitments to feed data** onchain. The complete feed data resides offchain but can be verified onchain against a Merkle root. This ensures data integrity and guards against tampering.
+Scaling only stores **commitments to feed data** onchain. Complete feed data resides offchain but can be verified against an onchain Merkle root, ensuring data integrity and tamper resistance.
 
 ## DA Layer API URLs
 
@@ -48,20 +48,20 @@ The public DA Layer endpoints are rate-limited. To request an API key for higher
 
 :::
 
-The DA Layer provides a set of API endpoints for querying offchain data from Flare protocols.
+The DA Layer provides API endpoints for querying offchain data from Flare protocols.
 
 | Network                 | Base URL                                       |
 | ----------------------- | ---------------------------------------------- |
 | Flare Mainnet           | `https://flr-data-availability.flare.network/` |
 | Songbird Canary-Network | `https://sgb-data-availability.flare.network/` |
 
-All networks have the same API, for a full list of endpoints see [Data Availability API Reference](/fdc/reference/data-availability-api).
+All networks have the same API structure. For a full list of endpoints see [Data Availability API Reference](/fdc/reference/data-availability-api).
 
 ## Fetching anchor feed data
 
-The DA Layer API allows querying the value and proof for multiple feeds from the same voting epoch in a single request. Use the `anchor-feeds-with-proof` POST endpoint to retrieve pricing data.
+The DA Layer API allows querying values and proofs for multiple feeds from the same voting epoch in a single request. Use the `anchor-feeds-with-proof` POST endpoint to retrieve pricing data.
 
-For example, to get the feed value of `FLR/USD`, `BTC/USD` and `ETH/USD` at the latest voting round:
+To fetch the feed values for FLR/USD, BTC/USD, and ETH/USD at the latest voting round, use the following command:
 
 <Tabs>
   <TabItem value="curl" label="curl" default>
@@ -97,18 +97,18 @@ For example, to get the feed value of `FLR/USD`, `BTC/USD` and `ETH/USD` at the 
   </TabItem>
 </Tabs>
 
-### API Response
+#### API response structure
 
 The response contains JSON objects for each feed, with the following fields:
 
-- `votingRoundId`: ID of the current voting round, each lasting 90s (see the [Flare Systems Explorer](https://flare-systems-explorer.flare.network/voting-epoch)).
-- `id`: ID of the feed (see [list of anchor feeds](/ftso/scaling/anchor-feeds)).
-- `value`: Integer value of the feed.
-- `turnoutBIPS`: Percentage (in basis points) of voting weight which contributed towards the finalized value.
-- `decimals`: Number of decimal places for the feed.
-- `proof`: Merkle proof array for data verification.
+- `votingRoundId`: The voting round ID (each round lasts 90 seconds; see the [Flare Systems Explorer](https://flare-systems-explorer.flare.network/voting-epoch)).
+- `id`: The feed ID (refer to the [list of anchor feeds](/ftso/scaling/anchor-feeds)).
+- `value`: The integer value of the feed.
+- `turnoutBIPS`: The percentage of voting weight (in basis points) that contributed to the finalized value.
+- `decimals`: The number of decimal places for the feed.
+- `proof`: The Merkle proof array for data verification.
 
-An example response for BTC/USD:
+#### Example Response (for BTC/USD)
 
 ```json
 [
@@ -129,6 +129,46 @@ An example response for BTC/USD:
 ```
 
 The floating point value of a feed can be calculated by dividing the `value` by 10^`decimals`. For example, if the feed value of BTC/USD is `6900420` and the decimal is `2`, the floating point feed value is `69004.20`.
+
+### Fetching Timestamps
+
+The `ftso/anchor-feeds-with-proof` endpoint returns a `votingRoundId`. Each voting round lasts for a fixed duration of **90 seconds**. To determine the **starting timestamp**, use the `fsp/status` GET endpoint:
+
+```bash
+curl -X 'GET' \
+  'https://flr-data-availability.flare.network/api/v0/fsp/status' \
+  -H 'accept: application/json'
+```
+
+:::warning
+
+- The timestamps returned correspond to the **start** of the voting round, which lasts for **90 seconds**.
+- Prices for a given voting round are finalized at the **end** of the round, calculated as `start_timestamp + 90s`.
+  :::
+
+#### Example Response
+
+```json
+{
+  "active": {
+    "voting_round_id": 839641,
+    "start_timestamp": 1733997690
+  },
+  "latest_fdc": {
+    "voting_round_id": -1,
+    "start_timestamp": -1
+  },
+  "latest_ftso": {
+    "voting_round_id": 839640,
+    "start_timestamp": 1733997600
+  }
+}
+```
+
+The response indicates that:
+
+- The **currently active voting round** has `voting_round_id` [839641](https://flare-systems-explorer.flare.network/voting-epoch/839641), which **started at** `1733997690`.
+- The **most recently finalized FTSO voting round** has `voting_round_id` [839640](https://flare-systems-explorer.flare.network/voting-epoch/839640), which **started at** `1733997600`.
 
 ## Verifying proof onchain
 
