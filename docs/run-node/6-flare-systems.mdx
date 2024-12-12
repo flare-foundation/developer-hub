@@ -5,20 +5,33 @@ title: Flare Systems
 description: Flare Systems
 ---
 
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import ThemedImage from "@theme/ThemedImage";
+import useBaseUrl from "@docusaurus/useBaseUrl";
+
 This guide contains sample deployment configuration for infrastructure providers to enable participation in Flare Systems Protocol ([FSP](https://dev.flare.network/network/fsp/)).
 
-Currently supported sub-protocols are [FTSOv2](https://flare.network/wp-content/uploads/FTSOv2-White-Paper.pdf) and [FDC](https://flare.network/wp-content/uploads/FDC_WP_171024_02.pdf).
+Currently supported sub-protocols are [FTSOv2](https://dev.flare.network/ftso/overview) and [FDC](https://dev.flare.network/fdc/overview).
 
 ## Overview
+
+<ThemedImage
+  alt="Data Provider System for FSP"
+  sources={{
+    light: useBaseUrl("/img/run-node-fsp/fsp_run_node_light.svg"),
+    dark: useBaseUrl("/img/run-node-fsp/fsp_run_node_dark.svg"),
+  }}
+/>
 
 A data provider system for FSP consists of the following components:
 
 1. **Flare System Client**
-   Responsible for all interactions with FSO smart contracts, including voting round data collection and submission for all protocols, voter registration, and additional system tasks.
+   Responsible for all interactions with FTSO smart contracts, including voting round data collection and submission for all protocols, voter registration, and additional system tasks.
 2. **C-chain Indexer**
    Captures FSP-related blockchain transactions and events. Used by clients for data calculation and action triggers.
 3. **FTSO Client**
-   Supports FTSO anchor feeds. Provides protocol votes and median data to System Client for submission.
+   Supports FTSO anchor feeds. Provides protocol votes and median data to the System Client for submission.
 4. **Fast Updates Client**
    Supports FTSO block-latency feeds. Collects and submits data to Fast Updates contracts.
 5. **Feed Value Provider**
@@ -28,7 +41,7 @@ A data provider system for FSP consists of the following components:
 
 :::info
 
-Reference implementations are provided for all components except **Feed Value Provider**, providers are encouraged to use own implementation conforming to the [REST API spec](https://github.com/flare-foundation/ftso-v2-example-value-provider?tab=readme-ov-file#example-usage).
+Reference implementations are provided for all components except **Feed Value Provider**. Providers are encouraged to use their own implementation conforming to the [REST API spec](https://github.com/flare-foundation/ftso-v2-example-value-provider?tab=readme-ov-file#example-usage).
 
 :::
 
@@ -36,21 +49,33 @@ Reference implementations are provided for all components except **Feed Value Pr
 
 ### Prerequisites
 
-:::warning
+1. Registration
 
-Complete all key registration steps in [REGISTRATION.md](https://github.com/flare-foundation/flare-systems-deployment/blob/main/docs/REGISTRATION.md), or else deployed services will not work.
+   Each Entity in the FSP system must have the following five addresses registered:
 
-:::
+   - `Identity address`: This is the entity's main address. It should be stored in cold storage, as it will only ever be needed during the initial setup and any future rotation of other keys.
+   - `Submit address`: This is used for `submit1`, `submit2`, and `submit3` transactions. It can be stored in hot storage, as its private key will be added to your environment variables (`.env`) file during deployment.
+   - `Submit signatures`: This is used for `submitSignatures` transactions. It can be stored in hot storage, as its private key will be added to the `.env` file during deployment,
+   - `Signing policy`: This is used for reward epoch registration and relay transactions as well as payload signing in some parts of the system. It can be stored in hot storage, as its private key will be added to the `.env` file during deployment.
+   - `Delegation address`: This is used for wrapping your tokens and getting delegation. It should be stored in cold storage, as it will not be needed in day to day protocol participation.
 
-1. Running FDC Client
-   This requires access to underlying chain infrastructure. You can perform the necessary deployment using information in [this repository](https://github.com/flare-foundation/fdc-suite-deployment).
+   :::info
 
-2. System Dependencies
+   You can register the above keys via the `EntityManager` contract by first calling `propose...Address` with your identity address and then calling `confirm...Address` with the proposed address.
+
+   All 5 addresses will need to be funded for gas fees.
+
+   :::
+
+2. Running FDC Client
+   This requires access to the underlying chain infrastructure. You can perform the necessary deployment using the information in [this repository](https://github.com/flare-foundation/fdc-suite-deployment).
+
+3. System Dependencies
    The following system dependencies are required to run this deployment:
    - [jq](https://jqlang.github.io/jq/)
    - [envsubst](https://www.gnu.org/software/gettext/manual/html_node/envsubst-Invocation.html)
    - [Docker](https://www.docker.com/)
-   - Bash (macOs only for updated version), install by running `brew install bash`
+   - Bash (macOS only for an updated version), install by running `brew install bash`
 
 ### Generate configuration
 
@@ -58,7 +83,7 @@ Copy the code in this [sample configuration file](https://github.com/flare-found
 
 Then copy the code in this [shell script](https://github.com/flare-foundation/flare-systems-deployment/blob/main/populate_config.sh) (`.sh` file) into a `populate_config.sh` file at your project's root directory.
 
-Run `./populate_config.sh` from your root to populate configs for provider stack.
+Run `./populate_config.sh` from your root to populate configs for the provider stack.
 
 :::note
 
@@ -70,11 +95,11 @@ You'll need to rerun this command if you change your `.env` file.
 
 Copy this [docker configuration code](https://github.com/flare-foundation/flare-systems-deployment/blob/main/docker-compose.yaml) into a `docker-compose.yaml` file at the root of your project.
 
-You can then everything up with `docker compose up -d` and stop everything with `docker compose down`.
+You can then start everything up with `docker compose up -d` and stop everything with `docker compose down`.
 
 :::info
 
-Database is persisted in a named docker volume. If you need to wipe database you need to remove the volume manually.
+The database is persisted in a named docker volume. If you need to wipe the database you need to remove the volume manually.
 
 When the upstream codebase is changed new images need to be pulled with `docker compose pull`.
 
@@ -84,7 +109,7 @@ When the upstream codebase is changed new images need to be pulled with `docker 
 
 The Feed Value Provider instance for FTSO protocol is not part of `docker-compose.yaml` and needs to be created separately.
 
-Start your own implementation or alternatively use the example implementation for testing:
+Start your own implementation or use the example implementation for testing:
 
 ```bash
 docker run --rm -it \
@@ -95,18 +120,18 @@ docker run --rm -it \
 
 ### FDC Suite
 
-Underlying infrastructure required for FDC protocol is not part of this project and needs to be setup separately. This can be done via [fdc-suite-deployment](https://github.com/flare-foundation/fdc-suite-deployment).
+The underlying infrastructure required for FDC protocol is not part of this project and needs to be set up separately. This can be done via [fdc-suite-deployment](https://github.com/flare-foundation/fdc-suite-deployment).
 
-<details>
-    <summary>Potential Issues</summary>
+## Potential Issues
 
-    1. `system-client` is not doing anything.
-        It is likely that your entity is not registered as a voter for the current reward epoch. There is a time window for voter registration on every reward epoch, and if you leave things running you should eventually see `RegisterVoter success` in the logs. It should then start submitting data successfully in the **following** reward epoch.
+- **`system-client` is not doing anything**
 
-    2. `system-client` fails to fetch sub-protocol data.
-        The `c-chain-indexer` may still be indexing data, once it's finished you should see `Indexer at block x` in the logs. If it's still processing blocks you will see various errors across all services.
+  Llikely, your entity is not registered as a voter for the current reward epoch. There is a time window for voter registration on every reward epoch, and if you leave things running you should eventually see `RegisterVoter success` in the logs. It should then start submitting data successfully in the **following** reward epoch.
 
-    3. `fast-updates` client is not doing anything.
-        If you have low weight it may take some time until you are selected to submit an update.
+- **`system-client` fails to fetch sub-protocol data**
 
-    </details>
+  The `c-chain-indexer` may still be indexing data, once it's finished you should see `Indexer at block x` in the logs. If it's still processing blocks you will see various errors across all services.
+
+- **`fast-updates` client is not doing anything**
+
+  If you have low weight it may take some time until you are selected to submit an update.
