@@ -89,7 +89,7 @@ Follow these steps to set up the FAssets agent using Docker:
 4. Set up the configuration file:
 
    ```bash
-   cp config.json.template config.json
+   ./populate_config.sh
    ```
 
 5. Login into GitHub Container Registry:
@@ -119,15 +119,6 @@ Once the database is created, the password will not change if you modify it in t
 
 You can configure several optional settings in the `.env` environment file.
 
-- Choose the profiles of the FAssets agent to run in `COMPOSE_PROFILES`, which by default include the FAssets agent bot, the agent user interface, and the liquidator bot.
-- The frontend interface operates on the port designated as `FRONTEND_PORT`, which is set to `3000` by default.
-- The link for the agent frontend user interface, referred to as `FRONTEND_URL`, is empty by default.
-- The password for the agent frontend user interface is `FRONTEND_PASSWORD`.
-- The backend port is `BACKEND_PORT`, which defaults to `4000`.
-- The `API_URL` is the default URL of the backend API for the agent user interface.
-- The backend URL is `BACKEND_URL`, which defaults to `/fasset-backend`. This change should also be reflected in the `config.json` file for `apiNotifierConfigs.apiUrl`.
-- The `ROOT_PATH` is the backend URL.
-
 ## Setting up Secret Keys
 
 The FAsset agents require multiple keys for the Flare and underlying network chains, which must be generated to make the agent operational.
@@ -136,7 +127,7 @@ The FAsset agents require multiple keys for the Flare and underlying network cha
 2. Generate the secrets using this command by replacing the `MANAGEMENT_WALLET_ADDRESS` with your management wallet address:
 
    ```bash
-   ./generateSecrets.sh MANAGEMENT_WALLET_ADDRESS
+   ./generate_secrets.sh MANAGEMENT_WALLET_ADDRESS
    ```
 
 3. Copy the `secrets.new.json` to `secrets.json`:
