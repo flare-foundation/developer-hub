@@ -97,14 +97,15 @@ Follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/
 
 When contributing diagrams, follow the established visual style:
 
-| **Element**               | **Light Mode** | **Dark Mode** |
-| ------------------------- | -------------- | ------------- |
-| **Border Width**          | 1px            | 1px           |
-| **Border Color**          | `#E7125E`      | `#EF4A82`     |
-| **Arrow Width**           | 1px            | 1px           |
-| **Arrow Color**           | `#595959`      | `#FFFFFF`     |
-| **Onchain Border Style**  | Solid          | Solid         |
-| **Offchain Border Style** | Dashed         | Dashed        |
+| **Element**                  | **Light Mode** | **Dark Mode** |
+| ---------------------------- | -------------- | ------------- |
+| **Arrow Width**              | 1px            | 1px           |
+| **Arrow Color**              | `#595959`      | `#FFFFFF`     |
+| **Border Width**             | 1px            | 1px           |
+| **Border Color (Highlight)** | `#E7125E`      | `#EF4A82`     |
+| **Border Color (Normal)**    | `#595959`      | `#FFFFFF`     |
+| **Onchain Border Style**     | Solid          | Solid         |
+| **Offchain Border Style**    | Dashed         | Dashed        |
 
 **Tip:** Use the dashed style **only if** both onchain and offchain elements are displayed.
 
