@@ -1,0 +1,291 @@
+---
+sidebar_position: 1
+slug: deploy-fassets-agent
+title: Deploy an FAssets Agent
+description: Deploy and run FAssets agent
+tags: [intermediate, fassets, bitcoin, dogecoin]
+authors: [fassko]
+keywords: [fassets, xrp, btc, doge flare-network, flare-network]
+---
+
+The FAssets system by Flare enables non-smart contract tokens like Bitcoin and XRP to interact trustlessly with smart contracts on the Flare network, unlocking their use in DeFi applications. It achieves this through collateralized minting, utilizing Flare's State Connector and Time Series Oracle for secure cross-chain functionality.
+
+Agents in the FAssets system facilitate the minting and redemption of FAssets by providing over-collateralized assets and managing transactions securely. A liquidator in the FAssets system monitors agent's collateralization levels to ensure the system's security and trustlessness.
+
+In this guide, you will learn the preferred methods for setting up and managing the FAssets agents using the frontend interface and running the liquidator bot.
+
+## Prerequisites
+
+### Hardware
+
+The server should have a minimum of 2 CPUs and 4 GB of RAM and must operate on an AMD64 architecture running a Linux operating system.
+
+Recommended Providers: Linode, DigitalOcean, AWS, GCP.
+
+### Software
+
+Ensure you have installed Docker version 25.0.4 or higher and Docker Compose version v2.24.7 or higher.
+Setting up and running the FAssets agent is accomplished by using Docker containers, so knowledge of Docker is essential.
+Using Docker eliminates the need to manage tool versions and their compatibilities.
+
+### Financials
+
+To participate, ensure you meet the following minimum deposit requirements:
+
+- **Songbird Tokens (SGB):** Deposit a minimum of 1,000 SGB into the `owner.native.address` specified in the `secrets.json` file.
+
+- **USDX Tokens:** Agents must deposit a USDX as vault collateral tokens into the `owner.USDX.address`.
+
+- **XRP Tokens:** For XRP agents, you need to deposit 500 XRP Ledger native tokens (XRP) into the `owner.XRP.address`.
+
+- **Bitcoin (BTC):** Bitcoin agents should hold at least 0.005 BTC to cover potential high transaction fees in the `owner.BTC.address`.
+
+- **Dogecoin (DOGE):** Doge agents should maintain a minimum balance of 100 DOGE to cover potential high transaction fees in the `owner.DOGE.address`.
+
+Additionally, please ensure there is sufficient collateral for vault and pool requirements at the `owner.native.address`.
+
+### Contract Addresses
+
+These are important FAssets smart contract addresses representing tokens and notable system components, provided for your convenience during the Open Beta on the Songbird network.
+
+### Tokens
+
+These are ERC-20 representations of tokens to be used by the FAssets system.
+
+| **Token** | **Address**                                                                                                                                |
+| --------: | ------------------------------------------------------------------------------------------------------------------------------------------ |
+|    `USDX` | [`0x4A771Cc1a39FDd8AA08B8EA51F7Fd412e73B3d2B`](https://songbird-explorer.flare.network/address/0x4A771Cc1a39FDd8AA08B8EA51F7Fd412e73B3d2B) |
+
+### FAssets System Contracts
+
+|         **Contract** | **Address**                                                                                                                                | **Description**                                                                                                                          |
+| -------------------: | ------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `AgentOwnerRegistry` | [`0xa7f5d3C81f55f2b072FB62a0D4A03317BFd1a3c0`](https://songbird-explorer.flare.network/address/0xa7f5d3C81f55f2b072FB62a0D4A03317BFd1a3c0) | Manages agent whitelisting and allows setting and retrieving details such as work and management addresses, name, description, and icon. |
+|               `FXRP` | [`0xF9a84f4ec903F4EaB117A9c1098BeC078BA7027d`](https://songbird-explorer.flare.network/address/0xF9a84f4ec903F4EaB117A9c1098BeC078BA7027d) | The FAsset-wrapped TestXRP token, ready for use on Songbird.                                                                             |
+
+## Setting Up
+
+Follow these steps to set up the FAssets agent using Docker:
+
+1. Clone the repository in your Linux server:
+
+   ```bash
+   git clone https://github.com/flare-labs-ltd/fasset-bots-deploy
+   cd fasset-bots-deploy
+   ```
+
+2. Switch to `songbird-release` branch:
+
+   ```bash
+   git checkout songbird-release
+   ```
+
+3. Set up the environment file:
+
+   ```bash
+   cp .env.template .env
+   ```
+
+4. Set up the configuration file:
+
+   ```bash
+   cp config.json.template config.json
+   ```
+
+5. Login into GitHub Container Registry:
+
+   ```bash
+   docker login ghcr.io
+   ```
+
+6. Get the latest docker containers from the registry:
+
+   ```bash
+   docker compose pull
+   ```
+
+### Setting Environment Variables
+
+To begin using the FAssets Docker infrastructure, you must configure the settings in the `.env` environment file.
+
+- Make sure to set the machine address in the `.env` file using the `MACHINE_ADDRESS` variable.
+- Set the database password `FASSET_DB_PASSWORD`.
+
+:::warning
+Once the database is created, the password will not change if you modify it in the `.env` file.
+:::
+
+#### Optional Settings
+
+You can configure several optional settings in the `.env` environment file.
+
+- Choose the profiles of the FAssets agent to run in `COMPOSE_PROFILES`, which by default include the FAssets agent bot, the agent user interface, and the liquidator bot.
+- The frontend interface operates on the port designated as `FRONTEND_PORT`, which is set to `3000` by default.
+- The link for the agent frontend user interface, referred to as `FRONTEND_URL`, is empty by default.
+- The password for the agent frontend user interface is `FRONTEND_PASSWORD`.
+- The backend port is `BACKEND_PORT`, which defaults to `4000`.
+- The `API_URL` is the default URL of the backend API for the agent user interface.
+- The backend URL is `BACKEND_URL`, which defaults to `/fasset-backend`. This change should also be reflected in the `config.json` file for `apiNotifierConfigs.apiUrl`.
+- The `ROOT_PATH` is the backend URL.
+
+## Setting up Secret Keys
+
+The FAsset agents require multiple keys for the Flare and underlying network chains, which must be generated to make the agent operational.
+
+1. Create a new management wallet or use an existing one, preferably a cold wallet, as the management address for your agent.
+2. Generate the secrets using this command by replacing the `MANAGEMENT_WALLET_ADDRESS` with your management wallet address:
+
+   ```bash
+   ./generateSecrets.sh MANAGEMENT_WALLET_ADDRESS
+   ```
+
+3. Copy the `secrets.new.json` to `secrets.json`:
+
+   ```bash
+   cp secrets.new.json secrets.json
+   ```
+
+4. Allow the user to read and write `secrets.json`:
+
+   ```bash
+   chmod 600 secrets.json
+   ```
+
+5. Set file ownership to user ID 1000, the default Linux user ID, for proper permissions:
+
+   ```bash
+   sudo chown 1000:1000 secrets.json
+   ```
+
+6. Make a backup of the `secrets.json` file and store it securely.
+
+## Setting the File Permissions
+
+Set the file permissions for the `log` directory:
+
+```bash
+sudo chown 1000:1000 log -R
+```
+
+## Whitelist the Management Address
+
+To access the FAssets system, you must be whitelisted for security reasons.
+
+1. Use the [FlareFAssetsBot Songbird Telegram channel](https://t.me/FlareFAssetsSongbirdBot), specifically designed for registration, and provide the necessary information.
+2. Enter the information and confirm, and the Telegram bot will inform you about the successful process.
+3. You need to wait for the Flare team to approve registrations.
+4. If the information you entered is correct, the Telegram Bot will notify you that you have been whitelisted for the FAssets Songbird.
+
+### Check Whitelist Status
+
+Checking if your agent's management address has been whitelisted is straightforward. Follow these steps:
+
+1. Navigate with the Coston block explorer to `AgentOwnerRegistry` smart contract on address [0xa7f5d3C81f55f2b072FB62a0D4A03317BFd1a3c0](https://songbird-explorer.flare.network/address/0xa7f5d3C81f55f2b072FB62a0D4A03317BFd1a3c0?tab=read_contract) and open the Read Contract tab.
+2. Connect your wallet with any address to the block explorer so you can gain access to read functions from the smart contract.
+3. Execute the `isWhitelisted` function with the value of the management address. This function returns `bool`: `true` for whitelisted or `false` for not whitelisted.
+
+## Set the Work Address
+
+After you have completed with the whitelisting process, you need to set the work address for your agent.
+Configuring the native address links your agent's work address to the management address and grants access.
+
+1. Navigate with the Songbird block explorer to the `AgentOwnerRegistry` smart contract on address [0xa7f5d3C81f55f2b072FB62a0D4A03317BFd1a3c0](https://songbird-explorer.flare.network/address/0xa7f5d3C81f55f2b072FB62a0D4A03317BFd1a3c0?tab=write_contract) and open the Write Contract tab.
+2. Connect the management address wallet you used to generate the access keys above.
+3. Register the work address by executing the `setWorkAddress` function with the value of `owner.native.address` from the `secrets.json` file.
+
+## Configure the RPCs
+
+In order to connect to various blockchains, you need to configure the Remote Procedure Call (RPC) configurations.
+
+You can obtain the `xrp_rpc` for the XRP Ledger, `btc_rpc` for Bitcoin, and `doge_rpc` for Dogecoin from the Flare team, configured in the `secrets.json` file under the `apiKey` key.
+
+## Configure the Server
+
+To access the FAssets admin interface, you need to configure the server to route requests to the frontend and backend.
+
+### Backend Configuration
+
+Allow your server to access the URL `fasset-backend`:
+
+1. Route requests from `/fasset-backend` to the backend service (default port `4000`).
+2. Rewrite the path from `/fasset-backend/` to `/api/`.
+3. Forward necessary headers to the backend for proper communication.
+
+### Frontend Configuration
+
+Route requests from the frontend to the backend service:
+
+1. Route requests from `/` path to the frontend service running on the desired port (default port `3000`).
+2. Forward the Host header to the frontend service for proper handling.
+
+:::warning
+
+When configuring the server for FAssets, ensure all **security measures** are implemented to safeguard your system. Exposing the FAssets backend can lead to severe vulnerabilities.
+
+- **Never expose the FAssets agent interface (`/fasset-backend`) to the public network**.
+- As a rule of thumb, restrict access to the backend **only** within the local network.
+- Use firewalls and IP-based access controls to allow requests **only** from trusted IP addresses.
+- Consider enabling IP whitelisting for specific addresses to restrict access.
+
+:::
+
+## Start the FAssets Agent
+
+Start the FAssets agent using the Docker infrastructure by running the following command:
+
+```bash
+docker compose up -d
+```
+
+## Execute FAsset Bot Commands
+
+To run commands for the FAsset bot, please use the `cli` profile.
+
+Use the specific Docker container:
+
+- the `agent-bot` for the FAsset agent bot;
+- the `user-bot` for the FAsset user bot.
+
+### Execute Agent Bot Commands
+
+To execute agent bot commands, use the `cli` profile with the `agent-bot` Docker container.
+For example, to get the FAssets system running agents, use this command:
+
+```bash
+docker-compose --profile cli run agent-bot listAgents --fasset FASSET
+```
+
+### Execute User Bot Commands
+
+To execute user bot commands, use the `cli` profile and the `user-bot` Docker container.
+For example, to retrieve FAsset system info, use this command:
+
+```bash
+docker-compose --profile cli run user-bot info --fasset FASSET
+```
+
+### Update the FAssets Agent
+
+To restart and update the FAssets agent, run the following commands:
+
+```bash
+docker compose down
+git pull
+docker compose pull
+docker compose up -d
+```
+
+## Access the Agent Frontend
+
+You can access the FAssets agent frontend user interface by navigating to the `FRONTEND_URL` in your browser.
+You will be prompted to enter the password set in the `.env` file.
+
+Refer to the [FAssets Agent Interface](/fassets/guides/create-fasset-agent-ui) guide for more information on the user interface.
+
+:::tip[What's next]
+
+If you need to refresh your knowledge about FAssets, you can explore the various components and processes involved, such as [collateral](/fassets/collateral), [minting](/fassets/minting), [redemptions](/fassets/redemption), and [liquidations](/fassets/liquidation).
+
+Additionally, if you have questions while setting up your FAssets agent, be sure to check out the [FAQ page](/fassets/guides/faq) for answers and guidance.
+
+:::
