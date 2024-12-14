@@ -1,0 +1,37 @@
+---
+sidebar_position: 4
+slug: custom-handshake
+title: Implement Custom Handshake
+description: Custom Handshake for FAssets Agent
+tags: [intermediate, fassets, bitcoin, dogecoin]
+authors: [fassko]
+keywords: [fassets, xrp, btc, doge flare-network, flare-network]
+---
+
+The [Handshake](/fassets/minting#handshake) in the FAsset system is an optional step where an agent verifies the minter's or redeemer's address using an external service to ensure compliance (e.g., sanctions checks) before proceeding with minting or redemption. If enabled, the agent must approve the provided address within a set time; failure to respond allows the user to cancel or proceed based on system rules.
+
+## Set Up Custom Handshake
+
+FAssets agents can establish custom handshake mechanisms for verifying minters and redeemers. The most straightforward approach is to create a separate web service that exposes an API which accepts two parameters:
+
+- API service URL;
+- address that requires verification.
+
+You need to configure the `kyc` block in the `secrets.json` file.
+
+```json
+"kyc": {
+    "url": "",
+    "api_key": ""
+}
+```
+
+The `url` field represents the web service link, while the `api_key` field is sent as a custom header using the variable `Token`.
+
+The `url` field specifies the web service link, while the `api_key` field is sent as a custom header named `Token`.
+
+:::info
+
+You can check the file `fasset-bots/packages/fasset-bots-core/src/actors/plugins/KycStrategy.ts` for implementation details related to the `ChainalysisClient` class in the [FAsset bots repository](https://github.com/flare-labs-ltd/fasset-bots).
+
+:::
