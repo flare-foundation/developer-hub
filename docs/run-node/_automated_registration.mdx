@@ -1,0 +1,114 @@
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+<details>
+<summary>Automated registration on testnets.</summary>
+
+:::danger
+
+Automated registration can expose private keys. Only use on testnets.
+
+:::
+
+On testnets, you can register your entity addresses with the [`register-entities.ts`](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/deployment/tasks/register-entities.ts) script and your sortition public key with the [`register-public-keys.ts`](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/deployment/tasks/register-public-keys.ts) scripts.
+
+1. Clone and build [flare-smart-contracts-v2](https://github.com/flare-foundation/flare-smart-contracts-v2/):
+
+```bash
+git clone https://github.com/flare-foundation/flare-smart-contracts-v2/
+cd flare-smart-contracts-v2
+yarn
+yarn c
+```
+
+2. Create an `entities.json` file with the following account addresses and private keys:
+
+```json
+[
+  {
+    "identity": {
+      "address": "<address>",
+      "privateKey": "<private key hex>"
+    },
+    "submit": {
+      "address": "<address>",
+      "privateKey": "<private key hex>"
+    },
+    "submitSignatures": {
+      "address": "<address>",
+      "privateKey": "<private key hex>"
+    },
+    "signingPolicy": {
+      "address": "<address>",
+      "privateKey": "<private key hex>"
+    },
+    "delegation": {
+      "address": "<address>",
+      "privateKey": "<private key hex>"
+    },
+    "sortitionPrivateKey": "<private key hex>"
+  }
+]
+```
+
+3. Setup the following variables in `.env`:
+
+<Tabs groupId="network">
+  <TabItem value="coston2" label="Flare Testnet Coston2" default>
+
+    ```text title=".env"
+    ENTITIES_FILE_PATH="<path to entities.json>"
+    COSTON2_RPC=<non-public Coston2 RPC>
+    CHAIN_CONFIG="coston2"
+    ```
+
+  </TabItem>
+  <TabItem value="songbird" label="Songbird Canary-Network">
+
+    ```text title=".env"
+    ENTITIES_FILE_PATH="<path to entities.json>"
+    SONGBIRD_RPC=<non-public Songbird RPC>
+    CHAIN_CONFIG="songbird"
+    ```
+
+  </TabItem>
+  <TabItem value="coston" label="Songbird Testnet Coston">
+
+    ```text title=".env"
+    ENTITIES_FILE_PATH="<path to entities.json>"
+    COSTON_RPC=<non-public Coston RPC>
+    CHAIN_CONFIG="coston"
+    ```
+
+  </TabItem>
+</Tabs>
+
+4. Run the registration tasks:
+
+<Tabs groupId="network">
+  <TabItem value="coston2" label="Flare Testnet Coston2" default>
+
+    ```bash
+    yarn hardhat --network coston2 register-entities
+    yarn hardhat --network coston2 register-public-keys
+    ```
+
+  </TabItem>
+  <TabItem value="songbird" label="Songbird Canary-Network">
+
+    ```bash
+    yarn hardhat --network songbird register-entities
+    yarn hardhat --network songbird register-public-keys
+    ```
+
+  </TabItem>
+  <TabItem value="coston" label="Songbird Testnet Coston">
+
+    ```bash
+    yarn hardhat --network coston register-entities
+    yarn hardhat --network coston register-public-keys
+    ```
+
+  </TabItem>
+</Tabs>
+</details>

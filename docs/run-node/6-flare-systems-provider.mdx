@@ -9,11 +9,10 @@ import Tabs from "@theme/Tabs";
 import TabItem from "@theme/TabItem";
 import ThemedImage from "@theme/ThemedImage";
 import useBaseUrl from "@docusaurus/useBaseUrl";
+import AutomatedRegistration from "./_automated_registration.mdx";
 
 This guide provides a sample deployment configuration for infrastructure providers participating in the [Flare Systems Protocol (FSP)](https://dev.flare.network/network/fsp).
-The FSP consists of the [Flare Time Series Oracle](https://dev.flare.network/ftso/overview) and [Flare Data Connector](https://dev.flare.network/fdc/overview).
-
-## Overview
+The FSP consists of [Flare Time Series Oracle (FTSO)](https://dev.flare.network/ftso/overview) and [Flare Data Connector (FDC)](https://dev.flare.network/fdc/overview).
 
 <ThemedImage
   alt="Data Provider System for FSP"
@@ -23,7 +22,7 @@ The FSP consists of the [Flare Time Series Oracle](https://dev.flare.network/fts
   }}
 />
 
-An FSP provider system consists of the following components:
+An FSP provider system consists of the following six components:
 
 1. **Flare System Client**: Manages interactions with FTSO smart contracts, including data collection, submission, voter registration, and system tasks.
 2. **C-chain Indexer**: Tracks FSP-related blockchain transactions and events, enabling data calculations and action triggers.
@@ -34,7 +33,7 @@ An FSP provider system consists of the following components:
 
 ## Hardware requirements
 
-To deploy all of Flare's enshrined data protocols to a single HW instance:
+To deploy all FSP components on a single HW instance:
 
 <Tabs groupId="network" block>
   <TabItem value="flare" label="Flare Mainnet" default>
@@ -89,56 +88,58 @@ Ensure you have the following tools installed:
 
 ## Registration
 
-:::info
-
 Registration only needs to be performed once.
 
-:::
+### Register addresses and key
 
-### Register addresses
+<AutomatedRegistration />
 
 Each entity in the FSP system must register the following five addresses:
 
-- `Identity`. Main identity account of the voter. On mainnet this should be held in cold storage. This account is required for initial data provider setup, but is not used during each voting round.
+- `Identity`: Main identity account of the voter. On mainnet this should be held in cold storage. This account is required for initial data provider setup, but is not used during each voting round.
 
-- `Submit`. Used for sending commit and reveal transactions.
+- `Submit`: Used for sending commit and reveal transactions.
 
-- `SubmitSignatures`. Used for sending voting round result signature transactions. (To avoid nonce conflicts, **Flare System Client** uses multiple accounts for submitting transactions).
+- `SubmitSignatures`: Used for sending voting round result signature transactions. (To avoid nonce conflicts, **Flare System Client** uses multiple accounts for submitting transactions).
 
-- `SigningPolicy`. Used for signature generation during the voting round, and reward epoch signing policy signing (it's a system protocol ran once during reward epoch to establish reward epoch settings, including valid voters and their weights).
+- `SigningPolicy`: Used for signature generation during the voting round, and reward epoch signing policy signing (it's a system protocol ran once during reward epoch to establish reward epoch settings, including valid voters and their weights).
 
-- `Delegation`. Account to which community should delegate funds (using `WNat` contract) to increase the vote power of the voter (identity/entity) - and also to later get the rewards.
+- `Delegation`: Account to which community should delegate funds (using `WNat` contract) to increase the vote power of the voter (identity/entity) - and also to later get the rewards.
 
-To register you can directly call the `EntityManager` contract. For the contract address, see the [Solidity Reference](/network/solidity-reference). The relevant functions on the `EntityManager` contract are:
+To register you can directly call the `EntityManager` contract. For the contract address, see the [Solidity Reference](/network/solidity-reference). The relevant methods on the `EntityManager` contract are:
 
-- [`proposeSubmitAddress`](/network/fsp/solidity-reference/IEntityManager#proposesubmitaddress) and [`confirmSubmitAddressRegistration`](/network/fsp/solidity-reference/IEntityManager#confirmsubmitaddressregistration)
-- [`proposeSubmitSignaturesAddress`](/network/fsp/solidity-reference/IEntityManager#proposesubmitsignaturesaddress) and [`confirmSubmitSignaturesAddressRegistration`](/network/fsp/solidity-reference/IEntityManager#confirmsubmitsignaturesaddressregistration)
-- [`proposeSigningPolicyAddress`](/network/fsp/solidity-reference/IEntityManager#proposesigningpolicyaddress) and [`confirmSigningPolicyAddressRegistration`](/network/fsp/solidity-reference/IEntityManager#confirmsigningpolicyaddressregistration)
-- [`proposeDelegationAddress`](/network/fsp/solidity-reference/IEntityManager#proposedelegationaddress) and [`confirmDelegationAddressRegistration`](/network/fsp/solidity-reference/IEntityManager#confirmdelegationaddressregistration)
+| Proposal method                                                                                                   | Confirmation method                                                                                                                       |
+| ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| [`proposeSubmitAddress`](/network/fsp/solidity-reference/IEntityManager#proposesubmitaddress)                     | [`confirmSubmitAddressRegistration`](/network/fsp/solidity-reference/IEntityManager#confirmsubmitaddressregistration)                     |
+| [`proposeSubmitSignaturesAddress`](/network/fsp/solidity-reference/IEntityManager#proposesubmitsignaturesaddress) | [`confirmSubmitSignaturesAddressRegistration`](/network/fsp/solidity-reference/IEntityManager#confirmsubmitsignaturesaddressregistration) |
+| [`proposeSigningPolicyAddress`](/network/fsp/solidity-reference/IEntityManager#proposesigningpolicyaddress)       | [`confirmSigningPolicyAddressRegistration`](/network/fsp/solidity-reference/IEntityManager#confirmsigningpolicyaddressregistration)       |
+| [`proposeDelegationAddress`](/network/fsp/solidity-reference/IEntityManager#proposedelegationaddress)             | [`confirmDelegationAddressRegistration`](/network/fsp/solidity-reference/IEntityManager#confirmdelegationaddressregistration)             |
 
-First call the `propose...` with your `Identity` address and then the `confirm...` with the proposed address.
+First call the `propose...` from your `Identity` address and then the `confirm...` with the proposed address.
+
+#### Fund addresses
 
 All addresses need to be funded for gas fees. The `Delegation` account is used for establishing voter power, which can be achieved by wrapping funds directly or by delegation from other accounts. Wrapping can be done via:
 
 - [Development Portal](https://governance.dev.aflabs.org/) for Flare Testnet Coston2 and Songbird Testnet Coston
 - [Flare Portal](https://portal.flare.network) for Flare Mainnet and Songbird Canary-Network.
 
-:::warning
+:::note[Ensure sufficient vote power]
 
-The protocol operation uses normalized weights, and the delegation account should have at least 150 Wrapped Native Tokens to obtain a non-zero vote power.
+The protocol operation uses normalized weights, and the `Delegation` address should have at least 150 WNat to obtain a non-zero vote power.
 
-| **Network**             | **Native Token** | **Wrapped Native Token** |
-| ----------------------- | ---------------- | ------------------------ |
-| Flare Mainnet           | FLR              | WFLR                     |
-| Flare Testnet Coston2   | C2FLR            | WC2FLR                   |
-| Songbird Canary-Network | SGB              | WSGB                     |
-| Songbird Testnet Coston | CFLR             | WCFLR                    |
+| **Network**             | **Native Token** | **Wrapped Native Token (WNat)** |
+| ----------------------- | ---------------- | ------------------------------- |
+| Flare Mainnet           | FLR              | WFLR                            |
+| Flare Testnet Coston2   | C2FLR            | WC2FLR                          |
+| Songbird Canary-Network | SGB              | WSGB                            |
+| Songbird Testnet Coston | CFLR             | WCFLR                           |
 
-The contract addresses of the Wrapped Native Tokens (WNat) are in the [Solidity Reference](/network/solidity-reference).
+The WNat contract addresses are in the [Network Solidity Reference](/network/solidity-reference).
 
 :::
 
-### Register sortition key
+#### Register sortition key
 
 Generate a sortition key to use in Fast Updates. You can use the [fast-updates/go-client](https://github.com/flare-foundation/fast-updates/tree/main/go-client) docker image to generate a key:
 
@@ -147,7 +148,7 @@ docker run --rm ghcr.io/flare-foundation/fast-updates/go-client:latest keygen
 ```
 
 Accounts for Fast Updates submission need to be generated and funded with gas fees.
-These can be any accounts **not used** for the five accounts in [register addresses](#register-addresses).
+These can be any accounts **not used** for the five accounts in [register addresses and key](#register-addresses-and-key).
 You are recommended to use **three** separate accounts to avoid nonce conflicts.
 
 When registering the sortition key using the explorer, you will need to manually create a signature:
@@ -158,117 +159,55 @@ docker run --rm ghcr.io/flare-foundation/fast-updates/go-client:latest keygen --
 
 Register the generated sortition key and signature via the `EntityManager` contract by calling [`registerPublicKey`](/network/fsp/solidity-reference/IEntityManager#registerpublickey) with your identity address, use the signature generated by the previous command as the input to `_verificationData`.
 
-<details>
-<summary>Automated registration on testnets.</summary>
+### Register validator node
 
-:::danger
+To register your validator node, call the `EntityManager` contract's [`registerNodeId`](/network/fsp/solidity-reference/IEntityManager#registernodeid) function by providing your identity address for each validator node.
 
-Automated registration can expose private keys. Only use on testnets.
+#### Required Input Arguments
 
-:::
+- **`_nodeId`**: 20-byte node ID in hexadecimal format.
+- **`_certificateRaw`**: Raw certificate bytes in hexadecimal format.
+- **`_signature`**: Signature bytes in hexadecimal format.
 
-On testnets, you can register your entity addresses with the [`register-entities.ts`](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/deployment/tasks/register-entities.ts) script and your sortition public key with the [`register-public-keys.ts`](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/deployment/tasks/register-public-keys.ts) scripts.
+#### Registration Steps
 
-Start by cloning and building [flare-smart-contracts-v2](https://github.com/flare-foundation/flare-smart-contracts-v2/):
+1. **Locate Certificate and Private Key Files**
 
-```bash
-git clone https://github.com/flare-foundation/flare-smart-contracts-v2/
-cd flare-smart-contracts-v2
-yarn
-yarn c
-```
+   Find the certificate (`.crt`) and private key (`.key`) files for your validator node. The default file paths are:
 
-Create an `entities.json` file with the following account addresses and private keys:
+   - `~/.avalanchego/staking/staker.key`
+   - `~/.avalanchego/staking/staker.crt`
 
-```json
-[
-  {
-    "identity": {
-      "address": "<address>",
-      "privateKey": "<private key hex>"
-    },
-    "submit": {
-      "address": "<address>",
-      "privateKey": "<private key hex>"
-    },
-    "submitSignatures": {
-      "address": "<address>",
-      "privateKey": "<private key hex>"
-    },
-    "signingPolicy": {
-      "address": "<address>",
-      "privateKey": "<private key hex>"
-    },
-    "delegation": {
-      "address": "<address>",
-      "privateKey": "<private key hex>"
-    },
-    "sortitionPrivateKey": "<private key hex>"
-  }
-]
-```
+2. **Set Environment Variables**
 
-Setup the following variables in `.env`:
+   Define necessary environment variables by copying and pasting the following snippet into your terminal:
 
-<Tabs groupId="network">
-  <TabItem value="coston2" label="Flare Testnet Coston2" default>
+   ```bash
+   PATH_TO_CRT=~/.avalanchego/staking/staker.crt
+   ZERO_PREFIX=0000000000000000000000000000000000000000000000000000000000000000
+   PATH_TO_KEY=~/.avalanchego/staking/staker.key
+   IDENTITY_ADDRESS=<YourIdentityAddressWithout0xPrefix>
+   ```
 
-    ```text title=".env"
-    ENTITIES_FILE_PATH="<path to entities.json>"
-    COSTON2_RPC=<non-public Coston2 RPC>
-    CHAIN_CONFIG="coston2"
-    ```
+3. **Generate required hex values**
 
-  </TabItem>
-  <TabItem value="songbird" label="Songbird Canary-Network">
+   **`_nodeId`:** If you are using an older version of `openssl`, omit the `-provider legacy` flag.
 
-    ```text title=".env"
-    ENTITIES_FILE_PATH="<path to entities.json>"
-    SONGBIRD_RPC=<non-public Songbird RPC>
-    CHAIN_CONFIG="songbird"
-    ```
+   ```bash
+   cat $PATH_TO_CRT | tail -n +2 | head -n -1 | base64 -d | openssl dgst -sha256 -binary | openssl rmd160 -provider legacy -binary | xxd -p | sed -e 's/^/0x/;'
+   ```
 
-  </TabItem>
-  <TabItem value="coston" label="Songbird Testnet Coston">
+   **`_certificateRaw`:**
 
-    ```text title=".env"
-    ENTITIES_FILE_PATH="<path to entities.json>"
-    COSTON_RPC=<non-public Coston RPC>
-    CHAIN_CONFIG="coston"
-    ```
+   ```bash
+   cat $PATH_TO_CRT | tail -n +2 | head -n -1 | base64 -d | xxd -p | tr -d '\n' | sed -e 's/^/0x/;' && echo
+   ```
 
-  </TabItem>
-</Tabs>
+   **`_signature`:**
 
-Run the registration tasks:
-
-<Tabs groupId="network">
-  <TabItem value="coston2" label="Flare Testnet Coston2" default>
-
-    ```bash
-    yarn hardhat --network coston2 register-entities
-    yarn hardhat --network coston2 register-public-keys
-    ```
-
-  </TabItem>
-  <TabItem value="songbird" label="Songbird Canary-Network">
-
-    ```bash
-    yarn hardhat --network songbird register-entities
-    yarn hardhat --network songbird register-public-keys
-    ```
-
-  </TabItem>
-  <TabItem value="coston" label="Songbird Testnet Coston">
-
-    ```bash
-    yarn hardhat --network coston register-entities
-    yarn hardhat --network coston register-public-keys
-    ```
-
-  </TabItem>
-</Tabs>
-</details>
+   ```bash
+   echo -n $ZERO_PREFIX$IDENTITY_ADDRESS | xxd -r -p | openssl dgst -sha256 -sign $PATH_TO_KEY | xxd -p | tr -d '\n' | sed -e 's/^/0x/;' && echo
+   ```
 
 ## Setup FDC
 
@@ -282,28 +221,33 @@ The FDC suite integrates blockchain data sources through a network of blockchain
 
 You can use the following components to run a full FDC suite.
 
-- Blockchain nodes (Docker images):
+#### Blockchain node images
 
-  - Bitcoin - [flarefoundation/bitcoin](https://hub.docker.com/r/flarefoundation/bitcoin)
-  - Dogecoin - [flarefoundation/dogecoin](https://hub.docker.com/r/flarefoundation/dogecoin)
-  - Ripple - [flarefoundation/rippled](https://hub.docker.com/r/flarefoundation/rippled)
-  - Ethereum - [ethereum/client-go](https://hub.docker.com/r/ethereum/client-go) and [prysm](https://docs.prylabs.network/docs/install/install-with-docker)
+| Network  | Blockchain node image                                                                                                                      |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Bitcoin  | [flarefoundation/bitcoin](https://hub.docker.com/r/flarefoundation/bitcoin)                                                                |
+| Dogecoin | [flarefoundation/dogecoin](https://hub.docker.com/r/flarefoundation/dogecoin)                                                              |
+| Ripple   | [flarefoundation/rippled](https://hub.docker.com/r/flarefoundation/rippled)                                                                |
+| Ethereum | [ethereum/client-go](https://hub.docker.com/r/ethereum/client-go) & [prysm](https://docs.prylabs.network/docs/install/install-with-docker) |
 
-- Indexers and verification servers for:
+#### Indexers and verifiers
 
-  - BTC - [flare-foundation/verifier-utxo-indexer](https://github.com/flare-foundation/verifier-utxo-indexer) and [flare-foundation/verifier-indexer-api](https://github.com/flare-foundation/verifier-indexer-api)
-  - DOGE - [flare-foundation/verifier-utxo-indexer](https://github.com/flare-foundation/verifier-utxo-indexer) and [flare-foundation/verifier-indexer-api](https://github.com/flare-foundation/verifier-indexer-api)
-  - XRP - [flare-foundation/verifier-xrp-indexer](https://github.com/flare-foundation/verifier-xrp-indexer) and [flare-foundation/verifier-indexer-api](https://github.com/flare-foundation/verifier-indexer-api)
-
-- EVM verifier - [flare-foundation/evm-verifier](https://github.com/flare-foundation/evm-verifier)
+| Network | Indexer                                                                                             | Verifier                                                                                          |
+| ------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| BTC     | [flare-foundation/verifier-utxo-indexer](https://github.com/flare-foundation/verifier-utxo-indexer) | [flare-foundation/verifier-indexer-api](https://github.com/flare-foundation/verifier-indexer-api) |
+| DOGE    | [flare-foundation/verifier-utxo-indexer](https://github.com/flare-foundation/verifier-utxo-indexer) | [flare-foundation/verifier-indexer-api](https://github.com/flare-foundation/verifier-indexer-api) |
+| XRP     | [flare-foundation/verifier-xrp-indexer](https://github.com/flare-foundation/verifier-xrp-indexer)   | [flare-foundation/verifier-indexer-api](https://github.com/flare-foundation/verifier-indexer-api) |
+| EVM     | -                                                                                                   | [flare-foundation/evm-verifier](https://github.com/flare-foundation/evm-verifier)                 |
 
 :::info
 
-- FLR and SGB nodes are required for EVM verification but are not listed here.
+- Flare Mainnet and Songbird Canary-Network nodes are required for EVM verification but are not listed here.
 - You are not required to use exactly these components, eg. if you already have a compatible Bitcoin RPC node, you can configure your deployment to run everything else except for Bitcoin node.
 - You can split the deployment across multiple servers.
 
 :::
+
+### Configuring blockchain nodes
 
 Start by cloning the [fdc-suite-deployment](https://github.com/flare-foundation/fdc-suite-deployment.git) repo:
 
@@ -311,8 +255,6 @@ Start by cloning the [fdc-suite-deployment](https://github.com/flare-foundation/
 git clone https://github.com/flare-foundation/fdc-suite-deployment.git
 cd fdc-suite-deployment
 ```
-
-### Configuring blockchain nodes
 
 #### Bitcoin (BTC)
 
@@ -368,40 +310,40 @@ Blockchain nodes expose all ports by default.
 
 ### Configuring indexers and verifiers
 
-Copy `.env.example` into `.env`:
+1. Copy `.env.example` into `.env`:
 
-```bash
-cp .env.example .env
-```
+   ```bash
+   cp .env.example .env
+   ```
 
-#### Configure required keys
+2. Configure required keys
 
-- **RPC Nodes Authentication:** Use credentials generated earlier. If you run blockchain nodes and verifiers on the same server, you can use the ip `172.17.0.1` to reach the nodes.
+   - **RPC Nodes Authentication:** Use credentials generated earlier. If you run blockchain nodes and verifiers on the same server, you can use the ip `172.17.0.1` to reach the nodes.
 
-- **Start Block Number:** Set `*_START_BLOCK_NUMBER` to a block finalized 14 days ago. This needs to be set the first time when you start the indexers to avoid indexing too much data. FDC requires at least 14 days of history. On later restarts indexers will start indexing from the latest block in the database.
+   - **Start Block Number:** Set `*_START_BLOCK_NUMBER` to a block finalized 14 days ago. This needs to be set the first time when you start the indexers to avoid indexing too much data. FDC requires at least 14 days of history. On later restarts indexers will start indexing from the latest block in the database.
 
-- **Testnet Mode:** Set `TESTNET=true` if using testnets.
-- **API Keys:** Configure `VERIFIER_API_KEYS` with comma-separated API keys. One or more comma separated keys can be configured. You will likely need at least one key for FDC client that will call verifier api servers.
-- **Database Passwords:** Set `*_DB_PASSWORD` variables to random strings. These are used internally for the indexer database.
+   - **Testnet Mode:** Set `TESTNET=true` if using testnets.
+   - **API Keys:** Configure `VERIFIER_API_KEYS` with comma-separated API keys. One or more comma separated keys can be configured. You will likely need at least one key for FDC client that will call verifier api servers.
+   - **Database Passwords:** Set `*_DB_PASSWORD` variables to random strings. These are used internally for the indexer database.
 
-#### Generate configuration files
+3. Generate configuration files
 
-```bash
-./generate-config.sh
-```
+   ```bash
+   ./generate-config.sh
+   ```
 
-This script populates config files from `*.example` templates in:
+   This script populates config files from `*.example` templates in:
 
-- `verifiers/btc/`
-- `verifiers/doge/`
-- `verifiers/xrp/`
-- `evm-verifier/`
+   - `verifiers/btc/`
+   - `verifiers/doge/`
+   - `verifiers/xrp/`
+   - `evm-verifier/`
 
 ### Start services
 
 #### Start blockchain nodes
 
-1. Navigate to the node directory, e.g., `nodes-mainnet/btc`
+1. Go to the directory for the specific blockchain node you want to run, e.g. `nodes-mainnet/btc`
 
 2. Start the node:
 
@@ -409,18 +351,19 @@ This script populates config files from `*.example` templates in:
    docker compose up -d
    ```
 
-Repeat this process for all blockchain nodes you plan to run.
+_Repeat these steps for each blockchain node you intend to run._
 
 #### Start indexers and verifiers
 
-1. Navigate to the appropriate verifier directory, e.g., `verifiers/btc`
+1. Go to the appropriate verifier directory, e.g. `verifiers/btc`
 
 2. Start the verifier:
+
    ```bash
    docker compose up -d
    ```
 
-Repeat this process for all verifiers you plan to run.
+_Repeat these steps for all verifiers you intend to run._
 
 ## Setup FTSO
 
@@ -455,7 +398,7 @@ You should see the following line in the logs:
 WARN [FixedFeed] Initializing FixedFeed, will return 0.01 for all feeds.
 ```
 
-## Generate configuration
+## Generate configuration and deploy
 
 1. Clone [flare-systems-deployment](https://github.com/flare-foundation/flare-systems-deployment) repository:
 
@@ -478,25 +421,21 @@ WARN [FixedFeed] Initializing FixedFeed, will return 0.01 for all feeds.
    ./populate_config.sh
    ```
 
-## Deploy
+5. Deploy the instance with the provided `docker-compose.yaml`
 
-Since `docker-compose.yaml` is already provided, you can start everything with:
+   ```bash
+   docker compose up -d
+   ```
 
-```bash
-docker compose up -d
-```
+   :::info[Stay up to date]
 
-To stop:
+   To pull the latest `flare-systems-deployment` image:
 
-```bash
-docker compose down
-```
+   ```bash
+   docker compose pull
+   ```
 
-To pull the latest images:
-
-```bash
-docker compose pull
-```
+   ::::
 
 ## Troubleshooting
 
