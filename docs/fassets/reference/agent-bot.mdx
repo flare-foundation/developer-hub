@@ -1,0 +1,332 @@
+---
+title: Agent Bot CLI Reference
+description: FAssets agent Bot command line reference
+keywords: [fassets, xrp, bitcoin, dogecoin, flare-network]
+---
+
+Command line reference for managing and interacting with FAssets agent bots.
+
+Sourced from `agent-bot.ts` on [GitHub](https://github.com/flare-labs-ltd/fasset-bots/blob/songbird-release/packages/fasset-bots-cli/src/cli/agent-bot.ts).
+
+## Setup
+
+Before running agent-bot, ensure it is properly set up using the [FAsset agent deploy](/fassets/guides/deploy-fassets-agent) with Docker and then learn [how to execute the command line commands](/fassets/guides/deploy-fassets-agent#execute-fasset-bot-commands).
+
+## Usage
+
+To run the agent-bot command line interface, use the `yarn agent-bot` command with the desired command and arguments and add the `--fasset` flag with the FAsset symbol.
+
+```bash
+yarn agent-bot [command] <args> --fasset [fAssetSymbol]
+```
+
+To list all available commands:
+
+```bash
+yarn agent-bot help
+```
+
+To execute a specific command using the [Docker container](/fassets/guides/deploy-fassets-agent#execute-fasset-bot-commands) change `yarn agent-bot` with `docker-compose --profile cli run agent-bot`:
+
+```bash
+docker-compose --profile cli run agent-bot [command] <args> --fasset [fAssetSymbol]
+```
+
+## Owner and Agent Management
+
+### Validate Owner
+
+Validate the setup of an agent owner for the FAsset by checking address whitelisting, proper registrations, and sufficient balances on management, work, and test asset addresses.
+It confirms that all configurations and balances meet the requirements for the agent owner.
+
+```bash
+yarn agent-bot validateOwner
+```
+
+### Create
+
+Create a new agent vault. Use `--prepare` to generate a settings template, or pass the settings as a file path argument.
+
+```bash
+yarn agent-bot create [agentSettingsPath]
+```
+
+### List Agents
+
+List your active FAsset agents active agents from the persistent state.
+
+```bash
+yarn agent-bot listAgents
+```
+
+### Get Info
+
+Output your FAsset agent information by specifying the agent vault address.
+Use `--raw` to get direct output.
+
+```bash
+yarn agent-bot info <agentVaultAddress>
+```
+
+## Collateral Management
+
+### Deposit Collaterals
+
+Deposit enough vault and pool collateral for minting by specifying the FAsset agent vault address and amount of lots.
+
+```bash
+yarn agent-bot depositCollaterals <agentVaultAddress> <lots>
+```
+
+### Deposit Vault Collateral
+
+Deposit vault collateral for minting by specifying the FAsset agent vault address and amount.
+
+```bash
+yarn agent-bot depositVaultCollateral <agentVaultAddress> <amount>
+```
+
+### Add Pool Collateral
+
+Add pool collateral and get the FAsset agent's pool tokens by specifying the FAsset agent vault address and amount.
+
+```bash
+yarn agent-bot buyPoolCollateral <agentVaultAddress> <amount>
+```
+
+### Withdraw Vault Collateral
+
+Start vault collateral withdrawal.
+Automatically executed by the running bot later.
+Specify the FAsset agent vault address and amount.
+
+```bash
+yarn agent-bot withdrawVaultCollateral <agentVaultAddress> <amount>
+```
+
+### Cancel Vault Collateral Withdrawal
+
+Cancel vault collateral withdrawal.
+Specify the FAsset agent vault address.
+
+```bash
+yarn agent-bot cancelVaultCollateralWithdrawal <agentVaultAddress>
+```
+
+### Redeem Collateral Pool Tokens
+
+Start pool tokens redemption process.
+Automatically executed by the running bot later. Specify the FAsset agent vault address and amount.
+
+```bash
+yarn agent-bot redeemCollateralPoolTokens <agentVaultAddress> <amount>
+```
+
+### Cancel Collateral Pool Token Redemption
+
+Cancel collateral pool token redemption.
+Specify the FAsset agent vault address.
+
+```bash
+yarn agent-bot cancelCollateralPoolTokenRedemption <agentVaultAddress>
+```
+
+### Withdraw Vault Collateral
+
+Start vault collateral withdrawal.
+Automatically executed by the running bot later.
+Specify the FAsset agent vault address and amount.
+
+```bash
+yarn agent-bot withdrawVaultCollateral <agentVaultAddress> <amount>
+```
+
+### Pool Fees Balance
+
+Get pool fees balance of the FAssets agent by specifying the agent vault address.
+
+```bash
+yarn agent-bot poolFeesBalance <agentVaultAddress>
+```
+
+### Top Up Underlying
+
+Sends additional underlying assets to the FAssets agent, increasing the assets backing their minted FAssets.
+Specify the FAsset agent vault address and amount.
+
+```bash
+yarn agent-bot topUpUnderlying <agentVaultAddress> <amount>
+```
+
+### Withdraw Underlying
+
+Withdrawing underlying assets in the FAssets system allows agents to reclaim original assets stored on their underlying address, provided they no longer back any FAssets.
+The process includes announcing the withdrawal, paying a fee, and obtaining a transaction hash while ensuring no risk to redeemers or collateral providers.
+Agents must comply with system rules, such as avoiding illegal payments or liquidations, to perform the withdrawal successfully.
+Specify the FAsset agent vault address, amount, and destination address.
+
+```bash
+yarn agent-bot withdrawUnderlying <agentVaultAddress> <amount> <destinationAddress>
+```
+
+### Cancel Underlying Withdrawal
+
+Cancel underlying withdrawal announcement by specifying the FAsset agent vault address.
+
+```bash
+yarn agent-bot cancelUnderlyingWithdrawal <agentVaultAddress>
+```
+
+### Delegate Pool Collateral
+
+Collateral providers or agents can delegate native pool collateral to the Flare Time Series Oracle (FTSO) by specifying the agent vault address, recipient, and share, enabling the locked collateral to earn rewards while maintaining system security and liquidity.
+This feature enhances incentives by providing passive income without affecting the collateral's ability to back FAssets.
+
+```bash
+yarn agent-bot delegatePoolCollateral <agentVaultAddress> <recipient> <share>
+```
+
+### Undelegate Pool Collateral
+
+Remove pool collateral delegation by specifying the FAsset agent vault address.
+
+```bash
+yarn agent-bot undelegatePoolCollateral <agentVaultAddress>
+```
+
+### Create Underlying Account
+
+Create an underlying account for the FAssets agent.
+
+```bash
+yarn agent-bot createUnderlyingAccount
+```
+
+### Free Vault Collateral
+
+Free vault collateral that is not currently locked to back FAssets by specifying the FAsset agent vault address.
+
+```bash
+yarn agent-bot freeVaultCollateral <agentVaultAddress>
+```
+
+### Free Pool Collateral
+
+Free pool collateral by specifying the agent vault address.
+
+```bash
+yarn agent-bot freePoolCollateral <agentVaultAddress>
+```
+
+### Free Underlying Balance
+
+Release the underlying balance assets on an agent's address that are not currently locked to back FAssets.
+Specify the FAssets agent vault address.
+
+```bash
+yarn agent-bot freeUnderlyingBalance <agentVaultAddress>
+```
+
+### Switch Vault Collateral
+
+Switch the vault collateral by specifying the agent vault address and the new token, using `--deposit` to auto-deposit equivalent tokens. 
+
+```bash
+yarn agent-bot switchVaultCollateral <agentVaultAddress> <token>
+```
+
+### Self Mint FAsset
+
+Mint FAssets using the agent vault without requiring the agent to be publicly available by specifying the agent vault address and amount.
+
+```bash
+yarn agent-bot selfMintFAsset <agentVaultAddress> <amount>
+```
+
+### Self Mint From Underlying
+
+Mint FAssets directly using newly deposited underlying assets by specifying the agent vault address and amount, without requiring the agent to be publicly available.
+
+```bash
+yarn agent-bot selfMintFromUnderlying <agentVaultAddress> <numberOfLots>
+```
+
+## Status Management
+
+### Enter Available
+
+Enter the available FAssets agent list by specifying the FAsset agent vault address to register the agent vault and collateral pool, making them publicly accessible for minting by other users.
+
+```bash
+yarn agent-bot enter <agentVaultAddress>
+```
+
+### Exit Available
+
+Exit the available agent list to automatically remove the agent vault and collateral pool from public availability, preventing users (minters) from selecting the agent to mint new FAssets.
+Specify the agent vault address.
+
+```bash
+yarn agent-bot exit <agentVaultAddress>
+```
+
+### Execute Exit Available
+
+Manually execute the exit from the available agent list that was previously announced, as this is typically unnecessary since the running bot can handle it automatically.
+
+```bash
+yarn agent-bot executeExit <agentVaultAddress>
+```
+
+### Self Close
+
+Self-close means reducing the FAsset agent's obligations by burning FAssets and releasing the equivalent amount of underlying assets and/or collateral back to themselves by specifying the agent vault address and amount.
+
+```bash
+yarn agent-bot selfClose <agentVaultAddress> <amount>
+```
+
+### Close Agent Vault
+
+Shut down the FAsset agent vault, ending all operations related to minting and backing FAssets by specifying the agent vault address.
+The closing will be executed automatically later.
+
+```bash
+yarn agent-bot close <agentVaultAddress>
+```
+
+## Agent Settings Management
+
+### Get Agent Settings
+
+Retrieve the configuration parameters by specifying the agent vault address.
+
+```bash
+yarn agent-bot getAgentSettings <agentVaultAddress>
+```
+
+### Update Agent Setting
+
+Modify specific operational parameters for the agent vault by specifying the agent vault address, name, and value.
+
+```bash
+yarn agent-bot updateAgentSetting <agentVaultAddress> <name> <value>
+```
+
+## Account Management
+
+### Upgrade WNat
+
+Upgrade the Wrapped Native Token (WNat) contract used in the FAsset agent collateral pool by specifying the agent vault address.
+
+```bash
+yarn agent-bot upgradeWnat <agentVaultAddress>
+```
+
+### Export Private Keys
+
+Export the private keys for the FAssets agent underlying address by specifying the export file.
+
+```bash
+yarn agent-bot exportPrivateKeys <exportFile>
+```
