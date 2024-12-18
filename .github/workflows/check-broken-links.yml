@@ -1,0 +1,36 @@
+name: Check Broken Links
+
+on:
+  pull_request:
+    paths:
+      - "**/*.md"
+      - "**/*.mdx"
+      - "**/*.html"
+
+jobs:
+  link-check:
+    name: Validate Links
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Lychee
+        run: |
+          wget -q https://github.com/lycheeverse/lychee/releases/latest/download/lychee-linux-x86_64.tar.gz
+          tar -xzf lychee-linux-x86_64.tar.gz
+          sudo mv lychee /usr/local/bin/
+
+      - name: Run Link Checker
+        run: |
+          lychee \
+            --config .github/config/lychee.toml \
+            --accept=200,403 \
+            --no-progress \
+            '**/*.md' '**/*.mdx' '**/*.html'
+
+      - name: Report Failure on Broken Links
+        if: failure()
+        run: |
+          echo "::error:: Broken links detected. Please fix them before merging."
