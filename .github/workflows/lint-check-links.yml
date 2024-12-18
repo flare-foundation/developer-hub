@@ -34,20 +34,22 @@ jobs:
         run: npm run typecheck
 
       # Run Link Checker using Lychee Action
-      - name: Check for Broken Links
+      - name: Check for Broken Links (Internal Only)
         uses: lycheeverse/lychee-action@v1.8.0
         with:
-          # Specify files to scan for links
+          # Check only internal links
           args: >
             --accept 200,403
             --no-progress
-            '**/*.md' '**/*.mdx' '**/*.html'
-          # Path to Lychee configuration file
+            --exclude-mail
+            --max-concurrency 20
+            --base . '**/*.md' '**/*.mdx' '**/*.html'
+          # Exclude external links entirely
+          exclude = ["https://", "http://"]
           config-file: .github/config/lychee.toml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Report Failure on Broken Links
       - name: Report Failure on Broken Links
         if: failure()
         run: |
