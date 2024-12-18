@@ -33,21 +33,19 @@ jobs:
       - name: Check types
         run: npm run typecheck
 
-      # Install Lychee for link checking
-      - name: Install Lychee (Link Checker)
-        run: |
-          wget -q https://github.com/lycheeverse/lychee/releases/latest/download/lychee-linux-x86_64.tar.gz
-          tar -xzf lychee-linux-x86_64.tar.gz
-          sudo mv lychee /usr/local/bin/
-
-      # Run Link Checker
-      - name: Run Link Checker
-        run: |
-          lychee \
-            --config .github/config/lychee.toml \
-            --accept=200,403 \
-            --no-progress \
+      # Run Link Checker using Lychee Action
+      - name: Check for Broken Links
+        uses: lycheeverse/lychee-action@v1.8.0
+        with:
+          # Specify files to scan for links
+          args: >
+            --accept 200,403
+            --no-progress
             '**/*.md' '**/*.mdx' '**/*.html'
+          # Path to Lychee configuration file
+          config-file: .github/config/lychee.toml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # Report Failure on Broken Links
       - name: Report Failure on Broken Links
