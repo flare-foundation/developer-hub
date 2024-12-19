@@ -13,19 +13,28 @@ on:
       - "**/*.ts"
       - "**/*.html"
       - "**/*.rst"
+      - "!**/*.svg" # Exclude svg files from triggering the workflow
+      - "**/*.go"
+      - "!**/*.sum"
+      - "!**/*.mod"
 
 jobs:
   spell-check:
+    if: github.event.pull_request.changed_files > 0
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.x"
+
       - name: Install codespell
         run: pip install codespell
+
       - name: Run Spell Check
         run: |
           codespell \
@@ -34,6 +43,7 @@ jobs:
             --quiet-level=2 \
             --check-filenames \
             .
+
       - name: Annotate spelling errors
         if: failure()
         run: echo "::error::Spelling errors detected. Please fix the typos or add to the ignore list if intentional."
