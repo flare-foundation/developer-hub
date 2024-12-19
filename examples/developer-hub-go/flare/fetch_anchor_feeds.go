@@ -1,4 +1,4 @@
-package coston2
+package flare
 
 import (
 	"bytes"
