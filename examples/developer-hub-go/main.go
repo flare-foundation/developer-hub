@@ -31,4 +31,5 @@ func main() {
 	FtsoV2Config()
 	coston2.MakeVolatilityIncentive()
 	coston2.SecureRandom()
+	coston2.FetchAnchorFeeds()
 }
