@@ -11,14 +11,14 @@ declare global {
   }
 }
 
-function IssueCollectorButton() {
+function JiraIssueCollector() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const buttonRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const script = document.createElement("script");
     script.src =
-      "https://flare-network.atlassian.net/s/d41d8cd98f00b204e9800998ecf8427e-T/-vg1gsr/b/8/c95134bc67d3a521bb3f4331beb9b804/_/download/batch/com.atlassian.jira.collector.plugin.jira-issue-collector-plugin:issuecollector/com.atlassian.jira.collector.plugin.jira-issue-collector-plugin:issuecollector.js?locale=en-US&collectorId=426c6341";
+      "https://flare-network.atlassian.net/s/d41d8cd98f00b204e9800998ecf8427e-T/-50n9c3/b/8/c95134bc67d3a521bb3f4331beb9b804/_/download/batch/com.atlassian.jira.collector.plugin.jira-issue-collector-plugin:issuecollector/com.atlassian.jira.collector.plugin.jira-issue-collector-plugin:issuecollector.js?locale=en-GB&collectorId=78bde981";
     script.async = true;
     document.body.appendChild(script);
 
@@ -58,9 +58,16 @@ function IssueCollectorButton() {
     event.preventDefault();
     event.stopPropagation();
 
+    // Save current scroll position
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
     if (window.showCollectorDialog) {
       window.showCollectorDialog();
-      setIsFormOpen(true);
+
+      // Restore scroll position after a small delay
+      setTimeout(() => {
+        window.scrollTo(scrollX, scrollY);
+      }, 10); // Adjust timeout if necessary
     } else {
       alert(
         "The JIRA form script has not loaded yet. Please try again in a moment.",
@@ -81,4 +88,4 @@ function IssueCollectorButton() {
   );
 }
 
-export default IssueCollectorButton;
+export default JiraIssueCollector;
