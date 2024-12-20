@@ -37,15 +37,9 @@ func anchorFeeds(feedIds []string, votingRoundId string) ([]AnchorFeed, error) {
 		url += "?voting_round_id=" + votingRoundId
 	}
 
-	payload, err := json.Marshal(map[string]interface{}{"feed_ids": feedIds})
-	if err != nil {
-		return nil, fmt.Errorf("could not marshal JSON: %w", err)
-	}
+	payload, _ := json.Marshal(map[string]interface{}{"feed_ids": feedIds})
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
-	}
+	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(payload))
 
 	req.Header.Set("X-API-KEY", APIKey)
 	req.Header.Set("Content-Type", "application/json")
@@ -61,10 +55,7 @@ func anchorFeeds(feedIds []string, votingRoundId string) ([]AnchorFeed, error) {
 		return nil, fmt.Errorf("unexpected status code %d: %s", resp.StatusCode, string(body))
 	}
 
-	responseBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
+	responseBody, _ := io.ReadAll(resp.Body)
 
 	var feeds []AnchorFeed
 	if err := json.Unmarshal(responseBody, &feeds); err != nil {
