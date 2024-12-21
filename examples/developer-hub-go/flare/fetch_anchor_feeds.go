@@ -5,20 +5,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 )
 
 const (
 	BaseURL = "https://flr-data-availability.flare.network/"
-	APIKey  = "api-key"
+	ApiKey  = "<your-api-key>"
 )
 
-var FeedIDs = []string{
+var FeedIds = []string{
 	"0x01464c522f55534400000000000000000000000000", // FLR/USD
 	"0x014254432f55534400000000000000000000000000", // BTC/USD
 	"0x014554482f55534400000000000000000000000000", // ETH/USD
 }
+var VotingRoundId = ""
 
 type AnchorFeed struct {
 	Body struct {
@@ -31,46 +31,28 @@ type AnchorFeed struct {
 	Proof []string `json:"proof"`
 }
 
-func anchorFeeds(feedIds []string, votingRoundId string) ([]AnchorFeed, error) {
+func FetchAnchorFeeds() ([]AnchorFeed, error) {
 	url := BaseURL + "api/v0/ftso/anchor-feeds-with-proof"
-	if votingRoundId != "" {
-		url += "?voting_round_id=" + votingRoundId
+	if VotingRoundId != "" {
+		url += "?voting_round_id=" + VotingRoundId
 	}
 
-	payload, _ := json.Marshal(map[string]interface{}{"feed_ids": feedIds})
-
+	payload, _ := json.Marshal(map[string]interface{}{"feed_ids": FeedIds})
 	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(payload))
-
-	req.Header.Set("X-API-KEY", APIKey)
+	req.Header.Set("X-API-KEY", ApiKey)
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to perform HTTP request: %w", err)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("request failed: %v (status: %d)", err, resp.StatusCode)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("unexpected status code %d: %s", resp.StatusCode, string(body))
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
-
-	responseBody, _ := io.ReadAll(resp.Body)
 
 	var feeds []AnchorFeed
-	if err := json.Unmarshal(responseBody, &feeds); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal JSON response: %w", err)
-	}
-
-	return feeds, nil
-
-}
-
-func FetchAnchorFeeds() {
-	feeds, err := anchorFeeds(FeedIDs, "")
-	if err != nil {
-		log.Fatalf("Error fetching anchor feeds: %v", err)
-	}
-	fmt.Printf("%+v\n", feeds)
-
+	return feeds, json.Unmarshal(body, &feeds)
 }
