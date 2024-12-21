@@ -2,13 +2,13 @@
 sidebar_position: 1
 slug: deploy-fassets-agent
 title: Deploy an FAssets Agent
-description: Deploy and run FAssets agent
+description: Deploy and run an FAssets agent.
 tags: [intermediate, fassets, bitcoin, dogecoin]
 authors: [fassko]
 keywords: [fassets, xrp, btc, doge flare-network, flare-network]
 ---
 
-The FAssets system by Flare enables non-smart contract tokens like Bitcoin and XRP to interact trustlessly with smart contracts on the Flare network, unlocking their use in DeFi applications. It achieves this through collateralized minting, utilizing Flare's State Connector and Time Series Oracle for secure cross-chain functionality.
+The FAssets system by Flare enables non-smart contract tokens like BTC and XRP to interact trustlessly with smart contracts on the Flare network, unlocking their use in DeFi applications. It achieves this through collateralized minting, utilizing [Flare Data Connector (FDC)](/fdc/overview) and [Flare Time Series Oracle (FTSO)](/ftso/overview) for secure cross-chain functionality.
 
 Agents in the FAssets system facilitate the minting and redemption of FAssets by providing over-collateralized assets and managing transactions securely. A liquidator in the FAssets system monitors agent's collateralization levels to ensure the system's security and trustlessness.
 
@@ -47,22 +47,7 @@ Additionally, please ensure there is sufficient collateral for vault and pool re
 
 ### Contract Addresses
 
-These are important FAssets smart contract addresses representing tokens and notable system components, provided for your convenience during the Open Beta on the Songbird network.
-
-### Tokens
-
-These are ERC-20 representations of tokens to be used by the FAssets system.
-
-| **Token** | **Address**                                                                                                                                |
-| --------: | ------------------------------------------------------------------------------------------------------------------------------------------ |
-|    `USDX` | [`0x4A771Cc1a39FDd8AA08B8EA51F7Fd412e73B3d2B`](https://songbird-explorer.flare.network/address/0x4A771Cc1a39FDd8AA08B8EA51F7Fd412e73B3d2B) |
-
-### FAssets System Contracts
-
-|         **Contract** | **Address**                                                                                                                                | **Description**                                                                                                                          |
-| -------------------: | ------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `AgentOwnerRegistry` | [`0xa7f5d3C81f55f2b072FB62a0D4A03317BFd1a3c0`](https://songbird-explorer.flare.network/address/0xa7f5d3C81f55f2b072FB62a0D4A03317BFd1a3c0) | Manages agent whitelisting and allows setting and retrieving details such as work and management addresses, name, description, and icon. |
-|               `FXRP` | [`0xF9a84f4ec903F4EaB117A9c1098BeC078BA7027d`](https://songbird-explorer.flare.network/address/0xF9a84f4ec903F4EaB117A9c1098BeC078BA7027d) | The FAsset-wrapped TestXRP token, ready for use on Songbird.                                                                             |
+See the [FAssets Reference](/fassets/reference) for important FAssets smart contract addresses representing tokens and notable system components, provided for your convenience during the Open Beta on the Songbird network.
 
 ## Setting Up
 
@@ -166,7 +151,7 @@ To access the FAssets system, you must be whitelisted for security reasons.
 
 Checking if your agent's management address has been whitelisted is straightforward. Follow these steps:
 
-1. Navigate with the Coston block explorer to `AgentOwnerRegistry` smart contract on address [0xa7f5d3C81f55f2b072FB62a0D4A03317BFd1a3c0](https://songbird-explorer.flare.network/address/0xa7f5d3C81f55f2b072FB62a0D4A03317BFd1a3c0?tab=read_contract) and open the Read Contract tab.
+1. Navigate with the Songbird block explorer to the [`AgentOwnerRegistry`](/fassets/reference#deployed-contracts) contract and open the Read Contract tab.
 2. Connect your wallet with any address to the block explorer so you can gain access to read functions from the smart contract.
 3. Execute the `isWhitelisted` function with the value of the management address. This function returns `bool`: `true` for whitelisted or `false` for not whitelisted.
 
@@ -175,7 +160,7 @@ Checking if your agent's management address has been whitelisted is straightforw
 After you have completed with the whitelisting process, you need to set the work address for your agent.
 Configuring the native address links your agent's work address to the management address and grants access.
 
-1. Navigate with the Songbird block explorer to the `AgentOwnerRegistry` smart contract on address [0xa7f5d3C81f55f2b072FB62a0D4A03317BFd1a3c0](https://songbird-explorer.flare.network/address/0xa7f5d3C81f55f2b072FB62a0D4A03317BFd1a3c0?tab=write_contract) and open the Write Contract tab.
+1. Navigate with the Songbird block explorer to the [`AgentOwnerRegistry`](/fassets/reference#deployed-contracts) contract and open the Write Contract tab.
 2. Connect the management address wallet you used to generate the access keys above.
 3. Register the work address by executing the `setWorkAddress` function with the value of `owner.native.address` from the `secrets.json` file.
 
@@ -227,7 +212,7 @@ For example, to get the FAssets system running agents, use this command:
 docker-compose --profile cli run agent-bot listAgents --fasset FASSET
 ```
 
-Full reference for the agent bot commands can be found in the [FAssets Agent Bot Command Line Reference](/fassets/reference/agent-bot).
+Full reference for the agent bot commands can be found in the [Agent Bot CLI Reference](/fassets/reference/agent-bot).
 
 ### Execute User Bot Commands
 
@@ -254,7 +239,7 @@ docker compose up -d
 You can access the FAssets agent frontend user interface by navigating to the `FRONTEND_URL` in your browser.
 You will be prompted to enter the password set in the `.env` file.
 
-Refer to the [FAssets Agent Interface](/fassets/guides/create-fasset-agent-ui) guide for more information on the user interface.
+Refer to the [Create FAssets Agent via UI](/fassets/guides/create-fasset-agent-ui) guide for more information on the user interface.
 
 :::tip[What's next]
 
