@@ -2,18 +2,20 @@
 sidebar_position: 3
 slug: create-fasset-agent-cli
 title: Create FAssets Agent via CLI
-description: Learn how to set up and manage the FAssets agent using the command line interface
+description: Set up and manage an FAssets agent using the CLI.
 tags: [intermediate, fassets, bitcoin, dogecoin]
 authors: [fassko]
 keywords: [fassets, xrp, btc, doge flare-network, flare-network]
 ---
 
-The FAssets Bots Command Line Interface (CLI) allows you to create and manage FAssets agent bots and user tools directly from the command line. It also allows you to monitor the agent bot, create FAssets agent vaults, and interact with the FAssets system efficiently.
+The FAssets Bots CLI allows you to create and manage FAssets agent bots and user tools directly from the command line. It also allows you to monitor the agent bot, create FAssets agent vaults, and interact with the FAssets system efficiently.
 
 You can access the FAssets Agent CLI after you follow the guide on how to [set up the FAssets agent](/fassets/guides/deploy-fassets-agent).
 
 :::info
-Learn how to use the FAssets Agent CLI as [Docker service](/fassets/guides/deploy-fassets-agent#execute-fasset-bot-commands).
+
+Learn how to use the FAssets Agent CLI as a [Docker service](/fassets/guides/deploy-fassets-agent#execute-fasset-bot-commands).
+
 :::
 
 ### Configure the Agent
@@ -22,7 +24,7 @@ You need to set up your agent's parameters like name, collateral, and fund with 
 
 1.  Prepare the agent settings `tmp.agent-settings.json` exchanging `FASSET` with `FXRP`, `FBTC` or `FDOGE` according to which underlying network you want to work on:
 
-    ```console
+    ```bash
     docker-compose --profile cli run agent-bot --fasset FASSET create --prepare
     ```
 
@@ -38,7 +40,7 @@ You need to set up your agent's parameters like name, collateral, and fund with 
     This command will print out your agent's address.
     Exchange `FASSET` with `FXRP`, `FBTC` or `FDOGE` according to which underlying network you are creating the agent.
 
-        ```console
+        ```bash
         docker-compose --profile cli run agent-bot --fasset FASSET create tmp.agent-settings.json
         ```
 
@@ -53,7 +55,7 @@ You have two options: either deposit the vault collateral and buy pool collatera
 
 To deposit both vault and pool collateral together and let the tool calculate the minimum required collateral to back the lots, you can use the `depositCollateral` function to the agent, specifying your created agent address in the `AGENT_ADDRESS` and lot size in the `LOTS`, as well exchange `FASSET` with `FXRP`, `FBTC` or `FDOGE` according to which underlying network you are creating the agent:
 
-```console
+```bash
 docker-compose --profile cli run agent-bot depositCollaterals AGENT_ADDRESS LOTS --fasset FASSET
 ```
 
@@ -61,13 +63,13 @@ docker-compose --profile cli run agent-bot depositCollaterals AGENT_ADDRESS LOTS
 
 1. Deposit enough vault collateral to the agent specifying your created agent address in the `AGENT_ADDRESS` and the amount of the stablecoin or wrapped ETH in the `AMOUNT` field, as well exchange `FASSET` with `FXRP`, `FBTC` or `FDOGE` according to which underlying network you are creating the agent.
 
-   ```console
+   ```bash
    docker-compose --profile cli run agent-bot depositVaultCollateral AGENT_ADDRESS AMOUNT --fasset FASSET
    ```
 
 2. Buy enough pool collateral for the agent specifying your agent's address in the `AGENT_ADDRESS` and the amount of the CFLR in the `CFLR_AMOUNT` field, as well exchange `FASSET` with `FXRP`, `FBTC` or `FDOGE` according to which underlying network you are creating the agent.
 
-   ```console
+   ```bash
    docker-compose --profile cli run agent-bot buyPoolCollateral AGENT_ADDRESS CFLR_AMOUNT --fasset FASSET
    ```
 
@@ -77,13 +79,13 @@ You need to make your agent available to mint and redeem FAssets.
 
 1. Register your agent as available to the network by executing this command replacing the `AGENT_ADDRESS` with your agent address, as well exchange `FASSET` with `FXRP`, `FBTC` or `FDOGE` according to which underlying network you are entering the agent:
 
-   ```console
+   ```bash
    docker-compose --profile cli run agent-bot enter AGENT_ADDRESS --fasset FASSET
    ```
 
 2. If you deposited enough collateral, you should see that your agent has at least one lot available by running the command replacing `FASSET` with `FXRP`, `FBTC` or `FDOGE` according to which underlying network you are running the agent.
 
-   ```console
+   ```bash
    docker-compose --profile cli run user-bot agents --fasset FASSET
    ```
 
