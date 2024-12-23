@@ -1,0 +1,24 @@
+name: Check External Links
+
+on:
+  schedule:
+    - cron: "59 23 * * 7" # Runs every Sunday at 23:59 UTC
+  workflow_dispatch: # Allows manual trigger of the workflow
+
+jobs:
+  check-external-links:
+    name: Check External Links
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run External Link Checks
+        run: npm run linkcheck-external
