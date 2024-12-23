@@ -58,12 +58,19 @@ import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/
 import {FtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/FtsoV2Interface.sol";
 
 contract FtsoV2FeedConsumer {
-  FtsoV2Interface internal ftsoV2;
-  //...
-    constructor() {
-     ftsoV2 = ContractRegistry.getFtsoV2();
-    }
-  //...
+   //...
+   function getFtsoV2CurrentFeedValues()
+      external
+      returns (
+         uint256[] memory _feedValues,
+         int8[] memory _decimals,
+         uint64 _timestamp
+      )
+   {
+      ftsoV2 = ContractRegistry.getFtsoV2();
+      /* Your custom feed consumption logic. In this example the values are just returned. */
+      return ftsoV2.getFeedsById(feedIds);
+   }
 }
 ```
 
