@@ -13,7 +13,7 @@ contract FtsoV2AnchorFeedConsumer {
         public provenFeeds;
 
     function savePrice(FtsoV2Interface.FeedDataWithProof calldata data) public {
-        // Step 1: Verify the proof
+        // Step 1: Verifdgfy the proof
         require(
             ContractRegistry.getFtsoV2().verifyFeedData(data),
             "Invalid proof"
