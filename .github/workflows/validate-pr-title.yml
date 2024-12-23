@@ -1,40 +1,27 @@
-name: Validate PR Title
+name: Check External Links
 
 on:
   pull_request:
-    types:
-      - opened
-      - edited
-      - synchronize
+    branches:
+      - main
+  schedule:
+    - cron: "59 23 * * 7" # Runs every Sunday at 23:59 UTC
+  workflow_dispatch: # Allows manual triggering
 
 jobs:
-  main:
-    name: Validate PR Title
+  check-external-links:
+    name: Check External Links
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./
+
     steps:
-      - name: Validate PR Title with Conventional Commits
-        uses: amannn/action-semantic-pull-request@v5
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          # Allowed types based on Conventional Commits
-          types: |
-            feat
-            fix
-            docs
-            chore
-            test
-            refactor
-            ci
-          # Scope is optional
-          requireScope: false
-          # This example ensures the subject doesn't start with an uppercase character.
-          subjectPattern: ^(?![A-Z]).+$
-          subjectPatternError: |
-            The subject "{subject}" found in the pull request title "{title}"
-            didn't match the configured pattern. Please ensure that the subject
-            doesn't start with an uppercase character.
-          # Allow Work-in-Progress (WIP) PRs using the "[WIP]" prefix
-          wip: true
-          # Skip validation for single-commit PRs
-          validateSingleCommit: false
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run External Link Checks
+        run: npm run linkcheck-external
