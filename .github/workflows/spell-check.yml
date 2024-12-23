@@ -61,11 +61,22 @@ jobs:
           codespell \
             --ignore-words=.github/config/ignored-words.txt \
             --skip="*.svg,*.png,*.jpg,*.woff,*.woff2,*.pdf,*.json,package-lock.json" \
-            --files-from=files-to-check.txt \
             --quiet-level=2 \
-            --check-filenames
+            --check-filenames \
+            --files-from=files-to-check.txt \
+            > codespell-output.txt || true
+
+      - name: Display Spell Check Output
+        run: |
+          echo "Detected typos:"
+          cat codespell-output.txt
 
       - name: Annotate Spelling Errors
         if: failure()
         run: |
-          echo "::error:: Spelling errors detected. Please fix the typos or add to the ignore list if intentional."
+          while read -r line; do
+            file=$(echo "$line" | awk '{print $1}')
+            line_number=$(echo "$line" | awk '{print $2}' | sed 's/://')
+            typo=$(echo "$line" | awk '{for (i=3; i<NF; i++) printf $i " "; print $NF}')
+            echo "::error file=$file,line=$line_number::Typo detected: $typo"
+          done < codespell-output.txt
