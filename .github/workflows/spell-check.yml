@@ -25,12 +25,15 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history to ensure proper diffs
 
       - name: List Changed Files
         id: changed-files
         run: |
-          if [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
-            echo "First push or fork detected. Checking all files."
+          git fetch origin ${{ github.base_ref }} --depth=1 || true
+          if [ -z "$(git rev-parse ${{ github.event.before }} 2>/dev/null)" ]; then
+            echo "First push or invalid 'before' hash detected. Checking all files."
             git ls-files > changed-files.txt
           else
             git diff --name-only ${{ github.event.before }} ${{ github.sha }} > changed-files.txt
