@@ -13,19 +13,24 @@ on:
       - "**/*.ts"
       - "**/*.html"
       - "**/*.rst"
-      - "!**/*.svg" # Exclude svg files from triggering the workflow
       - "**/*.go"
+      - "!**/*.svg" # Exclude svg files from triggering the workflow
       - "!**/*.sum"
       - "!**/*.mod"
 
 jobs:
   spell-check:
-    if: github.event.pull_request.changed_files > 0
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: List Changed Files
+        id: changed-files
+        run: |
+          git diff --name-only ${{ github.event.before }} ${{ github.sha }} > changed-files.txt
+          grep -E '\.(md|mdx|txt|yml|yaml|py|js|ts|html|rst|go)$' changed-files.txt || echo "No files to check" && exit 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -44,6 +49,7 @@ jobs:
             --check-filenames \
             .
 
-      - name: Annotate spelling errors
+      - name: Annotate Spelling Errors
         if: failure()
-        run: echo "::error::Spelling errors detected. Please fix the typos or add to the ignore list if intentional."
+        run: |
+          echo "::error:: Spelling errors detected. Please fix the typos or add to the ignore list if intentional."
