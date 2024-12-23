@@ -38,7 +38,15 @@ jobs:
           else
             git diff --name-only ${{ github.event.before }} ${{ github.sha }} > changed-files.txt
           fi
-          grep -E '\.(md|mdx|txt|yml|yaml|py|js|ts|html|rst|go)$' changed-files.txt || echo "No files to check" && exit 0
+          grep -E '\.(md|mdx|txt|yml|yaml|py|js|ts|html|rst|go)$' changed-files.txt > files-to-check.txt || {
+            echo "No files to check. Skipping spell check."
+            exit 0
+          }
+
+      - name: Debug Changed Files
+        run: |
+          echo "Files to check:"
+          cat files-to-check.txt
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -53,9 +61,9 @@ jobs:
           codespell \
             --ignore-words=.github/config/ignored-words.txt \
             --skip="*.svg,*.png,*.jpg,*.woff,*.woff2,*.pdf,*.json,package-lock.json" \
+            --files-from=files-to-check.txt \
             --quiet-level=2 \
-            --check-filenames \
-            .
+            --check-filenames
 
       - name: Annotate Spelling Errors
         if: failure()
