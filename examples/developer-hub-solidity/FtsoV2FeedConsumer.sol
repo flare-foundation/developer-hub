@@ -24,7 +24,6 @@ contract FtsoV2FeedConsumer {
      */
     function getFtsoV2CurrentFeedValues()
         external
-        view
         returns (
             uint256[] memory _feedValues,
             int8[] memory _decimals,
