@@ -29,7 +29,12 @@ jobs:
       - name: List Changed Files
         id: changed-files
         run: |
-          git diff --name-only ${{ github.event.before }} ${{ github.sha }} > changed-files.txt
+          if [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
+            echo "First push or fork detected. Checking all files."
+            git ls-files > changed-files.txt
+          else
+            git diff --name-only ${{ github.event.before }} ${{ github.sha }} > changed-files.txt
+          fi
           grep -E '\.(md|mdx|txt|yml|yaml|py|js|ts|html|rst|go)$' changed-files.txt || echo "No files to check" && exit 0
 
       - name: Set up Python
