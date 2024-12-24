@@ -57,11 +57,7 @@ func FetchAnchorFeeds() ([]AnchorFeed, error) {
 	return feeds, json.Unmarshal(body, &feeds)
 }
 
-func main() {
-    if err := godotenv.Load(); err != nil {
-        fmt.Println("Error loading .env file")
-    }
-    
+func main() {    
     feeds, err := FetchAnchorFeeds()
     if err != nil {
         fmt.Printf("Error: %v\n", err)
