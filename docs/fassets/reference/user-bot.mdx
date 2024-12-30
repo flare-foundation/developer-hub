@@ -6,7 +6,7 @@ keywords: [fassets, xrp, bitcoin, dogecoin, flare-network]
 
 Command line reference for managing and interacting with FAssets user bot. It allows users to mint and redeem FAssets, manage collateral pools, and query system information.
 
-Sourced from `agent-bot.ts` on [GitHub](https://github.com/flare-labs-ltd/fasset-bots/blob/songbird-release/packages/fasset-bots-cli/src/cli/user-bot.ts).
+Sourced from `user-bot.ts` on [GitHub](https://github.com/flare-labs-ltd/fasset-bots/blob/main/packages/fasset-bots-cli/src/cli/user-bot.ts).
 
 ## Setup
 
@@ -152,3 +152,89 @@ Additionally the custom flag can be specified:
 
 - **`--noWait`\***
   Does not wait for non-payment proof. don't wait for non-payment proof, but immediately exit with exitcode 10 if the proof isn't available
+
+### Redemption Status
+
+The `redemptionStatus` function provides information about the current state of a redemption request in the FAsset system.
+
+```bash
+yarn user-bot redemptionStatus
+```
+
+### Update Redemptions
+
+The `updateRedemptions` function updates the status of one or more open redemption requests. It ensures that these requests are processed efficiently and appropriately addresses any unresolved or overdue requests. This function is essential for automating the entire redemption lifecycle.
+
+```bash
+yarn user-bot updateRedemptions
+```
+
+## Collateral Pool Management
+
+### List Collateral Pools
+
+Lists all available collateral pools, including:
+
+- Pool address
+- Token symbol
+- Token price (CFLR)
+- Collateral (CFLR)
+- Fees (FXRP)
+- Collateral Ratio
+
+```bash
+yarn user-bot pools
+```
+
+### Pool Holdings
+
+The 'poolHoldings' function provides detailed information about the pools that user has holdings, listing:
+
+- Pool address
+- Token symbol
+- Pool tokens
+
+```bash
+yarn user-bot poolHoldings
+```
+
+### Enter Pool
+
+The `enterPool` function allows users to deposit collateral into a specific collateral pool and become a participant by specifying the collateral pool ID and collateral amount.
+
+```bash
+yarn user-bot enterPool <poolId> <collateralAmount>
+```
+
+### Exit Pool
+
+The `exitPool` function allows participants to withdraw their share of collateral from a collateral pool by burning their Collateral Pool Tokens (CPTs) and receiving collateral. Specify the pool ID and the amount of collateral to withdraw.
+
+```bash
+yarn user-bot exitPool <poolId> <amount|all>
+```
+
+## Balance Management
+
+## Balance
+
+Displays balance for relevant tokens like FAssets, underlying, native, wrapped native, and vault collateral.
+
+```bash
+yarn user-bot balance
+```
+
+## Secrets Management
+
+### Generate Secrets
+
+The function `generateSecrets' generates a secret JSON file for user addresses and private keys.
+
+```bash
+yarn user-bot generateSecrets --user
+```
+
+When executing the `generateSecrets` command, the following custom flag can be specified:
+
+- **`-o <filename>`** (Optional)
+  Saves the secrets to a specified file; otherwise, they are printed to the console.
