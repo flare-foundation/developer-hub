@@ -1,0 +1,240 @@
+---
+title: User Bot CLI Reference
+description: FAssets User Bot command line interface reference.
+keywords: [fassets, xrp, bitcoin, dogecoin, flare-network]
+---
+
+Command line reference for managing and interacting with FAssets user bot. It allows users to mint and redeem FAssets, manage collateral pools, and query system information.
+
+Sourced from `user-bot.ts` on [GitHub](https://github.com/flare-labs-ltd/fasset-bots/blob/main/packages/fasset-bots-cli/src/cli/user-bot.ts).
+
+## Setup
+
+Before running user-bot, ensure it is properly set up using the [FAsset agent deploy](/fassets/guides/deploy-fassets-agent) with Docker and then learn [how to execute the command line commands](/fassets/guides/deploy-fassets-agent#execute-fasset-bot-commands).
+
+## Usage
+
+To run the user-bot command line interface, use the `yarn user-bot` command with the desired command and arguments and add the `--fasset` flag with the FAsset symbol.
+
+```bash
+yarn user-bot [command] <args> --fasset [fAssetSymbol]
+```
+
+To list all available commands:
+
+```bash
+yarn user-bot help
+```
+
+To execute a specific command using the [Docker container](/fassets/guides/deploy-fassets-agent#execute-fasset-bot-commands) change `yarn user-bot` with `docker compose --profile cli run user-bot`:
+
+```bash
+docker compose --profile cli run user-bot [command] <args> --fasset [fAssetSymbol]
+```
+
+## General Commands
+
+## System Info
+
+Display information about the FAssets system.
+
+```bash
+yarn user-bot info
+```
+
+### List Agents
+
+List available FAssets agents.
+
+```bash
+yarn user-bot agents
+```
+
+### Agent Information
+
+Display information about a specific FAssets agent by providing the agent vault address.
+
+```bash
+yarn user-bot agentInfo <agentVaultAddress>
+```
+
+### Minting
+
+### Mint
+
+Mint the specified number of FAsset lots, specifying the number of lots to mint.
+
+```bash
+yarn user-bot mint <numberOfLots>
+```
+
+When executing the `mint` command, the following custom flags can be specified:
+
+- **`-a <agentVaultAddress>`**  
+  Specifies the agent for minting. If omitted, the bot automatically selects the agent with the lowest fee and sufficient capacity.
+
+- **`--executor <executorAddress>`** _(Optional)_  
+  Specifies the executor's native address.
+
+- **`--executorFee <executorFee>`** _(Optional)_  
+  Specifies the executor's fee in NAT.
+
+- **`--noWait`**  
+   Reserves and pays for minting without waiting for proof.
+
+### Mint Execute
+
+The `mintExecute` function is essential for completing the minting process.
+It handles the minting of FAssets, distributes fees, and unlocks collateral.
+
+This function ensures the following:
+
+- The minter receives their minted FAssets after payment is confirmed.
+- Agents and collateral providers are compensated for their involvement.
+- System stability is maintained by requiring proof of underlying payments.
+
+Using this function need to specify the `requestId` of the minting request.
+
+```bash
+yarn user-bot mintExecute <requestId>
+```
+
+### Mint Status
+
+The `mintStatus` function provides information about the current state of a minting request.
+It helps to track the progress of the minting process.
+
+```bash
+yarn user-bot mintStatus
+```
+
+### Update Mintings
+
+The `updateMintings` function updates the status of all open minting requests in the FAsset system.
+It ensures that the system remains up-to-date by resolving minting requests based on their current state or conditions, such as time expiration or payment verification.
+
+```bash
+yarn user-bot updateMintings
+```
+
+## Redemption
+
+### Redeem
+
+The `redeem` function enables FAsset holders to burn their FAssets in exchange for the equivalent amount of the underlying asset.
+This ensures that FAssets can be converted to their original value on the underlying blockchain.
+To redeem, specify the number of FAsset lots you wish to exchange.
+
+```bash
+yarn user-bot redeem <numberOfLots>
+```
+
+When executing the `redeem` command, the following custom flags can be specified:
+
+- **`--executor <executorAddress>`** _(Optional)_  
+   Specifies the executor's native address.
+
+- **`--executorFee <executorFee>`** _(Optional)_  
+   Specifies the executor's fee in NAT.
+
+### Redemption Default
+
+The `redemptionDefault` function is invoked when an agent fails to fulfill their obligation to deliver the underlying asset during a redemption process.
+This function ensures that the redeemer is compensated, system integrity is maintained, and the agent is penalized for failing to meet their commitment.
+
+Specify the `requestId` of the redemption request.
+
+```bash
+yarn user-bot redemptionDefault <requestId>
+```
+
+Additionally the custom flag can be specified:
+
+- **`--noWait`\***
+  Does not wait for non-payment proof. don't wait for non-payment proof, but immediately exit with exitcode 10 if the proof isn't available
+
+### Redemption Status
+
+The `redemptionStatus` function provides information about the current state of a redemption request in the FAsset system.
+
+```bash
+yarn user-bot redemptionStatus
+```
+
+### Update Redemptions
+
+The `updateRedemptions` function updates the status of one or more open redemption requests. It ensures that these requests are processed efficiently and appropriately addresses any unresolved or overdue requests. This function is essential for automating the entire redemption lifecycle.
+
+```bash
+yarn user-bot updateRedemptions
+```
+
+## Collateral Pool Management
+
+### List Collateral Pools
+
+Lists all available collateral pools, including:
+
+- Pool address
+- Token symbol
+- Token price (CFLR)
+- Collateral (CFLR)
+- Fees (FXRP)
+- Collateral Ratio
+
+```bash
+yarn user-bot pools
+```
+
+### Pool Holdings
+
+The 'poolHoldings' function provides detailed information about the pools that user has holdings, listing:
+
+- Pool address
+- Token symbol
+- Pool tokens
+
+```bash
+yarn user-bot poolHoldings
+```
+
+### Enter Pool
+
+The `enterPool` function allows users to deposit collateral into a specific collateral pool and become a participant by specifying the collateral pool ID and collateral amount.
+
+```bash
+yarn user-bot enterPool <poolId> <collateralAmount>
+```
+
+### Exit Pool
+
+The `exitPool` function allows participants to withdraw their share of collateral from a collateral pool by burning their Collateral Pool Tokens (CPTs) and receiving collateral. Specify the pool ID and the amount of collateral to withdraw.
+
+```bash
+yarn user-bot exitPool <poolId> <amount|all>
+```
+
+## Balance Management
+
+## Balance
+
+Displays balance for relevant tokens like FAssets, underlying, native, wrapped native, and vault collateral.
+
+```bash
+yarn user-bot balance
+```
+
+## Secrets Management
+
+### Generate Secrets
+
+The function `generateSecrets' generates a secret JSON file for user addresses and private keys.
+
+```bash
+yarn user-bot generateSecrets --user
+```
+
+When executing the `generateSecrets` command, the following custom flag can be specified:
+
+- **`-o <filename>`** (Optional)
+  Saves the secrets to a specified file; otherwise, they are printed to the console.
