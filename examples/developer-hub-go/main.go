@@ -32,4 +32,5 @@ func main() {
 	coston2.MakeVolatilityIncentive()
 	coston2.SecureRandom()
 	flare.FetchAnchorFeeds()
+	flare.VerifyAnchorFeeds()
 }
