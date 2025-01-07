@@ -57,11 +57,11 @@ func FetchAnchorFeeds() ([]AnchorFeed, error) {
 	return feeds, json.Unmarshal(body, &feeds)
 }
 
-func main() {    
-    feeds, err := FetchAnchorFeeds()
-    if err != nil {
-        fmt.Printf("Error: %v\n", err)
-        return
-    }
-    fmt.Printf("Anchor feeds: %+v\n", feeds)
+func main() {
+	feeds, err := FetchAnchorFeeds()
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		return
+	}
+	fmt.Printf("Anchor feeds: %+v\n", feeds)
 }

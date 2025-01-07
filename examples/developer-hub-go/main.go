@@ -15,6 +15,7 @@ import (
 // flare package ABIs
 //go:generate abigen --abi FlareContractRegistry.abi --pkg flare --type FlareContractRegistry --out flare/FlareContractRegistry.go
 //go:generate abigen --bin=build/FtsoV2FeedConsumer.bin --abi=build/FtsoV2FeedConsumer.abi --pkg flare --type FtsoV2FeedConsumer --out flare/FtsoV2FeedConsumer.go
+//go:generate abigen --bin=build/FtsoV2AnchorFeedConsumer.bin --abi=build/FtsoV2AnchorFeedConsumer.abi --pkg flare --type FtsoV2AnchorFeedConsumer --out flare/FtsoV2AnchorFeedConsumer.go
 
 /* Note: Call `go generate` before executing these functions. */
 
@@ -32,4 +33,5 @@ func main() {
 	coston2.MakeVolatilityIncentive()
 	coston2.SecureRandom()
 	flare.FetchAnchorFeeds()
+	flare.VerifyAnchorFeedsOnchain()
 }
