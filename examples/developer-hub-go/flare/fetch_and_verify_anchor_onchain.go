@@ -37,12 +37,13 @@ func convertToByteArray(proof []string) ([][32]byte, error) {
 	return result, nil
 }
 
-func VerifyAnchorFeeds() {
+func VerifyAnchorFeedsOnchain() {
 	const (
-		PRIVATE_KEY               = " "
+		PRIVATE_KEY               = "your_private_key_here"
 		RPC_URL                   = "https://coston2-api.flare.network/ext/C/rpc"
 		DEPLOYED_CONTRACT_ADDRESS = "0x069227C6A947d852c55655e41C6a382868627920"
 	)
+
 	var feed_Id [21]byte
 	var proof [][32]byte
 
@@ -50,6 +51,7 @@ func VerifyAnchorFeeds() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	copy(feed_Id[:], feeds[0].Body.ID)
 	votingRoundId := uint32(feeds[0].Body.VotingRoundID)
 	feedBody := FtsoV2InterfaceFeedData{
