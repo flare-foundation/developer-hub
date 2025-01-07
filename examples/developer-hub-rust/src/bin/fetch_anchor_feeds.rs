@@ -4,6 +4,7 @@ use serde_json::json;
 const BASE_URL: &str = "https://flr-data-availability.flare.network/";
 const API_KEY: &str = "<your-api-key>";
 
+#[allow(dead_code)]
 const FEED_IDS: &[&str] = &[
     "0x01464c522f55534400000000000000000000000000", // FLR/USD
     "0x014254432f55534400000000000000000000000000", // BTC/USD
