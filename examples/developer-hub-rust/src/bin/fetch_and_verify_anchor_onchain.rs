@@ -1,3 +1,4 @@
+// THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
 use crate::FtsoV2AnchorFeedConsumer::{FeedData, FeedDataWithProof};
 use alloy::{
     network::EthereumWallet,
