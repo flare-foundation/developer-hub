@@ -1,0 +1,24 @@
+---
+sidebar_position: 6
+slug: export-private-keys
+title: Export Private Keys
+description: Export private keys for minting and redeeming
+tags: [intermediate, fassets, bitcoin, dogecoin]
+authors: [fassko]
+keywords: [fassets, xrp, btc, doge flare-network, flare-network]
+---
+
+This guide explains how to export the private keys for the FAssets agent's underlying address by specifying the export file in the Docker container setup. This process is essential if you need to migrate your FAssets agent after full liquidation.
+
+1. Create a directory named `export` to export the private keys.
+2. Assign ownership of the directory to user ID 1000 by setting the appropriate permissions:
+
+   ```bash
+   sudo chown 1000:1000 export -R
+   ```
+
+3. Execute the following command to export the private keys and mount the export path to the Docker container:
+
+   ```bash
+   docker-compose --profile cli run -v $(pwd)/export:/export agent-bot exportPrivateKeys /export/keys.tmp --fasset FXRP
+   ```
