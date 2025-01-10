@@ -5,15 +5,6 @@ import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/
 import {FtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/FtsoV2Interface.sol";
 
 contract FtsoV2FeedConsumer {
-    FtsoV2Interface internal ftsoV2;
-
-    /**
-     * @dev Constructor initializes the FTSOv2 contract by fetching the FtsoV2Interface address from the ContractRegistry.
-     */
-    constructor() {
-        ftsoV2 = ContractRegistry.getFtsoV2();
-    }
-
     /**
      * @dev Converts a feed name to a bytes21 ID with a fixed category (1) and USD quote.
      * @param _name The name of the feed, e.g. FLR.
@@ -49,6 +40,9 @@ contract FtsoV2FeedConsumer {
             uint64 _timestamp
         )
     {
+        // Get the current FTSOv2 contract from the ContractRegistry
+        FtsoV2Interface ftsoV2 = ContractRegistry.getFtsoV2();
+
         bytes21[] memory feedIds = new bytes21[](_feedNames.length);
 
         // Preprocess feed names to feed IDs
@@ -61,7 +55,7 @@ contract FtsoV2FeedConsumer {
             uint256[] memory feedValues,
             int8[] memory decimals,
             uint64 timestamp
-        ) = ftsoV2.getFeedsById(feedIds);
+        ) = ftsoV2.getFeedsById{value: msg.value}(feedIds);
 
         return (feedValues, decimals, timestamp);
     }
@@ -79,6 +73,9 @@ contract FtsoV2FeedConsumer {
         payable
         returns (uint256[] memory _feedValues, uint64 _timestamp)
     {
+        // Get the current FTSOv2 contract from the ContractRegistry
+        FtsoV2Interface ftsoV2 = ContractRegistry.getFtsoV2();
+
         bytes21[] memory feedIds = new bytes21[](_feedNames.length);
 
         // Preprocess feed names to feed IDs
