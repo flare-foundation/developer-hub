@@ -2,53 +2,49 @@ name: Spell Check
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, edited]
+    paths:
+      - "**/*.md"
+      - "**/*.mdx"
+      - "**/*.txt"
+      - "**/*.yml"
+      - "**/*.yaml"
+      - "**/*.py"
+      - "**/*.js"
+      - "**/*.ts"
+      - "**/*.html"
+      - "**/*.rst"
+      - "!**/*.svg" # Exclude svg files from triggering the workflow
+      - "!**/*.sol"
+      - "**/*.go"
+      - "!**/*.sum"
+      - "!**/*.mod"
 
 jobs:
   spell-check:
+    if: github.event.pull_request.changed_files > 0
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # Fetch all history for checking changes
-
-      - name: Get changed files
-        id: changed-files
-        run: |
-          # Get list of changed files excluding binary and specific formats
-          CHANGED_FILES=$(git diff --name-only --diff-filter=d origin/${{ github.base_ref }} HEAD | \
-            grep -E '\.(md|mdx|txt|yml|yaml|py|js|ts|html|rst|go)$' | \
-            grep -v -E '\.(svg|sol|sum|mod|png|jpg|woff|woff2|pdf|json)$' || true)
-          echo "files=${CHANGED_FILES}" >> $GITHUB_OUTPUT
-          echo "Changed files to check: ${CHANGED_FILES}"
 
       - name: Set up Python
-        if: steps.changed-files.outputs.files != ''
         uses: actions/setup-python@v5
         with:
           python-version: "3.x"
 
       - name: Install codespell
-        if: steps.changed-files.outputs.files != ''
         run: pip install codespell
 
       - name: Run Spell Check
-        if: steps.changed-files.outputs.files != ''
         run: |
-          # Create a temporary file with the list of files to check
-          echo "${{ steps.changed-files.outputs.files }}" > files_to_check.txt
-
-          # Run codespell only on changed files
           codespell \
             --ignore-words=.github/config/ignored-words.txt \
+            --skip="*.svg,*.png,*.jpg,*.woff,*.woff2,*.pdf,*.json,package-lock.json" \
             --quiet-level=2 \
             --check-filenames \
-            --files-with-matches \
-            $(cat files_to_check.txt)
+            .
 
-      - name: Skip message
-        if: steps.changed-files.outputs.files == ''
-        run: |
-          echo "No relevant files were changed. Skipping spell check."
-          exit 0
+      - name: Annotate spelling errors
+        if: failure()
+        run: echo "::error::Spelling errors detected. Please fix the typos or add to the ignore list if intentional."
