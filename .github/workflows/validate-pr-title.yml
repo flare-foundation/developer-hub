@@ -7,6 +7,10 @@ on:
       - edited
       - synchronize
 
+permissions:
+  pull-requests: read
+  statuses: write
+
 jobs:
   main:
     name: Validate PR Title
@@ -17,7 +21,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          # Allowed types based on Conventional Commits
           types: |
             feat
             fix
@@ -26,15 +29,11 @@ jobs:
             test
             refactor
             ci
-          # Scope is optional
           requireScope: false
-          # This example ensures the subject doesn't start with an uppercase character.
           subjectPattern: ^(?![A-Z]).+$
           subjectPatternError: |
             The subject "{subject}" found in the pull request title "{title}"
             didn't match the configured pattern. Please ensure that the subject
             doesn't start with an uppercase character.
-          # Allow Work-in-Progress (WIP) PRs using the "[WIP]" prefix
           wip: true
-          # Skip validation for single-commit PRs
           validateSingleCommit: false
