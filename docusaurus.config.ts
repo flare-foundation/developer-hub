@@ -164,7 +164,6 @@ const config: Config = {
               label: "Discourse Forum",
               href: "https://forum.flare.network",
             },
-
           ],
         },
       ],
