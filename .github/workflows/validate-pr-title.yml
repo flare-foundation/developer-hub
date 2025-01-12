@@ -7,24 +7,18 @@ on:
       - edited
       - synchronize
 
-# Adding both pull-requests and contents permissions
 permissions:
-  pull-requests: write
-  contents: read
-  issues: read
+  contents: write
 
 jobs:
   main:
     name: Validate PR Title
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4 # Adding checkout action explicitly
-
       - name: Validate PR Title with Conventional Commits
         uses: amannn/action-semantic-pull-request@v5
         env:
-          # Using a different token syntax
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           types: |
             feat
