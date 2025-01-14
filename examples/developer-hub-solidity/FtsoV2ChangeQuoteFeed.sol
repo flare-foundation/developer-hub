@@ -48,7 +48,7 @@ contract FtsoV2ChangeQuoteFeed {
             _baseAndQuoteFeedIds.length == 2,
             "Invalid feed indexes. Please provide exactly two indexes."
         );
-
+        /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
         ftsoV2 = ContractRegistry.getTestFtsoV2();
         // Fetch current feeds
         (uint256[] memory feedValues, int8[] memory decimals, ) = ftsoV2
