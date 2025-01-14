@@ -26,11 +26,9 @@ contract FtsoV2FeedConsumerById {
     payable
     returns (uint256 _feedValue, int8 _decimals, uint64 _timestamp)
     {
-        /* Retrieves the latest value, decimals, and timestamp for the specified feed ID. */
-
         /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
         ftsoV2 = ContractRegistry.getTestFtsoV2();
-
+        /* Retrieves the latest value, decimals, and timestamp for the specified feed ID. */
         return ftsoV2.getFeedById(feedId);
     }
 }
