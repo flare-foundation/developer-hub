@@ -7,14 +7,14 @@ description: Primary interface for interacting with FTSOv2.
 import Remix from "@site/src/components/remix";
 import CodeBlock from "@theme/CodeBlock";
 import FTSOV2FeedById from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedById.sol";
-import FTSOV2FeedByIdWei from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedByIdWei.sol";
+//import FTSOV2FeedByIdWei from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedByIdWei.sol";
 import FTSOV2FeedByIndex from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedByIndex.sol";
-import FTSOV2FeedByIndexWei from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedByIndexWei.sol";
-import FTSOV2FeedByIdIndex from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedByIdIndex.sol";
+//import FTSOV2FeedByIndexWei from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedByIndexWei.sol";
+//import FTSOV2FeedByIdIndex from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedByIdIndex.sol";
 import FTSOV2FeedsById from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedsById.sol";
 import FTSOV2FeedsByIdWei from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedsByIdWei.sol";
-import FTSOV2FeedsByIndex from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedsByIndex.sol";
-import FTSOV2FeedsByIndexWei from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedsByIndexWei.sol";
+//import FTSOV2FeedsByIndex from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedsByIndex.sol";
+//import FTSOV2FeedsByIndexWei from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedsByIndexWei.sol";
 import FTSOV2VerifyProof from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2VerifyProof.sol";
 
 Primary interface for interacting with FTSOv2. This is a long-term support (LTS) interface, designed to ensure continuity even as underlying contracts evolve or protocols migrate to new versions.
@@ -371,7 +371,7 @@ Checks if the feed data is valid (i.e. is part of the confirmed Merkle tree).
 function verifyFeedData(
     struct FtsoV2Interface.FeedDataWithProof _feedData
 ) external view returns (
-    bool
+bool
 );
 ```
 
@@ -403,11 +403,11 @@ Feed data structure
 
 ```solidity
 struct FeedData {
-  uint32 votingRoundId;
-  bytes21 id;
-  int32 value;
-  uint16 turnoutBIPS;
-  int8 decimals;
+    uint32 votingRoundId;
+    bytes21 id;
+    int32 value;
+    uint16 turnoutBIPS;
+    int8 decimals;
 }
 ```
 
@@ -417,7 +417,7 @@ Feed data with proof structure
 
 ```solidity
 struct FeedDataWithProof {
-  bytes32[] proof;
-  struct FtsoV2Interface.FeedData body;
+    bytes32[] proof;
+    struct FtsoV2Interface.FeedData body;
 }
 ```

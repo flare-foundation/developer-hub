@@ -13,15 +13,6 @@ contract FtsoV2ChangeQuoteFeed {
     TestFtsoV2Interface internal ftsoV2;
 
     /**
-     * Initializing an instance with FtsoV2Interface.
-     * The contract registry is used to fetch the contract address.
-     */
-    constructor() {
-        /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
-        ftsoV2 = ContractRegistry.getTestFtsoV2();
-    }
-
-    /**
      * @dev Internal function to scale the base feed value to match the decimals of the final feed.
      */
     function _scaleBaseFeedValue(
@@ -52,11 +43,13 @@ contract FtsoV2ChangeQuoteFeed {
      */
     function getNewQuoteFeedValue(
         bytes21[] calldata _baseAndQuoteFeedIds
-    ) external view returns (uint256) {
+    ) external returns (uint256) {
         require(
             _baseAndQuoteFeedIds.length == 2,
             "Invalid feed indexes. Please provide exactly two indexes."
         );
+
+        ftsoV2 = ContractRegistry.getTestFtsoV2();
         // Fetch current feeds
         (uint256[] memory feedValues, int8[] memory decimals, ) = ftsoV2
             .getFeedsById(_baseAndQuoteFeedIds);
@@ -92,6 +85,7 @@ contract FtsoV2ChangeQuoteFeed {
             _baseAndQuoteFeedIds.length == 2,
             "Invalid feed indexes. Please provide exactly two indexes."
         );
+
         // Fetch current feeds
         (uint256[] memory feedValues, int8[] memory decimals, ) = ftsoV2
             .getFeedsById(_baseAndQuoteFeedIds);

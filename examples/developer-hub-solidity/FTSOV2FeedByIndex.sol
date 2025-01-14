@@ -15,29 +15,19 @@ contract FtsoV2FeedConsumerByIndex {
     uint256 public feedIndex = 1; // Example: FLR/USD
 
     /**
-     * Constructor initializes the FTSOv2 contract.
-     * The contract registry is used to fetch the FtsoV2 contract address.
-     */
-    constructor() {
-        /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
-        ftsoV2 = ContractRegistry.getTestFtsoV2();
-    }
-
-    /**
      * Get the current value of a specific feed by its index.
      * @return _feedValue The latest price value of the feed.
      * @return _decimals The decimal precision of the feed value.
      * @return _timestamp The timestamp of the last feed update.
      */
     function getFtsoV2FeedValueByIndex()
-        external
-        payable
-        returns (
-            uint256 _feedValue,
-            int8 _decimals,
-            uint64 _timestamp
-        )
+    external
+    payable
+    returns (uint256 _feedValue, int8 _decimals, uint64 _timestamp)
     {
+        /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
+        ftsoV2 = ContractRegistry.getTestFtsoV2();
+
         /* Retrieves the latest value, decimals, and timestamp for the specified feed index. */
         return ftsoV2.getFeedByIndex(feedIndex);
     }
