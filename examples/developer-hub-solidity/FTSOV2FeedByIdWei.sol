@@ -11,58 +11,29 @@ import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/costo
  */
 contract FtsoV2FeedTracker {
     TestFtsoV2Interface internal ftsoV2;
-
-    // Feed data structure to store multiple feed values with timestamps
-    struct FeedInfo {
-        uint256 valueInWei;
-        uint64 timestamp;
-    }
-
-    // Mapping to store the latest feed data for a given index
-    mapping(uint256 => FeedInfo) public feedDataByIndex;
-    uint256 public highestValueIndex;
-    uint256 public highestValueInWei;
+    bytes21 public feedId =
+    bytes21(0x01464c522f55534400000000000000000000000000); // FLR/USD
 
     // Event to track feed retrieval
-    event FeedFetched(uint256 index, uint256 valueInWei, uint64 timestamp);
-
-    /**
-     * Constructor initializes the FTSOv2 contract.
-     * The contract registry is used to fetch the FtsoV2 contract address.
-     */
-    constructor() {
-        /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
-        ftsoV2 = ContractRegistry.getTestFtsoV2();
-    }
+    event FeedFetched(bytes21 feedId, uint256 valueInWei, uint64 timestamp);
 
     /**
      * Get the current value of a specific feed by its index, in wei.
-     * @param _index The index of the feed to retrieve.
      * @return _feedValue The latest price value of the feed in wei.
      * @return _timestamp The timestamp of the last update for the feed.
      */
-    function getFeedValueByIndexInWei(uint256 _index)
-        external
-        payable
-        returns (uint256 _feedValue, uint64 _timestamp)
+    function getFeedValueByIdWei()
+    external
+    payable
+    returns (uint256 _feedValue, uint64 _timestamp)
     {
+        /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
+        ftsoV2 = ContractRegistry.getTestFtsoV2();
         // Retrieve feed value and timestamp from the FtsoV2 contract
-        (_feedValue, _timestamp) = ftsoV2.getFeedByInWei{value: msg.value}(_index);
-
-        // Store the feed value and timestamp in the contract's storage
-        feedDataByIndex[_index] = FeedInfo({
-            valueInWei: _feedValue,
-            timestamp: _timestamp
-        });
-
-        // Update the highest value feed if applicable
-        if (_feedValue > highestValueInWei) {
-            highestValueInWei = _feedValue;
-            highestValueIndex = _index;
-        }
+        (_feedValue, _timestamp) = ftsoV2.getFeedByIdInWei(feedId);
 
         // Emit an event to log the feed retrieval
-        emit FeedFetched(_index, _feedValue, _timestamp);
+        emit FeedFetched(feedId, _feedValue, _timestamp);
     }
 
 }

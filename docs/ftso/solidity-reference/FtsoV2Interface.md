@@ -8,6 +8,7 @@ import Remix from "@site/src/components/remix";
 import CodeBlock from "@theme/CodeBlock";
 import FTSOV2FeedById from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedById.sol";
 import FTSOV2FeedByIndex from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedByIndex.sol";
+import FTSOV2FeedByIdWei from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedByIdWei.sol";
 import FTSOV2FeedsById from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedsById.sol";
 import FTSOV2FeedsByIdWei from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedsByIdWei.sol";
 import FTSOV2FeedsByIndexWei from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedsByIndexWei.sol";
@@ -54,6 +55,41 @@ function getFeedById(
 </details>
 
 <Remix fileName="FTSOV2FeedById.sol">Open sample in Remix</Remix>
+<br></br>
+
+### getFeedByIdInWei
+
+Returns value in wei and timestamp of a feed.
+A fee (calculated by the FeeCalculator contract) may need to be paid.
+
+```solidity
+function getFeedByIdInWei(
+    bytes21 _feedId
+) external payable returns (
+    uint256 _value,
+    uint64 _timestamp
+);
+```
+
+#### Parameters
+
+- `_feedId`: The id of the feed.
+
+#### Returns
+
+- `_value`: The value for the requested feed in wei (i.e. with 18 decimal places).
+- `_timestamp`: The timestamp of the last update.
+
+<details>
+<summary>Sample contract usage</summary>
+
+<CodeBlock language="solidity" title="FTSOV2FeedByIdWei.sol">
+  {FTSOV2FeedByIdWei}
+</CodeBlock>
+
+</details>
+
+<Remix fileName="FTSOV2FeedByIdWei.sol">Open sample in Remix</Remix>
 <br></br>
 
 ### getFeedByIndex
