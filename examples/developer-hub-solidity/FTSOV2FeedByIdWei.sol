@@ -11,8 +11,7 @@ import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/costo
  */
 contract FtsoV2FeedTracker {
     TestFtsoV2Interface internal ftsoV2;
-    bytes21 public feedId =
-    bytes21(0x01464c522f55534400000000000000000000000000); // FLR/USD
+    bytes21 public feedId = bytes21(0x01464c522f55534400000000000000000000000000); // FLR/USD
 
     // Event to track feed retrieval
     event FeedFetched(bytes21 feedId, uint256 valueInWei, uint64 timestamp);
