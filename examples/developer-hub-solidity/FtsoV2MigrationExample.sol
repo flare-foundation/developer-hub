@@ -2,9 +2,11 @@
 pragma solidity >=0.7.6 <0.9.0;
 
 import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
-import {FtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/FtsoV2Interface.sol";
+import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/TestFtsoV2Interface.sol";
 
 contract FtsoV2FeedConsumer {
+    TestFtsoV2Interface internal ftsoV2;
+
     /**
      * @dev Converts a feed name to a bytes21 ID with a fixed category (1) and USD quote.
      * @param _name The name of the feed, e.g. FLR.
@@ -15,11 +17,11 @@ contract FtsoV2FeedConsumer {
     ) internal pure returns (bytes21) {
         return
             bytes21(
-                bytes.concat(
-                    bytes1(uint8(1)), // Category 1 for crypto feeds
-                    bytes(string.concat(_name, "/USD")) // Append "/USD" to the feed name
-                )
-            );
+            bytes.concat(
+                bytes1(uint8(1)), // Category 1 for crypto feeds
+                bytes(string.concat(_name, "/USD")) // Append "/USD" to the feed name
+            )
+        );
     }
 
     /**
@@ -32,30 +34,29 @@ contract FtsoV2FeedConsumer {
     function getFtsoV2CurrentFeedValues(
         string[] memory _feedNames
     )
-        external
-        payable
-        returns (
-            uint256[] memory _feedValues,
-            int8[] memory _decimals,
-            uint64 _timestamp
-        )
+    external
+    payable
+    returns (
+        uint256[] memory _feedValues,
+        int8[] memory _decimals,
+        uint64 _timestamp
+    )
     {
-        // Get the current FTSOv2 contract from the ContractRegistry
-        FtsoV2Interface ftsoV2 = ContractRegistry.getFtsoV2();
-
         bytes21[] memory feedIds = new bytes21[](_feedNames.length);
 
         // Preprocess feed names to feed IDs
         for (uint256 i = 0; i < _feedNames.length; i++) {
             feedIds[i] = convertToFeedId(_feedNames[i]);
         }
+        /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
+        ftsoV2 = ContractRegistry.getTestFtsoV2();
 
         // Fetch feed data from the FtsoV2 contract
         (
             uint256[] memory feedValues,
             int8[] memory decimals,
             uint64 timestamp
-        ) = ftsoV2.getFeedsById{value: msg.value}(feedIds);
+        ) = ftsoV2.getFeedsById(feedIds);
 
         return (feedValues, decimals, timestamp);
     }
@@ -69,13 +70,10 @@ contract FtsoV2FeedConsumer {
     function getFtsoV2CurrentFeedValuesInWei(
         string[] memory _feedNames
     )
-        external
-        payable
-        returns (uint256[] memory _feedValues, uint64 _timestamp)
+    external
+    payable
+    returns (uint256[] memory _feedValues, uint64 _timestamp)
     {
-        // Get the current FTSOv2 contract from the ContractRegistry
-        FtsoV2Interface ftsoV2 = ContractRegistry.getFtsoV2();
-
         bytes21[] memory feedIds = new bytes21[](_feedNames.length);
 
         // Preprocess feed names to feed IDs
@@ -83,9 +81,12 @@ contract FtsoV2FeedConsumer {
             feedIds[i] = convertToFeedId(_feedNames[i]);
         }
 
+        /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
+        ftsoV2 = ContractRegistry.getTestFtsoV2();
+
         // Fetch feed values in Wei and timestamp from FtsoV2 contract
         (uint256[] memory feedValues, uint64 timestamp) = ftsoV2
-            .getFeedsByIdInWei{value: msg.value}(feedIds);
+            .getFeedsByIdInWei(feedIds);
 
         return (feedValues, timestamp);
     }

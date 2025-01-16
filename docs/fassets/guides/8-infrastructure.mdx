@@ -1,0 +1,82 @@
+---
+sidebar_position: 8
+slug: infrastructure
+title: FAssets Agent Infrastructure
+description: Configuring the FAsset Bot to Use Custom Infrastructure
+tags: [intermediate, fassets, bitcoin, dogecoin]
+authors: [fassko]
+keywords: [fassets, xrp, btc, doge flare-network, flare-network]
+---
+
+import RestartDocker from "./_restart_docker.mdx";
+
+By default, the FAsset bot operates on Flare infrastructure.
+This guide explains how to configure it to utilize your own infrastructure for enhanced performance and reliability.
+
+## Prerequisites
+
+- [Running an RPC node](/run-node/rpc-node)
+- [Configure FTSO data provider](/run-node/ftso-data-provider)
+- [Configuring FDC attestation provider](/run-node/fdc-attestation-provider)
+- [Setting up DAL](https://github.com/flare-foundation/data-availability)
+
+## Setting Up
+
+1.  Update `config.json`
+
+    Update the `config.json` file to include your own URLs for the data access layer, RPC, and verifier.
+
+    Replace the following URLs with your own:
+
+        - Substitute the Data Availability Layer URL with the URL for your Data Access Layer.
+        - Update the Songbird RPC URL with your RPC endpoint.
+        - Replace your verifier URL with your verifier endpoint both for FXRP and FDOGE.
+
+    ```json
+    {
+      "dataAccessLayerUrls": [
+        "Data Availability Layer URL",
+        "https://sgb-data-availability.flare.network"
+      ],
+      "rpcUrl": "Songbird RPC URL",
+      "fAssets": {
+        "FXRP": {
+          "indexerUrls": [
+            "Verifier URL",
+            "https://fdc-verifiers-mainnet.flare.network/verifier/xrp"
+          ]
+        },
+        "FDOGE": {
+          "indexerUrls": [
+            "Verifier URL",
+            "https://fdc-verifiers-mainnet.flare.network/verifier/doge"
+          ]
+        }
+      }
+    }
+    ```
+
+2.  Update `secrets.json`
+
+    Ensure your API keys are correctly set in the `secrets.json` file:
+
+    ```json
+    {
+      "indexer": ["Your API key", "Flare API key"],
+      "data_access_layer": ["Your API key", "Flare API key"],
+      "native_rpc": "your Songbird API key"
+    }
+    ```
+
+    Replace the following: - Substitute your API key with your own custom API key(s) for indexers and data access layers. - Replace your Songbird API key with your RPC API key.
+
+    :::warning
+
+        The API keys must align with the corresponding URLs in dataAccessLayerUrls and indexerUrls. For example, the first API key in indexer should match the first verifier URL in indexerUrls.
+
+        Currently, only a single RPC URL is supported.
+        Multiple RPC URLs are not supported yet.
+
+3.  Restart Docker Containers
+
+    <RestartDocker />

@@ -7,13 +7,10 @@ description: Primary interface for interacting with FTSOv2.
 import Remix from "@site/src/components/remix";
 import CodeBlock from "@theme/CodeBlock";
 import FTSOV2FeedById from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedById.sol";
-import FTSOV2FeedByIdWei from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedByIdWei.sol";
 import FTSOV2FeedByIndex from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedByIndex.sol";
-import FTSOV2FeedByIndexWei from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedByIndexWei.sol";
-import FTSOV2FeedByIdIndex from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedByIdIndex.sol";
+import FTSOV2FeedByIdWei from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedByIdWei.sol";
 import FTSOV2FeedsById from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedsById.sol";
 import FTSOV2FeedsByIdWei from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedsByIdWei.sol";
-import FTSOV2FeedsByIndex from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedsByIndex.sol";
 import FTSOV2FeedsByIndexWei from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedsByIndexWei.sol";
 import FTSOV2VerifyProof from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2VerifyProof.sol";
 
@@ -132,73 +129,6 @@ function getFeedByIndex(
 <Remix fileName="FTSOV2FeedByIndex.sol">Open sample in Remix</Remix>
 <br></br>
 
-### getFeedByIndexInWei
-
-Returns value in wei and timestamp of a feed.
-A fee (calculated by the FeeCalculator contract) may need to be paid.
-
-```solidity
-function getFeedByIndexInWei(
-    uint256 _index
-) external payable returns (
-    uint256 _value,
-    uint64 _timestamp
-);
-```
-
-#### Parameters
-
-- `_index`: The index of the feed, corresponding to feed id in the FastUpdatesConfiguration contract.
-
-#### Returns
-
-- `_value`: The value for the requested feed in wei (i.e. with 18 decimal places).
-- `_timestamp`: The timestamp of the last update.
-
-<details>
-<summary>Sample contract usage</summary>
-
-<CodeBlock language="solidity" title="FTSOV2FeedByIndexWei.sol">
-  {FTSOV2FeedByIndexWei}
-</CodeBlock>
-
-</details>
-
-<Remix fileName="FTSOV2FeedByIndexWei.sol">Open sample in Remix</Remix>
-<br></br>
-
-### getFeedId
-
-Returns the feed id at a given index. Removed (unused) feed index will return bytes21(0).
-
-```solidity
-function getFeedId(
-    uint256 _index
-) external view returns (
-    bytes21 _feedId
-);
-```
-
-#### Parameters
-
-- `_index`: The index.
-
-#### Returns
-
-- `_feedId`: The feed id.
-
-<details>
-<summary>Sample contract usage</summary>
-
-<CodeBlock language="solidity" title="FTSOV2FeedByIdIndex.sol">
-  {FTSOV2FeedByIdIndex}
-</CodeBlock>
-
-</details>
-
-<Remix fileName="FTSOV2FeedByIdIndex.sol">Open sample in Remix</Remix>
-<br></br>
-
 ### getFeedIndex
 
 Returns the index of a feed.
@@ -291,43 +221,6 @@ function getFeedsByIdInWei(
 <Remix fileName="FTSOV2FeedsByIdWei.sol">Open sample in Remix</Remix>
 <br></br>
 
-### getFeedsByIndex
-
-Returns stored data of each feed.
-A fee (calculated by the FeeCalculator contract) may need to be paid.
-
-```solidity
-function getFeedsByIndex(
-    uint256[] _indices
-) external payable returns (
-    uint256[] _values,
-    int8[] _decimals,
-    uint64 _timestamp
-);
-```
-
-#### Parameters
-
-- `_indices`: Indices of the feeds, corresponding to feed ids in the FastUpdatesConfiguration contract.
-
-#### Returns
-
-- `_values`: The list of values for the requested feeds.
-- `_decimals`: The list of decimal places for the requested feeds.
-- `_timestamp`: The timestamp of the last update.
-
-<details>
-<summary>Sample contract usage</summary>
-
-<CodeBlock language="solidity" title="FTSOV2FeedsByIndex.sol">
-  {FTSOV2FeedsByIndex}
-</CodeBlock>
-
-</details>
-
-<Remix fileName="FTSOV2FeedsByIndex.sol">Open sample in Remix</Remix>
-<br></br>
-
 ### getFeedsByIndexInWei
 
 Returns value in wei of each feed and a timestamp.
@@ -417,7 +310,7 @@ Feed data with proof structure
 
 ```solidity
 struct FeedDataWithProof {
-  bytes32[] proof;
-  struct FtsoV2Interface.FeedData body;
+    bytes32[] proof;
+    struct FtsoV2Interface.FeedData body;
 }
 ```
