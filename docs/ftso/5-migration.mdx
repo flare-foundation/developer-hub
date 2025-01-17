@@ -14,7 +14,7 @@ This guide is for applications moving from FTSOv1 to FTSOv2. Briefly, FTSOv2 com
 - **[Block-Latency Feeds](/ftso/feeds)**: These feeds are updated with each new block, approximately every 1.8 seconds. They can be accessed through [FtsoV2Interface](/ftso/solidity-reference/FtsoV2Interface) and are available directly on-chain.
 - **[Anchor Feeds](/ftso/scaling/anchor-feeds)**: These feeds are provided through [Scaling](/ftso/scaling/overview) with a latency of 90 seconds. Feeds can be verified using [FtsoV2Interface](/ftso/solidity-reference/FtsoV2Interface) but are not immediately available on-chain.
 
-A key difference between the two is the introduction of a payment mechanism for data access. This system helps prevent unnecessary data requests and ensures sustainable funding. For more details, refer to the [`IFeeCalculator`](/ftso/solidity-reference/IFeeCalculator) contract, which calculates fees for data access using the [`calculateFeeByIds`](/ftso/solidity-reference/IFeeCalculator#calculatefeebyids) and [`calculateFeeByIndices`](/ftso/solidity-reference/IFeeCalculator#calculatefeebyindices) methods.
+A key difference between the two is the introduction of a payment mechanism for data access. This system helps prevent unnecessary data requests and ensures sustainable funding. For more details, refer to the [`IFeeCalculator`](/ftso/solidity-reference/IFeeCalculator) contract, which calculates fees for data access using the [`calculateFeeByIds`](/ftso/solidity-reference/IFeeCalculator#calculatefeebyids) method.
 
 Additionally, a new Long Term Support (LTS) system has been launched to ensure continued access to essential data and metadata within the Flare ecosystem. A series of [LTS interfaces](#lts-interfaces) have been introduced, each aligned with a specific product in the Flare ecosystem. It is strongly recommended to use these LTS contracts for data access instead of querying individual contracts or interfaces, as they are designed for long-term stability, even as underlying protocols evolve or migrate.
 
@@ -93,7 +93,7 @@ The primary goal of the Long Term Support (LTS) interfaces is to offer a stable 
 :::warning
 
 - **RandomNumberV2Interface:** In addition to providing random numbers, the new methods also return a `_isSecureRandom` flag. Learn more about this flag in the guide on [Secure Random Numbers](/network/guides/secure-random-numbers).
-- **FtsoV2Interface:** Provides access to both block-latency and anchor feeds. You can retrieve feeds using the [`getFeedById`](/ftso/solidity-reference/FtsoV2Interface#getfeedbyid) or [`getFeedByIndex`](/ftso/solidity-reference/FtsoV2Interface#getfeedbyindex) methods. These methods are now payable, and while the current fee is set to `0`, it is advisable to use [`FeeCalculator`](/ftso/solidity-reference/IFeeCalculator) to calculate the fee and be prepared for potential future changes.
+- **FtsoV2Interface:** Provides access to fetching block-latency feeds onchain, and verifying anchor feeds onchain. You can retrieve feeds using the [`getFeedById`](/ftso/solidity-reference/FtsoV2Interface#getfeedbyid) or [`getFeedsById`](/ftso/solidity-reference/FtsoV2Interface#getfeedsbyid) methods. These methods are now payable, and while the current fee is set to `0`, it is advisable to use [`FeeCalculator`](/ftso/solidity-reference/IFeeCalculator) to calculate the fee and be prepared for potential future changes.
 
 :::
 
