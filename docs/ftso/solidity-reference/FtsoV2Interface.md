@@ -7,11 +7,9 @@ description: Primary interface for interacting with FTSOv2.
 import Remix from "@site/src/components/remix";
 import CodeBlock from "@theme/CodeBlock";
 import FTSOV2FeedById from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedById.sol";
-import FTSOV2FeedByIndex from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedByIndex.sol";
 import FTSOV2FeedByIdWei from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedByIdWei.sol";
 import FTSOV2FeedsById from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedsById.sol";
 import FTSOV2FeedsByIdWei from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedsByIdWei.sol";
-import FTSOV2FeedsByIndexWei from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedsByIndexWei.sol";
 import FTSOV2VerifyProof from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2VerifyProof.sol";
 
 Primary interface for interacting with FTSOv2. This is a long-term support (LTS) interface, designed to ensure continuity even as underlying contracts evolve or protocols migrate to new versions.
@@ -55,7 +53,6 @@ function getFeedById(
 </details>
 
 <Remix fileName="FTSOV2FeedById.sol">Open sample in Remix</Remix>
-<br></br>
 
 ### getFeedByIdInWei
 
@@ -90,64 +87,6 @@ function getFeedByIdInWei(
 </details>
 
 <Remix fileName="FTSOV2FeedByIdWei.sol">Open sample in Remix</Remix>
-<br></br>
-
-### getFeedByIndex
-
-Returns stored data of a feed.
-A fee (calculated by the FeeCalculator contract) may need to be paid.
-
-```solidity
-function getFeedByIndex(
-    uint256 _index
-) external payable returns (
-    uint256 _value,
-    int8 _decimals,
-    uint64 _timestamp
-);
-```
-
-#### Parameters
-
-- `_index`: The index of the feed, corresponding to feed id in the FastUpdatesConfiguration contract.
-
-#### Returns
-
-- `_value`: The value for the requested feed.
-- `_decimals`: The decimal places for the requested feed.
-- `_timestamp`: The timestamp of the last update.
-
-<details>
-<summary>Sample contract usage</summary>
-
-<CodeBlock language="solidity" title="FTSOV2FeedByIndex.sol">
-  {FTSOV2FeedByIndex}
-</CodeBlock>
-
-</details>
-
-<Remix fileName="FTSOV2FeedByIndex.sol">Open sample in Remix</Remix>
-<br></br>
-
-### getFeedIndex
-
-Returns the index of a feed.
-
-```solidity
-function getFeedIndex(
-    bytes21 _feedId
-) external view returns (
-    uint256 _index
-);
-```
-
-#### Parameters
-
-- `_feedId`: The feed id.
-
-#### Returns
-
-- `_index`: The index of the feed.
 
 ### getFeedsById
 
@@ -184,7 +123,6 @@ function getFeedsById(
 </details>
 
 <Remix fileName="FTSOV2FeedsById.sol">Open sample in Remix</Remix>
-<br></br>
 
 ### getFeedsByIdInWei
 
@@ -219,42 +157,6 @@ function getFeedsByIdInWei(
 </details>
 
 <Remix fileName="FTSOV2FeedsByIdWei.sol">Open sample in Remix</Remix>
-<br></br>
-
-### getFeedsByIndexInWei
-
-Returns value in wei of each feed and a timestamp.
-For some feeds, a fee (calculated by the FeeCalculator contract) may need to be paid.
-
-```solidity
-function getFeedsByIndexInWei(
-    uint256[] _indices
-) external payable returns (
-    uint256[] _values,
-    uint64 _timestamp
-);
-```
-
-#### Parameters
-
-- `_indices`: Indices of the feeds, corresponding to feed ids in the FastUpdatesConfiguration contract.
-
-#### Returns
-
-- `_values`: The list of values for the requested feeds in wei (i.e. with 18 decimal places).
-- `_timestamp`: The timestamp of the last update.
-
-<details>
-<summary>Sample contract usage</summary>
-
-<CodeBlock language="solidity" title="FTSOV2FeedsByIndexWei.sol">
-  {FTSOV2FeedsByIndexWei}
-</CodeBlock>
-
-</details>
-
-<Remix fileName="FTSOV2FeedsByIndexWei.sol">Open sample in Remix</Remix>
-<br></br>
 
 ### verifyFeedData
 
@@ -286,7 +188,6 @@ function verifyFeedData(
 </details>
 
 <Remix fileName="FTSOV2VerifyProof.sol">Open sample in Remix</Remix>
-<br></br>
 
 ## Structures
 

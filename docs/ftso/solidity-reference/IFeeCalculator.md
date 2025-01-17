@@ -25,19 +25,3 @@ function calculateFeeByIds(
 #### Parameters
 
 - `_feedIds`: List of feed ids.
-
-### calculateFeeByIndices
-
-Calculates a fee that needs to be paid to fetch feeds' data.
-
-```solidity
-function calculateFeeByIndices(
-    uint256[] _indices
-) external view returns (
-    uint256 _fee
-);
-```
-
-#### Parameters
-
-- `_indices`: Indices of the feeds, corresponding to feed ids in the FastUpdatesConfiguration contract.
