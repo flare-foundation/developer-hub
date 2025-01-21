@@ -1,3 +1,4 @@
+// THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
 const BASE_URL = "https://flr-data-availability.flare.network/";
 const API_KEY = "<your-api-key>";
 // Feed IDs, see https://dev.flare.network/ftso/scaling/anchor-feeds for full list

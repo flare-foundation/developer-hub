@@ -14,22 +14,17 @@ contract FtsoV2FeedConsumer {
 
     // Feed IDs, see https://dev.flare.network/ftso/feeds for full list
     bytes21[] public feedIds = [
-        bytes21(0x01464c522f55534400000000000000000000000000), // FLR/USD
-        bytes21(0x014254432f55534400000000000000000000000000), // BTC/USD
-        bytes21(0x014554482f55534400000000000000000000000000)  // ETH/USD
+    bytes21(0x01464c522f55534400000000000000000000000000), // FLR/USD
+    bytes21(0x014254432f55534400000000000000000000000000), // BTC/USD
+    bytes21(0x014554482f55534400000000000000000000000000) // ETH/USD
     ];
 
     // Event to log feed values retrieval
-    event FeedValuesRetrieved(bytes21[] indexed feedIds, uint256[] values, uint64 timestamp);
-
-    /**
-     * Constructor initializes the FTSOv2 contract.
-     * The contract registry is used to fetch the FtsoV2 contract address.
-     */
-    constructor() {
-        /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
-        ftsoV2 = ContractRegistry.getTestFtsoV2();
-    }
+    event FeedValuesRetrieved(
+        bytes21[] indexed feedIds,
+        uint256[] values,
+        uint64 timestamp
+    );
 
     /**
      * Get the current value of the feeds in wei.
@@ -38,13 +33,14 @@ contract FtsoV2FeedConsumer {
      * @return _values The list of values for the requested feeds in wei.
      * @return _timestamp The timestamp of the last update.
      */
-    function getFeedsByIdInWei(bytes21[] calldata _feedIds)
-        external
-        payable
-        returns (uint256[] memory _values, uint64 _timestamp)
-    {
+    function getFeedsByIdInWei(
+        bytes21[] calldata _feedIds
+    ) external payable returns (uint256[] memory _values, uint64 _timestamp) {
         // Ensure that the length of the feed IDs is non-zero
         require(_feedIds.length > 0, "No feed IDs provided");
+
+        /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
+        ftsoV2 = ContractRegistry.getTestFtsoV2();
 
         // Retrieve the feed values and timestamp from the FTSOv2 contract
         (_values, _timestamp) = ftsoV2.getFeedsByIdInWei(_feedIds);

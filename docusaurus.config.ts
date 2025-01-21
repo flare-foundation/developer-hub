@@ -74,8 +74,7 @@ const config: Config = {
 
     announcementBar: {
       id: `announcementBar`,
-      content: `🚀 <a href="https://forms.gle/V2VqBm46yrMq5L6V6" target="_blank" rel="noopener noreferrer">
-                Join the Flare Developer Ambassadors Program.</a> Apply before Dec 31. ☀️`,
+      content: `<a href="https://dev.flare.network/ftso/overview">FTSOv2</a> is live on mainnet! ☀️`,
     },
 
     docs: {
@@ -146,25 +145,29 @@ const config: Config = {
             },
 
             {
-              label: "Grants",
+              label: "Grants Program",
               href: "https://flare.network/grants",
             },
             {
-              label: "Flare Systems Explorer",
+              label: "Systems Explorer",
               href: "https://flare-systems-explorer.flare.network",
             },
             {
-              label: "Flare Governance Proposals",
+              label: "Governance Proposals",
               href: "https://proposals.flare.network",
             },
             {
-              label: "Flare P-Chain Explorer",
-              href: "https://flare.space/dapp/p-chain-explorer",
+              label: "Flare Portal",
+              href: "http://portal.flare.network/",
+            },
+            {
+              label: "Discourse Forum",
+              href: "https://forum.flare.network",
             },
           ],
         },
       ],
-      copyright: `Copyright © Flare Networks ${new Date().getFullYear()}`,
+      copyright: `Copyright © Flare Network ${new Date().getFullYear()}`,
     },
     prism: {
       additionalLanguages: ["solidity", "bash", "json", "toml", "diff"],

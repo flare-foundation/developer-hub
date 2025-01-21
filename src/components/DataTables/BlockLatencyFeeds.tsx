@@ -25,6 +25,11 @@ const getRiskIcon = (value: number): { icon: string; tooltip: string } => {
       tooltip:
         "High risk: Feeds demonstrating high volatility with frequent price swings.",
     },
+    4: {
+      icon: "⚫",
+      tooltip:
+        "New Feed: Recently launched feeds with high volatility risk. Users must verify reliability.",
+    },
   };
   return riskMap[value];
 };

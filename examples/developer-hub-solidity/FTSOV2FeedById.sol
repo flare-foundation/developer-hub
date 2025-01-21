@@ -12,16 +12,8 @@ import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/costo
 contract FtsoV2FeedConsumerById {
     TestFtsoV2Interface internal ftsoV2;
     // Example Feed ID for FLR/USD
-    bytes21 public feedId = bytes21(0x01464c522f55534400000000000000000000000000); // FLR/USD
-
-    /**
-     * Constructor initializes the FTSOv2 contract.
-     * The contract registry is used to fetch the FtsoV2 contract address.
-     */
-    constructor() {
-        /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
-        ftsoV2 = ContractRegistry.getTestFtsoV2();
-    }
+    bytes21 public feedId =
+    bytes21(0x01464c522f55534400000000000000000000000000); // FLR/USD
 
     /**
      * Get the current value of a specific feed by its ID.
@@ -30,14 +22,12 @@ contract FtsoV2FeedConsumerById {
      * @return _timestamp The timestamp of the last feed update.
      */
     function getFtsoV2FeedValueById()
-        external
-        payable
-        returns (
-            uint256 _feedValue,
-            int8 _decimals,
-            uint64 _timestamp
-        )
+    external
+    payable
+    returns (uint256 _feedValue, int8 _decimals, uint64 _timestamp)
     {
+        /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
+        ftsoV2 = ContractRegistry.getTestFtsoV2();
         /* Retrieves the latest value, decimals, and timestamp for the specified feed ID. */
         return ftsoV2.getFeedById(feedId);
     }

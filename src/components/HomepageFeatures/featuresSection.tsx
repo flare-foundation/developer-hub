@@ -40,8 +40,7 @@ const FeatureList: FeatureItem[] = [
     Svg: FAssets,
     description: (
       <>
-        Verifiable economic security enabling decentralized finance for BTC,
-        DOGE and XRP on Flare
+        Verifiable economic security enabling XRPfi, BTCfi, and DOGEfi on Flare
       </>
     ),
     linkToProtocolDocs: "/fassets/overview",

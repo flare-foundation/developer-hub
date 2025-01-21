@@ -1,3 +1,4 @@
+# THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
 import asyncio
 
 import aiohttp
