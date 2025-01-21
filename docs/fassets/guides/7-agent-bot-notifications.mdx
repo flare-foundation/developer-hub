@@ -1,0 +1,61 @@
+---
+sidebar_position: 7
+slug: agent-bot-notifications
+title: Agent Bot Notifications
+description: Learn how to set up agent bot notifications for FAssets.
+tags: [intermediate, fassets, bitcoin, dogecoin]
+authors: [fassko]
+keywords: [fassets, xrp, btc, doge flare-network, flare-network]
+---
+
+The agent bot can send notifications to a Telegram bot or API endpoint.
+It helps monitor the health of the agent and the network.
+
+## Agent Bot Notifications Configuration
+
+1. Add the following configuration to the `apiNotifierConfigs` list in the `config.json` file:
+
+   ```json
+   {
+     "apiUrl": "NOTIFICATIONS_API_URL",
+     "apiKey": "API_KEY",
+     "level": "danger"
+   }
+   ```
+
+   If the level field is omitted inside configuration, the bot will default it to `danger`.
+
+2. The `apiUrl` field specifies the URL to send the notifications to.
+   The bot will send the notifications as POST requests to the `/api/agent/botAlert` endpoint.
+
+3. The `apiKey` is sent in the header under `x-apikey`.
+   The `level` field specifies the minimum level of alerts to send.
+   If the `level` field is omitted, the bot will default it to `danger`.
+
+4. The agent bot can send notifications as POST requests to the endpoint `apiUrl/api/agent/botAlert` with the following body:
+
+   ```typescript
+   PostAlert = {
+     bot_type: string,
+     address: string,
+     level: string,
+     title: string,
+     description: string,
+   };
+   ```
+
+## Flare Hosted Telegram Notifications Alert Configuration
+
+1. Get the API key from the [FAssets Telegram Bot](http://t.me/FlareFAssetsSongbirdBot) by sending `/events` and selecting `Subscribe to Events`.
+2. Add the following configuration to the `apiNotifierConfigs` list in the `config.json` file, replacing `API_KEY` with the key obtained from the bot.
+
+   ```json
+   {
+     "apiUrl": "https://fasset-tg-bot-songbird.flare.network",
+     "apiKey": "API_KEY",
+     "level": "danger"
+   }
+   ```
+
+   Notifications will only be sent out for `danger` and `critical` levels, regardless of the configured level.
+   This is enforced by the Telegram bot, which delivers priority messages due to heavy load.
