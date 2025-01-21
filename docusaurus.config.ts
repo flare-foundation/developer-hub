@@ -59,7 +59,7 @@ const config: Config = {
         },
         sitemap: {
           lastmod: "date",
-          ignorePatterns: ["/tags/**"],
+          ignorePatterns: ["/tags/**", "/**/*.pdf"],
         },
       } satisfies Preset.Options,
     ],
