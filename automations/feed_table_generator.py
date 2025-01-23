@@ -27,6 +27,7 @@ HARD_CODED_FEEDS = {
     }
 }
 
+
 def get_contract_abi(contract_address: str) -> dict:
     """Get the ABI for a contract from the Chain Explorer API."""
     params = {"module": "contract", "action": "getabi", "address": contract_address}
@@ -43,11 +44,13 @@ def get_contract_abi(contract_address: str) -> dict:
         logger.exception("Error fetching ABI for contract")
         sys.exit(1)
 
+
 def get_feed_id(category: str, feed_name: str) -> str:
     """Convert a feed name to its structured encoded feed ID."""
     hex_feed_name = feed_name.encode("utf-8").hex()
     padded_hex_string = (category + hex_feed_name).ljust(42, "0")
     return f"0x{padded_hex_string}"
+
 
 def write_data_to_file(file_path: Path, data: list[dict]) -> None:
     """Write a markdown table to a file."""
@@ -57,6 +60,7 @@ def write_data_to_file(file_path: Path, data: list[dict]) -> None:
         logger.debug("Successfully wrote data to %s", file_path)
     except OSError:
         logger.exception("Failed to write to %s: ", file_path)
+
 
 def read_data_from_file(file_path: Path) -> list[dict]:
     """Write a markdown table to a file."""
@@ -71,6 +75,7 @@ def read_data_from_file(file_path: Path) -> list[dict]:
     else:
         return data
 
+
 def get_coins_list(pages: list) -> list[dict]:
     """Get the top 500 coins from CoinGecko."""
     cg = CoinGeckoAPI()
@@ -84,11 +89,13 @@ def get_coins_list(pages: list) -> list[dict]:
     else:
         return coins
 
+
 def find_coin_by_symbol(coins: list[dict], symbol: str) -> dict | None:
     """Find a coin in the list by its symbol."""
     return next(
         (coin for coin in coins if coin["symbol"].lower() == symbol.lower()), None
     )
+
 
 def generate_feed_data(
     feed_names: list[str],
@@ -132,6 +139,7 @@ def generate_feed_data(
             }
         data.append(feed_data)
     return data
+
 
 if __name__ == "__main__":
     logging.info("Running Feed Table automation...")
