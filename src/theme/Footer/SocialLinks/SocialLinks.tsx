@@ -33,11 +33,6 @@ const socialLinks: Array<SocialLinkProps> = [
     label: "LinkedIn",
   },
   {
-    href: "https://medium.com/flarenetwork",
-    icon: Medium,
-    label: "Medium",
-  },
-  {
     href: "https://discord.com/invite/flarenetwork",
     icon: Discord,
     label: "Discord",
