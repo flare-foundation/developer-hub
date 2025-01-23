@@ -2,7 +2,6 @@ import GitHub from "@site/static/img/social-icons/github.svg";
 import YouTube from "@site/static/img/social-icons/youtube.svg";
 import LinkedIn from "@site/static/img/social-icons/linkedin.svg";
 import Discord from "@site/static/img/social-icons/discord.svg";
-import Medium from "@site/static/img/social-icons/Medium.svg";
 import X from "@site/static/img/social-icons/X.svg";
 import Telegram from "@site/static/img/social-icons/Telegram.svg";
 import Discourse from "@site/static/img/social-icons/discourse.svg";
@@ -31,11 +30,6 @@ const socialLinks: Array<SocialLinkProps> = [
     href: "https://www.linkedin.com/company/flarenetwork/",
     icon: LinkedIn,
     label: "LinkedIn",
-  },
-  {
-    href: "https://medium.com/flarenetwork",
-    icon: Medium,
-    label: "Medium",
   },
   {
     href: "https://discord.com/invite/flarenetwork",
