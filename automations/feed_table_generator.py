@@ -19,6 +19,14 @@ ANCHOR_FEEDS_PATH = Path("anchor_feeds.json")
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+HARD_CODED_FEEDS = {
+    "FTM/USD": {
+        "name": "Fantom",
+        "decimals": 6,
+        "category": "Crypto",
+    }
+}
+
 
 def get_contract_abi(contract_address: str) -> dict:
     """Get the ABI for a contract from the Chain Explorer API."""
@@ -101,6 +109,11 @@ def generate_feed_data(
     for idx, (name, decimal) in enumerate(zip(feed_names, decimals, strict=True)):
         feed_id = get_feed_id("01", name)
         coin = find_coin_by_symbol(coins, name.split("/")[0])
+
+        # Handle hardcoded feeds
+        if name in HARD_CODED_FEEDS:
+            coin = HARD_CODED_FEEDS[name]
+
         if not coin:
             logger.warning("Coin %s not found in CoinGecko data", name)
             continue
@@ -111,8 +124,8 @@ def generate_feed_data(
                 "feed_index": idx,
                 "feed_id": feed_id,
                 "decimals": decimal,
-                "base_asset": coin["name"],
-                "category": "Crypto",
+                "base_asset": coin.get("name"),
+                "category": coin.get("category", "Crypto"),
                 "risk": feed_risk[idx].get("volatility", -1),
             }
         else:
