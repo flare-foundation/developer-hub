@@ -81,7 +81,7 @@ The static files are generated in the `build` directory. To serve the production
 npm run serve
 ```
 
-**Tip**: Test search functionality using a production build.
+**Tip**: Search only works in production builds.
 
 ## 📄 **Autogenerate Solidity Documentation**
 
@@ -111,34 +111,21 @@ To generate Solidity documentation:
 
 ## 🔄 **Automations**
 
-Ensure [uv](https://docs.astral.sh/uv/) dependencies are synced:
+A set of scripts that:
 
-```bash
-cd automations
-uv sync
-```
+- Update contract addresses (from onchain `ContractRegistry`)
+- Update feed risks (from `automations/*_risk.json`)
 
-### Automated Tasks
+**Run all automations:**
 
-1. **Update Feed IDs:**
-
-   Generate and save feed IDs in `anchor_feeds.json` and `block_latency_feeds.json`:
+1. Ensure [uv](https://docs.astral.sh/uv/) dependencies are synced:
 
    ```bash
-   uv run feed_table_generator.py
+   cd automations
+   uv sync
    ```
 
-2. **Update Contract Addresses:**
-
-   Fetch and save contract addresses in `solidity_reference.json`:
-
-   ```bash
-   uv run solidity_reference_table_generator.py
-   ```
-
-3. **Run All Automations:**
-
-   Execute all tasks at once:
+2. Execute automations:
 
    ```bash
    npm run automations
