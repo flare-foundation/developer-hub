@@ -17,7 +17,7 @@ ISSUES_FILE = Path("issues.md")
 MAX_MARKET_CAP_RANK = 100
 HEADER_TEMPLATE = """---
 title: "[auto_req]: Potential New Feeds"
-assignees: dineshpinto
+assignees: swarna1101
 labels: "enhancement"
 ---
 """
