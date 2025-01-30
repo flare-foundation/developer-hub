@@ -1,5 +1,4 @@
 name: Spell Check
-
 on:
   pull_request:
     paths:
@@ -14,7 +13,7 @@ on:
       - "**/*.html"
       - "**/*.rst"
       - "**/*.go"
-      - "!**/*.svg" # Exclude svg files from triggering the workflow
+      - "!**/*.svg"
       - "!**/*.sol"
       - "!**/*.sum"
       - "!**/*.mod"
@@ -27,13 +26,11 @@ jobs:
   spell-check:
     if: github.event.pull_request.changed_files > 0
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Run Spell Check with Typos
+      - name: Run Spell Check
         uses: crate-ci/typos@v1.29.4
         with:
-          files: .
-          config: .github/config/typos.toml
+          config: ./.github/config/typos.toml
