@@ -1,5 +1,4 @@
 name: Spell Check
-
 on:
   pull_request:
     paths:
@@ -13,39 +12,25 @@ on:
       - "**/*.tsx"
       - "**/*.html"
       - "**/*.rst"
-      - "!**/*.svg" # Exclude svg files from triggering the workflow
-      - "!**/*.sol"
       - "**/*.go"
+      - "!**/*.svg"
+      - "!**/*.sol"
       - "!**/*.sum"
       - "!**/*.mod"
       - "!**/*.json"
+
+permissions:
+  contents: read
 
 jobs:
   spell-check:
     if: github.event.pull_request.changed_files > 0
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
-
-      - name: Install codespell
-        run: pip install codespell
-
       - name: Run Spell Check
-        run: |
-          codespell \
-            --ignore-words=.github/config/ignored-words.txt \
-            --skip="*.svg,*.png,*.jpg,*.woff,*.woff2,*.pdf,package-lock.json" \
-            --quiet-level=2 \
-            --check-filenames \
-            .
-
-      - name: Annotate spelling errors
-        if: failure()
-        run: echo "::error::Spelling errors detected. Please fix the typos or add to the ignore list if intentional."
+        uses: crate-ci/typos@v1.29.4
+        with:
+          config: ./.github/config/typos.toml
