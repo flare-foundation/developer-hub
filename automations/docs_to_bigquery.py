@@ -8,7 +8,7 @@ from google.cloud import bigquery
 from google.oauth2 import service_account
 
 PROJECT_ID = r"flare-network-sandbox"
-CREDENTIALS_PATH = r"./flare-network-sandbox-e95a1db92f64.json"
+CREDENTIALS_PATH = r"./env.json"
 
 
 credentials = service_account.Credentials.from_service_account_file(CREDENTIALS_PATH)
