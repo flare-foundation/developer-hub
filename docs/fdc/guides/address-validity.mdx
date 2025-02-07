@@ -1,0 +1,661 @@
+---
+title: Address validity
+authors: [lukaavbreht, filipkoprivec]
+description: Check the validity of a Bitcoin, Dogecoin or XRPL address.
+tags: [intermediate, ethereum, fdc]
+keywords: [ethereum, flare-data-connector, evm, flare-network]
+sidebar_position: 2
+unlisted: true
+---
+
+# AddressValidity
+
+The `AddressValidity` attestation type allows users to verify whether a given string represents an existing address on a specified chain.
+The currently supported chain are: `BTC`, `DOGE` and `XRP`.
+The full specification is available on the official [specification repo](https://github.com/flare-foundation/flare-specs/blob/main/src/FDC/AttestationTypes/AddressValidity.md).
+
+We will now demonstrate how the FDC protocol can be used to verify the validity a given address.
+The address we will be using is `mg9P9f4wr9w7c1sgFeiTC5oMLYXCc2c7hs`; this is an arbitrary address that we acquired from the Bitcoin testnet explorer.
+You can follow this tutorial with any other valid address - just make sure it is a valid testnet address.
+
+The same proceudre works for all supported sources, `BTC`, `DOGE` and `XRP`.
+The source then requires only a slight modification; we will remind you of that when it comes up in the guide.
+
+In this guide we will be following the steps outlined in the [FDC overview](/fdc/guides/fdc-overview).
+
+As mentioned in the previous section, we must wait for the current voting round to finalise before we can use the data.
+For this reason we will be defining multiple scripts that we will run separately.
+Thus, we will be defining a `scrip/fdcExample/AddressValidity.s.sol` file with the following outline.
+
+```solidity title="scrip/fdcExample/AddressValidity.s.sol"
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.25;
+
+import {Script} from "dependencies/forge-std-1.9.5/src/Script.sol";
+...
+
+string constant attestationTypeName = "AddressValidity";
+string constant dirPath = "data/";
+
+contract PrepareAttestationRequest is Script {
+    ...
+}
+
+contract SubmitAttestationRequest is Script {
+    ...
+}
+
+contract RetrieveDataAndProof is Script {
+    ...
+}
+
+contract Deploy is Script {
+    ...
+}
+...
+```
+
+The names of included contracts mostly mirror the steps described in the [FDC guide](/fdc/guides/fdc-overview).
+
+To bridge the separate executions of the scripts, we will save the relavant data of each script to a file in the `dirPath` folder.
+Each succeeding script will then read that file to load in the data.
+
+## 1.1. Preparing the request
+
+The JSON request to the verifier is the same form for all attestation types, but the values of the field differ between them.
+It contains the following fields.
+
+- `attestationType` is the UTF8 hex string encoding of the attestation type name, zero-padded to 32 bytes.
+- `sourceId` is the UTF8 hex string encoding of the data source identifier name, zero-padded to 32 bytes.
+- `requestBody` is different for each attestation type.
+
+In the case of `AddressValidity`, `requestBody` is a JSON containing only a single field, `addressString`.
+We can find the required fields in the [specification](https://gitlab.com/flarenetwork/docs-team/flare-specs/-/blob/main/src/FDC/AttestationTypes/AddressValidity.md?ref_type=heads) for the `AddressValidity` attestation type.
+Alternatively, we can check the verifier's [interactive docs](https://fdc-verifiers-testnet.flare.network/verifier/btc/api-doc#/AddressValidity/BTCAddressValidityVerifierController_prepareRequest).
+Here we can also check the verifier's response by providing the neccessary data.
+Though the urls are slightly different, the verifier has the same API for both [DOGE](https://fdc-verifiers-testnet.flare.network/verifier/doge/api-doc#/AddressValidity/BTCAddressValidityVerifierController_prepareRequest) and [XRP](https://fdc-verifiers-testnet.flare.network/verifier/xrp/api-doc#/AddressValidity/BTCAddressValidityVerifierController_prepareRequest).
+
+In our example, the values we will be using are:
+
+- `attestationType`: UTF8 hex string encoding of `AddressValidity`, zero-padded to 32 bytes
+- `sourceId`: UTF8 hex string encoding of `testBTC`, zero-padded to 32 bytes.
+  Here, the prefix "test" signifies that we will be accessing an address on the Bitcoin testchain.
+  Since this is a demo, we will only be deploying our contract one of the Flare testchains (either Coston or Coston2); these only allow for lookup on the corresponding testchains.
+  To access other chains replace `testBTC` with `testDOGE` or `testXRP`.
+- `addressString`: the afore-mentioned address `mg9P9f4wr9w7c1sgFeiTC5oMLYXCc2c7hs`.
+
+To produce the UTF8 hex string encoding of a given value, we define `toUtf8HexString` and `toHexString` helper functions.
+In the [example repository](https://github.com/flare-foundation/flare-foundry-starter), these are shipped within the Base library, since all attestation type examples make use of them.
+But you may as well define them within the same contract or within the same file.
+
+The first function translates a string to an UTF8 encoded hex string.
+The other then zero-right-pads such a string, so that it is 32 bytes long.
+
+```solidity title="scrip/fdcExample/Base.s.sol"
+function toHexString(
+    bytes memory data
+) public pure returns (string memory) {
+    bytes memory alphabet = "0123456789abcdef";
+
+    bytes memory str = new bytes(2 + data.length * 2);
+    str[0] = "0";
+    str[1] = "x";
+    for (uint i = 0; i < data.length; i++) {
+        str[2 + i * 2] = alphabet[uint(uint8(data[i] >> 4))];
+        str[3 + i * 2] = alphabet[uint(uint8(data[i] & 0x0f))];
+    }
+    return string(str);
+}
+```
+
+```solidity title="scrip/fdcExample/Base.s.sol"
+function toUtf8HexString(
+    string memory _string
+) internal pure returns (string memory) {
+    string memory encodedString = toHexString(
+        abi.encodePacked(_string)
+    );
+    uint256 stringLength = bytes(encodedString).length;
+    require(stringLength <= 64, "String too long");
+    uint256 paddingLength = 64 - stringLength + 2;
+    for (uint256 i = 0; i < paddingLength; i++) {
+        encodedString = string.concat(encodedString, "0");
+    }
+    return encodedString;
+}
+```
+
+We also define helper function for formatting data into a JSON string.
+
+```solidity title="scrip/fdcExample/Base.s.sol"
+function prepareAttestationRequest(
+        string memory attestationType,
+        string memory sourceId,
+        string memory requestBody
+) internal view returns (string[] memory, string memory) {
+    // We read the API key from the .env file
+    string memory apiKey = vm.envString("VERIFIER_API_KEY");
+
+    // Preparing headers
+    string[] memory headers = prepareHeaders(apiKey);
+    // Preparing body
+    string memory body = prepareBody(
+        attestationType,
+        sourceId,
+        requestBody
+    );
+
+    console.log(
+        "headers: %s",
+        string.concat("{", headers[0], ", ", headers[1]),
+        "}\n"
+    );
+    console.log("body: %s\n", body);
+    return (headers, body);
+}
+
+function prepareHeaders(
+    string memory apiKey
+) internal pure returns (string[] memory) {
+    string[] memory headers = new string[](2);
+    headers[0] = string.concat('"X-API-KEY": ', apiKey);
+    headers[1] = '"Content-Type": "application/json"';
+    return headers;
+}
+
+function prepareBody(
+    string memory attestationType,
+    string memory sourceId,
+    string memory body
+) internal pure returns (string memory) {
+    return
+        string.concat(
+            '{"attestationType": ',
+            '"',
+            attestationType,
+            '"',
+            ', "sourceId": ',
+            '"',
+            sourceId,
+            '"',
+            ', "requestBody": ',
+            body,
+            "}"
+        );
+}
+
+```
+
+In the example repository, these are once again included within the Base library file.
+
+Thus, the part of the script that prepares the verifier request looks like:
+
+```solidity title="scrip/fdcExample/AddressValidity.s.sol"
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.25;
+
+import {console} from "dependencies/forge-std-1.9.5/src/console.sol";
+import {Script} from "dependencies/forge-std-1.9.5/src/Script.sol";
+import {Base} from "./Base.s.sol";
+...
+
+string constant attestationTypeName = "AddressValidity";
+string constant dirPath = "data/";
+
+contract PrepareAttestationRequest is Script {
+    ...
+
+    function run() external {
+        // Setting parameters
+        string memory sourceId = toUtf8HexString("testBTC"); // Bitcoin chain ID
+        string memory baseSourceName = "btc"; // Part of verifier URL
+
+        // Setting request data
+        string memory addressStr = "mg9P9f4wr9w7c1sgFeiTC5oMLYXCc2c7hs"; // Id of the Bitcoin address to be validated
+
+        // Preparing the attestation request
+        string memory attestationType = toUtf8HexString(
+            attestationTypeName
+        );
+        string memory requestBody = string.concat(
+            '{"addressStr": "',
+            addressStr,
+            '"}'
+        );
+
+        (string[] memory headers, string memory body) = prepareAttestationRequest(attestationType, sourceId, requestBody);
+
+        ...
+    }
+}
+
+...
+```
+
+If you are accessing a different chain, replace the `baseSourceName` with an appropriate value, `doge` or `xrp`.
+
+The code aobe differes slightly from the [starter example](https://github.com/flare-foundation/flare-foundry-starter).
+But, if we remove the elipses `...` signifying missing code, we can still run the script.
+
+Because of the `console.log` commands it will produce JSON strings that represent valid requests; we can then pass this to the [interactive verifier](https://fdc-verifiers-testnet.flare.network/verifier/btc/api-doc#/AddressValidity/BTCAddressValidityVerifierController_prepareRequest) to check what the response will be.
+
+We can run the script with by calling the following commands in the console.
+
+```bash
+source .env
+```
+
+```bash
+forge script script/fdcExample/AddressValidity.s.sol:PostRequest --private-key $PRIVATE_KEY --rpc-url $COSTON2_RPC_URL --etherscan-api-key $FLARE_API_KEY --broadcast  --ffi
+```
+
+The prerequisit for this is that the `.env` file is not missing the `PRIVATE KEY` and `COSTON2_RPC_URL` values.
+The script can also access other chaing; that can be achieved by replacing the `--rpc-url` value with `COSTON_RPC_URL`, `FLARE_RPC_URL` or `SONGBIRD_RPC_URL`.
+
+1.2. Posting the request to a verifier server.
+
+To post a request to a verifier server, we use the `surl` package.
+We place `using Surl for *;` at the start of our `PostRequest` contract, and then call its `post` method on the verifier url.
+
+```solidity title="scrip/fdcExample/AddressValidity.s.sol"
+(, bytes memmory data) = url.post(headers, body);
+```
+
+We construct the url by appending to the verifier address `https://fdc-verifiers-testnet.flare.network/` the path `verifier/btc/AddressValidity/prepareRequest`.
+We can do so dynamically with the following code.
+
+```solidity title="scrip/fdcExample/AddressValidity.s.sol"
+string memory baseUrl = "https://fdc-verifiers-testnet.flare.network/";
+string memory url = string.concat(
+    baseUrl,
+    "verifier/",
+    baseSourceName,
+    "/",
+    attestationTypeName,
+    "/prepareRequest"
+);
+console.log("url: %s", url);
+string memory requestBody = string.concat(
+    '{"addressStr": "',
+    addressStr,
+    '"}'
+);
+```
+
+Lastly, we parse the return data from the verifier server.
+Using the Foundry `parseJson` shortcode, and a custom struct `AttestationResponse`, we decode the returned data and extract from it the ABI encoded request.
+
+```solidity title="scrip/fdcExample/Base.s.sol"
+function parseAttestationRequest(
+    bytes memory data
+) internal pure returns (AttestationResponse memory) {
+    string memory dataString = string(data);
+    bytes memory dataJson = vm.parseJson(dataString);
+
+    AttestationResponse memory response = abi.decode(
+        dataJson,
+        (AttestationResponse)
+    );
+
+    console.log("response status: %s\n", response.status);
+    console.log("response abiEncodedRequest: ");
+    console.logBytes(response.abiEncodedRequest);
+    console.log("\n");
+
+    return response;
+}
+```
+
+:::info
+
+If everything went right, the `abiEncodedRequest` should look something like this.
+
+```
+0x
+4164647265737356616c69646974790000000000000000000000000000000000
+7465737442544300000000000000000000000000000000000000000000000000
+7d2ef938d4ffd2392f588bf46563e07ab885b15fead91c1bb99b16f465b71a68
+0000000000000000000000000000000000000000000000000000000000000020
+0000000000000000000000000000000000000000000000000000000000000020
+0000000000000000000000000000000000000000000000000000000000000022
+6d6739503966347772397737633173674665695443356f4d4c59584363326337
+6873000000000000000000000000000000000000000000000000000000000000
+```
+
+Let's break it down line by line:
+
+- **First line:** `toUtf8HexString("AddressValidity")`
+- **Second line:** `toUtf8HexString("testBTC")`
+- **Third line:** message integrity code (MIC), a hash of the whole response salted with a string `"Flare"`, ensures the integrity of the attestation
+- **Remaining lines:** ABI encoded `AddressValidity.RequestBody` Solidity struct
+
+:::
+
+What this demonstrates is that, with some effort, the `abiEncodedRequest` can be constructed manually.
+
+## 1.3. Submitting the request to the FDC.
+
+In contrast to the previous steps, which took many lines of code that required little explanation, we really need only five to submit the request to the `FdcHub` protocol, but all of them require a closer look.
+
+:::note
+So far, everything has been happening offchain; in this step we will start interracting with deployed contracts.
+:::
+
+```solidity title="scrip/fdcExample/Base.s.sol"
+function submitAttestationRequest(
+    AttestationResponse memory response
+) internal {
+    uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+    vm.startBroadcast(deployerPrivateKey);
+    IFdcRequestFeeConfigurations fdcRequestFeeConfigurations = ContractRegistry
+            .getFdcRequestFeeConfigurations();
+    uint256 requestFee = fdcRequestFeeConfigurations.getRequestFee(
+        response.abiEncodedRequest
+    );
+    console.log("request fee: %s\n", requestFee);
+    vm.stopBroadcast();
+
+    vm.startBroadcast(deployerPrivateKey);
+
+    IFdcHub fdcHub = ContractRegistry.getFdcHub();
+    console.log("fcdHub address:");
+    console.log(address(fdcHub));
+    console.log("\n");
+    fdcHub.requestAttestation{value: requestFee}(response.abiEncodedRequest);
+    vm.stopBroadcast();
+}
+```
+
+First of all, we read the private key of our account from an `.env` file using a Foundry shortcode:
+
+```solidity
+uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+```
+
+We then broadcast all the code enveloped between `vm.startBroadcast` and `vm.stopBroadcast` shortcodes, to the chain (the console command parameter `--rpc-url` determines which one).
+
+To aquire access to the `FcdHub` contract, we first import the `ContractRegistry` library from the `flare-periphery` package.
+The purpuse of this library is to provide getter functions for the most commonly used Flare contracts.
+It calls the `getContractAddressByName("FdcHub")` function of the `ContractRegistry` contract, deployed on the correct address.
+
+We assign the `FcdHub` to a variable, and declare its type as `IFcdHub` (we must import this interface separately).
+
+Finaly, we can call the `requestAttestation` method of this contract.
+But, to execute the transaction, we must pay a certain amount of ether to the contract.
+To obtain the exact ammount, we call on another contract from the `ContractRegistry` library.
+
+```solidity
+IFdcRequestFeeConfigurations fdcRequestFeeConfigurations = ContractRegistry
+            .getFdcRequestFeeConfigurations();
+    uint256 requestFee = fdcRequestFeeConfigurations.getRequestFee(
+        response.abiEncodedRequest
+    )
+```
+
+We do so within a separate broadcast so that the value `requestFee` is available to us when we post the request.
+
+```solidity
+fdcHub.requestAttestation{value: requestFee}(response.abiEncodedRequest);
+```
+
+Next, we calculate the voting round number in which the above attestation request takes place.
+We do so through the `FlareSystemsManager` contract, which we aquire the same way as we did `FdcHub`.
+
+```solidity
+// Calculating roundId
+IFlareSystemsManager flareSystemsManager = ContractRegistry
+    .getFlareSystemsManager();
+
+uint32 roundId = flareSystemsManager.getCurrentVotingEpochId();
+console.log("roundId: %s\n", Strings.toString(roundId));
+```
+
+In the current version of the demo, we get the `roundId` directly from the `FlareSystemsManager` contract.
+This worst all right most of the time, but it can be off by 1 in rare cases where the attestation request is submitted close to the end of the epoch.
+
+We can either do that within the previous broadcast, or start a new on (in the demo repository, we chose the second option, because it allowed us to better organise the code).
+
+## 2.1. Waitting for the response
+
+We wait for the round to finalise.
+This takes no more than 90s.
+
+You can check the if the request was submitted successfully on the [AttestationRequests](https://coston2-systems-explorer.flare.rocks/attestation-request) page on Flare Systems Explorer website.
+To check if the round has finalised, go to [Finalizations](https://coston2-systems-explorer.flare.rocks/finalizations) page.
+
+If you want to learn more about how the FDC protocol works, check [here](/fdc/guides/fdc-overview).
+
+## 3.2. Preparing proof request
+
+We prepare the proof request in a simmilar manner as in the step [Preparing the request](#11-preparing-the-request), by string concatenation.
+We import two new variables from the `.env` file; the url of a verifier server and the corresponding API key.
+note
+
+```solidity title="scrip/fdcExample/AddressValidity.s.sol"
+string memory daLayerUrl = vm.envString("COSTON2_DA_LAYER_URL");
+string memory apiKey = vm.envString("X_API_KEY");
+```
+
+Also, by repeatedly using the Foundry shortcode `vm.readLine`, we read the data, saved to a file in the previous step, to variables.
+
+```solidity
+string memory votingRoundId = vm.readLine(filePath);
+string memory requestBytes = vm.readLine(filePath);
+```
+
+The code is as follows.
+
+```solidity title="scrip/fdcExample/AddressValidity.s.sol"
+contract RetrieveDataAndProof is Script {
+    using Surl for *;
+
+    function run() external {
+        string memory daLayerUrl = vm.envString("COSTON2_DA_LAYER_URL");
+        string memory apiKey = vm.envString("X_API_KEY");
+        string memory fileName = string.concat(attestationTypeName, ".txt");
+        string memory filePath = string.concat(dirPath, fileName);
+
+        // We import the roundId and abiEncodedRequest from the first file
+        string memory votingRoundId = vm.readLine(filePath);
+        string memory requestBytes = vm.readLine(filePath);
+        console.log("votingRoundId: %s\n", votingRoundId);
+        console.log("requestBytes: %s\n", requestBytes);
+
+        // Preparing the proof request
+        string[] memory headers = prepareHeaders(apiKey);
+        string memory body = string.concat(
+            '{"votingRoundId":',
+            votingRoundId,
+            ',"requestBytes":"',
+            requestBytes,
+            '"}'
+        );
+        console.log("body: %s\n", body);
+        console.log(
+            "headers: %s",
+            string.concat("{", headers[0], ", ", headers[1]),
+            "}\n"
+        );
+
+        ...
+    }
+}
+```
+
+## 3.3. Posting the proof request to a DA Layer provider
+
+We post the proof request to a chosen DA Layer provider server also with the same code as we did in the [previous step](#12-posting-the-request-to-a-verifier-server).
+
+```solidity title="scrip/fdcExample/AddressValidity.s.sol"
+string memory url = string.concat(
+    daLayerUrl,
+    // "api/v0/fdc/get-proof-round-id-bytes"
+    "api/v1/fdc/proof-by-request-round-raw"
+);
+console.log("url: %s\n", url);
+
+(, bytes memory data) = Base.postAttestationRequest(url, headers, body);
+```
+
+Parsing the returned data requires the definition of an auxiliary `struct`.
+
+{/* <!-- TODO rename after renaming --> */}
+
+```solidity title="scrip/fdcExample/Base.s.sol"
+struct ParsableProof {
+    bytes32 attestationType;
+    bytes32[] proofs;
+    bytes responseHex;
+}
+```
+
+The field `attestationType` holds the UTF8 encoded hex string of the attestation type name, padded to 32 bytes.
+Thus, it should match the value of the `attestationType` parameter in the [Preparing the request](#11-preparing-the-request) step.
+In our case, that value is `0x4164647265737356616c69646974790000000000000000000000000000000000`.
+
+The array `proofs` holds the merkle proofs of our attestation request.
+
+Lastly, `responseHex` is the ABI encoding of the chosen attestation type response struct.
+In this case, it is the `IAddressValidity.Response` struct.
+We retrieve this data as follows.
+
+```solidity title="scrip/fdcExample/AddressValidity.s.sol"
+bytes memory dataJson = Base.parseData(data);
+ParsableProof memory proof = abi.decode(dataJson, (ParsableProof));
+
+IAddressValidity.Response memory proofResponse = abi.decode(
+    proof.responseHex,
+    (IAddressValidity.Response)
+);
+```
+
+## 3.4. Verifying the proof
+
+Because every node holds a copy of the whole chain, storing data on the blockchain is expensive.
+For the seake of efficiency, FDC keeps only the merkle proof onchain, while the data itself can be obtained from outside data providers.
+Per our request, they supply us with the specified data.
+That data then be encripted, and its merkle proof compared to the merkle root stored onchain.
+If they match, the data can be trusted
+
+This step is not strictly neccessary; if we trust our data provider, we can skip this step.
+And in practice, we do just that.
+But it is crutial, that should we want to verify the data, we have the ability to do so.
+
+One way to do it is using the `FdcVerification` contract.
+We first store our data as an appropriate Solidity struct, namely `IAddressValidity.Proof`.
+
+```solidity title="scrip/fdcExample/AddressValidity.s.sol"
+IAddressValidity.Proof memory _proof = IAddressValidity.Proof(
+    proof.proofs,
+    proofResponse
+);
+```
+
+We then access the `FdcVerification` contract through the `ContractRegistry`, and feed it the proof.
+If we proof is valid, the function `verifyAddressValidity` will return `true`, otherwise `false`.
+As before, we wrap the whole thing into a broadcast environment, using the `PRIVATE_KEY` variable from our `.env` file.
+
+```solidity title="scrip/fdcExample/AddressValidity.s.sol"
+uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+vm.startBroadcast(deployerPrivateKey);
+
+bool isValid = ContractRegistry
+    .getFdcVerification()
+    .verifyAddressValidity(proof);
+console.log("proof is valid: %s\n", StringsBase.toString(isValid));
+
+vm.stopBroadcast();
+```
+
+## 4. Using the data
+
+We will now define a simple contract, that will demonstrate how the data can be used onchain.
+The contract will receive an address and a proof, and decide if the address is valid.
+If the address is valid, the contract will add it to an array of valid addresses.
+Otherwise, it will raise an error.
+
+The code for this contract is as follows.
+
+```solidity title="src/fdcExample/AddressValidity.sol"
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.25;
+
+import {console} from "dependencies/forge-std-1.9.5/src/console.sol";
+import {Strings} from "@openzeppelin-contracts/utils/Strings.sol";
+import {ContractRegistry} from "dependencies/flare-periphery-test-0.0.7/src/coston2/ContractRegistry.sol";
+import {IFdcHub} from "dependencies/flare-periphery-test-0.0.7/src/coston2/IFdcHub.sol";
+import {IAddressValidity} from "dependencies/flare-periphery-test-0.0.7/src/coston2/IAddressValidity.sol";
+import {IFdcVerification} from "dependencies/flare-periphery-test-0.0.7/src/coston2/IFdcVerification.sol";
+import {FdcStrings} from "src/utils/fdcStrings/AddressValidity.sol";
+
+struct EventInfo {
+    address sender;
+    uint256 value;
+    bytes data;
+}
+
+contract AddressValidity {
+    string[] public verifiedAddresses;
+
+    function isAddressValidityProofValid(
+        IAddressValidity.Proof calldata transaction
+    ) public view returns (bool) {
+        // Use the library to get the verifier contract and verify that this transaction was proved by state connector
+        IFdcVerification fdc = ContractRegistry.getFdcVerification();
+        console.log("transaction: %s\n", FdcStrings.toJsonString(transaction));
+        // return true;
+        return fdc.verifyAddressValidity(transaction);
+    }
+
+    function registerAddress(
+        string calldata _addressStr,
+        IAddressValidity.Proof calldata _transaction
+    ) external {
+        // 1. FDC Logic
+        // Check that this AddressValidity has indeed been confirmed by the FDC
+        require(
+            isAddressValidityProofValid(_transaction),
+            "Invalid transaction proof"
+        );
+
+        // 2. Business logic
+        string provedAddress = _transaction.data.requestBody.addressStr;
+        require(
+            Strings.equal(provedAddress, _addressStr),
+            string.concat(
+                "Invalid address.\n\tProvided: ",
+                _addressStr,
+                "\n\tProoved: ",
+                provedAddress
+            )
+        );
+        verifiedAddresses.push(provedAddress);
+    }
+}
+```
+
+The function `registerAddress` takes as parameters a string representing an address, and a proof.
+If the proof is valid, and if the given address matches the one in the proof, the address is added to an array of verified addresses.
+
+We deploy this contract through a script in `script/AddressValidity.s.sol`.
+
+```solidity title="scrip/fdcExample/AddressValidity.s.sol"
+
+contract Deploy is Script {
+    function run() external {
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
+
+        AddressValidity addressValidity = new AddressValidity();
+
+        vm.stopBroadcast();
+    }
+}
+```
+
+We run the above script with the following console command.
+
+```bash
+forge script script/fdcExample/AddressValidity.s.sol:Deploy --private-key $PRIVATE_KEY --rpc-url $COSTON2_RPC_URL --etherscan-api-key $FLARE_API_KEY --broadcast --ffi
+
+```

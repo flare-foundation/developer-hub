@@ -1,0 +1,65 @@
+---
+title: Overview
+authors: [lukaavbreht, filipkoprivec]
+description: Check the validity of a Bitcoin, Dogecoin or XRPL address.
+tags: [intermediate, ethereum, fdc]
+keywords: [ethereum, flare-data-connector, evm, flare-network]
+sidebar_position: 1
+unlisted: true
+---
+
+## Flare Data Connector (FDC)
+
+The Flare Data Connector is an enshrined protocol on Flare.
+It allows onchain attestations to offchain data.
+
+### Attestation types
+
+The FDC protocol supports the following six attestation types.
+This is only a brif overview; the attestaion types will be explained in greater detail in their corresponding sections.
+
+- **AddressValidity**: Is the provided address a valid address on the specified chain?
+- **EVMTransaction**: Give me the details of the transaction with this address on the specified chain (either `ETH`, `FLR` or `SGB`)! 
+- **Payment**: Give me the details of the transaction with this address on the specified chain (either `BTC`, `DOGE` or `XRP`), considered a payment on that chain!
+- **ConfirmedBlockHeightExists**: Does a block with a specified number exist and has it been sufficiently confirmed?
+- **BalanceDecreasingTransaction**: Is the provided transaction balance decreasing for a specified address?
+- **ReferencedPaymentNonexistence**: There is no such payment within the required time interval!
+
+The first three types are the most generally useful, while the last three are used mostly in FAssets.
+
+For all six attestation types, the workflow follows the same general steps.
+Because of the waiting period between the first two parts, in which the round is finalised, we have split have the process into three sections.
+
+1.  **Preparing the attestation request.**
+    We post the attestation request by calling the `requestAttestation` method on the `FdcHub` contract.
+    To do so we provide to it as a parameter a properly-formed ABI encoded data.
+    We can prepare the data manually, or generate it through a verifier server; the following steps describe the second method.
+    1.  **Preparing the requst.**
+        We provide the request data, as is specified in the [specifications](https://gitlab.com/flarenetwork/docs-team/flare-specs/-/tree/main/src/FDC/AttestationTypes?ref_type=heads) (the data is different for each attestation type).
+        The request is formatted as a JSON string.
+    2.  **Posting the request to a verifier server.**
+        We send the request to a verifier server, which checks its validity.
+        The server returns a JSON response containing two fields: the validity of the request and its ABI encoding.
+2.  **Submitting the request to the FDC contract.**
+    We extract an ABI encoded request from the verifier server's response.
+    We then provide this data as a parameter to a `requestAttestation` method call on the `FdcHub` contract.
+3.  **Retrieving the data and proof.**
+    We retrieve the data and proof from a chosen DA Layer provider. Then we can verify the proof through FDC.
+    1.  **Waiting for the response.**
+        We wait for the current voting round to finalise, which takes no more than 90s.
+    2.  **Preparing the proof request.**
+        We prepare a JSON request, containing the ID of the voting round in which our attestation took place, and the ABI encoded request data produced in the previous step.
+        This request is the same for all attestation types.
+    3.  **Posting the proof request to a Data Availability (DA) Layer provider.**
+        We post the JSON request to a server of the chosen DA Layer provider.
+        The server returns a JSON string response.
+        The DA Layer's response is a JSON string with fields specified in the [specifications](https://gitlab.com/flarenetwork/docs-team/flare-specs/-/tree/main/src/FDC/AttestationTypes?ref_type=heads) for each attestation type.
+        We decode the response to an appropriate struct, determined by the attestation type.
+        We can then access the data.
+    4.  **Verifying the proof.**
+4.  **Using the data.**
+    We use the data by passing the struct with DA Layer's response to custom contract.
+    This step can be executed as soon as we receive the response from the DA Layer, so it need not be split into a separate script.
+
+The role of the first two steps of section one is to generate an ABI encoded request string that can be passed as an argument to the `FdcHub`.
+This is a neccessary compromise that allows use to define a single `requestAttestation` function.
