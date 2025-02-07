@@ -35,65 +35,32 @@ Ensure you have the following tools installed:
 - [Foundry](https://book.getfoundry.sh/getting-started/installation)
 - [Node.js](https://nodejs.org/en/download/)
 
-## Create a Foundry project
+## Start with flare template of a Foundry project
 
-1. Create a new directory to hold your app and navigate inside it:
+Clone the [flare template](https://github.com/flare-foundation/flare-foundry-starter) and navigate into the project directory:
 
-   ```bash
-   mkdir ftsov2-app && cd ftsov2-app
-   ```
+```bash
+git clone https://github.com/flare-foundation/flare-foundry-starter.git
+cd flare-foundry-starter
+```
 
-2. Initialize an empty Foundry project:
+Install the project dependencies.
 
-   ```bash
-   forge init
-   ```
+```bash
+forge soldeer install
+```
 
-   This creates several subdirectories like `src` and `test`, with some sample contracts in them.
+You might have to modify the `remappings.txt` so that `/src` part of path is before the non src part
+Like this
 
-3. Verify the setup by running the sample test:
-
-   ```bash
-   forge test
-   ```
-
-   The output should look similar to this:
-
-   ```plaintext
-   [⠢] Compiling...
-   No files changed, compilation skipped
-
-   Running 2 tests for test/Counter.t.sol:CounterTest
-   [PASS] testFuzz_SetNumber(uint256) (runs: 256, μ: 27864, ~: 28409)
-   [PASS] test_Increment() (gas: 28379)
-   Test result: ok. 2 passed; 0 failed; 0 skipped; finished in 12.30ms
-
-   Ran 1 test suites: 2 tests passed, 0 failed, 0 skipped (2 total tests)
-   ```
-
-4. Clean up by deleting the sample contracts and tests:
-
-   ```bash
-   rm -r src/* test/*
-   ```
-
-## Install the Flare periphery
-
-Install the Flare periphery package to interact with [FTSOv2 contracts](/ftso/solidity-reference).
-
-1. Initialize an npm project and install the Flare periphery package:
-
-   ```bash
-   npm init -y
-   npm i @flarenetwork/flare-periphery-contracts
-   ```
-
-2. Create a file `remappings.txt` in the main directory, and add the following remappings to ensure Foundry can locate the installed packages:
-
-   ```plaintext title="remappings.txt"
-   @flarenetwork/flare-periphery-contracts/=node_modules/@flarenetwork/flare-periphery-contracts/
-   @openzeppelin/contracts/=node_modules/@openzeppelin/contracts
-   ```
+```bash
+@openzeppelin-contracts/=dependencies/@openzeppelin-contracts-5.2.0-rc.1/
+flare-periphery/=dependencies/flare-periphery-0.0.1/
+forge-std/=dependencies/forge-std-1.9.5/src/
+forge-std/=dependencies/forge-std-1.9.5/
+surl/=dependencies/surl-0.0.0/src/
+surl/=dependencies/surl-0.0.0/
+```
 
 ## Create and compile a contract
 
