@@ -15,6 +15,13 @@ const sidebars: SidebarsConfig = {
     "intro",
     {
       type: "category",
+      label: "Verifiable AI Hackathon",
+      collapsed: true,
+      link: { type: "doc", id: "verifiable-ai-hackathon/overview" },
+      items: ["verifiable-ai-hackathon/overview"],
+    },
+    {
+      type: "category",
       label: "Network",
       collapsed: true,
       link: { type: "doc", id: "network/overview" },
