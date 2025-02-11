@@ -125,4 +125,5 @@ if __name__ == "__main__":
     ]
 
     # Write results to issues file
-    write_issues_file(ISSUES_FILE, HEADER_TEMPLATE, selected_coins)
+    if selected_coins:
+        write_issues_file(ISSUES_FILE, HEADER_TEMPLATE, selected_coins)
