@@ -17,8 +17,8 @@ const sidebars: SidebarsConfig = {
       type: "category",
       label: "Verifiable AI Hackathon",
       collapsed: true,
-      link: { type: "doc", id: "verifiable-ai-hackathon/overview" },
-      items: ["verifiable-ai-hackathon/overview"],
+      link: { type: "doc", id: "verifiable-ai-hackathon/onboarding-guide" },
+      items: ["verifiable-ai-hackathon/onboarding-guide"],
     },
     {
       type: "category",
