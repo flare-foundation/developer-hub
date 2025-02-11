@@ -2,7 +2,7 @@
 sidebar_position: 1
 unlisted: true
 slug: onboarding-guide
-title: Participant Onboarding
+title: Onboarding
 description: Step-by-step guide for setting up infrastructure, credentials, and cloud instances for the Verifiable AI Hackathon.
 keywords: [flare, ai, confidential-compute, hackathon, google-cloud, onboarding]
 ---
@@ -18,223 +18,216 @@ import Networking from "/static/img/verifiable-ai-hackathon/networking.png";
 import FinalStep from "/static/img/verifiable-ai-hackathon/final-step.png";
 import AddMetaData from "/static/img/verifiable-ai-hackathon/add-metadata.png";
 
-# Participant Onboarding
+# Onboarding
 
-This guide provides all necessary steps to get onboarded for the **Verifiable AI Hackathon**. Participants will set up their **Google Cloud infrastructure**, acquire necessary **API keys**, and deploy their **Confidential Compute VMs**.
+Welcome to the Verifiable AI Hackathon! This comprehensive guide will walk you through setting up your development environment, including Google Cloud infrastructure, API credentials, and Confidential Compute virtual machines.
 
-## 1. Initial Setup
+## Before You Begin
 
-### 1.1. Google Account
+- Plan for approximately 30-45 minutes to complete the entire setup
+- Keep track of your credentials in a secure location
+- If you encounter any issues, reach out to the support team via the hackathon Discord channels
 
-- Create or use an existing Google account
-- This account will be used for all hackathon resources
+## Prerequisites
 
-### 1.2. Project Registration
+### Required Google Account & Registration
 
-- Submit your email address during registration
-- The Flare Infra Team will onboard you to `google-hackathon-project`
+- Use an existing Google account or create a new one
+- This account will be your primary access point for all hackathon resources
+- Submit your Google account email during the registration process
+- You'll receive access to the `google-hackathon-project` when approved, usually within a hour of submission
 
-### 1.3. Gemini API Key
+### Setting up Gemini API access
 
-1. Navigate to [Get a Gemini API key in Google AI Studio](https://aistudio.google.com/app/apikey)
-2. Click on "Create API key"
-3. Select `google-hackathon-project` from the dropdown
-4. Click "Create API key in existing project"
+1. Log into your registered Google account
+1. Visit the [Get a Gemini API key in Google AI Studio](https://aistudio.google.com/app/apikey) page
+1. Click on **Create API key**
+1. Select `google-hackathon-project` from the dropdown
+1. Click **Create API key in existing project**
+1. Store your API key securely
 
-### 1.4. VM Instance Creation
+## Setting up a VM
 
-Choose between CLI or Console setup methods detailed in Section 2.
-
-## 2. VM Instance Setup Methods
-
-### 2.1. Option A: Using gcloud CLI (Recommended)
+### Option A: Using gcloud CLI (Recommended)
 
 Follow these steps to set up a GCP instance using Confidential Space with Cloud Logging.
 
-1. **Install gcloud CLI**
+#### Prerequisites
 
-   - Follow the [gcloud CLI installation guide](https://cloud.google.com/sdk/docs/install)
+1. **Install the gcloud CLI**
 
-2. **Create VM Instance**
-   Use the following command, replacing variables marked with `<>`:
+- Follow the [gcloud CLI installation guide](https://cloud.google.com/sdk/docs/install) steps for your OS
+
+2. **Authenticate your CLI**
+
+   Use the same account used for hackathon registration
 
    ```bash
-   gcloud compute instances create <INSTANCE_NAME> \
-       --confidential-compute-type=TDX \
-       --machine-type=c3-standard-4 \
-       --maintenance-policy=TERMINATE \
-       --zone=us-central1-c \
-       --project=flare-network-sandbox \
-       --network-interface=network-tier=PREMIUM,nic-type=GVNIC,stack-type=IPV4_ONLY,subnet=default \
-       --metadata=tee-image-reference=<IMAGE_URL>,tee-container-log-redirect=true,tee-env-<ENV_VAR_NAME1>=<ENV_VAR_VALUE1>,tee-env-<ENV_VAR_NAME2>=<ENV_VAR_VALUE2> \
-       --provisioning-model=STANDARD \
-       --service-account=83674517876-compute@developer.gserviceaccount.com \
-       --scopes=https://www.googleapis.com/auth/cloud-platform \
-       --tags=<INSTANCE_NAME>,http-server,https-server \
-       --create-disk=auto-delete=yes,boot=yes,device-name=<INSTANCE_NAME>,image=projects/confidential-space-images/global/images/confidential-space-debug-250100,mode=rw,size=11,type=pd-balanced \
-       --shielded-secure-boot \
-       --shielded-vtpm \
-       --shielded-integrity-monitoring \
-       --labels=goog-ec-src=vm_add-gcloud \
-       --reservation-affinity=any
+   gcloud auth login
    ```
 
-   **Required Variables:**
+#### Create VM Instance
 
-   - `<INSTANCE_NAME>`: Your instance name (e.g., flare-ai-core)
-   - `<IMAGE_URL>`: Image path (e.g., ghcr.io/flare-foundation/flare-ai-core:main)
-   - `<ENV_VAR_NAME1>`: First environment variable name (e.g., GEMINI_API_KEY)
-   - `<ENV_VAR_VALUE1>`: First environment variable value
-   - Add additional environment variables as needed
+Use the following command template, replacing the placeholder variables (`<>`):
 
-### 2.2. Option B: Using GCP Console
+```bash
+# highlight-next-line
+gcloud compute instances create <INSTANCE_NAME> \
+  --project=google-hackathon-project \
+  --zone=us-central1-c \
+  --machine-type=n2d-standard-2 \
+  --network-interface=network-tier=PREMIUM,nic-type=GVNIC,stack-type=IPV4_ONLY,subnet=default \
+  # highlight-next-line
+  --metadata=tee-image-reference=<IMAGE_URL>,tee-container-log-redirect=true,tee-env-<ENV_VAR_NAME1>=<ENV_VAR_VALUE1>,tee-env-<ENV_VAR_NAME2>=<ENV_VAR_VALUE2>\
+  --maintenance-policy=MIGRATE \
+  --provisioning-model=STANDARD \
+  --service-account=confidential-sa@flare-network-sandbox.iam.gserviceaccount.com \
+  --scopes=https://www.googleapis.com/auth/cloud-platform \
+  --min-cpu-platform="AMD Milan" \
+  --tags=flare-ai-core,http-server,https-server \
+  --create-disk=auto-delete=yes,boot=yes,\
+  # highlight-next-line
+  device-name=<INSTANCE_NAME>,\
+  image=projects/confidential-space-images/global/images/confidential-space-debug-250100,mode=rw,size=11,type=pd-standard \
+  --shielded-secure-boot \
+  --shielded-vtpm \
+  --shielded-integrity-monitoring \
+  --labels=goog-ec-src=vm_add-gcloud \
+  --reservation-affinity=any \
+  --confidential-compute-type=SEV
+```
 
-Follow these steps to set up a GCP instance using the web console.
+**Required Variables:**
 
-1. **Access Console**
+- `<INSTANCE_NAME>`: Your instance name (in the format `<project-name>-<team-name>`, e.g. `agent-gemini-team1`)
+- `<IMAGE_URL>`: Image path (e.g., `ghcr.io/flare-foundation/flare-ai-core:main`)
+- `<ENV_VAR_NAME1>` and `<ENV_VAR_VALUE1>`: First environment variable name (e.g., GEMINI_API_KEY) and first environment variable value
+- Add additional comma separated environment variables as needed
 
-   - Go to the [GCP Console](https://console.cloud.google.com/)
-   - Click "Create Instance"
+### Option B: Using GCP Console
+
+Follow these steps to create your VM instance through the Google Cloud Console interface.
+
+1. **Initial Setup**
+
+   - Navigate to the [GCP Console](https://console.cloud.google.com/)
+   - Make sure _google-hackathon-project_ is selected
+   - Click **Compute Engine → VM instances → Create Instance**
 
    <div align="center">
      <img
        src={CreateInstance}
        alt="Create Instance Button"
-       style={{ maxWidth: "80%", margin: "20px 0" }}
+       style={{ maxWidth: "50%", margin: "20px 0" }}
      />
    </div>
 
-2. **Configure Machine Settings**
+2. **Machine Configuration**
 
-   a. **Basic Settings:**
-
-   - Name: `<project-name>-<team-name>` (e.g., agent-gemini-john)
-   - Region: us-west2
-   - Machine Type: n2d-standard-2 (2 vCPU, 1 core, 8 GB memory)
+   - Name: `<project-name>-<team-name>` (e.g., `agent-gemini-team1`)
+   - Region: `us-west2`
+   - Machine Type: `n2d-standard-2`
 
    <div align="center">
      <img
        src={MachineConfiguration}
        alt="Machine Configuration"
-       style={{ maxWidth: "80%", margin: "20px 0" }}
+       style={{ maxWidth: "50%", margin: "20px 0" }}
      />
    </div>
 
-   b. **Security Settings:**
+3. **Security Configuration**
 
-   - Service account: confidential-sa
-   - Access scopes: "Allow full access to Cloud APIs"
-   - Confidential VM service: Enable
-   - Shielded VM: Check "Turn on Secure Boot"
+   - Service account: `confidential-sa`
+   - Access scopes: **Allow full access to Cloud APIs**
+   - Enable Confidential VM service
+   - Enable Secure Boot under Shielded VM
 
    <div align="center">
      <img
        src={Security}
        alt="Security Settings"
-       style={{ maxWidth: "80%", margin: "20px 0" }}
+       style={{ maxWidth: "50%", margin: "20px 0" }}
      />
    </div>
 
-   c. **OS and Storage:**
+4. **OS and Storage Configuration**
 
-   1. Click "Change"
-   2. Select "Confidential Space Debug 240900"
-   3. Keep other values default
-   4. Click "Select"
+   - Click **Change** under Boot Disk
+   - Select **Confidential Space Debug 250100**
+   - Keep default storage settings
+   - Click **Select**
 
    <div align="center">
      <img
        src={OsAndStorage}
        alt="OS and Storage Configuration"
-       style={{ maxWidth: "80%", margin: "20px 0" }}
+       style={{ maxWidth: "50%", margin: "20px 0" }}
      />
    </div>
 
-   d. **Networking:**
+5. **Network Configuration**
 
-   - Enable "Allow HTTPS traffic"
+   - Check **Allow HTTPS traffic**
+   - Leave other networking settings as default
 
    <div align="center">
      <img
        src={Networking}
        alt="Networking Configuration"
-       style={{ maxWidth: "80%", margin: "20px 0" }}
+       style={{ maxWidth: "50%", margin: "20px 0" }}
      />
    </div>
 
-   e. **Advanced Settings:**
+6. **Advanced Configuration:**
 
-   1. Click "Add Item" under Metadata
-   2. Add the following items:
-      ```bash
-      tee-image-reference: <ghcr.io/john/agent-gemini:main>
-      tee-container-log-redirect: cloud_logging
-      ```
-   3. Additional API keys should be prefixed with `tee-env-`
+   - Click **Add Item** under Metadata
+   - Add the following key-value pairs:
+
+     ```bash
+     tee-image-reference: <ghcr.io/john/agent-gemini:main>
+     tee-container-log-redirect: cloud_logging
+     ```
+
+   - Additional API keys should be prefixed with `tee-env-`, e.g. the env variable `GEMINI_API_KEY` will become `tee-env-GEMINI_API_KEY`
 
    <div align="center">
      <img
        src={AddMetaData}
        alt="Add Metadata Configuration"
-       style={{ maxWidth: "80%", margin: "20px 0" }}
+       style={{ maxWidth: "50%", margin: "20px 0" }}
      />
    </div>
 
-3. **Launch and Monitor Instance**
+   - Click **Create** to start the VM
 
-   - Click "Create" to start the VM
-   - Monitor progress:
-     1. System logs: Click "Serial Port (console)"
-     2. Container logs: Click "Logging" after startup
+## Post Setup Verification
 
-   <div align="center">
-     <img
-       src={FinalStep}
-       alt="Final Step Configuration"
-       style={{ maxWidth: "80%", margin: "20px 0" }}
-     />
-   </div>
+- Check the VM status in your Google Cloud Console
+- Ensure all services are running correctly
+- Monitor system logs through Serial Port console
+- Verify container logs in Cloud Logging
 
-## 3. Resource Allocation
+  {" "}
+  <div align="left">
+    <img
+      src={FinalStep}
+      alt="Final Step Configuration"
+      style={{ maxWidth: "30%", margin: "20px 0" }}
+    />
+  </div>
 
-### Track Allocations
+## Troubleshooting
 
-| Track              | Prize Share | Compute | Gemini API | BigQuery | Total |
-| ------------------ | ----------- | ------- | ---------- | -------- | ----- |
-| Social AI Agent    | 20%         | $250    | $100       | $100     | $450  |
-| RAG Knowledge      | 25%         | $250    | $100       | $600     | $950  |
-| AI x DeFi          | 35%         | $250    | $100       | $400     | $750  |
-| Consensus Learning | 20%         | $250    | $100       | $300     | $650  |
-
-**Important Notes:**
-
-- Total credits required: ~$3,000
-- Buffer allocation: 100% ($6,000 total)
-- Resources monitored via Billing → Budget & Alerts
-- Consumption tracked per service
-
-## 4. Service Usage Guidelines
-
-### 4.1. BigQuery Usage
-
-- 50% team activity at any time
-- Free tier (1 TiB) distributed equally
-- 48-hour usage period
-- Query patterns vary by track
-- Storage costs not included
-
-### 4.2. Gemini API Usage
-
-- Uses Gemini 1.5 Flash pricing
-- 50% team activity rate
-- 48-hour usage distribution
-- Standard pricing (no long context)
-- No context caching included
-- No Google Search grounding
-
-### 4.3. Compute Resource Usage
-
-- Confidential Compute: $0.123/hour per instance
-- Total hourly cost: $15.65 (125 teams)
-- 48-hour duration: $750
-- Rounded to $1,000 with equal track distribution
+- **VM Creation Fails**
+  - Verify project permissions
+  - Check quota limits
+  - Ensure correct service account access
+- **API Key Issues**
+  - Confirm project selection
+  - Verify key format
+  - Check access restrictions
+- **Container Startup Problems**
+  - Review metadata configuration
+  - Check image URL validity
+  - Verify environment variables
