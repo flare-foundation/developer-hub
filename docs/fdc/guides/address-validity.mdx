@@ -58,36 +58,43 @@ The names of included contracts mostly mirror the steps described in the [FDC gu
 To bridge the separate script executions, we will save the relevant data of each script to a file in the `dirPath` folder.
 Each succeeding script will then read that file to load the data.
 
-## 1.1. Preparing the request
+## 1.1. Preparing the Request
 
-The JSON request to the verifier is the same form for all attestation types, but the values of the fields differ between them.
-It contains the following fields.
+A JSON request to the verifier follows the same structure for all attestation types, with field values varying per type.
 
-- `attestationType` is the UTF8 hex string encoding of the attestation type name, zero-padded to 32 bytes.
-- `sourceId` is the UTF8 hex string encoding of the data source identifier name, zero-padded to 32 bytes.
-- `requestBody` is different for each attestation type.
+### Required Fields
 
-In the case of `AddressValidity`, `requestBody` is a JSON containing only a single field, `addressString`.
-We can find the required fields in the [specification](https://gitlab.com/flarenetwork/docs-team/flare-specs/-/blob/main/src/FDC/AttestationTypes/AddressValidity.md?ref_type=heads) for the `AddressValidity` attestation type.
-Alternatively, we can check the verifier's [interactive docs](https://fdc-verifiers-testnet.flare.network/verifier/btc/api-doc#/AddressValidity/BTCAddressValidityVerifierController_prepareRequest).
-Here we can also check the verifier's response by providing the necessary data.
-Though the URLs are slightly different, the verifier has the same API for both [DOGE](https://fdc-verifiers-testnet.flare.network/verifier/doge/api-doc#/AddressValidity/BTCAddressValidityVerifierController_prepareRequest) and [XRP](https://fdc-verifiers-testnet.flare.network/verifier/xrp/api-doc#/AddressValidity/BTCAddressValidityVerifierController_prepareRequest).
+- `attestationType`: UTF8 hex string encoding of the attestation type name, zero-padded to 32 bytes.
+- `sourceId`: UTF8 hex string encoding of the data source identifier name, zero-padded to 32 bytes.
+- `requestBody`: Specific to each attestation type.
 
-In our example, the values we will be using are:
+For `AddressValidity`, `requestBody` contains a single field:
 
-- `attestationType`: UTF8 hex string encoding of `AddressValidity`, zero-padded to 32 bytes
-- `sourceId`: UTF8 hex string encoding of `testBTC`, zero-padded to 32 bytes.
-  Here, the prefix "test" signifies that we will be accessing an address on the Bitcoin testchain.
-  Since this is a demo, we will only deploy our contract on one of the Flare testchains (either Coston or Coston2); these only allow for lookup on the corresponding testchains.
-  To access other chains replace `testBTC` with `testDOGE` or `testXRP`.
-- `addressString`: the afore-mentioned address `mg9P9f4wr9w7c1sgFeiTC5oMLYXCc2c7hs`.
+- `addressString`: The address to verify.
 
-To produce the UTF8 hex string encoding of a given value, we define the `toUtf8HexString` and `toHexString` helper functions.
-In the [example repository](https://github.com/flare-foundation/flare-foundry-starter), these are shipped within the [Base](https://github.com/flare-foundation/flare-foundry-starter/blob/master/script/fdcExample/Base.s.sol) library, since all attestation type examples make use of them.
-But you may as well define them within the same contract or within the same file.
+### Reference Documentation
 
-The first function translates a string to a UTF8 encoded hex string.
-The other then zero-right-pads such a string, so that it is 32 bytes long.
+- [AddressValidity Specification](https://gitlab.com/flarenetwork/docs-team/flare-specs/-/blob/main/src/FDC/AttestationTypes/AddressValidity.md?ref_type=heads)
+- [Verifier Interactive Docs](https://fdc-verifiers-testnet.flare.network/verifier/btc/api-doc#/AddressValidity/BTCAddressValidityVerifierController_prepareRequest)
+- API available for [DOGE](https://fdc-verifiers-testnet.flare.network/verifier/doge/api-doc#/AddressValidity/BTCAddressValidityVerifierController_prepareRequest) and [XRP](https://fdc-verifiers-testnet.flare.network/verifier/xrp/api-doc#/AddressValidity/BTCAddressValidityVerifierController_prepareRequest).
+
+### Example Values
+
+- `attestationType`: UTF8 hex encoding of `AddressValidity`, zero-padded to 32 bytes.
+- `sourceId`: UTF8 hex encoding of `testBTC`, zero-padded to 32 bytes.
+  - `"test"` prefix denotes Bitcoin testnet.
+  - Supports deployment on Flare testchains (`Coston` or `Coston2`).
+  - Replace `testBTC` with `testDOGE` or `testXRP` for other chains.
+- `addressString`: `mg9P9f4wr9w7c1sgFeiTC5oMLYXCc2c7hs`.
+
+### Encoding Functions
+
+To encode values into UTF8 hex:
+
+- `toUtf8HexString`: Converts a string to UTF8 hex.
+- `toHexString`: Zero-right-pads the string to 32 bytes.
+
+These functions are included in the [Base library](https://github.com/flare-foundation/flare-foundry-starter/blob/master/script/fdcExample/Base.s.sol) within the [example repository](https://github.com/flare-foundation/flare-foundry-starter), but they can also be defined locally in your contract or script.
 
 ```solidity title="scrip/fdcExample/Base.s.sol"
 function toHexString(
@@ -266,7 +273,7 @@ forge script script/fdcExample/AddressValidity.s.sol:PostRequest --private-key $
 The prerequisite for this is that the `.env` file is not missing the `PRIVATE KEY` and `COSTON2_RPC_URL` values.
 The script can also access other chains; that can be achieved by replacing the `--rpc-url` value with `COSTON_RPC_URL`, `FLARE_RPC_URL`, or `SONGBIRD_RPC_URL`.
 
-## 1.2. Posting the request to a verifier server.
+## 1.2. Posting the Request to a Verifier Server
 
 Before submitting address validation requests to the FDC protocol, we first need to prepare and send them to a verifier server.
 This section walks through the request submission process using the `surl` package.
@@ -348,85 +355,95 @@ Let's break it down line by line:
 
 What this demonstrates is that, with some effort, the `abiEncodedRequest` can be constructed manually.
 
-## 2. Submitting the request to the FDC.
+## 2. Submitting the Request to the FDC
 
-In contrast to the previous steps, which took many lines of code that required little explanation, we really need only five to submit the request to the `FdcHub` protocol, but all of them require a closer look.
+This step transitions from off-chain request preparation to on-chain interaction with the FDC protocol. Now, we submit the validated request to the blockchain using deployed smart contracts.
 
-:::note
-This step marks our transition from off-chain preparation to on-chain interaction with the FDC protocol.
-We will now submit our validated request to the blockchain using deployed smart contracts.
-:::
+### Submitting the Request
 
-```solidity title="scrip/fdcExample/Base.s.sol"
+The entire submission process requires only five key steps:
+
+```solidity title="script/fdcExample/Base.s.sol"
 function submitAttestationRequest(
- AttestationResponse memory response
+    AttestationResponse memory response
 ) internal {
- uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
- vm.startBroadcast(deployerPrivateKey);
- IFdcRequestFeeConfigurations fdcRequestFeeConfigurations = ContractRegistry
- .getFdcRequestFeeConfigurations();
- uint256 requestFee = fdcRequestFeeConfigurations.getRequestFee(
- response.abiEncodedRequest
- );
- console.log("request fee: %s\n", requestFee);
- vm.stopBroadcast();
+    uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+    vm.startBroadcast(deployerPrivateKey);
 
- vm.startBroadcast(deployerPrivateKey);
+    IFdcRequestFeeConfigurations fdcRequestFeeConfigurations = ContractRegistry
+        .getFdcRequestFeeConfigurations();
+    uint256 requestFee = fdcRequestFeeConfigurations.getRequestFee(
+        response.abiEncodedRequest
+    );
+    console.log("request fee: %s\n", requestFee);
+    vm.stopBroadcast();
 
- IFdcHub fdcHub = ContractRegistry.getFdcHub();
- console.log("fcdHub address:");
- console.log(address(fdcHub));
- console.log("\n");
- fdcHub.requestAttestation{value: requestFee}(response.abiEncodedRequest);
- vm.stopBroadcast();
+    vm.startBroadcast(deployerPrivateKey);
+
+    IFdcHub fdcHub = ContractRegistry.getFdcHub();
+    console.log("fcdHub address:");
+    console.log(address(fdcHub));
+    console.log("\n");
+
+    fdcHub.requestAttestation{value: requestFee}(response.abiEncodedRequest);
+    vm.stopBroadcast();
 }
 ```
 
-First of all, we read the private key of our account from a `.env` file using a Foundry shortcode:
+### Step-by-Step Breakdown
+
+1.  Load Private Key
+    The private key is read from the `.env` file using Foundry’s `envUint` function:
 
 ```solidity
-uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+       uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 ```
 
-We then broadcast all the code enveloped between `vm.startBroadcast` and `vm.stopBroadcast` shortcodes, to the chain (the console command parameter `--rpc-url` determines which one).
-
-To acquire access to the `FcdHub` contract, we first import the `ContractRegistry` library from the `flare-periphery` package.
-The purpose of this library is to provide getter functions for the most commonly used Flare contracts.
-It calls the `getContractAddressByName("FdcHub")` function of the `ContractRegistry` contract, deployed on the correct address.
-
-We assign the `FcdHub` to a variable, and declare its type as `IFcdHub` (we must import this interface separately).
-
-Finally, we can call the `requestAttestation` method of this contract.
-But, to execute the transaction, we must pay a certain amount of ether to the contract.
-To obtain the exact amount, we call on another contract from the `ContractRegistry` library.
+2.  Obtain Request Fee
+    We retrieve the required requestFee from the `FdcRequestFeeConfigurations` contract:
 
 ```solidity
-IFdcRequestFeeConfigurations fdcRequestFeeConfigurations = ContractRegistry
- .getFdcRequestFeeConfigurations();
- uint256 requestFee = fdcRequestFeeConfigurations.getRequestFee(
- response.abiEncodedRequest
- )
+        IFdcRequestFeeConfigurations fdcRequestFeeConfigurations = ContractRegistry
+            .getFdcRequestFeeConfigurations();
+        uint256 requestFee = fdcRequestFeeConfigurations.getRequestFee(
+            response.abiEncodedRequest
+        );
+
 ```
 
-We do so within a separate broadcast so that the value `requestFee` is available to us when we post the request.
+    This is done in a separate broadcast to ensure `requestFee` is available before submitting the request.
+
+3. Access `FdcHub` Contract
+   Using the `ContractRegistry` library (from `flare-periphery`), we fetch the `FdcHub` contract:
 
 ```solidity
-fdcHub.requestAttestation{value: requestFee}(response.abiEncodedRequest);
+   IFdcHub fdcHub = ContractRegistry.getFdcHub();
+   console.log("fcdHub address:");
+   console.log(address(fdcHub));
+   console.log("\n");
 ```
 
-Next, we calculate the voting round number in which the above attestation request takes place.
-We do so through the `FlareSystemsManager` contract, which we acquire the same way as we did `FdcHub`.
+4. Submit the Attestation Request
+   We send the attestation request with the required fee:
 
 ```solidity
-// Calculating roundId
-IFlareSystemsManager flareSystemsManager = ContractRegistry
- .getFlareSystemsManager();
-
-uint32 roundId = flareSystemsManager.getCurrentVotingEpochId();
-console.log("roundId: %s\n", Strings.toString(roundId));
+ fdcHub.requestAttestation{value: requestFee}(response.abiEncodedRequest);
 ```
 
-We can either do that within the previous broadcast or start a new one (in the demo repository, we chose the second option, because it allowed us to organize the code better).
+5.  Calculate Voting Round Number
+    To determine the voting round in which the attestation request is processed, we query the `FlareSystemsManager` contract:
+
+```solidity
+       // Calculating roundId
+       IFlareSystemsManager flareSystemsManager = ContractRegistry
+           .getFlareSystemsManager();
+
+       uint32 roundId = flareSystemsManager.getCurrentVotingEpochId();
+       console.log("roundId: %s\n", Strings.toString(roundId));
+
+```
+
+This can be done within the existing broadcast or in a new one (as done in the demo repository for better code organization).
 
 ## 3.1. Waiting for the response
 
