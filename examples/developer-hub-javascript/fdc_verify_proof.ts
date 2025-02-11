@@ -20,7 +20,7 @@ async function submitProof() {
 }
 
 submitProof()
-  .then((data) => {
+  .then(() => {
     console.log("Submitted proof");
   })
   .catch((e) => {

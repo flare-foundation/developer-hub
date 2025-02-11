@@ -6,7 +6,7 @@ const firstVotingRoundStartTs = 1658429955;
 const votingEpochDurationSeconds = 90;
 
 // Valid only on coston. In production get the address from the ContractRegistry
-const FDC_HUB_ADDRESS = "0x1c78A073E3BD2aCa4cc327d55FB0cD4f0549B55b"; 
+const FDC_HUB_ADDRESS = "0x1c78A073E3BD2aCa4cc327d55FB0cD4f0549B55b";
 
 async function submitRequest() {
   const requestData = await prepareRequest();

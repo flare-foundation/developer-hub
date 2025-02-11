@@ -1,7 +1,7 @@
 // Simple hex encoding
 function toHex(data) {
-  var result = "";
-  for (var i = 0; i < data.length; i++) {
+  let result = "";
+  for (let i = 0; i < data.length; i++) {
     result += data.charCodeAt(i).toString(16);
   }
   return result.padEnd(64, "0");
@@ -28,11 +28,11 @@ async function prepareRequest() {
     },
   };
   const response = await fetch(
-    `${BASE_URL}verifier/eth/EVMTransaction/prepareRequest`,
+    `${VERIFIER_BASE_URL}verifier/eth/EVMTransaction/prepareRequest`,
     {
       method: "POST",
       headers: {
-        "X-API-KEY": API_KEY,
+        "X-API-KEY": VERIFIER_API_KEY,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(requestData),
