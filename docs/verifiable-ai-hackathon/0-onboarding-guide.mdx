@@ -22,31 +22,32 @@ import AddMetaData from "/static/img/verifiable-ai-hackathon/add-metadata.png";
 
 This guide provides all necessary steps to get onboarded for the **Verifiable AI Hackathon**. Participants will set up their **Google Cloud infrastructure**, acquire necessary **API keys**, and deploy their **Confidential Compute VMs**.
 
-## 1. Setup
+## 1. Initial Setup
 
-1. **Google Account**
+### 1.1. Google Account
 
-   - Create or use an existing Google account
-   - This account will be used for all hackathon resources
+- Create or use an existing Google account
+- This account will be used for all hackathon resources
 
-2. **Project Registration**
+### 1.2. Project Registration
 
-   - Submit your email address during registration
-   - The Flare Infra Team will onboard you to `google-hackathon-project`
+- Submit your email address during registration
+- The Flare Infra Team will onboard you to `google-hackathon-project`
 
-3. **Gemini API Key**
+### 1.3. Gemini API Key
 
-   1. Navigate to [Get a Gemini API key in Google AI Studio](https://aistudio.google.com/app/apikey)
-   2. Click on "Create API key"
-   3. Select `google-hackathon-project` from the dropdown
-   4. Click "Create API key in existing project"
+1. Navigate to [Get a Gemini API key in Google AI Studio](https://aistudio.google.com/app/apikey)
+2. Click on "Create API key"
+3. Select `google-hackathon-project` from the dropdown
+4. Click "Create API key in existing project"
 
-4. **VM Instance Creation**
-   - Choose between CLI or Console setup methods below
+### 1.4. VM Instance Creation
+
+Choose between CLI or Console setup methods detailed in Section 2.
 
 ## 2. VM Instance Setup Methods
 
-### Option A: Using gcloud CLI (Recommended)
+### 2.1. Option A: Using gcloud CLI (Recommended)
 
 Follow these steps to set up a GCP instance using Confidential Space with Cloud Logging.
 
@@ -86,7 +87,7 @@ Follow these steps to set up a GCP instance using Confidential Space with Cloud 
    - `<ENV_VAR_VALUE1>`: First environment variable value
    - Add additional environment variables as needed
 
-### Option B: Using GCP Console
+### 2.2. Option B: Using GCP Console
 
 Follow these steps to set up a GCP instance using the web console.
 
@@ -95,71 +96,108 @@ Follow these steps to set up a GCP instance using the web console.
    - Go to the [GCP Console](https://console.cloud.google.com/)
    - Click "Create Instance"
 
-   {" "}
+   <div align="center">
+     <img
+       src={CreateInstance}
+       alt="Create Instance Button"
+       style={{ maxWidth: "80%", margin: "20px 0" }}
+     />
+   </div>
 
-   <img src={CreateInstance} />
+2. **Configure Machine Settings**
 
-2. **Configure Machine**
+   a. **Basic Settings:**
 
-   1. Basic Settings:
+   - Name: `<project-name>-<team-name>` (e.g., agent-gemini-john)
+   - Region: us-west2
+   - Machine Type: n2d-standard-2 (2 vCPU, 1 core, 8 GB memory)
 
-      - Name: `<project-name>-<team-name>` (e.g., agent-gemini-john)
-      - Region: us-west2
-      - Machine Type: n2d-standard-2 (2 vCPU, 1 core, 8 GB memory)
+   <div align="center">
+     <img
+       src={MachineConfiguration}
+       alt="Machine Configuration"
+       style={{ maxWidth: "80%", margin: "20px 0" }}
+     />
+   </div>
 
-      <img src={MachineConfiguration} />
+   b. **Security Settings:**
 
-   2. Security Settings:
+   - Service account: confidential-sa
+   - Access scopes: "Allow full access to Cloud APIs"
+   - Confidential VM service: Enable
+   - Shielded VM: Check "Turn on Secure Boot"
 
-      - Service account: confidential-sa
-      - Access scopes: "Allow full access to Cloud APIs"
-      - Confidential VM service: Enable
-      - Shielded VM: Check "Turn on Secure Boot"
+   <div align="center">
+     <img
+       src={Security}
+       alt="Security Settings"
+       style={{ maxWidth: "80%", margin: "20px 0" }}
+     />
+   </div>
 
-      <img src={Security} />
+   c. **OS and Storage:**
 
-   3. OS and Storage:
+   1. Click "Change"
+   2. Select "Confidential Space Debug 240900"
+   3. Keep other values default
+   4. Click "Select"
 
-      1. Click "Change"
-      2. Select "Confidential Space Debug 240900"
-      3. Keep other values default
-      4. Click "Select"
+   <div align="center">
+     <img
+       src={OsAndStorage}
+       alt="OS and Storage Configuration"
+       style={{ maxWidth: "80%", margin: "20px 0" }}
+     />
+   </div>
 
-      <img src={OsAndStorage} />
+   d. **Networking:**
 
-   4. Networking:
+   - Enable "Allow HTTPS traffic"
 
-      - Enable "Allow HTTPS traffic"
+   <div align="center">
+     <img
+       src={Networking}
+       alt="Networking Configuration"
+       style={{ maxWidth: "80%", margin: "20px 0" }}
+     />
+   </div>
 
-      <img src={Networking} />
+   e. **Advanced Settings:**
 
-   5. Advanced Settings:
+   1. Click "Add Item" under Metadata
+   2. Add the following items:
+      ```bash
+      tee-image-reference: <ghcr.io/john/agent-gemini:main>
+      tee-container-log-redirect: cloud_logging
+      ```
+   3. Additional API keys should be prefixed with `tee-env-`
 
-      1. Click "Add Item" under Metadata
-      2. Add the following items:
+   <div align="center">
+     <img
+       src={AddMetaData}
+       alt="Add Metadata Configuration"
+       style={{ maxWidth: "80%", margin: "20px 0" }}
+     />
+   </div>
 
-         ```bash
-         tee-image-reference: <ghcr.io/john/agent-gemini:main>
-         tee-container-log-redirect: cloud_logging
-         ```
-
-      3. Additional API keys should be prefixed with `tee-env-`
-
-      <img src={AddMetaData} />
-
-3. **Launch Instance**
+3. **Launch and Monitor Instance**
 
    - Click "Create" to start the VM
    - Monitor progress:
+     1. System logs: Click "Serial Port (console)"
+     2. Container logs: Click "Logging" after startup
 
-     - System logs: Click "Serial Port (console)"
-     - Container logs: Click "Logging" after startup
+   <div align="center">
+     <img
+       src={FinalStep}
+       alt="Final Step Configuration"
+       style={{ maxWidth: "80%", margin: "20px 0" }}
+     />
+   </div>
 
-     <img src={FinalStep} />
+## 3. Resource Allocation
 
-## Resource Allocation
-
-The hackathon provides the following resource allocations per track:
+### Track Allocations
 
 | Track              | Prize Share | Compute | Gemini API | BigQuery | Total |
 | ------------------ | ----------- | ------- | ---------- | -------- | ----- |
@@ -168,16 +206,16 @@ The hackathon provides the following resource allocations per track:
 | AI x DeFi          | 35%         | $250    | $100       | $400     | $750  |
 | Consensus Learning | 20%         | $250    | $100       | $300     | $650  |
 
-**Notes:**
+**Important Notes:**
 
 - Total credits required: ~$3,000
 - Buffer allocation: 100% ($6,000 total)
 - Resources monitored via Billing → Budget & Alerts
 - Consumption tracked per service
 
-## Service Usage Assumptions
+## 4. Service Usage Guidelines
 
-### BigQuery Usage
+### 4.1. BigQuery Usage
 
 - 50% team activity at any time
 - Free tier (1 TiB) distributed equally
@@ -185,7 +223,7 @@ The hackathon provides the following resource allocations per track:
 - Query patterns vary by track
 - Storage costs not included
 
-### Gemini API Usage
+### 4.2. Gemini API Usage
 
 - Uses Gemini 1.5 Flash pricing
 - 50% team activity rate
@@ -194,7 +232,7 @@ The hackathon provides the following resource allocations per track:
 - No context caching included
 - No Google Search grounding
 
-### Compute Resource Usage
+### 4.3. Compute Resource Usage
 
 - Confidential Compute: $0.123/hour per instance
 - Total hourly cost: $15.65 (125 teams)
