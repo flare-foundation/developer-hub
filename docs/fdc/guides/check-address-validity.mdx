@@ -1,378 +1,692 @@
 ---
-title: Check address validity
+title: Check Address Validity
 authors: [lukaavbreht, filipkoprivec]
-description: Check the validity of a Bitcoin, Dogecoin or XRPL address.
+description: Check the validity of a Bitcoin, Dogecoin, or XRPL address.
 tags: [intermediate, ethereum, fdc]
 keywords: [ethereum, flare-data-connector, evm, flare-network]
-sidebar_position: 1
-unlisted: true
+sidebar_position: 3
+unlisted: false
 ---
 
-This guide focuses on the [AddressValidity](/fdc/attestation-types/address-validity) attestation type, a straightforward and efficient way to verify the validity of a string as an address on a specified blockchain.
-The primary contract interface for this attestation type is [`IAddressValidity`](/fdc/reference/IFdcHub).
+The [AddressValidity](/fdc/attestation-types/address-validity) attestation type validates whether a string represents a valid address on supported blockchain networks (`BTC`, `DOGE`, and `XRP`).
+This validation ensures addresses meet chain-specific formatting and checksum requirements before they're used in transactions or smart contracts.
+The full specification is available on the official [specification repo](https://github.com/flare-foundation/flare-specs/blob/main/src/FDC/AttestationTypes/AddressValidity.md).
 
-AddressValidity is a simple and efficient solution for address verification. It does not require proving a transaction, which significantly reduces on-chain overhead. Instead, the computation for verifying an address is delegated to an off-chain verifier, ensuring that expensive computations are handled outside the blockchain. This approach is particularly useful for scenarios where address validity needs to be confirmed before further integration.
+The primary contract interface for this attestation type is [`IAddressValidity`](/fdc/reference/IFdcHub). Let's walk through validating a Bitcoin testnet address using the FDC protocol.
+We will use the address `mg9P9f4wr9w7c1sgFeiTC5oMLYXCc2c7hs` as an example throughout this guide.
+You can swap this with any valid testnet address from the supported chains.
+You can follow this tutorial with any other valid address - just make sure it is a valid testnet address.
 
-For example, in the case of FAssets, it is essential to validate an address before it can be used within the protocol. By leveraging AddressValidity attestations, complex and resource-intensive computations, such as verifying the validity of a Bitcoin address, can be offloaded to off-chain entities.
+This validation process works identically for `BTC`, `DOGE`, and `XRP` addresses, with only minor chain-specific parameter adjustments which we'll highlight throughout the guide.
 
-:::warning[Testnet and Mainnet]
+In this guide, we will follow the steps outlined in the [FDC overview](/fdc/overview).
 
-Bitcoin and Dogecoin have different rules for validity on the mainnet and testnet, so make sure to check the correct specification with the correct verifier.
+Our implementation requires handling the FDC voting round finalization process.
+To manage this, we will create separate scripts in `script/fdcExample/AddressValidity.s.sol` that handle different stages of the validation process:
+
+```solidity title="scrip/fdcExample/AddressValidity.s.sol"
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.25;
+
+import {Script} from "dependencies/forge-std-1.9.5/src/Script.sol";
+...
+
+// Configuration constants
+string constant attestationTypeName = "AddressValidity";
+string constant dirPath = "data/";
+
+contract PrepareAttestationRequest is Script {
+ ...
+}
+
+contract SubmitAttestationRequest is Script {
+ ...
+}
+
+contract RetrieveDataAndProof is Script {
+ ...
+}
+
+contract Deploy is Script {
+ ...
+}
+...
+```
+
+The names of included contracts mostly mirror the steps described in the [FDC overview](/fdc/overview).
+
+To bridge the separate script executions, we will save the relevant data of each script to a file in the `dirPath` folder.
+Each succeeding script will then read that file to load the data.
+
+## Preparing the Request
+
+A JSON request to the verifier follows the same structure for all attestation types, with field values varying per type.
+
+### Required Fields
+
+- `attestationType`: UTF8 hex string encoding of the attestation type name, zero-padded to 32 bytes.
+- `sourceId`: UTF8 hex string encoding of the data source identifier name, zero-padded to 32 bytes.
+- `requestBody`: Specific to each attestation type.
+
+For `AddressValidity`, `requestBody` contains a single field:
+
+- `addressString`: The address to verify.
+
+### Reference Documentation
+
+- [AddressValidity Specification](https://gitlab.com/flarenetwork/docs-team/flare-specs/-/blob/main/src/FDC/AttestationTypes/AddressValidity.md?ref_type=heads)
+- [Verifier Interactive Docs](https://fdc-verifiers-testnet.flare.network/verifier/btc/api-doc#/AddressValidity/BTCAddressValidityVerifierController_prepareRequest)
+- API available for [DOGE](https://fdc-verifiers-testnet.flare.network/verifier/doge/api-doc#/AddressValidity/BTCAddressValidityVerifierController_prepareRequest) and [XRP](https://fdc-verifiers-testnet.flare.network/verifier/xrp/api-doc#/AddressValidity/BTCAddressValidityVerifierController_prepareRequest).
+
+### Example Values
+
+- `attestationType`: UTF8 hex encoding of `AddressValidity`, zero-padded to 32 bytes.
+- `sourceId`: UTF8 hex encoding of `testBTC`, zero-padded to 32 bytes.
+  - `"test"` prefix denotes Bitcoin testnet.
+  - Supports deployment on Flare testchains (`Coston` or `Coston2`).
+  - Replace `testBTC` with `testDOGE` or `testXRP` for other chains.
+- `addressString`: `mg9P9f4wr9w7c1sgFeiTC5oMLYXCc2c7hs`.
+
+### Encoding Functions
+
+To encode values into UTF8 hex:
+
+- `toUtf8HexString`: Converts a string to UTF8 hex.
+- `toHexString`: Zero-right-pads the string to 32 bytes.
+
+These functions are included in the [Base library](https://github.com/flare-foundation/flare-foundry-starter/blob/master/script/fdcExample/Base.s.sol) within the [example repository](https://github.com/flare-foundation/flare-foundry-starter), but they can also be defined locally in your contract or script.
+
+```solidity title="scrip/fdcExample/Base.s.sol"
+function toHexString(
+ bytes memory data
+) public pure returns (string memory) {
+ bytes memory alphabet = "0123456789abcdef";
+
+ bytes memory str = new bytes(2 + data.length * 2);
+ str[0] = "0";
+ str[1] = "x";
+ for (uint i = 0; i < data.length; i++) {
+ str[2 + i * 2] = alphabet[uint(uint8(data[i] >> 4))];
+ str[3 + i * 2] = alphabet[uint(uint8(data[i] & 0x0f))];
+ }
+ return string(str);
+}
+```
+
+```solidity title="scrip/fdcExample/Base.s.sol"
+function toUtf8HexString(
+ string memory _string
+) internal pure returns (string memory) {
+ string memory encodedString = toHexString(
+ abi.encodePacked(_string)
+ );
+ uint256 stringLength = bytes(encodedString).length;
+ require(stringLength <= 64, "String too long");
+ uint256 paddingLength = 64 - stringLength + 2;
+ for (uint256 i = 0; i < paddingLength; i++) {
+ encodedString = string.concat(encodedString, "0");
+ }
+ return encodedString;
+}
+```
+
+We also define a helper function for formatting data into a JSON string.
+
+```solidity title="scrip/fdcExample/Base.s.sol"
+function prepareAttestationRequest(
+ string memory attestationType,
+ string memory sourceId,
+ string memory requestBody
+) internal view returns (string[] memory, string memory) {
+ // We read the API key from the .env file
+ string memory apiKey = vm.envString("VERIFIER_API_KEY");
+
+ // Preparing headers
+ string[] memory headers = prepareHeaders(apiKey);
+ // Preparing body
+ string memory body = prepareBody(
+ attestationType,
+ sourceId,
+ requestBody
+ );
+
+ console.log(
+ "headers: %s",
+ string.concat("{", headers[0], ", ", headers[1]),
+ "}\n"
+ );
+ console.log("body: %s\n", body);
+ return (headers, body);
+}
+
+function prepareHeaders(
+ string memory apiKey
+) internal pure returns (string[] memory) {
+ string[] memory headers = new string[](2);
+ headers[0] = string.concat('"X-API-KEY": ', apiKey);
+ headers[1] = '"Content-Type": "application/json"';
+ return headers;
+}
+
+function prepareBody(
+ string memory attestationType,
+ string memory sourceId,
+ string memory body
+) internal pure returns (string memory) {
+ return
+ string.concat(
+ '{"attestationType": ',
+ '"',
+ attestationType,
+ '"',
+ ', "sourceId": ',
+ '"',
+ sourceId,
+ '"',
+ ', "requestBody": ',
+ body,
+ "}"
+ );
+}
+
+```
+
+In the example repository, these are once again included within the [Base](https://github.com/flare-foundation/flare-foundry-starter/blob/master/script/fdcExample/Base.s.sol) library file.
+
+Thus, the part of the script that prepares the verifier request looks like:
+
+```solidity title="scrip/fdcExample/AddressValidity.s.sol"
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.25;
+
+import {console} from "dependencies/forge-std-1.9.5/src/console.sol";
+import {Script} from "dependencies/forge-std-1.9.5/src/Script.sol";
+import {Base} from "./Base.s.sol";
+...
+
+string constant attestationTypeName = "AddressValidity";
+string constant dirPath = "data/";
+
+contract PrepareAttestationRequest is Script {
+ using Surl for *;
+
+ // Setting request data
+ string public addressStr = "mg9P9f4wr9w7c1sgFeiTC5oMLYXCc2c7hs"; // Id of the Bitcoin address to be validated
+ string public baseSourceName = "btc"; // Part of verifier URL
+ string public sourceName = "testBTC"; // Bitcoin chain ID
+
+ function prepareRequestBody(
+ string memory addressStr
+ ) private pure returns (string memory) {
+ return string.concat('{"addressStr": "', addressStr, '"}');
+ }
+
+ function run() external {
+ // Preparing request data
+ string memory attestationType = Base.toUtf8HexString(
+ attestationTypeName
+ );
+ string memory sourceId = Base.toUtf8HexString(sourceName);
+ string memory requestBody = prepareRequestBody(addressStr);
+ (string[] memory headers, string memory body) = Base
+ .prepareAttestationRequest(attestationType, sourceId, requestBody);
+
+ // TODO change key in .env
+ // string memory baseUrl = "https://testnet-verifier-fdc-test.aflabs.org/";
+ string memory baseUrl = vm.envString("VERIFIER_URL_TESTNET");
+ string memory url = string.concat(
+ baseUrl,
+ "verifier/",
+ baseSourceName,
+ "/",
+ attestationTypeName,
+ "/prepareRequest"
+ );
+ console.log("url: %s", url);
+
+ (string[] memory headers, string memory body) = prepareAttestationRequest(attestationType, sourceId, requestBody);
+
+ ...
+ }
+}
+
+...
+```
+
+If you are accessing a different chain, replace the `baseSourceName` with an appropriate value, `doge` or `xrp`.
+
+The code above differs slightly from the [starter example](https://github.com/flare-foundation/flare-foundry-starter).
+But, if we remove the ellipses `...` signifying missing code, we can still run the script.
+
+Because of the `console.log` commands it will produce JSON strings that represent valid requests; we can then pass this to the [interactive verifier](https://fdc-verifiers-testnet.flare.network/verifier/btc/api-doc#/AddressValidity/BTCAddressValidityVerifierController_prepareRequest) to check what the response is.
+
+We can run the script by calling the following commands in the console.
+
+```bash
+source .env
+```
+
+```bash
+forge script script/fdcExample/AddressValidity.s.sol:PostRequest --private-key $PRIVATE_KEY --rpc-url $COSTON2_RPC_URL --etherscan-api-key $FLARE_API_KEY --broadcast  --ffi
+```
+
+The prerequisite for this is that the `.env` file is not missing the `PRIVATE KEY` and `COSTON2_RPC_URL` values.
+The script can also access other chains; that can be achieved by replacing the `--rpc-url` value with `COSTON_RPC_URL`, `FLARE_RPC_URL`, or `SONGBIRD_RPC_URL`.
+
+## Posting the Request to a Verifier Server
+
+Before submitting address validation requests to the FDC protocol, we first need to prepare and send them to a verifier server.
+This section walks through the request submission process using the `surl` package.
+We place `using Surl for *;` at the start of our `PostRequest` contract, and then call its `post` method on the verifier URL.
+
+```solidity title="scrip/fdcExample/AddressValidity.s.sol"
+(, bytes memory data) = url.post(headers, body);
+```
+
+We construct the URL by appending to the verifier address `https://fdc-verifiers-testnet.flare.network/` the path `verifier/btc/AddressValidity/prepareRequest`.
+We can do so dynamically with the following code.
+
+```solidity title="scrip/fdcExample/AddressValidity.s.sol"
+string memory baseUrl = "https://fdc-verifiers-testnet.flare.network/";
+string memory url = string.concat(
+ baseUrl,
+ "verifier/",
+ baseSourceName,
+ "/",
+ attestationTypeName,
+ "/prepareRequest"
+);
+console.log("url: %s", url);
+string memory requestBody = string.concat(
+ '{"addressStr": "',
+ addressStr,
+ '"}'
+);
+```
+
+Lastly, we parse the return data from the verifier server.
+Using the Foundry `parseJson` shortcode, and a custom struct `AttestationResponse`, we decode the returned data and extract from it the ABI encoded request.
+
+```solidity title="scrip/fdcExample/Base.s.sol"
+function parseAttestationRequest(
+ bytes memory data
+) internal pure returns (AttestationResponse memory) {
+ string memory dataString = string(data);
+ bytes memory dataJson = vm.parseJson(dataString);
+
+ AttestationResponse memory response = abi.decode(
+ dataJson,
+ (AttestationResponse)
+ );
+
+ console.log("response status: %s\n", response.status);
+ console.log("response abiEncodedRequest: ");
+ console.logBytes(response.abiEncodedRequest);
+ console.log("\n");
+
+ return response;
+}
+```
+
+:::info
+
+If everything went right, the `abiEncodedRequest` should look something like this.
+
+```
+0x
+4164647265737356616c69646974790000000000000000000000000000000000
+7465737442544300000000000000000000000000000000000000000000000000
+7d2ef938d4ffd2392f588bf46563e07ab885b15fead91c1bb99b16f465b71a68
+0000000000000000000000000000000000000000000000000000000000000020
+0000000000000000000000000000000000000000000000000000000000000020
+0000000000000000000000000000000000000000000000000000000000000022
+6d6739503966347772397737633173674665695443356f4d4c59584363326337
+6873000000000000000000000000000000000000000000000000000000000000
+```
+
+Let's break it down line by line:
+
+- **First line:** `toUtf8HexString("AddressValidity")`
+- **Second line:** `toUtf8HexString("testBTC")`
+- **Third line:** message integrity code (MIC), a hash of the whole response salted with a string `"Flare"`, ensures the integrity of the attestation
+- **Remaining lines:** ABI encoded `AddressValidity.RequestBody` Solidity struct
 
 :::
 
-### Type Definition
+What this demonstrates is that, with some effort, the `abiEncodedRequest` can be constructed manually.
 
-```solidity title="AddressValidity.sol"
+## Submitting the Request to the FDC
+
+This step transitions from off-chain request preparation to on-chain interaction with the FDC protocol. Now, we submit the validated request to the blockchain using deployed smart contracts.
+
+### Submitting the Request
+
+The entire submission process requires only five key steps:
+
+```solidity title="script/fdcExample/Base.s.sol"
+function submitAttestationRequest(
+    AttestationResponse memory response
+) internal {
+    uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+    vm.startBroadcast(deployerPrivateKey);
+
+    IFdcRequestFeeConfigurations fdcRequestFeeConfigurations = ContractRegistry
+        .getFdcRequestFeeConfigurations();
+    uint256 requestFee = fdcRequestFeeConfigurations.getRequestFee(
+        response.abiEncodedRequest
+    );
+    console.log("request fee: %s\n", requestFee);
+    vm.stopBroadcast();
+
+    vm.startBroadcast(deployerPrivateKey);
+
+    IFdcHub fdcHub = ContractRegistry.getFdcHub();
+    console.log("fcdHub address:");
+    console.log(address(fdcHub));
+    console.log("\n");
+
+    fdcHub.requestAttestation{value: requestFee}(response.abiEncodedRequest);
+    vm.stopBroadcast();
+}
+```
+
+### Step-by-Step Breakdown
+
+1.  Load Private Key
+    The private key is read from the `.env` file using Foundry’s `envUint` function:
+
+```solidity
+       uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+```
+
+2.  Obtain Request Fee
+    We retrieve the required requestFee from the `FdcRequestFeeConfigurations` contract:
+
+```solidity
+        IFdcRequestFeeConfigurations fdcRequestFeeConfigurations = ContractRegistry
+            .getFdcRequestFeeConfigurations();
+        uint256 requestFee = fdcRequestFeeConfigurations.getRequestFee(
+            response.abiEncodedRequest
+        );
+
+```
+
+    This is done in a separate broadcast to ensure `requestFee` is available before submitting the request.
+
+3. Access `FdcHub` Contract
+   Using the `ContractRegistry` library (from `flare-periphery`), we fetch the `FdcHub` contract:
+
+```solidity
+   IFdcHub fdcHub = ContractRegistry.getFdcHub();
+   console.log("fcdHub address:");
+   console.log(address(fdcHub));
+   console.log("\n");
+```
+
+4. Submit the Attestation Request
+   We send the attestation request with the required fee:
+
+```solidity
+ fdcHub.requestAttestation{value: requestFee}(response.abiEncodedRequest);
+```
+
+5.  Calculate Voting Round Number
+    To determine the voting round in which the attestation request is processed, we query the `FlareSystemsManager` contract:
+
+```solidity
+       // Calculating roundId
+       IFlareSystemsManager flareSystemsManager = ContractRegistry
+           .getFlareSystemsManager();
+
+       uint32 roundId = flareSystemsManager.getCurrentVotingEpochId();
+       console.log("roundId: %s\n", Strings.toString(roundId));
+
+```
+
+This can be done within the existing broadcast or in a new one (as done in the demo repository for better code organization).
+
+## Waiting for the response
+
+We wait for the round to finalize.
+This takes no more than 90 seconds.
+
+You can check if the request was submitted successfully on the [AttestationRequests](https://coston2-systems-explorer.flare.rocks/attestation-request) page on the Flare Systems Explorer website.
+To check if the round has been finalized, go to [Finalizations](https://coston2-systems-explorer.flare.rocks/finalizations) page.
+
+If you want to learn more about how the FDC protocol works, check [here](/fdc/overview).
+
+## Preparing proof request
+
+We prepare the proof request in a similar manner as in the step Preparing the request, by string concatenation.
+We import two new variables from the `.env` file; the URL of a verifier server and the corresponding API key.
+note
+
+```solidity title="scrip/fdcExample/AddressValidity.s.sol"
+string memory daLayerUrl = vm.envString("COSTON2_DA_LAYER_URL");
+string memory apiKey = vm.envString("X_API_KEY");
+```
+
+Also, by repeatedly using the Foundry shortcode `vm.readLine`, we read the data, saved to a file in the previous step, to variables.
+
+```solidity
+string memory votingRoundId = vm.readLine(filePath);
+string memory requestBytes = vm.readLine(filePath);
+```
+
+The code is as follows.
+
+```solidity title="scrip/fdcExample/AddressValidity.s.sol"
+contract RetrieveDataAndProof is Script {
+ using Surl for *;
+
+ function run() external {
+ string memory daLayerUrl = vm.envString("COSTON2_DA_LAYER_URL");
+ string memory apiKey = vm.envString("X_API_KEY");
+ string memory fileName = string.concat(attestationTypeName, ".txt");
+ string memory filePath = string.concat(dirPath, fileName);
+
+ // We import the roundId and abiEncodedRequest from the first file
+ string memory votingRoundId = vm.readLine(filePath);
+ string memory requestBytes = vm.readLine(filePath);
+ console.log("votingRoundId: %s\n", votingRoundId);
+ console.log("requestBytes: %s\n", requestBytes);
+
+ // Preparing the proof request
+ string[] memory headers = prepareHeaders(apiKey);
+ string memory body = string.concat(
+ '{"votingRoundId":',
+ votingRoundId,
+ ',"requestBytes":"',
+ requestBytes,
+ '"}'
+ );
+ console.log("body: %s\n", body);
+ console.log(
+ "headers: %s",
+ string.concat("{", headers[0], ", ", headers[1]),
+ "}\n"
+ );
+
+ ...
+ }
+}
+```
+
+## Posting the proof request to a DA Layer provider
+
+We post the proof request to a chosen DA Layer provider server also with the same code as we did in the previous step.
+
+```solidity title="scrip/fdcExample/AddressValidity.s.sol"
+string memory url = string.concat(
+ daLayerUrl,
+ // "api/v0/fdc/get-proof-round-id-bytes"
+ "api/v1/fdc/proof-by-request-round-raw"
+);
+console.log("url: %s\n", url);
+
+(, bytes memory data) = postAttestationRequest(url, headers, body);
+```
+
+Parsing the returned data requires the definition of an auxiliary `struct`.
+
+{/* <!-- TODO rename after renaming --> */}
+
+```solidity title="scrip/fdcExample/Base.s.sol"
+struct ParsableProof {
+ bytes32 attestationType;
+ bytes32[] proofs;
+ bytes responseHex;
+}
+```
+
+The field `attestationType` holds the UTF8 encoded hex string of the attestation type name, padded to 32 bytes.
+Thus, it should match the value of the `attestationType` parameter in the Preparing the request step.
+In our case, that value is `0x4164647265737356616c69646974790000000000000000000000000000000000`.
+
+The array `proofs` holds the Merkle proofs of our attestation request.
+
+Lastly, `responseHex` is the ABI encoding of the chosen attestation type response struct.
+In this case, it is the `IAddressValidity.Response` struct.
+We retrieve this data as follows.
+
+```solidity title="scrip/fdcExample/AddressValidity.s.sol"
+bytes memory dataJson = Base.parseData(data);
+ParsableProof memory proof = abi.decode(dataJson, (ParsableProof));
+
+IAddressValidity.Response memory proofResponse = abi.decode(
+ proof.responseHex,
+ (IAddressValidity.Response)
+);
+```
+
+## Verifying the proof
+
+FDC optimizes on-chain storage costs by implementing a hybrid data verification system.
+Instead of storing complete datasets on-chain, it stores only Merkle proofs, while maintaining the actual data through trusted off-chain providers.
+This approach significantly reduces gas costs while preserving data integrity.
+
+When requested, data providers supply the original data along with its corresponding Merkle proof.
+The protocol verifies data authenticity by comparing the provided Merkle proof against the on-chain Merkle root.
+A successful match confirms the data's integrity and authenticity within the FDC system.
+
+While data verification is optional if you trust your data provider, FDC ensures transparency by making verification possible at any time.
+This capability is crucial for maintaining system integrity and allowing users to independently verify data when needed, particularly in production environments.
+
+FDC provides verification functionality through the `FdcVerification` contract.
+To verify address validity, we first format our data using the `IAddressValidity.Proof` struct, which contains both the Merkle proof and the response data.
+
+```solidity title="scrip/fdcExample/AddressValidity.s.sol"
+IAddressValidity.Proof memory _proof = IAddressValidity.Proof(
+ proof.proofs,
+ proofResponse
+);
+```
+
+We then access the `FdcVerification` contract through the `ContractRegistry`, and feed it the proof.
+If we proof is valid, the function `verifyAddressValidity` will return `true`, otherwise `false`.
+As before, we wrap the whole thing into a broadcast environment, using the `PRIVATE_KEY` variable from our `.env` file.
+
+```solidity title="scrip/fdcExample/AddressValidity.s.sol"
+uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+vm.startBroadcast(deployerPrivateKey);
+
+bool isValid = ContractRegistry
+ .getFdcVerification()
+ .verifyAddressValidity(proof);
+console.log("proof is valid: %s\n", StringsBase.toString(isValid));
+
+vm.stopBroadcast();
+```
+
+## Using the data
+
+We will now define a simple contract, that will demonstrate how the data can be used onchain.
+The contract will receive an address and proof, and decide if the address is valid.
+If the address is valid, the contract will add it to an array of valid addresses.
+Otherwise, it will raise an error.
+
+The code for this contract is as follows.
+
+```solidity title="src/fdcExample/AddressValidity.sol"
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.7.6 <0.9;
+pragma solidity ^0.8.25;
 
-/**
- * @custom:name AddressValidity
- * @custom:id 0x05
- * @custom:supported BTC, DOGE, XRP, testBTC, testDOGE, testXRP
- * @author Flare
- * @notice An assertion whether a string represents a valid address on an external chain.
- * @custom:verification The address is checked against all validity criteria of the chain with `sourceId`.
- * Indicator of validity is provided.
- * If the address is valid, its standard form and standard hash are computed.
- * Validity criteria for each supported chain:
- * - [BTC](/specs/attestations/external-chains/address-validity/BTC.md)
- * - [DOGE](/specs/attestations/external-chains/address-validity/DOGE.md)
- * - [XRPL](/specs/attestations/external-chains/address-validity/XRPL.md)
- * @custom:lut `0xffffffffffffffff` ($2^{64}-1$ in hex)
- */
-interface AddressValidity {
-    /**
-     * @notice Toplevel request
-     * @param attestationType ID of the attestation type.
-     * @param sourceId Id of the data source.
-     * @param messageIntegrityCode `MessageIntegrityCode` that is derived from the expected response.
-     * @param requestBody Data defining the request. Type (struct) and interpretation is determined by the `attestationType`.
-     */
-    struct Request {
-        bytes32 attestationType;
-        bytes32 sourceId;
-        bytes32 messageIntegrityCode;
-        RequestBody requestBody;
-    }
+import {console} from "dependencies/forge-std-1.9.5/src/console.sol";
+import {Strings} from "@openzeppelin-contracts/utils/Strings.sol";
+import {ContractRegistry} from "dependencies/flare-periphery-test-0.0.7/src/coston2/ContractRegistry.sol";
+import {IFdcHub} from "dependencies/flare-periphery-test-0.0.7/src/coston2/IFdcHub.sol";
+import {IAddressValidity} from "dependencies/flare-periphery-test-0.0.7/src/coston2/IAddressValidity.sol";
+import {IFdcVerification} from "dependencies/flare-periphery-test-0.0.7/src/coston2/IFdcVerification.sol";
+import {FdcStrings} from "src/utils/fdcStrings/AddressValidity.sol";
 
-    /**
-     * @notice Toplevel response
-     * @param attestationType Extracted from the request.
-     * @param sourceId Extracted from the request.
-     * @param votingRound The ID of the Data Connector round in which the request was considered.
-     * @param lowestUsedTimestamp The lowest timestamp used to generate the response.
-     * @param requestBody Extracted from the request.
-     * @param responseBody Data defining the response. The verification rules for the construction of the response body and the type are defined per specific `attestationType`.
-     */
-    struct Response {
-        bytes32 attestationType;
-        bytes32 sourceId;
-        uint64 votingRound;
-        uint64 lowestUsedTimestamp;
-        RequestBody requestBody;
-        ResponseBody responseBody;
-    }
+struct EventInfo {
+ address sender;
+ uint256 value;
+ bytes data;
+}
 
-    /**
-     * @notice Toplevel proof
-     * @param merkleProof Merkle proof corresponding to the attestation response.
-     * @param data Attestation response.
-     */
-    struct Proof {
-        bytes32[] merkleProof;
-        Response data;
-    }
+contract AddressValidity {
+ string[] public verifiedAddresses;
 
-    /**
-     * @notice Request body for AddressValidity attestation type
-     * @param addressStr Address to be verified.
-     */
-    struct RequestBody {
-        string addressStr;
-    }
+ function isAddressValidityProofValid(
+ IAddressValidity.Proof calldata transaction
+ ) public view returns (bool) {
+ // Use the library to get the verifier contract and verify that this transaction was proved by the state connector
+ IFdcVerification fdc = ContractRegistry.getFdcVerification();
+ console.log("transaction: %s\n", FdcStrings.toJsonString(transaction));
+ // return true;
+ return fdc.verifyAddressValidity(transaction);
+ }
 
-    /**
-     * @notice Response body for AddressValidity attestation type
-     * @param isValid Boolean indicator of the address validity.
-     * @param standardAddress If `isValid`, standard form of the validated address. Otherwise an empty string.
-     * @param standardAddressHash If `isValid`, standard address hash of the validated address. Otherwise a zero bytes32 string.
-     */
-    struct ResponseBody {
-        bool isValid;
-        string standardAddress;
-        bytes32 standardAddressHash;
-    }
+ function registerAddress(
+ string calldata _addressStr,
+ IAddressValidity.Proof calldata _transaction
+ ) external {
+ // 1. FDC Logic
+ // Check that this AddressValidity has indeed been confirmed by the FDC
+ require(
+ isAddressValidityProofValid(_transaction),
+ "Invalid transaction proof"
+ );
+
+ // 2. Business logic
+ string provedAddress = _transaction.data.requestBody.addressStr;
+ require(
+ Strings.equal(provedAddress, _addressStr),
+ string.concat(
+ "Invalid address.\n\tProvided: ",
+ _addressStr,
+ "\n\tProoved: ",
+ provedAddress
+ )
+ );
+ verifiedAddresses.push(provedAddress);
+ }
 }
 ```
 
-The request body is very simple—it just contains the `addressStr`, which is the address to be verified according to the chain's rules.
+The function `registerAddress` takes as parameters a string representing an address, and a proof.
+If the proof is valid, and if the given address matches the one in the proof, the address is added to an array of verified addresses.
 
-The response body contains all the important details. Generally, the request can always be confirmed. Here are the specific fields to look at:
+We deploy this contract through a script in `script/AddressValidity.s.sol`.
 
-- **`isValid`**: A boolean indicator of the address validity.
-  - If this is true, the address is valid according to the chain's rules.
-  - Remember, the Merkle proof is about the validity of this request (if it was confirmed by the verifiers), not about the meaning of its response—whether the address is valid or not.
-- **`standardAddress`**: If `isValid`, this is the standard form of the validated address; otherwise, it is an empty string.
-  - This is useful if you want to use the address in your protocol, as you can use the standard form of the address and not worry about different representations of the same address.
-- **`standardAddressHash`**: If `isValid`, this is the standard address hash of the validated address; otherwise, it is a zero bytes32 string.
-  - This is useful to verify with the standard address hash returned by `Payment` and `ReferencedPaymentNonexistence`.
+```solidity title="scrip/fdcExample/AddressValidity.s.sol"
 
-Think of this as an example of what can be offloaded to offchain computation (and verification). Try to imagine other tasks that are prohibitively expensive (or impossible due to data unavailability) onchain that can be offloaded to offchain computation.
+contract Deploy is Script {
+ function run() external {
+ uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+ vm.startBroadcast(deployerPrivateKey);
 
-### Example
+ AddressValidity addressValidity = new AddressValidity();
 
-The script for address validity (`tryAddressValidity.ts`) is simpler than the scripts we've seen so far. There's no need to create a transaction or anything complex; you just call the `prepareResponse` endpoint and see the result. In actual use, you will first prepare a request for the Data Connector, wait for it to be confirmed, and then use the response in your smart contract together with the proof. This means your smart contract will receive the result of a potentially large and expensive calculation (the response body part) along with proof that it was included in the Merkle root. This attests that it has been calculated and verified by the network validator.
-
-This setup ensures that your smart contract gets a verified result without having to perform the expensive calculation onchain, thereby saving computational resources and improving efficiency.
-
-```typescript title="tryAddressValidity.ts"
-const { ATTESTATION_URL, ATTESTATION_API_KEY } = process.env;
-const exampleXRPLAddress = "r9RLXvWuRro3RX33pk4xsN58tefYZ8Tvbj";
-const someDogecoinAddress = "njyMWWyh1L7tSX6QkWRgetMVCVyVtfoDta";
-const someBTCAddress = "tb1qq3fm2kdklehk545c5rgfxzfhe7ph5tt640cayu";
-
-function toHex(data: string): string {
-  var result = "";
-  for (var i = 0; i < data.length; i++) {
-    result += data.charCodeAt(i).toString(16);
-  }
-  return "0x" + result.padEnd(64, "0");
-}
-
-function fromHex(data: string): string {
-  data = data.replace(/^(0x\.)/, "");
-  return data
-    .split(/(\w\w)/g)
-    .filter((p) => !!p)
-    .map((c) => String.fromCharCode(parseInt(c, 16)))
-    .join("");
-}
-
-async function prepareAttestationResponse(
-  attestationType: string,
-  network: string,
-  sourceId: string,
-  requestBody: any,
-): Promise<AttestationResponse> {
-  const response = await fetch(
-    `${ATTESTATION_URL}/verifier/${network}/${attestationType}/prepareResponse`,
-    {
-      method: "POST",
-      headers: {
-        "X-API-KEY": ATTESTATION_API_KEY as string,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        attestationType: toHex(attestationType),
-        sourceId: toHex(sourceId),
-        requestBody: requestBody,
-      }),
-    },
-  );
-  const data = await response.json();
-  return data;
-}
-
-async function main() {
-  console.log(
-    await prepareAttestationResponse("AddressValidity", "xrp", "testXRP", {
-      addressStr: exampleXRPLAddress,
-    }),
-  );
-  console.log(
-    await prepareAttestationResponse("AddressValidity", "xrp", "testXRP", {
-      addressStr: "0xhahahahaha",
-    }),
-  );
-  console.log(
-    await prepareAttestationResponse("AddressValidity", "xrp", "testXRP", {
-      addressStr: "Hello world!",
-    }),
-  );
-
-  console.log(
-    await prepareAttestationResponse("AddressValidity", "btc", "testBTC", {
-      addressStr: someBTCAddress,
-    }),
-  );
-  console.log(
-    await prepareAttestationResponse("AddressValidity", "btc", "testBTC", {
-      addressStr: "0xhahahahaha",
-    }),
-  );
-  console.log(
-    await prepareAttestationResponse("AddressValidity", "btc", "testBTC", {
-      addressStr: "Hello world!",
-    }),
-  );
-
-  console.log(
-    await prepareAttestationResponse("AddressValidity", "doge", "testDOGE", {
-      addressStr: someDogecoinAddress,
-    }),
-  );
-  console.log(
-    await prepareAttestationResponse("AddressValidity", "doge", "testDOGE", {
-      addressStr: "0xhahahahaha",
-    }),
-  );
-  console.log(
-    await prepareAttestationResponse("AddressValidity", "doge", "testDOGE", {
-      addressStr: "Hello world!",
-    }),
-  );
-}
-
-main().then(() => process.exit(0));
-```
-
-and the response
-
-```json
-{
-  status: 'VALID',
-  response: {
-    attestationType: '0x4164647265737356616c69646974790000000000000000000000000000000000',
-    sourceId: '0x7465737458525000000000000000000000000000000000000000000000000000',
-    votingRound: '0',
-    lowestUsedTimestamp: '0xffffffffffffffff',
-    requestBody: { addressStr: 'r9RLXvWuRro3RX33pk4xsN58tefYZ8Tvbj' },
-    responseBody: {
-      isValid: true,
-      standardAddress: 'r9RLXvWuRro3RX33pk4xsN58tefYZ8Tvbj',
-      standardAddressHash: '0x0555194538763da400394fc7184432e9a006565fa710392ea1a86486eb83920f'
-    }
-  }
-}
-{
-  status: 'VALID',
-  response: {
-    attestationType: '0x4164647265737356616c69646974790000000000000000000000000000000000',
-    sourceId: '0x7465737458525000000000000000000000000000000000000000000000000000',
-    votingRound: '0',
-    lowestUsedTimestamp: '0xffffffffffffffff',
-    requestBody: { addressStr: '0xhahahahaha' },
-    responseBody: {
-      isValid: false,
-      standardAddress: '',
-      standardAddressHash: '0x0000000000000000000000000000000000000000000000000000000000000000'
-    }
-  }
-}
-{
-  status: 'VALID',
-  response: {
-    attestationType: '0x4164647265737356616c69646974790000000000000000000000000000000000',
-    sourceId: '0x7465737458525000000000000000000000000000000000000000000000000000',
-    votingRound: '0',
-    lowestUsedTimestamp: '0xffffffffffffffff',
-    requestBody: { addressStr: 'Hello world!' },
-    responseBody: {
-      isValid: false,
-      standardAddress: '',
-      standardAddressHash: '0x0000000000000000000000000000000000000000000000000000000000000000'
-    }
-  }
-}
-{
-  status: 'VALID',
-  response: {
-    attestationType: '0x4164647265737356616c69646974790000000000000000000000000000000000',
-    sourceId: '0x7465737442544300000000000000000000000000000000000000000000000000',
-    votingRound: '0',
-    lowestUsedTimestamp: '0xffffffffffffffff',
-    requestBody: { addressStr: 'tb1qq3fm2kdklehk545c5rgfxzfhe7ph5tt640cayu' },
-    responseBody: {
-      isValid: true,
-      standardAddress: 'tb1qq3fm2kdklehk545c5rgfxzfhe7ph5tt640cayu',
-      standardAddressHash: '0x085f152e9e9ebd6c009827678785b1b3667733fa3f6b5d78bb462bd1978825ff'
-    }
-  }
-}
-{
-  status: 'VALID',
-  response: {
-    attestationType: '0x4164647265737356616c69646974790000000000000000000000000000000000',
-    sourceId: '0x7465737442544300000000000000000000000000000000000000000000000000',
-    votingRound: '0',
-    lowestUsedTimestamp: '0xffffffffffffffff',
-    requestBody: { addressStr: '0xhahahahaha' },
-    responseBody: {
-      isValid: false,
-      standardAddress: '',
-      standardAddressHash: '0x0000000000000000000000000000000000000000000000000000000000000000'
-    }
-  }
-}
-{
-  status: 'VALID',
-  response: {
-    attestationType: '0x4164647265737356616c69646974790000000000000000000000000000000000',
-    sourceId: '0x7465737442544300000000000000000000000000000000000000000000000000',
-    votingRound: '0',
-    lowestUsedTimestamp: '0xffffffffffffffff',
-    requestBody: { addressStr: 'Hello world!' },
-    responseBody: {
-      isValid: false,
-      standardAddress: '',
-      standardAddressHash: '0x0000000000000000000000000000000000000000000000000000000000000000'
-    }
-  }
-}
-{
-  status: 'VALID',
-  response: {
-    attestationType: '0x4164647265737356616c69646974790000000000000000000000000000000000',
-    sourceId: '0x74657374444f4745000000000000000000000000000000000000000000000000',
-    votingRound: '0',
-    lowestUsedTimestamp: '0xffffffffffffffff',
-    requestBody: { addressStr: 'njyMWWyh1L7tSX6QkWRgetMVCVyVtfoDta' },
-    responseBody: {
-      isValid: true,
-      standardAddress: 'njyMWWyh1L7tSX6QkWRgetMVCVyVtfoDta',
-      standardAddressHash: '0xfc8d6252c5132f771fc711fe13cb3c6e768ed9290ce199efd87d5ec1b6094df6'
-    }
-  }
-}
-{
-  status: 'VALID',
-  response: {
-    attestationType: '0x4164647265737356616c69646974790000000000000000000000000000000000',
-    sourceId: '0x74657374444f4745000000000000000000000000000000000000000000000000',
-    votingRound: '0',
-    lowestUsedTimestamp: '0xffffffffffffffff',
-    requestBody: { addressStr: '0xhahahahaha' },
-    responseBody: {
-      isValid: false,
-      standardAddress: '',
-      standardAddressHash: '0x0000000000000000000000000000000000000000000000000000000000000000'
-    }
-  }
-}
-{
-  status: 'VALID',
-  response: {
-    attestationType: '0x4164647265737356616c69646974790000000000000000000000000000000000',
-    sourceId: '0x74657374444f4745000000000000000000000000000000000000000000000000',
-    votingRound: '0',
-    lowestUsedTimestamp: '0xffffffffffffffff',
-    requestBody: { addressStr: 'Hello world!' },
-    responseBody: {
-      isValid: false,
-      standardAddress: '',
-      standardAddressHash: '0x0000000000000000000000000000000000000000000000000000000000000000'
-    }
-  }
+ vm.stopBroadcast();
+ }
 }
 ```
 
-One might ask what use such an attestation type is and why all the checks are necessary. Consider it in two ways:
+We run the above script with the following console command.
 
-- **Data Contains Request and Response**: This setup makes it possible to observe both the input (request) and output (response) of the computation. The computation can be very complex and expensive, but for our purposes, we only need to know the result (and, of course, the input we want to be observed), and we can act on it.
-- **Merkle Proof**: The Merkle proof is used to verify that the response was included in the committed root and was confirmed by the verifiers. The "being confirmed" part is crucial because it means the verifiers have indeed seen the request, performed the computation (arriving at the same result), and included the result in the Merkle root, which we base our actions on.
+```bash
+forge script script/fdcExample/AddressValidity.s.sol:Deploy --private-key $PRIVATE_KEY --rpc-url $COSTON2_RPC_URL --etherscan-api-key $FLARE_API_KEY --broadcast --ffi
 
-This approach ensures that complex and resource-intensive computations can be performed offchain while still providing verifiable and trustworthy results that can be used onchain.
-
-{/* <!-- TODO: A lahko na to gledamo kot na ZK proof nekega izračuna? - a bi se dal iz tega čist lepo na ta AI dal vezat stvari - mogoče very simple classification a je nek address fishing al pa blacklisted kje? --> */}
+```
