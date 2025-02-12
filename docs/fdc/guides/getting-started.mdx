@@ -1,6 +1,6 @@
 ---
-slug: data-connector-evm
-title: Flare Data Connector
+slug: quickstart-guide
+title: Quickstart Guide
 authors: [filipkoprivec]
 description: FDC quickstart with EVMTransaction attestation type.
 tags: [quickstart, evm, fdc]
@@ -36,9 +36,9 @@ In addition, it also supports chains with smart contract capability, currently E
 The consensus on information from external blockchains is achieved through the BitVote-reveal FDC protocol operating within the Flare Systems Protocol suite.
 After the consensus is reached dapps can use the Merkle root to validate and confirm requested data.
 
-## Transferring external data to Flare
+## Transferring External Data to Flare
 
-This guide focuses on the [**EVMTransaction attestation type**](https://github.com/flare-foundation/songbird-state-connector-protocol/blob/main/specs/attestations/active-types/EVMTransaction.md), an attestation type designed to prove and relay data about a transaction that happened on an external EVM chain.
+This guide focuses on the [**EVMTransaction attestation type**](/fdc/attestation-types/evm-transaction), an attestation type designed to prove and relay data about a transaction that happened on an external EVM chain.
 
 You will write a simple script and smart contract that will use Flare Data Connector to verify that a transaction happened on the Ethereum network and decode the event log data from the transaction.
 You will write a contract that will interact with FDC to verify the provided data, decode and use the event log together with the off-chain script to request the attestation through the FDC and provide proof and data to the contract.
@@ -80,7 +80,7 @@ The process of attesting to a transaction on an external chain and using the pro
 
 Let's start
 
-### 1. Identifying the transaction
+### 1. Identifying the Transaction
 
 You can pick any transaction on the Sepolia testnet that has already been mined and confirmed.
 We will use [`0x4e636c6590b22d8dcdade7ee3b5ae5572f42edb1878f09b3034b2f7c3362ef3c`](https://sepolia.etherscan.io/tx/0x4e636c6590b22d8dcdade7ee3b5ae5572f42edb1878f09b3034b2f7c3362ef3c) for this guide.
@@ -105,7 +105,7 @@ The rest of the procedure and the code remains the same.
 
 :::
 
-### 2. Preparing the attestation request
+### 2. Preparing the Attestation Request
 
 We now need to prepare the attestation request.
 This involves encoding the data about the transaction we want to attest to in a specific format that the FDC can understand.
@@ -254,7 +254,7 @@ If there is no consensus, the data will not be included in the Merkle root and t
 
 </details>
 
-### 3. Submitting the attestation request
+### 3. Submitting the Attestation Request
 
 The next step is to request attestation on the Flare Data Connector smart contract, thus broadcasting to the entire network that you want this transaction to be proven.
 
@@ -324,7 +324,7 @@ async function submitRequest() {
 
 We now need to wait for the round to be finalized and the Merkle root to be stored on the chain.
 
-### 4. Extracting the Merkle proof and full data
+### 4. Extracting the Merkle Proof and Full Data
 
 Once the the FDC round is finalized the Merkle root becomes available on the chain.
 For each of the requests that were included in the round, full data with accompanying Merkle proof can be generated.
@@ -494,7 +494,7 @@ The top level fields nicely correspond to two things you need to do in the smart
 
 We are now ready to use the data in the smart contract.
 
-### 5. Using the data in the smart contract
+### 5. Using the Data in the Smart Contract
 
 Let's first take a detailed look at the data we received from the DA Layer API in the `response` field and the corresponding solidity struct.
 The interface is already included in both hardhat and foundry packages.
@@ -702,7 +702,7 @@ submitProof()
   });
 ```
 
-### 6. Bonus - Waiting for the round to be finalized (optional)
+### 6. Bonus - Waiting for the Round to be Finalized (optional)
 
 Due to the inner workings of FDC, you need to wait for the round to be finalized before you can use the proof.
 There are multiple ways to do this (depending on your infrastructure and requirements).
