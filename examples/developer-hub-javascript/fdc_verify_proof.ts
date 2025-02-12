@@ -1,5 +1,4 @@
 import { ethers } from "hardhat";
-import "@nomicfoundation/hardhat-ethers";
 
 const EVENT_COLLECTOR_ABI = "...";
 const EVENT_COLLECTOR_ADDRESS = "...";

@@ -1,5 +1,4 @@
 import { ethers } from "hardhat";
-import "@nomicfoundation/hardhat-ethers";
 
 // In production get the data directly from FlareSystemsManager
 const firstVotingRoundStartTs = 1658429955;
