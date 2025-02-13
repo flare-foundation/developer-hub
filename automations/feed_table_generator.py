@@ -1,6 +1,7 @@
 import json
 import logging
 import sys
+import time
 from pathlib import Path
 
 import requests
@@ -24,8 +25,17 @@ HARD_CODED_FEEDS = {
         "name": "Fantom",
         "decimals": 6,
         "category": "Crypto",
+    },
+    "USDX/USD": {
+        "name": "Hex Trust USD",
+        "decimals": 5,
+        "category": "Crypto",
     }
 }
+
+
+class FeedRiskNotFoundError(Exception):
+    pass
 
 
 def get_contract_abi(contract_address: str) -> dict:
@@ -76,13 +86,15 @@ def read_data_from_file(file_path: Path) -> list[dict]:
         return data
 
 
-def get_coins_list(pages: list) -> list[dict]:
+def get_coins_list(num_pages: int) -> list[dict]:
     """Get the top 500 coins from CoinGecko."""
     cg = CoinGeckoAPI()
     coins = []
+    logger.info("Querying %i pages on CoinGecko...", num_pages)
     try:
-        for page in pages:
+        for page in range(1, num_pages + 1):
             coins += cg.get_coins_markets(vs_currency="usd", per_page=250, page=page)
+            time.sleep(0.5)
     except Exception:
         logger.exception("Error fetching coins from CoinGecko")
         sys.exit(1)
@@ -118,6 +130,12 @@ def generate_feed_data(
             logger.warning("Coin %s not found in CoinGecko data", name)
             continue
 
+        try:
+            risk = feed_risk[idx].get("volatility", -1)
+        except IndexError as e:
+            msg = f"Unable to find risk for {name}"
+            raise FeedRiskNotFoundError(msg) from e
+
         if include_index:
             feed_data = {
                 "feed_name": name,
@@ -126,16 +144,16 @@ def generate_feed_data(
                 "decimals": decimal,
                 "base_asset": coin.get("name"),
                 "category": coin.get("category", "Crypto"),
-                "risk": feed_risk[idx].get("volatility", -1),
+                "risk": risk,
             }
         else:
             feed_data = {
                 "feed_name": name,
                 "feed_id": feed_id,
                 "decimals": decimal,
-                "base_asset": coin["name"],
+                "base_asset": coin.get("name"),
                 "category": "Crypto",
-                "risk": feed_risk[idx].get("volatility", -1),
+                "risk": risk,
             }
         data.append(feed_data)
     return data
@@ -171,8 +189,8 @@ if __name__ == "__main__":
     decimals = block_latency_feeds[2]
     logger.debug("Found %d block-latency feeds", len(feed_names))
 
-    # Query CoinGecko for top 750 coins
-    coins_list = get_coins_list(pages=[1, 2, 3])
+    # Query CoinGecko for top N pages, where each page has 250 coins
+    coins_list = get_coins_list(num_pages=8)
 
     # Write block-latency feeds to file
     block_latency_risk = read_data_from_file(BLOCK_LATENCY_RISK_PATH)

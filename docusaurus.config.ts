@@ -74,7 +74,7 @@ const config: Config = {
 
     announcementBar: {
       id: `announcementBar`,
-      content: `<a href="https://dev.flare.network/ftso/overview">FTSOv2</a> is live on mainnet! ☀️`,
+      content: `🚀 We're hosting the <a href="https://hackathon.flare.network/" target="_blank" rel="noopener noreferrer">Flare x Google Cloud Verifiable AI Hackathon</a> with a $100K prize pool. ☀️`,
     },
 
     docs: {

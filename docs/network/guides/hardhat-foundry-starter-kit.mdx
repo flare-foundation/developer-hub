@@ -172,7 +172,7 @@ Install the following prerequisites:
 
 #### Cloning and installing dependencies
 
-Clone the [template repository](https://github.com/flare-foundation/flare-foundry-starter) and navigate into the project directory.
+Clone the [flare-foundry-starter](https://github.com/flare-foundation/flare-foundry-starter) and navigate into the project directory.
 
 ```bash
 git clone https://github.com/flare-foundation/flare-foundry-starter.git
@@ -182,10 +182,23 @@ cd flare-foundry-starter
 Install the project dependencies.
 
 ```bash
-forge install
+forge soldeer install
+```
+
+You might need to modify `remappings.txt` so `/src` paths are read correctly, e.g.:
+
+```bash
+@openzeppelin-contracts/=dependencies/@openzeppelin-contracts-5.2.0-rc.1/
+flare-periphery/=dependencies/flare-periphery-0.0.1/
+forge-std/=dependencies/forge-std-1.9.5/src/
+forge-std/=dependencies/forge-std-1.9.5/
+surl/=dependencies/surl-0.0.0/src/
+surl/=dependencies/surl-0.0.0/
 ```
 
 #### Setting up environment variables
+
+Copy `.env.example` to `.env` and update it with your settings.
 
 Add `PRIVATE_KEY` to your environment variables.
 
@@ -200,6 +213,14 @@ PRIVATE_KEY=your_private_key_here
 - Never commit private keys to a Git repository.
 
 :::
+
+You now need to add the information from the `.env` file to your bash profile:
+
+```bash
+source .env
+```
+
+You need to do this every time you open a new terminal or change the `.env` file.
 
 ### Compile, test and deploy
 
