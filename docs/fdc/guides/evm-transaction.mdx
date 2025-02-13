@@ -8,7 +8,7 @@ sidebar_position: 6
 unlisted: false
 ---
 
-The `EVMTransaction` attestation type enables data collection about a transaction on an EVM chain.
+The [`EVMTransaction`](/fdc/attestation-types/evm-transaction) attestation type enables data collection about a transaction on an EVM chain.
 The currently supported chain are: `ETH`, `FLR`, and `SGB`.
 You can learn more about it in the official [specification repo](https://github.com/flare-foundation/flare-specs/blob/main/src/FDC/AttestationTypes/EVMTransaction.md).
 
@@ -56,7 +56,7 @@ The names of included contracts mostly mirror the steps described in the [FDC gu
 To bridge the separate executions of the scripts, we will save the relevant data of each script to a file in the `dirPath` folder.
 Each succeeding script will then read that file to load the data.
 
-## 1.1. Preparing the request
+## Preparing the Request
 
 The JSON request to the verifier is the same form for all attestation types, but the values of the fields differ between them.
 It contains the following fields.
@@ -296,7 +296,7 @@ forge script script/fdcExample/EVMTransaction.s.sol:PrepareAttestationRequest --
 The prerequisite for this is that the `.env` file is not missing the `PRIVATE KEY` and `COSTON2_RPC_URL` values.
 The script can also access other chains; that can be achieved by replacing the `--rpc-url` value with `COSTON_RPC_URL`, `FLARE_RPC_URL`, or `SONGBIRD_RPC_URL`.
 
-## 1.2. Posting the request to a verifier server.
+## Posting the Request to a Verifier Server
 
 Before submitting address validation requests to the FDC protocol, we first need to prepare and send them to a verifier server.
 This section walks through the request submission process using the `surl` package.
@@ -389,7 +389,7 @@ Base.writeToFile(
 );
 ```
 
-## 2. Submitting the request to the FDC.
+## Submitting the Request to the FDC
 
 This step transitions from off-chain request preparation to on-chain interaction with the FDC protocol. Now, we submit the validated request to the blockchain using deployed smart contracts.
 
@@ -479,7 +479,7 @@ This can be done within the existing broadcast or in a new one (as done in the d
 
 Again, we write the `roundId` to a file (`data/EVMTransaction_roundId.txt`).
 
-## 3.1. Waiting for the response
+## Waiting for the Response
 
 We wait for the round to finalize.
 This takes no more than 145 seconds.
@@ -571,7 +571,7 @@ contract RetrieveDataAndProof is Script {
 }
 ```
 
-## 3.3. Posting the proof request to a DA Layer provider
+## Posting the Proof Request to a DA Layer Provider
 
 We post the proof request to a chosen DA Layer provider server also with the same code as we did in the previous step.
 
@@ -618,7 +618,7 @@ IEVMTransaction.Response memory proofResponse = abi.decode(
 );
 ```
 
-## 3.4. Verifying the proof
+## Verifying the Proof
 
 FDC optimizes on-chain storage costs by implementing a hybrid data verification system.
 Instead of storing complete datasets on-chain, it stores only Merkle proofs, while maintaining the actual data through trusted off-chain providers.
@@ -670,7 +670,7 @@ Base.writeToFile(
 );
 ```
 
-## 4. Using the data
+## Using the Data
 
 We will now define a simple contract, that will demonstrate how the data can be used onchain.
 The contract will receive data and proof of an Ethereum transaction, and store all token transfers contained into an array of `TokenTransfer` structs.
