@@ -1,7 +1,7 @@
 ---
 sidebar_position: 1
 unlisted: true
-slug: onboarding-guide
+slug: onboarding
 title: Onboarding
 description: Step-by-step guide for setting up infrastructure, credentials, and cloud instances for the Verifiable AI Hackathon.
 keywords: [flare, ai, confidential-compute, hackathon, google-cloud, onboarding]
@@ -20,13 +20,14 @@ import AddMetaData from "/static/img/verifiable-ai-hackathon/add-metadata.png";
 
 # Onboarding
 
-Welcome to the Verifiable AI Hackathon! This comprehensive guide will walk you through setting up your development environment, including Google Cloud infrastructure, API credentials, and Confidential Compute virtual machines.
+Welcome to the **Verifiable AI Hackathon**!
+This comprehensive guide will walk you through setting up your development environment, including Google Cloud infrastructure, API credentials, and Confidential Space virtual machines.
 
 ## Before You Begin
 
 - Plan for approximately 30-45 minutes to complete the entire setup
 - Keep track of your credentials in a secure location
-- If you encounter any issues, reach out to the support team via the hackathon Discord channels
+- If you encounter any issues, reach out to the Flare team on [Telegram](https://t.me/+StI5VEIvtIg2ODlh)
 
 ## Prerequisites
 
@@ -34,17 +35,39 @@ Welcome to the Verifiable AI Hackathon! This comprehensive guide will walk you t
 
 - Use an existing Google account or create a new one
 - This account will be your primary access point for all hackathon resources
-- Submit your Google account email during the registration process
-- You'll receive access to the `google-hackathon-project` when approved, usually within a hour of submission
+- Submit your Google account email during the hackathon registration process
+- You'll receive access to the `google-hackathon-project` when approved
 
 ### Setting up Gemini API access
 
-1. Log into your registered Google account
-1. Visit the [Get a Gemini API key in Google AI Studio](https://aistudio.google.com/app/apikey) page
+1. Log into your registered Google account after you receive the approval
+1. Visit the [Get a Gemini API key](https://aistudio.google.com/app/apikey) page
 1. Click on **Create API key**
 1. Select `google-hackathon-project` from the dropdown
 1. Click **Create API key in existing project**
 1. Store your API key securely
+
+:::tip[Adding Hackathon API keys to your environment]
+
+Add the following lines to your shell configuration file (`~/.bashrc` or `~/.zshrc`):
+
+```bash
+export GEMINI_API_KEY=<your-gemini-api-key>
+```
+
+Apply the configuration:
+
+```bash
+source ~/.bashrc  # or source ~/.zshrc, you can also restart the shell
+```
+
+Verify:
+
+```bash
+echo $GEMINI_API_KEY  # Expected output: <your-gemini-api-key>
+```
+
+:::
 
 ## Setting up a VM
 
@@ -56,7 +79,7 @@ Follow these steps to set up a GCP instance using Confidential Space with Cloud 
 
 1. **Install the gcloud CLI**
 
-- Follow the [gcloud CLI installation guide](https://cloud.google.com/sdk/docs/install) steps for your OS
+   Follow the [gcloud CLI installation guide](https://cloud.google.com/sdk/docs/install) steps for your OS
 
 2. **Authenticate your CLI**
 
@@ -68,7 +91,14 @@ Follow these steps to set up a GCP instance using Confidential Space with Cloud 
 
 #### Create VM Instance
 
-Use the following command template, replacing the placeholder variables (`<>`):
+:::warning[Number of VM instances]
+
+Each hackathon team is limited to **one** continuously running VM.
+You can briefly set up more than one instance for testing, but make sure you don't leave it running.
+
+:::
+
+Use the following command template, replacing the highlighted placeholder variables (`<>`):
 
 ```bash
 # highlight-next-line
@@ -99,9 +129,9 @@ gcloud compute instances create <INSTANCE_NAME> \
 
 **Required Variables:**
 
-- `<INSTANCE_NAME>`: Your instance name (in the format `<project-name>-<team-name>`, e.g. `agent-gemini-team1`)
-- `<IMAGE_URL>`: Image path (e.g., `ghcr.io/flare-foundation/flare-ai-core:main`)
-- `<ENV_VAR_NAME1>` and `<ENV_VAR_VALUE1>`: First environment variable name (e.g., GEMINI_API_KEY) and first environment variable value
+- `<INSTANCE_NAME>`: Your instance name in the format `<project-name>-<team-name>`, e.g. `agent-gemini-team1`
+- `<IMAGE_URL>`: Image path (e.g., `ghcr.io/flare-foundation/flare-ai-defai:main`)
+- `<ENV_VAR_NAME1>` and `<ENV_VAR_VALUE1>`: First environment variable name (e.g. `GEMINI_API_KEY`) and first environment variable value
 - Add additional comma separated environment variables as needed
 
 ### Option B: Using GCP Console
@@ -111,7 +141,7 @@ Follow these steps to create your VM instance through the Google Cloud Console i
 1. **Initial Setup**
 
    - Navigate to the [GCP Console](https://console.cloud.google.com/)
-   - Make sure _google-hackathon-project_ is selected
+   - Make sure **google-hackathon-project** is selected
    - Click **Compute Engine → VM instances → Create Instance**
 
    <div align="center">
@@ -125,7 +155,7 @@ Follow these steps to create your VM instance through the Google Cloud Console i
 2. **Machine Configuration**
 
    - Name: `<project-name>-<team-name>` (e.g., `agent-gemini-team1`)
-   - Region: `us-west2`
+   - Region: `us-central1-c`
    - Machine Type: `n2d-standard-2`
 
    <div align="center">
@@ -184,12 +214,11 @@ Follow these steps to create your VM instance through the Google Cloud Console i
    - Click **Add Item** under Metadata
    - Add the following key-value pairs:
 
-     ```bash
-     tee-image-reference: <ghcr.io/john/agent-gemini:main>
-     tee-container-log-redirect: cloud_logging
-     ```
-
-   - Additional API keys should be prefixed with `tee-env-`, e.g. the env variable `GEMINI_API_KEY` will become `tee-env-GEMINI_API_KEY`
+   | Key                          | Value              | Notes                                               |
+   | ---------------------------- | ------------------ | --------------------------------------------------- |
+   | `tee-image-reference`        | `<IMAGE_URL>`      | e.g. `ghcr.io/flare-foundation/flare-ai-defai:main` |
+   | `tee-container-log-redirect` | `true`             | Sends VM logs to serial port and cloud logging      |
+   | `tee-env-<ENV_VAR_NAME1>`    | `<ENV_VAR_VALUE1>` | e.g. `tee-env-GEMINI_API_KEY : MY_GEMINI_API_KEY`   |
 
    <div align="center">
      <img
@@ -218,7 +247,25 @@ Follow these steps to create your VM instance through the Google Cloud Console i
     />
   </div>
 
+## Track Templates
+
+You can use the following track templates to quickly get started building:
+
+| Track              | Template Repository                                                                       |
+| ------------------ | ----------------------------------------------------------------------------------------- |
+| Social AI Agents   | [flare-foundation/flare-ai-social](https://github.com/flare-foundation/flare-ai-social)   |
+| RAG Knowledge      | [flare-foundation/flare-ai-rag](https://github.com/flare-foundation/flare-ai-rag)         |
+| AI x DeFi (DeFAI)  | [flare-foundation/flare-ai-defai](https://github.com/flare-foundation/flare-ai-defai)     |
+| Consensus Learning | [flare-research/flare-ai-consensus](https://github.com/flare-research/flare-ai-consensus) |
+
 ## Troubleshooting
+
+:::tip[Reach out for support]
+
+If you are unable to bugfix your issue, feel free to reach out to the Flare team on [Telegram](https://t.me/+StI5VEIvtIg2ODlh) for support.
+When reaching out clearly mention the VM instance name.
+
+:::
 
 - **VM Creation Fails**
   - Verify project permissions
