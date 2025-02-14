@@ -9,7 +9,7 @@ unlisted: false
 ---
 
 The `JsonApi` attestation type enables data collection from an arbitrary Web2 source.
-You can learn more about it in the official [specification repo](https://github.com/flare-foundation/flare-specs/blob/main/src/FDC/AttestationTypes/JsonApi.md).
+You can learn more about it in the official [specification repo](/fdc/attestation-types/json-api).
 
 We will now demonstrate how the FDC protocol can be used to collect the data of a given [Star Wars API](https://swapi.dev/) request.
 The request we will be making is `https://swapi.dev/api/peaople/3/`.
@@ -20,7 +20,7 @@ In this guide, we will follow the steps outlined in the [FDC overview](/fdc/over
 Our implementation requires handling the FDC voting round finalization process.
 To manage this, we will create separate scripts in `script/fdcExample/JsonApi.s.sol` that handle different stages of the validation process:
 
-```solidity title="scrip/fdcExample/JsonApi.s.sol"
+```solidity title="script/fdcExample/JsonApi.s.sol"
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
@@ -53,7 +53,7 @@ The names of included contracts mostly mirror the steps described in the [FDC gu
 To bridge the separate executions of the scripts, we will save the relevant data of each script to a file in the `dirPath` folder.
 Each succeeding script will then read that file to load the data.
 
-## Preparing the request
+## Prepare request
 
 The JSON request to the verifier is the same form for all attestation types, but the values of the fields differ between them.
 It contains the following fields.
@@ -72,7 +72,7 @@ In the case of `JsonApi`, `requestBody` is a JSON containing the fields:
 
 ### Reference Documentation
 
-- [JsonApi Specification](https://gitlab.com/flarenetwork/docs-team/flare-specs/-/blob/main/src/FDC/AttestationTypes/JsonApi.md?ref_type=heads)
+- [JsonApi Specification](/fdc/attestation-types/json-api)
 - [Verifier Interactive Docs](https://jq-verifier-test.flare.rocks/api-doc#/)
 
 ### Example Values
@@ -118,7 +118,7 @@ function toHexString(
 }
 ```
 
-```solidity title="scrip/fdcExample/Base.s.sol"
+```solidity title="script/fdcExample/Base.s.sol"
 function toUtf8HexString(
  string memory _string
 ) internal pure returns (string memory) {
@@ -288,7 +288,7 @@ forge script script/fdcExample/JsonApi.s.sol:PrepareAttestationRequest --private
 The prerequisite for this is that the `.env` file is not missing the `PRIVATE KEY` and `COSTON2_RPC_URL` values.
 The script can also access other chains; that can be achieved by replacing the `--rpc-url` value with `COSTON_RPC_URL`, `FLARE_RPC_URL`, or `SONGBIRD_RPC_URL`.
 
-## Posting the request to a verifier server.
+## Post request to verifier
 
 To post a request to a verifier server, we use the `surl` package.
 We place `using Surl for *;` at the start of our `PostRequest` contract, and then call its `post` method on the verifier URL.
@@ -397,11 +397,11 @@ Base.writeToFile(
 );
 ```
 
-## Submitting the request to the FDC.
+## Submit request to FDC
 
 This step transitions from off-chain request preparation to on-chain interaction with the FDC protocol. Now, we submit the validated request to the blockchain using deployed smart contracts.
 
-### Submitting the Request
+### Submit request
 
 The entire submission process requires only five key steps:
 
@@ -485,7 +485,7 @@ function submitAttestationRequest(
 
 This can be done within the existing broadcast or in a new one (as done in the demo repository for better code organization).
 
-## Waiting for the response
+## Wait for response
 
 We wait for the round to finalize.
 This takes no more than 90 seconds.
@@ -495,9 +495,9 @@ To check if the round has been finalized, go to [Finalizations](https://coston2-
 
 To learn more about how the FDC protocol works, check [here](/fdc/overview).
 
-## Preparing the Proof Request
+## Prepare proof request
 
-We prepare the proof request in a similar manner as in the step Preparing the request, by string concatenation.
+We prepare the proof request in a similar manner as in the step Prepare the request, by string concatenation.
 We import two new variables from the `.env` file; the URL of a verifier server and the corresponding API key.
 
 ```solidity title="scrip/fdcExample/JsonApi.s.sol"
@@ -577,7 +577,7 @@ contract RetrieveDataAndProof is Script {
 }
 ```
 
-## Posting the proof request to a DA Layer provider
+## Post proof request to DA Layer
 
 We post the proof request to a chosen DA Layer provider server also with the same code as we did in the previous step.
 
@@ -605,7 +605,7 @@ struct ParsableProof {
 ```
 
 The field `attestationType` holds the UTF8 encoded hex string of the attestation type name, padded to 32 bytes.
-Thus, it should match the value of the `attestationType` parameter in the Preparing the request step.
+Thus, it should match the value of the `attestationType` parameter in the Prepare the request step.
 In our case, that value is `0x4164647265737356616c69646974790000000000000000000000000000000000`.
 
 The array `proofs` holds the Merkle proofs of our attestation request.
@@ -624,7 +624,7 @@ IJsonApi.Response memory proofResponse = abi.decode(
 );
 ```
 
-## Verifying the Proof
+## Verify proof
 
 FDC optimizes on-chain storage costs by implementing a hybrid data verification system.
 Instead of storing complete datasets on-chain, it stores only Merkle proofs, while maintaining the actual data through trusted off-chain providers.
@@ -676,7 +676,7 @@ Base.writeToFile(
 );
 ```
 
-## Using the data
+## Use the data
 
 {/* TODO */}
 
