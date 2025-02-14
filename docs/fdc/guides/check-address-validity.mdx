@@ -10,7 +10,7 @@ unlisted: false
 
 The [AddressValidity](/fdc/attestation-types/address-validity) attestation type validates whether a string represents a valid address on supported blockchain networks (`BTC`, `DOGE`, and `XRP`).
 This validation ensures addresses meet chain-specific formatting and checksum requirements before they're used in transactions or smart contracts.
-The full specification is available on the official [specification repo](https://github.com/flare-foundation/flare-specs/blob/main/src/FDC/AttestationTypes/AddressValidity.md).
+The full specification is available on the official [specification repo](/fdc/attestation-types/address-validity).
 
 The primary contract interface for this attestation type is [`IAddressValidity`](/fdc/reference/IFdcHub). Let's walk through validating a Bitcoin testnet address using the FDC protocol.
 We will use the address `mg9P9f4wr9w7c1sgFeiTC5oMLYXCc2c7hs` as an example throughout this guide.
@@ -58,7 +58,7 @@ The names of included contracts mostly mirror the steps described in the [FDC ov
 To bridge the separate script executions, we will save the relevant data of each script to a file in the `dirPath` folder.
 Each succeeding script will then read that file to load the data.
 
-## Preparing the Request
+## Prepare request
 
 A JSON request to the verifier follows the same structure for all attestation types, with field values varying per type.
 
@@ -74,7 +74,7 @@ For `AddressValidity`, `requestBody` contains a single field:
 
 ### Reference Documentation
 
-- [AddressValidity Specification](https://gitlab.com/flarenetwork/docs-team/flare-specs/-/blob/main/src/FDC/AttestationTypes/AddressValidity.md?ref_type=heads)
+- [AddressValidity Specification](/fdc/attestation-types/address-validity)
 - [Verifier Interactive Docs](https://fdc-verifiers-testnet.flare.network/verifier/btc/api-doc#/AddressValidity/BTCAddressValidityVerifierController_prepareRequest)
 - API available for [DOGE](https://fdc-verifiers-testnet.flare.network/verifier/doge/api-doc#/AddressValidity/BTCAddressValidityVerifierController_prepareRequest) and [XRP](https://fdc-verifiers-testnet.flare.network/verifier/xrp/api-doc#/AddressValidity/BTCAddressValidityVerifierController_prepareRequest).
 
@@ -273,7 +273,7 @@ forge script script/fdcExample/AddressValidity.s.sol:PostRequest --private-key $
 The prerequisite for this is that the `.env` file is not missing the `PRIVATE KEY` and `COSTON2_RPC_URL` values.
 The script can also access other chains; that can be achieved by replacing the `--rpc-url` value with `COSTON_RPC_URL`, `FLARE_RPC_URL`, or `SONGBIRD_RPC_URL`.
 
-## Posting the Request to a Verifier Server
+## Post request to verifier
 
 Before submitting address validation requests to the FDC protocol, we first need to prepare and send them to a verifier server.
 This section walks through the request submission process using the `surl` package.
@@ -355,17 +355,17 @@ Let's break it down line by line:
 
 What this demonstrates is that, with some effort, the `abiEncodedRequest` can be constructed manually.
 
-## Submitting the Request to the FDC
+## Submit request to FDC
 
 This step transitions from off-chain request preparation to on-chain interaction with the FDC protocol. Now, we submit the validated request to the blockchain using deployed smart contracts.
 
-### Submitting the Request
+### Submit request
 
 The entire submission process requires only five key steps:
 
 ```solidity title="script/fdcExample/Base.s.sol"
 function submitAttestationRequest(
-    AttestationResponse memory response
+    bytes memory abiEncodedRequest
 ) internal {
     uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
     vm.startBroadcast(deployerPrivateKey);
@@ -373,7 +373,7 @@ function submitAttestationRequest(
     IFdcRequestFeeConfigurations fdcRequestFeeConfigurations = ContractRegistry
         .getFdcRequestFeeConfigurations();
     uint256 requestFee = fdcRequestFeeConfigurations.getRequestFee(
-        response.abiEncodedRequest
+        abiEncodedRequest
     );
     console.log("request fee: %s\n", requestFee);
     vm.stopBroadcast();
@@ -385,7 +385,7 @@ function submitAttestationRequest(
     console.log(address(fdcHub));
     console.log("\n");
 
-    fdcHub.requestAttestation{value: requestFee}(response.abiEncodedRequest);
+    fdcHub.requestAttestation{value: requestFee}(abiEncodedRequest);
     vm.stopBroadcast();
 }
 ```
@@ -393,7 +393,7 @@ function submitAttestationRequest(
 ### Step-by-Step Breakdown
 
 1.  Load Private Key
-    The private key is read from the `.env` file using Foundry’s `envUint` function:
+    The private key is read from the `.env` file using Foundry's `envUint` function:
 
 ```solidity
        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -430,7 +430,7 @@ function submitAttestationRequest(
  fdcHub.requestAttestation{value: requestFee}(response.abiEncodedRequest);
 ```
 
-5.  Calculate Voting Round Number
+5.  Calculate the Voting Round Number
     To determine the voting round in which the attestation request is processed, we query the `FlareSystemsManager` contract:
 
 ```solidity
@@ -445,7 +445,7 @@ function submitAttestationRequest(
 
 This can be done within the existing broadcast or in a new one (as done in the demo repository for better code organization).
 
-## Waiting for the response
+## Wait for response
 
 We wait for the round to finalize.
 This takes no more than 90 seconds.
@@ -455,9 +455,9 @@ To check if the round has been finalized, go to [Finalizations](https://coston2-
 
 If you want to learn more about how the FDC protocol works, check [here](/fdc/overview).
 
-## Preparing proof request
+## Prepare proof request
 
-We prepare the proof request in a similar manner as in the step Preparing the request, by string concatenation.
+We prepare the proof request in a similar manner as in the step Prepare the request, by string concatenation.
 We import two new variables from the `.env` file; the URL of a verifier server and the corresponding API key.
 note
 
@@ -480,39 +480,51 @@ contract RetrieveDataAndProof is Script {
  using Surl for *;
 
  function run() external {
- string memory daLayerUrl = vm.envString("COSTON2_DA_LAYER_URL");
- string memory apiKey = vm.envString("X_API_KEY");
- string memory fileName = string.concat(attestationTypeName, ".txt");
- string memory filePath = string.concat(dirPath, fileName);
+    string memory daLayerUrl = vm.envString("COSTON2_DA_LAYER_URL");
+    string memory apiKey = vm.envString("X_API_KEY");
 
- // We import the roundId and abiEncodedRequest from the first file
- string memory votingRoundId = vm.readLine(filePath);
- string memory requestBytes = vm.readLine(filePath);
- console.log("votingRoundId: %s\n", votingRoundId);
- console.log("requestBytes: %s\n", requestBytes);
+    string memory requestBytes = vm.readLine(
+        string.concat(
+            dirPath,
+            attestationTypeName,
+            "_abiEncodedRequest",
+            ".txt"
+        )
+    );
+    string memory votingRoundId = vm.readLine(
+        string.concat(
+            dirPath,
+            attestationTypeName,
+            "_votingRoundId",
+            ".txt"
+        )
+    );
 
- // Preparing the proof request
- string[] memory headers = prepareHeaders(apiKey);
- string memory body = string.concat(
- '{"votingRoundId":',
- votingRoundId,
- ',"requestBytes":"',
- requestBytes,
- '"}'
- );
- console.log("body: %s\n", body);
- console.log(
- "headers: %s",
- string.concat("{", headers[0], ", ", headers[1]),
- "}\n"
- );
+    console.log("votingRoundId: %s\n", votingRoundId);
+    console.log("requestBytes: %s\n", requestBytes);
+
+    string[] memory headers = Base.prepareHeaders(apiKey);
+    string memory body = string.concat(
+        '{"votingRoundId":',
+        votingRoundId,
+        ',"requestBytes":"',
+        requestBytes,
+        '"}'
+    );
+    console.log("body: %s\n", body);
+    console.log(
+        "headers: %s",
+        string.concat("{", headers[0], ", ", headers[1]),
+        "}\n"
+    );
+
 
  ...
  }
 }
 ```
 
-## Posting the proof request to a DA Layer provider
+## Post proof request to DA Layer
 
 We post the proof request to a chosen DA Layer provider server also with the same code as we did in the previous step.
 
@@ -540,7 +552,7 @@ struct ParsableProof {
 ```
 
 The field `attestationType` holds the UTF8 encoded hex string of the attestation type name, padded to 32 bytes.
-Thus, it should match the value of the `attestationType` parameter in the Preparing the request step.
+Thus, it should match the value of the `attestationType` parameter in the Prepare the request step.
 In our case, that value is `0x4164647265737356616c69646974790000000000000000000000000000000000`.
 
 The array `proofs` holds the Merkle proofs of our attestation request.
@@ -559,7 +571,7 @@ IAddressValidity.Response memory proofResponse = abi.decode(
 );
 ```
 
-## Verifying the proof
+## Verify proof
 
 FDC optimizes on-chain storage costs by implementing a hybrid data verification system.
 Instead of storing complete datasets on-chain, it stores only Merkle proofs, while maintaining the actual data through trusted off-chain providers.
@@ -598,7 +610,7 @@ console.log("proof is valid: %s\n", StringsBase.toString(isValid));
 vm.stopBroadcast();
 ```
 
-## Using the data
+## Use the data
 
 We will now define a simple contract, that will demonstrate how the data can be used onchain.
 The contract will receive an address and proof, and decide if the address is valid.
