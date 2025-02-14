@@ -1,0 +1,839 @@
+---
+title: Json Api
+authors: [lukaavbreht, filipkoprivec]
+description: Retrieve arbitrary Web2 data.
+tags: [intermediate, ethereum, fdc]
+keywords: [ethereum, flare-data-connector, evm, flare-network]
+sidebar_position: 8
+unlisted: false
+---
+
+The `JsonApi` attestation type enables data collection from an arbitrary Web2 source.
+You can learn more about it in the official [specification repo](/fdc/attestation-types/json-api).
+
+We will now demonstrate how the FDC protocol can be used to collect the data of a given [Star Wars API](https://swapi.dev/) request.
+The request we will be making is `https://swapi.dev/api/peaople/3/`.
+The same procedure works for all public APIs.
+
+In this guide, we will follow the steps outlined in the [FDC overview](/fdc/overview).
+
+Our implementation requires handling the FDC voting round finalization process.
+To manage this, we will create separate scripts in `script/fdcExample/JsonApi.s.sol` that handle different stages of the validation process:
+
+```solidity title="script/fdcExample/JsonApi.s.sol"
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.25;
+
+import {Script} from "dependencies/forge-std-1.9.5/src/Script.sol";
+...
+
+string constant attestationTypeName = "JsonApi";
+string constant dirPath = "data/";
+
+contract PrepareAttestationRequest is Script {
+ ...
+}
+
+contract SubmitAttestationRequest is Script {
+ ...
+}
+
+contract RetrieveDataAndProof is Script {
+ ...
+}
+
+contract Deploy is Script {
+ ...
+}
+...
+```
+
+The names of included contracts mostly mirror the steps described in the [FDC guide](/fdc/overview).
+
+To bridge the separate executions of the scripts, we will save the relevant data of each script to a file in the `dirPath` folder.
+Each succeeding script will then read that file to load the data.
+
+## Prepare request
+
+The JSON request to the verifier is the same form for all attestation types, but the values of the fields differ between them.
+It contains the following fields.
+
+### Required Fields
+
+- `attestationType` is the UTF8 hex string encoding of the attestation type name, zero-padded to 32 bytes.
+- `sourceId` is the UTF8 hex string encoding of the data source identifier name, zero-padded to 32 bytes.
+- `requestBody` is different for each attestation type.
+
+In the case of `JsonApi`, `requestBody` is a JSON containing the fields:
+
+- `url`: url of the data source; as `string`
+- `postprocessJq`: JQ filter to postprocess the json data received from the URL; as `string`
+- `abi_signature`: ABI signature of the Solidity struct that will be used to decode the data; as `string`
+
+### Reference Documentation
+
+- [JsonApi Specification](/fdc/attestation-types/json-api)
+- [Verifier Interactive Docs](https://jq-verifier-test.flare.rocks/api-doc#/)
+
+### Example Values
+
+- `url`: the above address `https://swapi.dev/api/people/3/`
+- `postprocessJq`: `{name: .name, height: .height, mass: .mass, numberOfFilms: .films | length, uid: (.url | split(\\"/\\") | .[-2] | tonumber)}`
+- `abi_signature`:
+
+```bash
+{\\"components\\": [
+{\\"internalType\\": \\"string\\", \\"name\\": \\"name\\", \\"type\\": \\"string\\"},
+{\\"internalType\\": \\"uint256\\", \\"name\\": \\"height\\", \\"type\\": \\"uint256\\"},
+{\\"internalType\\": \\"uint256\\", \\"name\\": \\"mass\\", \\"type\\": \\"uint256\\"},
+{\\"internalType\\": \\"uint256\\", \\"name\\": \\"numberOfFilms\\", \\"type\\": \\"uint256\\"},
+{\\"internalType\\": \\"uint256\\", \\"name\\": \\"uid\\", \\"type\\": \\"uint256\\"}
+],
+\\"name\\": \\"task\\",\\"type\\": \\"tuple\\"}
+```
+
+### Encoding Functions
+
+To encode values into UTF8 hex:
+
+- `toUtf8HexString`: Converts a string to UTF8 hex.
+- `toHexString`: Zero-right-pads the string to 32 bytes.
+
+These functions are included in the [Base library](https://github.com/flare-foundation/flare-foundry-starter/blob/master/script/fdcExample/Base.s.sol) within the [example repository](https://github.com/flare-foundation/flare-foundry-starter), but they can also be defined locally in your contract or script.
+
+```solidity title="scrip/fdcExample/Base.s.sol"
+function toHexString(
+ bytes memory data
+) public pure returns (string memory) {
+ bytes memory alphabet = "0123456789abcdef";
+
+ bytes memory str = new bytes(2 + data.length * 2);
+ str[0] = "0";
+ str[1] = "x";
+ for (uint i = 0; i < data.length; i++) {
+ str[2 + i * 2] = alphabet[uint(uint8(data[i] >> 4))];
+ str[3 + i * 2] = alphabet[uint(uint8(data[i] & 0x0f))];
+ }
+ return string(str);
+}
+```
+
+```solidity title="script/fdcExample/Base.s.sol"
+function toUtf8HexString(
+ string memory _string
+) internal pure returns (string memory) {
+ string memory encodedString = toHexString(
+ abi.encodePacked(_string)
+ );
+ uint256 stringLength = bytes(encodedString).length;
+ require(stringLength <= 64, "String too long");
+ uint256 paddingLength = 64 - stringLength + 2;
+ for (uint256 i = 0; i < paddingLength; i++) {
+ encodedString = string.concat(encodedString, "0");
+ }
+ return encodedString;
+}
+```
+
+We also define a helper function for formatting data into a JSON string.
+
+```solidity title="scrip/fdcExample/Base.s.sol"
+function prepareAttestationRequest(
+ string memory attestationType,
+ string memory sourceId,
+ string memory requestBody
+) internal view returns (string[] memory, string memory) {
+ // We read the API key from the .env file
+ string memory apiKey = vm.envString("VERIFIER_API_KEY");
+
+ // Preparing headers
+ string[] memory headers = prepareHeaders(apiKey);
+ // Preparing body
+ string memory body = prepareBody(
+ attestationType,
+ sourceId,
+ requestBody
+ );
+
+ console.log(
+ "headers: %s",
+ string.concat("{", headers[0], ", ", headers[1]),
+ "}\n"
+ );
+ console.log("body: %s\n", body);
+ return (headers, body);
+}
+
+function prepareHeaders(
+ string memory apiKey
+) internal pure returns (string[] memory) {
+ string[] memory headers = new string[](2);
+ headers[0] = string.concat('"X-API-KEY": ', apiKey);
+ headers[1] = '"Content-Type": "application/json"';
+ return headers;
+}
+
+function prepareBody(
+ string memory attestationType,
+ string memory sourceId,
+ string memory body
+) internal pure returns (string memory) {
+ return
+ string.concat(
+ '{"attestationType": ',
+ '"',
+ attestationType,
+ '"',
+ ', "sourceId": ',
+ '"',
+ sourceId,
+ '"',
+ ', "requestBody": ',
+ body,
+ "}"
+ );
+}
+
+```
+
+In the example repository, these are once again included within the [Base](https://github.com/flare-foundation/flare-foundry-starter/blob/master/script/fdcExample/Base.s.sol) library file.
+
+Thus, the part of the script that prepares the verifier request looks like:
+
+```solidity title="scrip/fdcExample/JsonApi.s.sol"
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.25;
+
+import {console} from "dependencies/forge-std-1.9.5/src/console.sol";
+import {Script} from "dependencies/forge-std-1.9.5/src/Script.sol";
+import {Base} from "./Base.s.sol";
+...
+
+string constant attestationTypeName = "JsonApi";
+string constant dirPath = "data/";
+
+contract PrepareAttestationRequest is Script {
+ using Surl for *;
+
+ // Setting request data
+    string public apiUrl = "https://swapi.dev/api/people/3/";
+    string public postprocessJq =
+        '{name: .name, height: .height, mass: .mass, numberOfFilms: .films | length, uid: (.url | split(\\"/\\") | .[-2] | tonumber)}';
+    string publicAbiSignature =
+        '{\\"components\\": ['
+        '{\\"internalType\\": \\"string\\", \\"name\\": \\"name\\", \\"type\\": \\"string\\"},'
+        '{\\"internalType\\": \\"uint256\\", \\"name\\": \\"height\\", \\"type\\": \\"uint256\\"},'
+        '{\\"internalType\\": \\"uint256\\", \\"name\\": \\"mass\\", \\"type\\": \\"uint256\\"},'
+        '{\\"internalType\\": \\"uint256\\", \\"name\\": \\"numberOfFilms\\", \\"type\\": \\"uint256\\"},'
+        '{\\"internalType\\": \\"uint256\\", \\"name\\": \\"uid\\", \\"type\\": \\"uint256\\"}'
+        "],"
+        '\\"name\\": \\"task\\",\\"type\\": \\"tuple\\"}';
+
+    string public sourceName = "WEB2";
+
+    function prepareRequestBody(
+        string memory url,
+        string memory postprocessJq,
+        string memory publicAbiSignature
+    ) private pure returns (string memory) {
+        return
+            string.concat(
+                '{"url": "',
+                url,
+                '","postprocessJq": "',
+                postprocessJq,
+                '","abi_signature": "',
+                publicAbiSignature,
+                '"}'
+            );
+    }
+
+    function run() external {
+        // Preparing request data
+        string memory attestationType = Base.toUtf8HexString(
+            attestationTypeName
+        );
+        string memory sourceId = Base.toUtf8HexString(sourceName);
+        string memory requestBody = prepareRequestBody(
+            apiUrl,
+            postprocessJq,
+            publicAbiSignature
+        );
+
+ (string[] memory headers, string memory body) =
+ prepareAttestationRequest(attestationType, sourceId, requestBody);
+
+ ...
+ }
+}
+
+...
+```
+
+The code above differs slightly from the [starter example](https://github.com/flare-foundation/flare-foundry-starter).
+But, if we remove the ellipses `...` signifying missing code, we can still run the script.
+
+Because of the `console.log` commands it will produce JSON strings that represent valid requests; we can then pass this to the [interactive verifier](https://fdc-verifiers-testnet.flare.network/verifier/btc/api-doc#/JsonApi/BTCJsonApiVerifierController_prepareRequest) to check the response.
+
+We can run the script by calling the following commands in the console.
+
+```bash
+source .env
+```
+
+```bash
+forge script script/fdcExample/JsonApi.s.sol:PrepareAttestationRequest --private-key $PRIVATE_KEY --rpc-url $COSTON2_RPC_URL --etherscan-api-key $FLARE_API_KEY --broadcast  --ffi
+```
+
+The prerequisite for this is that the `.env` file is not missing the `PRIVATE KEY` and `COSTON2_RPC_URL` values.
+The script can also access other chains; that can be achieved by replacing the `--rpc-url` value with `COSTON_RPC_URL`, `FLARE_RPC_URL`, or `SONGBIRD_RPC_URL`.
+
+## Post request to verifier
+
+To post a request to a verifier server, we use the `surl` package.
+We place `using Surl for *;` at the start of our `PostRequest` contract, and then call its `post` method on the verifier URL.
+
+```solidity title="scrip/fdcExample/JsonApi.s.sol"
+(, bytes memory data) = url.post(headers, body);
+```
+
+We construct the URL by appending to the verifier address `https://fdc-verifiers-testnet.flare.network/` the path `verifier/btc/JsonApi/prepareRequest`.
+We can do so dynamically with the following code.
+
+```solidity title="scrip/fdcExample/JsonApi.s.sol"
+string memory baseUrl = "https://fdc-verifiers-testnet.flare.network/";
+string memory url = string.concat(
+ baseUrl,
+ "verifier/",
+ baseSourceName,
+ "/",
+ attestationTypeName,
+ "/prepareRequest"
+);
+console.log("url: %s", url);
+string memory requestBody = string.concat(
+ '{"addressStr": "',
+ addressStr,
+ '"}'
+);
+```
+
+Lastly, we parse the return data from the verifier server.
+Using the Foundry `parseJson` shortcode, and a custom struct `AttestationResponse`, we decode the returned data and extract from it the ABI encoded request.
+
+```solidity title="scrip/fdcExample/Base.s.sol"
+function parseAttestationRequest(
+ bytes memory data
+) internal pure returns (AttestationResponse memory) {
+ string memory dataString = string(data);
+ bytes memory dataJson = vm.parseJson(dataString);
+
+ AttestationResponse memory response = abi.decode(
+ dataJson,
+ (AttestationResponse)
+ );
+
+ console.log("response status: %s\n", response.status);
+ console.log("response abiEncodedRequest: ");
+ console.logBytes(response.abiEncodedRequest);
+ console.log("\n");
+
+ return response;
+}
+```
+
+:::info
+If everything went right, the `abiEncodedRequest` should look something like this.
+
+```
+0x
+494a736f6e417069000000000000000000000000000000000000000000000000
+5745423200000000000000000000000000000000000000000000000000000000
+0b62b2fe7066a5b56cd4cc859f4c802a02e2a0f84b5ad12893ef5a90651e588c
+0000000000000000000000000000000000000000000000000000000000000020
+0000000000000000000000000000000000000000000000000000000000000060
+00000000000000000000000000000000000000000000000000000000000000a0
+0000000000000000000000000000000000000000000000000000000000000140
+000000000000000000000000000000000000000000000000000000000000001f
+68747470733a2f2f73776170692e6465762f6170692f70656f706c652f332f00
+0000000000000000000000000000000000000000000000000000000000000078
+7b6e616d653a202e6e616d652c206865696768743a202e6865696768742c206d
+6173733a202e6d6173732c206e756d6265724f6646696c6d733a202e66696c6d
+73207c206c656e6774682c207569643a20282e75726c207c2073706c69742822
+2f2229207c202e5b2d325d207c20746f6e756d626572297d0000000000000000
+0000000000000000000000000000000000000000000000000000000000000173
+7b22636f6d706f6e656e7473223a205b7b22696e7465726e616c54797065223a
+2022737472696e67222c20226e616d65223a20226e616d65222c202274797065
+223a2022737472696e67227d2c7b22696e7465726e616c54797065223a202275
+696e74323536222c20226e616d65223a2022686569676874222c202274797065
+223a202275696e74323536227d2c7b22696e7465726e616c54797065223a2022
+75696e74323536222c20226e616d65223a20226d617373222c20227479706522
+3a202275696e74323536227d2c7b22696e7465726e616c54797065223a202275
+696e74323536222c20226e616d65223a20226e756d6265724f6646696c6d7322
+2c202274797065223a202275696e74323536227d2c7b22696e7465726e616c54
+797065223a202275696e74323536222c20226e616d65223a2022756964222c20
+2274797065223a202275696e74323536227d5d2c226e616d65223a2022746173
+6b222c2274797065223a20227475706c65227d00000000000000000000000000
+```
+
+Let's break it down line by line:
+
+- **First line:** `toUtf8HexString("JsonApi")`
+- **Second line:** `toUtf8HexString("testETH")`
+- **Third line:** message integrity code (MIC), a hash of the whole response salted with a string `"Flare"`, ensures the integrity of the attestation
+- **Remaining lines:** ABI encoded `JsonApi.RequestBody` Solidity struct
+  :::
+
+What this demonstrates is that, with some effort, the `abiEncodedRequest` can be constructed manually.
+
+We write the `abiEncodedRequest` to a file (`data/JsonApi_abiEncodedRequest.txt`) to it in the next step.
+
+```solidity title="scrip/fdcExample/JsonApi.s.sol"
+Base.writeToFile(
+    dirPath,
+    string.concat(attestationTypeName, "_abiEncodedRequest"),
+    StringsBase.toHexString(response.abiEncodedRequest),
+    true
+);
+```
+
+## Submit request to FDC
+
+This step transitions from off-chain request preparation to on-chain interaction with the FDC protocol. Now, we submit the validated request to the blockchain using deployed smart contracts.
+
+### Submit request
+
+The entire submission process requires only five key steps:
+
+```solidity title="scrip/fdcExample/Base.s.sol"
+function submitAttestationRequest(
+    bytes memory abiEncodedRequest
+) internal {
+ uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+ vm.startBroadcast(deployerPrivateKey);
+ IFdcRequestFeeConfigurations fdcRequestFeeConfigurations = ContractRegistry
+ .getFdcRequestFeeConfigurations();
+ uint256 requestFee = fdcRequestFeeConfigurations.getRequestFee(
+ abiEncodedRequest
+ );
+ console.log("request fee: %s\n", requestFee);
+ vm.stopBroadcast();
+
+ vm.startBroadcast(deployerPrivateKey);
+
+ IFdcHub fdcHub = ContractRegistry.getFdcHub();
+ console.log("fcdHub address:");
+ console.log(address(fdcHub));
+ console.log("\n");
+ fdcHub.requestAttestation{value: requestFee}(abiEncodedRequest);
+ vm.stopBroadcast();
+}
+```
+
+### Step-by-Step Breakdown
+
+1.  Load Private Key
+    The private key is read from the `.env` file using Foundry's `envUint` function:
+
+```solidity
+       uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+```
+
+2.  Obtain Request Fee
+    We retrieve the required requestFee from the `FdcRequestFeeConfigurations` contract:
+
+```solidity
+        IFdcRequestFeeConfigurations fdcRequestFeeConfigurations = ContractRegistry
+            .getFdcRequestFeeConfigurations();
+        uint256 requestFee = fdcRequestFeeConfigurations.getRequestFee(
+            abiEncodedRequest
+        );
+
+```
+
+    This is done in a separate broadcast to ensure `requestFee` is available before submitting the request.
+
+3. Access `FdcHub` Contract
+   Using the `ContractRegistry` library (from `flare-periphery`), we fetch the `FdcHub` contract:
+
+```solidity
+   IFdcHub fdcHub = ContractRegistry.getFdcHub();
+   console.log("fcdHub address:");
+   console.log(address(fdcHub));
+   console.log("\n");
+```
+
+4. Submit the Attestation Request
+   We send the attestation request with the required fee:
+
+```solidity
+ fdcHub.requestAttestation{value: requestFee}(abiEncodedRequest);
+```
+
+5.  Calculate the Voting Round Number
+    To determine the voting round in which the attestation request is processed, we query the `FlareSystemsManager` contract:
+
+```solidity
+       // Calculating roundId
+       IFlareSystemsManager flareSystemsManager = ContractRegistry
+           .getFlareSystemsManager();
+
+       uint32 roundId = flareSystemsManager.getCurrentVotingEpochId();
+       console.log("roundId: %s\n", Strings.toString(roundId));
+
+```
+
+This can be done within the existing broadcast or in a new one (as done in the demo repository for better code organization).
+
+## Wait for response
+
+We wait for the round to finalize.
+This takes no more than 90 seconds.
+
+You can check if the request was submitted successfully on the [AttestationRequests](https://coston2-systems-explorer.flare.rocks/attestation-request) page on the Flare Systems Explorer website.
+To check if the round has been finalized, go to [Finalizations](https://coston2-systems-explorer.flare.rocks/finalizations) page.
+
+To learn more about how the FDC protocol works, check [here](/fdc/overview).
+
+## Prepare proof request
+
+We prepare the proof request in a similar manner as in the step Prepare the request, by string concatenation.
+We import two new variables from the `.env` file; the URL of a verifier server and the corresponding API key.
+
+```solidity title="scrip/fdcExample/JsonApi.s.sol"
+string memory daLayerUrl = vm.envString("COSTON2_DA_LAYER_URL");
+string memory apiKey = vm.envString("X_API_KEY");
+```
+
+Also, by repeatedly using the Foundry shortcode `vm.readLine`, we read the data, saved to a file in the previous step, to variables.
+
+```solidity title="scrip/fdcExample/JsonApi.s.sol"
+string memory requestBytes = vm.readLine(
+    string.concat(
+        dirPath,
+        attestationTypeName,
+        "_abiEncodedRequest",
+        ".txt"
+    )
+);
+string memory votingRoundId = vm.readLine(
+    string.concat(
+        dirPath,
+        attestationTypeName,
+        "_votingRoundId",
+        ".txt"
+    )
+);
+```
+
+The code is as follows.
+
+```solidity title="scrip/fdcExample/JsonApi.s.sol"
+contract RetrieveDataAndProof is Script {
+ using Surl for *;
+
+ function run() external {
+    string memory daLayerUrl = vm.envString("COSTON2_DA_LAYER_URL");
+    string memory apiKey = vm.envString("X_API_KEY");
+
+    string memory requestBytes = vm.readLine(
+        string.concat(
+            dirPath,
+            attestationTypeName,
+            "_abiEncodedRequest",
+            ".txt"
+        )
+    );
+    string memory votingRoundId = vm.readLine(
+        string.concat(
+            dirPath,
+            attestationTypeName,
+            "_votingRoundId",
+            ".txt"
+        )
+    );
+
+    console.log("votingRoundId: %s\n", votingRoundId);
+    console.log("requestBytes: %s\n", requestBytes);
+
+    string[] memory headers = Base.prepareHeaders(apiKey);
+    string memory body = string.concat(
+        '{"votingRoundId":',
+        votingRoundId,
+        ',"requestBytes":"',
+        requestBytes,
+        '"}'
+    );
+    console.log("body: %s\n", body);
+    console.log(
+        "headers: %s",
+        string.concat("{", headers[0], ", ", headers[1]),
+        "}\n"
+    );
+
+
+ ...
+ }
+}
+```
+
+## Post proof request to DA Layer
+
+We post the proof request to a chosen DA Layer provider server also with the same code as we did in the previous step.
+
+```solidity title="scrip/fdcExample/JsonApi.s.sol"
+string memory url = string.concat(
+ daLayerUrl,
+ // "api/v0/fdc/get-proof-round-id-bytes"
+ "api/v1/fdc/proof-by-request-round-raw"
+);
+console.log("url: %s\n", url);
+
+(, bytes memory data) = Base.postAttestationRequest(url, headers, body);
+```
+
+Parsing the returned data requires the definition of an auxiliary `struct`.
+
+{/* <!-- TODO rename after renaming --> */}
+
+```solidity title="scrip/fdcExample/Base.s.sol"
+struct ParsableProof {
+ bytes32 attestationType;
+ bytes32[] proofs;
+ bytes responseHex;
+}
+```
+
+The field `attestationType` holds the UTF8 encoded hex string of the attestation type name, padded to 32 bytes.
+Thus, it should match the value of the `attestationType` parameter in the Prepare the request step.
+In our case, that value is `0x4164647265737356616c69646974790000000000000000000000000000000000`.
+
+The array `proofs` holds the Merkle proofs of our attestation request.
+
+Lastly, `responseHex` is the ABI encoding of the chosen attestation type response struct.
+In this case, it is the `IJsonApi.Response` struct.
+We retrieve this data as follows.
+
+```solidity title="scrip/fdcExample/JsonApi.s.sol"
+bytes memory dataJson = parseData(data);
+ParsableProof memory proof = abi.decode(dataJson, (ParsableProof));
+
+IJsonApi.Response memory proofResponse = abi.decode(
+ proof.responseHex,
+ (IJsonApi.Response)
+);
+```
+
+## Verify proof
+
+FDC optimizes on-chain storage costs by implementing a hybrid data verification system.
+Instead of storing complete datasets on-chain, it stores only Merkle proofs, while maintaining the actual data through trusted off-chain providers.
+This approach significantly reduces gas costs while preserving data integrity.
+
+When requested, data providers supply the original data along with its corresponding Merkle proof.
+The protocol verifies data authenticity by comparing the provided Merkle proof against the on-chain Merkle root.
+A successful match confirms the data's integrity and authenticity within the FDC system.
+
+While data verification is optional if you trust your data provider, FDC ensures transparency by making verification possible at any time.
+This capability is crucial for maintaining system integrity and allowing users to independently verify data when needed, particularly in production environments.
+
+FDC provides verification functionality through the `FdcVerification` contract.
+To verify address validity, we first format our data using the `IEVMTransaction.Proof` struct, which contains both the Merkle proof and the response data.
+
+```solidity title="scrip/fdcExample/JsonApi.s.sol"
+IJsonApi.Proof memory _proof = IJsonApi.Proof(
+ proof.proofs,
+ proofResponse
+);
+```
+
+We then access the `FdcVerification` contract through the `ContractRegistry`, and feed it the proof.
+If the proof is valid, the function `verifyJsonApi` will return `true`, otherwise `false`.
+As before, we wrap the whole thing into a broadcast environment, using the `PRIVATE_KEY` variable from our `.env` file.
+
+```solidity title="scrip/fdcExample/JsonApi.s.sol"
+uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+vm.startBroadcast(deployerPrivateKey);
+
+bool isValid = ContractRegistry
+ .getFdcVerification()
+ .verifyJsonApi(proof);
+console.log("proof is valid: %s\n", StringsBase.toString(isValid));
+
+vm.stopBroadcast();
+```
+
+In actuality, we will only verify the proof within a deployed contract, which we will define in the next step.
+What we will do here instead is, we will save the proof to a file so that it can be later loaded into a variable.
+The code that does this is as follows.
+
+```solidity title="scrip/fdcExample/EVMTransaction.s.sol"
+Base.writeToFile(
+    dirPath,
+    string.concat(attestationTypeName, "_proof"),
+    StringsBase.toHexString(abi.encode(_proof)),
+    true
+);
+```
+
+## Use the data
+
+{/* TODO */}
+
+We will now define a simple contract, that will demonstrate how the data can be used onchain.
+The contract will receive character data from the [Star Wars API](https://swapi.dev/), and store it in a `StarWarsCharacter` struct.
+It will do so only if the proof is valid.
+
+```solidity title="src/fdcExample/JsonApi.sol"
+struct StarWarsCharacter {
+    string name;
+    uint256 numberOfMovies;
+    uint256 apiUid;
+    uint256 bmi;
+}
+
+```
+
+We will also need a `DataTransportObject` struct, that will allow us to decode the data.
+
+```solidity title="src/fdcExample/JsonApi.sol"
+struct DataTransportObject {
+    string name;
+    uint256 height;
+    uint256 mass;
+    uint256 numberOfMovies;
+    uint256 apiUid;
+}
+```
+
+First, we define an interface that the contract will inherit from.
+We do so, so that we may contact the contract later through a script.
+
+```solidity title="src/fdcExample/JsonApi.sol"
+interface IStarWarsCharacterList {
+    function addCharacter(IJsonApi.Proof calldata data) external;
+    function getAllCharacters()
+        external
+        view
+        returns (StarWarsCharacter[] memory);
+}
+```
+
+The interface exposes the two functions that a user might call, `addCharacter` and `getAllCharacters`.
+We now define the contract as follows.
+
+```solidity title="src/fdcExample/JsonApi.sol"
+
+contract StarWarsCharacterList {
+    mapping(uint256 => StarWarsCharacter) public characters;
+    uint256[] public characterIds;
+
+    function isJsonApiProofValid(
+        IJsonApi.Proof calldata _proof
+    ) private view returns (bool) {
+        // Inline the check for now until we have an official contract deployed
+        return
+            ContractRegistry.auxiliaryGetIJsonApiVerification().verifyJsonApi(
+                _proof
+            );
+    }
+
+    function addCharacter(IJsonApi.Proof calldata data) public {
+        require(isJsonApiProofValid(data), "Invalid proof");
+
+        DataTransportObject memory dto = abi.decode(
+            data.data.responseBody.abi_encoded_data,
+            (DataTransportObject)
+        );
+
+        require(characters[dto.apiUid].apiUid == 0, "Character already exists");
+
+        StarWarsCharacter memory character = StarWarsCharacter({
+            name: dto.name,
+            numberOfMovies: dto.numberOfMovies,
+            apiUid: dto.apiUid,
+            bmi: (dto.mass * 100 * 100) / (dto.height * dto.height)
+        });
+
+        characters[dto.apiUid] = character;
+        characterIds.push(dto.apiUid);
+    }
+
+    function getAllCharacters()
+        public
+        view
+        returns (StarWarsCharacter[] memory)
+    {
+        StarWarsCharacter[] memory result = new StarWarsCharacter[](
+            characterIds.length
+        );
+        for (uint256 i = 0; i < characterIds.length; i++) {
+            result[i] = characters[characterIds[i]];
+        }
+        return result;
+    }
+}
+```
+
+We deploy the contract through a simple script.
+The script creates a new `StarWarsCharacterList` contract and writes its address to a file (`data/JsonApi_listenerAddress.txt`).
+
+```solidity title="scrip/fdcExample/DeployContract.s.sol"
+contract DeployContract is Script {
+    function run() external {
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
+
+        StarWarsCharacterList characterList = new StarWarsCharacterList();
+        address _address = address(characterList);
+
+        vm.stopBroadcast();
+
+        Base.writeToFile(
+            dirPath,
+            string.concat(attestationTypeName, "_address"),
+            StringsBase.toHexString(abi.encodePacked(_address)),
+            true
+        );
+    }
+}
+```
+
+We deploy the contract with the following console command.
+
+```bash
+forge script script/fdcExample/JsonApi.s.sol:DeployContract --private-key $PRIVATE_KEY --rpc-url $COSTON2_RPC_URL --etherscan-api-key $FLARE_API_KEY --broadcast --verify --ffi
+```
+
+Lastly, we define a script that interacts with the above contract.
+It first reads the ABI-encoded proof data, and the contract address, from files.
+Then, it connects to the above contract at the saved address (this is why we require the interface).
+With that, it can call the `registerJsonApi` method of the contract.
+
+```solidity title="script/fdcExample/JsonApi.s.sol"
+contract InteractWithContract is Script {
+    function run() external {
+        string memory addressString = vm.readLine(
+            string.concat(dirPath, attestationTypeName, "_address", ".txt")
+        );
+        address _address = vm.parseAddress(addressString);
+        string memory proofString = vm.readLine(
+            string.concat(dirPath, attestationTypeName, "_proof", ".txt")
+        );
+        bytes memory proofBytes = vm.parseBytes(proofString);
+        IJsonApi.Proof memory proof = abi.decode(proofBytes, (IJsonApi.Proof));
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
+        IStarWarsCharacterList characterList = IStarWarsCharacterList(_address);
+        characterList.addCharacter(proof);
+        vm.stopBroadcast();
+    }
+}
+```
+
+We run this script with the console command:
+
+```bash
+forge script script/fdcExample/JsonApi.s.sol:InteractWithContract --private-key $PRIVATE_KEY --rpc-url $COSTON2_RPC_URL --etherscan-api-key $FLARE_API_KEY --broadcast --ffi
+
+```
