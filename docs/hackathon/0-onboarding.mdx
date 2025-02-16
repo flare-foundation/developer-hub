@@ -36,16 +36,24 @@ This comprehensive guide will walk you through setting up your development envir
 - Use an existing Google account or create a new one
 - This account will be your primary access point for all hackathon resources
 - Submit your Google account email during the hackathon registration process
-- You'll receive access to the `google-hackathon-project` when approved
+- You'll receive access to the `verifiable-ai-hackathon` when approved
 
 ### Setting up Gemini API access
 
 1. Log into your registered Google account after you receive the approval
-1. Visit the [Get a Gemini API key](https://aistudio.google.com/app/apikey) page
-1. Click on **Create API key**
-1. Select `google-hackathon-project` from the dropdown
-1. Click **Create API key in existing project**
-1. Store your API key securely
+2. Visit the [Get a Gemini API key](https://aistudio.google.com/app/apikey) page
+3. Click on **Create API key**
+4. Select `verifiable-ai-hackathon` from the dropdown
+5. Click **Create API key in existing project**
+6. Store your API key securely
+
+:::tip[Common API Key Issues]
+If you get an error when creating the API key:
+
+- Clear browser cache and try again
+- Ensure you're logged into the correct Google account
+- Wait a few minutes after project approval before attempting
+  :::
 
 :::tip[Adding Hackathon API keys to your environment]
 
@@ -81,12 +89,24 @@ Follow these steps to set up a GCP instance using Confidential Space with Cloud 
 
    Follow the [gcloud CLI installation guide](https://cloud.google.com/sdk/docs/install) steps for your OS
 
+   Verify installation:
+
+   ```bash
+   gcloud version
+   ```
+
 2. **Authenticate your CLI**
 
    Use the same account used for hackathon registration
 
    ```bash
    gcloud auth login
+   ```
+
+   Verify project access:
+
+   ```bash
+   gcloud projects list  # Should show verifiable-ai-hackathon
    ```
 
 #### Create VM Instance
@@ -103,7 +123,7 @@ Use the following command template, replacing the highlighted placeholder variab
 ```bash
 # highlight-next-line
 gcloud compute instances create <INSTANCE_NAME> \
-  --project=google-hackathon-project \
+  --project=verifiable-ai-hackathon \
   --zone=us-central1-c \
   --machine-type=n2d-standard-2 \
   --network-interface=network-tier=PREMIUM,nic-type=GVNIC,stack-type=IPV4_ONLY,subnet=default \
@@ -127,6 +147,12 @@ gcloud compute instances create <INSTANCE_NAME> \
   --confidential-compute-type=SEV
 ```
 
+Key parameters explained:
+
+- `--zone=us-central1-c`: Required zone for hackathon resources
+- `--machine-type=n2d-standard-2`: Optimized for AI workloads
+- `--min-cpu-platform="AMD Milan"`: Required for confidential computing
+
 **Required Variables:**
 
 - `<INSTANCE_NAME>`: Your instance name in the format `<project-name>-<team-name>`, e.g. `agent-gemini-team1`
@@ -141,7 +167,7 @@ Follow these steps to create your VM instance through the Google Cloud Console i
 1. **Initial Setup**
 
    - Navigate to the [GCP Console](https://console.cloud.google.com/)
-   - Make sure **google-hackathon-project** is selected
+   - Make sure **verifiable-ai-hackathon** is selected
    - Click **Compute Engine → VM instances → Create Instance**
 
    <div align="center">
@@ -237,15 +263,43 @@ Follow these steps to create your VM instance through the Google Cloud Console i
 - Monitor system logs through Serial Port console
 - Verify container logs in Cloud Logging
 
-  {" "}
+### Quick Start Steps After VM Creation
 
-  <div align="center">
-    <img
-      src={FinalStep}
-      alt="Final Step Configuration"
-      style={{ maxWidth: "30%", margin: "20px 0" }}
-    />
-  </div>
+1. Test your VM connection:
+   ```bash
+   gcloud compute ssh <INSTANCE_NAME>
+   ```
+2. Verify container is running:
+   ```bash
+   docker ps
+   ```
+3. Check application logs:
+   ```bash
+   docker logs <CONTAINER_ID>
+   ```
+
+### Development Workflow
+
+- Use `gcloud compute scp` to transfer files to/from VM
+- Set up port forwarding for local development
+- Use VS Code Remote SSH extension for easier development
+
+### Resource Monitoring
+
+Monitor your VM resources through:
+
+- Google Cloud Console Dashboard
+- `top` command in VM
+- Container metrics via `docker stats`
+
+:::tip[Accessing Container Logs]
+View container logs in multiple ways:
+
+- Cloud Logging interface in Google Cloud Console
+- Serial console output
+- Docker logs in the VM
+- Cloud Logging API for programmatic access
+  :::
 
 ## Track Templates
 
@@ -268,13 +322,17 @@ When reaching out clearly mention the VM instance name.
 :::
 
 - **VM Creation Fails**
+
   - Verify project permissions
   - Check quota limits
   - Ensure correct service account access
+
 - **API Key Issues**
+
   - Confirm project selection
   - Verify key format
   - Check access restrictions
+
 - **Container Startup Problems**
   - Review metadata configuration
   - Check image URL validity
