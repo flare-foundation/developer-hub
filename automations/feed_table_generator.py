@@ -6,6 +6,7 @@ from pathlib import Path
 
 import requests
 from pycoingecko import CoinGeckoAPI
+from tqdm import tqdm
 from web3 import Web3
 
 # Configuration
@@ -30,7 +31,7 @@ HARD_CODED_FEEDS = {
         "name": "Hex Trust USD",
         "decimals": 5,
         "category": "Crypto",
-    }
+    },
 }
 
 
@@ -92,9 +93,9 @@ def get_coins_list(num_pages: int) -> list[dict]:
     coins = []
     logger.info("Querying %i pages on CoinGecko...", num_pages)
     try:
-        for page in range(1, num_pages + 1):
+        for page in tqdm(range(1, num_pages + 1)):
             coins += cg.get_coins_markets(vs_currency="usd", per_page=250, page=page)
-            time.sleep(0.5)
+            time.sleep(1)
     except Exception:
         logger.exception("Error fetching coins from CoinGecko")
         sys.exit(1)
