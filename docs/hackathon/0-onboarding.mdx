@@ -9,93 +9,75 @@ keywords: [flare, ai, confidential-compute, hackathon, google-cloud, onboarding]
 
 import ThemedImage from "@theme/ThemedImage";
 import useBaseUrl from "@docusaurus/useBaseUrl";
-
-import CreateInstance from "/static/img/verifiable-ai-hackathon/create-instance.png";
-import MachineConfiguration from "/static/img/verifiable-ai-hackathon/machine-configuration.png";
-import OsAndStorage from "/static/img/verifiable-ai-hackathon/os-and-storage.png";
-import Security from "/static/img/verifiable-ai-hackathon/security.png";
-import Networking from "/static/img/verifiable-ai-hackathon/networking.png";
-import FinalStep from "/static/img/verifiable-ai-hackathon/final-step.png";
-import AddMetaData from "/static/img/verifiable-ai-hackathon/add-metadata.png";
+import AccessGranted from "/static/img/verifiable-ai-hackathon/access-granted.png";
+import ChooseTemplate from "/static/img/verifiable-ai-hackathon/choose-template.png";
+import GeminiKey from "/static/img/verifiable-ai-hackathon/gemini-key.png";
+import CreateKey from "/static/img/verifiable-ai-hackathon/create-key.png";
 
 # Onboarding
 
 Welcome to the **Verifiable AI Hackathon**!
-This comprehensive guide will walk you through setting up your development environment, including Google Cloud infrastructure, API credentials, and Confidential Space virtual machines.
+This guide will walk you through setting up your development environment, including Google Cloud infrastructure, API credentials, and gcloud CLI access.
 
 ## Before You Begin
 
-- Plan for approximately 30-45 minutes to complete the entire setup
-- Keep track of your credentials in a secure location
-- If you encounter any issues, reach out to the Flare team on [Telegram](https://t.me/+StI5VEIvtIg2ODlh)
+- **Time Estimate:** 15-20 minutes to complete the entire setup
+- **Support Channel:** [Telegram Support Group](https://t.me/+StI5VEIvtIg2ODlh)
 
-## Prerequisites
+## Step 1: Google Account Setup
 
-### Required Google Account & Registration
+### Prerequisites
 
-- Use an existing Google account or create a new one
+- A Google account (existing or newly created)
 - This account will be your primary access point for all hackathon resources
-- Submit your Google account email during the hackathon registration process
-- You'll receive access to the `verifiable-ai-hackathon` when approved
 
-### Setting up Gemini API access
+### Registration Process
+
+1. Submit your Google account email during hackathon registration (i.e. the Google Form you submitted)
+2. Access to the `verifiable-ai-hackathon` Google Cloud project will be granted on **March 6th** (one day before the hackathon)
+3. Verify your access by visiting the [Google Cloud Console](https://console.cloud.google.com/welcome?project=verifiable-ai-hackathon)
+4. When access is granted, you'll see this confirmation screen:
+
+   <img src={AccessGranted} style={{ width: 600 }} />
+
+## Step 2: API Credential Setup
+
+### Gemini API Keys
 
 1. Log into your registered Google account after you receive the approval
 2. Visit the [Get a Gemini API key](https://aistudio.google.com/app/apikey) page
-3. Click on **Create API key**
-4. Select `verifiable-ai-hackathon` from the dropdown
-5. Click **Create API key in existing project**
-6. Store your API key securely
+3. Click on **Create API key** and select `verifiable-ai-hackathon` from the dropdown
 
-:::tip[Common API Key Issues]
-If you get an error when creating the API key:
+   <img src={GeminiKey} style={{ width: 600 }} />
 
-- Clear browser cache and try again
-- Ensure you're logged into the correct Google account
-- Wait a few minutes after project approval before attempting
-  :::
+4. Click **Create API key in existing project**
 
-:::tip[Adding Hackathon API keys to your environment]
+   <img src={CreateKey} style={{ width: 600 }} />
 
-Add the following lines to your shell configuration file (`~/.bashrc` or `~/.zshrc`):
+5. Store your API key securely
 
-```bash
-export GEMINI_API_KEY=<your-gemini-api-key>
-```
+### OpenRouter API Keys (Consensus Learning Track Only)
 
-Apply the configuration:
+If you're participating in the Consensus Learning track:
 
-```bash
-source ~/.bashrc  # or source ~/.zshrc, you can also restart the shell
-```
+1. Visit [OpenRouter](https://openrouter.ai) and create a free account
+2. Navigate to the [Settings page](https://openrouter.ai/settings/keys) to generate your API keys
+3. **Need higher limits?** Contact the Flare team on [Telegram](https://t.me/+StI5VEIvtIg2ODlh) with your team and VM instance name
 
-Verify:
+## Step 3: Set up gcloud CLI
 
-```bash
-echo $GEMINI_API_KEY  # Expected output: <your-gemini-api-key>
-```
+1. **Download & install the gcloud CLI**
 
-:::
+   - Follow the [gcloud CLI installation guide](https://cloud.google.com/sdk/docs/install) steps for your OS
+   - Installation packages available for Windows, macOS, and Linux
 
-## Setting up a VM
-
-### Option A: Using gcloud CLI (Recommended)
-
-Follow these steps to set up a GCP instance using Confidential Space with Cloud Logging.
-
-#### Prerequisites
-
-1. **Install the gcloud CLI**
-
-   Follow the [gcloud CLI installation guide](https://cloud.google.com/sdk/docs/install) steps for your OS
-
-   Verify installation:
+2. **Verify installation:**
 
    ```bash
    gcloud version
    ```
 
-2. **Authenticate your CLI**
+3. **Authenticate your CLI**
 
    Use the same account used for hackathon registration
 
@@ -103,237 +85,64 @@ Follow these steps to set up a GCP instance using Confidential Space with Cloud 
    gcloud auth login
    ```
 
-   Verify project access:
+4. **Verify project access:**
 
    ```bash
-   gcloud projects list  # Should show verifiable-ai-hackathon
+   gcloud projects list
    ```
 
-#### Create VM Instance
+   The output should include `verifiable-ai-hackathon`
 
-:::warning[Number of VM instances]
+## Step 4: Track template selection
 
-Each hackathon team is limited to **one** continuously running VM.
-You can briefly set up more than one instance for testing, but make sure you don't leave it running.
+1. Jump-start your development with one of these pre-configured templates:
 
-:::
+| Track              | Template Repository                                                                         |
+| ------------------ | ------------------------------------------------------------------------------------------- |
+| Social AI Agents   | [`flare-foundation/flare-ai-social`](https://github.com/flare-foundation/flare-ai-social)   |
+| RAG Knowledge      | [`flare-foundation/flare-ai-rag`](https://github.com/flare-foundation/flare-ai-rag)         |
+| AI x DeFi (DeFAI)  | [`flare-foundation/flare-ai-defai`](https://github.com/flare-foundation/flare-ai-defai)     |
+| Consensus Learning | [`flare-research/flare-ai-consensus`](https://github.com/flare-research/flare-ai-consensus) |
 
-Use the following command template, replacing the highlighted placeholder variables (`<>`):
+2. Navigate to the template, and click on **Use this template** and **Create a new repository**
 
-```bash
-# highlight-next-line
-gcloud compute instances create <INSTANCE_NAME> \
-  --project=verifiable-ai-hackathon \
-  --zone=us-central1-c \
-  --machine-type=n2d-standard-2 \
-  --network-interface=network-tier=PREMIUM,nic-type=GVNIC,stack-type=IPV4_ONLY,subnet=default \
-  # highlight-next-line
-  --metadata=tee-image-reference=<IMAGE_URL>,tee-container-log-redirect=true,tee-env-<ENV_VAR_NAME1>=<ENV_VAR_VALUE1>,tee-env-<ENV_VAR_NAME2>=<ENV_VAR_VALUE2>\
-  --maintenance-policy=MIGRATE \
-  --provisioning-model=STANDARD \
-  --service-account=confidential-sa@flare-network-sandbox.iam.gserviceaccount.com \
-  --scopes=https://www.googleapis.com/auth/cloud-platform \
-  --min-cpu-platform="AMD Milan" \
-  --tags=flare-ai-core,http-server,https-server \
-  --create-disk=auto-delete=yes,boot=yes,\
-  # highlight-next-line
-  device-name=<INSTANCE_NAME>,\
-  image=projects/confidential-space-images/global/images/confidential-space-debug-250100,mode=rw,size=11,type=pd-standard \
-  --shielded-secure-boot \
-  --shielded-vtpm \
-  --shielded-integrity-monitoring \
-  --labels=goog-ec-src=vm_add-gcloud \
-  --reservation-affinity=any \
-  --confidential-compute-type=SEV
-```
+   <img src={ChooseTemplate} style={{ width: 300 }} />
 
-Key parameters explained:
+3. **Clone the repo:**
 
-- `--zone=us-central1-c`: Required zone for hackathon resources
-- `--machine-type=n2d-standard-2`: Optimized for AI workloads
-- `--min-cpu-platform="AMD Milan"`: Required for confidential computing
-
-**Required Variables:**
-
-- `<INSTANCE_NAME>`: Your instance name in the format `<project-name>-<team-name>`, e.g. `agent-gemini-team1`
-- `<IMAGE_URL>`: Image path (e.g., `ghcr.io/flare-foundation/flare-ai-defai:main`)
-- `<ENV_VAR_NAME1>` and `<ENV_VAR_VALUE1>`: First environment variable name (e.g. `GEMINI_API_KEY`) and first environment variable value
-- Add additional comma separated environment variables as needed
-
-### Option B: Using GCP Console
-
-Follow these steps to create your VM instance through the Google Cloud Console interface.
-
-1. **Initial Setup**
-
-   - Navigate to the [GCP Console](https://console.cloud.google.com/)
-   - Make sure **verifiable-ai-hackathon** is selected
-   - Click **Compute Engine → VM instances → Create Instance**
-
-   <div align="center">
-     <img
-       src={CreateInstance}
-       alt="Create Instance Button"
-       style={{ maxWidth: "50%", margin: "20px 0" }}
-     />
-   </div>
-
-2. **Machine Configuration**
-
-   - Name: `<project-name>-<team-name>` (e.g., `agent-gemini-team1`)
-   - Region: `us-central1-c`
-   - Machine Type: `n2d-standard-2`
-
-   <div align="center">
-     <img
-       src={MachineConfiguration}
-       alt="Machine Configuration"
-       style={{ maxWidth: "50%", margin: "20px 0" }}
-     />
-   </div>
-
-3. **Security Configuration**
-
-   - Service account: `confidential-sa`
-   - Access scopes: **Allow full access to Cloud APIs**
-   - Enable Confidential VM service
-   - Enable Secure Boot under Shielded VM
-
-   <div align="center">
-     <img
-       src={Security}
-       alt="Security Settings"
-       style={{ maxWidth: "50%", margin: "20px 0" }}
-     />
-   </div>
-
-4. **OS and Storage Configuration**
-
-   - Click **Change** under Boot Disk
-   - Select **Confidential Space Debug 250100**
-   - Keep default storage settings
-   - Click **Select**
-
-   <div align="center">
-     <img
-       src={OsAndStorage}
-       alt="OS and Storage Configuration"
-       style={{ maxWidth: "50%", margin: "20px 0" }}
-     />
-   </div>
-
-5. **Network Configuration**
-
-   - Check **Allow HTTPS traffic**
-   - Leave other networking settings as default
-
-   <div align="center">
-     <img
-       src={Networking}
-       alt="Networking Configuration"
-       style={{ maxWidth: "50%", margin: "20px 0" }}
-     />
-   </div>
-
-6. **Advanced Configuration:**
-
-   - Click **Add Item** under Metadata
-   - Add the following key-value pairs:
-
-   | Key                          | Value              | Notes                                               |
-   | ---------------------------- | ------------------ | --------------------------------------------------- |
-   | `tee-image-reference`        | `<IMAGE_URL>`      | e.g. `ghcr.io/flare-foundation/flare-ai-defai:main` |
-   | `tee-container-log-redirect` | `true`             | Sends VM logs to serial port and cloud logging      |
-   | `tee-env-<ENV_VAR_NAME1>`    | `<ENV_VAR_VALUE1>` | e.g. `tee-env-GEMINI_API_KEY : MY_GEMINI_API_KEY`   |
-
-   <div align="center">
-     <img
-       src={AddMetaData}
-       alt="Add Metadata Configuration"
-       style={{ maxWidth: "50%", margin: "20px 0" }}
-     />
-   </div>
-
-   - Click **Create** to start the VM
-
-## Post Setup Verification
-
-- Check the VM status in your Google Cloud Console
-- Ensure all services are running correctly
-- Monitor system logs through Serial Port console
-- Verify container logs in Cloud Logging
-
-### Quick Start Steps After VM Creation
-
-1. Test your VM connection:
    ```bash
-   gcloud compute ssh <INSTANCE_NAME>
-   ```
-2. Verify container is running:
-   ```bash
-   docker ps
-   ```
-3. Check application logs:
-   ```bash
-   docker logs <CONTAINER_ID>
+   git clone https://github.com/YOUR_REPO
+   cd YOUR_REPO
    ```
 
-### Development Workflow
+4. Follow the **README** in your chosen template for track-specific setup instructions
 
-- Use `gcloud compute scp` to transfer files to/from VM
-- Set up port forwarding for local development
-- Use VS Code Remote SSH extension for easier development
-
-### Resource Monitoring
-
-Monitor your VM resources through:
-
-- Google Cloud Console Dashboard
-- `top` command in VM
-- Container metrics via `docker stats`
-
-:::tip[Accessing Container Logs]
-View container logs in multiple ways:
-
-- Cloud Logging interface in Google Cloud Console
-- Serial console output
-- Docker logs in the VM
-- Cloud Logging API for programmatic access
-  :::
-
-## Track Templates
-
-You can use the following track templates to quickly get started building:
-
-| Track              | Template Repository                                                                       |
-| ------------------ | ----------------------------------------------------------------------------------------- |
-| Social AI Agents   | [flare-foundation/flare-ai-social](https://github.com/flare-foundation/flare-ai-social)   |
-| RAG Knowledge      | [flare-foundation/flare-ai-rag](https://github.com/flare-foundation/flare-ai-rag)         |
-| AI x DeFi (DeFAI)  | [flare-foundation/flare-ai-defai](https://github.com/flare-foundation/flare-ai-defai)     |
-| Consensus Learning | [flare-research/flare-ai-consensus](https://github.com/flare-research/flare-ai-consensus) |
+Happy hacking!
 
 ## Troubleshooting
 
-:::tip[Reach out for support]
+- **Unable to create Gemini API Key in `verifiable-ai-hackathon`:**
 
-If you are unable to bugfix your issue, feel free to reach out to the Flare team on [Telegram](https://t.me/+StI5VEIvtIg2ODlh) for support.
-When reaching out clearly mention the VM instance name.
+  - Ensure you're logged into the exact Google account you registered with (i.e. the Google Form you submitted)
+  - Wait 5-10 minutes after receiving project access before attempting
+  - Clear browser cache or try in a private/incognito window
+
+- **gcloud CLI Authentication Problems:**
+
+  - Run gcloud auth login --no-launch-browser if the browser auth flow fails
+  - Check if you have multiple Google accounts in your browser and select the correct one
+
+- **Windows-specific gcloud issues**
+  - On Windows, when installing the gcloud CLI, gcloud installs its own basic shell as well.
+  - We recommend using [git BASH](https://gitforwindows.org) for access to a full set of linux commands.
+
+:::tip[Still not able to bugfix?]
+
+If you are unable to fix your issue, feel free to reach out to the Flare team on [Telegram](https://t.me/+StI5VEIvtIg2ODlh) for support. When reaching out, include:
+
+- Your team name
+- VM instance name
+- Screenshots of any error messages
+- Steps you've already attempted
 
 :::
-
-- **VM Creation Fails**
-
-  - Verify project permissions
-  - Check quota limits
-  - Ensure correct service account access
-
-- **API Key Issues**
-
-  - Confirm project selection
-  - Verify key format
-  - Check access restrictions
-
-- **Container Startup Problems**
-  - Review metadata configuration
-  - Check image URL validity
-  - Verify environment variables
