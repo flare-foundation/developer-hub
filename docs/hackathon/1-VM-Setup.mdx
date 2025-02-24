@@ -1,0 +1,144 @@
+---
+sidebar_position: 2
+unlisted: true
+title: Setting up a VM
+description: Step-by-step guide for setting up a VM the Verifiable AI Hackathon.
+keywords: [flare, ai, confidential-compute, hackathon, google-cloud, onboarding]
+---
+
+### Option A: Using gcloud CLI (Recommended)
+
+Follow these steps to set up a GCP instance using Confidential Space with Cloud Logging.
+
+#### Prerequisites
+
+1. **Install the gcloud CLI**
+
+   Follow the [gcloud CLI installation guide](https://cloud.google.com/sdk/docs/install) steps for your OS
+
+   Verify installation:
+
+   ```bash
+   gcloud version
+   ```
+
+2. **Authenticate your CLI**
+
+   Use the same account used for hackathon registration
+
+   ```bash
+   gcloud auth login
+   ```
+
+   Verify project access:
+
+   ```bash
+   gcloud projects list  # Should show verifiable-ai-hackathon
+   ```
+
+#### Create VM Instance
+
+:::warning[Number of VM instances]
+
+Each hackathon team is limited to **one** continuously running VM.
+You can briefly set up more than one instance for testing, but make sure you don't leave it running.
+
+:::
+
+Use the following command template, replacing the highlighted placeholder variables (`<>`):
+
+```bash
+# highlight-next-line
+gcloud compute instances create <INSTANCE_NAME> \
+  --project=verifiable-ai-hackathon \
+  --zone=us-central1-c \
+  --machine-type=n2d-standard-2 \
+  --network-interface=network-tier=PREMIUM,nic-type=GVNIC,stack-type=IPV4_ONLY,subnet=default \
+  # highlight-next-line
+  --metadata=tee-image-reference=<IMAGE_URL>,tee-container-log-redirect=true,tee-env-<ENV_VAR_NAME1>=<ENV_VAR_VALUE1>,tee-env-<ENV_VAR_NAME2>=<ENV_VAR_VALUE2>\
+  --maintenance-policy=MIGRATE \
+  --provisioning-model=STANDARD \
+  --service-account=confidential-sa@flare-network-sandbox.iam.gserviceaccount.com \
+  --scopes=https://www.googleapis.com/auth/cloud-platform \
+  --min-cpu-platform="AMD Milan" \
+  --tags=flare-ai-core,http-server,https-server \
+  --create-disk=auto-delete=yes,boot=yes,\
+  # highlight-next-line
+  device-name=<INSTANCE_NAME>,\
+  image=projects/confidential-space-images/global/images/confidential-space-debug-250100,mode=rw,size=11,type=pd-standard \
+  --shielded-secure-boot \
+  --shielded-vtpm \
+  --shielded-integrity-monitoring \
+  --labels=goog-ec-src=vm_add-gcloud \
+  --reservation-affinity=any \
+  --confidential-compute-type=SEV
+```
+
+Key parameters explained:
+
+- `--zone=us-central1-c`: Required zone for hackathon resources
+- `--machine-type=n2d-standard-2`: Optimized for AI workloads
+- `--min-cpu-platform="AMD Milan"`: Required for confidential computing
+
+**Required Variables:**
+
+- `<INSTANCE_NAME>`: Your instance name in the format `<project-name>-<team-name>`, e.g. `agent-gemini-team1`
+- `<IMAGE_URL>`: Image path (e.g., `ghcr.io/flare-foundation/flare-ai-defai:main`)
+- `<ENV_VAR_NAME1>` and `<ENV_VAR_VALUE1>`: First environment variable name (e.g. `GEMINI_API_KEY`) and first environment variable value
+- Add additional comma separated environment variables as needed
+
+## Post Setup Verification
+
+- Check the VM status in your Google Cloud Console
+- Ensure all services are running correctly
+- Monitor system logs through Serial Port console
+- Verify container logs in Cloud Logging
+
+### Quick Start Steps After VM Creation
+
+1. Test your VM connection:
+   ```bash
+   gcloud compute ssh <INSTANCE_NAME>
+   ```
+2. Verify container is running:
+   ```bash
+   docker ps
+   ```
+3. Check application logs:
+   ```bash
+   docker logs <CONTAINER_ID>
+   ```
+
+### Development Workflow
+
+- Use `gcloud compute scp` to transfer files to/from VM
+- Set up port forwarding for local development
+- Use VS Code Remote SSH extension for easier development
+
+### Resource Monitoring
+
+Monitor your VM resources through:
+
+- Google Cloud Console Dashboard
+- `top` command in VM
+- Container metrics via `docker stats`
+
+:::tip[Accessing Container Logs]
+View container logs in multiple ways:
+
+- Cloud Logging interface in Google Cloud Console
+- Serial console output
+- Docker logs in the VM
+- Cloud Logging API for programmatic access
+  :::
+
+- **VM Creation Fails**
+
+  - Verify project permissions
+  - Check quota limits
+  - Ensure correct service account access
+
+- **Container Startup Problems**
+  - Review metadata configuration
+  - Check image URL validity
+  - Verify environment variables
