@@ -1,6 +1,6 @@
 ---
 sidebar_position: 2
-unlisted: true
+unlisted: false
 title: Cookbook
 description: Cookbook commands for managing Confidential VMs.
 keywords: [flare, ai, confidential-compute, hackathon, google-cloud, onboarding]
@@ -46,9 +46,9 @@ You can also view logs in the Google Cloud Console by navigating to the Logging 
 
 :::
 
-## Deploying Confidential VMs
+## Deploying AMD SEV Confidential VMs
 
-This command creates a Confidential Computing VM instance using AMD SEV (Secure Encrypted Virtualization), with a specific image, network configuration, and security settings.
+This command creates a Confidential Computing VM instance using AMD SEV ([Secure Encrypted Virtualization](https://www.amd.com/content/dam/amd/en/documents/epyc-business-docs/white-papers/memory-encryption-white-paper.pdf)), with a specific image, network configuration, and security settings.
 The metadata section is critical for configuring the Trusted Execution Environment (TEE).
 The command is broken down in the following sections.
 
@@ -63,7 +63,7 @@ gcloud compute instances create $INSTANCE_NAME \
   --metadata=tee-image-reference=$TEE_IMAGE_REFERENCE,\
   # highlight-next-line
   tee-container-log-redirect=true,\
-   # highlight-next-line
+  # highlight-next-line
   tee-env-<ENV_VAR_NAME1>=<ENV_VAR_VALUE1>,tee-env-<ENV_VAR_NAME2>=<ENV_VAR_VALUE2>\
   --maintenance-policy=MIGRATE \
   --provisioning-model=STANDARD \
@@ -187,3 +187,54 @@ gcloud compute instances create $INSTANCE_NAME \
 - `--labels=goog-ec-src=vm_add-gcloud`: Adds a label to the VM for tracking purposes.
 - `--reservation-affinity=any`: If you have reservations, this allows the VM to use any available reservation.
 - `--confidential-compute-type=SEV`: Enables AMD SEV (Secure Encrypted Virtualization) Confidential Computing. This is the core flag that makes this instance a confidential VM.
+
+## Deploying Intel TDX Confidential VMs
+
+This command creates a Confidential Computing VM instance using Intel TDX ([Trust Domain Extensions](https://www.intel.com/content/www/us/en/developer/tools/trust-domain-extensions/documentation.html)), with a specific image, network configuration, and security settings.
+The command instructions differing from [Deploying AMD SEV Confidential VMs](#deploying-amd-sev-confidential-vms) are highlighted.
+
+```bash
+gcloud compute instances create $INSTANCE_NAME \
+  --project=verifiable-ai-hackathon \
+  --zone=us-central1-a \
+  # highlight-next-line
+  --machine-type=c3-standard-4 \
+  --network-interface=network-tier=PREMIUM,nic-type=GVNIC,stack-type=IPV4_ONLY,subnet=default \
+  --metadata=tee-image-reference=$TEE_IMAGE_REFERENCE,\
+  tee-container-log-redirect=true,\
+  tee-env-<ENV_VAR_NAME1>=<ENV_VAR_VALUE1>,tee-env-<ENV_VAR_NAME2>=<ENV_VAR_VALUE2>\
+  # highlight-next-line
+  --maintenance-policy=TERMINATE \
+  --provisioning-model=STANDARD \
+  --service-account=confidential-sa@verifiable-ai-hackathon.iam.gserviceaccount.com \
+  --scopes=https://www.googleapis.com/auth/cloud-platform \
+  --tags=flare-ai,http-server,https-server \
+  --create-disk=auto-delete=yes,\
+boot=yes,\
+device-name=$INSTANCE_NAME,\
+# highlight-next-line
+image=projects/confidential-space-images/global/images/confidential-space-debug-0-tdxpreview-c38b622,\
+mode=rw,\
+size=11,\
+# highlight-next-line
+type=pd-balanced \
+  --shielded-secure-boot \
+  --shielded-vtpm \
+  --shielded-integrity-monitoring \
+  --reservation-affinity=any \
+  # highlight-next-line
+  --confidential-compute-type=TDX
+```
+
+**Differences:**
+
+- Use the `c3-standard-*` series of machines running on Intel Sapphire Rapids
+- Set the maintenance policy to `TERMINATE`, as TDX does not support migration
+- Use the preview TDX images of Confidential Space, to see all Confidential Space images run:
+
+  ```bash
+  gcloud compute images list --project=confidential-space-images --no-standard-images
+  ```
+
+- Set the boot disk to `pd-balanced` as required by `c3-standard-*` series of machines
+- Set the confidential compute type to `TDX`
