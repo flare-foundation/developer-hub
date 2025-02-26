@@ -21,7 +21,7 @@ const sidebars: SidebarsConfig = {
         type: "doc",
         id: "hackathon/onboarding",
       },
-      items: ["hackathon/onboarding", "hackathon/VM-Setup"],
+      items: ["hackathon/onboarding", "hackathon/cookbook"],
     },
     {
       type: "category",
