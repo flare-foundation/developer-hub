@@ -1,6 +1,438 @@
 ---
 sidebar_position: 2
 unlisted: false
+title: Getting Started
+description: Learn how to verify data from other chains using FDC.
+keywords:
+  [
+    fdc,
+    oracle,
+    flare-data-connector,
+    flare-network,
+    smart-contracts,
+    solidity,
+    remix,
+  ]
 ---
 
-# Getting Started
+import Remix from "@site/src/components/remix";
+import CodeBlock from "@theme/CodeBlock";
+import YoutubeEmbed from "@site/src/components/youtube";
+import FDCTransferEventListener from "!!raw-loader!/examples/developer-hub-solidity/FDCTransferEventListener.sol";
+import PrepareRequest from "!!raw-loader!/examples/developer-hub-javascript/fdc_prepare_request.ts";
+import SubmitRequest from "!!raw-loader!/examples/developer-hub-javascript/fdc_submit_request.ts";
+import GetProof from "!!raw-loader!/examples/developer-hub-javascript/fdc_get_proof.ts";
+import VerifyProof from "!!raw-loader!/examples/developer-hub-javascript/fdc_verify_proof.ts";
+
+The Flare Data Connector (FDC) is a powerful cross-chain protocol that enables smart contracts on Flare to securely access and verify data from other blockchains.
+This section demonstrates how to bridge data across chains and attest to events on EVM networks, with practical examples using the Ethereum testnet (Sepolia) and Flare Network.
+
+:::info[New to smart contract development?]
+
+Learn how to [deploy your first smart contract](/network/getting-started) on Flare before you start this guide, or explore the [official starter kits](/network/guides/hardhat-foundry-starter-kit) for Hardhat and Foundry.
+
+:::
+
+At its core, FDC enables any smart contract on Flare to query immutable, verifiable information from supported blockchain networks. The protocol achieves consensus through the BitVote-reveal mechanism within the Flare Systems Protocol suite, allowing dapps to validate external blockchain data using Merkle proofs.
+
+Currently supported networks include:
+
+- **Non smart-contract**: Bitcoin, Dogecoin, and XRP Ledger (including their testnets)
+- **Smart-contract**: Ethereum, Songbird, and Flare (including Sepolia, Songbird Testnet Coston, and Flare Testnet Coston2)
+
+The protocol's extensible design allows for future integration of additional blockchains and attestation types, making it a foundation for cross-chain interoperability.
+
+## Process overview
+
+This guide demonstrates how to use the [EVMTransaction](/fdc/attestation-types/evm-transaction) attestation type to verify and utilize transaction data from external EVM chains on Flare.
+You'll create a smart contract and accompanying script that interact with the FDC to verify Ethereum transactions and decode their event data.
+
+Here's how the attestation process works:
+
+1. **Identify the transaction**
+
+   For this guide, we'll use an existing transaction on the Sepolia testnet that contains event data we want to verify on Flare.
+   In a real dapp, you might identify transactions based on user actions or specific event emissions.
+
+2. **Prepare the attestation request**
+
+   To prepare the attestation request, transaction data must be encoded in a FDC-compatible format.
+   While this can be done manually, we'll use Flare's verifier service for simplicity.
+   Note that while Flare provides rate-limited verifiers suitable for development,
+   production applications should use their own verifier service.
+
+3. **Submit the attestation request**
+
+   Once encoded, the attestation request is submitted to the FDC, initiating the consensus protocol.
+   After consensus is reached, FDC stores the Merkle root of the attested data on the Flare network.
+
+4. **Extract proof and data**
+
+   After the Merkle root is stored on-chain, we'll use the Data Availability (DA) Layer service to retrieve the complete transaction data for our smart contract logic and the Merkle proof needed to verify the data's authenticity.
+
+5. **Verify and use the data**
+
+   Our smart contract will then verify that the provided transaction data matches what was attested in the Merkle root.
+   Once verified, it will decode the event log data and integrate it into the contract's logic, enabling secure cross-chain data flow in your applications.
+
+## Identify the transaction
+
+For this guide, we'll use a pre-existing transaction on the Sepolia testnet: [`0x4e636c6590b22d8dcdade7ee3b5ae5572f42edb1878f09b3034b2f7c3362ef3c`](https://sepolia.etherscan.io/tx/0x4e636c6590b22d8dcdade7ee3b5ae5572f42edb1878f09b3034b2f7c3362ef3c).
+This transaction is particularly useful for our demonstration as it contains both an ERC20 `Transfer` event and a `Swap` event, providing clear examples of cross-chain event verification.
+
+:::info[Confirmation Requirements]
+
+Each blockchain connected to FDC has specific confirmation requirements that must be met before data can be attested. For EVM chains, you can configure the required number of confirmations based on the chain's finality and security guarantees.
+See the [connected blockchain documentation](/fdc/attestation-types/confirmed-block-height-exists#finality) for detailed requirements.
+
+:::
+
+:::info[Mainnets and testnets]
+
+The Data Connector operates in separate environments for mainnets and testnets, when working with testnets:
+
+- Use different base URLs for the attestation client and DA Layer
+- Specify `testETH` instead of `ETH` as the source network name in transaction encoding
+- All other procedures and code remain consistent across environments
+
+:::
+
+## Prepare the attestation request
+
+To attest to transaction data, we need to encode it in a format that the Flare Data Connector (FDC) can process.
+This is done through a verifier service. While you can set up your own verifier, we'll use Flare's testnet verifier service available at `https://fdc-verifiers-testnet.flare.network/`.
+You can explore the API through their Swagger interface at `https://fdc-verifiers-testnet.flare.network/verifier/api-doc`.
+
+### Request structure
+
+To prepare an attestation request, you can use the `prepareRequest` endpoint with the following JSON structure:
+
+```json
+{
+  "attestationType": "0x45564d5472616e73616374696f6e000000000000000000000000000000000000",
+  "sourceId": "0x7465737445544800000000000000000000000000000000000000000000000000",
+  "requestBody": {
+    "transactionHash": "0x4e636c6590b22d8dcdade7ee3b5ae5572f42edb1878f09b3034b2f7c3362ef3c",
+    "requiredConfirmations": "1",
+    "provideInput": true,
+    "listEvents": true,
+    "logIndices": []
+  }
+}
+```
+
+The request contains three main components:
+
+- `attestationType`: Specifies "EVMTransaction" as a 32-byte padded hex string.
+- `sourceId`: Identifies the source chain ("testETH" for Sepolia testnet) as a 32-byte padded hex string.
+- `requestBody`: Contains transaction-specific parameters including:
+  - `transactionHash`: Transaction hash to verify.
+  - `requiredConfirmations`: Number of required confirmations.
+  - `provideInput`: Boolean specifying if the input data of the toplevel transaction should be included in the response.
+  - `listEvents`: Flags for including transaction input and event logs.
+  - `logIndices`: Optional log indices (maximum 50 logs per request).
+
+For full details, see the EVMTransaction](/fdc/attestation-types/evm-transaction) type specification.
+
+### Implementation example
+
+Here's a TypeScript script that prepares the attestation request:
+
+<CodeBlock language="typescript" title="prepare_request.ts">
+  {PrepareRequest}
+</CodeBlock>
+
+### Verifier response
+
+Upon successful validation, the verifier returns:
+
+```json
+{
+  "status": "VALID",
+  "abiEncodedRequest": "0x45564d5472616e73616374696f6e00000000000000000000000000000000000074657374455448000000000000000000000000000000000000000000000000009d410778cc0b2b8f1b8eaa79cbd0eed5d3be7514dea070e2041ad00a4c6e88f800000000000000000000000000000000000000000000000000000000000000204e636c6590b22d8dcdade7ee3b5ae5572f42edb1878f09b3034b2f7c3362ef3c00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000"
+}
+```
+
+- `status`: Indicates that the verifier recognized this attestation request as valid.
+- `abiEncodedRequest`: Contains all the data necessary for the FDC attestation providers to confirm this request.
+
+This encoded request can now be submitted to the FDC contract.
+The attestation clients will pick up the request and include it in the next FDC consensus round.
+If consensus is reached, your attestation will be included in that round's Merkle root, making it available for use.
+If consensus fails, you'll need to resubmit the request.
+
+<details>
+    <summary>Understanding the structure of `abiEncodedRequest`.</summary>
+
+    The structure of `abiEncodedRequest` may seem complex, but it's essentially a concatenated hex string (with the initial 0x removed) representing different parts of the request. Each part is 32 bytes long (64 characters in hex). Here's a breakdown of the string:
+
+    ```text
+    45564d5472616e73616374696f6e000000000000000000000000000000000000
+    7465737445544800000000000000000000000000000000000000000000000000
+    9d410778cc0b2b8f1b8eaa79cbd0eed5d3be7514dea070e2041ad00a4c6e88f8
+    0000000000000000000000000000000000000000000000000000000000000020
+    4e636c6590b22d8dcdade7ee3b5ae5572f42edb1878f09b3034b2f7c3362ef3c
+    0000000000000000000000000000000000000000000000000000000000000001
+    0000000000000000000000000000000000000000000000000000000000000001
+    0000000000000000000000000000000000000000000000000000000000000001
+    00000000000000000000000000000000000000000000000000000000000000a0
+    0000000000000000000000000000000000000000000000000000000000000000
+    ```
+
+    You can decode the first two parts using an online tool like [playcode.io](https://playcode.io/1752890).
+
+    Breaking it down line-by-line:
+
+    - **First line:** `toHex("EVMTransaction")`
+
+    - **Second line:** `toHex("testETH")`
+
+    - **Third line:** Message Integrity Code (MIC). This is a hash of the whole response salted with a string `Flare`. It ensures the integrity of the attestation and prevents tampering.
+
+    - **Remaining lines:** ABI encoded request body (as solidity struct).
+      The structure of the body is defined in the accompanying attestation [type specification](https://github.com/flare-foundation/songbird-state-connector-protocol/blob/main/contracts/interface/types/EVMTransaction.sol#L68).
+      As we supply a list, the encoding is a bit more complicated, but you can easily spot the `transactionHash` as `4e636c6590b22d8dcdade7ee3b5ae5572f42edb1878f09b3034b2f7c3362ef3c`.
+
+</details>
+
+## Submit the attestation request
+
+Once we have our encoded attestation request, we'll submit it to the Flare Data Connector (FDC) smart contract through the `requestAttestation` method on [FDCHub](/fdc/reference/IFdcHub).
+This broadcasts our request to the network and initiates the verification process.
+The attestation will be processed in the current FDC round, which typically finalizes within 90-180 seconds.
+
+:::info
+
+While you can retrieve a proof before round finalization, it won't be valid until the round completes and its Merkle root is stored on-chain.
+
+:::
+
+Here's how to submit the request and calculate its `roundId`:
+
+<CodeBlock language="typescript" title="submit_request.ts">
+  {SubmitRequest}
+</CodeBlock>
+
+After submitting the request, wait for round finalization before proceeding to proof extraction and verification.
+
+## Extract proof and data
+
+Once the FDC round is finalized and its Merkle root is stored on-chain, we can retrieve the full data and proof for our attestation request.
+The Data Availability (DA) Layer API provides a streamlined way to access this information.
+
+### Using the DA Layer API
+
+While a rate-limited public endpoint [is available](/fdc/reference/data-availability-api), you should set up your [own DA Layer service](https://github.com/flare-foundation/data-availability) for production use.
+
+```json
+{
+  "roundId": FDC_ROUND_ID,
+  "requestBytes": "0xABI_ENCODED_REQUEST"
+}
+```
+
+We are providing the same `abiEncodedRequest` that we used to request the attestation, and the `roundId` that we calculated when we submitted the request.
+Here's how to retrieve the proof and data:
+
+<CodeBlock language="typescript" title="get_proof.ts">
+  {GetProof}
+</CodeBlock>
+
+### Response structure
+
+The API returns two key components:
+
+- `response`: Contains the complete transaction data, including:
+
+  - Attestation type and source chain
+  - Transaction details (block number, timestamp, addresses)
+  - Input data and execution status
+  - Emitted events and their details
+
+- `proof`: Contains the Merkle proof array, verifying that the data exists in the round's Merkle tree
+
+Here's a simplified example of the response structure:
+
+```json
+{
+  "response": {
+    "attestationType": "0x45564d5472616e73616374696f6e000000000000000000000000000000000000",
+    "sourceId": "0x7465737445544800000000000000000000000000000000000000000000000000",
+    "votingRound": "859315",
+    "lowestUsedTimestamp": "1735543584",
+    "requestBody": {
+      "transactionHash": "0x4e636c6590b22d8dcdade7ee3b5ae5572f42edb1878f09b3034b2f7c3362ef3c",
+      "requiredConfirmations": "1",
+      "provideInput": true,
+      "listEvents": true,
+      "logIndices": []
+    },
+    "responseBody": {
+      "blockNumber": "7384262",
+      "timestamp": "1735543584",
+      "sourceAddress": "0x70ad32b82b4fe2821c798e628d93645218e2a806",
+      "isDeployment": false,
+      "receivingAddress": "0x3fc91a3afd70395cd496c647d5a6cc9d4b2b7fad",
+      "value": "61000000000000000",
+      "input": "0x3593564c000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000006772521a00000000000000000000000000000000000000000000000000000000000000040b000604000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002800000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000d8b72d434c80000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000d8b72d434c8000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002bfff9976782d46cc05630d1f6ebab18b2324d6b140001f41c7d4b196cb0c7b01d743fbc6116a902379c723800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000001c7d4b196cb0c7b01d743fbc6116a902379c7238000000000000000000000000e49acc3b16c097ec88dc9352ce4cd57ab7e35b95000000000000000000000000000000000000000000000000000000000000001900000000000000000000000000000000000000000000000000000000000000600000000000000000000000001c7d4b196cb0c7b01d743fbc6116a902379c723800000000000000000000000070ad32b82b4fe2821c798e628d93645218e2a80600000000000000000000000000000000000000000000000000000000ad2090e40c",
+      "status": "1",
+      "events": [
+        {
+          "logIndex": 63,
+          "emitterAddress": "0xfff9976782d46cc05630d1f6ebab18b2324d6b14",
+          "topics": [
+            "0xe1fffcc4923d04b559f4d29a8bfc6cda04eb5b0d3c460751c2402c5c5cc9109c",
+            "0x0000000000000000000000003fc91a3afd70395cd496c647d5a6cc9d4b2b7fad"
+          ],
+          "data": "0x00000000000000000000000000000000000000000000000000d8b72d434c8000",
+          "removed": false
+        }
+        // Additional events...
+      ]
+    }
+  },
+  "proof": [
+    "0x54124eb68914f7ef9017f47328b02af8a61bc9ed4e276d9e09c725df2056b38e",
+    "0x2ee26beac9f7da0cea28ba8b13f49ca8f6477bb82d839ca1e808ceac2d551427",
+    "0xf8265e7b0c7165ba16111fbf8d1f0e2e279e44b77ff343393fd2269353f2adfa"
+  ]
+}
+```
+
+This data is now ready to be used in your smart contract to:
+
+- Verify the data's authenticity using the Merkle proof
+- Process the transaction data and event logs for your contract's logic
+
+## Verify and use the data
+
+Let's examine how to verify and utilize the data from the DA Layer API in your smart contract. We'll focus on a practical example: listening for and verifying USDC transfer events.
+
+### Data structure
+
+The response data maps directly to the [`IEVMTransaction`](/fdc/reference/IEVMTransaction) interface, which is already included in both Hardhat and Foundry packages.
+Here's what you'll work with:
+
+- `requestBody`: Contains your original attestation request parameters
+- `responseBody`: Contains the verified transaction data:
+  - Block details (number, timestamp)
+  - Transaction details (addresses, value, status)
+  - Emitted events (logs, topics, data)
+
+Here's a simplified version of the key response structures:
+
+```solidity
+struct Response {
+    bytes32 attestationType;
+    bytes32 sourceId;
+    uint64 votingRound;
+    uint64 lowestUsedTimestamp;
+    RequestBody requestBody;
+    ResponseBody responseBody;
+}
+
+struct ResponseBody {
+    uint64 blockNumber;
+    uint64 timestamp;
+    address sourceAddress;
+    bool isDeployment;
+    address receivingAddress;
+    uint256 value;
+    bytes input;
+    uint8 status;
+    Event[] events;
+}
+
+struct Event {
+    uint32 logIndex;
+    address emitterAddress;
+    bytes32[] topics;
+    bytes data;
+    bool removed;
+}
+```
+
+### Implementation example
+
+The response consists of several key components:
+
+1. `requestBody`: Contains an exact copy of your original attestation request data.
+
+2. `metadata`: Includes verification-critical information:
+
+   - `votingRound`: Identifies the specific FDC consensus round
+   - `lowestUsedTimestamp`: Ensures data freshness and proper round assignment
+
+3. `responseBody`: Contains the verified transaction details:
+   - Basic information: block number, timestamp, addresses, value
+   - Transaction status and input data
+   - Complete list of emitted events, each containing:
+     - Log index and emitter address
+     - Event topics and data
+     - Chain reorganization status flag
+
+<CodeBlock language="solidity" title="FDCTransferEventListener.sol">
+  {FDCTransferEventListener}
+</CodeBlock>
+
+{/* prettier-ignore */}
+<Remix fileName="FDCTransferEventListener.sol">Open in Remix</Remix>
+<br></br>
+
+:::warning
+
+Don't forget to set the EVM version to `london` in Remix before compiling the contract.
+
+:::
+
+### Using the contract
+
+1. **Proof Verification**
+
+   The contract uses the `ContractRegistry` library to access Flare's official verifiers. The verification process:
+
+   - Retrieves the current verifier through the Flare governance-managed registry
+   - Uses `isEVMTransactionProofValid` to verify the Merkle proof and data integrity
+   - Requires successful verification before proceeding with any data processing
+
+2. **Event Processing**
+
+   After verification, the `collectTransferEvents` function handles the business logic:
+
+   - Processes the verified transaction data
+   - Filters for USDC Transfer events
+   - Decodes and stores relevant event data
+
+This two-phase approach provides robust security against malicious data providers:
+
+- While the data comes from an off-chain source (DA Layer API), it must match the on-chain Merkle root
+- Any attempt to provide manipulated data will fail at the proof verification stage
+- Only data that has achieved consensus through the FDC protocol can pass verification
+
+To use the contract, simply retrieve the proof from the DA Layer API and submit it:
+
+<CodeBlock language="typescript" title="verify_proof.ts">
+  {VerifyProof}
+</CodeBlock>
+
+## Wait for round finalization (optional)
+
+Before using a proof, you must ensure the FDC round has been finalized and its Merkle root accepted.
+Here are the recommended approaches for different scenarios:
+
+**Production environment:** Use the `Relay` contract's event system:
+
+- Access the latest `Relay` contract through `ContractRegistry`
+- Listen for the `ProtocolMessageRelayed` event with:
+  - `protocolId`: 200 (FDC protocol identifier)
+  - `roundId`: Your submitted round ID
+
+**Testing environment:** For testing, you can use the `Relay` contract's view method
+
+```solidity
+isFinalized(uint256 _protocolId, uint256 _votingRoundId) returns (bool)
+```
+
+## Watch the video
+
+<YoutubeEmbed embedLink="bURtt4siWd0?si=tVnpU0SC7ISMnrA0"></YoutubeEmbed>

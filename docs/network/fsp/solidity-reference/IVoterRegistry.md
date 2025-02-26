@@ -99,7 +99,7 @@ function maxVoters(
 ### newSigningPolicyInitializationStartBlockNumber
 
 Returns the block number of the start of the new signing policy initialisation for a given reward epoch.
-It is a snaphost block of the voters' addresses (it is zero if the reward epoch is not supported).
+It is a snapshot block of the voters' addresses (it is zero if the reward epoch is not supported).
 
 ```solidity
 function newSigningPolicyInitializationStartBlockNumber(
