@@ -6,6 +6,9 @@ description: Cookbook commands for managing Confidential VMs.
 keywords: [flare, ai, confidential-compute, hackathon, google-cloud, onboarding]
 ---
 
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
 Reference for commands you will encounter when interacting with Confidential VMs.
 
 ## Restarting VMs
@@ -46,11 +49,17 @@ You can also view logs in the Google Cloud Console by navigating to the Logging 
 
 :::
 
-## Deploying AMD SEV Confidential VMs
+## Deploying Confidential VMs
 
-This command creates a Confidential Computing VM instance using AMD SEV ([Secure Encrypted Virtualization](https://www.amd.com/content/dam/amd/en/documents/epyc-business-docs/white-papers/memory-encryption-white-paper.pdf)), with a specific image, network configuration, and security settings.
-The metadata section is critical for configuring the Trusted Execution Environment (TEE).
-The command is broken down in the following sections.
+This guide shows commands for deploying Confidential VMs using either AMD SEV or Intel TDX.
+Select the appropriate tab for your configuration, and click "Show breakdown" to see more details.
+
+<Tabs>
+  <TabItem value="amd-sev" label="AMD SEV">
+
+### Deploying AMD SEV Confidential VMs
+
+This command creates a Confidential Computing VM instance using AMD SEV ([Secure Encrypted Virtualization](https://www.amd.com/content/dam/amd/en/documents/epyc-business-docs/white-papers/memory-encryption-white-paper.pdf)) with specific image, network, and security settings. The metadata section is critical for configuring the Trusted Execution Environment (TEE).
 
 ```bash
 # highlight-next-line
@@ -84,7 +93,10 @@ gcloud compute instances create $INSTANCE_NAME \
   --confidential-compute-type=SEV
 ```
 
-### Core command & instance name
+<details>
+<summary>Show breakdown of command sections</summary>
+
+#### Core command & instance name
 
 ```bash
 gcloud compute instances create $INSTANCE_NAME \
@@ -93,7 +105,7 @@ gcloud compute instances create $INSTANCE_NAME \
 - `gcloud compute instances create`: This is the base command for creating a new Compute Engine virtual machine (VM) instance.
 - `$INSTANCE_NAME`: You need to replace this with the desired name for your VM instance.
 
-### Project and zone
+#### Project and zone
 
 ```bash
   --project=verifiable-ai-hackathon \
@@ -103,7 +115,7 @@ gcloud compute instances create $INSTANCE_NAME \
 - `--project=verifiable-ai-hackathon`: Specifies the Google Cloud project where the VM will be created.
 - `--zone=us-central1-c`: Defines the zone within the `us-central1` region where the instance will reside. Choosing a zone is important for latency and resource availability.
 
-### Machine type & network configuration
+#### Machine type & network configuration
 
 ```bash
   --machine-type=n2d-standard-2 \
@@ -117,7 +129,7 @@ gcloud compute instances create $INSTANCE_NAME \
   - `stack-type=IPV4_ONLY`: Specifies that the instance will use IPv4 only.
   - `subnet=default`: Attaches the instance to the default subnet in the specified zone's VPC network.
 
-### Metadata (crucial for Confidential Computing)
+#### Metadata (crucial for Confidential Computing)
 
 ```bash
   --metadata=tee-image-reference=$TEE_IMAGE_REFERENCE,tee-container-log-redirect=true,tee-env-<ENV_VAR_NAME1>=<ENV_VAR_VALUE1>,tee-env-<ENV_VAR_NAME2>=<ENV_VAR_VALUE2>\
@@ -128,7 +140,7 @@ gcloud compute instances create $INSTANCE_NAME \
   - `tee-container-log-redirect=true`: Enables redirecting container logs to both Cloud Logging and serial logging, which can be helpful for debugging.
   - `tee-env-<ENV_VAR_NAME1>=<ENV_VAR_VALUE1>,tee-env-<ENV_VAR_NAME2>=<ENV_VAR_VALUE2>`: Sets environment variables within the TEE environment. Replace `<ENV_VAR_NAME1>`, `<ENV_VAR_VALUE1>`, `<ENV_VAR_NAME2>`, and `<ENV_VAR_VALUE2>` with your desired environment variable names and values. This is how you would pass secrets or other configuration data to the application running inside the TEE.
 
-### Other instance settings
+#### Other instance settings
 
 ```bash
   --maintenance-policy=MIGRATE \
@@ -146,7 +158,7 @@ gcloud compute instances create $INSTANCE_NAME \
 - `--min-cpu-platform="AMD Milan"`: Ensures that the VM runs on a host with an AMD Milan CPU, which is required for Confidential Computing with SEV.
 - `--tags=flare-ai-core,http-server,https-server`: Applies network tags to the VM, which can be used for firewall rules and network routing.
 
-### Boot disk configuration
+#### Boot disk configuration
 
 ```bash
   --create-disk=auto-delete=yes,boot=yes,\
@@ -163,7 +175,7 @@ gcloud compute instances create $INSTANCE_NAME \
   - `size=11`: The disk size is 11 GB.
   - `type=pd-standard`: Uses a standard persistent disk.
 
-### Shielded VM options
+#### Shielded VM options
 
 ```bash
   --shielded-secure-boot \
@@ -176,7 +188,7 @@ gcloud compute instances create $INSTANCE_NAME \
   - `--shielded-vtpm`: Enables virtual Trusted Platform Module (vTPM).
   - `--shielded-integrity-monitoring`: Enables integrity monitoring.
 
-### Labels, reservation affinity, and confidential compute
+#### Labels, reservation affinity, and confidential compute
 
 ```bash
   --labels=goog-ec-src=vm_add-gcloud \
@@ -188,7 +200,10 @@ gcloud compute instances create $INSTANCE_NAME \
 - `--reservation-affinity=any`: If you have reservations, this allows the VM to use any available reservation.
 - `--confidential-compute-type=SEV`: Enables AMD SEV (Secure Encrypted Virtualization) Confidential Computing. This is the core flag that makes this instance a confidential VM.
 
-## Deploying Intel TDX Confidential VMs
+</details>
+  </TabItem> <TabItem value="intel-tdx" label="Intel TDX">
+
+### Deploying Intel TDX Confidential VMs
 
 This command creates a Confidential Computing VM instance using Intel TDX ([Trust Domain Extensions](https://www.intel.com/content/www/us/en/developer/tools/trust-domain-extensions/documentation.html)), with a specific image, network configuration, and security settings.
 The command instructions differing from [Deploying AMD SEV Confidential VMs](#deploying-amd-sev-confidential-vms) are highlighted.
@@ -225,6 +240,9 @@ type=pd-balanced \
   # highlight-next-line
   --confidential-compute-type=TDX
 ```
+
+</TabItem>
+</Tabs>
 
 **Differences:**
 
