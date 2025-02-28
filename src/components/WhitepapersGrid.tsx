@@ -26,7 +26,7 @@ const whitepaperData: Whitepaper[] = [
   {
     title: "The Flare network and FLR token",
     date: "30 December 2022",
-    path: "/pdf/whitepapers/20221231-Flare-White-Paper-v2.pdf",
+    path: "/pdf/whitepapers/20221231-TheFlareNetworkAndFLRToken.pdf",
     category: "white-papers",
   },
 
@@ -41,13 +41,13 @@ const whitepaperData: Whitepaper[] = [
   {
     title: "A hybrid post-quantum digital signature scheme for the EVM",
     date: "5 July 2022",
-    path: "/pdf/whitepapers/20220722-Post-Quantum-Digital-Signature-Scheme.pdf",
+    path: "/pdf/whitepapers/20220722-HybridPostQuantumDigitalSignatureSchemeForTheEthereumVirtualMachine.pdf",
     category: "research",
   },
   {
     title: "Flare Consensus Protocol",
     date: "5 November 2019",
-    path: "/pdf/whitepapers/20191105-FCP-White-Paper.pdf",
+    path: "/pdf/whitepapers/20191105-FlareConsensusProtocol.pdf",
     category: "research",
   },
 
@@ -55,13 +55,13 @@ const whitepaperData: Whitepaper[] = [
   {
     title: "Kraken exchange - FTSO price comparison",
     date: "6 April 2023",
-    path: "/pdf/whitepapers/20230406-FTSO_Kraken.pdf",
+    path: "/pdf/whitepapers/20230406-KrakenExchange-FTSOPriceComparison.pdf",
     category: "analytics",
   },
   {
     title: "STP.02 - Impact of secondary FTSO reward band",
     date: "29 May 2023",
-    path: "/pdf/whitepapers/20230529-Flare-Analytics-Report-02-Impact-of-the-secondary-FTSO-reward-band.pdf",
+    path: "/pdf/whitepapers/20230529-SongbirdBandUpdate-ImpactOfSTP02.pdf",
     category: "analytics",
   },
 ];
