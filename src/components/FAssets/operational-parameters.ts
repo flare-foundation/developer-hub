@@ -1037,7 +1037,7 @@ export const operationalParameters = [
     parameters: [
       {
         name: "Minting fee",
-        settingName: "mintingFee",
+        settingName: "feeBIPS",
         description:
           "The minting fee is when users (minters) mint FAssets by depositing underlying assets with an agent.",
         link: "/fassets/minting#minting-fee",
@@ -1056,7 +1056,7 @@ export const operationalParameters = [
       },
       {
         name: "Pool share",
-        settingName: "poolFeeShare",
+        settingName: "poolFeeShareBIPS",
         description:
           "The pool share fee is the portion of the minting and redemption fees allocated to pool collateral providers.",
         link: "/fassets/minting#pool-share",
@@ -1075,7 +1075,7 @@ export const operationalParameters = [
       },
       {
         name: "Minting Collateral Ratio - Agent Vault",
-        settingName: "mintingVaultCollateralRatio",
+        settingName: "mintingVaultCollateralRatioBIPS",
         description:
           "The minting vault collateral ratio is the minimum collateral required to back FAssets, ensuring value protection against under-collateralization.",
         link: "/fassets/collateral#minting-cr",
@@ -1094,7 +1094,7 @@ export const operationalParameters = [
       },
       {
         name: "Minting Collateral Ratio - Collateral Pool",
-        settingName: "mintingPoolCollateralRatio",
+        settingName: "mintingPoolCollateralRatioBIPS",
         description:
           "The minting pool collateral ratio ensures the collateral value supports the minted FAssets.",
         link: "/fassets/collateral#minting-cr",
@@ -1113,7 +1113,7 @@ export const operationalParameters = [
       },
       {
         name: "Exit Collateral Ratio",
-        settingName: "poolExitCollateralRatio",
+        settingName: "poolExitCollateralRatioBIPS",
         description:
           "The pool exit collateral ratio is the minimum collateral ratio agents must maintain when exiting their pool collateral.",
         link: "/fassets/collateral#exit-cr",
@@ -1132,7 +1132,7 @@ export const operationalParameters = [
       },
       {
         name: "Top-up CR",
-        settingName: "poolTopupCollateralRatio",
+        settingName: "poolTopupCollateralRatioBIPS",
         description:
           "Defines the minimum collateral ratio agents must maintain when topping up pool collateral.",
         link: "/fassets/collateral#top-up-cr",
@@ -1151,7 +1151,7 @@ export const operationalParameters = [
       },
       {
         name: "Top-up discount",
-        settingName: "poolTopupTokenDiscount",
+        settingName: "poolTopupTokenPriceFactorBIPS",
         description:
           "The pool top-up token discount values added tokens at a slight discount to market price, increasing system stability, shown as a factor on the Agent UI.",
         values: {
@@ -1169,7 +1169,7 @@ export const operationalParameters = [
       },
       {
         name: "Discount for agent self-close",
-        settingName: "buyFAssetByAgentDiscount",
+        settingName: "buyFAssetByAgentFactorBIPS",
         description:
           "Applied when agents buy back FAssets during liquidation events, shown as a factor on the Agent UI.",
         link: "/fassets/liquidation#stopping-liquidations",
