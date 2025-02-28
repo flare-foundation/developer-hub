@@ -15,16 +15,6 @@ const sidebars: SidebarsConfig = {
     "intro",
     {
       type: "category",
-      label: "Verifiable AI Hackathon",
-      collapsed: true,
-      link: {
-        type: "doc",
-        id: "hackathon/onboarding",
-      },
-      items: ["hackathon/onboarding", "hackathon/cookbook"],
-    },
-    {
-      type: "category",
       label: "Network",
       collapsed: true,
       link: { type: "doc", id: "network/overview" },
@@ -236,6 +226,20 @@ const sidebars: SidebarsConfig = {
           </a>
         </div>
       `,
+    },
+    {
+      type: "html",
+      value: "<hr>",
+    },
+    {
+      type: "category",
+      label: "Verifiable AI Hackathon",
+      collapsed: true,
+      link: {
+        type: "doc",
+        id: "hackathon/onboarding",
+      },
+      items: ["hackathon/onboarding", "hackathon/cookbook"],
     },
   ],
 };
