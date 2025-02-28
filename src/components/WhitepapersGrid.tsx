@@ -18,7 +18,7 @@ const whitepaperData: Whitepaper[] = [
     category: "white-papers",
   },
   {
-    title: "FTSOv2",
+    title: "FTSOv2: more data feeds and faster updates to the FTSO",
     date: "9 September 2024",
     path: "/pdf/whitepapers/20240223-FlareTimeSeriesOracleV2.pdf",
     category: "white-papers",
@@ -82,9 +82,6 @@ const WhitepapersGrid: React.FC = () => {
     <div className="whitepapers-container">
       {/* White Papers Section */}
       <section className="whitepapers-section">
-        <Heading as="h2" className="whitepapers-section-title">
-          Whitepapers
-        </Heading>
         <div className="whitepapers-grid">
           {whitePapers.map((paper, index) => (
             <Link
