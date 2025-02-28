@@ -131,6 +131,10 @@ const config: Config = {
               to: "/support/audits",
             },
             {
+              label: "Whitepapers",
+              to: "/support/whitepapers",
+            },
+            {
               label: "Terms & Privacy",
               href: "https://flare.network/privacy-policy/",
             },
