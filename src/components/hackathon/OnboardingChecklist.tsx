@@ -5,7 +5,7 @@ import { useColorMode } from "@docusaurus/theme-common";
 const CHECKLIST_STEPS = [
   {
     id: "google-account",
-    title: "Set up Google Account",
+    title: "Set up your Google account",
     docSection: "step-1-set-up-your-google-account",
     subSteps: [
       { id: "google-account-create", text: "Have a Google account" },
@@ -18,7 +18,7 @@ const CHECKLIST_STEPS = [
   },
   {
     id: "api-credentials",
-    title: "Set up API Credentials",
+    title: "Set up API credentials",
     docSection: "step-2-set-up-api-credentials",
     subSteps: [
       { id: "gemini-api-create", text: "Create Gemini API key" },
@@ -31,8 +31,8 @@ const CHECKLIST_STEPS = [
   },
   {
     id: "gcloud-setup",
-    title: "Install & Configure gcloud CLI",
-    docSection: "step-3-install--configure-gcloud-cli",
+    title: "Install & configure gcloud CLI",
+    docSection: "step-3-install-configure-gcloud-cli",
     subSteps: [
       { id: "gcloud-install", text: "Install gcloud CLI" },
       { id: "gcloud-auth", text: "Authenticate CLI" },
@@ -41,7 +41,7 @@ const CHECKLIST_STEPS = [
   },
   {
     id: "track-template",
-    title: "Select Track Template",
+    title: "Select your track template",
     docSection: "step-4-select-your-track-template",
     subSteps: [
       { id: "tools-install", text: "Install required tools" },
