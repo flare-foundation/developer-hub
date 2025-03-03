@@ -147,15 +147,6 @@ export default function ConfidentialVMBuilder(): JSX.Element {
       return;
     }
 
-    // Handle checkbox
-    if (type === "checkbox") {
-      setFormState({
-        ...formState,
-        includeComment: (e.target as HTMLInputElement).checked,
-      });
-      return;
-    }
-
     // Handle text inputs
     if (
       name === "instanceName" ||
@@ -371,7 +362,7 @@ export default function ConfidentialVMBuilder(): JSX.Element {
       <div style={containerStyle}>
         <div style={headerStyle} onClick={() => setIsExpanded(!isExpanded)}>
           <Heading as="h3" style={{ margin: 0, fontSize: "1.25rem" }}>
-            Confidential Space Command Builder
+            Confidential VM Command Builder
           </Heading>
           <span>{isExpanded ? "▲" : "▼"}</span>
         </div>
@@ -420,8 +411,8 @@ export default function ConfidentialVMBuilder(): JSX.Element {
                   style={inputStyle}
                 />
                 <div style={hintStyle}>
-                  Default: $INSTANCE_NAME from your .env file (format:
-                  PROJECT_NAME-TEAM_NAME)
+                  Default is $INSTANCE_NAME from your .env file (recommended
+                  format: PROJECT_NAME-TEAM_NAME)
                 </div>
               </div>
 
@@ -494,8 +485,8 @@ export default function ConfidentialVMBuilder(): JSX.Element {
               style={inputStyle}
             />
             <div style={hintStyle}>
-              Default: $TEE_IMAGE_REFERENCE from your .env file (e.g.
-              ghcr.io/flare-foundation/flare-ai-social:main)
+              Default is $TEE_IMAGE_REFERENCE from your .env file (e.g.,
+              ghcr.io/YOUR_REPO_IMAGE:main)
             </div>
           </div>
 
@@ -513,9 +504,6 @@ export default function ConfidentialVMBuilder(): JSX.Element {
               <button onClick={addEnvVar} style={buttonStyle}>
                 Add Variable
               </button>
-            </div>
-            <div style={hintStyle}>
-              Environment variables are by default loaded from your .env file
             </div>
 
             {formState.envVars.map((envVar, index) => (
