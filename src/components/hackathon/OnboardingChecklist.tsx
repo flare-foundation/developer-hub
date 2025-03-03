@@ -11,9 +11,12 @@ const CHECKLIST_STEPS = [
       { id: "google-account-create", text: "Have a Google account" },
       {
         id: "google-account-register",
-        text: "Submit account during registration",
+        text: "Submit account during registration (i.e. the Google Form)",
       },
-      { id: "google-account-access", text: "Verify GCP project access" },
+      {
+        id: "google-account-access",
+        text: "Verify access to `verifiable-ai-hackathon` GCP project",
+      },
     ],
   },
   {
@@ -25,7 +28,7 @@ const CHECKLIST_STEPS = [
       { id: "store-api-key", text: "Store API key securely" },
       {
         id: "openrouter-api",
-        text: "Set up OpenRouter API (Consensus track only)",
+        text: "Set up OpenRouter API (Consensus Learning track only)",
       },
     ],
   },
@@ -36,7 +39,10 @@ const CHECKLIST_STEPS = [
     subSteps: [
       { id: "gcloud-install", text: "Install gcloud CLI" },
       { id: "gcloud-auth", text: "Authenticate CLI" },
-      { id: "gcloud-verify", text: "Verify project access" },
+      {
+        id: "gcloud-verify",
+        text: "Verify gcloud access to verifiable-ai-hackathon project",
+      },
     ],
   },
   {
