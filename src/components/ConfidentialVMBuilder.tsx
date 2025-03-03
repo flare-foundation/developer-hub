@@ -22,7 +22,6 @@ interface FormState {
   machineType: string;
   imageReference: string;
   envVars: EnvVar[];
-  includeComment: boolean;
 }
 
 export default function ConfidentialVMBuilder(): JSX.Element {
@@ -103,7 +102,6 @@ export default function ConfidentialVMBuilder(): JSX.Element {
     machineType: platformConfigs["AMD SEV"].machineType,
     imageReference: "$TEE_IMAGE_REFERENCE", // Using the environment variable from .env
     envVars: [...trackDefaultEnvVars["Social AI Agents"]],
-    includeComment: true,
   });
 
   // Handler for track changes - creates a brand new state object
@@ -213,32 +211,26 @@ export default function ConfidentialVMBuilder(): JSX.Element {
     const {
       instanceName,
       platform,
-      track,
       zone,
       envVars,
       imageReference,
-      includeComment,
       machineType,
     } = formState;
 
     const config = platformConfigs[platform];
 
-    let envVarsString = "";
+    // Format environment variables for metadata
+    let metadataString = `tee-image-reference=${imageReference}`;
 
-    if (envVars.length > 0) {
-      const filteredEnvVars = envVars.filter((v) => v.name && v.value);
-      if (filteredEnvVars.length > 0) {
-        envVarsString = filteredEnvVars
-          .map((v) => `tee-env-${v.name}=${v.value}`)
-          .join(" \\\n");
+    // Add container log redirect
+    metadataString += ",tee-container-log-redirect=true";
 
-        envVarsString =
-          "tee-container-log-redirect=true,\\\n" + envVarsString + " \\";
-      } else {
-        envVarsString = "tee-container-log-redirect=true \\";
-      }
-    } else {
-      envVarsString = "tee-container-log-redirect=true \\";
+    // Add env variables if they exist
+    const filteredEnvVars = envVars.filter((v) => v.name && v.value);
+    if (filteredEnvVars.length > 0) {
+      filteredEnvVars.forEach((envVar) => {
+        metadataString += `,tee-env-${envVar.name}=${envVar.value}`;
+      });
     }
 
     const commandArray = [
@@ -247,8 +239,7 @@ export default function ConfidentialVMBuilder(): JSX.Element {
       `  --zone=${zone} \\`,
       `  --machine-type=${machineType} \\`,
       `  --network-interface=network-tier=PREMIUM,nic-type=GVNIC,stack-type=IPV4_ONLY,subnet=default \\`,
-      `  --metadata=tee-image-reference=${imageReference},\\`,
-      `${envVarsString}`,
+      `  --metadata=${metadataString} \\`,
       `  ${config.maintenancePolicy} \\`,
       `  --provisioning-model=STANDARD \\`,
       `  --service-account=confidential-sa@verifiable-ai-hackathon.iam.gserviceaccount.com \\`,
@@ -276,18 +267,7 @@ export default function ConfidentialVMBuilder(): JSX.Element {
       `  ${config.computeType}`,
     );
 
-    let commandString = commandArray.join("\n");
-
-    // Add platform-specific comments if requested
-    if (includeComment) {
-      const comment =
-        platform === "AMD SEV"
-          ? `# AMD SEV Confidential VM - ${track} Track\n`
-          : `# Intel TDX Confidential VM - ${track} Track\n`;
-      commandString = comment + commandString;
-    }
-
-    return commandString;
+    return commandArray.join("\n");
   };
 
   // Copy command to clipboard
@@ -574,26 +554,7 @@ export default function ConfidentialVMBuilder(): JSX.Element {
             ))}
           </div>
 
-          {/* Include Platform Comment */}
-          <div style={{ marginBottom: "10px" }}>
-            <label
-              style={{
-                display: "flex",
-                alignItems: "center",
-                cursor: "pointer",
-                color: isDarkTheme ? "#e6e6e6" : "inherit",
-              }}
-            >
-              <input
-                type="checkbox"
-                name="includeComment"
-                checked={formState.includeComment}
-                onChange={handleChange}
-                style={{ marginRight: "8px" }}
-              />
-              <span>Include platform comment</span>
-            </label>
-          </div>
+          {/* Include Platform Comment - Removed since comments are no longer used */}
         </div>
       </div>
 
