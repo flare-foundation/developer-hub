@@ -1,115 +1,227 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
 import CodeBlock from "@theme/CodeBlock";
 import Heading from "@theme/Heading";
 import { useColorMode } from "@docusaurus/theme-common";
 
+// Define strict literal types
 type Platform = "AMD SEV" | "Intel TDX";
+type Track =
+  | "Social AI Agents"
+  | "RAG Knowledge"
+  | "AI x DeFi (DeFAI)"
+  | "Consensus Learning";
 type EnvVar = { name: string; value: string };
 
+// Define the form state type
+interface FormState {
+  instanceName: string;
+  platform: Platform;
+  track: Track;
+  zone: string;
+  machineType: string;
+  imageReference: string;
+  envVars: EnvVar[];
+  includeComment: boolean;
+}
+
 export default function ConfidentialVMBuilder(): JSX.Element {
-  const { isClient } = useDocusaurusContext();
+  const docusaurusContext = useDocusaurusContext();
   const { colorMode } = useColorMode();
   const isDarkTheme = colorMode === "dark";
 
   const [isExpanded, setIsExpanded] = useState(true);
   const [isCommandExpanded, setIsCommandExpanded] = useState(true);
   const [copied, setCopied] = useState(false);
-  const [formState, setFormState] = useState({
-    instanceName: "my-confidential-vm",
-    platform: "AMD SEV" as Platform,
-    zone: "us-central1-c",
-    machineType: "n2d-standard-2",
-    imageReference: "gcr.io/your-project/your-tee-image:latest",
-    envVars: [
-      { name: "EXAMPLE_VAR", value: "example-value" },
-      { name: "", value: "" },
-    ] as EnvVar[],
+
+  // Track-specific data mappings
+  const trackZoneMap: Record<Track, string> = {
+    "Social AI Agents": "us-central1-c",
+    "RAG Knowledge": "us-east5-b",
+    "AI x DeFi (DeFAI)": "us-west1-b",
+    "Consensus Learning": "us-south1-a",
+  };
+
+  const trackDefaultEnvVars: Record<Track, EnvVar[]> = {
+    "Social AI Agents": [
+      { name: "GEMINI_API_KEY", value: "$GEMINI_API_KEY" },
+      { name: "TUNED_MODEL_NAME", value: "$TUNED_MODEL_NAME" },
+    ],
+    "RAG Knowledge": [
+      { name: "GEMINI_API_KEY", value: "$GEMINI_API_KEY" },
+      { name: "TUNED_MODEL_NAME", value: "$TUNED_MODEL_NAME" },
+    ],
+    "AI x DeFi (DeFAI)": [
+      { name: "GEMINI_API_KEY", value: "$GEMINI_API_KEY" },
+      { name: "GEMINI_MODEL", value: "$GEMINI_MODEL" },
+      { name: "WEB3_PROVIDER_URL", value: "$WEB3_PROVIDER_URL" },
+      { name: "SIMULATE_ATTESTATION", value: "false" },
+    ],
+    "Consensus Learning": [
+      { name: "OPEN_ROUTER_API_KEY", value: "$OPEN_ROUTER_API_KEY" },
+    ],
+  };
+
+  // Platform-specific configurations
+  const platformConfigs: Record<
+    Platform,
+    {
+      machineType: string;
+      cpuPlatform: string;
+      maintenancePolicy: string;
+      image: string;
+      diskType: string;
+      computeType: string;
+    }
+  > = {
+    "AMD SEV": {
+      machineType: "n2d-standard-2",
+      cpuPlatform: '--min-cpu-platform="AMD Milan"',
+      maintenancePolicy: "--maintenance-policy=MIGRATE",
+      image:
+        "projects/confidential-space-images/global/images/confidential-space-debug-250100",
+      diskType: "pd-standard",
+      computeType: "--confidential-compute-type=SEV",
+    },
+    "Intel TDX": {
+      machineType: "c3-standard-4",
+      cpuPlatform: "",
+      maintenancePolicy: "--maintenance-policy=TERMINATE",
+      image:
+        "projects/confidential-space-images/global/images/confidential-space-debug-0-tdxpreview-c38b622",
+      diskType: "pd-balanced",
+      computeType: "--confidential-compute-type=TDX",
+    },
+  };
+
+  // Initialize form state
+  const [formState, setFormState] = useState<FormState>({
+    instanceName: "$INSTANCE_NAME", // Using the environment variable from .env
+    platform: "AMD SEV",
+    track: "Social AI Agents",
+    zone: trackZoneMap["Social AI Agents"],
+    machineType: platformConfigs["AMD SEV"].machineType,
+    imageReference: "$TEE_IMAGE_REFERENCE", // Using the environment variable from .env
+    envVars: [...trackDefaultEnvVars["Social AI Agents"]],
     includeComment: true,
   });
 
+  // Handler for track changes - creates a brand new state object
+  const handleTrackChange = (track: Track) => {
+    setFormState({
+      ...formState,
+      track,
+      zone: trackZoneMap[track],
+      envVars: [...trackDefaultEnvVars[track]],
+    });
+  };
+
+  // Handler for platform changes - creates a brand new state object
+  const handlePlatformChange = (platform: Platform) => {
+    setFormState({
+      ...formState,
+      platform,
+      machineType: platformConfigs[platform].machineType,
+    });
+  };
+
+  // Handle all form changes
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value, type } = e.target;
-    const newValue =
-      type === "checkbox" ? (e.target as HTMLInputElement).checked : value;
 
-    setFormState((prev) => ({ ...prev, [name]: newValue }));
+    // Handle track selection
+    if (
+      name === "track" &&
+      (value === "Social AI Agents" ||
+        value === "RAG Knowledge" ||
+        value === "AI x DeFi (DeFAI)" ||
+        value === "Consensus Learning")
+    ) {
+      handleTrackChange(value);
+      return;
+    }
+
+    // Handle platform selection
+    if (name === "platform" && (value === "AMD SEV" || value === "Intel TDX")) {
+      handlePlatformChange(value);
+      return;
+    }
+
+    // Handle checkbox
+    if (type === "checkbox") {
+      setFormState({
+        ...formState,
+        includeComment: (e.target as HTMLInputElement).checked,
+      });
+      return;
+    }
+
+    // Handle text inputs
+    if (
+      name === "instanceName" ||
+      name === "imageReference" ||
+      name === "machineType"
+    ) {
+      setFormState({
+        ...formState,
+        [name]: value,
+      });
+    }
   };
 
+  // Handle environment variable changes
   const handleEnvVarChange = (
     index: number,
     field: "name" | "value",
     value: string,
   ) => {
-    setFormState((prev) => {
-      const newEnvVars = [...prev.envVars];
-      newEnvVars[index][field] = value;
-      return { ...prev, envVars: newEnvVars };
-    });
-  };
-
-  const addEnvVar = () => {
-    setFormState((prev) => ({
-      ...prev,
-      envVars: [...prev.envVars, { name: "", value: "" }],
-    }));
-  };
-
-  const removeEnvVar = (index: number) => {
-    setFormState((prev) => {
-      const newEnvVars = [...prev.envVars];
-      newEnvVars.splice(index, 1);
-      return { ...prev, envVars: newEnvVars };
-    });
-  };
-
-  const getPlatformDefaults = (platform: Platform) => {
-    const defaults = {
-      "AMD SEV": {
-        zone: "us-central1-c",
-        machineType: "n2d-standard-2",
-        cpuPlatform: '--min-cpu-platform="AMD Milan"',
-        maintenancePolicy: "--maintenance-policy=MIGRATE",
-        image:
-          "projects/confidential-space-images/global/images/confidential-space-debug-250100",
-        diskType: "pd-standard",
-        computeType: "--confidential-compute-type=SEV",
-      },
-      "Intel TDX": {
-        zone: "us-central1-a",
-        machineType: "c3-standard-4",
-        cpuPlatform: "",
-        maintenancePolicy: "--maintenance-policy=TERMINATE",
-        image:
-          "projects/confidential-space-images/global/images/confidential-space-debug-0-tdxpreview-c38b622",
-        diskType: "pd-balanced",
-        computeType: "--confidential-compute-type=TDX",
-      },
+    const newEnvVars = [...formState.envVars];
+    newEnvVars[index] = {
+      ...newEnvVars[index],
+      [field]: value,
     };
 
-    return defaults[platform];
+    setFormState({
+      ...formState,
+      envVars: newEnvVars,
+    });
   };
 
-  // Update zone and machine type when platform changes
-  useEffect(() => {
-    const defaults = getPlatformDefaults(formState.platform);
-    setFormState((prev) => ({
-      ...prev,
-      zone: defaults.zone,
-      machineType: defaults.machineType,
-    }));
-  }, [formState.platform]);
+  // Add a new environment variable
+  const addEnvVar = () => {
+    setFormState({
+      ...formState,
+      envVars: [...formState.envVars, { name: "", value: "" }],
+    });
+  };
 
+  // Remove an environment variable
+  const removeEnvVar = (index: number) => {
+    const newEnvVars = [...formState.envVars];
+    newEnvVars.splice(index, 1);
+
+    setFormState({
+      ...formState,
+      envVars: newEnvVars,
+    });
+  };
+
+  // Build the command string
   const buildCommand = () => {
-    const { instanceName, platform, envVars, imageReference, includeComment } =
-      formState;
-    const config = getPlatformDefaults(platform);
+    const {
+      instanceName,
+      platform,
+      track,
+      zone,
+      envVars,
+      imageReference,
+      includeComment,
+      machineType,
+    } = formState;
 
-    // Use form values if provided, otherwise use defaults
-    const zone = formState.zone || config.zone;
-    const machineType = formState.machineType || config.machineType;
+    const config = platformConfigs[platform];
 
     let envVarsString = "";
 
@@ -123,10 +235,10 @@ export default function ConfidentialVMBuilder(): JSX.Element {
         envVarsString =
           "tee-container-log-redirect=true,\\\n" + envVarsString + " \\";
       } else {
-        envVarsString = "tee-container-log-redirect=true,\\";
+        envVarsString = "tee-container-log-redirect=true \\";
       }
     } else {
-      envVarsString = "tee-container-log-redirect=true,\\";
+      envVarsString = "tee-container-log-redirect=true \\";
     }
 
     const commandArray = [
@@ -170,14 +282,15 @@ export default function ConfidentialVMBuilder(): JSX.Element {
     if (includeComment) {
       const comment =
         platform === "AMD SEV"
-          ? "# AMD SEV Confidential VM\n"
-          : "# Intel TDX Confidential VM\n";
+          ? `# AMD SEV Confidential VM - ${track} Track\n`
+          : `# Intel TDX Confidential VM - ${track} Track\n`;
       commandString = comment + commandString;
     }
 
     return commandString;
   };
 
+  // Copy command to clipboard
   const copyToClipboard = useCallback(() => {
     navigator.clipboard
       .writeText(buildCommand())
@@ -284,6 +397,26 @@ export default function ConfidentialVMBuilder(): JSX.Element {
         </div>
 
         <div style={bodyStyle}>
+          {/* First row - Track selection */}
+          <div style={{ marginBottom: "20px" }}>
+            <label htmlFor="track" style={labelStyle}>
+              Track
+            </label>
+            <select
+              id="track"
+              name="track"
+              value={formState.track}
+              onChange={handleChange}
+              style={inputStyle}
+            >
+              <option value="Social AI Agents">Social AI Agents</option>
+              <option value="RAG Knowledge">RAG Knowledge</option>
+              <option value="AI x DeFi (DeFAI)">AI x DeFi (DeFAI)</option>
+              <option value="Consensus Learning">Consensus Learning</option>
+            </select>
+            <div style={hintStyle}>Zone: {trackZoneMap[formState.track]}</div>
+          </div>
+
           <div
             style={{
               display: "grid",
@@ -306,29 +439,13 @@ export default function ConfidentialVMBuilder(): JSX.Element {
                   onChange={handleChange}
                   style={inputStyle}
                 />
+                <div style={hintStyle}>
+                  Default is $INSTANCE_NAME from your .env file (recommended
+                  format: PROJECT_NAME-TEAM_NAME)
+                </div>
               </div>
 
               <div>
-                <label htmlFor="zone" style={labelStyle}>
-                  Zone
-                </label>
-                <input
-                  id="zone"
-                  name="zone"
-                  type="text"
-                  value={formState.zone}
-                  onChange={handleChange}
-                  style={inputStyle}
-                />
-                <div style={hintStyle}>
-                  Default: {getPlatformDefaults(formState.platform).zone}
-                </div>
-              </div>
-            </div>
-
-            {/* Second column */}
-            <div>
-              <div style={{ marginBottom: "20px" }}>
                 <label htmlFor="platform" style={labelStyle}>
                   Platform Type
                 </label>
@@ -336,14 +453,32 @@ export default function ConfidentialVMBuilder(): JSX.Element {
                   id="platform"
                   name="platform"
                   value={formState.platform}
-                  onChange={
-                    handleChange as React.ChangeEventHandler<HTMLSelectElement>
-                  }
+                  onChange={handleChange}
                   style={inputStyle}
                 >
                   <option value="AMD SEV">AMD SEV</option>
                   <option value="Intel TDX">Intel TDX</option>
                 </select>
+              </div>
+            </div>
+
+            {/* Second column */}
+            <div>
+              <div style={{ marginBottom: "20px" }}>
+                <label htmlFor="zone" style={labelStyle}>
+                  Zone (Set by Track)
+                </label>
+                <input
+                  id="zone"
+                  name="zone"
+                  type="text"
+                  value={formState.zone}
+                  disabled
+                  style={{
+                    ...inputStyle,
+                    backgroundColor: isDarkTheme ? "#1a1a1a" : "#f0f0f0",
+                  }}
+                />
               </div>
 
               <div>
@@ -359,7 +494,7 @@ export default function ConfidentialVMBuilder(): JSX.Element {
                   style={inputStyle}
                 />
                 <div style={hintStyle}>
-                  Default: {getPlatformDefaults(formState.platform).machineType}
+                  Default: {platformConfigs[formState.platform].machineType}
                 </div>
               </div>
             </div>
@@ -378,6 +513,10 @@ export default function ConfidentialVMBuilder(): JSX.Element {
               onChange={handleChange}
               style={inputStyle}
             />
+            <div style={hintStyle}>
+              Default is $TEE_IMAGE_REFERENCE from your .env file (e.g.,
+              ghcr.io/YOUR_REPO_IMAGE:main)
+            </div>
           </div>
 
           {/* Environment Variables */}
@@ -468,7 +607,7 @@ export default function ConfidentialVMBuilder(): JSX.Element {
             Generated Command
           </Heading>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            {isClient && (
+            {docusaurusContext && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
