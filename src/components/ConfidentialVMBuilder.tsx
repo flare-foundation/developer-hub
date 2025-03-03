@@ -391,7 +391,7 @@ export default function ConfidentialVMBuilder(): JSX.Element {
       <div style={containerStyle}>
         <div style={headerStyle} onClick={() => setIsExpanded(!isExpanded)}>
           <Heading as="h3" style={{ margin: 0, fontSize: "1.25rem" }}>
-            Confidential VM Command Builder
+            Confidential Space Command Builder
           </Heading>
           <span>{isExpanded ? "▲" : "▼"}</span>
         </div>
@@ -440,8 +440,8 @@ export default function ConfidentialVMBuilder(): JSX.Element {
                   style={inputStyle}
                 />
                 <div style={hintStyle}>
-                  Default is $INSTANCE_NAME from your .env file (recommended
-                  format: PROJECT_NAME-TEAM_NAME)
+                  Default: $INSTANCE_NAME from your .env file (format:
+                  PROJECT_NAME-TEAM_NAME)
                 </div>
               </div>
 
@@ -514,8 +514,8 @@ export default function ConfidentialVMBuilder(): JSX.Element {
               style={inputStyle}
             />
             <div style={hintStyle}>
-              Default is $TEE_IMAGE_REFERENCE from your .env file (e.g.,
-              ghcr.io/YOUR_REPO_IMAGE:main)
+              Default: $TEE_IMAGE_REFERENCE from your .env file (e.g.
+              ghcr.io/flare-foundation/flare-ai-social:main)
             </div>
           </div>
 
@@ -533,6 +533,9 @@ export default function ConfidentialVMBuilder(): JSX.Element {
               <button onClick={addEnvVar} style={buttonStyle}>
                 Add Variable
               </button>
+            </div>
+            <div style={hintStyle}>
+              Environment variables are by default loaded from your .env file
             </div>
 
             {formState.envVars.map((envVar, index) => (
