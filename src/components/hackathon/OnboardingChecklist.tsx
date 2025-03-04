@@ -63,8 +63,43 @@ const getTotalSteps = () => {
 
 const getLocalStorageKey = () => "verifiable-ai-hackathon-progress";
 
-const OnboardingChecklist: React.FC = () => {
+const OnboardingChecklist = () => {
   const { colorMode } = useColorMode();
+  const isDarkMode = colorMode === "dark";
+
+  // Theme colors based on color mode
+  const colors = {
+    primary: isDarkMode
+      ? "var(--ifm-color-primary)"
+      : "var(--ifm-color-primary)",
+    primaryLighter: isDarkMode
+      ? "var(--ifm-color-primary-lighter)"
+      : "var(--ifm-color-primary-lighter)",
+    primaryDarker: isDarkMode
+      ? "var(--ifm-color-primary-darker)"
+      : "var(--ifm-color-primary-darker)",
+    primaryLightest: isDarkMode
+      ? "var(--ifm-color-primary-lightest)"
+      : "var(--ifm-color-primary-lightest)",
+    text: isDarkMode ? "#f8f9fa" : "#212529",
+    textSecondary: isDarkMode ? "#adb5bd" : "#6c757d",
+    background: isDarkMode ? "var(--ifm-background-color)" : "#ffffff",
+    cardBackground: isDarkMode ? "var(--ifm-card-background-color)" : "#ffffff",
+    border: isDarkMode ? "#495057" : "#dee2e6",
+    success: isDarkMode ? "#75b798" : "#198754", // Green
+    successLight: isDarkMode
+      ? "rgba(117, 183, 152, 0.1)"
+      : "rgba(25, 135, 84, 0.1)",
+    warning: isDarkMode ? "#ffca2c" : "#ffc107", // Yellow/amber
+    warningLight: isDarkMode
+      ? "rgba(255, 202, 44, 0.1)"
+      : "rgba(255, 193, 7, 0.1)",
+    inactive: isDarkMode ? "#6c757d" : "#adb5bd", // Gray
+    inactiveLight: isDarkMode
+      ? "rgba(108, 117, 125, 0.1)"
+      : "rgba(173, 181, 189, 0.1)",
+  };
+
   const [checklist, setChecklist] = useState(() => {
     if (typeof window !== "undefined") {
       const savedProgress = localStorage.getItem(getLocalStorageKey());
@@ -125,7 +160,7 @@ const OnboardingChecklist: React.FC = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [checklist]);
 
-  const toggleStep = (stepId: string, subStepId: string) => {
+  const toggleStep = (stepId, subStepId) => {
     setChecklist((prevChecklist) =>
       prevChecklist.map((step) =>
         step.id === stepId
@@ -164,9 +199,9 @@ const OnboardingChecklist: React.FC = () => {
     }
   };
 
-  const scrollToSection = (sectionId: string) => {
+  const scrollToSection = (sectionId) => {
     // Try to find the element by either sectionId or by h2/h3 text content
-    let element: HTMLElement | null = document.getElementById(sectionId);
+    let element = document.getElementById(sectionId);
 
     if (!element) {
       // Try to find via heading text if ID isn't found
@@ -180,7 +215,7 @@ const OnboardingChecklist: React.FC = () => {
 
         for (const heading of headingsArray) {
           if (heading.textContent && heading.textContent.includes(step.title)) {
-            element = heading as HTMLElement;
+            element = heading;
             break;
           }
         }
@@ -323,36 +358,79 @@ const OnboardingChecklist: React.FC = () => {
     <div
       className="onboarding-miniBar"
       style={{
-        backgroundColor:
-          colorMode === "dark"
-            ? "var(--ifm-color-primary-darker)"
-            : "var(--ifm-color-primary-lightest)",
-        zIndex: 100,
+        position: "fixed",
+        top: "5.5rem",
+        left: 0,
+        right: 0,
+        padding: "0.5rem 1rem",
+        boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+        transition: "transform 0.3s ease",
+        zIndex: 999,
+        backgroundColor: colors.primary,
       }}
     >
-      <div className="onboarding-miniBarContent">
-        <div className="onboarding-miniProgressSection">
-          <div className="onboarding-miniTitle">Onboarding Progress</div>
+      <div
+        className="onboarding-miniBarContent"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          maxWidth: "1320px",
+          margin: "0 auto",
+        }}
+      >
+        <div
+          className="onboarding-miniProgressSection"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "1rem",
+          }}
+        >
+          <div
+            className="onboarding-miniTitle"
+            style={{
+              fontWeight: 600,
+              color: "white",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Onboarding Progress
+          </div>
           <div
             className="onboarding-miniCounter"
             style={{
-              backgroundColor:
-                colorMode === "dark" ? "var(--ifm-background-color)" : "white",
-              color:
-                colorMode === "dark"
-                  ? "var(--ifm-color-primary-lightest)"
-                  : "var(--ifm-color-primary)",
+              borderRadius: "2rem",
+              padding: "0.1rem 0.5rem",
+              fontSize: "0.8rem",
+              fontWeight: 700,
+              whiteSpace: "nowrap",
+              backgroundColor: colors.background,
+              color: colors.primary,
             }}
           >
             {completedCount}/{getTotalSteps()}
           </div>
         </div>
-        <div className="onboarding-miniProgressBar">
+        <div
+          className="onboarding-miniProgressBar"
+          style={{
+            flexGrow: 1,
+            height: "6px",
+            backgroundColor: "rgba(255, 255, 255, 0.3)",
+            borderRadius: "3px",
+            margin: "0 1.5rem",
+            overflow: "hidden",
+          }}
+        >
           <div
             className="onboarding-miniProgressBarFill"
             style={{
+              height: "100%",
               width: `${(completedCount / getTotalSteps()) * 100}%`,
+              borderRadius: "3px",
               backgroundColor: "white",
+              transition: "width 0.5s ease",
             }}
           />
         </div>
@@ -360,6 +438,17 @@ const OnboardingChecklist: React.FC = () => {
           className="onboarding-miniExpandButton"
           onClick={toggleMiniView}
           aria-label="Expand checklist"
+          style={{
+            padding: "0.3rem 1rem",
+            backgroundColor: "rgba(255, 255, 255, 0.2)",
+            color: "white",
+            border: "none",
+            borderRadius: "3px",
+            fontSize: "0.8rem",
+            fontWeight: 600,
+            cursor: "pointer",
+            transition: "background-color 0.2s ease",
+          }}
         >
           View Tasks
         </button>
@@ -385,10 +474,9 @@ const OnboardingChecklist: React.FC = () => {
           style={{
             cursor: "pointer",
             padding: "0.75rem 1rem",
-            backgroundColor:
-              colorMode === "dark"
-                ? "var(--ifm-color-primary-darker)"
-                : "var(--ifm-color-primary-lightest)",
+            backgroundColor: isDarkMode
+              ? colors.primaryDarker
+              : colors.primaryLightest,
           }}
           onClick={toggleVisibility}
         >
@@ -426,19 +514,13 @@ const OnboardingChecklist: React.FC = () => {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  backgroundColor:
-                    colorMode === "dark"
-                      ? "var(--ifm-background-color)"
-                      : "white",
+                  backgroundColor: colors.background,
                   borderRadius: "2rem",
                   padding: "0.2rem 0.75rem",
                   fontSize: "0.85rem",
                   fontWeight: 700,
                   minWidth: "3rem",
-                  color:
-                    colorMode === "dark"
-                      ? "var(--ifm-color-primary-lightest)"
-                      : "var(--ifm-color-primary)",
+                  color: colors.primary,
                 }}
               >
                 {completedCount}/{getTotalSteps()}
@@ -486,10 +568,8 @@ const OnboardingChecklist: React.FC = () => {
                 height: "100%",
                 width: `${(completedCount / getTotalSteps()) * 100}%`,
                 borderRadius: "3px",
-                backgroundColor:
-                  colorMode === "dark"
-                    ? "var(--ifm-color-primary-lightest)"
-                    : "var(--ifm-color-primary)",
+                backgroundColor: "white",
+                transition: "width 0.5s ease",
               }}
             />
           </div>
@@ -499,7 +579,7 @@ const OnboardingChecklist: React.FC = () => {
           <div
             className="onboarding-checklistBody"
             style={{
-              backgroundColor: "var(--ifm-card-background-color)",
+              backgroundColor: colors.cardBackground,
             }}
           >
             {showAllComplete && (
@@ -507,15 +587,15 @@ const OnboardingChecklist: React.FC = () => {
                 style={{
                   padding: "1rem",
                   textAlign: "center",
-                  backgroundColor: "rgba(0, 200, 83, 0.1)",
-                  borderBottom: "1px solid rgba(0, 0, 0, 0.05)",
+                  backgroundColor: colors.successLight,
+                  borderBottom: `1px solid ${colors.border}`,
                 }}
               >
                 <div
                   style={{
                     fontSize: "1.1rem",
                     fontWeight: 600,
-                    color: "rgb(0, 150, 62)",
+                    color: colors.success,
                     marginBottom: "0.5rem",
                   }}
                 >
@@ -524,10 +604,7 @@ const OnboardingChecklist: React.FC = () => {
                 <div
                   style={{
                     fontSize: "0.9rem",
-                    color:
-                      colorMode === "dark"
-                        ? "rgba(255, 255, 255, 0.8)"
-                        : "rgba(0, 0, 0, 0.7)",
+                    color: colors.textSecondary,
                   }}
                 >
                   Dive into your chosen track and let the hacking begin!
@@ -561,12 +638,12 @@ const OnboardingChecklist: React.FC = () => {
                       padding: "0.75rem",
                       borderRadius: "var(--ifm-global-radius)",
                       backgroundColor: allCompleted
-                        ? "rgba(0, 200, 83, 0.05)"
+                        ? colors.successLight
                         : someCompleted
-                          ? "rgba(255, 171, 0, 0.05)"
-                          : "rgba(0, 0, 0, 0.02)",
+                          ? colors.warningLight
+                          : colors.inactiveLight,
                       borderLeft: isActive
-                        ? `3px solid ${colorMode === "dark" ? "var(--ifm-color-primary-lightest)" : "var(--ifm-color-primary)"}`
+                        ? `3px solid ${colors.primary}`
                         : "none",
                     }}
                   >
@@ -577,7 +654,7 @@ const OnboardingChecklist: React.FC = () => {
                         alignItems: "center",
                         marginBottom: "0.75rem",
                         paddingBottom: "0.5rem",
-                        borderBottom: "1px solid rgba(0, 0, 0, 0.05)",
+                        borderBottom: `1px solid ${colors.border}`,
                         cursor: "pointer",
                       }}
                       onClick={() => scrollToSection(sectionId)}
@@ -588,6 +665,7 @@ const OnboardingChecklist: React.FC = () => {
                           margin: 0,
                           fontSize: "1rem",
                           fontWeight: 600,
+                          color: colors.text,
                         }}
                       >
                         {step.title}
@@ -598,8 +676,8 @@ const OnboardingChecklist: React.FC = () => {
                             style={{
                               padding: "0.25rem 0.5rem",
                               borderRadius: "1rem",
-                              backgroundColor: "rgba(0, 200, 83, 0.1)",
-                              color: "rgb(0, 150, 62)",
+                              backgroundColor: colors.successLight,
+                              color: colors.success,
                               fontSize: "0.75rem",
                               fontWeight: 600,
                             }}
@@ -611,8 +689,8 @@ const OnboardingChecklist: React.FC = () => {
                             style={{
                               padding: "0.25rem 0.5rem",
                               borderRadius: "1rem",
-                              backgroundColor: "rgba(255, 171, 0, 0.1)",
-                              color: "rgb(200, 135, 0)",
+                              backgroundColor: colors.warningLight,
+                              color: colors.warning,
                               fontSize: "0.75rem",
                               fontWeight: 600,
                             }}
@@ -624,8 +702,8 @@ const OnboardingChecklist: React.FC = () => {
                             style={{
                               padding: "0.25rem 0.5rem",
                               borderRadius: "1rem",
-                              backgroundColor: "rgba(0, 0, 0, 0.06)",
-                              color: "rgb(120, 120, 120)",
+                              backgroundColor: colors.inactiveLight,
+                              color: colors.inactive,
                               fontSize: "0.75rem",
                               fontWeight: 600,
                             }}
@@ -657,6 +735,7 @@ const OnboardingChecklist: React.FC = () => {
                               padding: "0.5rem",
                               borderRadius: "var(--ifm-global-radius)",
                               cursor: "pointer",
+                              color: colors.text,
                             }}
                           >
                             <input
@@ -667,7 +746,7 @@ const OnboardingChecklist: React.FC = () => {
                                 width: "18px",
                                 height: "18px",
                                 marginRight: "0.75rem",
-                                accentColor: "var(--ifm-color-primary)",
+                                accentColor: colors.primary,
                               }}
                             />
                             <span
@@ -693,7 +772,7 @@ const OnboardingChecklist: React.FC = () => {
               style={{
                 padding: "1rem",
                 textAlign: "center",
-                borderTop: "1px solid rgba(0, 0, 0, 0.05)",
+                borderTop: `1px solid ${colors.border}`,
               }}
             >
               <button
@@ -701,8 +780,8 @@ const OnboardingChecklist: React.FC = () => {
                 aria-label="Reset progress"
                 style={{
                   background: "none",
-                  border: "1px solid var(--ifm-color-primary)",
-                  color: "var(--ifm-color-primary)",
+                  border: `1px solid ${colors.primary}`,
+                  color: colors.primary,
                   padding: "0.5rem 1.25rem",
                   borderRadius: "var(--ifm-global-radius)",
                   fontSize: "0.85rem",
@@ -731,8 +810,8 @@ const OnboardingChecklist: React.FC = () => {
               zIndex: 999,
               borderRadius: "var(--ifm-global-radius)",
               boxShadow: "0 6px 16px rgba(0, 0, 0, 0.15)",
-              backgroundColor: "var(--ifm-card-background-color)",
-              border: "1px solid rgba(0, 0, 0, 0.1)",
+              backgroundColor: colors.cardBackground,
+              border: `1px solid ${colors.border}`,
               overflow: "hidden",
             }}
           >
@@ -743,10 +822,7 @@ const OnboardingChecklist: React.FC = () => {
                 justifyContent: "space-between",
                 alignItems: "center",
                 padding: "0.75rem 1rem",
-                backgroundColor:
-                  colorMode === "dark"
-                    ? "var(--ifm-color-primary-darker)"
-                    : "var(--ifm-color-primary-lightest)",
+                backgroundColor: colors.primary,
                 color: "white",
               }}
             >
@@ -762,18 +838,12 @@ const OnboardingChecklist: React.FC = () => {
               >
                 <span
                   style={{
-                    backgroundColor:
-                      colorMode === "dark"
-                        ? "var(--ifm-background-color)"
-                        : "white",
+                    backgroundColor: colors.background,
                     borderRadius: "2rem",
                     padding: "0.1rem 0.5rem",
                     fontSize: "0.75rem",
                     fontWeight: 700,
-                    color:
-                      colorMode === "dark"
-                        ? "var(--ifm-color-primary-lightest)"
-                        : "var(--ifm-color-primary)",
+                    color: colors.primary,
                   }}
                 >
                   {completedCount}/{getTotalSteps()}
@@ -815,17 +885,13 @@ const OnboardingChecklist: React.FC = () => {
                     cursor: "pointer",
                     backgroundColor:
                       status.docSection === activeSection
-                        ? `rgba(var(--ifm-color-primary-rgb), 0.08)`
+                        ? `rgba(${isDarkMode ? "109, 168, 254" : "13, 110, 253"}, 0.08)`
                         : "transparent",
                     borderLeft:
                       status.docSection === activeSection
-                        ? `3px solid ${colorMode === "dark" ? "var(--ifm-color-primary-lightest)" : "var(--ifm-color-primary)"}`
+                        ? `3px solid ${colors.primary}`
                         : "none",
-                    color: status.isComplete
-                      ? colorMode === "dark"
-                        ? "rgb(80, 220, 140)"
-                        : "rgb(0, 150, 62)"
-                      : "inherit",
+                    color: status.isComplete ? colors.success : colors.text,
                   }}
                 >
                   <div style={{ fontSize: "0.9rem", fontWeight: 500 }}>
