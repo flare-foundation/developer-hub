@@ -160,7 +160,7 @@ const OnboardingChecklist = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [checklist]);
 
-  const toggleStep = (stepId, subStepId) => {
+  const toggleStep = (stepId: string, subStepId: string) => {
     setChecklist((prevChecklist) =>
       prevChecklist.map((step) =>
         step.id === stepId
@@ -199,9 +199,9 @@ const OnboardingChecklist = () => {
     }
   };
 
-  const scrollToSection = (sectionId) => {
+  const scrollToSection = (sectionId: string) => {
     // Try to find the element by either sectionId or by h2/h3 text content
-    let element = document.getElementById(sectionId);
+    let element: HTMLElement | null = document.getElementById(sectionId);
 
     if (!element) {
       // Try to find via heading text if ID isn't found
@@ -215,7 +215,8 @@ const OnboardingChecklist = () => {
 
         for (const heading of headingsArray) {
           if (heading.textContent && heading.textContent.includes(step.title)) {
-            element = heading;
+            // Cast to HTMLElement to fix TypeScript error
+            element = heading as HTMLElement;
             break;
           }
         }
@@ -366,7 +367,9 @@ const OnboardingChecklist = () => {
         boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
         transition: "transform 0.3s ease",
         zIndex: 999,
-        backgroundColor: colors.primary,
+        backgroundColor: isDarkMode
+          ? colors.primaryDarker
+          : colors.primaryLightest,
       }}
     >
       <div
@@ -822,7 +825,9 @@ const OnboardingChecklist = () => {
                 justifyContent: "space-between",
                 alignItems: "center",
                 padding: "0.75rem 1rem",
-                backgroundColor: colors.primary,
+                backgroundColor: isDarkMode
+                  ? colors.primaryDarker
+                  : colors.primaryLightest,
                 color: "white",
               }}
             >
@@ -885,7 +890,7 @@ const OnboardingChecklist = () => {
                     cursor: "pointer",
                     backgroundColor:
                       status.docSection === activeSection
-                        ? `rgba(${isDarkMode ? "109, 168, 254" : "13, 110, 253"}, 0.08)`
+                        ? `rgba(var(--ifm-color-primary-rgb), 0.08)`
                         : "transparent",
                     borderLeft:
                       status.docSection === activeSection
