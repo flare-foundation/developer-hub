@@ -31,6 +31,30 @@ An FSP provider system consists of the following six components:
 5. **Feed Value Provider**: Retrieves data from exchanges and supplies current feed values (prices).
 6. **FDC Client**: Provides FDC protocol voting round data to the System Client.
 
+:::warning[Minimal conditions]
+
+After the introduction of minimal conditions in [FIP.10](https://proposals.flare.network/FIP/FIP_10.html#21-new-incentive-structure), a provider needs to be both available and performant across all Flare protocols in order to be eligible for rewards.
+
+- FSP (FTSO, FDC) reward information is available at [flare-foundation/fsp-rewards](https://github.com/flare-foundation/fsp-rewards/tree/main/flare).\*
+- Staking reward information is available at [flare-foundation/reward-scripts](https://github.com/flare-foundation/reward-scripts/tree/main/generated-files).
+
+\*Updated every reward epoch, i.e. 3.5 days, with epochs starting on Monday and Thursday.
+
+:::
+
+:::warning[Claiming rewards]
+
+Currently, claiming rewards needs to be performed [manually](https://github.com/flare-foundation/FTSO-Scaling/blob/main/scripts/rewards/README.md#claiming-rewards).
+Automated solutions are being worked upon.
+
+:::
+
+:::tip[Name & Logo on explorers]
+
+To get your validator logo and name listed on the explorers, open a PR on [TowoLabs/ftso-signal-providers](https://github.com/TowoLabs/ftso-signal-providers).
+
+:::
+
 ## Hardware requirements
 
 To deploy all FSP components on a single HW instance:
@@ -450,3 +474,47 @@ WARN [FixedFeed] Initializing FixedFeed, will return 0.01 for all feeds.
 - **`fast-updates` client is not doing anything**
 
   If you have low weight it may take some time until you are selected to submit an update.
+
+- **Monitoring the health of your deployment**
+
+  A simple option is to monitor the `/ext/health` endpoint, and inspect the connectivity of your validator using this [API endpoint](https://build.avax.network/docs/api-reference/p-chain/api#platformgetcurrentvalidators) and checking uptime/connected values.
+  For more advanced monitoring, Avalanche has a list of [Grafana dashboards](https://support.avax.network/en/articles/6159074-grafana-dashboards) that can be used for Flare.
+
+  To check FDC health, you can query the FDC verifier by making a `GET` request on `http://localhost:9800/verifier/{chain}/health`
+
+  To check FTSO health, you can inspect the logs to make sure everything is running as expected. First, check if you are passing minimal conditions in the epoch:
+
+  ```bash
+  curl -s 'https://flare-systems-explorer.flare.network/backend-url/api/v0/entity?limit=100&offset=0&sort_ascending=true&sort_by=' | jq '.results[] | select(.identity_address == "YOUR_IDENTITY_ADDRESS") | .entityminimalconditions'
+  ```
+
+  For registration, your log should contain:
+
+  ```plaintext
+  [01-03|23:02:03.175] INFO epoch/registry_utils.go:187 Voter 0x25f42DEf3fCc078DE8895Cd01de8AB6514020548 registered for epoch 3589
+  [01-04|05:02:04.096] INFO epoch/registry_utils.go:187 Voter 0x25f42DEf3fCc078DE8895Cd01de8AB6514020548 registered for epoch 3590
+  [01-04|11:02:07.113] INFO epoch/registry_utils.go:187 Voter 0x25f42DEf3fCc078DE8895Cd01de8AB6514020548 registered for epoch 3591
+  [01-04|17:02:03.136] INFO epoch/registry_utils.go:187 Voter 0x25f42DEf3fCc078DE8895Cd01de8AB6514020548 registered for epoch 3592
+  [01-04|23:02:03.217] INFO epoch/registry_utils.go:187 Voter 0x25f42DEf3fCc078DE8895Cd01de8AB6514020548 registered for epoch 3593
+  ```
+
+  For submissions, your log should contain (**Tip:** Set an alert if there is no `Submitter ... successfully sent tx` for 5 - 10 minutes):
+
+  ```plaintext
+  [01-06|14:39:10.366] INFO protocol/submitter.go:76 Submitter submitSignatures successfully sent tx
+  [01-06|14:39:31.273] INFO protocol/submitter.go:76 Submitter submit1 successfully sent tx
+  [01-06|14:39:53.107] INFO protocol/submitter.go:76 Submitter submit2 successfully sent tx
+  ```
+
+  And finalizations (**Tip:** Set an alert if there is no `Relaying finished ...` for 5-10 mins, note that protocol 200 is FDC so this would be checking FDC submissions as well):
+
+  ```plaintext
+  [01-05|15:55:54.641] INFO finalizer/relay_client.go:168 Relaying finished for protocol 100 with success
+  [01-05|15:55:55.686] INFO finalizer/relay_client.go:168 Relaying finished for protocol 200 with success
+  [01-05|15:57:25.608] INFO finalizer/relay_client.go:168 Relaying finished for protocol 100 with non fatal error
+  [01-05|15:57:28.937] INFO finalizer/relay_client.go:168 Relaying finished for protocol 200 with non fatal error
+  ```
+
+- **Get your name and logo listed on explorers**
+
+  To get your validator logo and name listed on the explorers, open a PR on [TowoLabs/ftso-signal-providers](https://github.com/TowoLabs/ftso-signal-providers).
