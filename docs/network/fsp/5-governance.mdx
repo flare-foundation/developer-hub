@@ -8,21 +8,23 @@ import GovVotingProcess from "/static/img/governance/gov-voting-process.png";
 
 # Governance
 
-## Introduction
+Flare governance gives everyone in the ecosystem the opportunity to collaborate on decision-making on the Flare and Songbird networks, making governance an important element of decentralization.
 
-Flare governance enables everyone in the ecosystem to collaborate on decision-making for the Flare and Songbird networks, making governance a crucial element of decentralization.
-
-This process allows the Flare Foundation and community members to:
+This process enables the Flare Foundation and community members to:
 
 - Propose policy changes
-- Vote on these proposals
+- Vote on them
 - Execute them if accepted
+
+:::tip
+If you are already familiar with Flare's governance and just need to know how to cast your vote through the Flare Portal, check the Voting User Guide.
+:::
 
 ## Networks and Proposal Types
 
 Excluding the testnets Coston and Coston2, Flare currently has two networks: Flare and Songbird.
 
-Two kinds of proposals exist, depending on the initiator:
+Two kinds of proposals exist, depending on who initiates them:
 
 - Foundation-initiated proposals
 - Community-initiated proposals (to be supported in the future)
@@ -57,61 +59,102 @@ STPs facilitate rapid testing of new proposals on Songbird before implementation
 
 ### Eligibility and Vote Power
 
-To participate in governance voting:
+To vote on a proposal on a network, you must have wrapped tokens:
 
-- You must have wrapped tokens (`$WFLR` for Flare or `$WSGB` for Songbird)
-- Your vote power equals the number of wrapped tokens you hold
-- Tokens must be wrapped **before** the proposal is submitted
-- Keep some unwrapped tokens for transaction fees
+| Network  | Proposal Type | Token  | Wrapped Token |
+| -------- | ------------- | ------ | ------------- |
+| Flare    | FIP           | `$FLR` | `$WFLR`       |
+| Songbird | STP           | `$SGB` | `$WSGB`       |
 
-!!! warning
-Native tokens (`$FLR` or `$SGB`) do not contribute to vote power. Remember to wrap your tokens before the voting period.
+The number of votes you can cast constitute your _vote power_, which is equal to the number of wrapped tokens (`$WFLR` or `$WSGB`) you hold.
+
+:::warning
+
+- The native tokens you hold (`$FLR` or `$SGB`) do not contribute to your vote power. Therefore, **remember to wrap your tokens**.
+- Don't wrap all your tokens. **Keep some of them to pay for transaction fees**.
+- To vote with your tokens, they must be wrapped before the proposal is submitted.
+  :::
+
+The Flare Foundation announces proposals in advance, so that users can read them and wrap their tokens if they have to.
+
+### Vote Transfer
+
+Votes can be transferred to another account while the wrapped tokens remain in your possession. Being able to transfer votes is useful, for example, if you have wrapped tokens in multiple self-custody wallets, because voting can then be simplified by transferring all the votes to a single wallet and voting from there.
+
+Votes can only be transferred to one address, but it can receive votes from multiple addresses. Received votes cannot be transferred again to a third address.
+
+**Once activated, vote transfers always send 100% of an account's votes to the selected address and remain active until they are canceled.**
+
+If you have 100 `$WSGB` before a proposal and you activate the transfer, you will transfer 100 votes. If you later add 100 more `$WSGB`, for the next proposal you will automatically transfer 200 votes, since the transfer remains active until you cancel it.
+
+:::note
+Vote transfer is independent from FTSO delegation. Wrapped tokens can be delegated to an FTSO data provider while their voting power is transferred to a different address.
+:::
 
 ### Vote Count Block
 
-A snapshot of all accounts is taken at a randomly selected block before each voting period starts. This snapshot determines the vote power each account can exercise during the vote.
+Since the amount of wrapped tokens an account holds varies over time, a snapshot of all accounts is taken before each voting period starts. The amount of wrapped tokens held by an account at the snapshot then dictates the number of votes it can cast later, its _vote power_.
 
-The random selection encourages users to maintain their tokens in the network rather than acquiring them solely for voting purposes.
+The block at which the snapshot is taken is called the **vote count block**.
 
-### Voting Timeline
+To encourage users to use their tokens and keep them in the network, instead of just acquiring them for voting and then disposing of them, the vote count block is randomly selected.
 
-The governance process follows these stages:
+### Voting Process
 
-1. **Announcement**: The Flare Foundation publishes the proposal and announces it through official channels.
+The image in this section shows the voting process, which includes several conditions:
 
-2. **Notice Period**: A discussion period (typically one week) before voting begins, allowing for clarification and feedback.
+- **Threshold condition**: A minimum quorum must be reached, meaning that enough votes must be cast, or no minimum quorum is required.
 
-3. **Block Selection Period**: A random period during which the vote count block is selected.
-
-4. **Voting Period**: The proposal becomes available on the [Flare Portal](https://portal.flare.network) for one week of voting.
+- **Majority condition**: More than 50% of the votes cast, must be for or against the proposal.
 
 <div style={{ display: "flex", justifyContent: "center", margin: "2rem 0" }}>
   <img src={GovVotingProcess} style={{ width: 500 }} alt="Voting process" />
 </div>
 
-### Vote Transfer
+- **Announcement**: The Flare Foundation publishes the proposal online and announces it through social media channels and [the Flare website](https://flare.network).
 
-Votes can be transferred to another account while maintaining ownership of the wrapped tokens. This feature simplifies voting for users with multiple wallets by allowing them to consolidate voting power in a single wallet.
+- **Notice period**: Once the proposal is published, the Flare Foundation allows a notice period before voting can start, typically lasting one week. During this time the proposal can be discussed, clarified, commented on, and even cancelled if serious issues are found with it.
 
-Key aspects of vote transfer:
+- **Block selection period**: The vote count block is selected at a random time during this period. The duration of this period is also random.
 
-- Transfers can only be sent to one address
-- An address can receive votes from multiple sources
-- Received votes cannot be transferred again
-- Vote transfers automatically send 100% of an account's votes
-- Transfers remain active until explicitly canceled
-- New wrapped tokens automatically contribute to transferred votes
+  :::warning
+  If you need to wrap tokens, do so before this period starts since tokens wrapped after the selected vote count block will not result in additional votes.
+  :::
 
-!!! note
-Vote transfer is independent from FTSO delegation. Wrapped tokens can be delegated to an FTSO data provider while their voting power is transferred to a different address.
+- **Voting period**: The proposal is submitted to the [Flare Portal](https://portal.flare.network), and it is immediately available for voting. Voting concludes after a week, and final results are presented on the portal.
+
+## Voting Outcomes
+
+### FIPs
+
+:::info[FIP VOTING RULES]
+Voting on FIPs is acceptance-based. For an FIP to be accepted, a simple majority of the votes cast must be in favor of it. No minimum quorum is required.
+
+Therefore, an FIP will be rejected only if less than half of the cast votes are for it.
+:::
+
+### STPs
+
+:::info[STP VOTING RULES]
+Voting on STPs is rejection-based. For an STP to be rejected, both of the following conditions must be true:
+
+- **Threshold condition**: The minimum quorum is at least 75% of all `$SGB` tokens circulation (excluding the Flare Foundation's tokens) at the vote count block.
+
+- **Majority condition**: More than 50% of the votes cast, must be against the proposal.
+
+Therefore, an STP will be accepted if the quorum threshold is not reached or if less than half of the cast votes are against it.
+:::
 
 ## Proposal Execution
 
 Once a proposal is accepted:
 
+:::note
+
 - Flare's governance contracts enable automatic execution via contract calls
-- Some proposals that cannot be implemented through smart contracts are manually executed by the Flare Foundation
-- Both FIPs and STPs are currently manually executed by the Foundation
+- Some proposals might require changes that are not implementable through a smart contract and therefore automatic execution is disabled for them
+- Both FIPs and STPs are currently manually executed by the Flare Foundation
+  :::
 
 ## Relation to FSP
 
@@ -122,7 +165,3 @@ The Flare Systems Protocol (FSP) incorporates governance mechanisms through its 
 - Various sub-protocols enable specialized governance for specific network functions
 
 These mechanisms work alongside the broader FIP and STP processes to enable comprehensive governance of the Flare ecosystem.
-
-## User Resources
-
-For practical instructions on participating in governance votes, refer to the Voting User Guide.
