@@ -33,24 +33,18 @@ An FSP provider system consists of the following six components:
 
 :::warning[Minimal conditions]
 
-After the introduction of minimal conditions in [FIP.10](https://proposals.flare.network/FIP/FIP_10.html#21-new-incentive-structure), a provider needs to be both **available** and **performant** across all Flare protocols in order to be eligible for rewards.
+After the introduction of minimal conditions in [FIP.10](https://proposals.flare.network/FIP/FIP_10.html#21-new-incentive-structure), a provider needs to be both **available** and **performant** across all Flare protocols in order to be eligible for rewards:
 
 - **FSP (FTSO, FDC)** reward information is available at [flare-foundation/fsp-rewards](https://github.com/flare-foundation/fsp-rewards/tree/main/flare).\*
 - **Staking** reward information is available at [flare-foundation/reward-scripts](https://github.com/flare-foundation/reward-scripts/tree/main/generated-files).
 
 \*Updated every reward epoch (3.5 days), with epochs starting on Monday and Thursday.
 
-:::
-
-:::warning[Claiming rewards]
-
-Currently, claiming rewards needs to be performed [manually](https://github.com/flare-foundation/FTSO-Scaling/blob/main/scripts/rewards/README.md#claiming-rewards).
-
-Automated solutions are being worked upon to simplify this process.
+Currently, claiming rewards needs to be performed [manually](https://github.com/flare-foundation/FTSO-Scaling/blob/main/scripts/rewards/README.md#claiming-rewards). Automated solutions are being worked upon to simplify this process.
 
 :::
 
-:::tip[Name & Logo on explorers]
+:::tip[Get listed on explorers]
 
 To get your validator logo and name listed on the explorers, open a PR on [TowoLabs/ftso-signal-providers](https://github.com/TowoLabs/ftso-signal-providers).
 
@@ -102,9 +96,9 @@ To deploy all FSP components on a single HW instance:
 - **Disk speed:** 1200 MB/s read and 600 MB/s write, or higher
 - **Network speed:** 40 Mbps, or higher
 
-:::info[Deploying components on multiple servers]
+:::warning[Deploying components on multiple instances]
 
-It is possible to split the deployment across multiple servers, but this deviation from the recommended deployment configuration will add friction to updating the FSP provider.
+It is possible to split the FSP deployment across multiple instances, but this deviation from the recommended deployment configuration could introduce additional friction when updating.
 
 :::
 
@@ -248,6 +242,12 @@ The FDC suite integrates blockchain data sources through a network of blockchain
 
 - **EVM Chains** (Ethereum, Flare, Songbird): Directly query the RPC node using the Verifier API server.
 
+### Prerequisites
+
+- [Docker Engine](https://docs.docker.com/engine/install/)
+- Deployment user in the `docker` group
+- Docker folder set to a mount point that has sufficient disk space for Docker volumes. The installation creates several Docker volumes.
+
 ### Required components
 
 You can use the following components to run a full FDC suite.
@@ -273,7 +273,7 @@ You can use the following components to run a full FDC suite.
 :::info
 
 - Flare Mainnet and Songbird Canary-Network nodes are required for EVM verification but are not listed here.
-- You are not required to use exactly these components, eg. if you already have a compatible Bitcoin RPC node, you can configure your deployment to run everything else except for Bitcoin node.
+- You are not required to use exactly these components, e.g. if you already have a compatible Bitcoin RPC node, you can configure your deployment to run everything else except for Bitcoin node.
 - You can split the deployment across multiple servers.
 
 :::
@@ -285,6 +285,16 @@ Start by cloning the [fdc-suite-deployment](https://github.com/flare-foundation/
 ```bash
 git clone https://github.com/flare-foundation/fdc-suite-deployment.git
 cd fdc-suite-deployment
+```
+
+#### Build Docker images (optional)
+
+Docker images are automatically built and published to GHCR.
+By default the deployment will download the images automatically.
+If you need to build them manually clone the required git repository listed in [Indexers and verifiers](#indexers-and-verifiers), and run:
+
+```bash
+docker build -t <image-tag> . # replace image tag with tag used in docker-compose.zml
 ```
 
 #### Bitcoin (BTC)
@@ -482,7 +492,11 @@ WARN [FixedFeed] Initializing FixedFeed, will return 0.01 for all feeds.
 
   If you have low weight it may take some time until you are selected to submit an update.
 
-:::info[Monitoring the health of your deployment]
+- **Icon and logo don't show up on Flare explorers**
+
+  To get your validator logo and name listed on the explorers, open a PR on [TowoLabs/ftso-signal-providers](https://github.com/TowoLabs/ftso-signal-providers).
+
+## Node maintenance
 
 - **Basic health checks**:
 
@@ -490,7 +504,7 @@ WARN [FixedFeed] Initializing FixedFeed, will return 0.01 for all feeds.
   - Check validator connectivity using this [API endpoint](https://build.avax.network/docs/api-reference/p-chain/api#platformgetcurrentvalidators) to verify uptime/connected values
   - For advanced monitoring, use Avalanche's [Grafana dashboards](https://support.avax.network/en/articles/6159074-grafana-dashboards) which are compatible with Flare
 
-- **FDC health verification**:
+- **FDC health monitoring**:
 
   - Query each FDC verifier with: `GET http://{verifier-host}:{verifier-port}/verifier/{chain}/health`
 
@@ -498,45 +512,45 @@ WARN [FixedFeed] Initializing FixedFeed, will return 0.01 for all feeds.
 
   - Check minimal conditions status with:
 
-  ```bash
-  curl -s 'https://flare-systems-explorer.flare.network/backend-url/api/v0/entity?limit=100&offset=0&sort_ascending=true&sort_by=' | jq '.results[] | select(.identity_address == "YOUR_IDENTITY_ADDRESS") | .entityminimalconditions'
-  ```
+    ```bash
+    curl -s 'https://flare-systems-explorer.flare.network/backend-url/api/v0/entity?limit=100&offset=0&sort_ascending=true&sort_by=' | jq '.results[] | select(.identity_address == "YOUR_IDENTITY_ADDRESS") | .entityminimalconditions'
+    ```
 
-- For registration, your log should contain:
+  - For registration, your log should contain:
 
-  ```plaintext
-  [01-03|23:02:03.175] INFO epoch/registry_utils.go:187 Voter 0x25f42DEf3fCc078DE8895Cd01de8AB6514020548 registered for epoch 3589
-  [01-04|05:02:04.096] INFO epoch/registry_utils.go:187 Voter 0x25f42DEf3fCc078DE8895Cd01de8AB6514020548 registered for epoch 3590
-  [01-04|11:02:07.113] INFO epoch/registry_utils.go:187 Voter 0x25f42DEf3fCc078DE8895Cd01de8AB6514020548 registered for epoch 3591
-  [01-04|17:02:03.136] INFO epoch/registry_utils.go:187 Voter 0x25f42DEf3fCc078DE8895Cd01de8AB6514020548 registered for epoch 3592
-  [01-04|23:02:03.217] INFO epoch/registry_utils.go:187 Voter 0x25f42DEf3fCc078DE8895Cd01de8AB6514020548 registered for epoch 3593
-  ```
+    ```plaintext
+    [01-03|23:02:03.175] INFO epoch/registry_utils.go:187 Voter 0x25f42DEf3fCc078DE8895Cd01de8AB6514020548 registered for epoch 3589
+    [01-04|05:02:04.096] INFO epoch/registry_utils.go:187 Voter 0x25f42DEf3fCc078DE8895Cd01de8AB6514020548 registered for epoch 3590
+    [01-04|11:02:07.113] INFO epoch/registry_utils.go:187 Voter 0x25f42DEf3fCc078DE8895Cd01de8AB6514020548 registered for epoch 3591
+    [01-04|17:02:03.136] INFO epoch/registry_utils.go:187 Voter 0x25f42DEf3fCc078DE8895Cd01de8AB6514020548 registered for epoch 3592
+    [01-04|23:02:03.217] INFO epoch/registry_utils.go:187 Voter 0x25f42DEf3fCc078DE8895Cd01de8AB6514020548 registered for epoch 3593
+    ```
 
-- For submissions, your log should contain:
+  - For submissions, your log should contain:
 
-  ```plaintext
-  [01-06|14:39:10.366] INFO protocol/submitter.go:76 Submitter submitSignatures successfully sent tx
-  [01-06|14:39:31.273] INFO protocol/submitter.go:76 Submitter submit1 successfully sent tx
-  [01-06|14:39:53.107] INFO protocol/submitter.go:76 Submitter submit2 successfully sent tx
-  ```
+    ```plaintext
+    [01-06|14:39:10.366] INFO protocol/submitter.go:76 Submitter submitSignatures successfully sent tx
+    [01-06|14:39:31.273] INFO protocol/submitter.go:76 Submitter submit1 successfully sent tx
+    [01-06|14:39:53.107] INFO protocol/submitter.go:76 Submitter submit2 successfully sent tx
+    ```
 
-  ⚠️ **Alert Tip:** Set an alert if there is no `Submitter ... successfully sent tx` message for 5-10 minutes
+    :::tip[Set an alert]
 
-- For finalization verification, your log should contain:
+    Set an alert if there is no `Submitter ... successfully sent tx` message for 5-10 minutes
 
-  ```plaintext
-  [01-05|15:55:54.641] INFO finalizer/relay_client.go:168 Relaying finished for protocol 100 with success
-  [01-05|15:55:55.686] INFO finalizer/relay_client.go:168 Relaying finished for protocol 200 with success
-  [01-05|15:57:25.608] INFO finalizer/relay_client.go:168 Relaying finished for protocol 100 with non fatal error
-  [01-05|15:57:28.937] INFO finalizer/relay_client.go:168 Relaying finished for protocol 200 with non fatal error
-  ```
+    :::
 
-  ⚠️ **Alert Tip:** Set an alert if there is no `Relaying finished ... message` for 5-10 minutes (note that protocol 100 is FTSOv2 and 200 is FDC)
+  - For finalization verification, your log should contain:
 
-:::
+    ```plaintext
+    [01-05|15:55:54.641] INFO finalizer/relay_client.go:168 Relaying finished for protocol 100 with success
+    [01-05|15:55:55.686] INFO finalizer/relay_client.go:168 Relaying finished for protocol 200 with success
+    [01-05|15:57:25.608] INFO finalizer/relay_client.go:168 Relaying finished for protocol 100 with non fatal error
+    [01-05|15:57:28.937] INFO finalizer/relay_client.go:168 Relaying finished for protocol 200 with non fatal error
+    ```
 
-:::tip[Name & Logo on explorers]
+    :::tip[Set an alert]
 
-To get your validator logo and name listed on the explorers, open a PR on [TowoLabs/ftso-signal-providers](https://github.com/TowoLabs/ftso-signal-providers).
+    Set an alert if there is no `Relaying finished for protocol ...` for 5-10 minutes (protocol 100 is FTSOv2 and protocol 200 is FDC)
 
-:::
+    :::
