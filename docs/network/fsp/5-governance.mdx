@@ -7,106 +7,98 @@ keywords: [flare-network, governance, voting, proposals, FIP, STP, blockchain]
 import ThemedImage from "@theme/ThemedImage";
 import useBaseUrl from "@docusaurus/useBaseUrl";
 
-# Governance
-
-Flare governance gives everyone in the ecosystem the opportunity to collaborate on decision-making on the Flare and Songbird networks, making governance an important element of decentralization.
-
-This process enables the Flare Foundation and community members to:
+Flare governance empowers the community by providing a structured process for decision-making across the Flare and Songbird networks.
+This governance framework plays a crucial role in decentralization and allows participants to:
 
 - Propose policy changes
 - Vote on them
-- Execute them if accepted
+- Execute approved proposals
 
-:::tip
-If you are already familiar with Flare's governance and just need to know how to cast your vote through the Flare Portal, check the Voting User Guide.
-:::
+## Proposal Types and Networks
 
-## Networks and Proposal Types
+On Flare Mainnet and Songbird Canary-Network, proposals can originate from different sources, resulting in two categories:
 
-Excluding the testnets Coston and Coston2, Flare currently has two networks: Flare and Songbird.
+- **Foundation-initiated proposals** (currently supported)
 
-Two kinds of proposals exist, depending on who initiates them:
+- **Community-initiated proposals** (to be introduced in the future)
 
-- Foundation-initiated proposals
-- Community-initiated proposals (to be supported in the future)
-
-This structure leads to four types of proposals, with only two currently supported:
+These categories give rise to four proposal types, with the following two currently active:
 
 ### Flare Improvement Proposals (FIPs)
 
 - **Network**: Flare
 - **Initiator**: Flare Foundation
 - **Default Status**: Rejected by default
-- **Voting Tokens**: `$WFLR` (wrapped FLR)
-- **Approval Condition**: Simple majority of votes must be in favor
+- **Voting Tokens**: `WFLR` (wrapped FLR)
+- **Approval Condition**: Simple majority vote in favor
 - **Quorum Requirement**: None
 
-FIPs are designed to improve stability and require explicit acceptance through voting.
+FIPs are proposed enhancements designed to improve the stability of the Flare network.
+They follow an acceptance-based voting process, where approval requires a simple majority of cast votes to be in favor.
 
 ### Songbird Test Proposals (STPs)
 
 - **Network**: Songbird
 - **Initiator**: Flare Foundation
 - **Default Status**: Accepted by default
-- **Voting Tokens**: `$WSGB` (wrapped SGB)
+- **Voting Tokens**: `WSGB` (wrapped SGB)
 - **Rejection Conditions**:
-  - **Threshold**: At least 75% of all circulating `$SGB` tokens must participate
+  - **Threshold**: At least 75% of all circulating `SGB` tokens must participate
   - **Majority**: More than 50% of votes must be against the proposal
 - **Outcome**: STPs are accepted unless both rejection conditions are met
 
-STPs facilitate rapid testing of new proposals on Songbird before implementation on Flare.
+STPs allow rapid testing of proposals on Songbird before their implementation on Flare.
+If either the quorum threshold is not met or fewer than half of the votes cast are against, the proposal is accepted.
 
 ## Voting Process
 
 ### Eligibility and Vote Power
 
-To vote on a proposal on a network, you must have wrapped tokens:
+To participate in governance, users must hold wrapped tokens. Voting power is determined by the number of wrapped tokens a user possesses:
 
-| Network  | Proposal Type | Token  | Wrapped Token |
-| -------- | ------------- | ------ | ------------- |
-| Flare    | FIP           | `$FLR` | `$WFLR`       |
-| Songbird | STP           | `$SGB` | `$WSGB`       |
+| Network  | Proposal Type | Token | Wrapped Token |
+| -------- | ------------- | ----- | ------------- |
+| Flare    | FIP           | `FLR` | `WFLR`        |
+| Songbird | STP           | `SGB` | `WSGB`        |
 
-The number of votes you can cast constitute your _vote power_, which is equal to the number of wrapped tokens (`$WFLR` or `$WSGB`) you hold.
-
-:::warning
-
-- The native tokens you hold (`$FLR` or `$SGB`) do not contribute to your vote power. Therefore, **remember to wrap your tokens**.
-- Don't wrap all your tokens. **Keep some of them to pay for transaction fees**.
-- To vote with your tokens, they must be wrapped before the proposal is submitted.
-  :::
-
-The Flare Foundation announces proposals in advance, so that users can read them and wrap their tokens if they have to.
+The Flare Foundation announces proposals in advance, allowing users to wrap their tokens before voting begins.
 
 ### Vote Transfer
 
-Votes can be transferred to another account while the wrapped tokens remain in your possession. Being able to transfer votes is useful, for example, if you have wrapped tokens in multiple self-custody wallets, because voting can then be simplified by transferring all the votes to a single wallet and voting from there.
+Users can transfer their voting power to another address while retaining ownership of their wrapped tokens. This feature is useful for consolidating votes across multiple self-custody wallets.
 
-Votes can only be transferred to one address, but it can receive votes from multiple addresses. Received votes cannot be transferred again to a third address.
+- Votes can be transferred to a single address but received from multiple addresses.
 
-**Once activated, vote transfers always send 100% of an account's votes to the selected address and remain active until they are canceled.**
+- Transferred votes cannot be further delegated.
 
-If you have 100 `$WSGB` before a proposal and you activate the transfer, you will transfer 100 votes. If you later add 100 more `$WSGB`, for the next proposal you will automatically transfer 200 votes, since the transfer remains active until you cancel it.
+- Once activated, all votes from an account are transferred to the designated address until the delegation is canceled.
 
-:::note
-Vote transfer is independent from FTSO delegation. Wrapped tokens can be delegated to an FTSO data provider while their voting power is transferred to a different address.
-:::
+**Example**: If an account holds 100 WSGB and enables vote delegation, it transfers 100 votes. If an additional 100 WSGB is acquired later, the delegation automatically transfers 200 votes in the next proposal.
 
 ### Vote Count Block
 
-Since the amount of wrapped tokens an account holds varies over time, a snapshot of all accounts is taken before each voting period starts. The amount of wrapped tokens held by an account at the snapshot then dictates the number of votes it can cast later, its _vote power_.
+Since token balances fluctuate, a snapshot of all accounts is taken before voting starts.
+This snapshot, known as the **vote count block**, determines the number of votes an account can cast.
 
-The block at which the snapshot is taken is called the **vote count block**.
+To encourage active participation and prevent strategic acquisition of tokens solely for voting, the vote count block is selected randomly.
 
-To encourage users to use their tokens and keep them in the network, instead of just acquiring them for voting and then disposing of them, the vote count block is randomly selected.
+### Voting Procedure
 
-### Voting Process
+The governance voting process follows a structured sequence:
 
-The image in this section shows the voting process, which includes several conditions:
+1. **Proposal Announcement:** The Flare Foundation publishes proposals on the [Flare website](https://flare.network) and social media (see footer for links).
 
-- **Threshold condition**: A minimum quorum must be reached, meaning that enough votes must be cast, or no minimum quorum is required.
+2. **Notice Period:** A minimum one-week window allows for discussion, clarifications, and potential cancellation of flawed proposals.
 
-- **Majority condition**: More than 50% of the votes cast, must be for or against the proposal.
+3. **Block Selection Period:** The vote count block is selected randomly within this timeframe.
+
+4. **Voting Period:** Voting occurs on the [Flare Portal](https://portal.flare.network/) and lasts one week. Results are published at the conclusion.
+
+The voting process follows these key principles:
+
+- **Threshold condition:** Some proposals require a minimum quorum for validity.
+
+- **Majority condition:** More than 50% of votes cast must support or oppose the proposal.
 
 <ThemedImage
   alt="Governance Proposal Diagram"
@@ -116,54 +108,22 @@ The image in this section shows the voting process, which includes several condi
   }}
 />
 
-- **Announcement**: The Flare Foundation publishes the proposal online and announces it through social media channels and [the Flare website](https://flare.network).
-
-- **Notice period**: Once the proposal is published, the Flare Foundation allows a notice period before voting can start, typically lasting one week. During this time the proposal can be discussed, clarified, commented on, and even cancelled if serious issues are found with it.
-
-- **Block selection period**: The vote count block is selected at a random time during this period. The duration of this period is also random.
-
-  :::warning
-  If you need to wrap tokens, do so before this period starts since tokens wrapped after the selected vote count block will not result in additional votes.
-  :::
-
-- **Voting period**: The proposal is submitted to the [Flare Portal](https://portal.flare.network), and it is immediately available for voting. Voting concludes after a week, and final results are presented on the portal.
-
-## Voting Outcomes
-
-### FIPs
-
-:::info[FIP VOTING RULES]
-Voting on FIPs is acceptance-based. For an FIP to be accepted, a simple majority of the votes cast must be in favor of it. No minimum quorum is required.
-
-Therefore, an FIP will be rejected only if less than half of the cast votes are for it.
-:::
-
-### STPs
-
-:::info[STP VOTING RULES]
-Voting on STPs is rejection-based. For an STP to be rejected, both of the following conditions must be true:
-
-- **Threshold condition**: The minimum quorum is at least 75% of all `$SGB` tokens circulation (excluding the Flare Foundation's tokens) at the vote count block.
-
-- **Majority condition**: More than 50% of the votes cast, must be against the proposal.
-
-Therefore, an STP will be accepted if the quorum threshold is not reached or if less than half of the cast votes are against it.
-:::
-
 ## Proposal Execution
 
-Once a proposal is accepted:
+Once a proposal is accepted, execution occurs based on its implementation method:
 
-- Flare's governance contracts enable automatic execution via contract calls
-- Some proposals might require changes that are not implementable through a smart contract and therefore automatic execution is disabled for them
-- Both FIPs and STPs are currently manually executed by the Flare Foundation
+- **Smart Contract Execution:** Governance contracts enable automatic execution through contract calls.
 
-## Relation to FSP
+- **Manual Execution:** Proposals requiring off-chain actions are executed by the Flare Foundation.
 
-The Flare Systems Protocol (FSP) incorporates governance mechanisms through its various sub-protocols:
+- **Future Automation:** Over time, additional automation mechanisms may be introduced.
 
-- The **Signing Policy Definition Protocol** ensures secure transitions between reward epochs
-- The **Reward Voting Protocol** allows voters to collectively validate reward distributions
-- Various sub-protocols enable specialized governance for specific network functions
+## Relation to Flare Systems Protocol
 
-These mechanisms work alongside the broader FIP and STP processes to enable comprehensive governance of the Flare ecosystem.
+The Flare Systems Protocol (FSP) incorporates governance mechanisms across multiple sub-protocols:
+
+- [Signing Policy Definition Protocol](/network/fsp/system-protocols#signing-policy-definition-protocol): Ensures secure transitions between reward epochs.
+- [Reward Voting Protocol](/network/fsp/system-protocols#reward-voting-protocol): Enables collective validation of reward distributions.
+- **Other Specialized Protocols:** Various mechanisms support governance for specific network functions.
+
+These governance structures, combined with FIP and STP processes, ensure a comprehensive approach to decision-making within the Flare ecosystem.
