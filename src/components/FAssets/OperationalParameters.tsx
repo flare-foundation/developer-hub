@@ -1,6 +1,7 @@
 import React from "react";
 import Tabs from "@theme/Tabs";
 import TabItem from "@theme/TabItem";
+import Link from "@docusaurus/Link";
 
 import { operationalParameters } from "./operational-parameters";
 
@@ -35,9 +36,9 @@ export default function OperationalParameters({
             <tr key={parameter.settingName}>
               <td>
                 {parameter.link ? (
-                  <a href={parameter.link} rel="noopener noreferrer">
+                  <Link to={parameter.link}>
                     <b>{parameter.name}</b>
-                  </a>
+                  </Link>
                 ) : (
                   <b>{parameter.name}</b>
                 )}

@@ -436,7 +436,7 @@ export const operationalParameters = [
         name: "Liquidation premium",
         settingName: "liquidationPremium",
         description: "Increases in steps, as time passes.",
-        link: "/fassets/liquidation#liquidation-premium",
+
         values: {
           songbird: {
             xrp: "<strong>Step 1</strong>: 5%<br /><strong>Step 2</strong>: 8%<br /><strong>Step 3</strong>: 12%",
