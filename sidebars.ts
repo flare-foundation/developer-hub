@@ -50,6 +50,7 @@ const sidebars: SidebarsConfig = {
             "network/fsp/protocol-components",
             "network/fsp/system-protocols",
             "network/fsp/offchain-services",
+            "network/fsp/governance",
             "network/fsp/rewarding",
             {
               type: "category",

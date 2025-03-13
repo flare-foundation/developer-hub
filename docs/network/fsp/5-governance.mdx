@@ -1,0 +1,126 @@
+---
+title: Governance
+description: Overview of governance in the Flare Systems Protocol.
+keywords: [flare-network, governance, voting, proposals, FIP, STP, blockchain]
+---
+
+import ThemedImage from "@theme/ThemedImage";
+import useBaseUrl from "@docusaurus/useBaseUrl";
+
+Flare governance empowers the community by providing a structured process for decision-making across the Flare and Songbird networks.
+This governance framework plays a crucial role in decentralization and allows participants to:
+
+- Propose policy changes
+- Vote on them
+- Execute approved proposals
+
+## Proposal Types and Networks
+
+On Flare Mainnet and Songbird Canary-Network, there are three different types of proposals:
+
+### Flare Improvement Proposals (FIPs)
+
+- **Network**: Flare Mainnet
+- **Initiator**: Flare Foundation
+- **Default Status**: Rejected by default
+- **Voting Tokens**: `WFLR` (wrapped `FLR`)
+- **Approval Condition**: Simple majority vote in favor
+- **Quorum Requirement**: None
+
+FIPs are proposed enhancements designed to improve the stability of Flare Mainnet.
+They follow an acceptance-based voting process, where approval requires a simple majority of cast votes to be in favor.
+
+### Songbird Test Proposals (STPs)
+
+- **Network**: Songbird Canary-Network
+- **Initiator**: Flare Foundation
+- **Default Status**: Accepted by default
+- **Voting Tokens**: `WSGB` (wrapped `SGB`)
+- **Rejection Conditions**:
+  - **Threshold**: At least 75% of all circulating `SGB` tokens must participate
+  - **Majority**: More than 50% of votes must be against the proposal
+- **Outcome**: STPs are accepted unless both rejection conditions are met
+
+STPs allow rapid testing of proposals on Songbird Canary-Network before their implementation on Flare Mainnet.
+If either the quorum threshold is not met or fewer than half of the votes cast are against, the proposal is accepted.
+
+### Songbird Improvement Proposals (SIPs)
+
+- **Network**: Songbird Canary-Network
+- **Initiator**: Flare Foundation
+- **Default Status**: Rejected by default
+- **Voting Tokens**: `WSGB` (wrapped `SGB`)
+- **Approval Condition**: Simple majority vote in favor
+- **Quorum Requirement**: None
+
+SIPs are proposed enhancements designed to improve the stability of Songbird Canary-Network.
+They follow an acceptance-based voting process, where approval requires a simple majority of cast votes to be in favor.
+
+## Voting Process
+
+### Eligibility and Vote Power
+
+To participate in governance, users must hold wrapped tokens. Voting power is determined by the number of wrapped tokens a user possesses:
+
+| Network                 | Proposal Type | Token | Wrapped Token |
+| ----------------------- | ------------- | ----- | ------------- |
+| Flare Mainnet           | FIP           | `FLR` | `WFLR`        |
+| Songbird Canary-Network | STP           | `SGB` | `WSGB`        |
+| Songbird Canary-Network | SIP           | `SGB` | `WSGB`        |
+
+The Flare Foundation announces proposals in advance, allowing users to wrap their tokens before voting begins.
+
+### Vote Transfer
+
+Users can transfer their voting power to another address while retaining ownership of their wrapped tokens. This feature is useful for consolidating votes across multiple self-custody wallets.
+
+- Votes can be transferred to a single address but received from multiple addresses.
+
+- Transferred votes cannot be further delegated.
+
+- Once activated, all votes from an account are transferred to the designated address until the delegation is canceled.
+
+**Example**: If an account holds 100 `WSGB` and enables vote delegation, it transfers 100 votes. If an additional 100 `WSGB` is acquired later, the delegation automatically transfers 200 votes in the next proposal.
+
+### Vote Count Block
+
+Since token balances fluctuate, a snapshot of all accounts is taken before voting starts.
+This snapshot, known as the **vote count block**, determines the number of votes an account can cast.
+
+To encourage active participation and prevent strategic acquisition of tokens solely for voting, the vote count block is selected randomly.
+
+### Voting Procedure
+
+The governance voting process follows a structured sequence:
+
+1. **Proposal Announcement:** The Flare Foundation publishes proposals on [Flare Governance Proposals](https://proposals.flare.network/), the Flare website and social media channels (see footer for links).
+
+2. **Notice Period:** A minimum one reward epoch window allows for discussion, clarifications, and potential cancellation of flawed proposals.
+
+3. **Block Selection Period:** The vote count block is selected randomly within this timeframe.
+
+4. **Voting Period:** Voting occurs on the [Flare Portal](https://portal.flare.network/) and usually lasts one week (around two reward epochs). Results are published at the conclusion.
+
+The voting process follows these key principles:
+
+- **Threshold condition:** Some proposals require a minimum quorum for validity.
+
+- **Majority condition:** More than 50% of votes cast must support or oppose the proposal.
+
+<ThemedImage
+  alt="Governance Proposal Diagram"
+  sources={{
+    light: useBaseUrl("img/governance/governance_light.svg"),
+    dark: useBaseUrl("img/governance/governance_dark.svg"),
+  }}
+/>
+
+## Proposal Execution
+
+Once a proposal is accepted, execution occurs based on its implementation method:
+
+- **Smart Contract Execution:** Governance contracts enable automatic execution through contract calls.
+
+- **Manual Execution:** Proposals requiring off-chain actions are executed by the Flare Foundation.
+
+- **Future Automation:** Over time, additional automation mechanisms may be introduced.
