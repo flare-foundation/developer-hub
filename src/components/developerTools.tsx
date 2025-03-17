@@ -70,7 +70,6 @@ const networkTools: NetworkTools = {
         {
           name: "ChainList",
           link: "https://ChainList.org/chain/14",
-          external: true,
         },
       ],
       Bridging: [
@@ -133,7 +132,6 @@ const networkTools: NetworkTools = {
         {
           name: "ChainList",
           link: "https://ChainList.org/chain/114",
-          external: true,
         },
       ],
       Bridging: [
@@ -178,7 +176,6 @@ const networkTools: NetworkTools = {
         {
           name: "ChainList",
           link: "https://ChainList.org/chain/19",
-          external: true,
         },
       ],
       Bridging: [],
@@ -216,7 +213,6 @@ const networkTools: NetworkTools = {
         {
           name: "ChainList",
           link: "https://ChainList.org/chain/16",
-          external: true,
         },
       ],
       Bridging: [],
@@ -265,20 +261,23 @@ const DeveloperTools = () => {
           bridges, indexers, account abstraction, wallet SDKs, and more.
         </p>
 
-        <div className="network-selector">
-          <label htmlFor="network-select">Select Network:</label>
-          <select
-            id="network-select"
-            value={activeNetwork}
-            onChange={(e) => setActiveNetwork(e.target.value)}
-            className="network-select"
-          >
-            {Object.keys(networkTools).map((networkKey) => (
-              <option key={networkKey} value={networkKey}>
-                {networkTools[networkKey].name}
-              </option>
-            ))}
-          </select>
+        <div className="network-selector-container">
+          <div className="network-selector">
+            <label htmlFor="network-select">Network:</label>
+            <select
+              id="network-select"
+              value={activeNetwork}
+              onChange={(e) => setActiveNetwork(e.target.value)}
+              className="network-select"
+              aria-label="Select a network"
+            >
+              {Object.keys(networkTools).map((networkKey) => (
+                <option key={networkKey} value={networkKey}>
+                  {networkTools[networkKey].name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -318,7 +317,9 @@ const DeveloperTools = () => {
                           "A tool for Flare ecosystem development."}
                       </p>
                     </div>
-                    <div className="tool-arrow">→</div>
+                    <div className="tool-arrow" aria-hidden="true">
+                      →
+                    </div>
                   </Link>
                 ))
               )}
