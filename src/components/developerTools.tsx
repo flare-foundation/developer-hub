@@ -15,6 +15,8 @@ const toolDescriptions = {
     "An omnichain protocol enabling seamless communication and interoperability across multiple blockchains.",
   "Stargate V2":
     "A cross-chain liquidity transfer protocol built on LayerZero, enabling seamless asset transfers across multiple blockchains.",
+  "Omnichain Fungible Tokens (OFTs)":
+    "Omnichain fungible tokens available on Flare through Stargate V2",
   zkBridge:
     "A trustless and efficient cross-chain interoperability protocol that enables secure asset transfers using zero-knowledge proofs.",
   Goldsky:
@@ -80,7 +82,10 @@ const networkTools: NetworkTools = {
         {
           name: "Stargate V2",
           link: "https://stargateprotocol.gitbook.io/stargate/v/v2-developer-docs/technical-reference/mainnet-contracts#flare",
-          subtext: "(OFTs)",
+        },
+        {
+          name: "Omnichain Fungible Tokens (OFTs)",
+          link: "https://stargateprotocol.gitbook.io/stargate/v2-developer-docs/technical-reference/mainnet-contracts#flare",
         },
         {
           name: "zkBridge",
@@ -138,6 +143,10 @@ const networkTools: NetworkTools = {
         {
           name: "LayerZero V2",
           link: "https://docs.layerzero.network/v2/developers/evm/technical-reference/deployed-contracts#flare-testnet",
+        },
+        {
+          name: "Omnichain Fungible Tokens (OFTs)",
+          link: "https://stargateprotocol.gitbook.io/stargate/v2-developer-docs/technical-reference/mainnet-contracts#flare",
         },
       ],
       Indexers: [
