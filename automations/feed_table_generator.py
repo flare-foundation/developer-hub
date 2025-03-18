@@ -24,12 +24,10 @@ logger = logging.getLogger(__name__)
 HARD_CODED_FEEDS = {
     "FTM/USD": {
         "name": "Fantom",
-        "decimals": 6,
         "category": "Crypto",
     },
     "USDX/USD": {
         "name": "Hex Trust USD",
-        "decimals": 5,
         "category": "Crypto",
     },
 }
@@ -113,13 +111,12 @@ def find_coin_by_symbol(coins: list[dict], symbol: str) -> dict | None:
 def generate_feed_data(
     feed_names: list[str],
     feed_risk: list[dict[str, int]],
-    decimals: list[int],
     coins: list[dict],
     include_index: bool = False,  # noqa: FBT001,FBT002
 ) -> list[dict]:
     """Generate a list of dictionaries based on feed data."""
     data = []
-    for idx, (name, decimal) in enumerate(zip(feed_names, decimals, strict=True)):
+    for idx, name in enumerate(feed_names):
         feed_id = get_feed_id("01", name)
         coin = find_coin_by_symbol(coins, name.split("/")[0])
 
@@ -142,7 +139,6 @@ def generate_feed_data(
                 "feed_name": name,
                 "feed_index": idx,
                 "feed_id": feed_id,
-                "decimals": decimal,
                 "base_asset": coin.get("name"),
                 "category": coin.get("category", "Crypto"),
                 "risk": risk,
@@ -151,7 +147,6 @@ def generate_feed_data(
             feed_data = {
                 "feed_name": name,
                 "feed_id": feed_id,
-                "decimals": decimal,
                 "base_asset": coin.get("name"),
                 "category": "Crypto",
                 "risk": risk,
@@ -187,7 +182,6 @@ if __name__ == "__main__":
     feed_names = [
         feed[1:].decode("utf-8").rstrip("\x00") for feed in block_latency_feeds[0]
     ]
-    decimals = block_latency_feeds[2]
     logger.debug("Found %d block-latency feeds", len(feed_names))
 
     # Query CoinGecko for top N pages, where each page has 250 coins
@@ -196,13 +190,13 @@ if __name__ == "__main__":
     # Write block-latency feeds to file
     block_latency_risk = read_data_from_file(BLOCK_LATENCY_RISK_PATH)
     block_latency_data = generate_feed_data(
-        feed_names, block_latency_risk, decimals, coins_list, include_index=True
+        feed_names, block_latency_risk, coins_list, include_index=True
     )
     write_data_to_file(BLOCK_LATENCY_FEEDS_PATH, block_latency_data)
 
     # Write anchor feeds to file
     anchor_risk = read_data_from_file(ANCHOR_RISK_PATH)
-    anchor_data = generate_feed_data(feed_names, anchor_risk, decimals, coins_list)
+    anchor_data = generate_feed_data(feed_names, anchor_risk, coins_list)
     write_data_to_file(ANCHOR_FEEDS_PATH, anchor_data)
 
     logging.info(
