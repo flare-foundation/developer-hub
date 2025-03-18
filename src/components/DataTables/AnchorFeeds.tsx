@@ -60,7 +60,6 @@ const AnchorFeeds = () => {
               </td>
               <td className="regular-font">
                 Base Asset: {row.base_asset} <br />
-                Decimals: {row.decimals} <br />
                 Category: {row.category}
               </td>
 
