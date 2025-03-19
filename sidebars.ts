@@ -20,6 +20,7 @@ const sidebars: SidebarsConfig = {
       link: { type: "doc", id: "network/overview" },
       items: [
         "network/getting-started",
+        "network/developer-tools",
         {
           type: "category",
           label: "Network Guides",
