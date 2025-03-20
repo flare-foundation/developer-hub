@@ -183,6 +183,7 @@ const sidebars: SidebarsConfig = {
         "fassets/minting",
         "fassets/redemption",
         "fassets/liquidation",
+        "fassets/core-vault",
         "fassets/operational-parameters",
         "fassets/songbird",
         {

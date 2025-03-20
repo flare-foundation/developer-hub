@@ -1,0 +1,82 @@
+---
+title: Core Vault
+description: Understanding the Core Vault system in FAssets
+keywords: [fassets, xrp, bitcoin, dogecoin, flare-network, core-vault]
+---
+
+The **Core Vault (CV)** is a specialized **FAsset system vault** that operates on the underlying network, enabling agents to manage their underlying assets more efficiently.
+When assets are stored in the CV, agents are **exempt from collateral requirements**, allowing for more flexible minting and withdrawal strategies.
+
+## Overview
+
+Each asset type has a dedicated Core Vault, which is managed by a multisig contract under a formal agreement with Flare.
+The assets stored in the CV do not belong to any specific agent and can be freely transferred between agents.
+To ensure security, governance has the authority to pause deposits and withdrawals if necessary, such as in the event of a system compromise.
+
+## Key Features
+
+### Transfer Capacity
+
+A system parameter defines the percentage of an agent's minting capacity that must remain on their address after transferring assets to the Core Vault.
+This ensures that sufficient reserves are available for redemptions, maintaining the system's stability.
+
+### Security
+
+The Core Vault operates through a predefined address on the underlying chain and is managed via a multisig setup with smart contract oversight under formal Flare contracts.
+Governance has the authority to pause operations in the event of a security issue.
+
+## Operations
+
+### Transferring to Core Vault
+
+1.	The agent manually transfers the underlying asset on the Flare network to the Core Vault.
+2.	The agent sends assets to the predefined CV address with a valid payment transaction reference.
+3.	A proof of payment is submitted to the FAsset system, which can be done by anyone.
+4.	Upon verification, the agent's collateral is released.
+5.	The agent creates a redemption request on the Flare network, specifying the predefined CV address for withdrawal.
+
+:::info
+
+   Transfer requests never expire or default, requiring agents to take action.
+   Agents can either pay and confirm payment to release their collateral, cancel and recreate the transfer at the end of the queue, or take no action, in which case the collateral remains locked indefinitely.
+
+:::
+
+### Redemption from CV
+
+There are two methods for agents to retrieve assets from the CV:
+
+#### Request for Return
+
+An agent can request assets from the CV through a special minting process, which creates a collateral reservation. 
+Once the request is made, CV operators execute the transfer and submit proof of payment to the asset manager.
+There is no time limit for the CV to honor the request, but governance ensures timely execution.
+
+#### Direct Redemption
+
+To redeem assets from the Core Vault, a user presents their FAssets (FXRP) in exchange for the underlying asset.
+A minimum redemption amount applies, and the recipient's address must be pre-approved by governance.
+Before the underlying asset is released, the system burns the FAssets.
+This process has a lower priority than return requests.
+
+## XRP Core Vault Specifics
+
+The XRP Core Vault (CV) operates through manual, multisig-controlled transactions, where a multisig executor collects signatures and executes XRPL transactions.
+
+### Transactions in XRP Core Vault
+
+The XRP Core Vault (CV) uses two types of transactions:
+- Payment Transactions: Transfers XRP back to agents upon redemption.
+- EscrowCreate Transactions: Time-locks XRP to control fund releases and minimize spending risk.
+
+:::info
+
+   Operations are manual, requiring multisig approval, ensuring security and preventing unauthorized withdrawals.
+
+:::
+
+### Security
+
+For security, the CV includes an emergency pause function and “Red Alert Mode” for urgent threats.
+If a security issue arises, all signing halts, requiring governance review before resumption.
+In critical cases, escrows may be unlocked to prevent asset loss, with governance retaining the authority to restore operations.
