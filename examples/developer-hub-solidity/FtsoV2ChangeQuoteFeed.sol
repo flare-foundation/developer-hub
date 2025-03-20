@@ -10,7 +10,6 @@ import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/costo
  * DO NOT USE THIS CODE IN PRODUCTION.
  */
 contract FtsoV2ChangeQuoteFeed {
-    TestFtsoV2Interface internal ftsoV2;
 
     /**
      * @dev Internal function to scale the base feed value to match the decimals of the final feed.
@@ -43,13 +42,13 @@ contract FtsoV2ChangeQuoteFeed {
      */
     function getNewQuoteFeedValue(
         bytes21[] calldata _baseAndQuoteFeedIds
-    ) external returns (uint256) {
+    ) external view returns (uint256) {
         require(
             _baseAndQuoteFeedIds.length == 2,
             "Invalid feed indexes. Please provide exactly two indexes."
         );
         /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
-        ftsoV2 = ContractRegistry.getTestFtsoV2();
+        TestFtsoV2Interface ftsoV2 = ContractRegistry.getTestFtsoV2();
         // Fetch current feeds
         (uint256[] memory feedValues, int8[] memory decimals, ) = ftsoV2
             .getFeedsById(_baseAndQuoteFeedIds);

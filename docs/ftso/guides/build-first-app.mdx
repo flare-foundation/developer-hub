@@ -2,7 +2,7 @@
 title: Build your first FTSOv2 app
 tags: [intermediate, ftso, solidity]
 slug: build-first-app
-description: Use FTSOv2 in your Foundry project.
+description: Use FTSOv2 in your Smart Contract project.
 keywords:
   [
     ftso,
@@ -17,10 +17,22 @@ sidebar_position: 1
 ---
 
 import CodeBlock from "@theme/CodeBlock";
-import FtsoV2FeedConsumer from "!!raw-loader!/examples/developer-hub-solidity/FtsoV2FeedConsumer_foundry.sol";
-import FtsoV2FeedConsumerTest from "!!raw-loader!/examples/developer-hub-solidity/FtsoV2FeedConsumer_foundry.t.sol";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import FtsoV2FeedConsumerFoundry from "!!raw-loader!/examples/developer-hub-solidity/FtsoV2FeedConsumer_foundry.sol";
+import FtsoV2FeedConsumerTestFoundry from "!!raw-loader!/examples/developer-hub-solidity/FtsoV2FeedConsumer_foundry.t.sol";
+import FtsoV2FeedConsumerHardhat from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedConsumer_hardhat.sol";
+import FtsoV2FeedConsumerTestHardhat from "!!raw-loader!/examples/developer-hub-javascript/FTSOV2FeedConsumer_hardhat.js";
+import FtsoV2FeedConsumerHardhatDeploy from "!!raw-loader!/examples/developer-hub-javascript/deployFTSO.ts";
 
-This guide is for developers who want to build an FTSOv2 application using Foundry. In this guide, you will learn how to:
+This guide is for developers who want to build an FTSOv2 application. Choose your development framework:
+
+<Tabs groupId="framework">
+<TabItem value="foundry" label="Foundry" default>
+
+## Building with Foundry
+
+In this guide, you will learn how to:
 
 - Create a contract to read the price of FLR/USD from FTSOv2 using [flare-periphery-contracts](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts).
 
@@ -28,14 +40,14 @@ This guide is for developers who want to build an FTSOv2 application using Found
 
 - Deploy your contract to Flare Testnet Coston2, and interact with it using Foundry [cast](https://book.getfoundry.sh/reference/cast/).
 
-## Prerequisites
+### Prerequisites
 
 Ensure you have the following tools installed:
 
 - [Foundry](https://book.getfoundry.sh/getting-started/installation)
 - [Node.js](https://nodejs.org/en/download/)
 
-## Clone the Foundry template
+### Clone the Foundry template
 
 1. Clone the [flare-foundry-starter](https://github.com/flare-foundation/flare-foundry-starter) and navigate into the project directory:
 
@@ -61,14 +73,14 @@ Ensure you have the following tools installed:
    surl/=dependencies/surl-0.0.0/
    ```
 
-## Create and compile a contract
+### Create and compile a contract
 
 Now, you can create a contract that consumes data from FTSOv2.
 
-1. Create a contract file `src/FtsoV2FeedConsumer.sol`, and add the following code to it:
+1. Create a contract file `src/FtsoV2FeedConsumer_foundry.sol`, and add the following code to it:
 
-   <CodeBlock language="solidity" title="src/FtsoV2FeedConsumer.sol">
-     {FtsoV2FeedConsumer}
+   <CodeBlock language="solidity" title="src/FtsoV2FeedConsumer_foundry.sol">
+     {FtsoV2FeedConsumerFoundry}
    </CodeBlock>
 
 2. Set EVM version to `london` in `foundry.toml`:
@@ -94,14 +106,14 @@ Now, you can create a contract that consumes data from FTSOv2.
    Compiler run successful!
    ```
 
-## Write tests
+### Write tests
 
 Before deploying, it's important to write tests for your contract.
 
-1. Create a test file `test/FtsoV2FeedConsumer.t.sol`, and add the following code:
+1. Create a test file `test/FtsoV2FeedConsumer_foundry.t.sol`, and add the following code:
 
-   <CodeBlock language="solidity" title="test/FtsoV2FeedConsumer.t.sol">
-     {FtsoV2FeedConsumerTest}
+   <CodeBlock language="solidity" title="test/FtsoV2FeedConsumer_foundry.t.sol">
+     {FtsoV2FeedConsumerTestFoundry}
    </CodeBlock>
 
 2. Run the tests:
@@ -118,7 +130,7 @@ Before deploying, it's important to write tests for your contract.
    [⠃] Solc 0.8.27 finished in 797.51ms
    Compiler run successful!
 
-   Ran 2 tests for test/FtsoV2FeedConsumer.t.sol:FtsoV2FeedConsumerTest
+   Ran 2 tests for test/FtsoV2FeedConsumer_foundry.t.sol:FtsoV2FeedConsumerTestFoundry
    [PASS] testCheckFees() (gas: 21085)
    [PASS] testGetFlrUsdPrice() (gas: 25610)
    Logs:
@@ -132,7 +144,7 @@ Before deploying, it's important to write tests for your contract.
    Ran 1 test suite in 122.65ms (7.72ms CPU time): 2 tests passed, 0 failed, 0 skipped (2 total tests)
    ```
 
-## Deploy and interact with the contract
+### Deploy and interact with the contract
 
 You can now deploy your contract to Flare Testnet Coston2.
 
@@ -309,7 +321,7 @@ You can now deploy your contract to Flare Testnet Coston2.
           "removed": false
         }
       ],
-      "logsBloom": "0x00020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000400000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "logsBloom": "0x000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000004000000000800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
       "type": "0x2",
       "transactionHash": "0x3fdc9cf00456a7878476877b6f8ae5c994dd3c224ca792f965f718340fd98402",
       "transactionIndex": "0x0",
@@ -328,6 +340,118 @@ You can now deploy your contract to Flare Testnet Coston2.
 You can see the transaction using the [Coston2 Explorer](https://coston2.testnet.flarescan.com/) by searching for its `transactionHash`.
 
 Congratulations! You've built your first app using FTSOv2.
+
+</TabItem>
+
+<TabItem value="hardhat" label="Hardhat">
+
+## Building with Hardhat
+
+In this guide, you will learn how to:
+
+- Create a contract to read the price of FLR/USD from FTSOv2 using [flare-periphery-contracts](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts).
+
+- Compile your contract using Hardhat and run tests.
+
+- Deploy your contract to Flare Testnet Coston2.
+
+### Prerequisites
+
+Ensure you have the following tools installed:
+
+- [Node.js](https://nodejs.org/en) v18.0 or higher
+- [npm](https://nodejs.org/en/learn/getting-started/an-introduction-to-the-npm-package-manager) or [yarn](https://yarnpkg.com)
+
+### Clone the Hardhat template
+
+1. Clone the [flare-hardhat-starter](https://github.com/flare-foundation/flare-hardhat-starter) and install dependencies:
+
+   ```bash
+   git clone https://github.com/flare-foundation/flare-hardhat-starter.git
+   cd flare-hardhat-starter
+   yarn install
+   ```
+
+2. Copy the environment file and set your private key:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+:::danger
+
+- Never share your private keys.
+- Never put your private keys in source code.
+- Never commit private keys to a Git repository.
+  :::
+
+### Create and compile a contract
+
+1. Create a contract file `contracts/FTSOV2FeedConsumer_hardhat.sol`:
+
+<CodeBlock language="solidity" title="contracts/FTSOV2FeedConsumer_hardhat.sol">
+  {FtsoV2FeedConsumerHardhat}
+</CodeBlock>
+
+2. Set EVM version to `london` in `hardhat.config.ts`:
+
+   ```typescript
+   module.exports = {
+     solidity: {
+       version: "0.8.27",
+       settings: {
+         evmVersion: "london",
+         optimizer: {
+           enabled: true,
+           runs: 200,
+         },
+       },
+     },
+   };
+   ```
+
+3. Compile the contract:
+
+   ```bash
+   npx hardhat compile
+   ```
+
+### Write tests
+
+1. Create a test file `test/FtsoV2FeedConsumer.test.ts`:
+
+<CodeBlock language="typescript" title="test/FtsoV2FeedConsumerHardhat.js">
+  {FtsoV2FeedConsumerTestHardhat}
+</CodeBlock>
+
+2. Run the tests:
+
+   ```bash
+   npx hardhat test
+   ```
+
+### Deploy and interact with the contract
+
+1. Create a deployment script `scripts/deployFTSO.ts`:
+
+<CodeBlock language="typescript" title="scripts/deployFTSO.ts">
+  {FtsoV2FeedConsumerHardhatDeploy}
+</CodeBlock>
+
+2. Deploy to Coston2:
+
+   ```bash
+   npx hardhat run scripts/deployFTSO.ts --network coston2
+   ```
+
+3. Interact with the contract:
+
+Copy and paste the deployed contract address into the Coston2 block explorer [here](https://coston2-explorer.flare.network/) to view and interact with the contract.
+
+Congratulations! You've built your first FTSOv2 app using Hardhat.
+
+</TabItem>
+</Tabs>
 
 :::tip[What's next]
 
