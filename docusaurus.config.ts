@@ -131,6 +131,10 @@ const config: Config = {
               to: "/support/audits",
             },
             {
+              label: "Tokenomics",
+              to: "/support/tokenomics",
+            },
+            {
               label: "Whitepapers",
               to: "/support/whitepapers",
             },
