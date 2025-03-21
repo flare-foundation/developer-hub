@@ -120,45 +120,70 @@ const config: Config = {
       },
       links: [
         {
-          title: "Support",
+          title: "Flare", // This will be used for horizontal links below the logo
           items: [
             {
-              label: "FAQs",
-              to: "/support/faqs",
+              label: "Contact",
+              href: "https://flare.network/resources/developer-support",
             },
             {
-              label: "Audits",
-              to: "/support/audits",
+              label: "Our Team",
+              href: "https://flare.network/team",
+            },
+            {
+              label: "Brand Assets",
+              href: "https://drive.google.com/drive/u/1/folders/1mPrtIBb2k88E4f1fguEm3eAXLW74xOry",
+            },
+            {
+              label: "Terms & Conditions",
+              href: "https://flare.network/privacy-policy/",
+            },
+          ],
+        },
+        {
+          title: "Resources",
+          items: [
+            {
+              label: "Whitepapers",
+              to: "/support/whitepapers",
             },
             {
               label: "Tokenomics",
               to: "/support/tokenomics",
             },
             {
-              label: "Whitepapers",
-              to: "/support/whitepapers",
+              label: "Audits",
+              to: "/support/audits",
             },
             {
-              label: "Terms & Privacy",
-              href: "https://flare.network/privacy-policy/",
+              label: "FAQs",
+              to: "/support/faqs",
             },
           ],
         },
         {
-          title: "Developer links",
+          title: "Developers",
           items: [
             {
               label: "Flarescan",
               href: "https://flarescan.com/",
             },
-
+            {
+              label: "Systems Explorer",
+              href: "https://flare-systems-explorer.flare.network",
+            },
             {
               label: "Grants Program",
               href: "https://flare.network/grants",
             },
+          ],
+        },
+        {
+          title: "Governance",
+          items: [
             {
-              label: "Systems Explorer",
-              href: "https://flare-systems-explorer.flare.network",
+              label: "Discourse Forum",
+              href: "https://forum.flare.network",
             },
             {
               label: "Governance Proposals",
@@ -167,10 +192,6 @@ const config: Config = {
             {
               label: "Flare Portal",
               href: "http://portal.flare.network/",
-            },
-            {
-              label: "Discourse Forum",
-              href: "https://forum.flare.network",
             },
           ],
         },

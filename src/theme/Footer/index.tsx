@@ -16,10 +16,12 @@ function Footer(): JSX.Element | null {
 
   return (
     <>
-      {links.find((link) => link.title == "Developer links") &&
-      links.find((link) => link.title == "Support") ? (
+      {links.find((link) => link.title == "Flare") &&
+      links.find((link) => link.title == "Resources") &&
+      links.find((link) => link.title == "Developers") &&
+      links.find((link) => link.title == "Governance") ? (
         <CustomFooter
-          // @ts-expect-error: We are for sure that if both titles are defined that we have right type
+          // @ts-expect-error: We are sure the footer links have the expected structure
           links={links && links.length > 0 && links}
           logo={logo && <FooterLogo logo={logo} />}
           copyright={copyright && <FooterCopyright copyright={copyright} />}

@@ -2,98 +2,172 @@
   border-top-style: solid;
   border-top-width: 3px;
   border-image: linear-gradient(90deg, #ffd1de, #ff1b5a) 1;
+  background-color: white; /* Light background */
+  color: #333333;
+  padding: 60px 0 40px;
 }
 
 .footerContainer {
-  display: grid;
-  grid-template-columns: 1fr;
-  grid-column-gap: 0px;
-  grid-row-gap: 0px;
-  justify-items: center;
-  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
 }
 
-.developerLinksTitle {
+/* Brand section - logo, social links, copyright */
+.brandSection {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+}
+
+.logoWrapper {
+  margin-bottom: 10px;
+}
+
+.copyrightWrapper {
+  color: var(--ifm-navbar-link-color);
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+/* Horizontal links below logo */
+.horizontalLinks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.horizLink {
+  color: var(--ifm-navbar-link-color);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.horizLink:hover {
+  color: var(--ifm-color-primary);
+  text-decoration: none;
+}
+
+.divider {
+  color: var(--ifm-navbar-link-color);
+  opacity: 0.7;
+}
+
+/* Columns section */
+.columnsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.footerColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.columnTitle {
   font-weight: 700;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--ifm-navbar-link-color);
 }
 
-.developerLinks {
+.columnLinks {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  align-items: center;
 }
 
-.supportLinks {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-}
-
-.displayedLinks {
-  display: grid;
-  grid-template-columns: repeat(1, 1fr);
-  grid-column-gap: 12px;
-  grid-row-gap: 12px;
-  justify-items: center;
-}
-
-.supportDisplayedLinks {
-  display: flex;
-  gap: 8px 24px;
-  color: var(--ifm-navbar-link-colors);
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.devExternalLink {
+.columnLink {
   display: flex;
   gap: 6px;
-  color: currentColor;
+  color: #333333; /* Darker text for light background */
   align-items: center;
+  text-decoration: none;
+  font-size: 15px;
 }
 
-.supportExternalLink {
-  color: currentColor;
-  cursor: pointer;
-  font-size: 14px;
+.columnLink:hover {
+  color: var(--ifm-color-primary);
+  text-decoration: none;
 }
 
+/* Dark mode overrides */
+[data-theme="dark"] .footerRoot {
+  background-color: #000000;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .columnLink {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .columnLink:hover {
+  color: var(--ifm-color-primary-lighter);
+}
+
+[data-theme="dark"] .horizLink {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .horizLink:hover {
+  color: var(--ifm-color-primary-lighter);
+}
+
+/* Desktop view (3 columns side by side) */
 @media (min-width: 996px) {
   .footerContainer {
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: 1fr;
-    grid-column-gap: 24px;
-    grid-row-gap: 0px;
-    padding-top: 90px;
-    padding-bottom: 50px;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
   }
 
-  .developerLinks {
-    grid-area: 1 / 2 / 2 / 3;
-    align-items: start;
-    justify-self: end;
+  .brandSection {
+    flex: 0 0 22%;
+    align-items: flex-start;
+    margin-right: 40px;
   }
 
-  .supportLinks {
-    grid-area: 1 / 1 / 2 / 2;
-    justify-self: start;
+  .columnsSection {
+    flex: 0 0 70%;
+    flex-direction: row;
+    justify-content: space-between;
   }
 
-  .supportLinks {
-    align-items: start;
+  .footerColumn {
+    flex: 1;
+    padding-right: 15px;
   }
 
-  .displayedLinks {
-    grid-template-columns: repeat(2, 1fr);
-    justify-items: start;
+  .footerColumn:last-child {
+    padding-right: 0; /* No padding needed on last column */
   }
 
-  .supportDisplayedLinks {
+  .horizontalLinks {
     justify-content: flex-start;
-    gap: 24px;
+  }
+}
+
+/* Tablet view (2 columns in columnsSection) */
+@media (min-width: 768px) and (max-width: 995px) {
+  .columnsSection {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .footerColumn {
+    flex: 0 0 calc(50% - 20px);
+  }
+}
+
+/* Ensure container has proper padding for smaller screens */
+@media (max-width: 1200px) {
+  .footerContainer {
+    padding-left: 20px;
+    padding-right: 20px;
   }
 }
