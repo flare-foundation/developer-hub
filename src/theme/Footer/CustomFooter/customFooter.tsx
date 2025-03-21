@@ -28,9 +28,15 @@ export default function CustomFooter({
     <footer className={classes.footerRoot}>
       <div className={clsx(classes.footerContainer, "container")}>
         <div className={classes.brandSection}>
+          {/* Logo first */}
           <div className={classes.logoWrapper}>{logo}</div>
+
+          {/* Tagline text would typically be part of the logo component */}
+
+          {/* Social icons */}
           <SocialLinks />
 
+          {/* Navigation links */}
           {flareLinks && (
             <div className={classes.horizontalLinks}>
               {flareLinks.items.map(({ label, to, href }, index) => (
@@ -49,6 +55,7 @@ export default function CustomFooter({
             </div>
           )}
 
+          {/* Copyright at the bottom */}
           <div className={classes.copyrightWrapper}>{copyright}</div>
         </div>
 
