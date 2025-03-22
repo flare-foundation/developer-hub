@@ -10,8 +10,6 @@ import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/costo
  * DO NOT USE THIS CODE IN PRODUCTION.
  */
 contract FtsoV2FeedTracker {
-    TestFtsoV2Interface internal ftsoV2;
-
     // Feed data structure to store multiple feed values with timestamps
     struct FeedInfo {
         uint256 valueInWei;
@@ -27,15 +25,6 @@ contract FtsoV2FeedTracker {
     event FeedFetched(uint256 index, uint256 valueInWei, uint64 timestamp);
 
     /**
-     * Constructor initializes the FTSOv2 contract.
-     * The contract registry is used to fetch the FtsoV2 contract address.
-     */
-    constructor() {
-        /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
-        ftsoV2 = ContractRegistry.getTestFtsoV2();
-    }
-
-    /**
      * Get the current value of a specific feed by its index, in wei.
      * @param _index The index of the feed to retrieve.
      * @return _feedValue The latest price value of the feed in wei.
@@ -43,10 +32,12 @@ contract FtsoV2FeedTracker {
      */
     function getFeedValueByIndexInWei(uint256 _index)
         external
-        payable
+        view
         returns (uint256 _feedValue, uint64 _timestamp)
     {
-        // Retrieve feed value and timestamp from the FtsoV2 contract
+    // Retrieve feed value and timestamp from the FtsoV2 contract
+    /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
+        TestFtsoV2Interface ftsoV2 = ContractRegistry.getTestFtsoV2();
         (_feedValue, _timestamp) = ftsoV2.getFeedByInWei{value: msg.value}(_index);
 
         // Store the feed value and timestamp in the contract's storage

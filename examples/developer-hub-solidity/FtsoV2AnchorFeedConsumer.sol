@@ -10,15 +10,14 @@ import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/costo
  * DO NOT USE THIS CODE IN PRODUCTION.
  */
 contract FtsoV2AnchorFeedConsumer {
-    TestFtsoV2Interface internal ftsoV2;
     mapping(uint32 => mapping(bytes21 => TestFtsoV2Interface.FeedData))
     public provenFeeds;
 
     function savePrice(
         TestFtsoV2Interface.FeedDataWithProof calldata data
-    ) public {
+    ) external view  {
         /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
-        ftsoV2 = ContractRegistry.getTestFtsoV2();
+        TestFtsoV2Interface ftsoV2 = ContractRegistry.getTestFtsoV2();
         // Step 1: Verify the proof
         require(ftsoV2.verifyFeedData(data), "Invalid proof");
         // Step 2: Use the feed data with app specific logic
