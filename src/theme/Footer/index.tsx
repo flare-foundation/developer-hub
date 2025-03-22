@@ -18,7 +18,7 @@ function Footer(): JSX.Element | null {
     <>
       {links.find((link) => link.title == "Flare") &&
       links.find((link) => link.title == "Resources") &&
-      links.find((link) => link.title == "Developers") &&
+      links.find((link) => link.title == "Explore") &&
       links.find((link) => link.title == "Governance") ? (
         <CustomFooter
           // @ts-expect-error: We are sure the footer links have the expected structure

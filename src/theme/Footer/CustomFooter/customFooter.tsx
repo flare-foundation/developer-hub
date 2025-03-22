@@ -21,7 +21,7 @@ export default function CustomFooter({
 }: CustomFooterProps) {
   const flareLinks = links.find((link) => link.title == "Flare");
   const resourcesLinks = links.find((link) => link.title == "Resources");
-  const developersLinks = links.find((link) => link.title == "Developers");
+  const exploreLinks = links.find((link) => link.title == "Explore");
   const governanceLinks = links.find((link) => link.title == "Governance");
 
   return (
@@ -30,11 +30,6 @@ export default function CustomFooter({
         <div className={classes.brandSection}>
           {/* Logo first */}
           <div className={classes.logoWrapper}>{logo}</div>
-
-          {/* Tagline text would typically be part of the logo component */}
-
-          {/* Social icons */}
-          <SocialLinks />
 
           {/* Navigation links */}
           {flareLinks && (
@@ -54,6 +49,9 @@ export default function CustomFooter({
               ))}
             </div>
           )}
+
+          {/* Social icons */}
+          <SocialLinks />
 
           {/* Copyright at the bottom */}
           <div className={classes.copyrightWrapper}>{copyright}</div>
@@ -98,13 +96,13 @@ export default function CustomFooter({
             </div>
           )}
 
-          {developersLinks && (
+          {exploreLinks && (
             <div className={classes.footerColumn}>
               <div className={classes.columnTitle}>
-                {developersLinks.title.toUpperCase()}
+                {exploreLinks.title.toUpperCase()}
               </div>
               <div className={classes.columnLinks}>
-                {developersLinks.items.map(({ label, to, href }) => (
+                {exploreLinks.items.map(({ label, to, href }) => (
                   <Link
                     className={classes.columnLink}
                     key={label}

@@ -162,7 +162,7 @@ const config: Config = {
           ],
         },
         {
-          title: "Developers",
+          title: "Explore",
           items: [
             {
               label: "Flarescan",
@@ -171,6 +171,10 @@ const config: Config = {
             {
               label: "Systems Explorer",
               href: "https://flare-systems-explorer.flare.network",
+            },
+            {
+              label: "P-Chain Explorer",
+              href: "https://flare.space/dapp/p-chain-explorer/",
             },
             {
               label: "Grants Program",
@@ -196,7 +200,7 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Copyright © Flare Network ${new Date().getFullYear()}`,
+      copyright: `Copyright © Flare ${new Date().getFullYear()}`,
     },
     prism: {
       additionalLanguages: ["solidity", "bash", "json", "toml", "diff"],
