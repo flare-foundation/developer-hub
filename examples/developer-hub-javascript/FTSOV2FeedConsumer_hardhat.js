@@ -18,7 +18,7 @@ describe("FtsoV2FeedConsumer", () => {
     ftsoConsumer = await FtsoV2FeedConsumer.new(
       mockFtsoV2Address,
       mockFeeCalcAddress,
-      mockFlrUsdId
+      mockFlrUsdId,
     );
   });
 

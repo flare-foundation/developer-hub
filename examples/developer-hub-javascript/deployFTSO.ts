@@ -9,8 +9,9 @@ async function main() {
   console.log("Deploying contracts with the account:", deployer.address);
 
   // Deploy FtsoV2FeedConsumer
-  const ftsoConsumer: FtsoV2FeedConsumerInstance =
-    await FtsoV2FeedConsumer.new("0x01464c522f55534400000000000000000000000000");
+  const ftsoConsumer: FtsoV2FeedConsumerInstance = await FtsoV2FeedConsumer.new(
+    "0x01464c522f55534400000000000000000000000000",
+  );
   console.log("FtsoV2FeedConsumer deployed to:", ftsoConsumer.address);
 
   // Test the contract functions
@@ -22,7 +23,7 @@ async function main() {
     console.log("Decimals:", result[1].toString());
     console.log(
       "Timestamp:",
-      new Date(result[2].toNumber() * 1000).toISOString()
+      new Date(result[2].toNumber() * 1000).toISOString(),
     );
 
     // Test checkFees
