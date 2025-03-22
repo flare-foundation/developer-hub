@@ -120,41 +120,75 @@ const config: Config = {
       },
       links: [
         {
-          title: "Support",
+          title: "Flare", // This will be used for horizontal links below the logo
           items: [
             {
-              label: "FAQs",
-              to: "/support/faqs",
+              label: "Contact",
+              href: "https://flare.network/resources/developer-support",
             },
             {
-              label: "Audits",
-              to: "/support/audits",
+              label: "Our Team",
+              href: "https://flare.network/team",
             },
             {
-              label: "Whitepapers",
-              to: "/support/whitepapers",
+              label: "Brand Assets",
+              href: "https://drive.google.com/drive/u/1/folders/1mPrtIBb2k88E4f1fguEm3eAXLW74xOry",
             },
             {
-              label: "Terms & Privacy",
+              label: "Terms & Conditions",
               href: "https://flare.network/privacy-policy/",
             },
           ],
         },
         {
-          title: "Developer links",
+          title: "Resources",
+          items: [
+            {
+              label: "Whitepapers",
+              to: "/support/whitepapers",
+            },
+
+            {
+              label: "Audits",
+              to: "/support/audits",
+            },
+            {
+              label: "FAQs",
+              to: "/support/faqs",
+            },
+            {
+              label: "FLR",
+              to: "/support/flr",
+            },
+          ],
+        },
+        {
+          title: "Explore",
           items: [
             {
               label: "Flarescan",
               href: "https://flarescan.com/",
             },
-
+            {
+              label: "Systems Explorer",
+              href: "https://flare-systems-explorer.flare.network",
+            },
+            {
+              label: "P-Chain Explorer",
+              href: "https://flare.space/dapp/p-chain-explorer/",
+            },
             {
               label: "Grants Program",
               href: "https://flare.network/grants",
             },
+          ],
+        },
+        {
+          title: "Governance",
+          items: [
             {
-              label: "Systems Explorer",
-              href: "https://flare-systems-explorer.flare.network",
+              label: "Discourse Forum",
+              href: "https://forum.flare.network",
             },
             {
               label: "Governance Proposals",
@@ -164,14 +198,10 @@ const config: Config = {
               label: "Flare Portal",
               href: "http://portal.flare.network/",
             },
-            {
-              label: "Discourse Forum",
-              href: "https://forum.flare.network",
-            },
           ],
         },
       ],
-      copyright: `Copyright © Flare Network ${new Date().getFullYear()}`,
+      copyright: `Copyright © Flare ${new Date().getFullYear()}`,
     },
     prism: {
       additionalLanguages: ["solidity", "bash", "json", "toml", "diff"],

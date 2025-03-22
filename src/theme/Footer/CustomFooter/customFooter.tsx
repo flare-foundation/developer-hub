@@ -19,71 +19,158 @@ export default function CustomFooter({
   logo,
   copyright,
 }: CustomFooterProps) {
-  const developerLinks = links.find((link) => link.title == "Developer links");
-  const supportLinks = links.find((link) => link.title == "Support");
+  const flareLinks = links.find((link) => link.title == "Flare");
+  const resourcesLinks = links.find((link) => link.title == "Resources");
+  const exploreLinks = links.find((link) => link.title == "Explore");
+  const governanceLinks = links.find((link) => link.title == "Governance");
+
   return (
     <footer className={classes.footerRoot}>
       <div className={clsx(classes.footerContainer, "container")}>
-        <div className={classes.developerLinks}>
-          <div className={classes.developerLinksTitle}>DEVELOPER LINKS</div>
-          <div className={classes.displayedLinks}>
-            {developerLinks.items.map(({ label, href }) => (
-              <Link
-                className={classes.devExternalLink}
-                key={label}
-                to={href}
-                target="_blank"
-              >
-                <div style={{ textWrap: "wrap" }}>{label}</div>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width={18}
-                  height={18}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="icon icon-tabler icons-tabler-outline icon-tabler-arrow-up-right"
-                >
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                  <path d="M17 7l-10 10" />
-                  <path d="M8 7l9 0l0 9" />
-                </svg>
-              </Link>
-            ))}
-          </div>
-        </div>
-        <div className={classes.supportLinks}>
-          <div>{logo}</div>
-          <div className={classes.supportDisplayedLinks}>
-            {supportLinks.items.map(({ label, to, href }, index) => (
-              <>
-                {index != 0 && <div>|</div>}
-                {href ? (
+        <div className={classes.brandSection}>
+          {/* Logo first */}
+          <div className={classes.logoWrapper}>{logo}</div>
+
+          {/* Navigation links */}
+          {flareLinks && (
+            <div className={classes.horizontalLinks}>
+              {flareLinks.items.map(({ label, to, href }, index) => (
+                <>
+                  {index > 0 && <span className={classes.divider}>|</span>}
                   <Link
+                    className={classes.horizLink}
                     key={label}
-                    to={href}
-                    className={classes.supportExternalLink}
-                    target="_blank"
+                    to={href || to}
+                    target={href ? "_blank" : undefined}
                   >
                     {label}
                   </Link>
-                ) : (
-                  <Link
-                    key={label}
-                    to={to}
-                    className={classes.supportExternalLink}
-                  >
-                    {label}
-                  </Link>
-                )}
-              </>
-            ))}
-          </div>
+                </>
+              ))}
+            </div>
+          )}
+
+          {/* Social icons */}
           <SocialLinks />
-          <div>{copyright}</div>
+
+          {/* Copyright at the bottom */}
+          <div className={classes.copyrightWrapper}>{copyright}</div>
+        </div>
+
+        <div className={classes.columnsSection}>
+          {resourcesLinks && (
+            <div className={classes.footerColumn}>
+              <div className={classes.columnTitle}>
+                {resourcesLinks.title.toUpperCase()}
+              </div>
+              <div className={classes.columnLinks}>
+                {resourcesLinks.items.map(({ label, to, href }) => (
+                  <Link
+                    className={classes.columnLink}
+                    key={label}
+                    to={href || to}
+                    target={href ? "_blank" : undefined}
+                  >
+                    <div>{label}</div>
+                    {href && (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width={18}
+                        height={18}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="icon icon-tabler icons-tabler-outline icon-tabler-arrow-up-right"
+                      >
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                        <path d="M17 7l-10 10" />
+                        <path d="M8 7l9 0l0 9" />
+                      </svg>
+                    )}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {exploreLinks && (
+            <div className={classes.footerColumn}>
+              <div className={classes.columnTitle}>
+                {exploreLinks.title.toUpperCase()}
+              </div>
+              <div className={classes.columnLinks}>
+                {exploreLinks.items.map(({ label, to, href }) => (
+                  <Link
+                    className={classes.columnLink}
+                    key={label}
+                    to={href || to}
+                    target={href ? "_blank" : undefined}
+                  >
+                    <div>{label}</div>
+                    {href && (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width={18}
+                        height={18}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="icon icon-tabler icons-tabler-outline icon-tabler-arrow-up-right"
+                      >
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                        <path d="M17 7l-10 10" />
+                        <path d="M8 7l9 0l0 9" />
+                      </svg>
+                    )}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {governanceLinks && (
+            <div className={classes.footerColumn}>
+              <div className={classes.columnTitle}>
+                {governanceLinks.title.toUpperCase()}
+              </div>
+              <div className={classes.columnLinks}>
+                {governanceLinks.items.map(({ label, to, href }) => (
+                  <Link
+                    className={classes.columnLink}
+                    key={label}
+                    to={href || to}
+                    target={href ? "_blank" : undefined}
+                  >
+                    <div>{label}</div>
+                    {href && (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width={18}
+                        height={18}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="icon icon-tabler icons-tabler-outline icon-tabler-arrow-up-right"
+                      >
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                        <path d="M17 7l-10 10" />
+                        <path d="M8 7l9 0l0 9" />
+                      </svg>
+                    )}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </footer>
