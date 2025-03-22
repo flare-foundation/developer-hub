@@ -147,10 +147,7 @@ const config: Config = {
               label: "Whitepapers",
               to: "/support/whitepapers",
             },
-            {
-              label: "Tokenomics",
-              to: "/support/tokenomics",
-            },
+
             {
               label: "Audits",
               to: "/support/audits",
@@ -158,6 +155,10 @@ const config: Config = {
             {
               label: "FAQs",
               to: "/support/faqs",
+            },
+            {
+              label: "FLR",
+              to: "/support/flr",
             },
           ],
         },
