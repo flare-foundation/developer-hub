@@ -1,4 +1,4 @@
-name: "CodeQL"
+name: "CodeQL Default Setup"
 
 on:
   push:
@@ -11,14 +11,9 @@ jobs:
     name: Analyze
     runs-on: ubuntu-latest
     permissions:
+      security-events: write
       actions: read
       contents: read
-      security-events: write
-
-    strategy:
-      fail-fast: false
-      matrix:
-        language: ["javascript", "python", "go"]
 
     steps:
       - name: Checkout repository
@@ -27,12 +22,12 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
-          languages: ${{ matrix.language }}
+          languages: javascript, python, go
+          config: |
+            disable-default-queries: false
 
       - name: Autobuild
-        uses: github/codeql-action/autobuild@v2
+        uses: github/codeql-action/autobuild@v3
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
-        with:
-          category: "/language:${{matrix.language}}"
+        uses: github/codeql-action/analyze@v3
