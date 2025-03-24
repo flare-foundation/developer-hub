@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Link from "@docusaurus/Link";
 import Heading from "@theme/Heading";
-// Import JSON directly - note: adjust the path based on your project structure
 import toolsDataRaw from "@site/src/data/developerTools.json";
 
 // Define the type for tool items
