@@ -40,9 +40,24 @@ const DeveloperTools = () => {
   const toolsData = toolsDataRaw as ToolsData;
   const { toolDescriptions, networkTools } = toolsData;
 
-  // Handle client-side only rendering
+  // Handle client-side only rendering and scroll to anchor if present
   useEffect(() => {
     setIsClient(true);
+
+    // Handle anchor scrolling
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash;
+      if (hash) {
+        // Remove the '#' character
+        const id = hash.substring(1);
+        setTimeout(() => {
+          const element = document.getElementById(id);
+          if (element) {
+            element.scrollIntoView({ behavior: "smooth" });
+          }
+        }, 100);
+      }
+    }
   }, []);
 
   if (!isClient || !networkTools[activeNetwork]) {
@@ -85,14 +100,15 @@ const DeveloperTools = () => {
             <Heading
               as="h2"
               className="category-title"
-              id={`category-${category.toLowerCase().replace(/\s+/g, "-")}`}
+              id={`${category.toLowerCase().replace(/\s+/g, "-")}`}
             >
-              <a
+              <Link
                 className="anchor-link"
-                href={`#category-${category.toLowerCase().replace(/\s+/g, "-")}`}
+                href={`#${category.toLowerCase().replace(/\s+/g, "-")}`}
+                aria-hidden="true"
               >
                 {category}
-              </a>
+              </Link>
             </Heading>
             <div className="tools-cards">
               {Array.isArray(tools) && tools.length === 0 ? (
