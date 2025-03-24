@@ -1,0 +1,1090 @@
+---
+title: Proof of Reserves
+authors: [lukaavbreht, filipkoprivec]
+description: Verifying stablecoin reserves with FDC.
+tags: [advanced, ethereum, fdc]
+keywords: [ethereum, flare-data-connector, evm, flare-network]
+sidebar_position: 10
+unlisted: false
+---
+
+This is a guide on how to build a simple dApp using the [Flare Data Connector](/fdc/overview).
+It demonstrates how multiple attestation types, namely the EVMTransaction and JsonApi, can be combined within the same app.
+
+The app that we will be building is called `proofOfReserves`.
+We will first describe what issue the app is addressing, and then provide a detailed walkthrough through its source code.
+All the code for this project is available on GitHub, in the [Flare Hardhat Starter](https://github.com/flare-foundation/flare-hardhat-starter) repository.
+
+## The task
+
+A stablecoin is a type of token with a fixed value.
+One token is guaranteed to always be exchangeable, for example, for one dollar.
+
+The institution backing the token provides a public Web2 API, listing its dollar reserves.
+Meanwhile, they also issue tokens on multiple chains.
+We want to compare the total token supply, across all chains, with the claimed dollar reserve value.
+If the sum of tokens exceeds the claimed reserve amount, the institution is overdrafting its tokens.
+That is why we call the app `proofOfReserves`.
+
+Here, we are facing several challenges.
+First, how do we acquire data from a public Web2 API?
+Second, how can we convert the state data of a contract to an event?
+And thirdly, how can we collect the event data from another chain?
+
+The answer to the first and the last question is FDC.
+The answer to the second is, that we deploy a contract that, upon being prompted, reads the state data and emits an event with the data included.
+
+This is all the information we need to write our `proofOfReserves` example.
+
+## Smart contracts
+
+To implement our proof of reserves example we will create three contracts.
+If this were production code, we would only need two.
+But since this is a guide and because we want to be able to play with token supply values, we will also deploy our own stablecoin.
+
+The code that defines the token is as follows.
+It is an ERC20 token that is burnable, ownable, and permits the owner to mint more tokens.
+
+```solidity title="contracts/proofOfReserves/Token.sol"
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.25;
+
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+
+contract MyStablecoin is ERC20, ERC20Burnable, Ownable, ERC20Permit {
+    constructor(address recipient, address initialOwner)
+        ERC20("MyStablecoin", "MST")
+        Ownable(initialOwner)
+        ERC20Permit("MyStablecoin")
+    {
+        _mint(recipient, 666 * 10 ** decimals());
+    }
+
+    function mint(address to, uint256 amount) public onlyOwner {
+        _mint(to, amount);
+    }
+}
+```
+
+Because we are building our app around `@openzeppelin`'s ERC20 token, we can later replace the token with any such instance.
+This means that we can easily modify our app to work with an arbitrary contract that inherits the `ERC20`.
+
+The second contract we need to write is the one that reads the total token supply of a given token and emits an event that exposes both the token address and its total supply.
+It has a single method that takes an `ERC20` token instance and calls its `totalSupply` function.
+Then, it emits the `TotalTokenSupply` event with the token's address and total supply.
+
+```solidity title="contracts/proofOfReserves/TokenStateReader.sol"
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.25;
+
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+
+contract TokenStateReader {
+    event TotalTokenSupply(address tokenAddress, uint256 totalSupply);
+
+    function broadcastTokenSupply(ERC20 token) external returns (uint256) {
+        emit TotalTokenSupply(address(token), token.totalSupply());
+        return token.totalSupply();
+    }
+}
+```
+
+The last contract left to define will check whether the claimed dollar reserves exceed the sum of total token supplies.
+Its main function, `verifyReserves`, will take two arguments: an `IJsonApi.Proof` struct, and an array of `IEVMTransaction.Proof` structs.
+Then, if the sum of total token supplies is less than the claimed reserves it will return `true`, and `false` otherwise.
+
+```solidity title="contracts/proofOfReserves/ProofOfReserves.sol"
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.25;
+
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {IEVMTransaction} from "@flarenetwork/flare-periphery-contracts/coston2/IEVMTransaction.sol";
+import {IJsonApi} from "@flarenetwork/flare-periphery-contracts/coston2/IJsonApi.sol";
+import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+
+...
+
+contract ProofOfReserves is Ownable {
+    event GoodPair(address reader, address token, uint256 totalSupply);
+    event BadPair(address reader, address token, uint256 totalSupply);
+
+    uint256 public debugTokenReserves = 0;
+    uint256 public debugClaimedReserves = 0;
+
+    mapping(address => address) public tokenStateReaders;
+
+    constructor() Ownable(msg.sender) {}
+
+    function updateAddress(address readerAddress, address tokenAddress) public onlyOwner {
+        tokenStateReaders[readerAddress] = tokenAddress;
+    }
+
+    function verifyReserves(IJsonApi.Proof calldata jsonProof, IEVMTransaction.Proof[] calldata transactionProofs)
+        external
+        returns (bool)
+    {
+        uint256 claimedReserves = readReserves(jsonProof);
+
+        uint256 totalTokenReserves = 0;
+        for (uint256 i = 0; i < transactionProofs.length; i++) {
+            totalTokenReserves += readReserves(transactionProofs[i]);
+        }
+        debugTokenReserves = totalTokenReserves;
+
+        return totalTokenReserves <= (claimedReserves * 1 ether);
+    }
+    ...
+}
+```
+
+At the top of the contract, we see two events and several variables.
+The `GoodPair` and `BadPair` events, as well as the `debugTokenReserves` and `debugClaimedReserves` are there for debugging purposes - they will allow us to check those values in the [explorer](https://coston2-explorer.flare.network/).
+The `tokenStateReaders` mapping connects each stablecoin to its corresponding `tokenStateReader` contract; it serves as the registry of the official readers.
+Therefore, it will only be modifiable by the owner of the `ProofOfReserves` contract (the `updateAddress` function).
+
+Before we can write the readReserves function for the `IJsonAPi.Proof` type, we need to define a `DataTransportObject` struct, as we did in the [JsonApi attestation type guide](/fdc/guides/json-api).
+This will later allow us to specify how data from the Web2 API will be stored.
+In this case, this will be a single `uint256` field.
+
+```solidity title="contracts/proofOfReserves/ProofOfReserves.sol"
+struct DataTransportObject {
+    uint256 reserves;
+}
+```
+
+With that, we simply decode the `abi_encoded_data` within the `IJsonAPi.Proof` struct, and access its `reserves` field.
+Of course, we must first validate the proof, but more on that later.
+
+```solidity title="contracts/proofOfReserves/ProofOfReserves.sol:ProofOfReserves"
+    function readReserves(IJsonApi.Proof calldata proof) private returns (uint256) {
+        require(isValidProof(proof), "Invalid json proof");
+        DataTransportObject memory data = abi.decode(proof.data.responseBody.abi_encoded_data, (DataTransportObject));
+        debugClaimedReserves = data.reserves;
+
+        return data.reserves;
+    }
+```
+
+The `readReserves` function for the `IEVMTransaction.Proof` type is more involved.
+It cycles through all transaction events and discards those that do not originate with the `tokenStateReader` contract.
+It also ignores the ones that belong to a wrong contract, according to the mapping.
+In the end, if all the conditions are met, the total supplies are added together.
+
+```solidity title="contracts/proofOfReserves/ProofOfReserves.sol:ProofOfReserves"
+    function readReserves(IEVMTransaction.Proof calldata proof) private returns (uint256) {
+        require(isValidProof(proof), "Invalid transaction proof");
+        uint256 totalSupply = 0;
+        for (uint256 i = 0; i < proof.data.responseBody.events.length; i++) {
+            IEVMTransaction.Event memory _event = proof.data.responseBody.events[i];
+            address readerAddress = _event.emitterAddress;
+            (address tokenAddress, uint256 supply) = abi.decode(_event.data, (address, uint256));
+            bool correctTokenAndReaderAddress = tokenStateReaders[readerAddress] == tokenAddress;
+            if (correctTokenAndReaderAddress) {
+                totalSupply += supply;
+                emit GoodPair(readerAddress, tokenAddress, supply);
+            } else {
+                emit BadPair(readerAddress, tokenAddress, supply);
+            }
+        }
+        return totalSupply;
+    }
+```
+
+As for validating the proofs, the contracts that do that are quite simple.
+Using the `ContractRegistry` library they contact the `FdcVerification` contracts and call the appropriate verify functions.
+
+```solidity title="contracts/proofOfReserves/ProofOfReserves.sol:ProofOfReserves"
+
+    function isValidProof(IJsonApi.Proof calldata proof) private view returns (bool) {
+        return ContractRegistry.auxiliaryGetIJsonApiVerification().verifyJsonApi(proof);
+    }
+
+    function isValidProof(IEVMTransaction.Proof calldata proof) private view returns (bool) {
+        return ContractRegistry.getFdcVerification().verifyEVMTransaction(proof);
+    }
+```
+
+:::info
+The `ContractRegistry` is a library shipped with the `flare-periphery-contracts` that allows for easier access to official Flare contracts.
+Instead of acquiring the needed contracts by their addresses, it exposes them through predefined functions.
+This approach is less error-prone.
+:::
+
+There is one more thing we need to add before we can proceed to the second part of the guide.
+While not strictly necessary, it will make one of the future steps much easier.
+We will add an empty function that takes a `DataTransportObject` as input.
+This will allow us to read the abi signature of the `DataTransportObject` struct from the `ProofOfReserves` contract's artifact.
+
+```solidity title="contracts/proofOfReserves/ProofOfReserves.sol:ProofOfReserves"
+    function abiSignatureHack(DataTransportObject calldata dto) external pure {}
+```
+
+We name the function appropriately.
+
+## Process Overview
+
+We can also replace the Coston and Coston2 chains with an arbitrary EVM chain.
+
+1. Deploy and verify `MyStablecoin` contract on Coston and Coston2 chains
+2. Deploy and verify `TokenStateReader` contract on Coston and Coston2
+3. Deploy and verify `ProofOfReserves` contract on Coston2
+4. Save `MyStablecoin`, `TokenStateReader`, and `ProofOfReserves` addresses to `scripts/proofOfReserves/config.ts`
+5. Call the `broadcastTokenSupply` function of both `TokenStateReader` contracts with the corresponding `MyStablecoin` addresses
+6. Save transaction hashes of both function calls to `scripts/proofOfReserves/config.ts`
+7. Request attestation from the FDC, and call `verifyReserves` function of the `ProofOfReserves` with the received data
+
+File names of our scripts will reflect these steps.
+At the end of the guide, we will repeat the list with file names instead.
+
+:::warning
+We deploy the `ProofOfReserves` on the Coston2 chain only.
+:::
+
+## Scripts
+
+The first three scripts each deploy and verify one of the contracts defined in the first part of the guide, ie. `MyStablecoin`, `TokenStateReader`, and `ProofOfReserves`.
+They are more or less the same script, the only real difference being the contracts deployed, and the arguments that are passed to their constructor.
+
+The `deployToken.ts` script deploys and verifies the `MyStablecoin` contract on the Coston and Coston2 chain.
+Unlike the other two scripts, it also imports an `owner` constant from the `scripts/proofOfReserves/config.ts` file.
+We provide it with the address of a dummy account, but it should be replaced by the address of the user's account.
+
+```typescript title="scripts/proofOfReserves/deployToken.ts"
+import hre, { run } from "hardhat";
+import { MyStablecoinInstance } from "../../typechain-types";
+import { owner } from "./config";
+
+const MyStablecoin = artifacts.require("MyStablecoin");
+
+async function deployAndVerify() {
+  const args: any[] = [owner, owner];
+  const myStablecoin: MyStablecoinInstance = await MyStablecoin.new(...args);
+  try {
+    await run("verify:verify", {
+      address: myStablecoin.address,
+      constructorArguments: args,
+    });
+  } catch (e: any) {
+    console.log(e);
+  }
+  console.log(
+    `(${hre.network.name}) MyStablecoin deployed to`,
+    myStablecoin.address,
+    "\n",
+  );
+}
+
+deployAndVerify().then((data) => {
+  process.exit(0);
+});
+```
+
+We run this script with the command:
+
+```sh
+yarn hardhat run scripts/proofOfReserves/deployToken.ts --network coston \
+&& yarn hardhat run scripts/proofOfReserves/deployToken.ts --network coston2
+```
+
+The `deployTokenStateReader.ts` deploys and verifies the `TokenStateReader` contract on the Coston and Coston2 chain.
+
+```typescript title="scripts/proofOfReserves/deployTokenStateReader.ts"
+import hre, { run } from "hardhat";
+import { TokenStateReaderInstance } from "../../typechain-types";
+
+const TokenStateReader = artifacts.require("TokenStateReader");
+
+async function deployAndVerify() {
+  const args: any[] = [];
+  const tokenStateReader: TokenStateReaderInstance = await TokenStateReader.new(
+    ...args,
+  );
+  try {
+    await run("verify:verify", {
+      address: tokenStateReader.address,
+      constructorArguments: args,
+    });
+  } catch (e: any) {
+    console.log(e);
+  }
+  console.log(
+    `(${hre.network.name}) TokenStateReader deployed to`,
+    tokenStateReader.address,
+    "\n",
+  );
+}
+
+deployAndVerify().then((data) => {
+  process.exit(0);
+});
+```
+
+We run this script with the command:
+
+```sh
+yarn hardhat run scripts/proofOfReserves/deployTokenStateReader.ts --network coston \
+&& yarn hardhat run scripts/proofOfReserves/deployTokenStateReader.ts --network coston2
+```
+
+Finally, the `deployProofOfReserves.ts` script deploys and verifies the `ProofOfReserves` contract on Coston2 chain.
+
+```typescript title="scripts/proofOfReserves/deployProofOfReserves.ts"
+import hre, { run } from "hardhat";
+import { ProofOfReservesInstance } from "../../typechain-types";
+
+const ProofOfReserves = artifacts.require("ProofOfReserves");
+
+async function deployAndVerify() {
+  const args: any[] = [];
+  const proofOfReserves: ProofOfReservesInstance = await ProofOfReserves.new(
+    ...args,
+  );
+  try {
+    await run("verify:verify", {
+      address: proofOfReserves.address,
+      constructorArguments: args,
+    });
+  } catch (e: any) {
+    console.log(e);
+  }
+  console.log(
+    `(${hre.network.name}) ProofOfReserves deployed to`,
+    proofOfReserves.address,
+    "\n",
+  );
+}
+
+deployAndVerify().then((data) => {
+  process.exit(0);
+});
+```
+
+We run this script with the command:
+
+```sh
+yarn hardhat run scripts/proofOfReserves/deployProofOfReserves.ts --network coston2
+```
+
+After we run the three scripts, we save the contract addresses to a `scripts/proofOfReserves/config.ts` file.
+We define a mapping that specifies what the addresses are for each chain.
+Since the `ProofOfReserves` contract is only deployed to a single chain, we do not save it as a mapping.
+At the end of the script, we also export these values so that they can be used in other scripts.
+
+```typescript title="scripts/proofOfReserves/config.ts"
+const owner = "0xF5488132432118596fa13800B68df4C0fF25131d";
+
+const tokenAddresses = new Map([
+  ["coston", "0xb979de129aFA8bBEC5d46314588B573aD9C72db6"],
+  ["coston2", "0xfc896CD7115dD2E901a573d11A598d9c8222f58A"],
+]);
+
+const readerAddresses = new Map([
+  ["coston", "0x16A446c2Bf18421c5d79a21f7Cc3636dFfDB0612"],
+  ["coston2", "0xD069D5c27211229afdCc173F2a46cc4aFb320911"],
+]);
+
+const proofOfReservesAddress = "0xCe109FE40e1860b7B659DA6C680E931b25d4E445";
+
+...
+
+export {
+  owner,
+  tokenAddresses,
+  readerAddresses,
+  proofOfReservesAddress,
+  ...
+};
+```
+
+The next script, `activateTokenStateReader`, calls the `broadcastTokenSupply` method of the `TokenStateReader` contracts on all chains.
+It retrieves the address mapping from the `scripts/proofOfReserves/config.ts` file and matches them to the current network (the `--network` parameter in the console command).
+
+```typescript title="scripts/proofOfReserves/activateTokenStateReader.ts"
+import hre from "hardhat";
+import { MyStablecoinInstance } from "../../typechain-types";
+import { TokenStateReaderInstance } from "../../typechain-types";
+
+import { tokenAddresses, readerAddresses } from "./config";
+
+const MyStablecoin = artifacts.require("MyStablecoin");
+const TokenStateReader = artifacts.require("TokenStateReader");
+
+
+async function main() {
+  const network = hre.network.name;
+  const tokenAddress = tokenAddresses.get(network);
+  const readerAddress = readerAddresses.get(network);
+  );
+
+  const transaction = await reader.broadcastTokenSupply(tokenAddress);
+  console.log(`(${network}) Transaction id:`, transaction.tx, "\n");
+}
+
+main().then((data) => {
+  process.exit(0);
+});
+```
+
+We run this script with the command:
+
+```sh
+yarn hardhat run scripts/proofOfReserves/activateTokenStateReader.ts --network coston \
+&& yarn hardhat run scripts/proofOfReserves/activateTokenStateReader.ts --network coston2
+```
+
+As discussed previously, the `TokenStateReader` contracts each emit an event containing the total token supply.
+We save the hashes of transactions where these events were emitted to a mapping in `scripts/proofOfReserves/config.ts`.
+
+```typescript title="scripts/proofOfReserves/config.ts"
+const owner = "0xF5488132432118596fa13800B68df4C0fF25131d";
+
+const tokenAddresses = new Map([
+  ["coston", "0xb979de129aFA8bBEC5d46314588B573aD9C72db6"],
+  ["coston2", "0xfc896CD7115dD2E901a573d11A598d9c8222f58A"],
+]);
+
+const readerAddresses = new Map([
+  ["coston", "0x16A446c2Bf18421c5d79a21f7Cc3636dFfDB0612"],
+  ["coston2", "0xD069D5c27211229afdCc173F2a46cc4aFb320911"],
+]);
+
+const proofOfReservesAddress = "0xCe109FE40e1860b7B659DA6C680E931b25d4E445";
+
+const transactionHashes = new Map([
+  [
+    "coston",
+    "0x192ff7eb839157d037f023d006aec47afaad6dc8ed98618a5e8803992518caeb",
+  ],
+  [
+    "coston2",
+    "0x7149c77b4ecb68ca9faea3991cf24864dc4fbf09c6c52f0c203c748456b80658",
+  ],
+]);
+
+export {
+  owner,
+  tokenAddresses,
+  readerAddresses,
+  proofOfReservesAddress,
+  transactionHashes,
+};
+```
+
+The last script, `verifyProofOfReserves.ts`, is the most advanced.
+It performs several steps that amount to the reserves being successfully or unsuccessfully verified.
+It first collects all the data and proofs and submits them to the `ProofOfReserves` contract.
+The steps are as follows:
+
+1. preparing attestation requests
+2. submitting attestation requests to FDC
+3. waiting for all voting rounds to finalize
+4. retrieving the data and proofs from the DA Layer
+5. submitting the data and proofs to the `ProofOfReserves` contract
+
+We first import the addresses from the `scripts/proofOfReserves/config.ts` file, and certain settings from environmental variables.
+In this scripts, we also heavily utilize helper functions shipped with the `flare-hardhat-starter` repository, (the `scripts/fdcExample/Base.ts` file).
+For a detailed breakdown of these functions, look at the Hardhat attestation type guides.
+
+```typescript title="scripts/proofOfReserves/verifyProofOfReserves.ts"
+import hre from "hardhat";
+import { ProofOfReservesInstance, IRelayInstance } from "../../typechain-types";
+import {
+  prepareAttestationRequestBase,
+  getFdcHub,
+  getFdcRequestFee,
+  getRelay,
+  calculateRoundId,
+  postRequestToDALayer,
+  sleep,
+} from "../fdcExample/Base";
+import {
+  tokenAddresses,
+  readerAddresses,
+  proofOfReservesAddress,
+  transactionHashes,
+} from "./config";
+
+const ProofOfReserves = artifacts.require("ProofOfReserves");
+
+const {
+  VERIFIER_URL_TESTNET,
+  VERIFIER_API_KEY,
+  JQ_VERIFIER_URL_TESTNET,
+  JQ_VERIFIER_API_KEY,
+  COSTON2_DA_LAYER_URL,
+} = process.env;
+
+...
+```
+
+Next, we define an `AttestationRequest` type.
+This will allow us to present the request data in a better organized format.
+Then, we prepare a list of requests, each populated with the data specified by its corresponding attestation type.
+The only two attestation types we need for this example are `IEVMTransaction` and `JsonApi`.
+For a more detailed explanation of the included fields, look at the appropriate type specification ([IEVMTransaction](/fdc/attestation-types/evm-transaction) and [JsonApi](/fdc/attestation-types/json-api)).
+
+In this guide, we will be comparing the total supplies of previously deployed tokens (with an arbitrary initial supply of `666`), to the claimed reserves of a real stablecoin.
+We will obtain the dollar reserves from the API at the address: `https://api.htdigitalassets.com/alm-stablecoin-db/metrics/current_reserves_amount`.
+To the response JSON, we will apply the following JQ filter.
+
+```jq
+{reserves: .value | gsub(\",\";\"\") | sub(\"\\\\.\\\\d*\";\"\")}
+```
+
+The filter removes all commas (separating thousands), and cuts away the decimal part.
+That way, the value we receive will truly be an integer.
+
+We will encode the data as the `DataTransportObject` type, with the following abi signature (expanded to multiple lines for clarity's sake).
+
+```typescript
+`{
+\"components\": 
+  [{
+    \"internalType\": \"uint256\",
+    \"name\": \"reserves\",
+    \"type\": \"uint256\"
+  }],
+\"internalType\": \"struct DataTransportObject\",
+\"name\": \"dto\",
+\"type\": \"tuple\"
+}`;
+```
+
+We have copied the abi signature from the Hardhat-generated artifact of the `abiSignatureHack` function of the `ProofOfReserves` contract.
+
+Since we have deployed the stablecoin contracts to Coston and Coston2, these will be the sources of the transactions.
+We read their addresses from the `scripts/proofOfReserves/config.ts` file.
+
+```typescript title="scripts/proofOfReserves/verifyProofOfReserves.ts"
+...
+
+type AttestationRequest = {
+  source: string;
+  sourceIdBase: string;
+  verifierUrlBase: string;
+  verifierApiKey: string;
+  urlTypeBase: string;
+  data: any;
+};
+
+const requests: AttestationRequest[] = [
+  {
+    source: "jsonApi",
+    sourceIdBase: "WEB2",
+    verifierUrlBase: JQ_VERIFIER_URL_TESTNET!,
+    verifierApiKey: JQ_VERIFIER_API_KEY!,
+    urlTypeBase: "",
+    data: {
+      apiUrl:
+        "https://api.htdigitalassets.com/alm-stablecoin-db/metrics/current_reserves_amount",
+      postprocessJq: `{reserves: .value | gsub(\",\";\"\") | sub(\"\\\\.\\\\d*\";\"\")}`,
+      abiSignature: `{\"components\": [{\"internalType\": \"uint256\",\"name\": \"reserves\",\"type\": \"uint256\"}],\"internalType\": \"struct DataTransportObject\",\"name\": \"dto\",\"type\": \"tuple\"}`,
+    },
+  },
+  {
+    source: "coston",
+    sourceIdBase: "testSGB",
+    verifierUrlBase: VERIFIER_URL_TESTNET!,
+    verifierApiKey: VERIFIER_API_KEY!,
+    urlTypeBase: "sgb",
+    data: {
+      transactionHash: transactionHashes.get("coston")!,
+    },
+  },
+  {
+    source: "coston2",
+    sourceIdBase: "testFLR",
+    verifierUrlBase: VERIFIER_URL_TESTNET!,
+    verifierApiKey: VERIFIER_API_KEY!,
+    urlTypeBase: "flr",
+    data: {
+      transactionHash: transactionHashes.get("coston2")!,
+    },
+  },
+];
+
+...
+```
+
+If we wanted to include additional sources, we would specify them here.
+If the new source were a new chain, no further change to the code would be needed.
+
+We prepare all attestation requests using helper functions from the `flare-hardhat-starter` repository.
+We save the returned abi encoded data to a mapping from the source (`jsonApi`, `coston`, and `coston2`) to the data of the corresponding response.
+
+The procedure is enclosed within the `prepareAttestationRequests` function.
+
+```typescript title="scripts/proofOfReserves/verifyProofOfReserves.ts"
+...
+
+async function prepareAttestationRequests(transactions: AttestationRequest[]) {
+  console.log("\nPreparing data...\n");
+  var data: Map<string, string> = new Map();
+
+  for (const transaction of transactions) {
+    console.log(`(${transaction.source})\n`);
+
+    if (transaction.source === "jsonApi") {
+      const responseData = await prepareJsonApiAttestationRequest(transaction);
+      console.log("Data:", responseData, "\n");
+      data.set(transaction.source, responseData.abiEncodedRequest);
+    } else {
+      const responseData = await prepareTransactionAttestationRequest(
+        transaction
+      );
+      console.log("Data:", responseData, "\n");
+      data.set(transaction.source, responseData.abiEncodedRequest);
+    }
+  }
+
+  return data;
+}
+
+...
+```
+
+We then submit the abi encoded requests to the FDC, storing the round IDs of each submission to a mapping.
+To that end, we define the `submitAttestationRequests` function.
+
+```typescript title="scripts/proofOfReserves/verifyProofOfReserves.ts"
+...
+
+async function submitAttestationRequests(data: Map<string, string>) {
+  console.log("\nSubmitting attestation requests...\n");
+
+  const fdcHub = await getFdcHub();
+  var roundIds: Map<string, number> = new Map();
+
+  for (const [source, abiEncodedRequest] of data.entries()) {
+    console.log(`(${source})\n`);
+
+    const requestFee = await getFdcRequestFee(abiEncodedRequest);
+    const transaction = await fdcHub.requestAttestation(abiEncodedRequest, {
+      value: requestFee,
+    });
+    console.log("Submitted request:", transaction.tx, "\n");
+
+    const roundId = await calculateRoundId(transaction);
+    console.log(
+      `Check round progress at: https://${hre.network.name}-systems-explorer.flare.rocks/voting-epoch/${roundId}?tab=fdc\n`
+    );
+    roundIds.set(source, roundId);
+  }
+
+  return roundIds;
+}
+
+...
+```
+
+We wait for the voting rounds to finalize, checking every 10 seconds.
+Then we collect the data and proof, waiting an additional multiple of 10 seconds if the proof has not been generated yet.
+We do so for each source; again we save the result to a mapping.
+This logic is contained in the `retrieveDataAndProofs` function.
+
+```typescript title="scripts/proofOfReserves/verifyProofOfReserves.ts"
+...
+
+async function retrieveDataAndProofs(
+  data: Map<string, string>,
+  roundIds: Map<string, number>
+) {
+  console.log("\nRetrieving data and proofs...\n");
+
+  var proofs: Map<string, any> = new Map();
+
+  const url = `${COSTON2_DA_LAYER_URL}api/v1/fdc/proof-by-request-round-raw`;
+  console.log("Url:", url, "\n");
+  for (const [source, roundId] of roundIds.entries()) {
+    console.log(`(${source})\n`);
+
+    console.log("Waiting for the round to finalize...");
+    // We check every 10 seconds if the round is finalized
+    const relay: IRelayInstance = await getRelay();
+    while (!(await relay.isFinalized(200, roundId))) {
+      await sleep(10000);
+    }
+    console.log("Round finalized!\n");
+
+    const request = {
+      votingRoundId: roundId,
+      requestBytes: data.get(source),
+    };
+    console.log("Prepared request:\n", request, "\n");
+
+    var proof = await postRequestToDALayer(url, request, true);
+    console.log("Waiting for the DA Layer to generate the proof...");
+    while (proof.response_hex == undefined) {
+      await sleep(10000);
+      proof = await postRequestToDALayer(url, request, false);
+    }
+    console.log("Proof generated!\n");
+
+    console.log("Proof:", proof, "\n");
+    proofs.set(source, proof);
+  }
+  return proofs;
+}
+
+...
+```
+
+Before the data can be used, we must decode it to an appropriate Solidity struct (`IEVMTransaction.Response` and `IJsonAPi.Response` respectively).
+We read the abi signature from Hardhat-generated artifacts (`IEVMTransactionVerification._json.abi[0].inputs[0].components[1]` and `IJsonApiVerification._json.abi[0].inputs[0].components[1]`).
+Afterwards, we save them as proof structs (`IEVMTransaction.Proof` and `IJsonAPi.Proof`).
+The logic is enclosed in `prepareDataAndProofs` function.
+
+```typescript title="scripts/proofOfReserves/verifyProofOfReserves.ts"
+...
+
+async function prepareDataAndProofs(data: Map<string, any>) {
+  const IJsonApiVerification = await artifacts.require("IJsonApiVerification");
+  const IEVMTransactionVerification = await artifacts.require(
+    "IEVMTransactionVerification"
+  );
+
+  const jsonProof = {
+    merkleProof: data.get("jsonApi").proof,
+    data: web3.eth.abi.decodeParameter(
+      IJsonApiVerification._json.abi[0].inputs[0].components[1],
+      data.get("jsonApi").response_hex
+    ),
+  };
+  var transactionProofs: any[] = [];
+  for (const [source, proof] of data.entries()) {
+    if (source !== "jsonApi") {
+      const decodedProof = web3.eth.abi.decodeParameter(
+        IEVMTransactionVerification._json.abi[0].inputs[0].components[1],
+        proof.response_hex
+      );
+      transactionProofs.push({
+        merkleProof: proof.proof,
+        data: decodedProof,
+      });
+    }
+  }
+
+  return [jsonProof, transactionProofs];
+}
+
+...
+```
+
+The final function, `submitDataAndProofsToProofOfReserves` function, interacts with the `ProofOfReserves` contract to verify stablecoin reserves.
+First, it accesses the latter at the specified address (imported from `scripts/proofOfReserves/config.ts`).
+It then updates the registered `MyStablecoin` and `TokenStateReader` addresses.
+Lastly, it submits all the data and proofs to the `ProofOfReserves` contract.
+
+```typescript title="scripts/proofOfReserves/verifyProofOfReserves.ts"
+...
+
+async function submitDataAndProofsToProofOfReserves(data: Map<string, any>) {
+  const proofOfReserves: ProofOfReservesInstance = await ProofOfReserves.at(
+    proofOfReservesAddress
+  );
+
+  for (const source of tokenAddresses.keys()) {
+    await proofOfReserves.updateAddress(
+      readerAddresses.get(source),
+      tokenAddresses.get(source)
+    );
+  }
+
+  const [jsonProof, transactionProofs] = await prepareDataAndProofs(data);
+
+  await proofOfReserves.verifyReserves(jsonProof, transactionProofs);
+  const sufficientReserves: boolean = true;
+  return sufficientReserves;
+}
+
+...
+```
+
+We run the script with the command:
+
+```sh
+yarn hardhat run scripts/proofOfReserves/verifyProofOfReserves.ts --network coston2
+```
+
+The whole script is as follows.
+
+```typescript title="scripts/proofOfReserves/verifyProofOfReserves.ts"
+import hre from "hardhat";
+import { ProofOfReservesInstance, IRelayInstance } from "../../typechain-types";
+import {
+  prepareAttestationRequestBase,
+  getFdcHub,
+  getFdcRequestFee,
+  getRelay,
+  calculateRoundId,
+  postRequestToDALayer,
+  sleep,
+} from "../fdcExample/Base";
+import {
+  tokenAddresses,
+  readerAddresses,
+  proofOfReservesAddress,
+  transactionHashes,
+} from "./config";
+
+const ProofOfReserves = artifacts.require("ProofOfReserves");
+
+const {
+  VERIFIER_URL_TESTNET,
+  VERIFIER_API_KEY,
+  JQ_VERIFIER_URL_TESTNET,
+  JQ_VERIFIER_API_KEY,
+  COSTON2_DA_LAYER_URL,
+} = process.env;
+
+type AttestationRequest = {
+  source: string;
+  sourceIdBase: string;
+  verifierUrlBase: string;
+  verifierApiKey: string;
+  urlTypeBase: string;
+  data: any;
+};
+
+const requests: AttestationRequest[] = [
+  {
+    source: "jsonApi",
+    sourceIdBase: "WEB2",
+    verifierUrlBase: JQ_VERIFIER_URL_TESTNET!,
+    verifierApiKey: JQ_VERIFIER_API_KEY!,
+    urlTypeBase: "",
+    data: {
+      apiUrl:
+        "https://api.htdigitalassets.com/alm-stablecoin-db/metrics/current_reserves_amount",
+      postprocessJq: `{reserves: .value | gsub(\",\";\"\") | sub(\"\\\\.\\\\d*\";\"\")}`,
+      abiSignature: `{\"components\": [{\"internalType\": \"uint256\",\"name\": \"reserves\",\"type\": \"uint256\"}],\"internalType\": \"struct DataTransportObject\",\"name\": \"dto\",\"type\": \"tuple\"}`,
+    },
+  },
+  {
+    source: "coston",
+    sourceIdBase: "testSGB",
+    verifierUrlBase: VERIFIER_URL_TESTNET!,
+    verifierApiKey: VERIFIER_API_KEY!,
+    urlTypeBase: "sgb",
+    data: {
+      transactionHash: transactionHashes.get("coston")!,
+    },
+  },
+  {
+    source: "coston2",
+    sourceIdBase: "testFLR",
+    verifierUrlBase: VERIFIER_URL_TESTNET!,
+    verifierApiKey: VERIFIER_API_KEY!,
+    urlTypeBase: "flr",
+    data: {
+      transactionHash: transactionHashes.get("coston2")!,
+    },
+  },
+];
+
+async function prepareJsonApiAttestationRequest(
+  transaction: AttestationRequest,
+) {
+  const attestationTypeBase = "IJsonApi";
+
+  const requestBody = {
+    url: transaction.data.apiUrl,
+    postprocessJq: transaction.data.postprocessJq,
+    abi_signature: transaction.data.abiSignature,
+  };
+
+  const url = `${transaction.verifierUrlBase}JsonApi/prepareRequest`;
+  const apiKey = transaction.verifierApiKey;
+
+  return await prepareAttestationRequestBase(
+    url,
+    apiKey,
+    attestationTypeBase,
+    transaction.sourceIdBase,
+    requestBody,
+  );
+}
+
+async function prepareTransactionAttestationRequest(
+  transaction: AttestationRequest,
+) {
+  const attestationTypeBase = "EVMTransaction";
+
+  const requiredConfirmations = "1";
+  const provideInput = true;
+  const listEvents = true;
+  const logIndices: string[] = [];
+
+  const requestBody = {
+    transactionHash: transaction.data.transactionHash,
+    requiredConfirmations: requiredConfirmations,
+    provideInput: provideInput,
+    listEvents: listEvents,
+    logIndices: logIndices,
+  };
+
+  const url = `${transaction.verifierUrlBase}verifier/${transaction.urlTypeBase}/EVMTransaction/prepareRequest`;
+  const apiKey = transaction.verifierApiKey;
+
+  return await prepareAttestationRequestBase(
+    url,
+    apiKey,
+    attestationTypeBase,
+    transaction.sourceIdBase,
+    requestBody,
+  );
+}
+
+async function prepareAttestationRequests(transactions: AttestationRequest[]) {
+  console.log("\nPreparing data...\n");
+  var data: Map<string, string> = new Map();
+
+  for (const transaction of transactions) {
+    console.log(`(${transaction.source})\n`);
+
+    if (transaction.source === "jsonApi") {
+      const responseData = await prepareJsonApiAttestationRequest(transaction);
+      console.log("Data:", responseData, "\n");
+      data.set(transaction.source, responseData.abiEncodedRequest);
+    } else {
+      const responseData =
+        await prepareTransactionAttestationRequest(transaction);
+      console.log("Data:", responseData, "\n");
+      data.set(transaction.source, responseData.abiEncodedRequest);
+    }
+  }
+
+  return data;
+}
+
+async function submitAttestationRequests(data: Map<string, string>) {
+  console.log("\nSubmitting attestation requests...\n");
+
+  const fdcHub = await getFdcHub();
+  var roundIds: Map<string, number> = new Map();
+
+  for (const [source, abiEncodedRequest] of data.entries()) {
+    console.log(`(${source})\n`);
+
+    const requestFee = await getFdcRequestFee(abiEncodedRequest);
+    const transaction = await fdcHub.requestAttestation(abiEncodedRequest, {
+      value: requestFee,
+    });
+    console.log("Submitted request:", transaction.tx, "\n");
+
+    const roundId = await calculateRoundId(transaction);
+    console.log(
+      `Check round progress at: https://${hre.network.name}-systems-explorer.flare.rocks/voting-epoch/${roundId}?tab=fdc\n`,
+    );
+    roundIds.set(source, roundId);
+  }
+
+  return roundIds;
+}
+
+async function retrieveDataAndProofs(
+  data: Map<string, string>,
+  roundIds: Map<string, number>,
+) {
+  console.log("\nRetrieving data and proofs...\n");
+
+  var proofs: Map<string, any> = new Map();
+
+  const url = `${COSTON2_DA_LAYER_URL}api/v1/fdc/proof-by-request-round-raw`;
+  console.log("Url:", url, "\n");
+  for (const [source, roundId] of roundIds.entries()) {
+    console.log(`(${source})\n`);
+
+    console.log("Waiting for the round to finalize...");
+    // We check every 10 seconds if the round is finalized
+    const relay: IRelayInstance = await getRelay();
+    while (!(await relay.isFinalized(200, roundId))) {
+      await sleep(10000);
+    }
+    console.log("Round finalized!\n");
+
+    const request = {
+      votingRoundId: roundId,
+      requestBytes: data.get(source),
+    };
+    console.log("Prepared request:\n", request, "\n");
+
+    var proof = await postRequestToDALayer(url, request, true);
+    console.log("Waiting for the DA Layer to generate the proof...");
+    while (proof.response_hex == undefined) {
+      await sleep(10000);
+      proof = await postRequestToDALayer(url, request, false);
+    }
+    console.log("Proof generated!\n");
+
+    console.log("Proof:", proof, "\n");
+    proofs.set(source, proof);
+  }
+  return proofs;
+}
+
+async function prepareDataAndProofs(data: Map<string, any>) {
+  const IJsonApiVerification = await artifacts.require("IJsonApiVerification");
+  const IEVMTransactionVerification = await artifacts.require(
+    "IEVMTransactionVerification",
+  );
+
+  const jsonProof = {
+    merkleProof: data.get("jsonApi").proof,
+    data: web3.eth.abi.decodeParameter(
+      IJsonApiVerification._json.abi[0].inputs[0].components[1],
+      data.get("jsonApi").response_hex,
+    ),
+  };
+  var transactionProofs: any[] = [];
+  for (const [source, proof] of data.entries()) {
+    if (source !== "jsonApi") {
+      const decodedProof = web3.eth.abi.decodeParameter(
+        IEVMTransactionVerification._json.abi[0].inputs[0].components[1],
+        proof.response_hex,
+      );
+      transactionProofs.push({
+        merkleProof: proof.proof,
+        data: decodedProof,
+      });
+    }
+  }
+
+  return [jsonProof, transactionProofs];
+}
+
+async function submitDataAndProofsToProofOfReserves(data: Map<string, any>) {
+  const proofOfReserves: ProofOfReservesInstance = await ProofOfReserves.at(
+    proofOfReservesAddress,
+  );
+
+  for (const source of tokenAddresses.keys()) {
+    await proofOfReserves.updateAddress(
+      readerAddresses.get(source),
+      tokenAddresses.get(source),
+    );
+  }
+
+  const [jsonProof, transactionProofs] = await prepareDataAndProofs(data);
+
+  await proofOfReserves.verifyReserves(jsonProof, transactionProofs);
+  const sufficientReserves: boolean = true;
+  return sufficientReserves;
+}
+
+async function main() {
+  const data = await prepareAttestationRequests(requests);
+  const roundIds = await submitAttestationRequests(data);
+  const proofs = await retrieveDataAndProofs(data, roundIds);
+  const sufficientReserves = await submitDataAndProofsToProofOfReserves(proofs);
+  console.log("Sufficient reserves:", sufficientReserves);
+}
+
+main().then((data) => {
+  process.exit(0);
+});
+```
