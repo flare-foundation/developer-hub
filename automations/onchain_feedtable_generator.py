@@ -26,8 +26,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 HARD_CODED_FEEDS = {
-    "FTM/USD": {"name": "Fantom", "decimals": 6, "category": "Crypto"},
-    "USDX/USD": {"name": "Hex Trust USD", "decimals": 5, "category": "Crypto"},
+    "FTM/USD": {"name": "Fantom", "category": "Crypto"},
+    "USDX/USD": {"name": "Hex Trust USD", "category": "Crypto"},
 }
 
 feed_id_by_name_contract_abi = [
@@ -49,12 +49,14 @@ class FeedRiskNotFoundError(Exception):
 def generate_feed_data(
     feed_names: list[str],
     feed_risk: list[dict[str, int]],
-    decimals: list[int],
+    decimals: list[
+        int
+    ],  # We'll still receive this parameter but not use it in the output
     coins: list[dict],
     *,
     include_index: bool = False,
 ) -> list[dict]:
-    """Generate structured feed data."""
+    """Generate structured feed data without decimals field."""
     w3 = Web3(Web3.HTTPProvider(COSTON2_RPC_URL))
     logger.debug("Connected to RPC `%s`", COSTON2_RPC_URL)
     feed_id_contract = w3.eth.contract(
@@ -63,7 +65,7 @@ def generate_feed_data(
     )
 
     data = []
-    for idx, (name, decimal) in enumerate(zip(feed_names, decimals, strict=True)):
+    for idx, name in enumerate(feed_names):
         feed_id = feed_id_contract.functions.getFeedId(name).call()
 
         # Convert feed ID from bytes to hex
@@ -81,7 +83,6 @@ def generate_feed_data(
         feed_data = {
             "feed_name": name,
             "feed_id": feed_id,
-            "decimals": decimal,
             "base_asset": coin.get("name"),
             "category": coin.get("category", "Crypto"),
             "risk": risk,
