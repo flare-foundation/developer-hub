@@ -13,8 +13,10 @@ JsonApi attestation type is currently only available on Coston and Coston2 test 
 
 ## Supported sources
 
-- `WEB2` (Web 2.0 JSON APIs)
-- Test networks: `testWEB2`
+| Network Type | Supported Sources          |
+| ------------ | -------------------------- |
+| **Web2**     | `WEB2` (Web 2.0 JSON APIs) |
+| **Testnet**  | `testWEB2`                 |
 
 ## Request
 
@@ -32,17 +34,24 @@ JsonApi attestation type is currently only available on Coston and Coston2 test 
 
 ## Verification Process
 
-1. The attestation service performs a GET request to the specified `url`.
+### 1. API Request
 
-   - If the request fails or returns non-JSON data, the attestation request is rejected.
-   - The service validates that the response is valid JSON data.
+The attestation service performs a GET request to the specified `url`.
 
-2. The specified `postprocessJq` filter is applied to the retrieved JSON:
+- If the request fails or returns non-JSON data, the attestation request is rejected.
+- The service validates that the response is valid JSON data.
 
-   - The JQ filter must be a valid JQ expression.
-   - The filter's output must match the structure defined in `abi_signature`.
-   - If the JQ transformation fails, the attestation request is rejected.
+### 2. JQ Transformation
 
-3. The transformed data is ABI-encoded according to the provided `abi_signature`:
-   - The encoding must match the Solidity ABI specification.
-   - The encoded bytes are returned in `abi_encoded_data`.
+The specified `postprocessJq` filter is applied to the retrieved JSON:
+
+- The JQ filter must be a valid JQ expression.
+- The filter's output must match the structure defined in `abi_signature`.
+- If the JQ transformation fails, the attestation request is rejected.
+
+### 3. ABI Encoding
+
+The transformed data is ABI-encoded according to the provided `abi_signature`:
+
+- The encoding must match the Solidity ABI specification.
+- The encoded bytes are returned in `abi_encoded_data`.
