@@ -65,6 +65,20 @@ const config: Config = {
     ],
   ],
 
+  plugins: [
+    [
+      "@docusaurus/plugin-client-redirects",
+      {
+        redirects: [
+          {
+            from: "/intro",
+            to: "/",
+          },
+        ],
+      },
+    ],
+  ],
+
   themeConfig: {
     image: "img/landing/dev_hub_ani_noblur.png",
     colorMode: {
