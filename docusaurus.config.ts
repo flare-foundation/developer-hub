@@ -72,11 +72,6 @@ const config: Config = {
       respectPrefersColorScheme: true,
     },
 
-    announcementBar: {
-      id: `announcementBar`,
-      content: `🚀 We're hosting the <a href="https://hackathon.flare.network/" target="_blank" rel="noopener noreferrer">Flare x Google Cloud Verifiable AI Hackathon</a> with a $100K prize pool. ☀️`,
-    },
-
     docs: {
       sidebar: {
         autoCollapseCategories: false,
