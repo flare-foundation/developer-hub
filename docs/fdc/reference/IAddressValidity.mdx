@@ -4,91 +4,200 @@ sidebar_position: 6
 description: Assert whether a string represents a valid address.
 ---
 
+Assert whether a string represents a valid address on an external blockchain.
+
 Sourced from `IAddressValidity.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/fdc/IAddressValidity.sol).
+
+## Overview
+
+The IAddressValidity interface enables smart contracts to verify if a given string is a valid address on supported external blockchains. This attestation provides standardized representations of addresses across different chains, facilitating cross-chain operations within the Flare ecosystem.
+
+## Supported Chains
+
+| Network Type | Supported Chains                                       |
+| ------------ | ------------------------------------------------------ |
+| **Mainnet**  | `BTC` (Bitcoin), `DOGE` (Dogecoin), `XRP` (XRP Ledger) |
+| **Testnet**  | `testBTC` (Bitcoin Testnet v3), `testDOGE`, `testXRP`  |
+
+## Structs
+
+### Request
+
+Toplevel request structure.
+
+```solidity
+struct Request {
+    bytes32 attestationType;
+    bytes32 sourceId;
+    bytes32 messageIntegrityCode;
+    RequestBody requestBody;
+}
+```
+
+#### Parameters
+
+- `attestationType`: ID of the attestation type (0x05 for AddressValidity)
+- `sourceId`: ID of the data source (e.g., BTC, DOGE, XRP)
+- `messageIntegrityCode`: MessageIntegrityCode derived from the expected response
+- `requestBody`: Data defining the request
+
+### Response
+
+Toplevel response structure.
+
+```solidity
+struct Response {
+    bytes32 attestationType;
+    bytes32 sourceId;
+    uint64 votingRound;
+    uint64 lowestUsedTimestamp;
+    RequestBody requestBody;
+    ResponseBody responseBody;
+}
+```
+
+#### Parameters
+
+- `attestationType`: Extracted from the request
+- `sourceId`: Extracted from the request
+- `votingRound`: The ID of the State Connector round in which the request was considered
+- `lowestUsedTimestamp`: The lowest timestamp used to generate the response
+- `requestBody`: Extracted from the request
+- `responseBody`: Data defining the response
+
+### Proof
+
+Toplevel proof structure for verification.
+
+```solidity
+struct Proof {
+    bytes32[] merkleProof;
+    Response data;
+}
+```
+
+#### Parameters
+
+- `merkleProof`: Merkle proof corresponding to the attestation response
+- `data`: Attestation response
+
+### RequestBody
+
+Request body specific to address validity.
+
+```solidity
+struct RequestBody {
+    string addressStr;
+}
+```
+
+#### Parameters
+
+- `addressStr`: Address string to be verified
+
+### ResponseBody
+
+Response body specific to address validity.
+
+```solidity
+struct ResponseBody {
+    bool isValid;
+    string standardAddress;
+    bytes32 standardAddressHash;
+}
+```
+
+#### Parameters
+
+- `isValid`: Boolean indicator of the address validity
+- `standardAddress`: If valid, the standard form of the address; otherwise an empty string
+- `standardAddressHash`: If valid, the standard address hash; otherwise a zero bytes32 string
+
+## Chain-Specific Address Formats
+
+### Bitcoin (BTC)
+
+- Supports P2PKH, P2SH, P2WPKH, P2WSH, and P2TR addresses
+- Bech32 and Bech32m encoding for SegWit addresses
+- Legacy addresses with Base58Check encoding
+
+### Dogecoin (DOGE)
+
+- Supports P2PKH and P2SH addresses
+- Base58Check encoding
+- Different address prefixes than Bitcoin
+
+### XRP Ledger (XRPL)
+
+- Base58 encoding with checksum
+- Addresses typically start with "r"
+- Supports X-addresses for destination tags
+
+## Implementation Notes
+
+- The attestation ID for AddressValidity is `0x05`
+- The `lowestUsedTimestamp` value is `0xffffffffffffffff` (maximum 64-bit value)
+- For invalid addresses, `standardAddress` will be empty and `standardAddressHash` will be zero
+- The `standardAddressHash` is computed using `keccak256` on the standardized address string
+
+## Usage Example
 
 ```solidity
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.7.6 <0.9;
+pragma solidity ^0.8.0;
 
-/**
- * @custom:name IAddressValidity
- * @custom:id 0x05
- * @custom:supported BTC, DOGE, XRP
- * @author Flare
- * @notice An assertion whether a string represents a valid address on an external chain.
- * @custom:verification The address is checked against all validity criteria of the chain with `sourceId`.
- * Indicator of validity is provided.
- * If the address is valid, its standard form and standard hash are computed.
- * Validity criteria for each supported chain:
- * - [BTC](/specs/attestations/external-chains/address-validity/BTC.md)
- * - [DOGE](/specs/attestations/external-chains/address-validity/DOGE.md)
- * - [XRPL](/specs/attestations/external-chains/address-validity/XRPL.md)
- * @custom:lut `0xffffffffffffffff` ($2^{64}-1$ in hex)
- * @custom:lutlimit `0xffffffffffffffff`, `0xffffffffffffffff`, `0xffffffffffffffff`
- */
-interface IAddressValidity {
-    /**
-     * @notice Toplevel request
-     * @param attestationType ID of the attestation type.
-     * @param sourceId Id of the data source.
-     * @param messageIntegrityCode `MessageIntegrityCode` that is derived from the expected response.
-     * @param requestBody Data defining the request. Type and interpretation is determined by the `attestationType`.
-     */
-    struct Request {
-        bytes32 attestationType;
-        bytes32 sourceId;
-        bytes32 messageIntegrityCode;
-        RequestBody requestBody;
+import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/IFdcHub.sol";
+import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/IFdcVerification.sol";
+import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/fdc/IAddressValidity.sol";
+
+contract AddressVerifier {
+    IFdcHub private fdcHub;
+    IFdcVerification private fdcVerification;
+
+    bytes32 private constant ATTESTATION_TYPE_ADDRESS_VALIDITY = 0x0500000000000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant SOURCE_ID_BTC = 0x4254430000000000000000000000000000000000000000000000000000000000;
+
+    constructor(address _fdcHubAddress, address _fdcVerificationAddress) {
+        fdcHub = IFdcHub(_fdcHubAddress);
+        fdcVerification = IFdcVerification(_fdcVerificationAddress);
     }
 
-    /**
-     * @notice Toplevel response
-     * @param attestationType Extracted from the request.
-     * @param sourceId Extracted from the request.
-     * @param votingRound The ID of the State Connector round in which the request was considered.
-     * @param lowestUsedTimestamp The lowest timestamp used to generate the response.
-     * @param requestBody Extracted from the request.
-     * @param responseBody Data defining the response. The verification rules for the construction of the
-     * response body and the type are defined per specific `attestationType`.
-     */
-    struct Response {
-        bytes32 attestationType;
-        bytes32 sourceId;
-        uint64 votingRound;
-        uint64 lowestUsedTimestamp;
-        RequestBody requestBody;
-        ResponseBody responseBody;
+    // Request address validation
+    function requestAddressValidation(string calldata _address) external payable {
+        // Create request body
+        IAddressValidity.RequestBody memory requestBody = IAddressValidity.RequestBody({
+            addressStr: _address
+        });
+
+        // Encode the full request
+        bytes memory encodedRequest = abi.encode(
+            ATTESTATION_TYPE_ADDRESS_VALIDITY,
+            SOURCE_ID_BTC,
+            bytes32(0), // messageIntegrityCode (would need to be calculated properly)
+            requestBody
+        );
+
+        // Submit the request with payment
+        fdcHub.requestAttestation{value: msg.value}(encodedRequest);
     }
 
-    /**
-     * @notice Toplevel proof
-     * @param merkleProof Merkle proof corresponding to the attestation response.
-     * @param data Attestation response.
-     */
-    struct Proof {
-        bytes32[] merkleProof;
-        Response data;
-    }
+    // Verify a provided proof
+    function verifyAddressProof(IAddressValidity.Proof calldata _proof) external view returns (
+        bool isValid,
+        string memory standardAddress,
+        bytes32 standardAddressHash
+    ) {
+        // Verify the proof using FdcVerification
+        bool proofVerified = fdcVerification.verifyAddressValidity(_proof);
 
-    /**
-     * @notice Request body for IAddressValidity attestation type
-     * @param addressStr Address to be verified.
-     */
-    struct RequestBody {
-        string addressStr;
-    }
+        if (proofVerified) {
+            // Extract data from the verified proof
+            isValid = _proof.data.responseBody.isValid;
+            standardAddress = _proof.data.responseBody.standardAddress;
+            standardAddressHash = _proof.data.responseBody.standardAddressHash;
+        }
 
-    /**
-     * @notice Response body for IAddressValidity attestation type
-     * @param isValid Boolean indicator of the address validity.
-     * @param standardAddress If `isValid`, standard form of the validated address. Otherwise an empty string.
-     * @param standardAddressHash If `isValid`, standard address hash of the validated address.
-     * Otherwise a zero bytes32 string.
-     */
-    struct ResponseBody {
-        bool isValid;
-        string standardAddress;
-        bytes32 standardAddressHash;
+        return (isValid, standardAddress, standardAddressHash);
     }
 }
 ```

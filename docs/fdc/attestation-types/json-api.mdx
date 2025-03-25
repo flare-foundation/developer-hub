@@ -1,42 +1,59 @@
 ---
 title: JsonApi
-description: An attestation request that fetches data from the given url and then edits the information with a jq transformation.
-keywords: [fdc, oracle, flare-data-connector, flare-network]
+description: Data retrieval from Web2 JSON APIs with JQ transformations.
+keywords: [fdc, oracle, flare-data-connector, flare-network, json, api, web2]
 sidebar_position: 1
 ---
 
-An attestation request that fetches data from the given url and then edits the information with a jq transformation.
+Data retrieval from **Web2 JSON APIs** with JQ transformations. This attestation type allows smart contracts to access and process external JSON data in a verifiable way.
+
+:::warning[Testnet Only]
+
+JsonApi attestation type is currently only available on Flare Testnet Coston2 and Songbird Testnet Coston.
+
+:::
 
 ## Supported sources
 
-- `WEB2`
-- test networks: `testWEB2`
+| Network Type | Sources                    |
+| ------------ | -------------------------- |
+| **Web2**     | `WEB2` (Web 2.0 JSON APIs) |
+| **Testnet**  | `testWEB2`                 |
 
 ## Request
 
-| Field           | Solidity type | Description                                              |
-| --------------- | ------------- | -------------------------------------------------------- |
-| `url`           | `string`      | URL of the data source.                                  |
-| `postprocessJq` | `string`      | JQ filter to postprocess the json received from the url. |
-| `abi_signature` | `string`      | ABI signature of struct for encoding.                    |
+| Field           | Solidity Type | Description                                                                      |
+| --------------- | ------------- | -------------------------------------------------------------------------------- |
+| `url`           | `string`      | URL of the JSON API endpoint to query.                                           |
+| `postprocessJq` | `string`      | JQ filter expression to transform the retrieved JSON data.                       |
+| `abi_signature` | `string`      | ABI signature defining the struct format for encoding the transformed JSON data. |
 
 ## Response
 
-| Field              | Solidity type | Description       |
-| ------------------ | ------------- | ----------------- |
-| `abi_encoded_data` | `bytes`       | ABI encoded data. |
+| Field              | Solidity Type | Description                                      |
+| ------------------ | ------------- | ------------------------------------------------ |
+| `abi_encoded_data` | `bytes`       | ABI-encoded data result after JQ transformation. |
 
-## Lowest Used Timestamp
+## Verification Process
 
-For `lowestUsedTimestamp`, `0xffffffffffffffff` ($2^{64}-1$ in hex) is used.
+### 1. API Request
 
-## Verification process
+The attestation service performs a GET request to the specified `url`.
 
-Query the URL with GET method.
-If the query is unsuccessful or does not return a json, reject the request.
+- If the request fails or returns non-JSON data, the attestation request is rejected.
+- The service validates that the response is valid JSON data.
 
-Apply the jq filter specified in the request to the received json.
+### 2. JQ Transformation
 
-ABI encode the filtered json with the abi_signature provided in the request and return it as abi_encoded_data.
+The specified `postprocessJq` filter is applied to the retrieved JSON:
 
-`LowestUsedTimestamp` is unlimited.
+- The JQ filter must be a valid JQ expression.
+- The filter's output must match the structure defined in `abi_signature`.
+- If the JQ transformation fails, the attestation request is rejected.
+
+### 3. ABI Encoding
+
+The transformed data is ABI-encoded according to the provided `abi_signature`:
+
+- The encoding must match the Solidity ABI specification.
+- The encoded bytes are returned in `abi_encoded_data`.
