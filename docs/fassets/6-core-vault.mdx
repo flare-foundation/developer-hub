@@ -4,79 +4,112 @@ description: Understanding the Core Vault system in FAssets
 keywords: [fassets, xrp, bitcoin, dogecoin, flare-network, core-vault]
 ---
 
+import ThemedImage from "@theme/ThemedImage";
+import useBaseUrl from "@docusaurus/useBaseUrl";
+
 ## Overview
 
-The **Core Vault (CV)** is a specialized FAsset system vault that operates on the underlying network, enabling agents to manage their underlying assets more efficiently.
-When assets are stored in the CV, agents are exempt from collateral requirements, allowing for more flexible minting and withdrawal strategies.
+<ThemedImage
+  alt="FAssets Core Vault Architecture"
+  sources={{
+    light: useBaseUrl("img/fassets/flare_fassets_core_vault_architecture_light.svg"),
+    dark: useBaseUrl("img/fassets/flare_fassets_core_vault_architecture_dark.svg"),
+  }}
+/>
 
-Each asset type has a dedicated Core Vault, which is managed by a multisig contract under a formal agreement with Flare.
-The assets stored in the CV do not belong to any specific agent and can be freely transferred between agents.
-To ensure security, governance has the authority to pause deposits and withdrawals if necessary, such as in the event of a system compromise.
+The **Core Vault (CV)** is a specialized FAsset system vault that operates on the underlying network.
+It allows FAsset agents to deposit and withdraw underlying assets while optimizing capital efficiency through reduced collateral requirements. 
+The CV was introduced in **FAssets v1.1** to solve key limitations of v1, such as limited minting capacity, high collateral burdens, and poor agent exit flexibility.
+
+
+The Core Vault is:
+- A **multisig-controlled reserve** that enhances **agent liquidity and profitability**
+- Integrated into the **FAssets smart contract system** on Flare
+- Designed to operate with **manual, auditable, and time-bounded signing routines**
+- Supported by **escrow-based fund throttling** to mitigate security risk
+
+FAsset users don't need to take any action to benefit from CV — it automatically integrates with FXRP and other v1 tokens.
 
 ## Key Features
 
 ### Transfer Capacity
 
-A system parameter defines the percentage of an agent's minting capacity that must remain on their address after transferring assets to the Core Vault.
-This ensures that sufficient reserves are available for redemptions, maintaining the system's stability.
+A system parameter defines the minimum percentage of minting capacity (based on collateral) that must remain on an agent's address after transferring assets to the CV.  
+This ensures redemption liquidity and protects the system from agent insolvency.
 
-### Security
+### Security Design
+
+Each asset type has a dedicated Core Vault, which is managed by a multisig contract under a formal agreement with Flare.
+The assets stored in the CV do not belong to any specific agent and can be freely transferred between agents.
+To ensure security, governance has the authority to pause deposits and withdrawals if necessary, such as in the event of a system compromise.
 
 The Core Vault operates through a predefined address on the underlying chain and is managed via a multisig setup with smart contract oversight under formal Flare contracts.
 Governance has the authority to pause operations in the event of a security issue.
 
-## Operations
+## Operational Workflow
 
 ### Transferring to Core Vault
 
-1.	The agent manually transfers the underlying asset on the Flare network to the Core Vault.
+1.	The agent manually transfers the underlying asset (e.g., XRP) to the CV address.
 2.	The agent sends assets to the predefined CV address with a valid payment transaction reference.
-3.	A proof of payment is submitted to the FAsset system, which can be done by anyone.
-4.	Upon verification, the agent's collateral is released.
+3.	Anyone may submit a proof of payment to the FAsset system.
+4.	Upon verification, the system releases the agent's collateral.
 5.	The agent creates a redemption request on the Flare network, specifying the predefined CV address for withdrawal.
 
 :::info
 
-   Transfer requests never expire or default, requiring agents to take action.
-   Agents can either pay and confirm payment to release their collateral, cancel and recreate the transfer at the end of the queue, or take no action, in which case the collateral remains locked indefinitely.
+   Transfer requests do not expire. Agents must either complete the transfer or cancel and re-queue it. Inaction leaves collateral locked indefinitely.
 
 :::
 
-### Redemption from CV
+### Redemption from Core Vault
 
 There are two methods for agents to retrieve assets from the CV:
 
-#### Request for Return
+#### 1. Request for Return (Agents Only)
 
 An agent can request assets from the CV through a special minting process, which creates a collateral reservation. 
 Once the request is made, CV operators execute the transfer and submit proof of payment to the asset manager.
 There is no time limit for the CV to honor the request, but governance ensures timely execution.
 
-#### Direct Redemption
+#### 2. Direct Redemption (Users)
 
-To redeem assets from the Core Vault, a user presents their FAssets (FXRP) in exchange for the underlying asset.
-A minimum redemption amount applies, and the recipient's address must be pre-approved by governance.
-Before the underlying asset is released, the system burns the FAssets.
-This process has a lower priority than return requests.
+Approved users can burn FXRP and receive underlying XRP from the CV.
+This Requires KYC approval and a minimum redemption threshold.
+It is typically processed once per day and has a lower priority than agent return requests.
+It is helpful for large, less time-sensitive redemptions.
 
-## XRP Core Vault
+## XRP Core Vault Design
 
-The XRP Core Vault (CV) operates through manual, multisig-controlled transactions, where a multisig executor collects signatures and executes XRPL transactions.
+The XRP Core Vault is a multisig account on the XRP Ledger, backed by an audited Flare smart contract that emits transaction instructions for execution.
 
 ### Transactions in XRP Core Vault
 
 The XRP Core Vault (CV) uses two types of transactions:
-- `Payment` Transactions: Transfers XRP back to agents upon redemption.
-- `EscrowCreate` Transactions: Time-locks XRP to control fund releases and minimize spending risk.
+- `Payment` [Transactions](https://xrpl.org/docs/references/protocol/transactions/types/payment): Transfers XRP back to agents upon redemption.
+- `EscrowCreate` [Transactions](https://xrpl.org/docs/references/protocol/transactions/types/escrowcreate): Time-locks XRP to control fund releases and minimize spending risk.
 
 :::info
 
-   Operations are manual, requiring multisig approval, ensuring security and preventing unauthorized withdrawals.
+   The vault is operated manually.
+   Multisig signers validate all outgoing transactions against a pre-approved rule set and sign them only during designated daily windows.
 
 :::
 
-### Security
+### Daily Security Routine
 
-For security, the CV includes an emergency pause function and “Red Alert Mode” for urgent threats.
-If a security issue arises, all signing halts, requiring governance review before resumption.
-In critical cases, escrows may be unlocked to prevent asset loss, with governance retaining the authority to restore operations.
+Every day:
+1. One escrow of size L expires, adding XRP to the available pool.
+2. Agents and users submit withdrawal requests.
+3. Flare smart contracts emit transaction instructions (off-chain).
+4. Multisig operators validate and sign these instructions.
+5. After payouts, any excess funds are **escrowed in batches of size L** to limit vault exposure.
+6. A minimum reserve M is maintained in the vault.
+
+Three escrows are created if `remaining_funds = M + 3L`, and M stays in the wallet.
+
+### Security Model
+
+The XRP Core Vault features enhanced security measures for managing daily liquidity, including escrow time-locking and a minimum reserve in multisig setups. It has an emergency pause function and "Red Alert Mode" for urgent threats.
+
+In case of a security issue, all signing is halted pending governance review. Escrow accounts may be unlocked to prevent asset loss, with governance overseeing the restoration of operations. Only one escrow can be unlocked per day, minimizing potential damage.
