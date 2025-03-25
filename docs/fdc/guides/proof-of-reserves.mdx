@@ -17,9 +17,11 @@ All the code for this project is available on GitHub, in the [Flare Hardhat Star
 
 ## The problem
 
-Stablecoins are cryptographic tokens designed to maintain a fixed value, typically pegged to a fiat currency like the US dollar. To maintain trust in the system, the issuing institution must hold sufficient reserves to back the tokens in circulation.
+Stablecoins are cryptographic tokens designed to maintain a fixed value, typically pegged to a fiat currency like the US dollar.
+To maintain trust in the system, the issuing institution must hold sufficient reserves to back the tokens in circulation.
 
-The `proofOfReserves` application demonstrates how to verify that a stablecoin issuer maintains adequate off-chain dollar reserves to cover all tokens in circulation across multiple blockchains. This verification creates transparency and helps prevent situations where more tokens exist than the backing reserves can support.
+The `proofOfReserves` application demonstrates how to verify that a stablecoin issuer maintains adequate off-chain dollar reserves to cover all tokens in circulation across multiple blockchains.
+This verification creates transparency and helps prevent situations where more tokens exist than the backing reserves can support.
 
 Implementing this verification system presents three technical challenges:
 
@@ -27,7 +29,8 @@ Implementing this verification system presents three technical challenges:
 2. **Reading on-chain state**: We need to access the total token supply data from various blockchain networks.
 3. **Cross-chain data collection**: We need to aggregate token supply information across multiple chains.
 
-The [Flare Data Connector (FDC)](/fdc/overview) provides solutions for both accessing Web2 APIs through the [JsonApi](/fdc/attestation-types/json-api) attestation type and collecting cross-chain data via the [EVMTransaction](/fdc/attestation-types/evm-transaction) attestation type. For reading on-chain state, we deploy a dedicated contract that reads the token supply and emits this data as an event.
+The [Flare Data Connector (FDC)](/fdc/overview) provides solutions for both accessing Web2 APIs through the [JsonApi](/fdc/attestation-types/json-api) attestation type and collecting cross-chain data via the [EVMTransaction](/fdc/attestation-types/evm-transaction) attestation type.
+For reading on-chain state, we deploy a dedicated contract that reads the token supply and emits this data as an event.
 
 This guide will walk through all the components needed to build the complete `proofOfReserves` verification system.
 
@@ -39,11 +42,13 @@ For our proof of reserves implementation, we'll create three distinct smart cont
 2. `TokenStateReader`: A utility contract that reads and broadcasts token supply data
 3. `ProofOfReserves`: The main verification contract that processes attestation proofs
 
-Note that in a production environment, we would typically only need two contracts - the main verification contract and a state reader. However, since this is a guide and we want flexibility to experiment with different token supply values, we'll also deploy our own stablecoin.
+Note that in a production environment, we would typically only need two contracts - the main verification contract and a state reader.
+However, since this is a guide and we want flexibility to experiment with different token supply values, we'll also deploy our own stablecoin.
 
 ### Stablecoin Contract
 
-Let's start with the stablecoin implementation. This contract creates an ERC20-compatible token with additional functionality for burning tokens and controlled minting.
+Let's start with the stablecoin implementation.
+This contract creates an ERC20-compatible token with additional functionality for burning tokens and controlled minting.
 
 ```solidity title="contracts/proofOfReserves/Token.sol"
 // SPDX-License-Identifier: MIT
@@ -96,14 +101,16 @@ contract TokenStateReader {
 
 ### ProofOfReserves Contract
 
-The final component in our implementation is the `ProofOfReserves` contract, which performs the actual verification of reserve adequacy. This contract evaluates whether the claimed dollar reserves are sufficient to back all tokens in circulation across different blockchains.
+The final component in our implementation is the `ProofOfReserves` contract, which performs the actual verification of reserve adequacy.
+This contract evaluates whether the claimed dollar reserves are sufficient to back all tokens in circulation across different blockchains.
 
 The core functionality is contained in the `verifyReserves` function, which accepts two parameters:
 
 - An `IJsonApi.Proof` struct containing attested data from the Web2 API about dollar reserves
 - An array of `IEVMTransaction.Proof` structs containing attested data about token supplies from various blockchains
 
-The function aggregates the total token supply from all chains and compares it against the claimed reserves. If sufficient reserves exist (i.e., if the total token supply is less than or equal to the claimed reserves), the function returns `true`; otherwise, it returns `false`.
+The function aggregates the total token supply from all chains and compares it against the claimed reserves.
+If sufficient reserves exist (i.e., if the total token supply is less than or equal to the claimed reserves), the function returns `true`; otherwise, it returns `false`.
 
 ```solidity title="contracts/proofOfReserves/ProofOfReserves.sol"
 // SPDX-License-Identifier: MIT
@@ -156,11 +163,13 @@ The contract defines several important components:
 
 - **Debug Variables**: The `debugTokenReserves` and `debugClaimedReserves` state variables store the latest values from the verification process, providing transparency and easier troubleshooting.
 
-- **Registry Mapping**: The `tokenStateReaders` mapping serves as a registry that associates each `TokenStateReader` contract with its corresponding stablecoin token. This mapping ensures we only process events from authorized reader contracts.
+- **Registry Mapping**: The `tokenStateReaders` mapping serves as a registry that associates each `TokenStateReader` contract with its corresponding stablecoin token.
+  This mapping ensures we only process events from authorized reader contracts.
 
 - **Access Control**: The `updateAddress` function, protected by the `onlyOwner` modifier, provides a secure mechanism to update the registry mapping.
 
-To properly decode data from the [JsonApi](/fdc/attestation-types/json-api) attestation, we need to define a data structure that matches our expected format. Following patterns from the [JsonApi attestation type guide](/fdc/guides/json-api), we create a simple `DataTransportObject` struct:
+To properly decode data from the [JsonApi](/fdc/attestation-types/json-api) attestation, we need to define a data structure that matches our expected format.
+Following patterns from the [JsonApi attestation type guide](/fdc/guides/json-api), we create a simple `DataTransportObject` struct:
 
 ```solidity title="contracts/proofOfReserves/ProofOfReserves.sol"
 struct DataTransportObject {
@@ -168,8 +177,9 @@ struct DataTransportObject {
 }
 ```
 
-This structure contains a single field to store the reserve amount received from the Web2 API. With this definition in place, we can now decode the `abi_encoded_data` within the `IJsonApi.Proof` struct and access its `reserves` field.
-Before accessing this data, we must first validate the proof using the Flare verification system.
+This structure contains a single field to store the reserve amount received from the Web2 API.
+With this definition in place, we can now decode the `abi_encoded_data` within the `IJsonApi.Proof` struct and access its `reserves` field.
+Before accessing this data, we must first validate the proof - more on that later.
 
 For processing JsonApi proofs, we implement the following function:
 
@@ -241,8 +251,8 @@ We name the function appropriately.
 
 ## Process Overview
 
-This guide demonstrates deployment on Flare's Coston and Coston2 testnets, but the same approach can be adapted for any compatible EVM chain.
-The complete implementation process follows these sequential steps:
+This guide demonstrates deployment on Flare's Coston and Coston2 testnets, but the same approach can be adapted for any EVM chain.
+The complete process follows these sequential steps:
 
 1. Deploy and verify the `MyStablecoin` contract on both Coston and Coston2 chains
 2. Deploy and verify the `TokenStateReader` contract on both Coston and Coston2 chains
@@ -549,7 +559,7 @@ To the response JSON, we will apply the following JQ filter.
 {reserves: .value | gsub(\",\";\"\") | sub(\"\\\\.\\\\d*\";\"\")}
 ```
 
-The filter removes all commas (separating thousands), and removes the decimal part.
+The filter removes all commas (separating thousands), and discards the decimal part (the period and everything after it).
 That way, the value we receive will truly be an integer.
 
 We will encode the data as the `DataTransportObject` type, with the following abi signature (expanded to multiple lines for clarity's sake).
