@@ -113,6 +113,7 @@ To generate Solidity documentation:
 
 A set of scripts that:
 
+- Update language dependencies (from `examples/developer-hub-*`)
 - Update contract addresses (from onchain `ContractRegistry`)
 - Update feed risks (from `automations/*_risk.json`)
 
