@@ -12,17 +12,21 @@ import useBaseUrl from "@docusaurus/useBaseUrl";
 <ThemedImage
   alt="FAssets Core Vault Architecture"
   sources={{
-    light: useBaseUrl("img/fassets/flare_fassets_core_vault_architecture_light.svg"),
-    dark: useBaseUrl("img/fassets/flare_fassets_core_vault_architecture_dark.svg"),
+    light: useBaseUrl(
+      "img/fassets/flare_fassets_core_vault_architecture_light.svg",
+    ),
+    dark: useBaseUrl(
+      "img/fassets/flare_fassets_core_vault_architecture_dark.svg",
+    ),
   }}
 />
 
 The **Core Vault (CV)** is a specialized FAsset system vault that operates on the underlying network.
-It allows FAsset agents to deposit and withdraw underlying assets while optimizing capital efficiency through reduced collateral requirements. 
+It allows FAsset agents to deposit and withdraw underlying assets while optimizing capital efficiency through reduced collateral requirements.
 The CV was introduced in **FAssets v1.1** to solve key limitations of v1, such as limited minting capacity, high collateral burdens, and poor agent exit flexibility.
 
-
 The Core Vault is:
+
 - A **multisig-controlled reserve** that enhances **agent liquidity and profitability**
 - Integrated into the **FAssets smart contract system** on Flare
 - Designed to operate with **manual, auditable, and time-bounded signing routines**
@@ -50,15 +54,15 @@ Governance has the authority to pause operations in the event of a security issu
 
 ### Transferring to Core Vault
 
-1.	The agent manually transfers the underlying asset (e.g., XRP) to the CV address.
-2.	The agent sends assets to the predefined CV address with a valid payment transaction reference.
-3.	Anyone may submit a proof of payment to the FAsset system.
-4.	Upon verification, the system releases the agent's collateral.
-5.	The agent creates a redemption request on the Flare network, specifying the predefined CV address for withdrawal.
+1. The agent manually transfers the underlying asset (e.g., XRP) to the CV address.
+2. The agent sends assets to the predefined CV address with a valid payment transaction reference.
+3. Anyone may submit a proof of payment to the FAsset system.
+4. Upon verification, the system releases the agent's collateral.
+5. The agent creates a redemption request on the Flare network, specifying the predefined CV address for withdrawal.
 
 :::info
 
-   Transfer requests do not expire. Agents must either complete the transfer or cancel and re-queue it. Inaction leaves collateral locked indefinitely.
+Transfer requests do not expire. Agents must either complete the transfer or cancel and re-queue it. Inaction leaves collateral locked indefinitely.
 
 :::
 
@@ -68,7 +72,7 @@ There are two methods for agents to retrieve assets from the CV:
 
 #### 1. Request for Return (Agents Only)
 
-An agent can request assets from the CV through a special minting process, which creates a collateral reservation. 
+An agent can request assets from the CV through a special minting process, which creates a collateral reservation.
 Once the request is made, CV operators execute the transfer and submit proof of payment to the asset manager.
 There is no time limit for the CV to honor the request, but governance ensures timely execution.
 
@@ -86,19 +90,21 @@ The XRP Core Vault is a multisig account on the XRP Ledger, backed by an audited
 ### Transactions in XRP Core Vault
 
 The XRP Core Vault (CV) uses two types of transactions:
+
 - `Payment` [Transactions](https://xrpl.org/docs/references/protocol/transactions/types/payment): Transfers XRP back to agents upon redemption.
 - `EscrowCreate` [Transactions](https://xrpl.org/docs/references/protocol/transactions/types/escrowcreate): Time-locks XRP to control fund releases and minimize spending risk.
 
 :::info
 
-   The vault is operated manually.
-   Multisig signers validate all outgoing transactions against a pre-approved rule set and sign them only during designated daily windows.
+The vault is operated manually.
+Multisig signers validate all outgoing transactions against a pre-approved rule set and sign them only during designated daily windows.
 
 :::
 
 ### Daily Security Routine
 
 Every day:
+
 1. One escrow of size L expires, adding XRP to the available pool.
 2. Agents and users submit withdrawal requests.
 3. Flare smart contracts emit transaction instructions (off-chain).
