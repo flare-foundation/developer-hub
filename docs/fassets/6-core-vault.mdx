@@ -54,11 +54,17 @@ Governance has the authority to pause operations in the event of a security issu
 
 ### Transferring to Core Vault
 
-1. The agent manually transfers the underlying asset (e.g., XRP) to the CV address.
-2. The agent sends assets to the predefined CV address with a valid payment transaction reference.
-3. Anyone may submit a proof of payment to the FAsset system.
-4. Upon verification, the system releases the agent's collateral.
-5. The agent creates a redemption request on the Flare network, specifying the predefined CV address for withdrawal.
+1. **Agent Transfers Assets**
+
+    The agent sends the underlying asset (e.g., XRP) to the Core Vault (CV) address with a valid payment reference.
+
+2. **Proof of Payment Submitted**
+    
+    Anyone (including the agent) submits a proof of the transfer to the FAsset system.
+
+3. **Verification and Redemption**
+
+    After verifying the payment, the system releases the agent’s collateral, and the agent creates a redemption request for withdrawal.
 
 :::info
 
@@ -70,13 +76,13 @@ Transfer requests do not expire. Agents must either complete the transfer or can
 
 There are two methods for agents to retrieve assets from the CV:
 
-#### 1. Request for Return (Agents Only)
+#### Request for Return (Agents Only)
 
 An agent can request assets from the CV through a special minting process, which creates a collateral reservation.
 Once the request is made, CV operators execute the transfer and submit proof of payment to the asset manager.
 There is no time limit for the CV to honor the request, but governance ensures timely execution.
 
-#### 2. Direct Redemption (Users)
+#### Direct Redemption (Users)
 
 Approved users can burn FXRP and receive underlying XRP from the CV.
 This Requires KYC approval and a minimum redemption threshold.
@@ -103,14 +109,17 @@ Multisig signers validate all outgoing transactions against a pre-approved rule 
 
 ### Daily Security Routine
 
-Every day:
+1. **Escrow Expiry Adds Funds**
 
-1. One escrow of size L expires, adding XRP to the available pool.
-2. Agents and users submit withdrawal requests.
-3. Flare smart contracts emit transaction instructions (off-chain).
-4. Multisig operators validate and sign these instructions.
-5. After payouts, any excess funds are **escrowed in batches of size L** to limit vault exposure.
-6. A minimum reserve M is maintained in the vault.
+    An expired escrow (size L) adds XRP to the vault’s available pool.
+
+2. **Withdrawals & Payouts**
+
+    Users request withdrawals; multisig operators validate Flare’s off-chain instructions and process payouts.
+
+3. **Re-escrow Excess & Maintain Reserve**
+
+    Remaining funds are escrowed in batches (size L), while a minimum reserve (M) is kept in the vault.
 
 Three escrows are created if `remaining_funds = M + 3L`, and M stays in the wallet.
 
