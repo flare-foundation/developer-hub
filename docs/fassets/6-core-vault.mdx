@@ -44,7 +44,7 @@ This ensures redemption liquidity and protects the system from agent insolvency.
 ### Security Design
 
 Each asset type has a dedicated Core Vault, which is managed by a multisig contract under a formal agreement with Flare.
-The assets stored in the CV do not belong to any specific agent and can be freely transferred between agents.
+The assets stored in the CV do not belong to any specific agent and can be can be requested to return to the agent's collateralized security.
 To ensure security, governance has the authority to pause deposits and withdrawals if necessary, such as in the event of a system compromise.
 
 The Core Vault operates through a predefined address on the underlying chain and is managed via a multisig setup with smart contract oversight under formal Flare contracts.
@@ -56,15 +56,15 @@ Governance has the authority to pause operations in the event of a security issu
 
 1. **Agent Transfers Assets**
 
-    The agent sends the underlying asset (e.g., XRP) to the Core Vault (CV) address with a valid payment reference.
+   The agent announces a transfer and sends the underlying asset (e.g., XRP) to the Core Vault (CV) address with a valid payment reference.
 
 2. **Proof of Payment Submitted**
-    
-    Anyone (including the agent) submits a proof of the transfer to the FAsset system.
+
+   Anyone (including the agent) submits a proof of the transfer to the FAsset system.
 
 3. **Verification and Redemption**
 
-    After verifying the payment, the system releases the agent’s collateral, and the agent creates a redemption request for withdrawal.
+   After verifying the payment, the system releases the agent's collateral.
 
 :::info
 
@@ -74,7 +74,7 @@ Transfer requests do not expire. Agents must either complete the transfer or can
 
 ### Redemption from Core Vault
 
-There are two methods for agents to retrieve assets from the CV:
+There are two methods to retrieve assets from the CV:
 
 #### Request for Return (Agents Only)
 
@@ -111,15 +111,15 @@ Multisig signers validate all outgoing transactions against a pre-approved rule 
 
 1. **Escrow Expiry Adds Funds**
 
-    An expired escrow (size L) adds XRP to the vault’s available pool.
+   An expired escrow (size L) adds XRP to the vault’s available pool.
 
 2. **Withdrawals & Payouts**
 
-    Users request withdrawals; multisig operators validate Flare’s off-chain instructions and process payouts.
+   Users request withdrawals; multisig operators validate Flare’s off-chain instructions and process payouts.
 
 3. **Re-escrow Excess & Maintain Reserve**
 
-    Remaining funds are escrowed in batches (size L), while a minimum reserve (M) is kept in the vault.
+   Remaining funds are escrowed in batches (size L), while a minimum reserve (M) is kept in the vault.
 
 Three escrows are created if `remaining_funds = M + 3L`, and M stays in the wallet.
 
