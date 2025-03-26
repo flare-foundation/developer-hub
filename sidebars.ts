@@ -20,6 +20,7 @@ const sidebars: SidebarsConfig = {
       link: { type: "doc", id: "network/overview" },
       items: [
         "network/getting-started",
+        "network/developer-tools",
         {
           type: "category",
           label: "Network Guides",
@@ -50,6 +51,7 @@ const sidebars: SidebarsConfig = {
             "network/fsp/protocol-components",
             "network/fsp/system-protocols",
             "network/fsp/offchain-services",
+            "network/fsp/governance",
             "network/fsp/rewarding",
             {
               type: "category",
@@ -226,20 +228,6 @@ const sidebars: SidebarsConfig = {
           </a>
         </div>
       `,
-    },
-    {
-      type: "html",
-      value: "<hr>",
-    },
-    {
-      type: "category",
-      label: "Verifiable AI Hackathon",
-      collapsed: true,
-      link: {
-        type: "doc",
-        id: "hackathon/onboarding",
-      },
-      items: ["hackathon/onboarding", "hackathon/cookbook"],
     },
   ],
 };

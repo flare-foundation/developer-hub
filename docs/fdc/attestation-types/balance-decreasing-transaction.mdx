@@ -1,6 +1,6 @@
 ---
 title: BalanceDecreasingTransaction
-description: Detects a transaction that either decreases the balance of a specified address.
+description: Detects a transaction decreasing the balance of an address.
 keywords: [fdc, oracle, flare-data-connector, flare-network]
 sidebar_position: 2
 ---
@@ -9,21 +9,20 @@ import Finality from "./_finality.mdx";
 import StandardAddressHash from "./_standard_address_hash.mdx";
 import TransactionSuccessStatus from "./_transaction_success_status.mdx";
 import StandardPaymentReference from "./_standard_payment_reference.mdx";
-import IBalanceDecreasingTransaction from "../reference/IBalanceDecreasingTransaction.mdx";
 
 Information describing a transaction that either **decreases the balance** for a specified address.
 
-A transaction is considered “balance decreasing” for the specified address if:
+A transaction is considered "balance decreasing" for the specified address if:
 
 1. The balance **after the transaction** is lower than **before**.
 2. The address is among the **signers** of the transaction (even if its balance is not reduced).
 
 ## Supported chains
 
-- `BTC` (Bitcoin)
-- `DOGE` (Dogecoin)
-- `XRP` (XRP Ledger)
-- Test networks: `testBTC` (Bitcoin Testnet v3), `testDOGE`, `testXRP`
+| Network Type | Supported Chains                                       |
+| ------------ | ------------------------------------------------------ |
+| **Mainnet**  | `BTC` (Bitcoin), `DOGE` (Dogecoin), `XRP` (XRP Ledger) |
+| **Testnet**  | `testBTC` (Bitcoin Testnet v3), `testDOGE`, `testXRP`  |
 
 ## Request
 
@@ -58,16 +57,26 @@ The verification process is chain-specific and can be computed with a [balance d
 
 ### UTXO chains (Bitcoin and Dogecoin)
 
+#### Address Indication
+
 - `sourceAddressIndicator`: Represents the index of the transaction input, formatted as a **0x-prefixed 32-byte string**.
   - If the specified input does not exist or lacks an associated address, the attestation request is rejected.
+
+#### Data Calculation
+
 - `sourceAddress`: Address associated with the specified transaction input.
 - `spentAmount`: Calculated as `Sum of all inputs with sourceAddress - Sum of all outputs with sourceAddress`. The value can be negative.
 - `blockTimestamp`: The **mediantime** of the block.
 
 ### Account-based chains (XRPL)
 
+#### Address Indication
+
 - `sourceAddressIndicator`: The [standard address hash](#standard-address-hash) of the address in question.
   - If the indicated address is not among the transaction signers and its balance was not decreased, the attestation request is rejected.
+
+#### Data Calculation
+
 - `spentAmount`: Difference between the balance of the address **after** and **before** the transaction. Can be negative.
 - `blockTimestamp`: The **close_time** of the ledger, converted to Unix time.
 
@@ -119,7 +128,7 @@ In particular, no summary is made for coinbase transactions.
 For XRPL, `sourceAddressIndicator` is [standardAddressHash](#standard-address-hash) of the indicated address.
 If the `sourceAddressIndicator` does not match any of the addresses who signed the transaction or whose balance was decreased by the transaction, the summary is not made.
 
-| Field           |                                                                                                   |
+| Field           | Description                                                                                       |
 | --------------- | ------------------------------------------------------------------------------------------------- |
 | `transactionId` | Hash of the transaction found in the field `hash`.                                                |
 | `sourceAddress` | Address whose [standardAddressHash](#standard-address-hash) matches the `sourceAddressIndicator`. |
@@ -141,6 +150,6 @@ If the `sourceAddressIndicator` does not match any of the addresses who signed t
 
 <Finality />
 
-## Contract interface
+## Contract Interface
 
-<IBalanceDecreasingTransaction />
+For the complete interface definition, see [`IBalanceDecreasingTransaction`](/fdc/reference/IBalanceDecreasingTransaction.mdx).
