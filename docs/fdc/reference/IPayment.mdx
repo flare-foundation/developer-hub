@@ -4,7 +4,37 @@ sidebar_position: 10
 description: Relay a transaction in native currency.
 ---
 
+An interface to relay and verify payment transactions in native currencies across multiple external blockchains.
+
 Sourced from `IPayment.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/fdc/IPayment.sol).
+
+## Overview
+
+The IPayment interface enables smart contracts on Flare networks to access and verify native currency payment transactions from external blockchains. It provides a standardized way to prove that payments have occurred between entities, similar to traditional banking transfers, with support for payment references. This attestation type handles the different transaction models across various blockchains, offering a unified interface for payment verification.
+
+## Supported Chains
+
+| Network Type | Supported Chains                                       |
+| ------------ | ------------------------------------------------------ |
+| **Mainnet**  | `BTC` (Bitcoin), `DOGE` (Dogecoin), `XRP` (XRP Ledger) |
+| **Testnet**  | `testBTC` (Bitcoin Testnet v3), `testDOGE`, `testXRP`  |
+
+## Chain-Specific Implementation Details
+
+### UTXO Chains (Bitcoin and Dogecoin)
+
+- **Transaction Model**: Uses inputs and outputs, where multiple addresses can contribute inputs and receive outputs
+- **inUtxo**: Index of the transaction input with the source address
+- **utxo**: Index of the transaction output with the receiving address
+- **blockTimestamp**: Derived from the mediantime of the block
+
+### Account-based Chains (XRPL)
+
+- **Transaction Model**: Direct transfers between accounts
+- **inUtxo** and **utxo**: Always set to 0 (not used)
+- **blockTimestamp**: Derived from the close_time of the ledger converted to UNIX time
+
+## Interface Definition
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -129,6 +159,187 @@ interface IPayment {
         bytes32 standardPaymentReference;
         bool oneToOne;
         uint8 status;
+    }
+}
+```
+
+## Structs
+
+### Request
+
+Toplevel request structure.
+
+#### Parameters
+
+- `attestationType`: ID of the attestation type (0x01 for Payment)
+- `sourceId`: ID of the data source (e.g., BTC, DOGE, XRP)
+- `messageIntegrityCode`: MessageIntegrityCode derived from the expected response
+- `requestBody`: Data defining the request
+
+### Response
+
+Toplevel response structure.
+
+#### Parameters
+
+- `attestationType`: Extracted from the request
+- `sourceId`: Extracted from the request
+- `votingRound`: The ID of the State Connector round in which the request was considered
+- `lowestUsedTimestamp`: The lowest timestamp used to generate the response
+- `requestBody`: Extracted from the request
+- `responseBody`: Data defining the response
+
+### Proof
+
+Toplevel proof structure for verification.
+
+#### Parameters
+
+- `merkleProof`: Merkle proof corresponding to the attestation response
+- `data`: Attestation response
+
+### RequestBody
+
+Request body specific to payment verification.
+
+#### Parameters
+
+- `transactionId`: The unique identifier of the transaction to verify
+- `inUtxo`: Index of the transaction input with source address (UTXO chains only)
+- `utxo`: Index of the transaction output with receiving address (UTXO chains only)
+
+### ResponseBody
+
+Response body containing payment transaction details.
+
+#### Parameters
+
+- `blockNumber`: Block number containing the transaction
+- `blockTimestamp`: Timestamp of the block containing the transaction
+- `sourceAddressHash`: Standard hash of the source address
+- `sourceAddressesRoot`: Root of the Merkle tree of all source addresses
+- `receivingAddressHash`: Standard hash of the receiving address (zero if transaction failed)
+- `intendedReceivingAddressHash`: Standard hash of the intended receiving address (for failed transactions)
+- `spentAmount`: Amount spent by the source address in minimal units
+- `intendedSpentAmount`: Amount intended to be spent (for failed transactions)
+- `receivedAmount`: Amount received by the receiving address
+- `intendedReceivedAmount`: Amount intended to be received (for failed transactions)
+- `standardPaymentReference`: Standard payment reference included in the transaction
+- `oneToOne`: True if the transaction involves only one source and one receiver
+- `status`: Transaction status (0=success, 1=sender failure, 2=receiver failure)
+
+## Transaction Status Codes
+
+| Status Code | Description      | Explanation                                             |
+| ----------- | ---------------- | ------------------------------------------------------- |
+| 0           | SUCCESS          | Transaction completed successfully                      |
+| 1           | SENDER_FAILURE   | Transaction failed due to issues on the sender's side   |
+| 2           | RECEIVER_FAILURE | Transaction failed due to issues on the receiver's side |
+
+## Implementation Notes
+
+- Attestation ID: `0x01`
+- The `lowestUsedTimestamp` parameter uses the value of `blockTimestamp`
+- The `lutlimit` (Lowest Used Timestamp limit) is `0x127500` (1,209,600 seconds = 14 days) for all supported chains
+- Standard payment references can be included for cross-chain payment identification
+- For account-based chains like XRPL, `inUtxo` and `utxo` parameters should be set to 0
+- The `sourceAddressesRoot` is a Merkle tree root of all transaction input addresses, useful for multi-input transactions
+- The `oneToOne` flag helps identify simple peer-to-peer transfers versus more complex multi-party transactions
+
+## Standard Payment Reference
+
+A standardized payment reference follows a specific format to ensure consistency across different blockchains:
+
+- For UTXO chains (BTC, DOGE): Derived from OP_RETURN outputs or specific patterns in transaction data
+- For XRPL: Derived from the MemoData field in the transaction
+
+Payment references allow for correlation of payments across chains and facilitate payment reconciliation in cross-chain applications.
+
+## Usage Example
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/IFdcHub.sol";
+import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/IFdcVerification.sol";
+import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/fdc/IPayment.sol";
+
+contract PaymentVerifier {
+    IFdcHub private fdcHub;
+    IFdcVerification private fdcVerification;
+
+    bytes32 private constant ATTESTATION_TYPE_PAYMENT = 0x0100000000000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant SOURCE_ID_BTC = 0x4254430000000000000000000000000000000000000000000000000000000000;
+
+    // Store verified payments
+    mapping(bytes32 => bool) public verifiedPayments; // transactionId => verified
+
+    constructor(address _fdcHubAddress, address _fdcVerificationAddress) {
+        fdcHub = IFdcHub(_fdcHubAddress);
+        fdcVerification = IFdcVerification(_fdcVerificationAddress);
+    }
+
+    // Request verification of a payment transaction
+    function requestPaymentVerification(
+        bytes32 transactionId,
+        uint256 inUtxo,
+        uint256 utxo
+    ) external payable {
+        // Create request body
+        IPayment.RequestBody memory requestBody = IPayment.RequestBody({
+            transactionId: transactionId,
+            inUtxo: inUtxo,
+            utxo: utxo
+        });
+
+        // Encode the full request
+        bytes memory encodedRequest = abi.encode(
+            ATTESTATION_TYPE_PAYMENT,
+            SOURCE_ID_BTC,
+            bytes32(0), // messageIntegrityCode (would need to be calculated properly)
+            requestBody
+        );
+
+        // Submit the request with payment
+        fdcHub.requestAttestation{value: msg.value}(encodedRequest);
+    }
+
+    // Verify a provided payment proof
+    function verifyPayment(IPayment.Proof calldata _proof)
+        external
+        returns (
+            bool success,
+            bytes32 sourceAddressHash,
+            bytes32 receivingAddressHash,
+            int256 amount,
+            bytes32 paymentReference
+        )
+    {
+        // Verify the proof using FdcVerification
+        bool proofVerified = fdcVerification.verifyPayment(_proof);
+
+        if (proofVerified) {
+            // Extract the payment details from the proof
+            bytes32 transactionId = _proof.data.requestBody.transactionId;
+            IPayment.ResponseBody memory response = _proof.data.responseBody;
+
+            // Check if this is a successful payment
+            if (response.status == 0) {
+                // Store that this transaction has been verified
+                verifiedPayments[transactionId] = true;
+
+                return (
+                    true,
+                    response.sourceAddressHash,
+                    response.receivingAddressHash,
+                    response.receivedAmount,
+                    response.standardPaymentReference
+                );
+            }
+        }
+
+        return (false, bytes32(0), bytes32(0), 0, bytes32(0));
     }
 }
 ```
