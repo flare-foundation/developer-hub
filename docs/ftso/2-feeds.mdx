@@ -18,7 +18,7 @@ FTSOv2's block-latency feeds update incrementally with each new block on Flare, 
 
 Each block-latency feed is uniquely identified by an ID composed of three components in a structured encoding process:
 
-1. **Category:** Indicates the type of asset - Crypto: `01`, Forex: `02`, Commodity: `03`, Stock: `04`
+1. **Category:** Indicates the type of asset - Crypto: `01`, Forex: `02`, Commodity: `03`, Stock: `04`, Custom Feeds: `05`
 
 2. **Hex-Encoded Feed Name:** The name of the feed is converted to a hexadecimal format.
 
@@ -32,14 +32,20 @@ The resulting string is then prefixed with `0x`.
 
 - Feed IDs are **not** addresses. They are `bytes21` structured encodings that combine the category and feed name to ensure each feed has a unique identifier.
 - **Do not** hardcode the number of decimals for a feed in your smart contract, as these can change as the feed value changes. You can use either of the following solutions:
-- Check the number of decimal places every query ([`getFeedById`](/ftso/solidity-reference/FtsoV2Interface#getfeedbyid)).
-- Use the feed value in Wei ([`getFeedByIdInWei`](/ftso/solidity-reference/FtsoV2Interface#getfeedbyidinwei)).
+  - Check the number of decimal places every query using [`getFeedById`](/ftso/solidity-reference/FtsoV2Interface#getfeedbyid).
+  - Use the feed value in Wei using [`getFeedByIdInWei`](/ftso/solidity-reference/FtsoV2Interface#getfeedbyidinwei).
 
 :::
 
 <BlockLatencyFeeds />
 
 ## Custom Feeds
+
+:::warning
+
+Custom Feeds, introduced in [FIP.13](https://proposals.flare.network/FIP/FIP_13.html), have a distinct risk profile compared to standard FTSO feeds. Unlike standard FTSO feeds, the security of a Custom Feed is conditional on the logic defined in its smart contract.
+
+:::
 
 <CustomFeeds />
 

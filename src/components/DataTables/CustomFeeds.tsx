@@ -10,7 +10,6 @@ const CustomFeeds = () => {
       <thead>
         <tr className="table-header">
           <th>Name</th>
-          <th>Index</th>
           <th>Feed ID</th>
           <th>Details</th>
         </tr>
@@ -20,9 +19,6 @@ const CustomFeeds = () => {
           return (
             <tr key={index} className="table-row">
               <td className="regular-font">{row.feed_name}</td>
-              <td className="mono-font feed-index">
-                <span className="feed-index-text">{row.feed_index}</span>
-              </td>
               <td className="feed-id mono-font">
                 <div className="feed-id-container">
                   <span className="feed-id-text">{row.feed_id}</span>
@@ -30,7 +26,15 @@ const CustomFeeds = () => {
                 </div>
               </td>
               <td className="regular-font">
-                Base Asset: {row.base_asset} <br />
+                Base Asset: {row.base_asset} (
+                <Link
+                  to={row.provider_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {`${row.provider_name}`}
+                </Link>
+                ) <br />
                 {row.contract && (
                   <>
                     Contract:{" "}
