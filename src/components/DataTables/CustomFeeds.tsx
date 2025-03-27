@@ -1,5 +1,6 @@
 import React from "react";
 import "tippy.js/dist/tippy.css";
+import Link from "@docusaurus/Link";
 import CopyButton from "../CopyButton";
 import tableData from "../../../automations/custom_feeds.json";
 
@@ -30,6 +31,18 @@ const CustomFeeds = () => {
               </td>
               <td className="regular-font">
                 Base Asset: {row.base_asset} <br />
+                {row.contract && (
+                  <>
+                    Contract:{" "}
+                    <Link
+                      to={`https://flarescan.com/address/${row.contract}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {`${row.contract}`}
+                    </Link>
+                  </>
+                )}
               </td>
             </tr>
           );
