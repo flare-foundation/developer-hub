@@ -4,15 +4,19 @@ sidebar_position: 2
 description: Primary interface for interacting with FDC.
 ---
 
-Primary interface for interacting with FDC.
+Primary interface for interacting with the Flare Data Connector (FDC).
 
 Sourced from `IFdcHub.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/IFdcHub.sol).
+
+## Overview
+
+The IFdcHub interface serves as the main entry point for applications requesting attestations from the Flare Data Connector. It provides functionality to request attestations, access configuration contracts, and handle related events.
 
 ## Functions
 
 ### fdcInflationConfigurations
 
-The FDC inflation configurations contract.
+Returns the FDC inflation configurations contract address.
 
 ```solidity
 function fdcInflationConfigurations(
@@ -21,9 +25,13 @@ function fdcInflationConfigurations(
 );
 ```
 
+**Returns**
+
+- `IFdcInflationConfigurations`: Contract interface for accessing inflation configurations
+
 ### fdcRequestFeeConfigurations
 
-The FDC request fee configurations contract.
+Returns the FDC request fee configurations contract address.
 
 ```solidity
 function fdcRequestFeeConfigurations(
@@ -32,9 +40,13 @@ function fdcRequestFeeConfigurations(
 );
 ```
 
+**Returns**
+
+- `IFdcRequestFeeConfigurations`: Contract interface for accessing request fee configurations
+
 ### requestAttestation
 
-Method to request an attestation.
+Requests an attestation from the Flare Data Connector.
 
 ```solidity
 function requestAttestation(
@@ -42,13 +54,15 @@ function requestAttestation(
 ) external payable;
 ```
 
-#### Parameters
+**Parameters**
 
 - `_data`: ABI encoded attestation request
 
+**Note**: This function is payable and requires a fee based on the attestation type.
+
 ### requestsOffsetSeconds
 
-The offset (in seconds) for the requests to be processed during the current voting round.
+Returns the offset (in seconds) for the requests to be processed during the current voting round.
 
 ```solidity
 function requestsOffsetSeconds(
@@ -57,9 +71,15 @@ function requestsOffsetSeconds(
 );
 ```
 
+**Returns**
+
+- `uint8`: Offset in seconds
+
 ## Events
 
 ### AttestationRequest
+
+Emitted when an attestation request is submitted.
 
 ```solidity
 event AttestationRequest(
@@ -68,9 +88,14 @@ event AttestationRequest(
 )
 ```
 
+**Parameters**
+
+- `data`: The encoded attestation request data
+- `fee`: The amount paid for the attestation request
+
 ### InflationRewardsOffered
 
-Event emitted when inflation rewards are offered.
+Emitted when inflation rewards are offered.
 
 ```solidity
 event InflationRewardsOffered(
@@ -80,10 +105,58 @@ event InflationRewardsOffered(
 )
 ```
 
+**Parameters**
+
+- `rewardEpochId`: The ID of the reward epoch
+- `fdcConfigurations`: Array of FDC configurations
+- `amount`: The total amount of rewards offered
+
 ### RequestsOffsetSet
+
+Emitted when the requests offset is updated.
 
 ```solidity
 event RequestsOffsetSet(
     uint8 requestsOffsetSeconds
 )
+```
+
+**Parameters**
+
+- `requestsOffsetSeconds`: The new offset value in seconds
+
+## Usage Example
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/IFdcHub.sol";
+import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/fdc/IAddressValidity.sol";
+
+contract AddressValidator {
+    IFdcHub private fdcHub;
+
+    constructor(address _fdcHubAddress) {
+        fdcHub = IFdcHub(_fdcHubAddress);
+    }
+
+    function validateAddress(string memory addressStr, bytes32 sourceId) external payable {
+        // Create address validity request
+        IAddressValidity.RequestBody memory requestBody = IAddressValidity.RequestBody({
+            addressStr: addressStr
+        });
+
+        // Encode the full request
+        bytes memory encodedRequest = abi.encode(
+            bytes32(0x05), // attestationType for AddressValidity
+            sourceId,
+            bytes32(0), // messageIntegrityCode - should be calculated properly
+            requestBody
+        );
+
+        // Submit the request with appropriate fee
+        fdcHub.requestAttestation{value: msg.value}(encodedRequest);
+    }
+}
 ```

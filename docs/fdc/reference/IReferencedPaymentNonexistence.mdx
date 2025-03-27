@@ -4,7 +4,46 @@ sidebar_position: 11
 description: Assert whether an agreed-upon payment has not been made.
 ---
 
+An interface to verify that a specific payment, agreed to be completed by a certain deadline, has **not been made** on an external blockchain.
+
 Sourced from `IReferencedPaymentNonexistence.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/fdc/IReferencedPaymentNonexistence.sol).
+
+## Overview
+
+The IReferencedPaymentNonexistence interface enables smart contracts on Flare networks to verify the absence of specific payment transactions on external blockchains. This type of attestation is particularly useful for conditional agreements where the absence of a payment by a deadline triggers consequences, such as liquidating collateral or executing penalties in cross-chain financial arrangements.
+
+## Supported Chains
+
+| Network Type | Supported Chains                                       |
+| ------------ | ------------------------------------------------------ |
+| **Mainnet**  | `BTC` (Bitcoin), `DOGE` (Dogecoin), `XRP` (XRP Ledger) |
+| **Testnet**  | `testBTC` (Bitcoin Testnet v3), `testDOGE`, `testXRP`  |
+
+## Chain-Specific Verification Criteria
+
+### UTXO Chains (Bitcoin and Dogecoin)
+
+A transaction is considered a match (and would invalidate the nonexistence claim) if all of the following are true:
+
+- It is **not** a coinbase transaction
+- The transaction includes the specified standard payment reference
+- If `checkSourceAddresses` is true, the source addresses root matches the specified one
+- The sum of outputs to the destination address, minus any inputs from that address, exceeds the specified amount
+- The transaction appears within the specified block range
+
+### Account-based Chains (XRPL)
+
+A transaction is considered a match (and would invalidate the nonexistence claim) if all of the following are true:
+
+- The transaction is of type "Payment"
+- The transaction includes the specified standard payment reference
+- If `checkSourceAddresses` is true, the source addresses root matches the specified one
+- One of the following conditions is met:
+  - Transaction status is "SUCCESS" and the amount received by the destination address exceeds the specified amount
+  - Transaction status is "RECEIVER_FAILURE" and the amount that would have been received exceeds the specified amount
+- The transaction appears within the specified block range
+
+## Interface Definition
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -146,6 +185,234 @@ interface IReferencedPaymentNonexistence {
         uint64 minimalBlockTimestamp;
         uint64 firstOverflowBlockNumber;
         uint64 firstOverflowBlockTimestamp;
+    }
+}
+```
+
+## Structs
+
+### Request
+
+Toplevel request structure.
+
+#### Parameters
+
+- `attestationType`: ID of the attestation type (0x04 for ReferencedPaymentNonexistence)
+- `sourceId`: ID of the data source (e.g., BTC, DOGE, XRP)
+- `messageIntegrityCode`: MessageIntegrityCode derived from the expected response
+- `requestBody`: Data defining the request
+
+### Response
+
+Toplevel response structure.
+
+#### Parameters
+
+- `attestationType`: Extracted from the request
+- `sourceId`: Extracted from the request
+- `votingRound`: The ID of the State Connector round in which the request was considered
+- `lowestUsedTimestamp`: The lowest timestamp used to generate the response
+- `requestBody`: Extracted from the request
+- `responseBody`: Data defining the response
+
+### Proof
+
+Toplevel proof structure for verification.
+
+#### Parameters
+
+- `merkleProof`: Merkle proof corresponding to the attestation response
+- `data`: Attestation response
+
+### RequestBody
+
+Request body specific to payment nonexistence verification.
+
+#### Parameters
+
+- `minimalBlockNumber`: The starting block number of the search range
+- `deadlineBlockNumber`: The last block number to include in the search range
+- `deadlineTimestamp`: The timestamp deadline for the payment
+- `destinationAddressHash`: Standard hash of the address that should have received the payment
+- `amount`: Minimum amount that should have been received
+- `standardPaymentReference`: The specific payment reference that should have been included
+- `checkSourceAddresses`: If true, source addresses are also verified
+- `sourceAddressesRoot`: Merkle tree root of expected source addresses (if checked)
+
+### ResponseBody
+
+Response body containing search range details.
+
+#### Parameters
+
+- `minimalBlockTimestamp`: Timestamp of the first block in the search range
+- `firstOverflowBlockNumber`: Block number of the first block after the deadline
+- `firstOverflowBlockTimestamp`: Timestamp of the first block after the deadline
+
+## Block Range Definition
+
+The search range for payment verification is defined as:
+
+- **Start**: Block at `minimalBlockNumber` (inclusive)
+- **End**: Block at `firstOverflowBlockNumber` (exclusive)
+
+The `firstOverflowBlock` is determined as the first block that:
+
+1. Has a block number greater than `deadlineBlockNumber`
+2. Has a timestamp later than `deadlineTimestamp`
+
+This dual condition approach ensures that both block height and timestamp requirements are met.
+
+## Implementation Notes
+
+- Attestation ID: `0x04`
+- The `lowestUsedTimestamp` parameter uses the value of `minimalBlockTimestamp`
+- The `lutlimit` (Lowest Used Timestamp limit) is `0x127500` (1,209,600 seconds = 14 days) for all supported chains
+- The standard payment reference must not be zero
+- Request will be rejected if the verification node doesn't have visibility of all blocks in the search range
+- Request will be rejected if `firstOverflowBlockNumber` cannot be determined or lacks sufficient confirmations
+
+## Standard Payment Reference
+
+A standardized payment reference follows a specific format to ensure consistency across different blockchains:
+
+- For UTXO chains (BTC, DOGE): Derived from OP_RETURN outputs or specific patterns in transaction data
+- For XRPL: Derived from the MemoData field in the transaction
+
+The standardPaymentReference is critical for this attestation type as it uniquely identifies the specific payment being verified for nonexistence.
+
+## Usage Example
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/IFdcHub.sol";
+import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/IFdcVerification.sol";
+import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/fdc/IReferencedPaymentNonexistence.sol";
+
+contract PaymentDeadlineEnforcer {
+    IFdcHub private fdcHub;
+    IFdcVerification private fdcVerification;
+
+    bytes32 private constant ATTESTATION_TYPE_PAYMENT_NONEXISTENCE = 0x0400000000000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant SOURCE_ID_BTC = 0x4254430000000000000000000000000000000000000000000000000000000000;
+
+    struct Agreement {
+        bytes32 destinationAddressHash;
+        uint256 amount;
+        bytes32 paymentReference;
+        uint64 startBlockNumber;
+        uint64 deadlineBlockNumber;
+        uint64 deadlineTimestamp;
+        bool checkSourceAddresses;
+        bytes32 sourceAddressesRoot;
+        bool liquidated;
+    }
+
+    mapping(uint256 => Agreement) public agreements;
+    uint256 public nextAgreementId;
+
+    constructor(address _fdcHubAddress, address _fdcVerificationAddress) {
+        fdcHub = IFdcHub(_fdcHubAddress);
+        fdcVerification = IFdcVerification(_fdcVerificationAddress);
+    }
+
+    // Create a new payment agreement
+    function createAgreement(
+        bytes32 destinationAddressHash,
+        uint256 amount,
+        bytes32 paymentReference,
+        uint64 startBlockNumber,
+        uint64 deadlineBlockNumber,
+        uint64 deadlineTimestamp,
+        bool checkSourceAddresses,
+        bytes32 sourceAddressesRoot
+    ) external returns (uint256 agreementId) {
+        require(paymentReference != bytes32(0), "Payment reference cannot be zero");
+
+        agreementId = nextAgreementId++;
+
+        agreements[agreementId] = Agreement({
+            destinationAddressHash: destinationAddressHash,
+            amount: amount,
+            paymentReference: paymentReference,
+            startBlockNumber: startBlockNumber,
+            deadlineBlockNumber: deadlineBlockNumber,
+            deadlineTimestamp: deadlineTimestamp,
+            checkSourceAddresses: checkSourceAddresses,
+            sourceAddressesRoot: sourceAddressesRoot,
+            liquidated: false
+        });
+
+        return agreementId;
+    }
+
+    // Request verification of payment nonexistence for an agreement
+    function checkPaymentMissed(uint256 agreementId) external payable {
+        Agreement storage agreement = agreements[agreementId];
+        require(!agreement.liquidated, "Agreement already liquidated");
+
+        // Create request body
+        IReferencedPaymentNonexistence.RequestBody memory requestBody = IReferencedPaymentNonexistence.RequestBody({
+            minimalBlockNumber: agreement.startBlockNumber,
+            deadlineBlockNumber: agreement.deadlineBlockNumber,
+            deadlineTimestamp: agreement.deadlineTimestamp,
+            destinationAddressHash: agreement.destinationAddressHash,
+            amount: agreement.amount,
+            standardPaymentReference: agreement.paymentReference,
+            checkSourceAddresses: agreement.checkSourceAddresses,
+            sourceAddressesRoot: agreement.sourceAddressesRoot
+        });
+
+        // Encode the full request
+        bytes memory encodedRequest = abi.encode(
+            ATTESTATION_TYPE_PAYMENT_NONEXISTENCE,
+            SOURCE_ID_BTC,
+            bytes32(0), // messageIntegrityCode (would need to be calculated properly)
+            requestBody
+        );
+
+        // Submit the request with payment
+        fdcHub.requestAttestation{value: msg.value}(encodedRequest);
+    }
+
+    // Verify a provided proof of payment nonexistence and trigger liquidation
+    function verifyMissedPayment(uint256 agreementId, IReferencedPaymentNonexistence.Proof calldata _proof)
+        external
+        returns (bool liquidated)
+    {
+        Agreement storage agreement = agreements[agreementId];
+        require(!agreement.liquidated, "Agreement already liquidated");
+
+        // Verify the proof using FdcVerification
+        bool proofVerified = fdcVerification.verifyReferencedPaymentNonexistence(_proof);
+
+        if (proofVerified) {
+            // Extract request details and validate they match our agreement
+            IReferencedPaymentNonexistence.RequestBody memory request = _proof.data.requestBody;
+
+            // Verify this proof is for the correct agreement
+            require(
+                request.minimalBlockNumber == agreement.startBlockNumber &&
+                request.deadlineBlockNumber == agreement.deadlineBlockNumber &&
+                request.deadlineTimestamp == agreement.deadlineTimestamp &&
+                request.destinationAddressHash == agreement.destinationAddressHash &&
+                request.amount == agreement.amount &&
+                request.standardPaymentReference == agreement.paymentReference,
+                "Proof does not match agreement"
+            );
+
+            // Mark the agreement as liquidated
+            agreement.liquidated = true;
+
+            // Trigger liquidation logic here
+            // ...
+
+            return true;
+        }
+
+        return false;
     }
 }
 ```
