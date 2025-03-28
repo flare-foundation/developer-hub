@@ -19,7 +19,7 @@ async function main() {
   // Set up contract instance
   const incentive = new ethers.Contract(
     INCENTIVE_ADDRESS,
-    JSON.parse(ABI),
+    abi,
     signer,
   );
   // Get the sample size increase price, sample size, precision, and scale
