@@ -5,8 +5,6 @@ import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/
 import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/TestFtsoV2Interface.sol";
 
 contract FtsoV2FeedConsumer {
-    TestFtsoV2Interface internal ftsoV2;
-
     /**
      * @dev Converts a feed name to a bytes21 ID with a fixed category (1) and USD quote.
      * @param _name The name of the feed, e.g. FLR.
@@ -35,7 +33,7 @@ contract FtsoV2FeedConsumer {
         string[] memory _feedNames
     )
     external
-    payable
+    view
     returns (
         uint256[] memory _feedValues,
         int8[] memory _decimals,
@@ -49,7 +47,7 @@ contract FtsoV2FeedConsumer {
             feedIds[i] = convertToFeedId(_feedNames[i]);
         }
         /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
-        ftsoV2 = ContractRegistry.getTestFtsoV2();
+        TestFtsoV2Interface ftsoV2 = ContractRegistry.getTestFtsoV2();
 
         // Fetch feed data from the FtsoV2 contract
         (

@@ -23,7 +23,7 @@ contract FtsoV2FeedConsumerById {
      */
     function getFtsoV2FeedValueById()
     external
-    payable
+    view
     returns (uint256 _feedValue, int8 _decimals, uint64 _timestamp)
     {
         /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
