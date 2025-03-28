@@ -1,5 +1,7 @@
 import { ethers } from "hardhat";
 
+import { interfaceToAbi } from "@flarenetwork/flare-periphery-contract-artifacts";
+
 // In production get the data directly from FlareSystemsManager
 const firstVotingRoundStartTs = 1658429955;
 const votingEpochDurationSeconds = 90;
@@ -10,24 +12,9 @@ const FDC_HUB_ADDRESS = "0x1c78A073E3BD2aCa4cc327d55FB0cD4f0549B55b";
 async function submitRequest() {
   const requestData = await prepareRequest();
 
-  const fdcHub = await ethers.getContractAt(
-    [
-      {
-        inputs: [
-          {
-            internalType: "bytes",
-            name: "_data",
-            type: "bytes",
-          },
-        ],
-        name: "requestAttestation",
-        outputs: [],
-        stateMutability: "payable",
-        type: "function",
-      },
-    ],
-    FDC_HUB_ADDRESS,
-  );
+  const abi = interfaceToAbi("IFdcHub", "coston");
+
+  const fdcHub = await ethers.getContractAt(abi, FDC_HUB_ADDRESS,);
 
   // Call to the FDC Hub protocol to provide attestation.
   const tx = await fdcHub.requestAttestation(requestData.abiEncodedRequest, {

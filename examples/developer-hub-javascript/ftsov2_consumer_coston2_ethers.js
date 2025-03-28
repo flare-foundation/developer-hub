@@ -14,13 +14,13 @@ const FEED_IDS = [
 ];
 
 // ABI for FtsoV2
-const ABI = interfaceToAbi("FtsoV2Interface", "coston2");
+const abi = interfaceToAbi("FtsoV2Interface", "coston2");
 
 export async function main() {
   // Connect to an RPC node
   const provider = new ethers.JsonRpcProvider(RPC_URL);
   // Set up contract instance
-  const ftsov2 = new ethers.Contract(FTSOV2_ADDRESS, ABI, provider);
+  const ftsov2 = new ethers.Contract(FTSOV2_ADDRESS, abi, provider);
   // Fetch current feeds
   const res = await ftsov2.getFeedsById.staticCall(FEED_IDS);
   // Log results

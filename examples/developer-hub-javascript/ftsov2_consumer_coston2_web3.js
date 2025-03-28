@@ -13,13 +13,13 @@ const FEED_IDS = [
   "0x014554482f55534400000000000000000000000000", // ETH/USD
 ];
 // ABI for FtsoV2
-const ABI = interfaceToAbi("FtsoV2Interface", "coston2");
+const abi = interfaceToAbi("FtsoV2Interface", "coston2");
 
 export async function main() {
   // Connect to an RPC node
   const w3 = new Web3(RPC_URL);
   // Set up contract instance
-  const ftsov2 = new w3.eth.Contract(ABI, FTSOV2_ADDRESS);
+  const ftsov2 = new w3.eth.Contract(abi, FTSOV2_ADDRESS);
   // Fetch current feeds
   const res = await ftsov2.methods.getFeedsById(FEED_IDS).call();
   // Log results
