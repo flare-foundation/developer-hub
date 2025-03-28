@@ -17,11 +17,7 @@ async function main() {
   const privateKey = process.env.ACCOUNT_PRIVATE_KEY.toString();
   const signer = new ethers.Wallet(privateKey, provider);
   // Set up contract instance
-  const incentive = new ethers.Contract(
-    INCENTIVE_ADDRESS,
-    abi,
-    signer,
-  );
+  const incentive = new ethers.Contract(INCENTIVE_ADDRESS, abi, signer);
   // Get the sample size increase price, sample size, precision, and scale
   const sampleSizeIncreasePrice =
     await incentive.getCurrentSampleSizeIncreasePrice();

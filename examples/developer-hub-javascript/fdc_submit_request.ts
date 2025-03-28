@@ -14,7 +14,7 @@ async function submitRequest() {
 
   const abi = interfaceToAbi("IFdcHub", "coston");
 
-  const fdcHub = await ethers.getContractAt(abi, FDC_HUB_ADDRESS,);
+  const fdcHub = await ethers.getContractAt(abi, FDC_HUB_ADDRESS);
 
   // Call to the FDC Hub protocol to provide attestation.
   const tx = await fdcHub.requestAttestation(requestData.abiEncodedRequest, {
