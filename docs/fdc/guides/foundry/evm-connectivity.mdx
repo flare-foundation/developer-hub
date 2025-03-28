@@ -1,20 +1,285 @@
 ---
-title: Connect to EVM Chains
+title: EVM Connectivity
+slug: evm-connectivity
 authors: [lukaavbreht, filipkoprivec]
-description: Relay transaction and event data from Ethereum.
-tags: [intermediate, ethereum, fdc]
+description: Learn how to connect EVM chains to Flare using FDC.
+tags: [intermediate, ethereum, fdc, foundry]
 keywords: [ethereum, flare-data-connector, evm, flare-network]
-sidebar_position: 5
+sidebar_position: 8
 unlisted: true
 ---
 
-This guide is for developers who want to connect to EVM chains. In this guide, you will learn how to:
+In [Part 1](/fdc/getting-started) and [Part 2](/fdc/attestation-types) of the series, you you have learned how the Data Connector works and what kind of different attestations you can get from it. In this guide, you will:
 
-- Use the `EVMTransaction` attestation type.
+- Move from the world of UTXO chains to the world of EVM chains with a new `EVMTransaction` attestation type.
+- Understand the implications of connecting account-based chains, and the additional possibilities that smart contracts bring.
+- Connect Ethereum and Flare (or testnets Sepolia and Flare Testnet Coston2 for the Coston testnet).
 
-- Understand the implications of connecting account-based chains.
+From Parts 1 and 2, the attestations that you know so far are:
 
-- Relay transaction information from Ethereum Sepolia to Flare Testnet Coston2.
+- Simple payment
+
+- Non-existence of a payment with reference
+
+- Balance decreasing transaction
+
+- Block height confirmation
+
+- Address validity check
+
+You also know that the Data Connector allows Flare to connect to Bitcoin, Dogecoin, and XRP Ledger.
+
+The information that the Data Connector provides is similar to what was provided before (sender and recipient, amount, block, timestamp, etc.), but since you are on a smart contract compatible chain now, you can also get additional things, namely, you can extract the full data about events that were emitted during the transaction, and you can also get the input data of the transaction (in case a contract was called).
+
+## Transaction Type
+
+Let's jump directly into the transaction type to see what kind of data we need to provide.
+
+The top-level `Request` in the `EVMTransaction` has the same structure as others:
+
+```solidity title="EVMTransaction.sol"
+// SPDX-License-Identifier: MIT
+pragma solidity >=0.7.6 <0.9;
+
+/**
+ * @custom:name EVMTransaction
+ * @custom:id 0x06
+ * @custom:supported ETH, FLR, SGB, testETH, testFLR, testSGB
+ * @author Flare
+ * @notice A relay of a transaction from an EVM chain.
+ * This type is only relevant for EVM-compatible chains.
+ * @custom:verification If a transaction with the `transactionId` is in a block on the main branch with at least `requiredConfirmations`, the specified data is relayed.
+ * If an indicated event does not exist, the request is rejected.
+ * @custom:lut `timestamp`
+ */
+interface EVMTransaction {
+    /**
+     * @notice Toplevel request
+     * @param attestationType ID of the attestation type.
+     * @param sourceId  ID of the data source.
+     * @param messageIntegrityCode `MessageIntegrityCode` that is derived from the expected response.
+     * @param requestBody Data defining the request. Type (struct) and interpretation is determined by the `attestationType`.
+     */
+    struct Request {
+        bytes32 attestationType;
+        bytes32 sourceId;
+        bytes32 messageIntegrityCode;
+        RequestBody requestBody;
+    }
+
+    /**
+     * @notice Toplevel response
+     * @param attestationType Extracted from the request.
+     * @param sourceId Extracted from the request.
+     * @param votingRound The ID of the Data Connector round in which the request was considered.
+     * @param lowestUsedTimestamp The lowest timestamp used to generate the response.
+     * @param requestBody Extracted from the request.
+     * @param responseBody Data defining the response. The verification rules for the construction of the response body and the type are defined per specific `attestationType`.
+     */
+    struct Response {
+        bytes32 attestationType;
+        bytes32 sourceId;
+        uint64 votingRound;
+        uint64 lowestUsedTimestamp;
+        RequestBody requestBody;
+        ResponseBody responseBody;
+    }
+
+    /**
+     * @notice Toplevel proof
+     * @param merkleProof Merkle proof corresponding to the attestation response.
+     * @param data Attestation response.
+     */
+    struct Proof {
+        bytes32[] merkleProof;
+        Response data;
+    }
+
+    /**
+     * @notice Request body for EVM transaction attestation type
+     * @custom:below Note that events (logs) are indexed in block not in each transaction. The contract that uses the attestation should specify the order of event logs as needed and the requestor should sort `logIndices`
+     * with respect to the set specifications. If possible, the contact should only require one `logIndex`.
+     * @param transactionHash Hash of the transaction(transactionHash).
+     * @param requiredConfirmations The height at which a block is considered confirmed by the requestor.
+     * @param provideInput If true, "input" field is included in the response.
+     * @param listEvents If true, events indicated by `logIndices` are included in the response. Otherwise, no events are included in the response.
+     * @param logIndices If `listEvents` is `false`, this should be an empty list, otherwise, the request is rejected. If `listEvents` is `true`, this is the list of indices (logIndex) of the events to be relayed (sorted by the requestor). The array should contain at most 50 indices. If empty, it indicates all events in order capped by 50.
+     */
+    struct RequestBody {
+        bytes32 transactionHash;
+        uint16 requiredConfirmations;
+        bool provideInput;
+        bool listEvents;
+        uint32[] logIndices;
+    }
+
+    /**
+     * @notice Response body for EVM transaction attestation type
+     * @custom:below The fields are in line with [transaction](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactionbyhash) provided by EVM node.
+     * @param blockNumber Number of the block in which the transaction is included.
+     * @param timestamp Timestamp of the block in which the transaction is included.
+     * @param sourceAddress The address (from) that signed the transaction.
+     * @param isDeployment Indicate whether it is a contract creation transaction.
+     * @param receivingAddress The address (to) of the receiver of the initial transaction. Zero address if `isDeployment` is `true`.
+     * @param value The value transferred by the initial transaction in wei.
+     * @param input If `provideInput`, this is the data send along with the initial transaction. Otherwise it is the default value `0x00`.
+     * @param status Status of the transaction 1 - success, 0 - failure.
+     * @param events If `listEvents` is `true`, an array of the requested events. Sorted by the logIndex in the same order as `logIndices`. Otherwise, an empty array.
+     */
+    struct ResponseBody {
+        uint64 blockNumber;
+        uint64 timestamp;
+        address sourceAddress;
+        bool isDeployment;
+        address receivingAddress;
+        uint256 value;
+        bytes input;
+        uint8 status;
+        Event[] events;
+    }
+
+    /**
+     * @notice Event log record
+     * @custom:above An `Event` is a struct with the following fields:
+     * @custom:below The fields are in line with [EVM event logs](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getfilterchanges).
+     * @param logIndex The consecutive number of the event in block.
+     * @param emitterAddress The address of the contract that emitted the event.
+     * @param topics An array of up to four 32-byte strings of indexed log arguments.
+     * @param data Concatenated 32-byte strings of non-indexed log arguments. At least 32 bytes long.
+     * @param removed It is `true` if the log was removed due to a chain reorganization and `false` if it is a valid log.
+     */
+    struct Event {
+        uint32 logIndex;
+        address emitterAddress;
+        bytes32[] topics;
+        bytes data;
+        bool removed;
+    }
+}
+```
+
+The `attestationType` for the evm attestation is a hex encoding of `hexEncode("EVMTransaction")`
+
+{/* Currently supported `sourceId` are */}
+
+{/* - TODO: Naštej jih in prveri, da delajo ok */}
+
+## Request Body
+
+The `RequestBody` is defined as:
+
+```solidity
+    /**
+     * @notice Request body for EVM transaction attestation type
+     * @custom:below Note that events (logs) are indexed in block not in each transaction. The contract that uses the attestation should specify the order of event logs as needed and the requestor should sort `logIndices`
+     * with respect to the set specifications. If possible, the contact should only require one `logIndex`.
+     * @param transactionHash Hash of the transaction(transactionHash).
+     * @param requiredConfirmations The height at which a block is considered confirmed by the requestor.
+     * @param provideInput If true, "input" field is included in the response.
+     * @param listEvents If true, events indicated by `logIndices` are included in the response. Otherwise, no events are included in the response.
+     * @param logIndices If `listEvents` is `false`, this should be an empty list, otherwise, the request is rejected. If `listEvents` is `true`, this is the list of indices (logIndex) of the events to be relayed (sorted by the requestor). The array should contain at most 50 indices. If empty, it indicates all events in order capped by 50.
+     */
+    struct RequestBody {
+        bytes32 transactionHash;
+        uint16 requiredConfirmations;
+        bool provideInput;
+        bool listEvents;
+        uint32[] logIndices;
+    }
+```
+
+- `TransactionHash`: Hash of the transaction you are observing.
+
+- `RequiredConfirmations`: The number of blocks after the transaction that you are requesting must be visible to the attestation client to consider this transaction as finalized. Unlike the previous payment (or block height) attestation, where the amount of block confirmations was set per chain, this type is more flexible and allows you to choose how many confirmations you want, thus adapting your security assumptions (about the other chain).
+
+- `provideInput`: Indicates if the response should also contain the input of the transaction. You can always include the input, but this might produce a large data structure that you will need to supply when using this transaction. If you don't need this data, it is advisable not to include it to avoid additional gas costs both for supplying it to the verification contract and making a transaction. However, it might be useful, for example, to check what contract was deployed or what was the top-level method that was executed.
+
+- `listEvents`: Events are an important and powerful tool when interacting with EVM chains, but including them adds additional costs (the same as with input). If you don't need events, you can save some gas costs by excluding them.
+
+- `logIndices`: An array of log indices (in any order, with repetitions allowed) for which events (logs) you want included as the result of your transaction attestation. As before, don't include events you don't need for gas reasons. Importantly, leaving this array empty will include all events emitted in the same order as they were emitted. The indices are the block log indices, indicating the event index in the whole block (not just the transactions you are attesting to), but if you supply an index outside your transaction range, the corresponding event won't be included. The amount of returned events is limited to 50, so if you want to attest that you have included all the events in a single transaction, make sure it has 49 of them or less.
+
+{/* (<!--TODO: link do definicije tega-->) */}
+
+## Response Body
+
+The `ResponseBody` is defined as:
+
+```solidity
+    /**
+     * @notice Response body for EVM transaction attestation type
+     * @custom:below The fields are in line with [transaction](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_gettransactionbyhash) provided by EVM node.
+     * @param blockNumber Number of the block in which the transaction is included.
+     * @param timestamp Timestamp of the block in which the transaction is included.
+     * @param sourceAddress The address (from) that signed the transaction.
+     * @param isDeployment Indicate whether it is a contract creation transaction.
+     * @param receivingAddress The address (to) of the receiver of the initial transaction. Zero address if `isDeployment` is `true`.
+     * @param value The value transferred by the initial transaction in wei.
+     * @param input If `provideInput`, this is the data send along with the initial transaction. Otherwise it is the default value `0x00`.
+     * @param status Status of the transaction 1 - success, 0 - failure.
+     * @param events If `listEvents` is `true`, an array of the requested events. Sorted by the logIndex in the same order as `logIndices`. Otherwise, an empty array.
+     */
+    struct ResponseBody {
+        uint64 blockNumber;
+        uint64 timestamp;
+        address sourceAddress;
+        bool isDeployment;
+        address receivingAddress;
+        uint256 value;
+        bytes input;
+        uint8 status;
+        Event[] events;
+    }
+
+    /**
+     * @notice Event log record
+     * @custom:above An `Event` is a struct with the following fields:
+     * @custom:below The fields are in line with [EVM event logs](https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getfilterchanges).
+     * @param logIndex The consecutive number of the event in block.
+     * @param emitterAddress The address of the contract that emitted the event.
+     * @param topics An array of up to four 32-byte strings of indexed log arguments.
+     * @param data Concatenated 32-byte strings of non-indexed log arguments. At least 32 bytes long.
+     * @param removed It is `true` if the log was removed due to a chain reorganization and `false` if it is a valid log.
+     */
+    struct Event {
+        uint32 logIndex;
+        address emitterAddress;
+        bytes32[] topics;
+        bytes data;
+        bool removed;
+    }
+```
+
+The response body struct contains the following fields:
+
+- `blockNumber`: Number of the block in which the transaction is included.
+
+- `timestamp`: Timestamp of the block the transaction was included in.
+
+- `sourceAddress`: Address signing the transaction. Since Flare is an EVM chain, this is nicely mapped to the address type directly, and you don't have to operate with strings or address hashes.
+
+- `isDeployment`: Flag indicating if this transaction was a contract deployment.
+
+- `receivingAddress`: The `to` address of the transaction (this is a zero address if you are dealing with contract deployment). Keep in mind, this can also be a contract address (if the toplevel transaction is a contract call) and this is where things get interesting.
+
+- `value`: The value (in wei) transferred by the toplevel transaction. Values transferred by internal transactions are not tracked by this type, but if proper events are emitted you can use them to follow this. If there is no value, the value has a default `0` value.
+
+- `input`: The input provided with a transaction (useful for contract calls). If no input is provided, a default value of zero bytes is used.
+
+- `status`: The status of the transaction, which can either be `1` indicating success or `0` indicating failure (without failure reason).
+
+- `events`: Array of requested events in the same order as requested.
+
+Each event has the following fields:
+
+- `logIndex`: The consecutive number of the event in the block.
+
+- `emitterAddress`: The address of the contract that emitted the event.
+
+- `topics`: An array of up to four 32-byte strings of indexed log arguments.
+
+- `data`: Concatenated 32-byte strings of non-indexed log arguments. This (together with topics) is usually the part of an event that you will decode to get the information you need. Keep in mind, this is event-specific and you will need to know the event structure to decode it properly.
+
+- `removed`: It is `true` if the log was removed due to a chain reorganization (transaction was mined, but the block was not on the main chain) and `false` if it is a valid log.
 
 ## Examples
 
@@ -26,7 +291,7 @@ Now that you know how to request an attestation and what you are getting in retu
 
 This deployment script will also allow you to understand exactly how long the waiting for each phase takes, which is something not previously focused on.
 
-### Simple ETH transfer
+### Simple transaction with a value
 
 Let's start small. You will create a smart contract that just tallies the top-level amounts transferred to a designated address on Sepolia.
 
@@ -400,7 +665,7 @@ Let's upgrade the contract from before to tally ERC20 payments on external chain
 
 {/* TODO: Here, we will create a simple contract on Sepolia and follow the events it emits, just to see another example of how events function. --> */}
 
-### Decoding transaction data
+### Decoding top-level transaction data
 
 You now know how to listen to events and decode them. Let's see how we can also decode top-level transaction data. Here, you will verify whether the top-level transaction really did increase the ERC20 allowance and see how to get top-level calldata.
 
@@ -455,7 +720,7 @@ By now, you should be able to see that the emitted event was the `Approval` even
 
 What we want to take a look at is the `input` field. It contains the calldata of the top-level transaction. Since you know the signature of this method, you can easily decode it and get the result you expect.
 
-### Observing state through events
+### Observing State Through Events
 
 We do not have direct access to state on the other chain, but we can circumvent this using events. If we deploy a contract on the external chain that emits events pertaining to the state it can read (at that block) from the chain, we can easily observe this state (frozen at that point in time) on Flare. Let's see how we can easily observe the current status of ERC20 allowance.
 
@@ -540,7 +805,7 @@ We can see that the event was emitted and all the calldata was properly decoded.
 
 It means that you can now observe any state on the external blockchain without having to modify the contract on the external blockchain. This allows you to easily observe USDT movements, current token balances, and other state changes on the external blockchain.
 
-### State observation and decoding
+### State Observation and Decoding
 
 The last example showed how you can observe the state on another blockchain and use it in TypeScript. Now, we will also see how to properly decode the event in a smart contract. We will use the same contract onchain as before to emit events, `CallResult`, and then decode them in the contract. The result will then be passed to the contract on Coston, which will first decode the full event, ensure that the correct function was called, and then decode the returned data (which is the state you want to observe).
 
