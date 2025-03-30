@@ -2114,3 +2114,214 @@ tr:last-child td {
 [data-theme="dark"] .deploy-tools-card-description {
   color: var(--ifm-menu-color);
 }
+
+/* Enhanced interactive styles for deploy-tools cards */
+
+/* Base card styles */
+.deploy-tools-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 1.5rem;
+  border-radius: 0.625rem;
+  background-color: var(--ifm-card-background-color);
+  color: inherit;
+  text-decoration: none;
+  transition: all 0.25s ease-in-out;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid transparent;
+}
+
+/* Active/hover state for card */
+.deploy-tools-card:hover,
+.deploy-tools-card-active {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  text-decoration: none;
+  border-color: var(--ifm-color-primary-lightest);
+}
+
+[data-theme="dark"] .deploy-tools-card:hover,
+[data-theme="dark"] .deploy-tools-card-active {
+  border-color: var(--ifm-color-primary-darker);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* Card icon container */
+.deploy-tools-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin-right: 1rem;
+  flex-shrink: 0;
+  transition: transform 0.3s ease;
+}
+
+/* Card icon animation on hover */
+.deploy-tools-icon-active {
+  transform: scale(1.1);
+}
+
+/* Card content styles */
+.deploy-tools-card-content {
+  flex: 1;
+  position: relative;
+}
+
+/* Card title styles */
+.deploy-tools-card-title {
+  font-size: 1.25rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: inherit;
+  transition: color 0.2s ease;
+}
+
+.deploy-tools-card:hover .deploy-tools-card-title,
+.deploy-tools-card-active .deploy-tools-card-title {
+  color: var(--ifm-color-primary);
+}
+
+/* Card description */
+.deploy-tools-card-description {
+  font-size: 0.9rem;
+  color: var(--ifm-navbar-link-color);
+  margin-bottom: 0;
+  line-height: 1.4;
+  transition: opacity 0.2s ease;
+}
+
+.deploy-tools-card:hover .deploy-tools-card-description,
+.deploy-tools-card-active .deploy-tools-card-description {
+  opacity: 0.85;
+}
+
+/* Learn more text that appears on hover */
+.deploy-tools-card-learn-more {
+  display: inline-block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--ifm-color-primary);
+  margin-top: 0.75rem;
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeInUp 0.3s forwards;
+}
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Arrow indicator */
+.deploy-tools-card-arrow {
+  margin-left: 1rem;
+  font-size: 1.25rem;
+  opacity: 0;
+  transition: all 0.3s ease-in-out;
+  transform: translateX(-5px);
+  color: var(--ifm-color-primary);
+}
+
+.deploy-tools-card:hover .deploy-tools-card-arrow,
+.deploy-tools-card-active .deploy-tools-card-arrow {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Progress indicator line that appears at card bottom on hover */
+.deploy-tools-card:hover::after,
+.deploy-tools-card-active::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: var(--ifm-color-primary);
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: progressLine 0.4s forwards ease-out;
+}
+
+@keyframes progressLine {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* Grid layout for cards */
+.deploy-tools-cards-grid {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+/* Responsive styles */
+@media (max-width: 996px) {
+  .deploy-tools-cards-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .deploy-tools-cards-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Minimal card styles with wider layout options */
+.deploy-tools-card-minimal {
+  padding: 1.25rem 1.75rem;
+  justify-content: flex-start;
+}
+
+.deploy-tools-card-minimal .deploy-tools-card-icon {
+  width: 42px;
+  height: 42px;
+  margin-right: 1.5rem;
+}
+
+.deploy-tools-card-minimal .deploy-tools-card-title {
+  margin-bottom: 0;
+  font-size: 1.3rem;
+}
+
+.deploy-tools-card-minimal .deploy-tools-card-content {
+  display: flex;
+  align-items: center;
+}
+
+/* Wide card style that takes more horizontal space */
+.deploy-tools-card-wide {
+  min-width: 250px;
+}
+
+/* Grid adjustments for wider cards */
+@media (min-width: 769px) {
+  .deploy-tools-cards-grid:has(.deploy-tools-card-wide) {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .deploy-tools-card-wide {
+    min-width: 300px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .deploy-tools-card-wide {
+    min-width: 350px;
+  }
+}
+
+/* Add some breathing room */
+.deploy-tools-cards-grid {
+  margin-top: 1.5rem;
+  margin-bottom: 2.5rem;
+}
