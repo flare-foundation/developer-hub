@@ -41,13 +41,13 @@ contract FtsoV2FeedTracker {
      * @return _feedValue The latest price value of the feed in wei.
      * @return _timestamp The timestamp of the last update for the feed.
      */
-    function getFeedValueByIndexInWei(uint256 _index)
-        external
-        payable
-        returns (uint256 _feedValue, uint64 _timestamp)
-    {
+    function getFeedValueByIndexInWei(
+        uint256 _index
+    ) external payable returns (uint256 _feedValue, uint64 _timestamp) {
         // Retrieve feed value and timestamp from the FtsoV2 contract
-        (_feedValue, _timestamp) = ftsoV2.getFeedByInWei{value: msg.value}(_index);
+        (_feedValue, _timestamp) = ftsoV2.getFeedByInWei{value: msg.value}(
+            _index
+        );
 
         // Store the feed value and timestamp in the contract's storage
         feedDataByIndex[_index] = FeedInfo({
@@ -64,5 +64,4 @@ contract FtsoV2FeedTracker {
         // Emit an event to log the feed retrieval
         emit FeedFetched(_index, _feedValue, _timestamp);
     }
-
 }

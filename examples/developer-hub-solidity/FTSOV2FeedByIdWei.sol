@@ -11,7 +11,8 @@ import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/costo
  */
 contract FtsoV2FeedTracker {
     TestFtsoV2Interface internal ftsoV2;
-    bytes21 public feedId = bytes21(0x01464c522f55534400000000000000000000000000); // FLR/USD
+    bytes21 public feedId =
+        bytes21(0x01464c522f55534400000000000000000000000000); // FLR/USD
 
     // Event to track feed retrieval
     event FeedFetched(bytes21 feedId, uint256 valueInWei, uint64 timestamp);
@@ -22,9 +23,9 @@ contract FtsoV2FeedTracker {
      * @return _timestamp The timestamp of the last update for the feed.
      */
     function getFeedValueByIdWei()
-    external
-    payable
-    returns (uint256 _feedValue, uint64 _timestamp)
+        external
+        payable
+        returns (uint256 _feedValue, uint64 _timestamp)
     {
         /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
         ftsoV2 = ContractRegistry.getTestFtsoV2();
@@ -34,5 +35,4 @@ contract FtsoV2FeedTracker {
         // Emit an event to log the feed retrieval
         emit FeedFetched(feedId, _feedValue, _timestamp);
     }
-
 }

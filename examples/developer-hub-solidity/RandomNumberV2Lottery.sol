@@ -19,7 +19,12 @@ contract LotteryWithRandomNumber {
     uint256 public lotteryEndTimestamp;
 
     // Event to log lottery results
-    event LotteryDrawn(uint256 indexed lotteryId, address winner, uint256 randomNumber, uint256 timestamp);
+    event LotteryDrawn(
+        uint256 indexed lotteryId,
+        address winner,
+        uint256 randomNumber,
+        uint256 timestamp
+    );
 
     /**
      * @notice Initializes the contract with the address of the random number generator.
@@ -44,7 +49,10 @@ contract LotteryWithRandomNumber {
      * @param duration The duration of the lottery in seconds.
      */
     function startLottery(uint256 duration) external {
-        require(participants.length == 0, "Previous lottery must be concluded first");
+        require(
+            participants.length == 0,
+            "Previous lottery must be concluded first"
+        );
         lotteryId++;
         lotteryEndTimestamp = block.timestamp + duration;
     }
@@ -54,11 +62,18 @@ contract LotteryWithRandomNumber {
      * Requires the lottery to be over and retrieves a secure random number to select the winner.
      */
     function drawLottery() external {
-        require(block.timestamp >= lotteryEndTimestamp, "Lottery is still ongoing");
+        require(
+            block.timestamp >= lotteryEndTimestamp,
+            "Lottery is still ongoing"
+        );
         require(participants.length > 0, "No participants in the lottery");
 
         // Get the current random number and its properties
-        (uint256 randomNumber, bool isSecureRandom, uint256 randomTimestamp) = randomNumberGenerator.getRandomNumber();
+        (
+            uint256 randomNumber,
+            bool isSecureRandom,
+            uint256 randomTimestamp
+        ) = randomNumberGenerator.getRandomNumber();
 
         // Use the random number to select a winner
         uint256 winnerIndex = randomNumber % participants.length;
@@ -84,7 +99,11 @@ contract LotteryWithRandomNumber {
      * @return currentLotteryId The current lottery ID.
      * @return endTimestamp The timestamp when the lottery ends.
      */
-    function getLotteryStatus() external view returns (uint256 currentLotteryId, uint256 endTimestamp) {
+    function getLotteryStatus()
+        external
+        view
+        returns (uint256 currentLotteryId, uint256 endTimestamp)
+    {
         return (lotteryId, lotteryEndTimestamp);
     }
 }

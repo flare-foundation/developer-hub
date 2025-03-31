@@ -12,7 +12,7 @@ import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/costo
 contract FtsoV2AnchorFeedConsumer {
     TestFtsoV2Interface internal ftsoV2;
     mapping(uint32 => mapping(bytes21 => TestFtsoV2Interface.FeedData))
-    public provenFeeds;
+        public provenFeeds;
 
     function savePrice(
         TestFtsoV2Interface.FeedDataWithProof calldata data
