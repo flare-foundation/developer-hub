@@ -25,22 +25,25 @@ contract FtsoV2FeedVerifier {
      * @param _feedData The FeedDataWithProof structure containing feed data and proof.
      * @return isValid Returns true if the feed data is valid, false otherwise.
      */
-    function verifyFeedData(FtsoV2Interface.FeedDataWithProof calldata _feedData)
-        external
-        view
-        returns (bool isValid)
-    {
+    function verifyFeedData(
+        FtsoV2Interface.FeedDataWithProof calldata _feedData
+    ) external view returns (bool isValid) {
         // Pack the relevant feed data fields into a hash
-        bytes32 leaf = keccak256(abi.encodePacked(
-            _feedData.body.votingRoundId,
-            _feedData.body.id,
-            _feedData.body.value,
-            _feedData.body.turnoutBIPS,
-            _feedData.body.decimals
-        ));
+        bytes32 leaf = keccak256(
+            abi.encodePacked(
+                _feedData.body.votingRoundId,
+                _feedData.body.id,
+                _feedData.body.value,
+                _feedData.body.turnoutBIPS,
+                _feedData.body.decimals
+            )
+        );
 
         // Verify the Merkle proof against the leaf and root
-        isValid = MerkleProof.verify(_feedData.proof, _feedData.merkleRoot, leaf);
+        isValid = MerkleProof.verify(
+            _feedData.proof,
+            _feedData.merkleRoot,
+            leaf
+        );
     }
-
 }

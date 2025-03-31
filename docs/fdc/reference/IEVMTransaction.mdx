@@ -4,7 +4,22 @@ sidebar_position: 9
 description: Relay a transaction from an EVM chain.
 ---
 
+An interface to relay and verify transactions from EVM-compatible blockchains.
+
 Sourced from `IEVMTransaction.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/fdc/IEVMTransaction.sol).
+
+## Overview
+
+The IEVMTransaction interface enables smart contracts on Flare networks to access and verify transaction data from other EVM-compatible blockchains. This attestation type provides access to transaction details, including associated events (logs), allowing cross-chain verification and integration of data from external EVM chains.
+
+## Supported Chains
+
+| Network Type | Supported Chains                                                                                     |
+| ------------ | ---------------------------------------------------------------------------------------------------- |
+| **Mainnet**  | `ETH` (Ethereum), `FLR` (Flare), `SGB` (Songbird)                                                    |
+| **Testnet**  | `testETH` (Ethereum Sepolia), `testFLR` (Flare Testnet Coston2), `testSGB` (Songbird Testnet Coston) |
+
+## Interface Definition
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -137,6 +152,198 @@ interface IEVMTransaction {
         bytes32[] topics;
         bytes data;
         bool removed;
+    }
+}
+```
+
+## Structs
+
+### Request
+
+Toplevel request structure.
+
+#### Parameters
+
+- `attestationType`: ID of the attestation type (0x06 for EVMTransaction)
+- `sourceId`: ID of the data source (e.g., ETH, FLR, SGB)
+- `messageIntegrityCode`: MessageIntegrityCode derived from the expected response
+- `requestBody`: Data defining the request
+
+### Response
+
+Toplevel response structure.
+
+#### Parameters
+
+- `attestationType`: Extracted from the request
+- `sourceId`: Extracted from the request
+- `votingRound`: The ID of the State Connector round in which the request was considered
+- `lowestUsedTimestamp`: The lowest timestamp used to generate the response
+- `requestBody`: Extracted from the request
+- `responseBody`: Data defining the response
+
+### Proof
+
+Toplevel proof structure for verification.
+
+#### Parameters
+
+- `merkleProof`: Merkle proof corresponding to the attestation response
+- `data`: Attestation response
+
+### RequestBody
+
+Request body specific to EVM transaction verification.
+
+#### Parameters
+
+- `transactionHash`: The hash of the transaction to relay
+- `requiredConfirmations`: Number of confirmations required for the block to be considered final
+- `provideInput`: If true, the transaction input data will be included in the response
+- `listEvents`: If true, events specified by logIndices will be included in the response
+- `logIndices`: Array of event indices to be relayed (max 50), if empty and listEvents is true, includes all events up to 50
+
+### ResponseBody
+
+Response body containing transaction details.
+
+#### Parameters
+
+- `blockNumber`: Block number containing the transaction
+- `timestamp`: Timestamp of the block containing the transaction
+- `sourceAddress`: Address that signed the transaction (from)
+- `isDeployment`: True if the transaction created a contract
+- `receivingAddress`: Address receiving the transaction (to), zero address if isDeployment is true
+- `value`: Value transferred in wei
+- `input`: Transaction input data if provideInput is true, otherwise "0x00"
+- `status`: Transaction status (1 = success, 0 = failure)
+- `events`: Array of requested events if listEvents is true, otherwise empty
+
+### Event
+
+Structure representing a transaction event (log).
+
+#### Parameters
+
+- `logIndex`: Index of the event within the block
+- `emitterAddress`: Contract address that emitted the event
+- `topics`: Array of indexed event parameters (up to 4)
+- `data`: Non-indexed event parameters, concatenated as 32-byte strings
+- `removed`: True if the event was removed due to a chain reorganization
+
+## Implementation Notes
+
+- Attestation ID: `0x06`
+- The `lowestUsedTimestamp` parameter uses the value of `timestamp`
+- The `lutlimit` (Lowest Used Timestamp limit) is `0x41eb00` (4,300,800 seconds = ~50 days) for all supported chains
+- Events are indexed at the block level, not at the transaction level
+- Maximum of 50 events can be included in a single attestation
+
+## Event Handling
+
+When working with events, it's important to remember:
+
+1. Events (logs) are indexed at the **block level**, not at the transaction level
+2. The order of events in `logIndices` should follow the requirements of the consuming contract
+3. If `listEvents` is set to false, `logIndices` must be an empty array
+4. If `listEvents` is true but `logIndices` is empty, all events up to a maximum of 50 will be included
+5. Events are returned in the same order as specified in `logIndices`
+
+## Usage Example
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/IFdcHub.sol";
+import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/IFdcVerification.sol";
+import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/fdc/IEVMTransaction.sol";
+
+contract EVMTransactionVerifier {
+    IFdcHub private fdcHub;
+    IFdcVerification private fdcVerification;
+
+    bytes32 private constant ATTESTATION_TYPE_EVM_TX = 0x0600000000000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant SOURCE_ID_ETH = 0x4554480000000000000000000000000000000000000000000000000000000000;
+
+    // Event signatures we're interested in
+    bytes32 private constant EVENT_TRANSFER = 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef;
+
+    constructor(address _fdcHubAddress, address _fdcVerificationAddress) {
+        fdcHub = IFdcHub(_fdcHubAddress);
+        fdcVerification = IFdcVerification(_fdcVerificationAddress);
+    }
+
+    // Request verification of an EVM transaction with specific events
+    function requestTransactionVerification(
+        bytes32 transactionHash,
+        uint16 requiredConfirmations,
+        bool includeInput,
+        uint32[] calldata eventIndices
+    ) external payable {
+        // Create request body
+        IEVMTransaction.RequestBody memory requestBody = IEVMTransaction.RequestBody({
+            transactionHash: transactionHash,
+            requiredConfirmations: requiredConfirmations,
+            provideInput: includeInput,
+            listEvents: eventIndices.length > 0,
+            logIndices: eventIndices
+        });
+
+        // Encode the full request
+        bytes memory encodedRequest = abi.encode(
+            ATTESTATION_TYPE_EVM_TX,
+            SOURCE_ID_ETH,
+            bytes32(0), // messageIntegrityCode (would need to be calculated properly)
+            requestBody
+        );
+
+        // Submit the request with payment
+        fdcHub.requestAttestation{value: msg.value}(encodedRequest);
+    }
+
+    // Verify a provided proof and extract ERC-20 transfer information
+    function verifyERC20Transfer(IEVMTransaction.Proof calldata _proof)
+        external view
+        returns (
+            bool success,
+            address tokenContract,
+            address from,
+            address to,
+            uint256 amount
+        )
+    {
+        // Verify the proof using FdcVerification
+        bool proofVerified = fdcVerification.verifyEVMTransaction(_proof);
+
+        if (proofVerified && _proof.data.responseBody.status == 1) {
+            // Look for Transfer events in the transaction
+            IEVMTransaction.Event[] memory events = _proof.data.responseBody.events;
+
+            for (uint i = 0; i < events.length; i++) {
+                IEVMTransaction.Event memory evt = events[i];
+
+                // Check if this is a Transfer event (topic[0] is the event signature)
+                if (evt.topics.length >= 3 && evt.topics[0] == EVENT_TRANSFER) {
+                    tokenContract = evt.emitterAddress;
+
+                    // ERC-20 Transfer(address indexed from, address indexed to, uint256 amount)
+                    // topics[1] is the first indexed parameter (from address)
+                    // topics[2] is the second indexed parameter (to address)
+                    // The addresses are padded to 32 bytes, so we need to extract them
+                    from = address(uint160(uint256(evt.topics[1])));
+                    to = address(uint160(uint256(evt.topics[2])));
+
+                    // The amount is in the data field for non-indexed parameters
+                    // It's a single uint256 value (32 bytes)
+                    amount = abi.decode(evt.data, (uint256));
+
+                    return (true, tokenContract, from, to, amount);
+                }
+            }
+        }
+
+        return (false, address(0), address(0), address(0), 0);
     }
 }
 ```
