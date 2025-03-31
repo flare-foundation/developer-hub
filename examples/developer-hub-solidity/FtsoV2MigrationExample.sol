@@ -17,11 +17,11 @@ contract FtsoV2FeedConsumer {
     ) internal pure returns (bytes21) {
         return
             bytes21(
-            bytes.concat(
-                bytes1(uint8(1)), // Category 1 for crypto feeds
-                bytes(string.concat(_name, "/USD")) // Append "/USD" to the feed name
-            )
-        );
+                bytes.concat(
+                    bytes1(uint8(1)), // Category 1 for crypto feeds
+                    bytes(string.concat(_name, "/USD")) // Append "/USD" to the feed name
+                )
+            );
     }
 
     /**
@@ -34,13 +34,13 @@ contract FtsoV2FeedConsumer {
     function getFtsoV2CurrentFeedValues(
         string[] memory _feedNames
     )
-    external
-    payable
-    returns (
-        uint256[] memory _feedValues,
-        int8[] memory _decimals,
-        uint64 _timestamp
-    )
+        external
+        payable
+        returns (
+            uint256[] memory _feedValues,
+            int8[] memory _decimals,
+            uint64 _timestamp
+        )
     {
         bytes21[] memory feedIds = new bytes21[](_feedNames.length);
 
@@ -70,9 +70,9 @@ contract FtsoV2FeedConsumer {
     function getFtsoV2CurrentFeedValuesInWei(
         string[] memory _feedNames
     )
-    external
-    payable
-    returns (uint256[] memory _feedValues, uint64 _timestamp)
+        external
+        payable
+        returns (uint256[] memory _feedValues, uint64 _timestamp)
     {
         bytes21[] memory feedIds = new bytes21[](_feedNames.length);
 

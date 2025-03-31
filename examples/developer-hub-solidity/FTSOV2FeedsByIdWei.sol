@@ -14,9 +14,9 @@ contract FtsoV2FeedConsumer {
 
     // Feed IDs, see https://dev.flare.network/ftso/feeds for full list
     bytes21[] public feedIds = [
-    bytes21(0x01464c522f55534400000000000000000000000000), // FLR/USD
-    bytes21(0x014254432f55534400000000000000000000000000), // BTC/USD
-    bytes21(0x014554482f55534400000000000000000000000000) // ETH/USD
+        bytes21(0x01464c522f55534400000000000000000000000000), // FLR/USD
+        bytes21(0x014254432f55534400000000000000000000000000), // BTC/USD
+        bytes21(0x014554482f55534400000000000000000000000000) // ETH/USD
     ];
 
     // Event to log feed values retrieval
