@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import ThemedImage from "@theme/ThemedImage";
 import useBaseUrl from "@docusaurus/useBaseUrl";
 import Link from "@docusaurus/Link";
@@ -11,6 +11,12 @@ import FAssets from "@site/static/img/FASSETS_new.svg";
 import FTSO from "@site/static/img/FTSO_new.svg";
 
 export default function FlareLandingPage() {
+  // Interactive feature states
+  const [completedTyping, setCompletedTyping] = useState(false);
+  const [typedText, setTypedText] = useState("");
+  const fullText = "Flare is the blockchain for data ☀️";
+
+  // Resource data
   const developmentResources = [
     {
       text: "JavaScript",
@@ -50,6 +56,19 @@ export default function FlareLandingPage() {
     },
   ];
 
+  // Typing effect for hero title
+  useEffect(() => {
+    if (typedText.length < fullText.length) {
+      const timeout = setTimeout(() => {
+        setTypedText(fullText.slice(0, typedText.length + 1));
+      }, 100);
+      return () => clearTimeout(timeout);
+    } else if (typedText.length === fullText.length && !completedTyping) {
+      setCompletedTyping(true);
+    }
+  }, [typedText, completedTyping]);
+
+  // Helper components
   function ResourceColumn({ title, items }) {
     return (
       <div className="flare-resource-column">
@@ -69,12 +88,55 @@ export default function FlareLandingPage() {
     );
   }
 
+  function ProductCard({ title, icon: Icon, description, link }) {
+    const [isHovered, setIsHovered] = useState(false);
+
+    return (
+      <Link
+        to={link}
+        className="flare-product-link"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <div className={`flare-product-card ${isHovered ? "is-hovered" : ""}`}>
+          <div className="flare-product-header">
+            <div className="flare-product-title-container">
+              <Icon className="flare-product-svg" role="img" />
+              <span className="flare-product-title">{title}</span>
+            </div>
+            <div className="flare-product-arrow">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M9 18L15 12L9 6"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+          </div>
+          <p className="flare-product-description no-underline">
+            {description}
+          </p>
+        </div>
+      </Link>
+    );
+  }
+
   return (
     <div className="flare-landing-container">
       <div className="flare-hero-section">
         <Heading as="h1" className="flare-hero-title">
-          <span className="flare-highlight">Flare</span> is the blockchain for
-          data <span className="flare-sun-emoji">☀️</span>
+          <span className="flare-highlight">Flare</span>{" "}
+          <span>is {typedText.slice(8)}</span>
+          {!completedTyping && <span className="flare-cursor"></span>}
         </Heading>
         <p className="flare-hero-subtitle">
           The decentralized origin for Flare builders.
@@ -100,101 +162,24 @@ export default function FlareLandingPage() {
           Products
         </Heading>
         <div className="flare-products-grid">
-          <Link to="/ftso/overview" className="flare-product-link">
-            <div className="flare-product-card">
-              <div className="flare-product-header">
-                <div className="flare-product-title-container">
-                  <FTSO className="flare-product-svg" role="img" />
-                  <span className="flare-product-title">FTSOv2</span>
-                </div>
-                <div className="flare-product-arrow">
-                  <svg
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M9 18L15 12L9 6"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </div>
-              </div>
-              <p className="flare-product-description">
-                Flare Time Series Oracle: Secure, decentralized price and data
-                feeds updating every ≈1.8 seconds.
-              </p>
-            </div>
-          </Link>
-
-          <Link to="/fdc/overview" className="flare-product-link">
-            <div className="flare-product-card">
-              <div className="flare-product-header">
-                <div className="flare-product-title-container">
-                  <DataConnector className="flare-product-svg" role="img" />
-                  <span className="flare-product-title">FDC</span>
-                </div>
-                <div className="flare-product-arrow">
-                  <svg
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M9 18L15 12L9 6"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </div>
-              </div>
-              <p className="flare-product-description">
-                Flare Data Connector: Access high-integrity data from other
-                chains and Web2 APIs securely.
-              </p>
-            </div>
-          </Link>
-
-          <Link to="/fassets/overview" className="flare-product-link">
-            <div className="flare-product-card">
-              <div className="flare-product-header">
-                <div className="flare-product-title-container">
-                  <FAssets className="flare-product-svg" role="img" />
-                  <span className="flare-product-title">FAssets</span>
-                </div>
-                <div className="flare-product-arrow">
-                  <svg
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M9 18L15 12L9 6"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </div>
-              </div>
-              <p className="flare-product-description">
-                Utilize assets from other chains on Flare through secure,
-                decentralized protocols.
-              </p>
-            </div>
-          </Link>
+          <ProductCard
+            title="FTSOv2"
+            icon={FTSO}
+            description="Flare Time Series Oracle: Secure, decentralized price and data feeds updating every ≈1.8 seconds."
+            link="/ftso/overview"
+          />
+          <ProductCard
+            title="FDC"
+            icon={DataConnector}
+            description="Flare Data Connector: Access high-integrity data from other chains and Web2 APIs securely."
+            link="/fdc/overview"
+          />
+          <ProductCard
+            title="FAssets"
+            icon={FAssets}
+            description="Utilize assets from other chains on Flare through secure, decentralized protocols."
+            link="/fassets/overview"
+          />
         </div>
       </div>
 
@@ -202,76 +187,113 @@ export default function FlareLandingPage() {
         <Heading as="h2" className="flare-section-title">
           Set Up, Build & Deploy with Flare
         </Heading>
-        <div className="flare-networks-table-container">
-          <table className="flare-networks-table">
-            <thead>
-              <tr>
-                <th className="network-col">Network</th>
-                <th className="mainnet-col">Flare Mainnet</th>
-                <th className="testnet-col">Flare Testnet (Coston2)</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>RPC Endpoint</td>
-                <td>
-                  <div className="flare-network-item">
-                    <span className="network-value">
-                      https://flare.rpc.thirdweb.com
-                    </span>
-                    <CopyButton textToCopy="https://flare.rpc.thirdweb.com" />
-                  </div>
-                </td>
-                <td>
-                  <div className="flare-network-item">
-                    <span className="network-value">
-                      https://flare-testnet-coston2.rpc.thirdweb.com
-                    </span>
-                    <CopyButton textToCopy="https://flare-testnet-coston2.rpc.thirdweb.com" />
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td>Chain ID</td>
-                <td>
-                  <div className="flare-network-item">
-                    <span className="network-value">14</span>
-                    <CopyButton textToCopy="14" />
-                  </div>
-                </td>
-                <td>
-                  <div className="flare-network-item">
-                    <span className="network-value">114</span>
-                    <CopyButton textToCopy="114" />
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td>Currency</td>
-                <td>FLR</td>
-                <td>C2FLR</td>
-              </tr>
-              <tr>
-                <td>Block Explorer</td>
-                <td>
-                  <div className="flare-network-item">
-                    <span className="network-value">
-                      mainnet.flarescan.com/
-                    </span>
-                    <CopyButton textToCopy="https://mainnet.flarescan.com/" />
-                  </div>
-                </td>
-                <td>
-                  <div className="flare-network-item">
-                    <span className="network-value">
-                      coston2-explorer.flare.network/
-                    </span>
-                    <CopyButton textToCopy="https://coston2-explorer.flare.network/" />
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+
+        <div className="flare-networks-tables">
+          <div className="flare-networks-table-container">
+            <div className="flare-table-title">Flare Mainnet</div>
+            <table className="flare-networks-table">
+              <tbody>
+                <tr>
+                  <td className="network-col">RPC Endpoint</td>
+                  <td className="network-value-col">
+                    <div className="flare-network-item">
+                      <code className="network-value">
+                        https://flare.rpc.thirdweb.com
+                      </code>
+                      <span className="copy-button-wrapper">
+                        <CopyButton textToCopy="https://flare.rpc.thirdweb.com" />
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="network-col">Chain ID</td>
+                  <td className="network-value-col">
+                    <div className="flare-network-item">
+                      <code className="network-value">14</code>
+                      <span className="copy-button-wrapper">
+                        <CopyButton textToCopy="14" />
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="network-col">Currency</td>
+                  <td className="network-value-col">
+                    <code className="network-value">FLR</code>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="network-col">Block Explorer</td>
+                  <td className="network-value-col">
+                    <div className="flare-network-item">
+                      <code className="network-value">
+                        mainnet.flarescan.com/
+                      </code>
+                      <span className="copy-button-wrapper">
+                        <CopyButton textToCopy="https://mainnet.flarescan.com/" />
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flare-networks-table-container">
+            <div className="flare-table-title">Flare Testnet (Coston2)</div>
+            <table className="flare-networks-table">
+              <colgroup>
+                <col style={{ width: "30%" }} />
+                <col style={{ width: "70%" }} />
+              </colgroup>
+              <tbody>
+                <tr>
+                  <td className="network-col">RPC Endpoint</td>
+                  <td className="network-value-col">
+                    <div className="flare-network-item">
+                      <code className="network-value">
+                        https://flare-testnet-coston2.rpc.thirdweb.com
+                      </code>
+                      <span className="copy-button-wrapper">
+                        <CopyButton textToCopy="https://flare-testnet-coston2.rpc.thirdweb.com" />
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="network-col">Chain ID</td>
+                  <td className="network-value-col">
+                    <div className="flare-network-item">
+                      <code className="network-value">114</code>
+                      <span className="copy-button-wrapper">
+                        <CopyButton textToCopy="114" />
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="network-col">Currency</td>
+                  <td className="network-value-col">
+                    <code className="network-value">C2FLR</code>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="network-col">Block Explorer</td>
+                  <td className="network-value-col">
+                    <div className="flare-network-item">
+                      <code className="network-value">
+                        coston2-explorer.flare.network/
+                      </code>
+                      <span className="copy-button-wrapper">
+                        <CopyButton textToCopy="https://coston2-explorer.flare.network/" />
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
