@@ -328,9 +328,10 @@ function parseAttestationRequest(
 }
 ```
 
-:::info
+<details>
+<summary>Understanding the `abiEncodedRequest`.</summary>
 
-If everything went right, the `abiEncodedRequest` should look something like this.
+If everything went right, the `abiEncodedRequest` should look something like this (minus the line breaks - we split it after the `0x` symbol and then after every 64 characters (32 bytes), for the sake of clarity).
 
 ```
 0x
@@ -351,9 +352,19 @@ Let's break it down line by line:
 - **Third line:** message integrity code (MIC), a hash of the whole response salted with a string `"Flare"`, ensures the integrity of the attestation
 - **Remaining lines:** ABI encoded `AddressValidity.RequestBody` Solidity struct
 
-:::
-
 What this demonstrates is that, with some effort, the `abiEncodedRequest` can be constructed manually.
+</details>
+
+We write the `abiEncodedRequest` to a file (`data/AddressValidity_abiEncodedRequest.txt`) to it in the next step.
+
+```solidity title="scrip/fdcExample/AddressValidity.s.sol"
+Base.writeToFile(
+    dirPath,
+    string.concat(attestationTypeName, "_abiEncodedRequest"),
+    StringsBase.toHexString(response.abiEncodedRequest),
+    true
+);
+```
 
 ## Submit request to FDC
 
@@ -445,10 +456,12 @@ function submitAttestationRequest(
 
 This can be done within the existing broadcast or in a new one (as done in the demo repository for better code organization).
 
+Again, we write the `roundId` to a file (`data/AddressValidity_roundId.txt`).
+
 ## Wait for response
 
 We wait for the round to finalize.
-This takes no more than 90 seconds.
+This takes no more than 180 seconds.
 
 You can check if the request was submitted successfully on the [AttestationRequests](https://coston2-systems-explorer.flare.rocks/attestation-request) page on the Flare Systems Explorer website.
 To check if the round has been finalized, go to [Finalizations](https://coston2-systems-explorer.flare.rocks/finalizations) page.
@@ -571,6 +584,69 @@ IAddressValidity.Response memory proofResponse = abi.decode(
 );
 ```
 
+<details>
+<summary>An example complete proof response and decoded `IAddressValidity.Response`.</summary>
+
+An example DA Layer response for a request using the data provided in this example is:
+
+```shell
+{
+  response_hex: "0x
+  0000000000000000000000000000000000000000000000000000000000000020
+  4164647265737356616c69646974790000000000000000000000000000000000
+  7465737442544300000000000000000000000000000000000000000000000000
+  00000000000000000000000000000000000000000000000000000000000e6bda
+  000000000000000000000000000000000000000000000000ffffffffffffffff
+  00000000000000000000000000000000000000000000000000000000000000c0
+  0000000000000000000000000000000000000000000000000000000000000140
+  0000000000000000000000000000000000000000000000000000000000000020
+  0000000000000000000000000000000000000000000000000000000000000022
+  6d6739503966347772397737633173674665695443356f4d4c59584363326337
+  6873000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000001
+  0000000000000000000000000000000000000000000000000000000000000060
+  6810e152510fe893f9cc8954c4dfaecd5c2be00e2732d6fe3e25922f30c5a3c5
+  0000000000000000000000000000000000000000000000000000000000000022
+  6d6739503966347772397737633173674665695443356f4d4c59584363326337
+  6873000000000000000000000000000000000000000000000000000000000000",
+  attestation_type: "0x4164647265737356616c69646974790000000000000000000000000000000000",
+  proof: [
+    "0x275dc338dd4e6a0a8749caa098c6749e0e77e22ba9db264f334b5dfb79aa6321",
+    "0x084e002bbe12f4a163d82ddd17861d1d3131c816fe3b998d575d134043a6c8f1",
+    "0xc30304c7d430e3d0f83d05017035f13ca19dec2799917745967f4c48685eab49",
+    "0x4d622137c9e7c9a1fa3a5d2942a183a8e926ba8659fe606495ea994acbb6ec0f"
+  ]
+} 
+```
+
+The `proof` field is dependent on the round in which the attestation request was submitted;
+it contains proofs for all of the requests submitted in that round.
+In the case of a single attestation request it is an empty list `[]` (the proof is the merkle root itself).
+
+The decoded `IAddressValidity.Response` struct is:
+
+```shell
+[
+  attestationType: "0x4164647265737356616c69646974790000000000000000000000000000000000",
+  sourceId: "0x7465737442544300000000000000000000000000000000000000000000000000",
+  votingRound: "945114",
+  lowestUsedTimestamp: "18446744073709551615",
+  requestBody: [
+    "mg9P9f4wr9w7c1sgFeiTC5oMLYXCc2c7hs",
+    addressStr: "mg9P9f4wr9w7c1sgFeiTC5oMLYXCc2c7hs"
+  ],
+  responseBody: [
+    true,
+    "mg9P9f4wr9w7c1sgFeiTC5oMLYXCc2c7hs",
+    "0x6810e152510fe893f9cc8954c4dfaecd5c2be00e2732d6fe3e25922f30c5a3c5",
+    isValid: true,
+    standardAddress: "mg9P9f4wr9w7c1sgFeiTC5oMLYXCc2c7hs",
+    standardAddressHash: "0x6810e152510fe893f9cc8954c4dfaecd5c2be00e2732d6fe3e25922f30c5a3c5"
+  ]
+] 
+```
+</details>
+
 ## Verify proof
 
 FDC optimizes on-chain storage costs by implementing a hybrid data verification system.
@@ -680,19 +756,27 @@ contract AddressValidity {
 The function `registerAddress` takes as parameters a string representing an address, and a proof.
 If the proof is valid, and if the given address matches the one in the proof, the address is added to an array of verified addresses.
 
-We deploy this contract through a script in `script/AddressValidity.s.sol`.
+We deploy the contract through a simple script.
+The script creates a new `AddressRegistry` contract, and writes its address to a file (`data/Address_listenerAddress.txt`).
 
-```solidity title="scrip/fdcExample/AddressValidity.s.sol"
+```solidity title="scrip/fdcExample/Address.s.sol"
+contract DeployContract is Script {
+    function run() external {
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
 
-contract Deploy is Script {
- function run() external {
- uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
- vm.startBroadcast(deployerPrivateKey);
+        AddressRegistry addressRegistry = new AddressRegistry();
+        address _address = address(addressRegistry);
 
- AddressValidity addressValidity = new AddressValidity();
+        vm.stopBroadcast();
 
- vm.stopBroadcast();
- }
+        Base.writeToFile(
+            dirPath,
+            string.concat(attestationTypeName, "_address"),
+            StringsBase.toHexString(abi.encodePacked(_address)),
+            true
+        );
+    }
 }
 ```
 
@@ -700,5 +784,42 @@ We run the above script with the following console command.
 
 ```bash
 forge script script/fdcExample/AddressValidity.s.sol:Deploy --private-key $PRIVATE_KEY --rpc-url $COSTON2_RPC_URL --etherscan-api-key $FLARE_API_KEY --broadcast --ffi
+
+```
+
+Lastly, we define a script that interacts with the above contract.
+It first reads the ABI encoded proof data, and the contract address, from files.
+Then, it connects to the above contract at the saved address (this is why we require the interface).
+With that, it is able to call the `registerAddress` method of the contract.
+
+```solidity title="script/fdcExample/AddressValidity.s.sol"
+contract InteractWithContract is Script {
+    function run() external {
+        string memory addressString = vm.readLine(
+            string.concat(dirPath, attestationTypeName, "_address", ".txt")
+        );
+        address _address = vm.parseAddress(addressString);
+        string memory proofString = vm.readLine(
+            string.concat(dirPath, attestationTypeName, "_proof", ".txt")
+        );
+        bytes memory proofBytes = vm.parseBytes(proofString);
+        IAddressValidity.Proof memory proof = abi.decode(
+            proofBytes,
+            (IAddressValidity.Proof)
+        );
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
+        IAddressRegistry registry = IAddressRegistry(_address);
+        registry.registerAddress("mg9P9f4wr9w7c1sgFeiTC5oMLYXCc2c7hs", proof);
+        vm.stopBroadcast();
+    }
+}
+```
+
+We run this script with the console command:
+
+```bash
+forge script script/fdcExample/
+AddressValidity.s.sol:InteractWithContract --private-key $PRIVATE_KEY --rpc-url $COSTON2_RPC_URL --etherscan-api-key $FLARE_API_KEY --broadcast --ffi
 
 ```
