@@ -141,7 +141,7 @@ export const operationalParameters = [
           songbird: {
             xrp: "225",
             btc: "36",
-            doge: "40",
+            doge: "100",
           },
           coston: {
             xrp: "500",
@@ -159,7 +159,7 @@ export const operationalParameters = [
           songbird: {
             xrp: "15 minutes",
             btc: "6 hours",
-            doge: "40 minutes",
+            doge: "60 minutes",
           },
           coston: {
             xrp: "15 minutes",
