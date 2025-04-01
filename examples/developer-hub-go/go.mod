@@ -4,7 +4,7 @@ go 1.23.0
 
 toolchain go1.24.1
 
-require github.com/ethereum/go-ethereum v1.15.5
+require github.com/ethereum/go-ethereum v1.15.7
 
 require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
