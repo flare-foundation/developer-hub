@@ -1,0 +1,187 @@
+---
+title: Fetch FAsset Settings
+tags: [intermediate, fassets]
+slug: fassets-settings-node
+description: Retrieve FAsset settings
+keywords: [fassets, ftso, oracle, flare-time-series-oracle, flare-network, node]
+sidebar_position: 1
+---
+
+## Overview
+
+Welcome! In this guide, you'll build a TypeScript script that connects to the Songbird Testnet Coston and:
+
+- Fetches [FAsset configuration settings](/fassets/operational-parameters) (lot size for XRP)
+- Retrieves the XRP/USD price from the [FTSO](/ftso/overview)
+- Calculates the USD value of one FAsset lot
+
+This is a perfect first step for developers working with FAssets, oracles, or building financial tools on Flare.
+
+## Prerequisites
+
+- [Node.js](https://nodejs.org/en/download/)
+- [npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
+- [TypeScript](https://www.typescriptlang.org/download)
+- [Ethers.js](https://docs.ethers.org/v5/)
+- [TypeChain](https://www.npmjs.com/package/typechain)
+
+## Project Setup
+
+### Create Project Directory
+
+```bash
+mkdir fassets-settings-ftso
+cd fassets-settings-ftso
+npm init -y
+```
+
+### Install Dependencies
+
+Install the following dependencies:
+
+```bash
+npm install --save-dev \
+  typescript \
+  typechain \
+  ethers \
+  @typechain/ethers-v6 \
+  @flarenetwork/flare-periphery-contract-artifacts
+```
+
+### Configure TypeScript
+
+This creates a config file `tsconfig.json to control TypeScript behavior:
+
+```bash
+npx tsc --init
+```
+
+Change the `tsconfig.json` file so it can find the Flare generated types:
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "./dist"
+  },
+  "include": ["scripts/**/*.ts", "typechain/**/*.ts", "typechain/**/*.d.ts"],
+  "exclude": ["node_modules"]
+}
+```
+
+### Update Package Configuration
+
+For convenience, add the Typescript build and type generation commands to the `scripts` section of the `package.json` file:
+
+```json
+...
+"scripts": {
+  "build": "tsc",
+  "generate-types": "typechain --target ethers-v6 --out-dir typechain './node_modules/@flarenetwork/flare-periphery-contract-artifacts/coston/artifacts/contracts/**/*.json'"
+}
+...
+```
+
+The `build` script will compile the TypeScript code.
+
+Using the Coston network artifacts, the `typechain` script will generate the TypeScript types from the Flare Periphery contract artifacts.
+
+Change the `package.json` file to use the `module` type to use ES modules and avoid issues with the `import` statement:
+
+```json
+"type": "module",
+```
+
+### Generate TypeScript Types
+
+To generate the TypeScript types, run the following command:
+
+```bash
+npm run generate-types
+```
+
+It will generate the types TypeScript types in the `typechain` directory.
+
+## Implementation
+
+### Create Script File
+
+First, you need to create a file where you will write the TypeScript code for this guide.
+
+```bash
+mkdir scripts
+touch scripts/fassets-settings.ts
+```
+
+Open the `scripts/fassets-settings.ts` file in your favorite code editor.
+
+### Import Dependencies
+
+Import the ethers library to interact with the blockchain:
+
+```typescript
+import { ethers } from "ethers";
+```
+
+Next, you need to import the FAssets asset manager contract factory type:
+
+```typescript
+import { IAssetManager__factory } from "../typechain/factories/IAssetManager__factory.js";
+```
+
+### Define Constants
+
+You need to define two constants:
+
+- `COSTON_RPC_URL`: The RPC URL for the Coston network.
+- `ASSET_MANAGER_ADDRESS`: The address of the FAssets asset manager contract. In this case, it is the XRP asset manager address on the Coston network.
+
+```typescript
+const COSTON_RPC = "https://coston-api.flare.network/ext/C/rpc";
+const ASSET_MANAGER_ADDRESS = "0xeEd82b8390880af0b6Cb6Dd398a7E361cc30E8e2";
+```
+
+### Implement Settings Retrieval
+
+Next, you need to create an asynchronous function that will fetch the FAsset configuration settings and call in the script.
+Inside the `getSettings` function, you need to create a new ethers provider, connect to the Coston network, and connect to the FAssets asset manager contract.
+After that, you must fetch the FAsset configuration settings using the [`getSettings`](/fassets/reference/IAssetManager#getsettings) function of the FAssets asset manager contract.
+The last step is to get the lot size of FXRP in XRP and print it to the console.
+
+```typescript
+async function getSettings() {
+  const provider = new ethers.JsonRpcProvider(COSTON_RPC);
+  const assetManager = IAssetManager__factory.connect(
+    ASSET_MANAGER_ADDRESS,
+    provider,
+  );
+
+  const settings = await assetManager.getSettings();
+  const lotSizeFXRP =
+    Number(settings.lotSizeAMG) / Math.pow(10, Number(settings.assetDecimals));
+  console.log("Lot Size (FXRP):", lotSizeFXRP);
+}
+
+getSettings();
+```
+
+## Running the Script
+
+To execute the script, run the following commands to compile the TypeScript code and run the script:
+
+```bash
+npm run build
+node dist/scripts/fassets-settings.js
+```
+
+You should see the following output:
+
+```console
+Lot Size (FXRP): 20
+```
