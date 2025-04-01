@@ -9,7 +9,7 @@ sidebar_position: 1
 
 ## Overview
 
-Welcome! In this guide, you'll build a TypeScript script that connects to the Songbird Testnet Coston and:
+In this guide, you'll build a TypeScript script that connects to the [Songbird Testnet Coston](/network/solidity-reference) and:
 
 - Fetches [FAsset configuration settings](/fassets/operational-parameters) (lot size for XRP)
 - Retrieves the XRP/USD price from the [FTSO](/ftso/overview)
@@ -171,6 +171,58 @@ async function getSettings() {
 getSettings();
 ```
 
+## Convert Lot Size to USD
+
+To convert the lot size to USD, you need to multiply the lot size by the price of XRP in USD.
+
+### 1. Import Dependencies
+
+To get the price of XRP in USD, you need to import the `IFlareContractRegistry__factory` and `FtsoV2Interface__factory` types.
+
+```typescript
+import { IFlareContractRegistry__factory } from "../typechain/factories/IFlareContractRegistry__factory.js";
+import { FtsoV2Interface__factory } from "../typechain/factories/FtsoV2Interface__factory.js";
+```
+
+### 2. Define Constants
+
+You need to define the following constants:
+
+```typescript
+const REGISTRY_ADDRESS = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019";
+const XRP_USD_FEED_ID = "0x015852502f55534400000000000000000000000000";
+```
+
+### 3. Get the Price feed XRP/USD
+
+You can get the price feed XRP/USD by calling the `getFeedById` function of the [`FtsoV2`](/ftso/solidity-reference/FtsoV2Interface#getfeedbyid) contract.
+
+Add the following code to the end of the `getSettings` function:
+
+```typescript
+const registry = IFlareContractRegistry__factory.connect(
+  REGISTRY_ADDRESS,
+  provider,
+);
+const ftsoAddress = await registry.getContractAddressByName("FtsoV2");
+const ftsoV2 = FtsoV2Interface__factory.connect(ftsoAddress, provider);
+const priceFeed = await ftsoV2.getFeedById.staticCall(XRP_USD_FEED_ID);
+```
+
+### 4. Convert Lot Size to USD
+
+To convert the lot size to USD, you need to multiply the lot size by the price of XRP in USD.
+Last, you need to log the results to the console.
+
+```typescript
+const xrpUsdPrice = Number(priceFeed[0]) / Math.pow(10, Number(priceFeed[1]));
+const lotValueUSD = lotSizeFXRP * xrpUsdPrice;
+
+console.log("XRP/USD Price:", xrpUsdPrice);
+console.log("Lot value in USD:", lotValueUSD);
+console.log("Timestamp:", priceFeed[2].toString());
+```
+
 ## Running the Script
 
 To execute the script, run the following commands to compile the TypeScript code and run the script:
@@ -184,4 +236,15 @@ You should see the following output:
 
 ```console
 Lot Size (FXRP): 20
+XRP/USD Price: 2.1346
+Lot value in USD: 42.69199999999999
+Timestamp: 1743513507
 ```
+
+Congratulations! You've built a TypeScript script that connects to the Coston network and retrieves the FAsset configuration settings and the price of XRP in USD.
+
+:::tip[What's next]
+
+Learn how to interact with FAssets reading the [overview](/fassets/sdk/overview) page.
+
+:::
