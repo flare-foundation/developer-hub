@@ -1,8 +1,8 @@
 ---
-title: Fetch FAsset Settings
+title: Get FAssets Lot Size
 tags: [intermediate, fassets]
 slug: fassets-settings-node
-description: Retrieve FAsset settings
+description: Fetch FAsset Lot Size and Value in USD (via FTSO)
 keywords: [fassets, ftso, oracle, flare-time-series-oracle, flare-network, node]
 sidebar_position: 1
 ---
@@ -11,11 +11,11 @@ sidebar_position: 1
 
 In this guide, you'll build a TypeScript script that connects to the [Songbird Testnet Coston](/network/solidity-reference) and:
 
-- Fetches [FAsset configuration settings](/fassets/operational-parameters) (lot size for XRP)
+- Fetches [FAssets configuration settings](/fassets/operational-parameters) (lot size for FXRP)
 - Retrieves the XRP/USD price from the [FTSO](/ftso/overview)
-- Calculates the USD value of one FAsset lot
+- Calculates the USD value of one FAssets FXRP lot
 
-This is a perfect first step for developers working with FAssets, oracles, or building financial tools on Flare.
+This guide is a perfect first step for developers working with FAssets.
 
 ## Prerequisites
 
@@ -24,10 +24,13 @@ This is a perfect first step for developers working with FAssets, oracles, or bu
 - [TypeScript](https://www.typescriptlang.org/download)
 - [Ethers.js](https://docs.ethers.org/v5/)
 - [TypeChain](https://www.npmjs.com/package/typechain)
+- [Flare Periphery Contract Artifacts](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contract-artifacts)
 
 ## Project Setup
 
 ### Create Project Directory
+
+Create a new directory for your project and initialize a new npm project:
 
 ```bash
 mkdir fassets-settings-ftso
@@ -50,7 +53,7 @@ npm install --save-dev \
 
 ### Configure TypeScript
 
-This creates a config file `tsconfig.json to control TypeScript behavior:
+Create a config file `tsconfig.json to control TypeScript behavior:
 
 ```bash
 npx tsc --init
@@ -58,7 +61,7 @@ npx tsc --init
 
 Change the `tsconfig.json` file so it can find the Flare generated types:
 
-```json
+```json title="tsconfig.json"
 {
   "compilerOptions": {
     "target": "ES2020",
@@ -80,17 +83,15 @@ Change the `tsconfig.json` file so it can find the Flare generated types:
 For convenience, add the Typescript build and type generation commands to the `scripts` section of the `package.json` file:
 
 ```json
-...
 "scripts": {
   "build": "tsc",
   "generate-types": "typechain --target ethers-v6 --out-dir typechain './node_modules/@flarenetwork/flare-periphery-contract-artifacts/coston/artifacts/contracts/**/*.json'"
 }
-...
 ```
 
 The `build` script will compile the TypeScript code.
 
-Using the Coston network artifacts, the `typechain` script will generate the TypeScript types from the Flare Periphery contract artifacts.
+Using the Coston network artifacts, the `typechain` generates TypeScript types from the Flare Periphery contracts, which are provided through a [package](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contract-artifacts) containing the necessary contract artifacts.
 
 Change the `package.json` file to use the `module` type to use ES modules and avoid issues with the `import` statement:
 
@@ -112,7 +113,7 @@ It will generate the types TypeScript types in the `typechain` directory.
 
 ### Create Script File
 
-First, you need to create a file where you will write the TypeScript code for this guide.
+First, you must create a file to write the TypeScript code for this guide.
 
 ```bash
 mkdir scripts
@@ -129,7 +130,7 @@ Import the ethers library to interact with the blockchain:
 import { ethers } from "ethers";
 ```
 
-Next, you need to import the FAssets asset manager contract factory type:
+You need to import the FAssets asset manager contract factory type:
 
 ```typescript
 import { IAssetManager__factory } from "../typechain/factories/IAssetManager__factory.js";
@@ -137,7 +138,7 @@ import { IAssetManager__factory } from "../typechain/factories/IAssetManager__fa
 
 ### Define Constants
 
-You need to define two constants:
+Define two constants:
 
 - `COSTON_RPC_URL`: The RPC URL for the Coston network.
 - `ASSET_MANAGER_ADDRESS`: The address of the FAssets asset manager contract. In this case, it is the XRP asset manager address on the Coston network.
@@ -149,12 +150,15 @@ const ASSET_MANAGER_ADDRESS = "0xeEd82b8390880af0b6Cb6Dd398a7E361cc30E8e2";
 
 ### Implement Settings Retrieval
 
-Next, you need to create an asynchronous function that will fetch the FAsset configuration settings and call in the script.
-Inside the `getSettings` function, you need to create a new ethers provider, connect to the Coston network, and connect to the FAssets asset manager contract.
-After that, you must fetch the FAsset configuration settings using the [`getSettings`](/fassets/reference/IAssetManager#getsettings) function of the FAssets asset manager contract.
+Next, you need to create an asynchronous function that will fetch the FAssets configuration settings and call in the script.
+
+Inside the `getSettings` function, you create a new ethers provider, connect to the Coston network, and connect to the FAssets asset manager contract.
+
+After that, you must fetch the FAssets configuration settings using the [`getSettings`](/fassets/reference/IAssetManager#getsettings) function of the FAssets asset manager contract.
+
 The last step is to get the lot size of FXRP in XRP and print it to the console.
 
-```typescript
+```typescript title="scripts/fassets-settings.ts"
 async function getSettings() {
   const provider = new ethers.JsonRpcProvider(COSTON_RPC);
   const assetManager = IAssetManager__factory.connect(
@@ -173,31 +177,29 @@ getSettings();
 
 ## Convert Lot Size to USD
 
-To convert the lot size to USD, you need to multiply the lot size by the price of XRP in USD.
+To convert the lot size to USD you need to use the [FTSO](/ftso/overview) to get the [anchor price feed](/ftso/scaling/anchor-feeds/) of XRP/USD and convert the FXRP lot size to USD.
 
-### 1. Import Dependencies
+### Import Dependencies
 
-To get the price of XRP in USD, you need to import the `IFlareContractRegistry__factory` and `FtsoV2Interface__factory` types.
+Import the `IFlareContractRegistry__factory` and `FtsoV2Interface__factory` types which are the factories for the [Flare Contract Registry](/network/solidity-reference/IFlareContractRegistry) and the [FTSO contracts](/ftso/solidity-reference/FtsoV2Interface).
 
 ```typescript
 import { IFlareContractRegistry__factory } from "../typechain/factories/IFlareContractRegistry__factory.js";
 import { FtsoV2Interface__factory } from "../typechain/factories/FtsoV2Interface__factory.js";
 ```
 
-### 2. Define Constants
+### Define Constants
 
-You need to define the following constants:
+Define the constants for the [registry address](/network/guides/flare-for-javascript-developers#querying-a-contract) and the [XRP/USD feed ID](/ftso/scaling/anchor-feeds).
 
 ```typescript
 const REGISTRY_ADDRESS = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019";
 const XRP_USD_FEED_ID = "0x015852502f55534400000000000000000000000000";
 ```
 
-### 3. Get the Price feed XRP/USD
+### Get the Price feed XRP/USD
 
-You can get the price feed XRP/USD by calling the `getFeedById` function of the [`FtsoV2`](/ftso/solidity-reference/FtsoV2Interface#getfeedbyid) contract.
-
-Add the following code to the end of the `getSettings` function:
+You can get the price feed XRP/USD by calling the [`getFeedById`](/ftso/solidity-reference/FtsoV2Interface#getfeedbyid) function of the `FtsoV2` contract.
 
 ```typescript
 const registry = IFlareContractRegistry__factory.connect(
@@ -209,10 +211,9 @@ const ftsoV2 = FtsoV2Interface__factory.connect(ftsoAddress, provider);
 const priceFeed = await ftsoV2.getFeedById.staticCall(XRP_USD_FEED_ID);
 ```
 
-### 4. Convert Lot Size to USD
+### Convert Lot Size to USD
 
-To convert the lot size to USD, you need to multiply the lot size by the price of XRP in USD.
-Last, you need to log the results to the console.
+Convert the lot size to USD, by multiplying the lot size by the price of XRP in USD.
 
 ```typescript
 const xrpUsdPrice = Number(priceFeed[0]) / Math.pow(10, Number(priceFeed[1]));
@@ -223,9 +224,72 @@ console.log("Lot value in USD:", lotValueUSD);
 console.log("Timestamp:", priceFeed[2].toString());
 ```
 
+## Putting All Together
+
+To put all together you have the following code:
+
+```typescript
+// Importing necessary modules and contract factories
+import { ethers } from "ethers";
+
+import { IAssetManager__factory } from "../typechain/factories/IAssetManager__factory.js";
+import { IFlareContractRegistry__factory } from "../typechain/factories/IFlareContractRegistry__factory.js";
+import { FtsoV2Interface__factory } from "../typechain/factories/FtsoV2Interface__factory.js";
+
+// Constants for RPC endpoint and contract addresses
+const COSTON_RPC = "https://coston-api.flare.network/ext/C/rpc"; // RPC URL for the Coston network
+const ASSET_MANAGER_ADDRESS = "0xeEd82b8390880af0b6Cb6Dd398a7E361cc30E8e2"; // Address of the Asset Manager contract
+const REGISTRY_ADDRESS = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"; // Address of the Flare Contract Registry
+const XRP_USD_FEED_ID = "0x015852502f55534400000000000000000000000000"; // Feed ID for XRP/USD price https://dev.flare.network/ftso/scaling/anchor-feeds
+
+async function getSettings() {
+  // Create a provider for interacting with the blockchain
+  const provider = new ethers.JsonRpcProvider(COSTON_RPC);
+
+  // Connect to the Asset Manager contract
+  const assetManager = IAssetManager__factory.connect(
+    ASSET_MANAGER_ADDRESS,
+    provider,
+  );
+
+  // Fetch settings from the Asset Manager contract
+  const settings = await assetManager.getSettings();
+
+  // Calculate the lot size in FXRP (Flare XRP)
+  const lotSizeFXRP =
+    Number(settings.lotSizeAMG) / Math.pow(10, Number(settings.assetDecimals));
+  console.log("Lot Size (FXRP):", lotSizeFXRP);
+
+  // Connect to the Flare Contract Registry
+  const registry = IFlareContractRegistry__factory.connect(
+    REGISTRY_ADDRESS,
+    provider,
+  );
+
+  // Fetch the address of the FtsoV2 contract from the registry
+  const ftsoAddress = await registry.getContractAddressByName("FtsoV2");
+
+  // Connect to the FtsoV2 contract
+  const ftsoV2 = FtsoV2Interface__factory.connect(ftsoAddress, provider);
+
+  // Fetch the XRP/USD price feed using the feed ID
+  const priceFeed = await ftsoV2.getFeedById.staticCall(XRP_USD_FEED_ID);
+
+  // Calculate the XRP/USD price and the lot value in USD
+  const xrpUsdPrice = Number(priceFeed[0]) / Math.pow(10, Number(priceFeed[1]));
+  const lotValueUSD = lotSizeFXRP * xrpUsdPrice;
+
+  console.log("XRP/USD Price:", xrpUsdPrice);
+  console.log("Lot value in USD:", lotValueUSD);
+  console.log("Timestamp:", priceFeed[2].toString());
+}
+
+getSettings();
+```
+
 ## Running the Script
 
-To execute the script, run the following commands to compile the TypeScript code and run the script:
+To execute the script, run the following commands to compile the TypeScript code and run the script from the `dist` directory:
 
 ```bash
 npm run build
