@@ -37,13 +37,12 @@ async function main() {
   const abiEncodedRequest = data.abiEncodedRequest;
   const roundId = await submitAttestationRequest(abiEncodedRequest);
 
-
   const proof = await retrieveDataAndProof(abiEncodedRequest, roundId);
 
-  const addressRegistry: PaymentRegistryInstance =
+  const paymentRegistry: PaymentRegistryInstance =
     await deployAndVerifyContract();
 
-  await interactWithContract(addressRegistry, proof);
+  await interactWithContract(paymentRegistry, proof);
 }
 
 main().then((data) => {
@@ -682,17 +681,17 @@ We deploy and verify this contract with the `deployAndVerifyContract` function i
 ```typescript title="scripts/fdcExample/Payment.ts"
 async function deployAndVerifyContract() {
   const args: any[] = [];
-  const addressRegistry: PaymentRegistryInstance = await Payment.new(...args);
+  const paymentRegistry: PaymentRegistryInstance = await Payment.new(...args);
   try {
     await run("verify:verify", {
-      address: addressRegistry.address,
+      address: paymentRegistry.address,
       constructorArguments: args,
     });
   } catch (e: any) {
     console.log(e);
   }
-  console.log("Payment deployed to", addressRegistry.address, "\n");
-  return addressRegistry;
+  console.log("Payment deployed to", paymentRegistry.address, "\n");
+  return paymentRegistry;
 }
 ```
 
@@ -701,12 +700,12 @@ async function deployAndVerifyContract() {
 We define an additional function that allows us to interact with the just deployed contract.
 The `interactWithContract` function also takes the proof retrieved in the previous step as an argument.
 It abi decodes the `response_hex` value to an `IPayment.Response` struct.
-From that and the array of proofs, it constructs an `IPayment.Proof` object, on which it call the `registerAddress` function of the `AddressRegistry` contract deployed above.
-The contract verifies the address, and the script prints it to the console.
+From that and the array of proofs, it constructs an `IPayment.Proof` object, on which it call the `registerPayment` function of the `PaymentRegistry` contract deployed above.
+The contract verifies the payment, and the script prints it to the console.
 
 ```typescript title="scripts/fdcExample/Payment.ts"
 async function interactWithContract(
-  addressRegistry: PaymentRegistryInstance,
+  paymentRegistry: PaymentRegistryInstance,
   proof: any,
 ) {
   console.log("Proof hex:", proof.response_hex, "\n");
@@ -722,14 +721,14 @@ async function interactWithContract(
     proof.response_hex,
   );
   console.log("Decoded proof:", decodedResponse, "\n");
-  const transaction = await addressRegistry.registerPayment({
+  const transaction = await paymentRegistry.registerPayment({
     merkleProof: proof.proof,
     data: decodedResponse,
   });
   console.log("Transaction:", transaction.tx, "\n");
   console.log(
     "Verified payment:",
-    await addressRegistry.verifiedPayments(0),
+    await paymentRegistry.verifiedPayments(0),
     "\n",
   );
 }
