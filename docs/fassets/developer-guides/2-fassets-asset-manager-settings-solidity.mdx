@@ -57,12 +57,11 @@ contract FAssetsSettings {
 1. Import the interface `IAssetManager` from the [Flare Periphery Contracts package](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts), which provides access to the FAssets system.
 2. Create a contract called `FAssetsSettings` that will be used to fetch the FAssets settings from the asset manager.
 3. Value `assetManager` holds the address of the FAssets FXRP asset manager contract.
-The type `IAssetManager` comes from the Flare Periphery Contracts package.
+   The type `IAssetManager` comes from the Flare Periphery Contracts package.
 4. The constructor initializes the contract with the AsseFXRP asset managertManager address.
 5. The `getLotSize` function gets numbers from the FAssets FXRP asset manager settings:
    - `lotSizeAMG`: The smallest amount you can trade (in AMG units)
    - `assetDecimals`: How many decimal places the FAssets asset uses
-
 
 :::info Flare Hardhat Starter Kit
 Using the [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit) you can quickly deploy the contract and generate TypeChain bindings for seamless TypeScript integration.
@@ -84,12 +83,17 @@ async function main() {
   console.log("Deploying FAssetsSettings...");
 
   // 2.  Get the contract factory
-  const FAssetsSettings = await ethers.getContractFactory("FAssetsSettings") as FAssetsSettingsContract;
+  const FAssetsSettings = (await ethers.getContractFactory(
+    "FAssetsSettings",
+  )) as FAssetsSettingsContract;
 
   // 3. Deploy the contract
   const fAssetsSettings = await FAssetsSettings.deploy(ASSET_MANAGER_ADDRESS);
   await fAssetsSettings.waitForDeployment();
-  console.log("FAssetsSettings deployed to:", await fAssetsSettings.getAddress());
+  console.log(
+    "FAssetsSettings deployed to:",
+    await fAssetsSettings.getAddress(),
+  );
 
   // 4. Call getSettings function
   const lotSize = await fAssetsSettings.getLotSize();
@@ -98,7 +102,7 @@ async function main() {
 
   // 5. Convert lot size to XRP
   const lotSizeFXRP = Number(lotSize[0]) / Math.pow(10, Number(lotSize[1]));
-  console.log("Lot size in XRP", lotSizeFXRP)
+  console.log("Lot size in XRP", lotSizeFXRP);
 }
 
 main().catch((error) => {
@@ -140,8 +144,9 @@ This script is included in the [Flare Hardhat Starter Kit](https://github.com/fl
 
 :::
 Congratulations! You have now deployed a Solidity helper contract and used a TypeScript script to
-* fetch FAsset FXRP lot size and decimals;
-* convert the value to a user-friendly format using decimal precision.
+
+- fetch FAsset FXRP lot size and decimals;
+- convert the value to a user-friendly format using decimal precision.
 
 :::tip[What's next]
 
