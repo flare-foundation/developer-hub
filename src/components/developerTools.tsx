@@ -70,8 +70,8 @@ const DeveloperTools = () => {
     <div className="developer-tools-container">
       <div className="developer-tools-header">
         <p>
-          Developer tools for Flare built by the community including RPCs,
-          bridges, indexers, account abstraction, wallet SDKs, and more.
+          Developer tools for Flare including RPCs, bridges, indexers, account
+          abstraction, wallet SDKs, and more.
         </p>
 
         <div className="network-selector-container">
@@ -106,9 +106,7 @@ const DeveloperTools = () => {
             </Heading>
             <div className="tools-cards">
               {Array.isArray(tools) && tools.length === 0 ? (
-                <div className="empty-category">
-                  No tools available in this category
-                </div>
+                <div className="empty-category">No tools in this category</div>
               ) : (
                 Array.isArray(tools) &&
                 tools.map((tool) => (
