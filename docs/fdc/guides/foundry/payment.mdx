@@ -329,8 +329,9 @@ function parseAttestationRequest(
 }
 ```
 
-:::info
-If everything went right, the `abiEncodedRequest` should look something like this.
+<details>
+<summary>Understanding the `abiEncodedRequest`.</summary>
+If everything went right, the `abiEncodedRequest` should look something like this (minus the line breaks - we split it after the `0x` symbol and then after every 64 characters (32 bytes), for the sake of clarity).
 
 ```
 0x
@@ -350,9 +351,10 @@ Let's break it down line by line:
 - **Second line:** `toUtf8HexString("testETH")`
 - **Third line:** message integrity code (MIC), a hash of the whole response salted with a string `"Flare"`, ensures the integrity of the attestation
 - **Remaining lines:** ABI encoded `Payment.RequestBody` Solidity struct
-  :::
 
 What this demonstrates is that, with some effort, the `abiEncodedRequest` can be constructed manually.
+
+</details>
 
 We write the `abiEncodedRequest` to a file (`data/Payment_abiEncodedRequest.txt`) to it in the next step.
 
@@ -456,7 +458,7 @@ This can be done within the existing broadcast or in a new one (as done in the d
 ## Wait for response
 
 We wait for the round to finalize.
-This takes no more than 90 seconds.
+This takes no more than 180 seconds.
 
 You can check if the request was submitted successfully on the [AttestationRequests](https://coston2-systems-explorer.flare.rocks/attestation-request) page on the Flare Systems Explorer website.
 To check if the round has been finalized, go to [Finalizations](https://coston2-systems-explorer.flare.rocks/finalizations) page.
@@ -579,6 +581,97 @@ IPayment.Response memory proofResponse = abi.decode(
  (IPayment.Response)
 );
 ```
+
+<details>
+<summary>An example complete proof response and decoded `IEVMTransaction.Response`.</summary>
+
+An example DA Layer response for a request using the data provided in this example is:
+
+```shell
+{
+  response_hex: '0x
+  5061796d656e7400000000000000000000000000000000000000000000000000
+  7465737458525000000000000000000000000000000000000000000000000000
+  00000000000000000000000000000000000000000000000000000000000e6c2d
+  00000000000000000000000000000000000000000000000000000000a019d806
+  2a3e7c7f6077b4d12207a9f063515eace70fbbf3c55514cd8bd659d4ab721447
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  000000000000000000000000000000000000000000000000000000000048f822
+  0000000000000000000000000000000000000000000000000000000067ac9486
+  7f5b4967a9fbe9b447fed6d4e3699051516b6afe5f94db2e77ccf86470bfd74d
+  a1475e9840d916c22f494c0dc25428d2affb5ae1f496efc82bbb59d46a336779
+  cd582d251987f15ecb29b69c2e02051479e84c176e39cbbdf04a4d0ef89bcf82
+  cd582d251987f15ecb29b69c2e02051479e84c176e39cbbdf04a4d0ef89bcf82
+  0000000000000000000000000000000000000000000000000000000005f5e10c
+  0000000000000000000000000000000000000000000000000000000005f5e10c
+  0000000000000000000000000000000000000000000000000000000005f5e100
+  0000000000000000000000000000000000000000000000000000000005f5e100
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000001
+  0000000000000000000000000000000000000000000000000000000000000000',
+  attestation_type: '0x5061796d656e7400000000000000000000000000000000000000000000000000',
+  proof: [
+    '0xe1f98d39167eab17b2157c06efb80530b161d5eb15c439fc476e3242e30b3ac1',
+    '0x23a8ffdb2cbaf0e2f3653923a159150f8d4c3ad5160f9e127cc9797ba233e6c2',
+    '0xd756b90367b336e127f0759a1457825b4c2bf9011b71b56e15d9fcb7ff735ec8',
+    '0xc881d1566868a986aef2bda47e9ab6dafeb8241bde5f5d53235837595829a5ea'
+  ]
+}
+```
+
+The `proof` field is dependent on the round in which the attestation request was submitted;
+it contains proofs for all of the requests submitted in that round.
+In the case of a single attestation request it is an empty list `[]` (the proof is the merkle root itself).
+
+The decoded `IEVMTransaction.Response` struct is:
+
+```shell
+[
+  attestationType: '0x5061796d656e7400000000000000000000000000000000000000000000000000',
+  sourceId: '0x7465737458525000000000000000000000000000000000000000000000000000',
+  votingRound: '945197',
+  lowestUsedTimestamp: '2686048262',
+  requestBody: [
+    '0x2a3e7c7f6077b4d12207a9f063515eace70fbbf3c55514cd8bd659d4ab721447',
+    '0',
+    '0',
+    transactionId: '0x2a3e7c7f6077b4d12207a9f063515eace70fbbf3c55514cd8bd659d4ab721447',
+    inUtxo: '0',
+    utxo: '0'
+  ],
+  responseBody: [
+    '4782114',
+    '1739363462',
+    '0x7f5b4967a9fbe9b447fed6d4e3699051516b6afe5f94db2e77ccf86470bfd74d',
+    '0xa1475e9840d916c22f494c0dc25428d2affb5ae1f496efc82bbb59d46a336779',
+    '0xcd582d251987f15ecb29b69c2e02051479e84c176e39cbbdf04a4d0ef89bcf82',
+    '0xcd582d251987f15ecb29b69c2e02051479e84c176e39cbbdf04a4d0ef89bcf82',
+    '100000012',
+    '100000012',
+    '100000000',
+    '100000000',
+    '0x0000000000000000000000000000000000000000000000000000000000000000',
+    true,
+    '0',
+    blockNumber: '4782114',
+    blockTimestamp: '1739363462',
+    sourceAddressHash: '0x7f5b4967a9fbe9b447fed6d4e3699051516b6afe5f94db2e77ccf86470bfd74d',
+    sourceAddressesRoot: '0xa1475e9840d916c22f494c0dc25428d2affb5ae1f496efc82bbb59d46a336779',
+    receivingAddressHash: '0xcd582d251987f15ecb29b69c2e02051479e84c176e39cbbdf04a4d0ef89bcf82',
+    intendedReceivingAddressHash: '0xcd582d251987f15ecb29b69c2e02051479e84c176e39cbbdf04a4d0ef89bcf82',
+    spentAmount: '100000012',
+    intendedSpentAmount: '100000012',
+    receivedAmount: '100000000',
+    intendedReceivedAmount: '100000000',
+    standardPaymentReference: '0x0000000000000000000000000000000000000000000000000000000000000000',
+    oneToOne: true,
+    status: '0'
+  ]
+]
+```
+
+</details>
 
 ## Verify proof
 
