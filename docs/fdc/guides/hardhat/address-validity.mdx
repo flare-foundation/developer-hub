@@ -1,0 +1,703 @@
+---
+title: Address Validity
+authors: [nikerzetic, filipkoprivec]
+description: Check the validity of a Bitcoin, Dogecoin, or XRPL address.
+tags: [intermediate, ethereum, fdc, hardhat]
+keywords: [ethereum, flare-data-connector, evm, flare-network]
+sidebar_position: 3
+unlisted: false
+---
+
+The [AddressValidity](/fdc/attestation-types/address-validity) attestation type validates whether a string represents a valid address on supported blockchain networks (`BTC`, `DOGE`, and `XRP`).
+This validation ensures addresses meet chain-specific formatting and checksum requirements before they're used in transactions or smart contracts.
+The full specification is available on the official [specification repo](/fdc/attestation-types/address-validity).
+
+The primary contract interface for this attestation type is [`IAddressValidity`](/fdc/reference/IFdcHub). Let's walk through validating a Bitcoin testnet address using the FDC protocol.
+We will use the address `mg9P9f4wr9w7c1sgFeiTC5oMLYXCc2c7hs` as an example throughout this guide.
+You can swap this with any valid testnet address from the supported chains.
+You can follow this tutorial with any other valid address - just make sure it is a valid testnet address.
+
+This validation process works identically for `BTC`, `DOGE`, and `XRP` addresses, with only minor chain-specific parameter adjustments which we'll highlight throughout the guide.
+
+In this guide, we will follow the steps outlined in the [FDC overview](/fdc/overview).
+We will define a `scripts/fdcExample/AddressValidity.ts` file that will encapsulate the whole process.
+
+```typescript title="scripts/fdcExample/AddressValidity.s.sol"
+import { run, web3 } from "hardhat";
+import { AddressRegistryInstance } from "../../typechain-types";
+import {
+  prepareAttestationRequestBase,
+  submitAttestationRequest,
+  retrieveDataAndProofBase,
+} from "./Base";
+
+const AddressRegistry = artifacts.require("AddressRegistry");
+
+const { VERIFIER_URL_TESTNET, VERIFIER_API_KEY, COSTON2_DA_LAYER_URL } =
+  process.env;
+
+...
+
+async function main() {
+  const data = await prepareAttestationRequest(addressStr);
+  console.log("Data:", data, "\n");
+
+  const abiEncodedRequest = data.abiEncodedRequest;
+  const roundId = await submitAttestationRequest(abiEncodedRequest);
+
+  const proof = await retrieveDataAndProof(abiEncodedRequest, roundId);
+
+  const addressRegistry: AddressRegistryInstance =
+    await deployAndVerifyContract();
+
+  await interactWithContract(addressRegistry, proof);
+}
+
+main().then((data) => {
+  process.exit(0);
+});
+
+```
+
+The function names mostly mirror the steps described in the [FDC guide](/fdc/overview).
+
+## Prepare request
+
+In this guide we will demonstrate how to prepare an attestation request through a verifier server.
+At the end of the section we will provide a breakdown of the abi encoded request; thus we will demonstrate how it can be constructed manually.
+
+To use the verifier server, we send a request to its `prepareRequest` endpoint.
+A JSON request to the verifier follows the same structure for all attestation types, with field values varying between types.
+
+### Required Fields
+
+- `attestationType`: UTF8 hex string encoding of the attestation type name, zero-padded to 32 bytes.
+- `sourceId`: UTF8 hex string encoding of the data source identifier name, zero-padded to 32 bytes.
+- `requestBody`: Specific to each attestation type.
+
+For `AddressValidity`, `requestBody` contains a single field:
+
+- `addressString`: The address to verify.
+
+### Reference Documentation
+
+- [AddressValidity Specification](/fdc/attestation-types/address-validity)
+- [Verifier Interactive Docs](https://fdc-verifiers-testnet.flare.network/verifier/btc/api-doc#/AddressValidity/BTCAddressValidityVerifierController_prepareRequest)
+- API available for [DOGE](https://fdc-verifiers-testnet.flare.network/verifier/doge/api-doc#/AddressValidity/BTCAddressValidityVerifierController_prepareRequest) and [XRP](https://fdc-verifiers-testnet.flare.network/verifier/xrp/api-doc#/AddressValidity/BTCAddressValidityVerifierController_prepareRequest).
+
+### Example Values
+
+- `addressString`: `mg9P9f4wr9w7c1sgFeiTC5oMLYXCc2c7hs`.
+- `attestationType`: UTF8 hex encoding of `AddressValidity`, zero-padded to 32 bytes.
+- `sourceId`: UTF8 hex encoding of `testBTC`, zero-padded to 32 bytes.
+  - `"test"` prefix denotes Bitcoin testnet.
+  - Supports deployment on Flare testchains (`Coston` or `Coston2`).
+  - Replace `testBTC` with `testDOGE` or `testXRP` for other chains.
+- `urlTypeBase`: string `btc`
+  - Replace `btc` with `doge` or `xrp` for other chains.
+
+```typescript title="scripts/fdcExample/AddressValidity.ts"
+// Request data
+const addressStr = "mg9P9f4wr9w7c1sgFeiTC5oMLYXCc2c7hs";
+
+// Configuration constants
+const attestationTypeBase = "AddressValidity";
+const sourceIdBase = "testBTC";
+const verifierUrlBase = VERIFIER_URL_TESTNET;
+const urlTypeBase = "btc";
+```
+
+### Encoding Functions
+
+To encode values into UTF8 hex:
+
+- `toUtf8HexString`: Converts a string to UTF8 hex.
+- `toHex`: Zero-right-pads the string to 32 bytes.
+
+These functions are included in the [Base library](https://github.com/flare-foundation/flare-hardhat-starter/blob/master/scripts/fdcExample/Base.ts) within the [example repository](https://github.com/flare-foundation/flare-hardhat-starter/), but they can also be defined locally in your contract or script.
+
+```typescript title="scripts/fdcExample/Base.ts"
+function toHex(data: string) {
+  var result = "";
+  for (var i = 0; i < data.length; i++) {
+    result += data.charCodeAt(i).toString(16);
+  }
+  return result.padEnd(64, "0");
+}
+```
+
+```typescript title="scripts/fdcExample/Base.ts"
+function toUtf8HexString(data: string) {
+  return "0x" + toHex(data);
+}
+```
+
+Because of the `console.log` commands it will produce JSON strings that represent valid requests; we can then pass this to the [interactive verifier](https://fdc-verifiers-testnet.flare.network/verifier/btc/api-doc#/AddressValidity/BTCAddressValidityVerifierController_prepareRequest) to check what the response is.
+
+The process of posting a request to a verifier server is identical for all attestation types.
+It differs only in values used.
+For that reason we define a base function that the `prepareAttestationRequest` function will call.
+
+The `prepareAttestationRequestBase` function formulates a request for the verifier server, and posts it to the given URL.
+
+```typescript title="scripts/fdcExample/Base.ts"
+async function prepareAttestationRequestBase(
+  url: string,
+  apiKey: string,
+  attestationTypeBase: string,
+  sourceIdBase: string,
+  requestBody: any,
+) {
+  console.log("Url:", url, "\n");
+  const attestationType = toUtf8HexString(attestationTypeBase);
+  const sourceId = toUtf8HexString(sourceIdBase);
+
+  const request = {
+    attestationType: attestationType,
+    sourceId: sourceId,
+    requestBody: requestBody,
+  };
+  console.log("Prepared request:\n", request, "\n");
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "X-API-KEY": apiKey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(request),
+  });
+  if (response.status != 200) {
+    throw new Error(
+      `Response status is not OK, status ${response.status} ${response.statusText}\n`,
+    );
+  }
+  console.log("Response status is OK\n");
+
+  return await response.json();
+}
+```
+
+In the example repository, it is once again included within the [Base](https://github.com/flare-foundation/flare-foundry-starter/blob/master/scripts/fdcExample/Base.s.sol) library file.
+
+We construct the URL by appending to the verifier address `https://fdc-verifiers-testnet.flare.network/` the path `verifier/btc/AddressValidity/prepareRequest`.
+If we were using another source, we would replace the string `btc` with `doge` or `xrp` accordingly (we would also have to replace `testBTC` with `testDOGE` or `testXRP`).
+Thus, the function that prepares the verifier request looks like:
+
+```typescript title="scripts/fdcExample/AddressValidity.ts"
+async function prepareAttestationRequest(addressStr: string) {
+  const requestBody = {
+    addressStr: addressStr,
+  };
+
+  const url = `${verifierUrlBase}verifier/${urlTypeBase}/AddressValidity/prepareRequest`;
+  const apiKey = VERIFIER_API_KEY ?? "";
+
+  return await prepareAttestationRequestBase(
+    url,
+    apiKey,
+    attestationTypeBase,
+    sourceIdBase,
+    requestBody,
+  );
+}
+```
+
+<details>
+<summary>Understanding the `abiEncodedRequest`.</summary>
+
+If everything went right, the `abiEncodedRequest` should look something like this (minus the line breaks - we split it after the `0x` symbol and then after every 64 characters (32 bytes), for the sake of clarity).
+
+```
+0x
+4164647265737356616c69646974790000000000000000000000000000000000
+7465737442544300000000000000000000000000000000000000000000000000
+7d2ef938d4ffd2392f588bf46563e07ab885b15fead91c1bb99b16f465b71a68
+0000000000000000000000000000000000000000000000000000000000000020
+0000000000000000000000000000000000000000000000000000000000000020
+0000000000000000000000000000000000000000000000000000000000000022
+6d6739503966347772397737633173674665695443356f4d4c59584363326337
+6873000000000000000000000000000000000000000000000000000000000000
+```
+
+Let's break it down line by line:
+
+- **First line:** `toUtf8HexString("AddressValidity")`
+- **Second line:** `toUtf8HexString("testBTC")`
+- **Third line:** message integrity code (MIC), a hash of the whole response salted with a string `"Flare"`, ensures the integrity of the attestation
+- **Remaining lines:** ABI encoded `AddressValidity.RequestBody` Solidity struct
+
+What this demonstrates is that, with some effort, the `abiEncodedRequest` can be constructed manually.
+
+</details>
+
+## Submit request to FDC
+
+This step transitions from off-chain request preparation to on-chain interaction with the FDC protocol.
+We will submit the validated request to the blockchain using deployed official Flare smart contracts.
+To streamline the process of accessing these, the [Flare smart contracts periphery package](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts) is shipped with the `ContractRegistry` library.
+
+The `ContractRegistry` library allows us to
+{/* TODO contract registry */}
+
+We define a `Helpers` contract that will give us access to the following contracts:
+
+- `FdcHub`: for posting the request to
+- `FdcRequestFeeConfigurations`: calculates the fee of the request
+- `FlareSystemsManager`: for calculating the round ID
+- `Relay`: confirms the round has finalized
+
+```solidity title="contracts/fdcExample/Helpers.sol"
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.25;
+
+import {console} from "hardhat/console.sol";
+import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
+import {IFdcHub} from "@flarenetwork/flare-periphery-contracts/coston2/IFdcHub.sol";
+import {IFdcRequestFeeConfigurations} from
+    "@flarenetwork/flare-periphery-contracts/coston2/IFdcRequestFeeConfigurations.sol";
+import {IFlareSystemsManager} from "@flarenetwork/flare-periphery-contracts/coston2/IFlareSystemsManager.sol";
+import {IRelay} from "@flarenetwork/flare-periphery-contracts/coston2/IRelay.sol";
+
+contract Helpers {
+    function getFdcHub() public view returns (IFdcHub) {
+        return ContractRegistry.getFdcHub();
+    }
+
+    function getFdcRequestFeeConfigurations() public view returns (IFdcRequestFeeConfigurations) {
+        return ContractRegistry.getFdcRequestFeeConfigurations();
+    }
+
+    function getFlareSystemsManager() public view returns (IFlareSystemsManager) {
+        return ContractRegistry.getFlareSystemsManager();
+    }
+
+    function getRelay() public view returns (IRelay) {
+        return ContractRegistry.getRelay();
+    }
+}
+```
+
+We expose the `Helpers` contract through the following function.
+
+```typescript title="scripts/fdcExample/Base.ts"
+async function getHelpers() {
+  const helpers: HelpersInstance = await Helpers.new();
+  return helpers;
+}
+```
+
+To submit the attestation request, we first access the deployed `FdcHub` contract.
+We determine the fee for our attestation type, and then request the attestation of the FDC, paying the required fee.
+Lastly, we calculate the voting round Id from the transaction that carried the attestation request; we will need it to query the data and proof.
+
+```typescript title="scripts/fdcExample/Base.ts"
+async function submitAttestationRequest(abiEncodedRequest: string) {
+  const fdcHub = await getFdcHub();
+
+  const requestFee = await getFdcRequestFee(abiEncodedRequest);
+
+  const transaction = await fdcHub.requestAttestation(abiEncodedRequest, {
+    value: requestFee,
+  });
+  console.log("Submitted request:", transaction.tx, "\n");
+
+  const roundId = await calculateRoundId(transaction);
+  console.log(
+    `Check round progress at: https://${hre.network.name}-systems-explorer.flare.rocks/voting-epoch/${roundId}?tab=fdc\n`,
+  );
+  return roundId;
+}
+```
+
+{/* TODO */}
+
+```typescript title="scripts/fdcExample/Base.ts"
+async function getFdcHub() {
+  const helpers: HelpersInstance = await getHelpers();
+  const fdcHubAddress: string = await helpers.getFdcHub();
+  return await FdcHub.at(fdcHubAddress);
+}
+```
+
+The request fee is obtained from the `fdcRequestFeeConfigurations` contract.
+We once again connect to the `fdcRequestFeeConfigurations` contract through the `ContractRegistry` library.
+
+```typescript title="scripts/fdcExample/Base.ts"
+async function getFdcRequestFee(abiEncodedRequest: string) {
+  const helpers: HelpersInstance = await getHelpers();
+  const fdcRequestFeeConfigurationsAddress: string =
+    await helpers.getFdcRequestFeeConfigurations();
+  const fdcRequestFeeConfigurations: IFdcRequestFeeConfigurationsInstance =
+    await FdcRequestFeeConfigurations.at(fdcRequestFeeConfigurationsAddress);
+  return await fdcRequestFeeConfigurations.getRequestFee(abiEncodedRequest);
+}
+```
+
+The round ID is calculate from the timestamp of the block, containing the transaction requesting attestation.
+We first subtract from the block timestamp the timestamp of the first voting epoch.
+Then, we divide the number by the duration of the voting epoch (90 seconds).
+Instead of hard-coding them, we retrieve these values from another official Flare contract, the `flareSystemsManager`.
+
+```typescript title="scripts/fdcExample/Base.ts"
+async function calculateRoundId(transaction: any) {
+  const blockNumber = transaction.receipt.blockNumber;
+  const block = await ethers.provider.getBlock(blockNumber);
+  const blockTimestamp = BigInt(block!.timestamp);
+
+  const flareSystemsManager: IFlareSystemsManagerInstance =
+    await getFlareSystemsManager();
+  const firsVotingRoundStartTs = BigInt(
+    await flareSystemsManager.firstVotingRoundStartTs(),
+  );
+  const votingEpochDurationSeconds = BigInt(
+    await flareSystemsManager.votingEpochDurationSeconds(),
+  );
+
+  console.log("Block timestamp:", blockTimestamp, "\n");
+  console.log("First voting round start ts:", firsVotingRoundStartTs, "\n");
+  console.log(
+    "Voting epoch duration seconds:",
+    votingEpochDurationSeconds,
+    "\n",
+  );
+
+  const roundId = Number(
+    (blockTimestamp - firsVotingRoundStartTs) / votingEpochDurationSeconds,
+  );
+  console.log("Calculated round id:", roundId, "\n");
+  console.log(
+    "Received round id:",
+    Number(await flareSystemsManager.getCurrentVotingEpochId()),
+    "\n",
+  );
+  return roundId;
+}
+```
+
+We obtain the `flareSystemsManager` contract through the `ContractRegistry` library and the previously defined `Helpers` contract as well.
+
+```typescript title="scripts/fdcExample/Base.ts"
+async function getFlareSystemsManager() {
+  const helpers: HelpersInstance = await getHelpers();
+  const flareSystemsManagerAddress: string =
+    await helpers.getFlareSystemsManager();
+  return await FlareSystemsManager.at(flareSystemsManagerAddress);
+}
+```
+
+## Retrieve data and proof
+
+To retrieve the data and proof, we must first wait for the voting round in which the attestation request was submitted to finalize;
+this takes no more than 180 seconds, but is on average much less.
+After the round has been finalized, we post a request to a DA Layer provider.
+
+We can check if the request was submitted successfully on the [AttestationRequests](https://coston2-systems-explorer.flare.rocks/attestation-request) page on the Flare Systems Explorer website.
+To check if the round has been finalized, go to [Finalizations](https://coston2-systems-explorer.flare.rocks/finalizations) page.
+
+If you want to learn more about how the FDC protocol works, check [here](/fdc/overview).
+
+Because the process includes waiting for the voting round to finalize, we prepare a `sleep` function.
+The function pauses the execution of the script for a given number of milliseconds.
+
+```typescript title="scripts/fdcExample/Base.ts"
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+```
+
+The only difference between the `retrieveDataAndProof` functions of all six attestation types is the URL of the DA Layer server.
+For that reason, we will define as separate `retrieveDataAndProofBase` function that will handle most of the logic.
+The function waits for the round to finalize - rechecking every 10 seconds if necessary.
+Then, it prepares a proof request, and posts it to the DA Layer server.
+Because it might take a few seconds for the server to generate the proof, the function ensures that the response actually contains a sufficient response, and retries otherwise.
+
+```typescript title="scripts/fdcExample/AddressValidity.ts"
+async function retrieveDataAndProofBase(
+  url: string,
+  abiEncodedRequest: string,
+  roundId: number,
+) {
+  console.log("Waiting for the round to finalize...");
+  // We check every 10 seconds if the round is finalized
+  const relay: IRelayInstance = await getRelay();
+  while (!(await relay.isFinalized(200, roundId))) {
+    await sleep(10000);
+  }
+  console.log("Round finalized!\n");
+
+  const request = {
+    votingRoundId: roundId,
+    requestBytes: abiEncodedRequest,
+  };
+  console.log("Prepared request:\n", request, "\n");
+
+  await sleep(10000);
+  var proof = await postRequestToDALayer(url, request, true);
+  console.log("Waiting for the DA Layer to generate the proof...");
+  while (proof.response_hex == undefined) {
+    await sleep(5000);
+    proof = await postRequestToDALayer(url, request, false);
+  }
+  console.log("Proof generated!\n");
+
+  console.log("Proof:", proof, "\n");
+  return proof;
+}
+```
+
+We access the Flare's official `Relay` contract with a helper function.
+
+```typescript title="scripts/fdcExample/Base.ts"
+async function getRelay() {
+  const helpers: HelpersInstance = await getHelpers();
+  const relayAddress: string = await helpers.getRelay();
+  return await IRelay.at(relayAddress);
+}
+```
+
+The following function posts a proof request to the DA Layer.
+
+```typescript title="scripts/fdcExample/Base.ts"
+async function postRequestToDALayer(
+  url: string,
+  request: any,
+  watchStatus: boolean = false,
+) {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      //   "X-API-KEY": "",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(request),
+  });
+  if (watchStatus && response.status != 200) {
+    throw new Error(
+      `Response status is not OK, status ${response.status} ${response.statusText}\n`,
+    );
+  } else if (watchStatus) {
+    console.log("Response status is OK\n");
+  }
+  return await response.json();
+}
+```
+
+The main prepare the URL of the DA Layer's `proof-by-request-raw` endpoint.
+We contact this specific endpoint, because it return the abi encoded `IAddressValidity.Response` struct, and is thus unambiguous.
+
+```typescript title="scripts/fdcExample/AddressValidity.ts"
+async function retrieveDataAndProof(
+  abiEncodedRequest: string,
+  roundId: number,
+) {
+  const url = `${COSTON2_DA_LAYER_URL}api/v1/fdc/proof-by-request-round-raw`;
+  console.log("Url:", url, "\n");
+  return await retrieveDataAndProofBase(url, abiEncodedRequest, roundId);
+}
+```
+
+The response the DA Layer server returns has the following fields:
+
+- The field `attestationType` holds the UTF8 encoded hex string of the attestation type name, padded to 32 bytes.
+  Thus, it should match the value of the `attestationType` parameter in the Prepare the request step.
+  In our case, that value is `0x4164647265737356616c69646974790000000000000000000000000000000000`.
+- The array `proofs` holds the Merkle proofs of our attestation request.
+- Lastly, `responseHex` is the ABI encoding of the chosen attestation type response struct.
+  In this case, it is the `IAddressValidity.Response` struct.
+
+We can ascertain the form of the proof request, as well as examine the response in advance, trough the [interactive documentation](https://fdc-verifiers-testnet.flare.network/verifier/btc/api-doc) of the DA Layer server.
+
+<details>
+<summary>An example complete proof response and decoded `IAddressValidity.Response`.</summary>
+
+An example DA Layer response for a request using the data provided in this example is:
+
+```shell
+{
+  response_hex: "0x
+  0000000000000000000000000000000000000000000000000000000000000020
+  4164647265737356616c69646974790000000000000000000000000000000000
+  7465737442544300000000000000000000000000000000000000000000000000
+  00000000000000000000000000000000000000000000000000000000000e6bda
+  000000000000000000000000000000000000000000000000ffffffffffffffff
+  00000000000000000000000000000000000000000000000000000000000000c0
+  0000000000000000000000000000000000000000000000000000000000000140
+  0000000000000000000000000000000000000000000000000000000000000020
+  0000000000000000000000000000000000000000000000000000000000000022
+  6d6739503966347772397737633173674665695443356f4d4c59584363326337
+  6873000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000001
+  0000000000000000000000000000000000000000000000000000000000000060
+  6810e152510fe893f9cc8954c4dfaecd5c2be00e2732d6fe3e25922f30c5a3c5
+  0000000000000000000000000000000000000000000000000000000000000022
+  6d6739503966347772397737633173674665695443356f4d4c59584363326337
+  6873000000000000000000000000000000000000000000000000000000000000",
+  attestation_type: "0x4164647265737356616c69646974790000000000000000000000000000000000",
+  proof: [
+    "0x275dc338dd4e6a0a8749caa098c6749e0e77e22ba9db264f334b5dfb79aa6321",
+    "0x084e002bbe12f4a163d82ddd17861d1d3131c816fe3b998d575d134043a6c8f1",
+    "0xc30304c7d430e3d0f83d05017035f13ca19dec2799917745967f4c48685eab49",
+    "0x4d622137c9e7c9a1fa3a5d2942a183a8e926ba8659fe606495ea994acbb6ec0f"
+  ]
+}
+```
+
+The `proof` field is dependent on the round in which the attestation request was submitted;
+it contains proofs for all of the requests submitted in that round.
+In the case of a single attestation request it is an empty list `[]` (the proof is the merkle root itself).
+
+The decoded `IAddressValidity.Response` struct is:
+
+```shell
+[
+  attestationType: "0x4164647265737356616c69646974790000000000000000000000000000000000",
+  sourceId: "0x7465737442544300000000000000000000000000000000000000000000000000",
+  votingRound: "945114",
+  lowestUsedTimestamp: "18446744073709551615",
+  requestBody: [
+    "mg9P9f4wr9w7c1sgFeiTC5oMLYXCc2c7hs",
+    addressStr: "mg9P9f4wr9w7c1sgFeiTC5oMLYXCc2c7hs"
+  ],
+  responseBody: [
+    true,
+    "mg9P9f4wr9w7c1sgFeiTC5oMLYXCc2c7hs",
+    "0x6810e152510fe893f9cc8954c4dfaecd5c2be00e2732d6fe3e25922f30c5a3c5",
+    isValid: true,
+    standardAddress: "mg9P9f4wr9w7c1sgFeiTC5oMLYXCc2c7hs",
+    standardAddressHash: "0x6810e152510fe893f9cc8954c4dfaecd5c2be00e2732d6fe3e25922f30c5a3c5"
+  ]
+]
+```
+
+</details>
+
+## Use the data
+
+We will now define a simple contract, that will demonstrate how the data can be used onchain.
+The contract will receive an address and proof, and decide if the address is valid.
+If the address is valid, the contract will add it to an array of valid addresses.
+Otherwise, it will raise an error.
+
+The code for this contract is as follows.
+
+```solidity title="contracts/fdcExample/AddressValidity.sol"
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.25;
+
+import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
+import {IFdcVerification} from "@flarenetwork/flare-periphery-contracts/coston2/IFdcVerification.sol";
+import {IAddressValidity} from "@flarenetwork/flare-periphery-contracts/coston2/IAddressValidity.sol";
+
+interface IAddressRegistry {
+    function registerAddress(IAddressValidity.Proof memory _transaction) external;
+}
+
+contract AddressRegistry is IAddressRegistry {
+    string[] public verifiedAddresses;
+
+    function isAddressValidityProofValid(IAddressValidity.Proof memory transaction) public view returns (bool) {
+        // Use the library to get the verifier contract and verify that this transaction was proved by state connector
+        IFdcVerification fdc = ContractRegistry.getFdcVerification();
+        return fdc.verifyAddressValidity(transaction);
+    }
+
+    function registerAddress(IAddressValidity.Proof memory _transaction) public {
+        // 1. FDC Logic
+        // Check that this AddressValidity has indeed been confirmed by the FDC
+        require(isAddressValidityProofValid(_transaction), "Invalid transaction proof");
+
+        // 2. Business logic
+        string memory provedAddress = _transaction.data.requestBody.addressStr;
+
+        verifiedAddresses.push(provedAddress);
+    }
+}
+
+```
+
+### Verify proof
+
+FDC optimizes on-chain storage costs by implementing a hybrid data verification system.
+Instead of storing complete datasets on-chain, it stores only Merkle proofs, while maintaining the actual data through trusted off-chain providers.
+This approach significantly reduces gas costs while preserving data integrity.
+
+When requested, data providers supply the original data along with its corresponding Merkle proof.
+The protocol verifies data authenticity by comparing the provided Merkle proof against the on-chain Merkle root.
+A successful match confirms the data's integrity and authenticity within the FDC system.
+
+While data verification is optional if you trust your data provider, FDC ensures transparency by making verification possible at any time.
+This capability is crucial for maintaining system integrity and allowing users to independently verify data when needed, particularly in production environments.
+
+FDC provides verification functionality through the `FdcVerification` contract.
+
+We then access the `FdcVerification` contract through the `ContractRegistry`, and feed it the proof.
+If we proof is valid, the function `verifyAddressValidity` will return `true`, otherwise `false`.
+
+We deploy and verify this contract with the `deployAndVerifyContract` function in the `scripts/fdcExample/AddressValidity.ts` file.
+
+```typescript title="scripts/fdcExample/AddressValidity.ts"
+async function deployAndVerifyContract() {
+  const args: any[] = [];
+  const addressRegistry: AddressRegistryInstance = await AddressRegistry.new(
+    ...args,
+  );
+  try {
+    await run("verify:verify", {
+      address: addressRegistry.address,
+      constructorArguments: args,
+    });
+  } catch (e: any) {
+    console.log(e);
+  }
+  console.log("AddressRegistry deployed to", addressRegistry.address, "\n");
+  return addressRegistry;
+}
+```
+
+## Interact with contract
+
+We define an additional function that allows us to interact with the just deployed contract.
+The `interactWithContract` function also takes the proof retrieved in the previous step as an argument.
+It abi decodes the `response_hex` value to an `IAddressValidity.Response` struct.
+From that and the array of proofs, it constructs an `IAddressValidity.Proof` object, on which it call the `registerAddress` function of the `AddressRegistry` contract deployed above.
+The contract verifies the address, and the script prints it to the console.
+
+```typescript title="scripts/fdcExample/AddressValidity.ts"
+async function interactWithContract(
+  addressRegistry: AddressRegistryInstance,
+  proof: any,
+) {
+  console.log("Proof hex:", proof.response_hex, "\n");
+
+  // A piece of black magic that allows us to read the response type from an artifact
+  const IAddressValidityVerification = await artifacts.require(
+    "IAddressValidityVerification",
+  );
+  const responseType =
+    IAddressValidityVerification._json.abi[0].inputs[0].components[1];
+  console.log("Response type:", responseType, "\n");
+
+  const decodedResponse = web3.eth.abi.decodeParameter(
+    responseType,
+    proof.response_hex,
+  );
+  console.log("Decoded proof:", decodedResponse, "\n");
+  const transaction = await addressRegistry.registerAddress({
+    merkleProof: proof.proof,
+    data: decodedResponse,
+  });
+  console.log("Transaction:", transaction.tx, "\n");
+  console.log(
+    "Verified address:",
+    await addressRegistry.verifiedAddresses(0),
+    "\n",
+  );
+}
+```
+
+We can run the whole script by calling the following console command.
+
+```bash
+yarn hardhat run scripts/fdcExample/AddressValidity.ts
+```
