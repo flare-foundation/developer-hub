@@ -30,7 +30,7 @@ export default function FlareLandingPage() {
   const productGuides = [
     { text: "FTSOv2 Guides", link: "/category/ftso/guides" },
     { text: "FDC Guides", link: "/category/fdc-guides" },
-    { text: "FAssets Guides", link: "/category/fassets-guides" },
+    { text: "FAssets Guides", link: "/category/developer-guides" },
     { text: "Network Guides", link: "/category/network/guides" },
   ];
 

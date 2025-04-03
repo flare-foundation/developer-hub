@@ -65,19 +65,7 @@ const config: Config = {
     ],
   ],
 
-  plugins: [
-    [
-      "@docusaurus/plugin-client-redirects",
-      {
-        redirects: [
-          {
-            from: "/intro",
-            to: "/",
-          },
-        ],
-      },
-    ],
-  ],
+  // Removed the redirects plugin since we're using slug: / directly in intro.mdx
 
   themeConfig: {
     image: "img/landing/dev_hub_ani_noblur.png",
