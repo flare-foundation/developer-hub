@@ -7,6 +7,10 @@ keywords: [fassets, ftso, oracle, flare-time-series-oracle, flare-network, node]
 sidebar_position: 1
 ---
 
+import CodeBlock from "@theme/CodeBlock";
+import Remix from "@site/src/components/remix";
+import FAssetsAssetManagerSettingsLotSize from "!!raw-loader!/examples/developer-hub-solidity/FAssetsAssetManagerSettingsLotSize.sol";
+
 ## Overview
 
 This guide will show you how to fetch FAsset [lot size](/fassets/minting#lots) for FXRP using the Solidity smart contract on the Flare network.
@@ -22,35 +26,13 @@ You will deploy the contract using Hardhat and interact with it via a TypeScript
 
 To get the FAsset lot size, you can use the following smart contract:
 
-```solidity title="contracts/FAssetsSettings.sol"
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.25;
+<CodeBlock language="solidity" title="contracts/FAssetsSettings.sol">
+  {FAssetsAssetManagerSettingsLotSize}
+</CodeBlock>
 
-// 1. Import the AssetManager interface
-import { IAssetManager } from "@flarenetwork/flare-periphery-contracts/coston/IAssetManager.sol";
-
-// 2. Contract for accessing FAssets settings from the asset manager
-contract FAssetsSettings {
-  // 3. Connection to the AssetManager contract
-  IAssetManager public assetManager;
-
-  // 4. Constructor initializes the contract with the AssetManager contract address
-  constructor(address _assetManager) {
-    assetManager = IAssetManager(_assetManager);
-  }
-
-  // 5. This function gets two important numbers from the asset manager settings:
-  // * lotSizeAMG: The smallest amount you can trade (in AMG units)
-  // * assetDecimals: How many decimal places the asset uses
-  // FAssets Operation Parameters https://dev.flare.network/fassets/operational-parameters
-  function getLotSize() public view returns(uint64 lotSizeAMG, uint8 assetDecimals) {
-    lotSizeAMG = assetManager.getSettings().lotSizeAMG;
-    assetDecimals = assetManager.getSettings().assetDecimals;
-
-    return (lotSizeAMG, assetDecimals);
-  }
-}
-```
+{/* prettier-ignore */}
+<Remix fileName="FAssetsAssetManagerSettingsLotSize.sol">Open in Remix</Remix>
+<br></br>
 
 ### Code Breakdown
 
