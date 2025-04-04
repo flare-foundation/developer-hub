@@ -106,7 +106,7 @@ const DeveloperTools = () => {
             </Heading>
             <div className="tools-cards">
               {Array.isArray(tools) && tools.length === 0 ? (
-                <div className="empty-category">No tools in this category</div>
+                <div className="empty-category">No tools in category</div>
               ) : (
                 Array.isArray(tools) &&
                 tools.map((tool) => (
