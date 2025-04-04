@@ -11,14 +11,14 @@ interface CardOption {
   wide?: boolean;
 }
 
-interface FlareCardsProps {
+interface LogoCardsProps {
   cards: CardOption[];
   columns?: number;
   wide?: boolean;
   minimalMode?: boolean;
 }
 
-const FlareCards: React.FC<FlareCardsProps> = ({
+const LogoCards: React.FC<LogoCardsProps> = ({
   cards,
   columns = 3,
   wide = false,
@@ -77,4 +77,4 @@ const FlareCards: React.FC<FlareCardsProps> = ({
   );
 };
 
-export default FlareCards;
+export default LogoCards;
