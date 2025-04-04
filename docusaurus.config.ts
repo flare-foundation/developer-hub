@@ -65,6 +65,8 @@ const config: Config = {
     ],
   ],
 
+  // Removed the redirects plugin since we're using slug: / directly in intro.mdx
+
   themeConfig: {
     image: "img/landing/dev_hub_ani_noblur.png",
     colorMode: {
