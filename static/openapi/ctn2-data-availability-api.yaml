@@ -6,9 +6,7 @@ info:
     OpenAPI specification for Data Availability Client API. 
     The public API endpoints are rate limited, to request an API key for higher limits, create an [API Key Request Issue](https://github.com/flare-foundation/developer-hub/issues/new/choose).
 servers:
-  - url: "https://flr-data-availability.flare.network/"
-  - url: "https://sgb-data-availability.flare.network/"
-  - url: "https://ctn-data-availability.flare.network/"
+  - url: "https://ctn2-data-availability.flare.network/"
 paths:
   /api/health:
     get:
@@ -17,6 +15,7 @@ paths:
       tags:
         - api
       security:
+        - ApiKeyAuth: []
         - {}
       responses:
         "200":
@@ -40,7 +39,9 @@ paths:
       tags:
         - fdc
       security:
+        - ApiKeyAuth: []
         - {}
+      deprecated: true
       responses:
         "200":
           content:
@@ -48,7 +49,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/AttestationMinimalProof"
+                  $ref: "#/components/schemas/AttestationResultV0"
           description: ""
   /api/v0/fdc/get-proof-round-bytes:
     post:
@@ -60,22 +61,24 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AttestationTypeGetByRoundBytesRequestRequest"
+              $ref: "#/components/schemas/AttestationTypeGetByRoundBytesV0RequestRequest"
           application/x-www-form-urlencoded:
             schema:
-              $ref: "#/components/schemas/AttestationTypeGetByRoundBytesRequestRequest"
+              $ref: "#/components/schemas/AttestationTypeGetByRoundBytesV0RequestRequest"
           multipart/form-data:
             schema:
-              $ref: "#/components/schemas/AttestationTypeGetByRoundBytesRequestRequest"
+              $ref: "#/components/schemas/AttestationTypeGetByRoundBytesV0RequestRequest"
         required: true
       security:
+        - ApiKeyAuth: []
         - {}
+      deprecated: true
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AttestationMinimalProof"
+                $ref: "#/components/schemas/AttestationResultV0"
           description: ""
         "400":
           content:
@@ -95,22 +98,24 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AttestationTypeGetByRoundIdBytesRequestRequest"
+              $ref: "#/components/schemas/AttestationTypeGetByRoundIdBytesv0RequestRequest"
           application/x-www-form-urlencoded:
             schema:
-              $ref: "#/components/schemas/AttestationTypeGetByRoundIdBytesRequestRequest"
+              $ref: "#/components/schemas/AttestationTypeGetByRoundIdBytesv0RequestRequest"
           multipart/form-data:
             schema:
-              $ref: "#/components/schemas/AttestationTypeGetByRoundIdBytesRequestRequest"
+              $ref: "#/components/schemas/AttestationTypeGetByRoundIdBytesv0RequestRequest"
         required: true
       security:
+        - ApiKeyAuth: []
         - {}
+      deprecated: true
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AttestationMinimalProof"
+                $ref: "#/components/schemas/AttestationResultV0"
           description: ""
         "400":
           content:
@@ -125,6 +130,7 @@ paths:
       tags:
         - fsp
       security:
+        - ApiKeyAuth: []
         - {}
       responses:
         "200":
@@ -142,6 +148,7 @@ paths:
       tags:
         - fsp
       security:
+        - ApiKeyAuth: []
         - {}
       responses:
         "200":
@@ -163,6 +170,7 @@ paths:
       tags:
         - ftso
       security:
+        - ApiKeyAuth: []
         - {}
       responses:
         "200":
@@ -200,6 +208,7 @@ paths:
               $ref: "#/components/schemas/FeedResultFeedsWithProofsRequestRequest"
         required: true
       security:
+        - ApiKeyAuth: []
         - {}
       responses:
         "200":
@@ -216,9 +225,177 @@ paths:
               schema:
                 $ref: "#/components/schemas/AttestationTypeGetByRoundIdBytesError"
           description: ""
+  /api/v1/fdc:
+    get:
+      operationId: fdc_list_2
+      description:
+        Returns full merkle tree with proof for each leaf for given round.
+        Leaves are abi decoded.
+      parameters:
+        - in: query
+          name: voting_round_id
+          schema:
+            type: integer
+          description: Voting round. Defaults to latest.
+      tags:
+        - fdc
+      security:
+        - ApiKeyAuth: []
+        - {}
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AttestationResultV1"
+          description: ""
+  /api/v1/fdc/proof-by-request-round:
+    post:
+      operationId: fdc_proof_by_request_round_create
+      description:
+        Retrieves the attestation request proof for given request bytes
+        and voting round. Leaves are abi decoded.
+      tags:
+        - fdc
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AttestationResponseProofByRequestRoundV1RequestRequest"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/AttestationResponseProofByRequestRoundV1RequestRequest"
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/AttestationResponseProofByRequestRoundV1RequestRequest"
+        required: true
+      security:
+        - ApiKeyAuth: []
+        - {}
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttestationResultV1"
+          description: ""
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttestationTypeGetByRoundIdBytesError"
+          description: ""
+  /api/v1/fdc/proof-by-request-round-raw:
+    post:
+      operationId: fdc_proof_by_request_round_raw_create
+      description:
+        Retrieves the attestation request proof for given request bytes
+        and voting round. Leaves are abi encoded.
+      tags:
+        - fdc
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AttestationResponseProofByRequestRoundV1RequestRequest"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/AttestationResponseProofByRequestRoundV1RequestRequest"
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/AttestationResponseProofByRequestRoundV1RequestRequest"
+        required: true
+      security:
+        - ApiKeyAuth: []
+        - {}
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttestationResultRawV1"
+          description: ""
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttestationTypeGetByRoundIdBytesError"
+          description: ""
+  /api/v1/fdc/raw:
+    get:
+      operationId: fdc_raw_list
+      description:
+        Returns full merkle tree with proof for each leaf for given round.
+        Leaves are abi encoded.
+      parameters:
+        - in: query
+          name: voting_round_id
+          schema:
+            type: integer
+          description: Voting round. Defaults to latest.
+      tags:
+        - fdc
+      security:
+        - ApiKeyAuth: []
+        - {}
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AttestationResultRawV1"
+          description: ""
 components:
   schemas:
-    AttestationMinimalProof:
+    AttestationResponseProofByRequestRoundV1RequestRequest:
+      type: object
+      properties:
+        votingRoundId:
+          type: integer
+          description:
+            Specific voting round from which the proof should be fetched.
+            If not provided latest matching proof will be fetched instead.
+        requestBytes:
+          type: string
+          minLength: 1
+          description: Hex encoded attestation request.
+      required:
+        - requestBytes
+    AttestationResultRawV1:
+      type: object
+      properties:
+        response_hex:
+          type: string
+          readOnly: true
+        attestation_type:
+          type: string
+          readOnly: true
+        proof:
+          type: array
+          items:
+            type: string
+      required:
+        - attestation_type
+        - proof
+        - response_hex
+    AttestationResultV0:
+      type: object
+      properties:
+        response:
+          type: object
+          additionalProperties: {}
+        proof:
+          type: array
+          items:
+            type: string
+      required:
+        - proof
+        - response
+    AttestationResultV1:
       type: object
       properties:
         response:
@@ -238,7 +415,7 @@ components:
           type: string
       required:
         - error
-    AttestationTypeGetByRoundBytesRequestRequest:
+    AttestationTypeGetByRoundBytesV0RequestRequest:
       type: object
       properties:
         requestBytes:
@@ -254,7 +431,7 @@ components:
           type: string
       required:
         - error
-    AttestationTypeGetByRoundIdBytesRequestRequest:
+    AttestationTypeGetByRoundIdBytesv0RequestRequest:
       type: object
       properties:
         votingRoundId:
@@ -352,3 +529,8 @@ components:
         - active
         - latest_fdc
         - latest_ftso
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
