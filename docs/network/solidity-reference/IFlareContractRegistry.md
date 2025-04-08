@@ -6,13 +6,15 @@ description: Registry interface with all Flare contract addresses.
 
 Registry interface with all Flare contract addresses.
 
+Check out the [guide](/network/guides/flare-contracts-registry) for instructions on how to interact with the Flare contracts registry.
+
 Sourced from `IFlareContractRegistry.sol` on [GitLab](https://gitlab.com/flarenetwork/flare-smart-contracts/-/blob/master/contracts/userInterfaces/IFlareContractRegistry.sol).
 
 ## Functions
 
 ### getContractAddressByName
 
-Returns contract address for the given name - might be address(0)
+Returns contract address for the given name - might be address(0).
 
 ```solidity
 function getContractAddressByName(
@@ -23,11 +25,11 @@ function getContractAddressByName(
 
 #### Parameters
 
-- `_name`: name of the contract
+- `_name`: name of the contract which is **case-sensitive**, so you should use the proper capitalization.
 
 ### getContractAddressByHash
 
-Returns contract address for the given name hash - might be address(0)
+Returns contract address for the given name hash - might be address(0).
 
 ```solidity
 function getContractAddressByHash(
@@ -42,7 +44,7 @@ function getContractAddressByHash(
 
 ### getContractAddressesByName
 
-Returns contract addresses for the given names - might be address(0)
+Returns contract addresses for the given names - might be address(0).
 
 ```solidity
 function getContractAddressesByName(
@@ -53,7 +55,7 @@ function getContractAddressesByName(
 
 #### Parameters
 
-- `_names`: names of the contracts
+- `_names`: names of the contracts which is **case-sensitive**, so you should use the proper capitalization.
 
 ### getContractAddressesByHash
 
