@@ -1,0 +1,65 @@
+---
+slug: flare-contracts-registry
+title: Retrieving Contract Addresses
+authors: [fassko]
+tags: [quickstart, solidity]
+description: Learn how to retrieve contract address on Flare Networks
+keywords: [quickstart, solidity, smart-contract, flare-network]
+sidebar_position: 6
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import Remix from "@site/src/components/remix";
+import FlareContractRegistryReader from "!!raw-loader!/examples/developer-hub-solidity/FlareContractRegistryReader.sol";
+
+On Flare networks, contract addresses for enshrined protocol components such as `FtsoV2`, `FdcHub`, `WNat`, and others **should never be hardcoded**.
+Instead, use the **Flare Contract Registry** to retrieve them dynamically.
+
+:::warning
+Developers should never rely on contract addresses from off-chain sources like direct messages, social media, or unofficial websites. These addresses may point to malicious contracts.
+:::
+
+## Retrieving Addresses from the Blockchain
+
+All core contract addresses can be retrieved from the [`FlareContractRegistry`](/network/solidity-reference/IFlareContractRegistry) smart contract.  
+This is the **only trusted source** of contract addresses provided in Flare documentation.
+
+### Registry Contract Address
+
+The Flare Contract Registry is deployed at the same address on [all networks](/network/solidity-reference):
+
+| [FlareContractRegistry](/network/solidity-reference/IFlareContractRegistry) | `0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019` |
+| --------------------------------------------------------------------------- | -------------------------------------------- |
+
+### Solidity Example
+
+You can use the following helper contract to fetch a contract address by name:
+
+<CodeBlock
+  language="solidity"
+  title="contracts/FlareContractRegistryReader.sol"
+>
+  {FlareContractRegistryReader}
+</CodeBlock>
+
+Deploy this contract to one of Flare Networks and use the `0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019` address for the `flareContractRegistry` variable.
+
+{/* prettier-ignore */}
+<Remix fileName="FlareContractRegistryReader.sol">Open in Remix</Remix>
+<br></br>
+
+#### Usage Example
+
+To retrieve the address of the `FtsoV2` contract:
+
+```solidity
+FlareContractRegistryReader.getContractAddressByName("FtsoV2");
+```
+
+### List of Available Contracts
+
+To retrieve all available enshrined contract names, use the `getAllContracts` method:
+
+```solidity
+FlareContractRegistryReader.getAllContracts();
+```
