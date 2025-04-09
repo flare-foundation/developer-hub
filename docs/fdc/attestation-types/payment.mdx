@@ -2,7 +2,7 @@
 title: Payment
 description: Information about native token payments on an external chain.
 keywords: [fdc, oracle, flare-data-connector, flare-network]
-sidebar_position: 5
+sidebar_position: 3
 ---
 
 import StandardAddressHash from "./_standard_address_hash.mdx";
@@ -72,11 +72,11 @@ For the `lowestUsedTimestamp` parameter, the **`blockTimestamp`** of the transac
 
 ## Payment Summary
 
-A **payment summary** consolidates all relevant data about a transaction that represents a payment. 
+A **payment summary** consolidates all relevant data about a transaction that represents a payment.
 This is particularly focused on payments between one source account (address) and one target account.
 
-- **UTXO Blockchains (e.g., BTC, DOGE)**: Payments can aggregate inputs from multiple addresses and distribute them to multiple outputs. 
-The summary here is computed based on specified input and output indices that identify addresses of interest.
+- **UTXO Blockchains (e.g., BTC, DOGE)**: Payments can aggregate inputs from multiple addresses and distribute them to multiple outputs.
+  The summary here is computed based on specified input and output indices that identify addresses of interest.
 - **XRPL**: Supports various transaction types, but a payment summary is only fully calculated for transactions of type `Payment`.
 
 ### Structure
@@ -116,7 +116,7 @@ The payment summary for Bitcoin and Dogecoin is derived using specified indices 
 
 - If the specified input or output does not exist, or lacks an address (e.g., outputs using `OP_RETURN`), no summary is generated.
 - Coinbase transactions are not summarized.
-- If a transaction has multiple outputs with receiving address, the request is rejected.
+- If a transaction has additional outputs with the same address as output, the request is rejected.
 
 #### Data Sources
 
@@ -142,7 +142,7 @@ The payment summary on XRPL is applicable only for transactions of type `Payment
 #### Conditions
 
 - Only `Payment` transactions are summarized; other transaction types are ignored.
-- A successful payment has exactly one sender and at most one receiver. 
+- A successful payment has exactly one sender and at most one receiver.
   If unsuccessful, no receiver is recorded.
 
 #### Data Sources
