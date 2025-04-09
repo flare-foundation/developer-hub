@@ -11,7 +11,8 @@ import TransactionSuccessStatus from "./_transaction_success_status.mdx";
 import Finality from "./_finality.mdx";
 
 Information about a transaction on an external chain that is classified as a **native currency payment**.
-Each supported blockchain specifies how a payment transaction should be formatted to be provable using this attestation type. These provable payments mimic traditional banking transactions where entity A sends a native currency to entity B, with an optional payment reference.
+Each supported blockchain specifies how a payment transaction should be formatted to be provable using this attestation type.
+These provable payments mimic traditional banking transactions where entity A sends a native currency to entity B, with an optional payment reference.
 
 ## Supported chains
 
@@ -48,7 +49,7 @@ Each supported blockchain specifies how a payment transaction should be formatte
 
 :::warning[Standard Payment Reference]
 
-If a transaction has no `standardPaymentReference`, it is set to default value, thus, zero value reference should be used with caution.
+If a transaction has no `standardPaymentReference`, it is set to default value; zero value reference should thus be used with caution.
 
 :::
 
@@ -71,9 +72,11 @@ For the `lowestUsedTimestamp` parameter, the **`blockTimestamp`** of the transac
 
 ## Payment Summary
 
-A **payment summary** consolidates all relevant data about a transaction that represents a payment. This is particularly focused on payments between one source account (address) and one target account.
+A **payment summary** consolidates all relevant data about a transaction that represents a payment. 
+This is particularly focused on payments between one source account (address) and one target account.
 
-- **UTXO Blockchains (e.g., BTC, DOGE)**: Payments can aggregate inputs from multiple addresses and distribute them to multiple outputs. The summary here is computed based on specified input and output indices that identify addresses of interest.
+- **UTXO Blockchains (e.g., BTC, DOGE)**: Payments can aggregate inputs from multiple addresses and distribute them to multiple outputs. 
+The summary here is computed based on specified input and output indices that identify addresses of interest.
 - **XRPL**: Supports various transaction types, but a payment summary is only fully calculated for transactions of type `Payment`.
 
 ### Structure
@@ -138,12 +141,14 @@ The payment summary on XRPL is applicable only for transactions of type `Payment
 #### Conditions
 
 - Only `Payment` transactions are summarized; other transaction types are ignored.
-- A successful payment has exactly one sender and at most one receiver. If unsuccessful, no receiver is recorded.
+- A successful payment has exactly one sender and at most one receiver. 
+If unsuccessful, no receiver is recorded.
 
 #### Data Sources
 
 - Transaction details are obtained via the [`tx`](https://xrpl.org/tx.html) method.
-- Changes made by the transaction are recorded in the `meta` field (or `metaData` if fetched via the `ledger` method) under `AffectedNodes`. Balance changes are found within `ModifiedNodes`, by comparing `FinalFields` and `PreviousFields`.
+- Changes made by the transaction are recorded in the `meta` field (or `metaData` if fetched via the `ledger` method) under `AffectedNodes`.
+  Balance changes are found within `ModifiedNodes`, by comparing `FinalFields` and `PreviousFields`.
 
 | Field                      | Description                                                                                                                                |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
