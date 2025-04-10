@@ -29,7 +29,9 @@
   --ifm-font-weight-bold: 550;
   --ifm-font-size-base: 16px;
   --ifm-global-radius: 0.625rem;
+  --ifm-global-radius-med: 1.25rem;
   --ifm-card-font-weight: 580;
+  --ifm-background-color: #ffffff;
 
   /* Navbar */
   --ifm-navbar-padding-vertical: 1rem;
@@ -729,22 +731,22 @@ tr:last-child td {
 /* Custom Card */
 .custom-card {
   background-color: var(--ifm-card-background-color);
-  border-radius: 1.25rem;
+  border-radius: var(--ifm-global-radius-med);
   padding: 2rem;
   position: relative;
   display: flex;
   justify-content: space-between;
   text-decoration: none;
   color: inherit;
-  transition: box-shadow 0.1s ease-in-out;
+  transition: box-shadow 0.2s ease-in-out;
   overflow: hidden;
 }
 .custom-card:hover {
-  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.15);
   text-decoration: none;
 }
 [data-theme="dark"] .custom-card:hover {
-  box-shadow: 0 10px 20px rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 4px rgba(255, 255, 255, 0.15);
 }
 .custom-card-content {
   display: flex;
@@ -801,7 +803,6 @@ tr:last-child td {
 /* Developer Tools Page */
 .developer-tools-container {
   margin: 2rem 0;
-  font-family: "Satoshi", var(--ifm-font-family-base);
 }
 .developer-tools-header {
   margin-bottom: 2.5rem;
@@ -851,7 +852,6 @@ tr:last-child td {
   border-radius: var(--ifm-global-radius);
   border: 1px solid var(--ifm-color-emphasis-300);
   background-color: var(--ifm-background-color);
-  font-family: "Satoshi", var(--ifm-font-family-base);
   font-size: 1rem;
   cursor: pointer;
   appearance: none;
@@ -864,6 +864,7 @@ tr:last-child td {
   padding-right: 2.5rem;
 }
 [data-theme="dark"] .network-select {
+  background-color: #000000;
   background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
 }
 .network-select:focus {
@@ -897,13 +898,10 @@ tr:last-child td {
 /* Developer Tools Styles */
 .developer-tools-container {
   margin: 2rem 0;
-  font-family: "Satoshi", var(--ifm-font-family-base);
 }
-
 .developer-tools-header {
   margin-bottom: 2.5rem;
 }
-
 .developer-tools-header p {
   font-size: 1.1rem;
   line-height: 1.6;
@@ -950,73 +948,6 @@ tr:last-child td {
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1.5rem;
 }
-
-/* Tool Card (Consolidated) */
-.tool-card {
-  position: relative;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.5rem;
-  border-radius: 1.25rem;
-  text-decoration: none;
-  color: inherit;
-  transition: box-shadow 0.2s ease-in-out;
-  min-height: 120px;
-  overflow: visible;
-  background-color: var(--ifm-card-background-color);
-}
-.tool-card:hover {
-  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.12);
-  text-decoration: none;
-}
-[data-theme="dark"] .tool-card:hover {
-  box-shadow: 0 10px 20px rgba(255, 255, 255, 0.12);
-}
-.tool-info {
-  flex: 1;
-  padding-right: 2rem;
-}
-.tool-name {
-  font-size: 1.25rem;
-  font-weight: var(--ifm-card-font-weight);
-  margin-bottom: 0.75rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #ffffff;
-  word-break: break-word;
-}
-[data-theme="light"] .tool-name {
-  color: #000000;
-}
-.tool-subtext {
-  font-size: 0.9rem;
-  font-weight: normal;
-  opacity: 0.7;
-}
-.tool-description {
-  font-size: 0.95rem;
-  line-height: 1.5;
-  color: rgba(255, 255, 255, 0.7);
-  margin-bottom: 0;
-}
-[data-theme="light"] .tool-description {
-  color: rgba(0, 0, 0, 0.7);
-}
-.tool-arrow {
-  font-size: 1.5rem;
-  font-weight: 300;
-  margin-left: 1rem;
-  transition: all 0.2s ease-in-out;
-  color: #ffffff;
-  opacity: 1; /* Make the arrow more visible */
-}
-
-[data-theme="light"] .tool-arrow {
-  color: #e62058;
-}
-
 .empty-category {
   grid-column: 1 / -1;
   padding: 2rem;
@@ -1045,18 +976,24 @@ tr:last-child td {
   }
 }
 
-[data-theme="light"] .cardTitle,
-[data-theme="light"] .tool-name,
-[data-theme="light"] .whitepapers-card-title,
-[data-theme="light"] h2.cardTitle,
-[data-theme="light"] .card h2 {
-  color: #e62058;
-  font-weight: 700;
+/* YouTube Embed */
+.youtube-embed-container {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  /* Maintain 16:9 aspect ratio using padding-bottom */
+  /* padding-bottom: 56.25%; /* 9 / 16 * 100 */
+  /* Or use the modern aspect-ratio property */
+  aspect-ratio: 16 / 9;
+  margin: 30px auto; /* Example margin, adjust as needed */
+  max-width: 784px; /* Optional: Limit max width */
 }
 
-[data-theme="light"] .tool-arrow,
-[data-theme="light"] .whitepapers-arrow-icon,
-[data-theme="light"] .card a::after,
-[data-theme="light"] .guide-card-arrow {
-  color: #e62058;
+.youtube-embed-iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0; /* Remove default border */
 }

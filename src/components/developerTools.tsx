@@ -1,79 +1,100 @@
-import React, { useState, useEffect } from "react";
-import Link from "@docusaurus/Link";
+import React, { useState, useEffect, useMemo } from "react";
 import Heading from "@theme/Heading";
 import toolsDataRaw from "@site/src/data/developerTools.json";
+import CustomCard from "./CustomCard";
 
-// Define the type for tool items
 type ToolItem = {
   name: string;
   link: string;
   subtext?: string;
 };
 
-// Define the type for categories
 type ToolCategories = {
-  [category: string]: ToolItem[];
+  [category: string]: ToolItem[]; // A dictionary mapping category names to tool lists
 };
 
-// Define the type for network data
 type NetworkData = {
-  name: string;
+  name: string; // Display name for the network (e.g., "Flare")
   categories: ToolCategories;
 };
 
-// Define the type for network tools
 type NetworkTools = {
-  [network: string]: NetworkData;
+  [networkKey: string]: NetworkData; // Key is the network identifier (e.g., "flare")
 };
 
-// Define the type for the complete tools data
 type ToolsData = {
-  toolDescriptions: { [key: string]: string };
+  toolDescriptions: { [key: string]: string }; // Descriptions keyed by tool name
   networkTools: NetworkTools;
 };
 
-const DeveloperTools = () => {
-  const [activeNetwork, setActiveNetwork] = useState("flare");
-  const [isClient, setIsClient] = useState(false);
+const DEFAULT_NETWORK = "flare";
+const DEFAULT_TOOL_DESCRIPTION = "A tool for Flare ecosystem development.";
+const SCROLL_DELAY_MS = 100; // Delay for scrolling to anchor
 
-  // Parse the imported JSON file
+const DeveloperTools: React.FC = () => {
+  const [activeNetwork, setActiveNetwork] = useState<string>(DEFAULT_NETWORK);
+  const [isClient, setIsClient] = useState<boolean>(false);
+
   const toolsData = toolsDataRaw as ToolsData;
   const { toolDescriptions, networkTools } = toolsData;
 
-  // Handle client-side only rendering and scroll to anchor if present
+  // Memoize network keys to avoid recalculating on every render if networkTools doesn't change
+  const networkKeys = useMemo(() => Object.keys(networkTools), [networkTools]);
+
+  // Memoize the currently selected network's data
+  const networkData = useMemo(
+    () => networkTools[activeNetwork],
+    [networkTools, activeNetwork],
+  );
+
+  // --- Effects ---
   useEffect(() => {
+    // Component has mounted, safe to access window/document
     setIsClient(true);
 
-    // Handle anchor scrolling
-    if (typeof window !== "undefined") {
-      const hash = window.location.hash;
-      if (hash) {
-        // Remove the '#' character
-        const id = hash.substring(1);
-        setTimeout(() => {
-          const element = document.getElementById(id);
-          if (element) {
-            element.scrollIntoView({ behavior: "smooth" });
-          }
-        }, 100);
-      }
-    }
-  }, []);
+    // Handle scrolling to anchor link if present on initial load
+    if (window.location.hash) {
+      const id = window.location.hash.substring(1);
+      // Use timeout to allow the DOM to potentially settle after initial render
+      const timerId = setTimeout(() => {
+        const element = document.getElementById(id);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth" });
+        }
+      }, SCROLL_DELAY_MS);
 
-  if (!isClient || !networkTools[activeNetwork]) {
+      // Cleanup timeout if component unmounts before it fires
+      return () => clearTimeout(timerId);
+    }
+    // No cleanup needed if there's no hash
+    return undefined;
+  }, []); // Empty dependency array: runs only once after initial mount
+
+  // --- Render Logic ---
+
+  // Don't render on the server or until client is ready, or if network data is missing
+  if (!isClient || !networkData) {
+    // Render nothing or a placeholder/spinner if preferred
     return null;
   }
 
-  const networkData = networkTools[activeNetwork];
+  // Generate category IDs safely
+  const generateCategoryId = (category: string): string => {
+    return category
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "");
+  };
 
   return (
     <div className="developer-tools-container">
+      {/* Header Section */}
       <div className="developer-tools-header">
         <p>
           Developer tools for Flare including RPCs, bridges, indexers, account
           abstraction, wallet SDKs, and more.
         </p>
-
+        {/* Network Selector */}
         <div className="network-selector-container">
           <div className="network-selector">
             <label htmlFor="network-select">Network</label>
@@ -84,9 +105,10 @@ const DeveloperTools = () => {
               className="network-select"
               aria-label="Select a network"
             >
-              {Object.keys(networkTools).map((networkKey) => (
+              {networkKeys.map((networkKey) => (
                 <option key={networkKey} value={networkKey}>
-                  {networkTools[networkKey].name}
+                  {networkTools[networkKey]?.name || networkKey}{" "}
+                  {/* Fallback to key if name missing */}
                 </option>
               ))}
             </select>
@@ -94,45 +116,38 @@ const DeveloperTools = () => {
         </div>
       </div>
 
+      {/* Tools Grid Section */}
       <div className="tools-grid">
         {Object.entries(networkData.categories).map(([category, tools]) => (
           <div key={category} className="category-section">
+            {/* Category Heading */}
             <Heading
               as="h2"
               className="category-title"
-              id={`${category.toLowerCase().replace(/\s+/g, "-")}`}
+              id={generateCategoryId(category)} // Generate ID for anchor links
             >
               {category}
             </Heading>
+            {/* Tool Cards within Category */}
             <div className="tools-cards">
-              {Array.isArray(tools) && tools.length === 0 ? (
-                <div className="empty-category">No tools in category</div>
+              {/* Check if tools array exists and is empty */}
+              {tools?.length === 0 ? (
+                <div className="empty-category">
+                  No tools listed in this category
+                </div>
               ) : (
-                Array.isArray(tools) &&
-                tools.map((tool) => (
-                  <Link
+                /* Map over tools if array has items */
+                tools?.map((tool) => (
+                  <CustomCard
                     key={tool.name}
-                    to={tool.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="tool-card"
-                  >
-                    <div className="tool-info">
-                      <Heading as="h3" className="tool-name">
-                        {tool.name}
-                        {tool.subtext && (
-                          <span className="tool-subtext"> {tool.subtext}</span>
-                        )}
-                      </Heading>
-                      <p className="tool-description">
-                        {toolDescriptions[tool.name] ||
-                          "A tool for Flare ecosystem development."}
-                      </p>
-                    </div>
-                    <div className="tool-arrow" aria-hidden="true">
-                      →
-                    </div>
-                  </Link>
+                    title={tool.name}
+                    href={tool.link}
+                    description={
+                      toolDescriptions[tool.name] || DEFAULT_TOOL_DESCRIPTION
+                    }
+                    newTab={true}
+                    date=""
+                  />
                 ))
               )}
             </div>
