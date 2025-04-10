@@ -36,7 +36,7 @@ const socialLinks: Array<SocialLinkProps> = [
     label: "Discord",
   },
   {
-    href: "https://twitter.com/FlareNetworks",
+    href: "https://x.com/FlareNetworks",
     icon: X,
     label: "X (formerly Twitter)",
   },
