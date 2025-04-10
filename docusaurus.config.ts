@@ -88,12 +88,6 @@ const config: Config = {
         height: 32,
       },
       items: [
-        // {
-        //   type: "docSidebar",
-        //   sidebarId: "networkSidebar",
-        //   position: "left",
-        //   label: "Flare ☀️",
-        // },
         {
           href: "https://github.com/flare-foundation/developer-hub",
           className: "header-github-link",
@@ -115,7 +109,7 @@ const config: Config = {
       },
       links: [
         {
-          title: "Flare", // This will be used for horizontal links below the logo
+          title: "Flare",
           items: [
             {
               label: "Contact",
@@ -208,7 +202,6 @@ const config: Config = {
     [
       require.resolve("@easyops-cn/docusaurus-search-local"),
       {
-        // `hashed` is recommended as long-term-cache of index file is possible
         language: ["en"],
         indexDocs: true,
         indexPages: true,
