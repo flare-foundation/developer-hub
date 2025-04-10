@@ -41,5 +41,6 @@ contract FtsoV2FeedConsumer {
         TestFtsoV2Interface ftsoV2 = ContractRegistry.getTestFtsoV2();
 
         // Retrieve the feed values and timestamp from the FTSOv2 contract
-        return ftsoV2.getFeedsByIdInWei(_feedIds);    }
+        return ftsoV2.getFeedsByIdInWei(_feedIds);
+    }
 }

@@ -10,7 +10,6 @@ import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/costo
  * DO NOT USE THIS CODE IN PRODUCTION.
  */
 contract FtsoV2ChangeQuoteFeed {
-
     /**
      * @dev Internal function to scale the base feed value to match the decimals of the final feed.
      */
