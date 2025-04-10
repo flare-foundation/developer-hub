@@ -76,7 +76,7 @@ const DeveloperTools = () => {
 
         <div className="network-selector-container">
           <div className="network-selector">
-            <label htmlFor="network-select">Network:</label>
+            <label htmlFor="network-select">Network</label>
             <select
               id="network-select"
               value={activeNetwork}
