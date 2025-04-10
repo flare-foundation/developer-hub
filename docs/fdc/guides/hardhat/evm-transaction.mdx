@@ -1,0 +1,900 @@
+---
+title: EVM Transaction
+authors: [nikerzetic, filipkoprivec]
+description: Retrieve the transaction data from Ethereum, Flare, or Songbird.
+tags: [intermediate, ethereum, fdc, foundry]
+keywords: [ethereum, flare-data-connector, evm, flare-network]
+sidebar_position: 6
+unlisted: false
+---
+
+The [`EVMTransaction`](/fdc/attestation-types/evm-transaction) attestation type enables data collection about a transaction on an EVM chain.
+The currently supported chain are: `ETH`, `FLR`, and `SGB`.
+You can learn more about it in the official [specification repo](/fdc/attestation-types/evm-transaction).
+
+We will now demonstrate how the FDC protocol can be used to collect the data of a given Ethereum transaction.
+The transaction we will be observing has the hash `0x4e636c6590b22d8dcdade7ee3b5ae5572f42edb1878f09b3034b2f7c3362ef3c`; this is an arbitrary transaction that we acquired from the Sepolia Ethereum testnet [explorer](https://sepolia.etherscan.io/).
+
+The same procedure works for all supported sources, `ETH`, `FLR`, and `SGB`.
+The source then requires only a slight modification; we will remind you of that when it comes up in the guide.
+
+In this guide, we will be following the steps outlined in the [FDC Overview](/fdc/overview).
+
+We will define a `scripts/fdcExample/EVMTransaction.ts` file that will encapsulate the whole process.
+
+```typescript title="scripts/fdcExample/EVMTransaction.s.sol"
+import { run, web3 } from "hardhat";
+import { TransferEventListenerInstance } from "../../typechain-types";
+import {
+  prepareAttestationRequestBase,
+  submitAttestationRequest,
+  retrieveDataAndProofBase,
+} from "./Base";
+
+const EVMTransaction = artifacts.require("TransferEventListener");
+
+const { VERIFIER_URL_TESTNET, VERIFIER_API_KEY_TESTNET, COSTON2_DA_LAYER_URL } =
+  process.env;
+
+...
+
+async function main() {
+  const data = await prepareAttestationRequest(transactionHash);
+  console.log("Data:", data, "\n");
+
+  const abiEncodedRequest = data.abiEncodedRequest;
+  const roundId = await submitAttestationRequest(abiEncodedRequest);
+
+  const proof = await retrieveDataAndProof(abiEncodedRequest, roundId);
+
+  const eventListener: TransferEventListenerInstance =
+    await deployAndVerifyContract();
+
+  await interactWithContract(eventListener, proof);
+}
+
+main().then((data) => {
+  process.exit(0);
+});
+```
+
+The function names mostly mirror the steps described in the [FDC guide](/fdc/overview).
+
+## Prepare request
+
+In this guide we will demonstrate how to prepare an attestation request through a verifier server.
+At the end of the section we will provide a breakdown of the abi encoded request; thus we will demonstrate how it can be constructed manually.
+
+To use the verifier server, we send a request to its `prepareRequest` endpoint.
+A JSON request to the verifier follows the same structure for all attestation types, with field values varying between types.
+
+### Required Fields
+
+- `attestationType` is the UTF8 hex string encoding of the attestation type name, zero-padded to 32 bytes.
+- `sourceId` is the UTF8 hex string encoding of the data source identifier name, zero-padded to 32 bytes.
+- `requestBody` is different for each attestation type.
+
+In the case of `EVMTransaction`, `requestBody` is a JSON containing the fields:
+
+- `transactionHash`: hash (address) of the observed transaction
+- `requiredConfirmations`: the depth of the block containing the transaction at which it is considered confirmed, i.e. when the transaction itself is considered confirmed; as `uint16`
+- `provideInput`: a `bool` determining whether the `input` field is included in the response
+- `listEvents`: a `bool` determining whether the `events` field is included in the response
+- `logIndices`: an `uint32` array of indices of the events to be included in the response; if `listEvents` is set to false `false` and this field is not `[]`, the attestation request will fail
+
+### Reference Documentation
+
+- [EVMTransaction Specification](/fdc/attestation-types/evm-transaction)
+- [Verifier Interactive Docs](https://fdc-verifiers-testnet.flare.network/verifier/api-doc#/)
+
+### Example Values
+
+- `transactionHash`: `0x4e636c6590b22d8dcdade7ee3b5ae5572f42edb1878f09b3034b2f7c3362ef3c`
+- `requiredConfirmations`: `1`
+- `provideInput`: `true`
+- `listEvents`: `true`
+- `logIndices`: `[]`
+- `urlTypeBase`: string `eth`
+  - Replace `eth` with `sgb` or `flr` for other chains.
+
+```typescript title="scripts/fdcExample/EVMTransaction.ts"
+// Request data
+const transactionHash =
+  "0x4e636c6590b22d8dcdade7ee3b5ae5572f42edb1878f09b3034b2f7c3362ef3c";
+
+// Configuration constants
+const attestationTypeBase = "EVMTransaction";
+const sourceIdBase = "testETH";
+const verifierUrlBase = VERIFIER_URL_TESTNET;
+const urlTypeBase = "eth";
+```
+
+### Encoding Functions
+
+To encode values into UTF8 hex:
+
+- `toUtf8HexString`: Converts a string to UTF8 hex.
+- `toHex`: Zero-right-pads the string to 32 bytes.
+
+These functions are included in the [Base library](https://github.com/flare-foundation/flare-hardhat-starter/blob/master/scripts/fdcExample/Base.ts) within the [example repository](https://github.com/flare-foundation/flare-hardhat-starter/), but they can also be defined locally in your contract or script.
+
+```typescript title="scripts/fdcExample/Base.ts"
+function toHex(data: string) {
+  var result = "";
+  for (var i = 0; i < data.length; i++) {
+    result += data.charCodeAt(i).toString(16);
+  }
+  return result.padEnd(64, "0");
+}
+```
+
+```typescript title="scripts/fdcExample/Base.ts"
+function toUtf8HexString(data: string) {
+  return "0x" + toHex(data);
+}
+```
+
+Because of the `console.log` commands it will produce JSON strings that represent valid requests; we can then pass this to the [interactive verifier](https://fdc-verifiers-testnet.flare.network/verifier/btc/api-doc#/EVMTransaction/BTCEVMTransactionVerifierController_prepareRequest) to check what the response will be.
+
+The process of posting a request to a verifier server is identical for all attestation types.
+It differs only in values used.
+For that reason we define a base function that the `prepareAttestationRequest` function will call.
+
+The `prepareAttestationRequestBase` function formulates a request for the verifier server, and posts it to the given URL.
+
+```typescript title="scripts/fdcExample/Base.ts"
+async function prepareAttestationRequestBase(
+  url: string,
+  apiKey: string,
+  attestationTypeBase: string,
+  sourceIdBase: string,
+  requestBody: any,
+) {
+  console.log("Url:", url, "\n");
+  const attestationType = toUtf8HexString(attestationTypeBase);
+  const sourceId = toUtf8HexString(sourceIdBase);
+
+  const request = {
+    attestationType: attestationType,
+    sourceId: sourceId,
+    requestBody: requestBody,
+  };
+  console.log("Prepared request:\n", request, "\n");
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "X-API-KEY": apiKey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(request),
+  });
+  if (response.status != 200) {
+    throw new Error(
+      `Response status is not OK, status ${response.status} ${response.statusText}\n`,
+    );
+  }
+  console.log("Response status is OK\n");
+
+  return await response.json();
+}
+```
+
+In the example repository, it is once again included within the [Base](https://github.com/flare-foundation/flare-foundry-starter/blob/master/scripts/fdcExample/Base.s.sol) library file.
+
+We construct the URL by appending to the verifier address `https://fdc-verifiers-testnet.flare.network/` the path `verifier/btc/EVMTransaction/prepareRequest`.
+If we were using another source, we would replace the string `eth` with `sgb` or `flr` accordingly (we would also have to replace `testETH` with `testSGB` or `testFLR`).
+Thus, the function that prepares the verifier request looks like:
+
+```typescript title="scripts/fdcExample/EVMTransaction.ts"
+async function prepareAttestationRequest(transactionHash: string) {
+  const requiredConfirmations = "1";
+  const provideInput = true;
+  const listEvents = true;
+  const logIndices: string[] = [];
+
+  const requestBody = {
+    transactionHash: transactionHash,
+    requiredConfirmations: requiredConfirmations,
+    provideInput: provideInput,
+    listEvents: listEvents,
+    logIndices: logIndices,
+  };
+
+  const url = `${verifierUrlBase}verifier/${urlTypeBase}/EVMTransaction/prepareRequest`;
+  const apiKey = VERIFIER_API_KEY_TESTNET!;
+
+  return await prepareAttestationRequestBase(
+    url,
+    apiKey,
+    attestationTypeBase,
+    sourceIdBase,
+    requestBody,
+  );
+}
+```
+
+<details>
+<summary>Understanding the `abiEncodedRequest`.</summary>
+
+If everything went right, the `abiEncodedRequest` should look something like this (minus the line breaks - we split it after the `0x` symbol and then after every 64 characters (32 bytes), for the sake of clarity).
+
+```
+0x
+45564d5472616e73616374696f6e000000000000000000000000000000000000
+7465737445544800000000000000000000000000000000000000000000000000
+9d410778cc0b2b8f1b8eaa79cbd0eed5d3be7514dea070e2041ad00a4c6e88f8
+0000000000000000000000000000000000000000000000000000000000000020
+4e636c6590b22d8dcdade7ee3b5ae5572f42edb1878f09b3034b2f7c3362ef3c
+0000000000000000000000000000000000000000000000000000000000000001
+0000000000000000000000000000000000000000000000000000000000000001
+0000000000000000000000000000000000000000000000000000000000000001
+00000000000000000000000000000000000000000000000000000000000000a0
+0000000000000000000000000000000000000000000000000000000000000000
+```
+
+Let's break it down line by line:
+
+- **First line:** `toUtf8HexString("EVMTransaction")`
+- **Second line:** `toUtf8HexString("testETH")`
+- **Third line:** message integrity code (MIC), a hash of the whole response salted with a string `"Flare"`, ensures the integrity of the attestation
+- **Remaining lines:** ABI encoded `EVMTransaction.RequestBody` Solidity struct
+
+What this demonstrates is that, with some effort, the `abiEncodedRequest` can be constructed manually.
+
+</details>
+
+## Submit request to FDC
+
+This step transitions from off-chain request preparation to on-chain interaction with the FDC protocol.
+We will submit the validated request to the blockchain using deployed official Flare smart contracts.
+To streamline the process of accessing these, the [Flare smart contracts periphery package](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts) is shipped with the `ContractRegistry` library.
+
+The `ContractRegistry` library allows us to
+{/* TODO contract registry */}
+
+We define a `Helpers` contract that will give us access to the following contracts:
+
+- `FdcHub`: for posting the request to
+- `FdcRequestFeeConfigurations`: calculates the fee of the request
+- `FlareSystemsManager`: for calculating the round ID
+- `Relay`: confirms the round has finalized
+
+```solidity title="contracts/fdcExample/Helpers.sol"
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.25;
+
+import {console} from "hardhat/console.sol";
+import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
+import {IFdcHub} from "@flarenetwork/flare-periphery-contracts/coston2/IFdcHub.sol";
+import {IFdcRequestFeeConfigurations} from
+    "@flarenetwork/flare-periphery-contracts/coston2/IFdcRequestFeeConfigurations.sol";
+import {IFlareSystemsManager} from "@flarenetwork/flare-periphery-contracts/coston2/IFlareSystemsManager.sol";
+import {IRelay} from "@flarenetwork/flare-periphery-contracts/coston2/IRelay.sol";
+
+contract Helpers {
+    function getFdcHub() public view returns (IFdcHub) {
+        return ContractRegistry.getFdcHub();
+    }
+
+    function getFdcRequestFeeConfigurations() public view returns (IFdcRequestFeeConfigurations) {
+        return ContractRegistry.getFdcRequestFeeConfigurations();
+    }
+
+    function getFlareSystemsManager() public view returns (IFlareSystemsManager) {
+        return ContractRegistry.getFlareSystemsManager();
+    }
+
+    function getRelay() public view returns (IRelay) {
+        return ContractRegistry.getRelay();
+    }
+}
+```
+
+We expose the `Helpers` contract through the following function.
+
+```typescript title="scripts/fdcExample/Base.ts"
+async function getHelpers() {
+  const helpers: HelpersInstance = await Helpers.new();
+  return helpers;
+}
+```
+
+To submit the attestation request, we first access the deployed `FdcHub` contract.
+We determine the fee for our attestation type, and then request the attestation of the FDC, paying the required fee.
+Lastly, we calculate the voting round Id from the transaction that carried the attestation request; we will need it to query the data and proof.
+
+```typescript title="scripts/fdcExample/Base.ts"
+async function submitAttestationRequest(abiEncodedRequest: string) {
+  const fdcHub = await getFdcHub();
+
+  const requestFee = await getFdcRequestFee(abiEncodedRequest);
+
+  const transaction = await fdcHub.requestAttestation(abiEncodedRequest, {
+    value: requestFee,
+  });
+  console.log("Submitted request:", transaction.tx, "\n");
+
+  const roundId = await calculateRoundId(transaction);
+  console.log(
+    `Check round progress at: https://${hre.network.name}-systems-explorer.flare.rocks/voting-epoch/${roundId}?tab=fdc\n`,
+  );
+  return roundId;
+}
+```
+
+{/* TODO */}
+
+```typescript title="scripts/fdcExample/Base.ts"
+async function getFdcHub() {
+  const helpers: HelpersInstance = await getHelpers();
+  const fdcHubAddress: string = await helpers.getFdcHub();
+  return await FdcHub.at(fdcHubAddress);
+}
+```
+
+The request fee is obtained from the `fdcRequestFeeConfigurations` contract.
+We once again connect to the `fdcRequestFeeConfigurations` contract through the `ContractRegistry` library.
+
+```typescript title="scripts/fdcExample/Base.ts"
+async function getFdcRequestFee(abiEncodedRequest: string) {
+  const helpers: HelpersInstance = await getHelpers();
+  const fdcRequestFeeConfigurationsAddress: string =
+    await helpers.getFdcRequestFeeConfigurations();
+  const fdcRequestFeeConfigurations: IFdcRequestFeeConfigurationsInstance =
+    await FdcRequestFeeConfigurations.at(fdcRequestFeeConfigurationsAddress);
+  return await fdcRequestFeeConfigurations.getRequestFee(abiEncodedRequest);
+}
+```
+
+The round ID is calculate from the timestamp of the block, containing the transaction requesting attestation.
+We first subtract from the block timestamp the timestamp of the first voting epoch.
+Then, we divide the number by the duration of the voting epoch (90 seconds).
+Instead of hard-coding them, we retrieve these values from another official Flare contract, the `flareSystemsManager`.
+
+```typescript title="scripts/fdcExample/Base.ts"
+async function calculateRoundId(transaction: any) {
+  const blockNumber = transaction.receipt.blockNumber;
+  const block = await ethers.provider.getBlock(blockNumber);
+  const blockTimestamp = BigInt(block!.timestamp);
+
+  const flareSystemsManager: IFlareSystemsManagerInstance =
+    await getFlareSystemsManager();
+  const firsVotingRoundStartTs = BigInt(
+    await flareSystemsManager.firstVotingRoundStartTs(),
+  );
+  const votingEpochDurationSeconds = BigInt(
+    await flareSystemsManager.votingEpochDurationSeconds(),
+  );
+
+  console.log("Block timestamp:", blockTimestamp, "\n");
+  console.log("First voting round start ts:", firsVotingRoundStartTs, "\n");
+  console.log(
+    "Voting epoch duration seconds:",
+    votingEpochDurationSeconds,
+    "\n",
+  );
+
+  const roundId = Number(
+    (blockTimestamp - firsVotingRoundStartTs) / votingEpochDurationSeconds,
+  );
+  console.log("Calculated round id:", roundId, "\n");
+  console.log(
+    "Received round id:",
+    Number(await flareSystemsManager.getCurrentVotingEpochId()),
+    "\n",
+  );
+  return roundId;
+}
+```
+
+We obtain the `flareSystemsManager` contract through the `ContractRegistry` library and the previously defined `Helpers` contract as well.
+
+```typescript title="scripts/fdcExample/Base.ts"
+async function getFlareSystemsManager() {
+  const helpers: HelpersInstance = await getHelpers();
+  const flareSystemsManagerAddress: string =
+    await helpers.getFlareSystemsManager();
+  return await FlareSystemsManager.at(flareSystemsManagerAddress);
+}
+```
+
+## Retrieve data and proof
+
+To retrieve the data and proof, we must first wait for the voting round in which the attestation request was submitted to finalize;
+this takes no more than 180 seconds, but is on average much less.
+After the round has been finalized, we post a request to a DA Layer provider.
+
+We can check if the request was submitted successfully on the [AttestationRequests](https://coston2-systems-explorer.flare.rocks/attestation-request) page on the Flare Systems Explorer website.
+To check if the round has been finalized, go to [Finalizations](https://coston2-systems-explorer.flare.rocks/finalizations) page.
+
+If you want to learn more about how the FDC protocol works, check [here](/fdc/overview).
+
+Because the process includes waiting for the voting round to finalize, we prepare a `sleep` function.
+The function pauses the execution of the script for a given number of milliseconds.
+
+```typescript title="scripts/fdcExample/Base.ts"
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+```
+
+The only difference between the `retrieveDataAndProof` functions of all six attestation types is the URL of the DA Layer server.
+For that reason, we will define as separate `retrieveDataAndProofBase` function that will handle most of the logic.
+The function waits for the round to finalize - rechecking every 10 seconds if necessary.
+Then, it prepares a proof request, and posts it to the DA Layer server.
+Because it might take a few seconds for the server to generate the proof, the function ensures that the response actually contains a sufficient response, and retries otherwise.
+
+```typescript title="scripts/fdcExample/Base.ts"
+async function retrieveDataAndProofBase(
+  url: string,
+  abiEncodedRequest: string,
+  roundId: number,
+) {
+  console.log("Waiting for the round to finalize...");
+  // We check every 10 seconds if the round is finalized
+  const relay: IRelayInstance = await getRelay();
+  while (!(await relay.isFinalized(200, roundId))) {
+    await sleep(10000);
+  }
+  console.log("Round finalized!\n");
+
+  const request = {
+    votingRoundId: roundId,
+    requestBytes: abiEncodedRequest,
+  };
+  console.log("Prepared request:\n", request, "\n");
+
+  await sleep(10000);
+  var proof = await postRequestToDALayer(url, request, true);
+  console.log("Waiting for the DA Layer to generate the proof...");
+  while (proof.response_hex == undefined) {
+    await sleep(5000);
+    proof = await postRequestToDALayer(url, request, false);
+  }
+  console.log("Proof generated!\n");
+
+  console.log("Proof:", proof, "\n");
+  return proof;
+}
+```
+
+We access the Flare's official `Relay` contract with a helper function.
+
+```typescript title="scripts/fdcExample/Base.ts"
+async function getRelay() {
+  const helpers: HelpersInstance = await getHelpers();
+  const relayAddress: string = await helpers.getRelay();
+  return await IRelay.at(relayAddress);
+}
+```
+
+The following function posts a proof request to the DA Layer.
+
+```typescript title="scripts/fdcExample/Base.ts"
+async function postRequestToDALayer(
+  url: string,
+  request: any,
+  watchStatus: boolean = false,
+) {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      //   "X-API-KEY": "",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(request),
+  });
+  if (watchStatus && response.status != 200) {
+    throw new Error(
+      `Response status is not OK, status ${response.status} ${response.statusText}\n`,
+    );
+  } else if (watchStatus) {
+    console.log("Response status is OK\n");
+  }
+  return await response.json();
+}
+```
+
+The main prepare the URL of the DA Layer's `proof-by-request-raw` endpoint.
+We contact this specific endpoint, because it return the abi encoded `IEVMTransaction.Response` struct, and is thus unambiguous.
+
+```typescript title="scripts/fdcExample/EVMTransaction.ts"
+async function retrieveDataAndProof(
+  abiEncodedRequest: string,
+  roundId: number,
+) {
+  const url = `${COSTON2_DA_LAYER_URL}api/v1/fdc/proof-by-request-round-raw`;
+  console.log("Url:", url, "\n");
+  return await retrieveDataAndProofBase(url, abiEncodedRequest, roundId);
+}
+```
+
+The response the DA Layer server returns has the following fields:
+
+- The field `attestationType` holds the UTF8 encoded hex string of the attestation type name, padded to 32 bytes.
+  Thus, it should match the value of the `attestationType` parameter in the Prepare the request step.
+  In our case, that value is `0x45564d5472616e73616374696f6e000000000000000000000000000000000000`.
+- The array `proofs` holds the Merkle proofs of our attestation request.
+- Lastly, `responseHex` is the ABI encoding of the chosen attestation type response struct.
+  In this case, it is the `IEVMTransaction.Response` struct.
+
+We can ascertain the form of the proof request, as well as examine the response in advance, trough the [interactive documentation](https://fdc-verifiers-testnet.flare.network/verifier/btc/api-doc) of the DA Layer server.
+
+<details>
+<summary>An example complete proof response and decoded `IEVMTransaction.Response`.</summary>
+
+An example DA Layer response for a request using the data provided in this example is:
+
+```shell
+{
+  response_hex: '0x
+  0000000000000000000000000000000000000000000000000000000000000020
+  45564d5472616e73616374696f6e000000000000000000000000000000000000
+  7465737445544800000000000000000000000000000000000000000000000000
+  00000000000000000000000000000000000000000000000000000000000e6c2c
+  0000000000000000000000000000000000000000000000000000000067724b20
+  00000000000000000000000000000000000000000000000000000000000000c0
+  0000000000000000000000000000000000000000000000000000000000000180
+  4e636c6590b22d8dcdade7ee3b5ae5572f42edb1878f09b3034b2f7c3362ef3c
+  0000000000000000000000000000000000000000000000000000000000000001
+  0000000000000000000000000000000000000000000000000000000000000001
+  0000000000000000000000000000000000000000000000000000000000000001
+  00000000000000000000000000000000000000000000000000000000000000a0
+  0000000000000000000000000000000000000000000000000000000000000000
+  000000000000000000000000000000000000000000000000000000000070acc6
+  0000000000000000000000000000000000000000000000000000000067724b20
+  00000000000000000000000070ad32b82b4fe2821c798e628d93645218e2a806
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000003fc91a3afd70395cd496c647d5a6cc9d4b2b7fad
+  00000000000000000000000000000000000000000000000000d8b72d434c8000
+  0000000000000000000000000000000000000000000000000000000000000120
+  0000000000000000000000000000000000000000000000000000000000000001
+  0000000000000000000000000000000000000000000000000000000000000520
+  00000000000000000000000000000000000000000000000000000000000003c5
+  3593564c00000000000000000000000000000000000000000000000000000000
+  0000006000000000000000000000000000000000000000000000000000000000
+  000000a000000000000000000000000000000000000000000000000000000000
+  6772521a00000000000000000000000000000000000000000000000000000000
+  000000040b000604000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000400000000000000000000000000000000000000000000000000000000
+  0000008000000000000000000000000000000000000000000000000000000000
+  000000e000000000000000000000000000000000000000000000000000000000
+  0000020000000000000000000000000000000000000000000000000000000000
+  0000028000000000000000000000000000000000000000000000000000000000
+  0000004000000000000000000000000000000000000000000000000000000000
+  0000000200000000000000000000000000000000000000000000000000d8b72d
+  434c800000000000000000000000000000000000000000000000000000000000
+  0000010000000000000000000000000000000000000000000000000000000000
+  0000000200000000000000000000000000000000000000000000000000d8b72d
+  434c800000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  000000a000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000002bfff9976782d46cc05630d1f6ebab18b2324d6b140001f41c7d4b196c
+  b0c7b01d743fbc6116a902379c72380000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000000
+  000000600000000000000000000000001c7d4b196cb0c7b01d743fbc6116a902
+  379c7238000000000000000000000000e49acc3b16c097ec88dc9352ce4cd57a
+  b7e35b9500000000000000000000000000000000000000000000000000000000
+  0000001900000000000000000000000000000000000000000000000000000000
+  000000600000000000000000000000001c7d4b196cb0c7b01d743fbc6116a902
+  379c723800000000000000000000000070ad32b82b4fe2821c798e628d936452
+  18e2a80600000000000000000000000000000000000000000000000000000000
+  ad2090e40c000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000006
+  00000000000000000000000000000000000000000000000000000000000000c0
+  0000000000000000000000000000000000000000000000000000000000000200
+  0000000000000000000000000000000000000000000000000000000000000360
+  00000000000000000000000000000000000000000000000000000000000004c0
+  00000000000000000000000000000000000000000000000000000000000006a0
+  0000000000000000000000000000000000000000000000000000000000000800
+  000000000000000000000000000000000000000000000000000000000000003f
+  000000000000000000000000fff9976782d46cc05630d1f6ebab18b2324d6b14
+  00000000000000000000000000000000000000000000000000000000000000a0
+  0000000000000000000000000000000000000000000000000000000000000100
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000002
+  e1fffcc4923d04b559f4d29a8bfc6cda04eb5b0d3c460751c2402c5c5cc9109c
+  0000000000000000000000003fc91a3afd70395cd496c647d5a6cc9d4b2b7fad
+  0000000000000000000000000000000000000000000000000000000000000020
+  00000000000000000000000000000000000000000000000000d8b72d434c8000
+  0000000000000000000000000000000000000000000000000000000000000040
+  0000000000000000000000001c7d4b196cb0c7b01d743fbc6116a902379c7238
+  00000000000000000000000000000000000000000000000000000000000000a0
+  0000000000000000000000000000000000000000000000000000000000000120
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000003
+  ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+  0000000000000000000000003289680dd4d6c10bb19b899729cda5eef58aeff1
+  0000000000000000000000003fc91a3afd70395cd496c647d5a6cc9d4b2b7fad
+  0000000000000000000000000000000000000000000000000000000000000020
+  00000000000000000000000000000000000000000000000000000000ae6dcda8
+  0000000000000000000000000000000000000000000000000000000000000041
+  000000000000000000000000fff9976782d46cc05630d1f6ebab18b2324d6b14
+  00000000000000000000000000000000000000000000000000000000000000a0
+  0000000000000000000000000000000000000000000000000000000000000120
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000003
+  ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+  0000000000000000000000003fc91a3afd70395cd496c647d5a6cc9d4b2b7fad
+  0000000000000000000000003289680dd4d6c10bb19b899729cda5eef58aeff1
+  0000000000000000000000000000000000000000000000000000000000000020
+  00000000000000000000000000000000000000000000000000d8b72d434c8000
+  0000000000000000000000000000000000000000000000000000000000000042
+  0000000000000000000000003289680dd4d6c10bb19b899729cda5eef58aeff1
+  00000000000000000000000000000000000000000000000000000000000000a0
+  0000000000000000000000000000000000000000000000000000000000000120
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000003
+  c42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67
+  0000000000000000000000003fc91a3afd70395cd496c647d5a6cc9d4b2b7fad
+  0000000000000000000000003fc91a3afd70395cd496c647d5a6cc9d4b2b7fad
+  00000000000000000000000000000000000000000000000000000000000000a0
+  ffffffffffffffffffffffffffffffffffffffffffffffffffffffff51923258
+  00000000000000000000000000000000000000000000000000d8b72d434c8000
+  00000000000000000000000000000000000011d79ac448fce087b0605d7423c8
+  000000000000000000000000000000000000000000000000002231596d817570
+  000000000000000000000000000000000000000000000000000000000002925f
+  0000000000000000000000000000000000000000000000000000000000000043
+  0000000000000000000000001c7d4b196cb0c7b01d743fbc6116a902379c7238
+  00000000000000000000000000000000000000000000000000000000000000a0
+  0000000000000000000000000000000000000000000000000000000000000120
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000003
+  ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+  0000000000000000000000003fc91a3afd70395cd496c647d5a6cc9d4b2b7fad
+  000000000000000000000000e49acc3b16c097ec88dc9352ce4cd57ab7e35b95
+  0000000000000000000000000000000000000000000000000000000000000020
+  00000000000000000000000000000000000000000000000000000000006fa26f
+  0000000000000000000000000000000000000000000000000000000000000044
+  0000000000000000000000001c7d4b196cb0c7b01d743fbc6116a902379c7238
+  00000000000000000000000000000000000000000000000000000000000000a0
+  0000000000000000000000000000000000000000000000000000000000000120
+  0000000000000000000000000000000000000000000000000000000000000000
+  0000000000000000000000000000000000000000000000000000000000000003
+  ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+  0000000000000000000000003fc91a3afd70395cd496c647d5a6cc9d4b2b7fad
+  00000000000000000000000070ad32b82b4fe2821c798e628d93645218e2a806
+  0000000000000000000000000000000000000000000000000000000000000020
+  00000000000000000000000000000000000000000000000000000000adfe2b39',
+  attestation_type: '0x45564d5472616e73616374696f6e000000000000000000000000000000000000',
+  proof: [
+    '0x9251c0e3047688af1305daf61f2b757527b731e7d1fad3c71d08734772fbebeb',
+    '0xad5fdf0f8cb6bc42cdab5affb8f03a1fadaf1ef60875af76344b7ca3ab694c9b',
+    '0xead06bac3be86604034e138784c86f0b14f2481c001e31e17d03c185488033dc'
+  ]
+}
+```
+
+The `proof` field is dependent on the round in which the attestation request was submitted;
+it contains proofs for all of the requests submitted in that round.
+In the case of a single attestation request it is an empty list `[]` (the proof is the merkle root itself).
+
+The decoded `IEVMTransaction.Response` struct is:
+
+```shell
+[
+  attestationType: '0x45564d5472616e73616374696f6e000000000000000000000000000000000000',
+  sourceId: '0x7465737445544800000000000000000000000000000000000000000000000000',
+  votingRound: '945196',
+  lowestUsedTimestamp: '1735543584',
+  requestBody: [
+    '0x4e636c6590b22d8dcdade7ee3b5ae5572f42edb1878f09b3034b2f7c3362ef3c',
+    '1',
+    true,
+    true,
+    [],
+    transactionHash: '0x4e636c6590b22d8dcdade7ee3b5ae5572f42edb1878f09b3034b2f7c3362ef3c',
+    requiredConfirmations: '1',
+    provideInput: true,
+    listEvents: true,
+    logIndices: []
+  ],
+  responseBody: [
+    '7384262',
+    '1735543584',
+    '0x70Ad32B82B4FE2821C798e628d93645218E2A806',
+    false,
+    '0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD',
+    '61000000000000000',
+    '0x3593564c000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000006772521a00000000000000000000000000000000000000000000000000000000000000040b000604000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002800000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000d8b72d434c80000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000d8b72d434c8000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002bfff9976782d46cc05630d1f6ebab18b2324d6b140001f41c7d4b196cb0c7b01d743fbc6116a902379c723800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000001c7d4b196cb0c7b01d743fbc6116a902379c7238000000000000000000000000e49acc3b16c097ec88dc9352ce4cd57ab7e35b95000000000000000000000000000000000000000000000000000000000000001900000000000000000000000000000000000000000000000000000000000000600000000000000000000000001c7d4b196cb0c7b01d743fbc6116a902379c723800000000000000000000000070ad32b82b4fe2821c798e628d93645218e2a80600000000000000000000000000000000000000000000000000000000ad2090e40c',
+    '1',
+    [ ... ],
+    blockNumber: '7384262',
+    timestamp: '1735543584',
+    sourceAddress: '0x70Ad32B82B4FE2821C798e628d93645218E2A806',
+    isDeployment: false,
+    receivingAddress: '0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD',
+    value: '61000000000000000',
+    input: '0x3593564c000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000006772521a00000000000000000000000000000000000000000000000000000000000000040b000604000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002800000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000d8b72d434c80000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000d8b72d434c8000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002bfff9976782d46cc05630d1f6ebab18b2324d6b140001f41c7d4b196cb0c7b01d743fbc6116a902379c723800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000001c7d4b196cb0c7b01d743fbc6116a902379c7238000000000000000000000000e49acc3b16c097ec88dc9352ce4cd57ab7e35b95000000000000000000000000000000000000000000000000000000000000001900000000000000000000000000000000000000000000000000000000000000600000000000000000000000001c7d4b196cb0c7b01d743fbc6116a902379c723800000000000000000000000070ad32b82b4fe2821c798e628d93645218e2a80600000000000000000000000000000000000000000000000000000000ad2090e40c',
+    status: '1',
+    events: [ ... ]
+  ]
+]
+```
+
+</details>
+
+## Use the data
+
+We will now define a simple contract, that will demonstrate how the data can be used onchain.
+The contract will receive data and proof of an Ethereum transaction, and store all token transfers contained into an array of `TokenTransfer` structs.
+It will do so only if the transaction is valid.
+
+```solidity title="src/fdcExample/EVMTransaction.sol"
+struct TokenTransfer {
+    address from;
+    address to;
+    uint256 value;
+}
+```
+
+The code of the contract is as follows.
+
+```solidity title="src/fdcExample/EVMTransaction.sol"
+contract TransferEventListener is ITransferEventListener {
+    TokenTransfer[] public tokenTransfers;
+    address public USDC_CONTRACT = 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238; // USDC contract address on sepolia
+
+    function isEVMTransactionProofValid(
+        IEVMTransaction.Proof calldata transaction
+    ) public view returns (bool) {
+        // Use the library to get the verifier contract and verify that this transaction was proved by state connector
+        IFdcVerification fdc = ContractRegistry.getFdcVerification();
+        console.log("transaction: %s\n", FdcStrings.toJsonString(transaction));
+        return true;
+        //return fdc.verifyEVMTransaction(transaction);
+    }
+
+    function collectTransferEvents(
+        IEVMTransaction.Proof calldata _transaction
+    ) external {
+        // 1. FDC Logic
+        // Check that this EVMTransaction has indeed been confirmed by the FDC
+        require(
+            isEVMTransactionProofValid(_transaction),
+            "Invalid transaction proof"
+        );
+
+        // 2. Business logic
+        // Go through all events
+        for (
+            uint256 i = 0;
+            i < _transaction.data.responseBody.events.length;
+            i++
+        ) {
+            // Get current event
+            IEVMTransaction.Event memory _event = _transaction
+                .data
+                .responseBody
+                .events[i];
+
+            // Disregard events that are not from the USDC contract
+            if (_event.emitterAddress != USDC_CONTRACT) {
+                continue;
+            }
+
+            // Disregard non Transfer events
+            if (
+                _event.topics.length == 0 || // No topics
+                // The topic0 doesn't match the Transfer event
+                _event.topics[0] !=
+                keccak256(abi.encodePacked("Transfer(address,address,uint256)"))
+            ) {
+                continue;
+            }
+
+            // We now know that this is a Transfer event from the USDC contract - and therefore know how to decode topics and data
+            // Topic 1 is the sender
+            address sender = address(uint160(uint256(_event.topics[1])));
+            // Topic 2 is the receiver
+            address receiver = address(uint160(uint256(_event.topics[2])));
+            // Data is the amount
+            uint256 value = abi.decode(_event.data, (uint256));
+
+            // Add the transfer to the list
+            tokenTransfers.push(
+                TokenTransfer({from: sender, to: receiver, value: value})
+            );
+        }
+    }
+
+    function getTokenTransfers()
+        external
+        view
+        returns (TokenTransfer[] memory)
+    {
+        TokenTransfer[] memory result = new TokenTransfer[](
+            tokenTransfers.length
+        );
+        for (uint256 i = 0; i < tokenTransfers.length; i++) {
+            result[i] = tokenTransfers[i];
+        }
+        return result;
+    }
+}
+```
+
+### Verify proof
+
+FDC optimizes on-chain storage costs by implementing a hybrid data verification system.
+Instead of storing complete datasets on-chain, it stores only Merkle proofs, while maintaining the actual data through trusted off-chain providers.
+This approach significantly reduces gas costs while preserving data integrity.
+
+When requested, data providers supply the original data along with its corresponding Merkle proof.
+The protocol verifies data authenticity by comparing the provided Merkle proof against the on-chain Merkle root.
+A successful match confirms the data's integrity and authenticity within the FDC system.
+
+While data verification is optional if you trust your data provider, FDC ensures transparency by making verification possible at any time.
+This capability is crucial for maintaining system integrity and allowing users to independently verify data when needed, particularly in production environments.
+
+FDC provides verification functionality through the `FdcVerification` contract.
+
+We then access the `FdcVerification` contract through the `ContractRegistry`, and feed it the proof.
+If we proof is valid, the function `verifyEVMTransaction` will return `true`, otherwise `false`.
+
+We deploy and verify this contract with the `deployAndVerifyContract` function in the `scripts/fdcExample/EVMTransaction.ts` file.
+
+```typescript title="scripts/fdcExample/EVMTransaction.ts"
+async function deployAndVerifyContract() {
+  const args: any[] = [];
+  const eventListener: TransferEventListenerInstance = await EVMTransaction.new(
+    ...args,
+  );
+  try {
+    await run("verify:verify", {
+      address: eventListener.address,
+      constructorArguments: args,
+    });
+  } catch (e: any) {
+    console.log(e);
+  }
+  console.log("EVMTransaction deployed to", eventListener.address, "\n");
+  return eventListener;
+}
+```
+
+## Interact with contract
+
+We define an additional function that allows us to interact with the just deployed contract.
+The `interactWithContract` function also takes the proof retrieved in the previous step as an argument.
+It abi decodes the `response_hex` value to an `IEVMTransaction.Response` struct.
+From that and the array of proofs, it constructs an `IEVMTransaction.Proof` object, on which it call the `registerAddress` function of the `AddressRegistry` contract deployed above.
+The contract verifies the address, and the script prints it to the console.
+
+```typescript title="scripts/fdcExample/EVMTransaction.ts"
+async function interactWithContract(
+  eventListener: TransferEventListenerInstance,
+  proof: any,
+) {
+  console.log("Proof hex:", proof.response_hex, "\n");
+
+  // A piece of black magic that allows us to read the response type from an artifact
+  const IEVMTransactionVerification = await artifacts.require(
+    "IEVMTransactionVerification",
+  );
+  const responseType =
+    IEVMTransactionVerification._json.abi[0].inputs[0].components[1];
+  console.log("Response type:", responseType, "\n");
+
+  const decodedResponse = web3.eth.abi.decodeParameter(
+    responseType,
+    proof.response_hex,
+  );
+  console.log("Decoded proof:", decodedResponse, "\n");
+  const transaction = await eventListener.collectTransferEvents({
+    merkleProof: proof.proof,
+    data: decodedResponse,
+  });
+  console.log("Transaction:", transaction.tx, "\n");
+  console.log("Token transfer:", await eventListener.tokenTransfers(0), "\n");
+}
+```
+
+We can run the whole script by calling the following console command.
+
+```bash
+yarn hardhat run scripts/fdcExample/EVMTransaction.ts
+```

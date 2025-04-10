@@ -12,8 +12,9 @@ Sourced from `IAssetManager.sol` on [GitHub](https://github.com/flare-labs-ltd/f
 
 ### `getSettings`
 
-Returns the complete asset manager settings.
-Returns the [`AssetManagerSettings`](https://github.com/flare-labs-ltd/fassets/blob/main/contracts/userInterfaces/data/AssetManagerSettings.sol) struct.
+Returns the complete asset manager settings as the [`AssetManagerSettings`](https://github.com/flare-labs-ltd/fassets/blob/main/contracts/userInterfaces/data/AssetManagerSettings.sol) struct.
+
+You can find detailed explanations of each parameter in the [FAssets Operational Parameters](/fassets/operational-parameters/#asset-manager-operational-parameters) documentation.
 
 ```solidity
 function getSettings()
@@ -23,12 +24,81 @@ function getSettings()
 
 ### `getAgentInfo`
 
-Return detailed info about an agent.
-Returns the [`AgentInfo`](https://github.com/flare-labs-ltd/fassets/blob/main/contracts/userInterfaces/data/AgentInfo.sol) struct.
+Returns detailed information about an agent as the [`AgentInfo`](https://github.com/flare-labs-ltd/fassets/blob/main/contracts/userInterfaces/data/AgentInfo.sol) struct.
+
 Need to provide the agent vault address.
+
+You can find detailed explanations of each agent parameter in the [FAssets Operational Parameters](/fassets/operational-parameters/#default-agent-settings) documentation.
 
 ```solidity
 function getAgentInfo(address _agentVault)
     external view
     returns (AgentInfo.Info memory);
+```
+
+### `redeem`
+
+Redeem number of lots of FAssets.
+
+Returns the actual redeemed amount.
+
+Parameters:
+
+- `_lots`: Number of lots to redeem.
+- `_redeemerUnderlyingAddressString`: The address to which the agent must transfer underlying amount.
+- `_executor`: The account that is allowed to execute redemption default (besides redeemer and agent).
+
+```solidity
+function redeem(
+    uint256 _lots,
+    string memory _redeemerUnderlyingAddressString,
+    address payable _executor
+) external payable
+    returns (uint256 _redeemedAmountUBA);
+```
+
+### `redemptionQueue`
+
+Returns the redemption queue in the form of an array of [`RedemptionTicketInfo`](https://github.com/flare-labs-ltd/fassets/blob/main/contracts/userInterfaces/data/RedemptionTicketInfo.sol) structs.
+
+Parameters:
+
+- `_firstRedemptionTicketId`: the ticket id to start listing from; if `0`, starts from the beginning
+- `_pageSize`: the maximum number of redemption tickets to return
+
+Returns:
+
+- `_queue`: the (part of) the redemption queue; maximum length is \_pageSize
+- `_nextRedemptionTicketId`: works as a cursor - if the `_pageSize` is reached and there are more tickets, it is the first ticket id not returned; if the end is reached, it is 0
+
+```solidity
+function redemptionQueue(
+    uint256 _firstRedemptionTicketId,
+    uint256 _pageSize
+) external view
+    returns (RedemptionTicketInfo.Data[] memory _queue, uint256 _nextRedemptionTicketId);
+```
+
+### `agentRedemptionQueue`
+
+Returns the redemption queue for specific agent in the form of an array of [`RedemptionTicketInfo`](https://github.com/flare-labs-ltd/fassets/blob/main/contracts/userInterfaces/data/RedemptionTicketInfo.sol) structs.
+
+Parameters:
+
+- `_agentVault`: the agent vault address of the queried agent
+- `_firstRedemptionTicketId`: the ticket id to start listing from; if `0`, starts from the beginning
+- `_pageSize`: the maximum number of redemption tickets to return
+
+Returns:
+
+- `_queue`: the (part of) the redemption queue; maximum length is \_pageSize
+- `_nextRedemptionTicketId`: works as a cursor - if the` _pageSize` is reached and there are more tickets, it is the first ticket id not returned; if the end is reached, it is 0
+
+```solidity
+function agentRedemptionQueue(
+    address _agentVault,
+    uint256 _firstRedemptionTicketId,
+    uint256 _pageSize
+) external view
+    returns (RedemptionTicketInfo.Data[] memory _queue, uint256 _nextRedemptionTicketId);
 ```

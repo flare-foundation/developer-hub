@@ -1,17 +1,19 @@
 openapi: 3.0.3
 info:
-  title: Data Availability API
+  title: Data Availability Client API
   version: 1.0.0
   description: >
-    OpenAPI specification for Data Availability API. 
+    OpenAPI specification for Data Availability Client API. 
     The public API endpoints are rate limited, to request an API key for higher limits, create an [API Key Request Issue](https://github.com/flare-foundation/developer-hub/issues/new/choose).
 servers:
   - url: "https://flr-data-availability.flare.network/"
   - url: "https://sgb-data-availability.flare.network/"
+  - url: "https://ctn-data-availability.flare.network/"
 paths:
   /api/health:
     get:
       operationId: api_health_retrieve
+      description: Checks whether the data availability runs correctly
       tags:
         - api
       security:
@@ -26,6 +28,9 @@ paths:
   /api/v0/fdc:
     get:
       operationId: fdc_list
+      description:
+        Retrieves the attestation minimal proofs based on voting round
+        id
       parameters:
         - in: query
           name: voting_round_id
@@ -45,9 +50,45 @@ paths:
                 items:
                   $ref: "#/components/schemas/AttestationMinimalProof"
           description: ""
+  /api/v0/fdc/get-proof-round-bytes:
+    post:
+      operationId: fdc_get_proof_round_bytes_create
+      description: Retrieves the last attestation minimal proof based on request bytes
+      tags:
+        - fdc
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AttestationTypeGetByRoundBytesRequestRequest"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/AttestationTypeGetByRoundBytesRequestRequest"
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/AttestationTypeGetByRoundBytesRequestRequest"
+        required: true
+      security:
+        - {}
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttestationMinimalProof"
+          description: ""
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttestationTypeGetByRoundBytesError"
+          description: ""
   /api/v0/fdc/get-proof-round-id-bytes:
     post:
       operationId: fdc_get_proof_round_id_bytes_create
+      description:
+        Retrieves the attestation minimal proof based on request bytes
+        and voting round id
       tags:
         - fdc
       requestBody:
@@ -80,6 +121,7 @@ paths:
   /api/v0/fsp/latest-voting-round:
     get:
       operationId: fsp_latest_voting_round_retrieve
+      description: Retrieves the last voting round id and its starting timestamp
       tags:
         - fsp
       security:
@@ -94,6 +136,9 @@ paths:
   /api/v0/fsp/status:
     get:
       operationId: fsp_status_retrieve
+      description:
+        Retrieves the last voting round id and its starting timestamp for
+        fdc and ftso
       tags:
         - fsp
       security:
@@ -108,6 +153,7 @@ paths:
   /api/v0/ftso/anchor-feed-names:
     get:
       operationId: ftso_anchor_feed_names_list
+      description: Retrieves the feed id and feed name based on voting round id
       parameters:
         - in: query
           name: voting_round_id
@@ -130,6 +176,9 @@ paths:
   /api/v0/ftso/anchor-feeds-with-proof:
     post:
       operationId: ftso_anchor_feeds_with_proof_create
+      description:
+        Retrieves the feed values with there proofs based on voting round
+        id and feed ids
       parameters:
         - in: query
           name: voting_round_id
@@ -173,8 +222,8 @@ components:
       type: object
       properties:
         response:
-          type: string
-          readOnly: true
+          type: object
+          additionalProperties: {}
         proof:
           type: array
           items:
@@ -182,6 +231,22 @@ components:
       required:
         - proof
         - response
+    AttestationTypeGetByRoundBytesError:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+    AttestationTypeGetByRoundBytesRequestRequest:
+      type: object
+      properties:
+        requestBytes:
+          type: string
+          minLength: 1
+          description: Request bytes that were send (emitted)
+      required:
+        - requestBytes
     AttestationTypeGetByRoundIdBytesError:
       type: object
       properties:

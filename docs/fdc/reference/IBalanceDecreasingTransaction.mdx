@@ -4,7 +4,43 @@ sidebar_position: 7
 description: Detect a transaction that decreases an address balance.
 ---
 
+An interface to detect transactions that decrease the balance of a specific address or are signed by that address on external blockchains.
+
 Sourced from `IBalanceDecreasingTransaction.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/fdc/IBalanceDecreasingTransaction.sol).
+
+## Overview
+
+The IBalanceDecreasingTransaction interface allows smart contracts to identify and verify transactions on external blockchains that either:
+
+1. Decrease the balance of a specific address, or
+2. Are signed by the address in question (even if the balance increases)
+
+This attestation type is particularly useful for detecting when a party has violated an agreement by moving funds that were promised to be locked, providing grounds for liquidating collateral locked in a smart contract on Flare.
+
+## Supported Chains
+
+| Network Type | Supported Chains                                       |
+| ------------ | ------------------------------------------------------ |
+| **Mainnet**  | `BTC` (Bitcoin), `DOGE` (Dogecoin), `XRP` (XRP Ledger) |
+| **Testnet**  | `testBTC` (Bitcoin Testnet v3), `testDOGE`, `testXRP`  |
+
+## Chain-Specific Implementation Details
+
+### UTXO Chains (Bitcoin and Dogecoin)
+
+- **sourceAddressIndicator**: Index of the transaction input in hex padded to a 0x-prefixed 32-byte string
+- **sourceAddress**: Address of the indicated transaction input
+- **spentAmount**: Sum of values of all inputs with sourceAddress minus sum of all outputs with sourceAddress (can be negative)
+- **blockTimestamp**: Mediantime of the block
+
+### Account-based Chains (XRPL)
+
+- **sourceAddressIndicator**: Standard address hash of the address to monitor
+- **sourceAddress**: Address whose standard hash matches the sourceAddressIndicator
+- **spentAmount**: Difference between the balance after and before the transaction (can be negative)
+- **blockTimestamp**: close_time of the ledger converted to Unix time
+
+## Interface Definition
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -20,7 +56,7 @@ pragma solidity >=0.7.6 <0.9;
  * Such an attestation could prove a violation of an agreement and therefore provides grounds to liquidate
  * some funds locked by a smart contract on Flare.
  *
- * A transaction is considered “balance decreasing” for the address, if the balance after the
+ * A transaction is considered "balance decreasing" for the address, if the balance after the
  * transaction is lower than before or the address is among the signers of the transaction
  * (even if its balance is greater than before the transaction).
  * @custom:verification The transaction with `transactionId` is fetched from the API of the
@@ -126,6 +162,152 @@ interface IBalanceDecreasingTransaction {
         bytes32 sourceAddressHash;
         int256 spentAmount;
         bytes32 standardPaymentReference;
+    }
+}
+```
+
+## Structs
+
+### Request
+
+Toplevel request structure.
+
+#### Parameters
+
+- `attestationType`: ID of the attestation type (0x02 for BalanceDecreasingTransaction)
+- `sourceId`: ID of the data source (e.g., BTC, DOGE, XRP)
+- `messageIntegrityCode`: MessageIntegrityCode derived from the expected response
+- `requestBody`: Data defining the request
+
+### Response
+
+Toplevel response structure.
+
+#### Parameters
+
+- `attestationType`: Extracted from the request
+- `sourceId`: Extracted from the request
+- `votingRound`: The ID of the State Connector round in which the request was considered
+- `lowestUsedTimestamp`: The lowest timestamp used to generate the response
+- `requestBody`: Extracted from the request
+- `responseBody`: Data defining the response
+
+### Proof
+
+Toplevel proof structure for verification.
+
+#### Parameters
+
+- `merkleProof`: Merkle proof corresponding to the attestation response
+- `data`: Attestation response
+
+### RequestBody
+
+Request body specific to balance decreasing transactions.
+
+#### Parameters
+
+- `transactionId`: Unique identifier of the transaction to check
+- `sourceAddressIndicator`: Indicator of the address to monitor (interpretation varies by chain)
+
+### ResponseBody
+
+Response body containing details about the balance decreasing transaction.
+
+#### Parameters
+
+- `blockNumber`: Block number containing the transaction
+- `blockTimestamp`: Timestamp of the block containing the transaction
+- `sourceAddressHash`: Standard hash of the address indicated by sourceAddressIndicator
+- `spentAmount`: Amount spent by the source address (can be negative)
+- `standardPaymentReference`: Standard payment reference of the transaction
+
+## Implementation Notes
+
+- Attestation ID: `0x02`
+- The `lowestUsedTimestamp` parameter uses the value of `blockTimestamp`
+- The `lutlimit` (Lowest Used Timestamp limit) is `0x127500` (1,209,600 seconds = 14 days) for all supported chains
+- A negative `spentAmount` value indicates the address received more funds than it sent
+- The transaction is still considered "balance decreasing" if the address signed the transaction, even if the balance increased
+
+## Practical Applications
+
+- **Cross-chain Collateral Monitoring**: Detect when funds that should be locked on one chain are moved, triggering liquidation of collateral on Flare
+- **Agreement Enforcement**: Verify if parties adhere to contractual agreements involving locking funds
+- **Fraud Detection**: Monitor specific addresses for suspicious outgoing transactions
+- **Conditional Smart Contracts**: Trigger contract actions based on external chain activity
+
+## Usage Example
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/IFdcHub.sol";
+import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/IFdcVerification.sol";
+import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/fdc/IBalanceDecreasingTransaction.sol";
+
+contract LockMonitor {
+    IFdcHub private fdcHub;
+    IFdcVerification private fdcVerification;
+
+    bytes32 private constant ATTESTATION_TYPE_BALANCE_DECREASING = 0x0200000000000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant SOURCE_ID_BTC = 0x4254430000000000000000000000000000000000000000000000000000000000;
+
+    mapping(bytes32 => bool) public lockedAddresses; // sourceAddressHash => isLocked
+
+    constructor(address _fdcHubAddress, address _fdcVerificationAddress) {
+        fdcHub = IFdcHub(_fdcHubAddress);
+        fdcVerification = IFdcVerification(_fdcVerificationAddress);
+    }
+
+    // Register an address as locked (should not spend funds)
+    function registerLockedAddress(bytes32 sourceAddressHash) external {
+        lockedAddresses[sourceAddressHash] = true;
+    }
+
+    // Request verification of a transaction that might violate lock agreement
+    function checkViolation(bytes32 transactionId, bytes32 sourceAddressIndicator) external payable {
+        // Create request body
+        IBalanceDecreasingTransaction.RequestBody memory requestBody = IBalanceDecreasingTransaction.RequestBody({
+            transactionId: transactionId,
+            sourceAddressIndicator: sourceAddressIndicator
+        });
+
+        // Encode the full request
+        bytes memory encodedRequest = abi.encode(
+            ATTESTATION_TYPE_BALANCE_DECREASING,
+            SOURCE_ID_BTC,
+            bytes32(0), // messageIntegrityCode (would need to be calculated properly)
+            requestBody
+        );
+
+        // Submit the request with payment
+        fdcHub.requestAttestation{value: msg.value}(encodedRequest);
+    }
+
+    // Verify a provided proof and take action if a locked address has spent funds
+    function verifyViolation(IBalanceDecreasingTransaction.Proof calldata _proof)
+        external
+        returns (bool isViolation)
+    {
+        // Verify the proof using FdcVerification
+        bool proofVerified = fdcVerification.verifyBalanceDecreasingTransaction(_proof);
+
+        if (proofVerified) {
+            // Extract the sourceAddressHash
+            bytes32 sourceAddressHash = _proof.data.responseBody.sourceAddressHash;
+            int256 spentAmount = _proof.data.responseBody.spentAmount;
+
+            // Check if this is a locked address and the amount spent is positive
+            if (lockedAddresses[sourceAddressHash] && spentAmount > 0) {
+                // Take action - e.g., liquidate collateral, notify stakeholders, etc.
+                lockedAddresses[sourceAddressHash] = false; // Remove from locked addresses
+                return true;
+            }
+        }
+
+        return false;
     }
 }
 ```

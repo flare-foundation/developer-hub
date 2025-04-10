@@ -43,6 +43,19 @@ It confirms that all configurations and balances meet the requirements for the a
 yarn agent-bot validateOwner
 ```
 
+### Check Balances
+
+Display token balances for the owner's accounts. By default, shows balances for both work and management accounts.
+
+```bash
+yarn agent-bot balances [options]
+```
+
+Options:
+
+- `-w, --work`: Show only work account balances
+- `-m, --management`: Show only management account balances
+
 ### Create
 
 Create a new agent vault. Use `--prepare` to generate a settings template, or pass the settings as a file path argument.
@@ -302,6 +315,8 @@ yarn agent-bot close <agentVaultAddress>
 
 Retrieve the configuration parameters by specifying the agent vault address.
 
+You can find detailed explanations of each agent parameter in the [FAssets Operational Parameters](/fassets/operational-parameters/#default-agent-settings) documentation.
+
 ```bash
 yarn agent-bot getAgentSettings <agentVaultAddress>
 ```
@@ -309,6 +324,8 @@ yarn agent-bot getAgentSettings <agentVaultAddress>
 ### Update Agent Setting
 
 Modify specific operational parameters for the agent vault by specifying the agent vault address, name, and value.
+
+You can find detailed explanations of each agent parameter in the [FAssets Operational Parameters](/fassets/operational-parameters/#default-agent-settings) documentation.
 
 ```bash
 yarn agent-bot updateAgentSetting <agentVaultAddress> <name> <value>
@@ -330,4 +347,38 @@ Export the private keys for the FAssets agent underlying address by specifying t
 
 ```bash
 yarn agent-bot exportPrivateKeys <exportFile>
+```
+
+## Core Vault Management
+
+### Transfer To Core Vault
+
+Request a transfer of underlying assets from the agent to the core vault by specifying the agent vault address and amount.
+
+```bash
+yarn agent-bot transferToCoreVault <agentVaultAddress> <amount>
+```
+
+### Maximum Transfer To Core Vault
+
+By specifying the agent vault address, get information about the maximum amount that can be transferred to the core vault and the minimum amount that must be left on the underlying address.
+
+```bash
+yarn agent-bot maximumTransferToCoreVault <agentVaultAddress>
+```
+
+### Return From Core Vault
+
+Request a transfer of underlying assets from the core vault back to the agent by specifying the agent vault address and number of lots.
+
+```bash
+yarn agent-bot returnFromCoreVault <agentVaultAddress> <lots>
+```
+
+### Cancel Return From Core Vault
+
+Cancel a pending return of underlying assets from the core vault by specifying the agent vault address.
+
+```bash
+yarn agent-bot cancelReturnFromCoreVault <agentVaultAddress>
 ```

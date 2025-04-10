@@ -72,11 +72,6 @@ const config: Config = {
       respectPrefersColorScheme: true,
     },
 
-    announcementBar: {
-      id: `announcementBar`,
-      content: `🚀 We're hosting the <a href="https://hackathon.flare.network/" target="_blank" rel="noopener noreferrer">Flare x Google Cloud Verifiable AI Hackathon</a> with a $100K prize pool. ☀️`,
-    },
-
     docs: {
       sidebar: {
         autoCollapseCategories: false,
@@ -93,12 +88,6 @@ const config: Config = {
         height: 32,
       },
       items: [
-        // {
-        //   type: "docSidebar",
-        //   sidebarId: "networkSidebar",
-        //   position: "left",
-        //   label: "Flare ☀️",
-        // },
         {
           href: "https://github.com/flare-foundation/developer-hub",
           className: "header-github-link",
@@ -120,41 +109,75 @@ const config: Config = {
       },
       links: [
         {
-          title: "Support",
+          title: "Flare",
           items: [
             {
-              label: "FAQs",
-              to: "/support/faqs",
+              label: "Contact",
+              href: "https://flare.network/resources/developer-support",
             },
             {
-              label: "Audits",
-              to: "/support/audits",
+              label: "Our Team",
+              href: "https://flare.network/team",
             },
             {
-              label: "Whitepapers",
-              to: "/support/whitepapers",
+              label: "Brand Assets",
+              href: "https://drive.google.com/drive/u/1/folders/1mPrtIBb2k88E4f1fguEm3eAXLW74xOry",
             },
             {
-              label: "Terms & Privacy",
+              label: "Terms & Conditions",
               href: "https://flare.network/privacy-policy/",
             },
           ],
         },
         {
-          title: "Developer links",
+          title: "Resources",
+          items: [
+            {
+              label: "Whitepapers",
+              to: "/support/whitepapers",
+            },
+
+            {
+              label: "Audits",
+              to: "/support/audits",
+            },
+            {
+              label: "FAQs",
+              to: "/support/faqs",
+            },
+            {
+              label: "FLR",
+              to: "/support/flr",
+            },
+          ],
+        },
+        {
+          title: "Explore",
           items: [
             {
               label: "Flarescan",
               href: "https://flarescan.com/",
             },
-
+            {
+              label: "Systems Explorer",
+              href: "https://flare-systems-explorer.flare.network",
+            },
+            {
+              label: "P-Chain Explorer",
+              href: "https://flare.space/dapp/p-chain-explorer/",
+            },
             {
               label: "Grants Program",
               href: "https://flare.network/grants",
             },
+          ],
+        },
+        {
+          title: "Governance",
+          items: [
             {
-              label: "Systems Explorer",
-              href: "https://flare-systems-explorer.flare.network",
+              label: "Discourse Forum",
+              href: "https://forum.flare.network",
             },
             {
               label: "Governance Proposals",
@@ -164,14 +187,10 @@ const config: Config = {
               label: "Flare Portal",
               href: "http://portal.flare.network/",
             },
-            {
-              label: "Discourse Forum",
-              href: "https://forum.flare.network",
-            },
           ],
         },
       ],
-      copyright: `Copyright © Flare Network ${new Date().getFullYear()}`,
+      copyright: `Copyright © Flare ${new Date().getFullYear()}`,
     },
     prism: {
       additionalLanguages: ["solidity", "bash", "json", "toml", "diff"],
@@ -183,7 +202,6 @@ const config: Config = {
     [
       require.resolve("@easyops-cn/docusaurus-search-local"),
       {
-        // `hashed` is recommended as long-term-cache of index file is possible
         language: ["en"],
         indexDocs: true,
         indexPages: true,
