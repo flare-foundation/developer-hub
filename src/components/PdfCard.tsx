@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "@docusaurus/Link";
 import clsx from "clsx";
+import Heading from "@theme/Heading";
 
 export default function PdfCard({
   title,
@@ -21,7 +22,9 @@ export default function PdfCard({
       {...(newTab && { target: "_blank", rel: "noopener noreferrer" })}
     >
       <div className="whitepapers-card-content">
-        <h3 className="whitepapers-card-title">{title}</h3>
+        <Heading as="h3" className="whitepapers-card-title">
+          {title}
+        </Heading>
         {description && (
           <p className="cardDescription pdf-card-description">{description}</p>
         )}
