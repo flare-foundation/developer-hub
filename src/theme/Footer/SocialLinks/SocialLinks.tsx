@@ -46,11 +46,6 @@ const socialLinks: Array<SocialLinkProps> = [
     icon: Telegram,
     label: "Telegram",
   },
-  {
-    href: "https://forum.flare.network/",
-    icon: Discourse,
-    label: "Discourse",
-  },
 ];
 
 export default function SocialLinks() {
