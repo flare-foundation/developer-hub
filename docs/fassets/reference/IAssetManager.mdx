@@ -56,3 +56,49 @@ function redeem(
 ) external payable
     returns (uint256 _redeemedAmountUBA);
 ```
+
+### `redemptionQueue`
+
+Returns the redemption queue in the form of an array of [`RedemptionTicketInfo`](https://github.com/flare-labs-ltd/fassets/blob/main/contracts/userInterfaces/data/RedemptionTicketInfo.sol) structs.
+
+Parameters:
+
+- `_firstRedemptionTicketId`: the ticket id to start listing from; if `0`, starts from the beginning
+- `_pageSize`: the maximum number of redemption tickets to return
+
+Returns:
+
+- `_queue`: the (part of) the redemption queue; maximum length is \_pageSize
+- `_nextRedemptionTicketId`: works as a cursor - if the `_pageSize` is reached and there are more tickets, it is the first ticket id not returned; if the end is reached, it is 0
+
+```solidity
+function redemptionQueue(
+    uint256 _firstRedemptionTicketId,
+    uint256 _pageSize
+) external view
+    returns (RedemptionTicketInfo.Data[] memory _queue, uint256 _nextRedemptionTicketId);
+```
+
+### `agentRedemptionQueue`
+
+Returns the redemption queue for specific agent in the form of an array of [`RedemptionTicketInfo`](https://github.com/flare-labs-ltd/fassets/blob/main/contracts/userInterfaces/data/RedemptionTicketInfo.sol) structs.
+
+Parameters:
+
+- `_agentVault`: the agent vault address of the queried agent
+- `_firstRedemptionTicketId`: the ticket id to start listing from; if `0`, starts from the beginning
+- `_pageSize`: the maximum number of redemption tickets to return
+
+Returns:
+
+- `_queue`: the (part of) the redemption queue; maximum length is \_pageSize
+- `_nextRedemptionTicketId`: works as a cursor - if the` _pageSize` is reached and there are more tickets, it is the first ticket id not returned; if the end is reached, it is 0
+
+```solidity
+function agentRedemptionQueue(
+    address _agentVault,
+    uint256 _firstRedemptionTicketId,
+    uint256 _pageSize
+) external view
+    returns (RedemptionTicketInfo.Data[] memory _queue, uint256 _nextRedemptionTicketId);
+```
