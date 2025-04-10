@@ -4,7 +4,6 @@ import LinkedIn from "@site/static/img/social-icons/linkedin.svg";
 import Discord from "@site/static/img/social-icons/discord.svg";
 import X from "@site/static/img/social-icons/X.svg";
 import Telegram from "@site/static/img/social-icons/Telegram.svg";
-import Discourse from "@site/static/img/social-icons/discourse.svg";
 
 import Link from "@docusaurus/Link";
 import classes from "./socialLinks.module.css";
