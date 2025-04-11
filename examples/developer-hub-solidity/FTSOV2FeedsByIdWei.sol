@@ -10,8 +10,6 @@ import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/costo
  * DO NOT USE THIS CODE IN PRODUCTION.
  */
 contract FtsoV2FeedConsumer {
-    TestFtsoV2Interface internal ftsoV2;
-
     // Feed IDs, see https://dev.flare.network/ftso/feeds for full list
     bytes21[] public feedIds = [
         bytes21(0x01464c522f55534400000000000000000000000000), // FLR/USD
@@ -35,17 +33,14 @@ contract FtsoV2FeedConsumer {
      */
     function getFeedsByIdInWei(
         bytes21[] calldata _feedIds
-    ) external payable returns (uint256[] memory _values, uint64 _timestamp) {
+    ) external view returns (uint256[] memory _values, uint64 _timestamp) {
         // Ensure that the length of the feed IDs is non-zero
         require(_feedIds.length > 0, "No feed IDs provided");
 
         /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
-        ftsoV2 = ContractRegistry.getTestFtsoV2();
+        TestFtsoV2Interface ftsoV2 = ContractRegistry.getTestFtsoV2();
 
         // Retrieve the feed values and timestamp from the FTSOv2 contract
-        (_values, _timestamp) = ftsoV2.getFeedsByIdInWei(_feedIds);
-
-        // Emit an event to log the retrieved feed values
-        emit FeedValuesRetrieved(_feedIds, _values, _timestamp);
+        return ftsoV2.getFeedsByIdInWei(_feedIds);
     }
 }
