@@ -163,11 +163,11 @@ const config: Config = {
               href: "https://flare-systems-explorer.flare.network",
             },
             {
-              label: "P-Chain Explorer",
-              href: "https://flare.space/dapp/p-chain-explorer/",
+              label: "Bug Bounty",
+              href: "https://immunefi.com/bug-bounty/flarenetwork/information/",
             },
             {
-              label: "Grants Program",
+              label: "Grants",
               href: "https://flare.network/grants",
             },
           ],
@@ -176,16 +176,16 @@ const config: Config = {
           title: "Governance",
           items: [
             {
-              label: "Discourse Forum",
-              href: "https://forum.flare.network",
+              label: "Flare Portal",
+              href: "http://portal.flare.network/",
             },
             {
               label: "Governance Proposals",
               href: "https://proposals.flare.network",
             },
             {
-              label: "Flare Portal",
-              href: "http://portal.flare.network/",
+              label: "Discourse Forum",
+              href: "https://forum.flare.network",
             },
           ],
         },
