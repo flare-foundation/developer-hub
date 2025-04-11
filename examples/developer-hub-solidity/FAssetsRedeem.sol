@@ -13,7 +13,11 @@ contract FAssetsRedeem {
     }
 
     // 2. Get the AssetManager settings
-    function getSettings() public view returns (uint256 lotSizeAMG, uint256 assetDecimals) {
+    function getSettings()
+        public
+        view
+        returns (uint256 lotSizeAMG, uint256 assetDecimals)
+    {
         AssetManagerSettings.Data memory settings = assetManager.getSettings();
         lotSizeAMG = settings.lotSizeAMG;
         assetDecimals = settings.assetDecimals;
@@ -26,13 +30,12 @@ contract FAssetsRedeem {
         uint256 _lots,
         string memory _redeemerUnderlyingAddressString
     ) public returns (uint256) {
-        uint256 redeemedAmountUBA = 
-            assetManager.redeem(
-                _lots,
-                _redeemerUnderlyingAddressString,
-                payable(address(0))
-            );
-            
+        uint256 redeemedAmountUBA = assetManager.redeem(
+            _lots,
+            _redeemerUnderlyingAddressString,
+            payable(address(0))
+        );
+
         return redeemedAmountUBA;
     }
 }

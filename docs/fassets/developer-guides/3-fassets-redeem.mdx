@@ -15,17 +15,9 @@ import FAssetsRedeem from "!!raw-loader!/examples/developer-hub-solidity/FAssets
 
 The [FAssets](/fassets/overview) system on the Flare Network enables users to interact with non-smart-contract chains (like XRP, BTC, DOGE) by wrapping their tokens into smart contract-compatible assets — called FAssets.
 
-Redemption is the process of burning FAssets (e.g., FXRP) on Flare in exchange for their equivalent value on the original chain (e.g., XRP on XRPL).
+[Redemption](/fassets/redemption) is the process of burning FAssets (e.g., FXRP) on Flare in exchange for their equivalent value on the original chain (e.g., XRP on XRPL).
 
 In this guide, you will learn how to redeem FAssets using asset manager smart contract.
-
-### The Redemption Flow
-
-1. User holds FAssets (e.g., FXRP).
-2. They specify the number of lots to redeem and their underlying chain address.
-3. The AssetManager locks the FAssets, emits a [`RedemptionRequested`](fassets/reference/IAssetManagerEvents#redemptionrequested) event, and assigns the task to a redemption agent.
-4. The agent sends the equivalent real asset (e.g., XRP) to the user’s address.
-5. Redemption is complete once the asset is received.
 
 ## Prerequisites
 
@@ -47,7 +39,7 @@ The following example demonstrates how to redeem FAssets using the `AssetManager
 ### Code Breakdown
 
 1. Define the `FAssetsRedeem` contract.
-2. Get the asset manager settings to calculate the redeemed amount; for that, you need to get the `lotSizeAMG` and `assetDecimals` from the asset manager [settings](/fassets/reference/IAssetManager#getsettings).
+2. Get the asset manager settings to calculate the redeemed amount; for that, you need to get the `lotSizeAMG` and `assetDecimals` from the asset manager [settings](/fassets/developer-guides/fassets-settings-solidity).
 3. Redeem the FAssets using the [`redeem`](/fassets/reference/IAssetManager#redeem) function by specifying the number of lots to redeem and the underlying chain address.
 
 ## Deploy and Interact with the Smart Contract
@@ -63,10 +55,10 @@ import { ethers, run } from "hardhat";
 import { ContractTransactionReceipt, formatUnits } from "ethers";
 
 import {
-  FAssetsRedeemContract, 
-  FAssetsRedeemInstance, 
-  IAssetManagerContract, 
-  ERC20Instance 
+  FAssetsRedeemContract,
+  FAssetsRedeemInstance,
+  IAssetManagerContract,
+  ERC20Instance,
 } from "../../typechain-types";
 ```
 
@@ -84,22 +76,26 @@ Define the constants:
 const ASSET_MANAGER_ADDRESS = "0x56728e46908fB6FcC5BCD2cc0c0F9BB91C3e4D34";
 const LOTS_TO_REDEEM = 1;
 const UNDERLYING_ADDRESS = "rSHYuiEvsYsKR8uUHhBTuGP5zjRcGt4nm";
-const FXRP_ADDRESS = "0x36be8f2e1CC3339Cf6702CEfA69626271C36E2fd";
+const FXRP_TOKEN_ADDRESS = "0x36be8f2e1CC3339Cf6702CEfA69626271C36E2fd";
 ```
 
 ### Deploy and Verify the Redeem Contract
 
-To deploy the contract you can use the following function:
+To deploy and verify the smart contract you can use the following function:
 
 ```typescript
 async function deployAndVerifyContract() {
-  const FAssetsRedeem = await ethers.getContractFactory("FAssetsRedeem") as FAssetsRedeemContract;
+  const FAssetsRedeem = (await ethers.getContractFactory(
+    "FAssetsRedeem",
+  )) as FAssetsRedeemContract;
 
   const args = [ASSET_MANAGER_ADDRESS];
-  const fAssetsRedeem = await FAssetsRedeem.deploy(...args) as FAssetsRedeemInstance;
+  const fAssetsRedeem = (await FAssetsRedeem.deploy(
+    ...args,
+  )) as FAssetsRedeemInstance;
   await fAssetsRedeem.waitForDeployment();
   const fAssetsRedeemAddress = await fAssetsRedeem.getAddress();
-  
+
   try {
     await run("verify:verify", {
       address: fAssetsRedeemAddress,
@@ -117,13 +113,21 @@ async function deployAndVerifyContract() {
 
 ### Transfer FXRP to the Redeem Contract
 
-To redeem FAssets, the invoker must have enough FAssets. In this case, the invoker is the `FAssetsRedeem` contract.
+To redeem FAssets, the invoker must have enough FAssets.
+In this case, the invoker is the `FAssetsRedeem` contract.
+You need to transfer FXRP to the `FAssetsRedeem` contract address after it is deployed.
 
 ```typescript
-async function transferFXRP(fAssetsRedeemAddress: string, amountToRedeem: number) {
+async function transferFXRP(
+  fAssetsRedeemAddress: string,
+  amountToRedeem: number,
+) {
   // Get FXRP token contract
-  const fxrp = await ethers.getContractAt("IERC20", FXRP_ADDRESS) as ERC20Instance;
-  
+  const fxrp = (await ethers.getContractAt(
+    "IERC20",
+    FXRP_TOKEN_ADDRESS,
+  )) as ERC20Instance;
+
   // Transfer FXRP to the deployed contract
   console.log("Transferring FXRP to contract...");
   const transferTx = await fxrp.transfer(fAssetsRedeemAddress, amountToRedeem);
@@ -133,36 +137,42 @@ async function transferFXRP(fAssetsRedeemAddress: string, amountToRedeem: number
 ```
 
 :::warning
-This is an example; in a production environment, you should use a more secure method to transfer FXRP to the redeem contract.
+In a production environment, you should use a more secure method to transfer FXRP to a smart contract.
 :::
 
 ### Parse the Redemption Events
 
-During the redemption process, the `AssetManager` emits an event [`RedemptionRequested`](/fassets/reference/IAssetManagerEvents#redemptionrequested) that holds the redemption ticket id, agent address (or addresses), the amount of FAssets to redeem, and other important information.
+During the redemption process, the `AssetManager` emits an events:
+
+- [`RedemptionRequested`](/fassets/reference/IAssetManagerEvents#redemptionrequested) - holds the agent vault address, redemption request id, the amount of FAssets to redeem, and other important information.
+- [`RedemptionTicketCreated`](/fassets/reference/IAssetManagerEvents#redemptionticketcreated) - holds the redemption ticket information that is updated during the redemption process.
 
 To parse the redemption events you can use the following function:
 
 ```typescript
 async function parseRedemptionEvents(
-  transactionReceipt: ContractTransactionReceipt, 
-  fAssetsRedeem: FAssetsRedeemInstance
+  transactionReceipt: ContractTransactionReceipt,
+  fAssetsRedeem: FAssetsRedeemInstance,
 ) {
   console.log("\nParsing events...", transactionReceipt.logs);
 
   // Get AssetManager contract interface
-  const assetManager = await ethers.getContractAt(
-      "IAssetManager", 
-      ASSET_MANAGER_ADDRESS
-    ) as IAssetManagerContract;
-  
+  const assetManager = (await ethers.getContractAt(
+    "IAssetManager",
+    ASSET_MANAGER_ADDRESS,
+  )) as IAssetManagerContract;
+
   for (const log of transactionReceipt.logs) {
     try {
-      // Try to parse with AssetManager interface first
       const parsedLog = assetManager.interface.parseLog(log);
       if (parsedLog) {
-        if (parsedLog.name === "RedemptionTicketUpdated" || parsedLog.name === "RedemptionRequested") {
+        const redemptionEvents = [
+          "RedemptionRequested",
+          "RedemptionTicketUpdated",
+        ];
+        if (redemptionEvents.includes(parsedLog.name)) {
           console.log(`\nEvent: ${parsedLog.name}`);
-          console.log('Arguments:', parsedLog.args);
+          console.log("Arguments:", parsedLog.args);
         }
       }
     } catch (e) {
@@ -176,20 +186,20 @@ async function parseRedemptionEvents(
 
 To put it all together you can use the following function to deploy the contract, transfer FXRP to it, redeem the FAssets and parse the redemption events:
 
-
 ```typescript
-
 async function main() {
   const fAssetsRedeem: FAssetsRedeemInstance = await deployAndVerifyContract();
-  
+
   const settings = await fAssetsRedeem.getSettings();
   const lotSize = settings[0];
   const decimals = settings[1];
   console.log("Lot size:", lotSize);
   console.log("Asset decimals:", decimals);
 
-  const amountToRedeem = (Number(lotSize) * Number(LOTS_TO_REDEEM));
-  console.log(`Required FXRP amount ${formatUnits(amountToRedeem, decimals)} FXRP`);
+  const amountToRedeem = Number(lotSize) * Number(LOTS_TO_REDEEM);
+  console.log(
+    `Required FXRP amount ${formatUnits(amountToRedeem, decimals)} FXRP`,
+  );
   console.log(`Required amount in base units: ${amountToRedeem.toString()}`);
 
   // Transfer FXRP to the contract
@@ -212,11 +222,17 @@ main().catch((error) => {
 
 ### Run the Script
 
+Run the script using the [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit#hardhat) with following command:
+
 ```bash
 npx hardhat run scripts/fassets/getLotSize.ts --network coston
 ```
 
-Once the script is executed, the main information you should look for is the decoded [`RedemptionRequested`](/fassets/reference/IAssetManagerEvents#redemptionrequested) event.
+Once the script is executed, the main information is in two events:
+
+#### [`RedemptionRequested`](/fassets/reference/IAssetManagerEvents#redemptionrequested)
+
+This event contains the agent vault address, redeemer address, underlying chain address, amount of FAssets to redeem, redemption fee, and other important information.
 
 ```bash
 Event: RedemptionRequested
@@ -236,14 +252,41 @@ Arguments: Result(12) [
 ]
 ```
 
-Once decoding the most important data from the event is:
+When decoding an event, the most important data from the event is:
 
 - agent vault address that will redeem the FAssets is `0x3c831Fe4417bEFFAc721d24996985eE2dd627053`;
 - redeemer address is `0xCA7C9fBbA56E44C508bcb4872775c5fEd169cDb3`;
 - redemption ticket id is `1898730`;
 - underlying chain address is `rSHYuiEvsYsKR8uUHhBTuGP5zjRcGt4nm`;
-- amount of FAssets to redeem is `20000000`
+- amount of FAssets to redeem is `20000000`;
 - redemption fee is `20000`;
+
+You can see the full event description [here](/fassets/reference/IAssetManagerEvents#redemptionrequested) section.
+
+#### [`RedemptionTicketUpdated`](/fassets/reference/IAssetManagerEvents#redemptionticketupdated)
+
+This event holds the redemption ticket information: agent vault address, redemption ticket id and the value of the redemption ticket in underlying chain currency.
+
+For every minting, a redemption ticket is created, and during the redemption process, the redemption ticket is updated with the new redemption status.
+
+```bash
+Event: RedemptionTicketUpdated
+Arguments: Result(3) [
+  '0x3c831Fe4417bEFFAc721d24996985eE2dd627053',
+  870n,
+  3440000000n
+]
+```
+
+Once decoding the most important data from the event is:
+
+- agent vault address that will redeem the FAssets is `0x3c831Fe4417bEFFAc721d24996985eE2dd627053`;
+- redemption ticket id is `870`;
+- value of the redemption ticket in underlying chain currency is `3440000000` (partially redeemed).
+
+You can read the full event description [here](/fassets/reference/IAssetManagerEvents#redemptionticketupdated).
+
+## Next Steps
 
 :::tip
 This is only the first step of the redemption process. The redeemer or agent completes the redemption process when proof of payment is presented to the FAssets system. Read more about the redemption process in the [here](/fassets/redemption).
