@@ -1,133 +1,84 @@
 # Contributing Guidelines
 
-We’re excited you want to contribute to the **Flare Developer Hub**! 🎉  
-Your contributions help make our documentation, tooling, and examples even better.
+We're excited you want to contribute and help improve the Flare Developer Hub. Your contributions make our documentation, tooling, and examples better for everyone.
 
-**Note:** Our repository is organized into several top-level directories to keep concerns separated:
+## How You Can Contribute
 
-> - **docs/** – The main documentation source split into subdirectories by topic (fassets, fdc, ftso, etc.).
-> - **src/** – The core source code (React components, pages, and theme files).
-> - **examples/** – Language-specific examples (Go, JavaScript, Python, Rust, Solidity).
-> - **automations/** & **docgen/** – Auxiliary scripts and tools to automate documentation tasks.
-> - **static/** – Static assets (images, fonts, openapi specs, etc.).
-> - **.github/** – Issue templates, workflows, and repository management files.
+We welcome contributions via:
 
-## 🤝 How to Contribute
+- **[GitHub Issues](https://github.com/flare-foundation/developer-hub/issues):** Report bugs, suggest features, or ask questions.
+- **Pull Requests (PRs):** Submit fixes, improvements, or new content (documentation, examples, site features).
 
-We welcome contributions in several forms:
+## Development Workflow
 
-- **Pull Requests (PRs)** for bug fixes, features, and documentation updates.
-- **Bug Reports** for issues you encounter.
-- **Feature Requests** and suggestions to improve the project.
+1.  **Make Changes:** Edit or add documentation (`docs/`), source code (`src/`), examples (`examples/`), or automation scripts (`automations/`, `docgen/`) after forking and creating a new branch:
 
-### Contributing Workflow Summary
+    ```bash
+    git checkout -b feature/your-feature-name
+    ```
 
-1. **Fork the Repository** and create a new branch:
+2.  **Follow Style Guides:**
 
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
+    - **Code/Docs:** Run `npm run format` to apply Prettier formatting. Match existing code style.
+    - **Diagrams:** Adhere to the [Diagram Style Guide](#diagrams-style-guide) below for consistency.
 
-2. **Commit Changes** using the Conventional Commit format:
+3.  **Commit Your Changes:** We **require** the [Conventional Commits](https://www.conventionalcommits.org/) format for clear history and automated changelogs.
 
-   ```bash
-   git commit -m "feat(api): add support for new endpoints"
-   ```
+    **Format:** `<type>(<scope>): <description>`
 
-3. **Push the Branch** to your fork:
+    **Common Types:**
+    | Type | Description |
+    | :--------- | :---------------------------------------- |
+    | `feat` | New feature |
+    | `fix` | Bug fix |
+    | `docs` | Documentation updates |
+    | `chore` | Maintenance tasks (build, deps) |
+    | `test` | Adding or improving tests |
+    | `refactor` | Code improvements without feature changes |
+    | `style` | Formatting changes (whitespace, etc.) |
+    | `ci` | CI pipeline changes |
 
-   ```bash
-   git push origin feature/your-feature-name
-   ```
+    **Example:**
 
-4. **Open a Pull Request (PR)** on the main repository.
+    ```bash
+    git commit -m "fix(ftso): correct feed ID example in getting started guide"
+    git commit -m "feat(src): add copy button to code blocks"
+    git commit -m "docs(fassets): clarify liquidation process diagram"
+    ```
 
-## 📝 Commit Message Guidelines
+4.  **Push to Your Fork:**
 
-We follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format for clear and structured commit messages:
+    ```bash
+    git push origin feature/your-feature-name
+    ```
 
-**Format:**
+5.  **Open a Pull Request (PR):** Submit a PR against the `main` branch of the `flare-foundation/developer-hub` repository.
 
-```
-<type>(<scope>): <description>
-```
+## Pull Request Guidelines
 
-**Examples:**
+- ✅ **Keep PRs Small & Focused:** One logical change per PR.
+- ✅ **Discuss Large Changes First:** Open an issue to discuss significant changes _before_ starting work.
+- ✅ **Provide Context:** Clearly describe the problem and solution in your PR description. Link relevant issues.
+- ✅ **Ensure Tests & CI Pass:** Fix any failures reported by GitHub Actions. Run tests locally if applicable (especially for `examples/`).
+- ✅ **Update Documentation:** If your change affects functionality or usage, update relevant documentation.
+- ✅ **Confirm Licensing:** By submitting a PR, you agree to license your contribution under the project's license.
 
-- `fix(api): correct response status for invalid input`
-- `feat(docs): add section for new API usage`
+## Diagrams Style Guide
 
-**Types:**
+For consistency, follow these styles when creating or updating diagrams:
 
-| Type       | Description                               |
-| ---------- | ----------------------------------------- |
-| `feat`     | New feature                               |
-| `fix`      | Bug fix                                   |
-| `docs`     | Documentation updates                     |
-| `chore`    | Maintenance tasks                         |
-| `test`     | Adding or improving tests                 |
-| `refactor` | Code improvements without feature changes |
-| `ci`       | CI pipeline changes                       |
+| Element                      | Light Mode | Dark Mode | Notes                      |
+| :--------------------------- | :--------- | :-------- | :------------------------- |
+| Arrow Width                  | `1px`      | `1px`     |                            |
+| Arrow Color                  | `#595959`  | `#ffffff` |                            |
+| Border Width                 | `1px`      | `1px`     |                            |
+| **Border Color (Highlight)** | `#e62058`  | `#e62058` | Use for emphasis           |
+| Border Color (Normal)        | `#595959`  | `#ffffff` | Default border             |
+| **Onchain Border Style**     | `Solid`    | `Solid`   |                            |
+| **Offchain Border Style**    | `Dashed`   | `Dashed`  | _Use only if mixing types_ |
 
-**Additional Notes:**
+## Need Help?
 
-- **Scope:** Indicates the area of the project affected (e.g., `api`, `docs`, `frontend`, `examples`).
-- Keep commit messages concise yet descriptive.
+If you get stuck or have questions, feel free to ask in a [GitHub Issue](https://github.com/flare-foundation/developer-hub/issues).
 
-## 🔄 Submitting a Pull Request (PR)
-
-**Important:** All contributions will be licensed under the project’s license.
-
-### Best Practices
-
-1. **Keep PRs Small and Focused:**
-
-   - Submit **one PR per feature or bug fix**.
-   - Avoid mixing unrelated changes in a single PR.
-
-2. **Discuss Large Changes First:**
-
-   - For significant features or major changes, [open an issue](https://github.com/flare-foundation/developer-hub/issues) to discuss the idea with maintainers **before** submitting a PR.
-
-3. **Follow the Repository Structure:**
-
-   - Review the organization of the repository before starting your work. If you’re adding new scripts or reorganizing documentation, consider whether they belong under `automations/`, `docgen/`, or a new subfolder in `docs/`.
-
-4. **Adhere to the Code Style:**
-
-   - Match the existing code style and structure in your contributions.
-   - Use the configured linter and formatter to ensure consistency.
-
-5. **Ensure Tests Pass:**
-
-   - Run the test suite locally (for language-specific examples and source code) and address any **CI/CD pipeline failures**.
-   - If you add tests or update examples, follow the testing conventions used in each example folder.
-
-6. **Resolve Merge Conflicts Promptly:**
-
-   - If a merge conflict occurs, resolve it as soon as possible.
-   - [Learn more about resolving merge conflicts](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/resolving-a-merge-conflict-on-github).
-
-## 🎨 Diagrams Style Guide
-
-When contributing diagrams, follow our established visual style:
-
-| **Element**                  | **Light Mode** | **Dark Mode** |
-| ---------------------------- | -------------- | ------------- |
-| **Arrow Width**              | 1px            | 1px           |
-| **Arrow Color**              | `#595959`      | `#FFFFFF`     |
-| **Border Width**             | 1px            | 1px           |
-| **Border Color (Highlight)** | `#E7125E`      | `#EF4A82`     |
-| **Border Color (Normal)**    | `#595959`      | `#FFFFFF`     |
-| **Onchain Border Style**     | Solid          | Solid         |
-| **Offchain Border Style**    | Dashed         | Dashed        |
-
-**Tip:** Use the dashed style **only if** both onchain and offchain elements are displayed.
-
-## Additional Guidelines
-
-- **Repository Structure Documentation:** If you’re unsure where your changes should live (e.g., new tooling scripts, docs updates, examples), refer to the repo structure overview above or ask in an issue.
-- **Communication:** If you have questions or need guidance, don’t hesitate to reach out via an issue or our community channels.
-- **Stay Updated:** Occasionally, our guidelines might change. Ensure you’re reviewing the latest version of this document before starting your work.
-
-By following these guidelines, you help maintain a high-quality, organized, and collaborative development environment. Thank you for contributing to the Flare Developer Hub!
+**Thank you for contributing\!**
