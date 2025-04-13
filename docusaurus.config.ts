@@ -212,10 +212,10 @@ const config: Config = {
   ],
   stylesheets: [
     {
-      href: "https://cdn.jsdelivr.net/npm/katex@0.13.24/dist/katex.min.css",
+      href: "https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css",
       type: "text/css",
       integrity:
-        "sha384-odtC+0UGzzFL/6PNoE8rX/SPcQDXBJ+uRepguP4QkPCm2LBxH3FA3y+fKSiJ+AmM",
+        "sha384-5TcZemv2l/9On385z///+d7MSYlvIEw9FuZTIdZ14vJLqWphw7e7ZPuOiCHJcFCP",
       crossorigin: "anonymous",
     },
   ],
