@@ -223,7 +223,6 @@ const config: Config = {
     // Optimized cookie script loading - defer until after page load
     {
       src: "/js/cookie-loader.js",
-      async: true,
       defer: true,
     },
   ],
