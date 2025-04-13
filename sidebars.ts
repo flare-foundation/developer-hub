@@ -241,6 +241,7 @@ const sidebars: SidebarsConfig = {
       type: "category",
       label: "Run a Node",
       link: {
+        slug: "/run-node",
         type: "generated-index",
       },
       collapsed: true,
