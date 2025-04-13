@@ -4,6 +4,9 @@ import type * as Preset from "@docusaurus/preset-classic";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 
+// Import the PDF export plugin
+const pdfExportPlugin = require("./src/plugins/pdf-export-plugin");
+
 const config: Config = {
   title: "Flare Developer Hub",
   tagline: "The decentralized origin for Flare builders.",
@@ -32,6 +35,9 @@ const config: Config = {
     defaultLocale: "en",
     locales: ["en"],
   },
+
+  // Add the PDF export plugin
+  plugins: [pdfExportPlugin],
 
   presets: [
     [
