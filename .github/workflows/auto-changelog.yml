@@ -1,0 +1,112 @@
+name: Auto Generate Changelog
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Allow manual triggering
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  generate-changelog:
+    name: Generate Changelog
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Get full history for generating changelog
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm install -g conventional-changelog-cli
+
+      - name: Check if CHANGELOG.md exists
+        id: check_changelog
+        run: |
+          if [ -f "CHANGELOG.md" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate/Update Changelog
+        id: changelog
+        run: |
+          if [ "${{ steps.check_changelog.outputs.exists }}" == "true" ]; then
+            # Update existing changelog
+            conventional-changelog -p angular -i CHANGELOG.md -s
+          else
+            # Generate full changelog
+            conventional-changelog -p angular -r 0 > CHANGELOG.md
+          fi
+
+          # Check if there are changes
+          if git diff --quiet CHANGELOG.md; then
+            echo "No new changes to add to the changelog"
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "New changes detected for the changelog"
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Process changelog for docs
+        if: steps.changelog.outputs.has_changes == 'true'
+        run: |
+          # Create docs directory if it doesn't exist
+          mkdir -p docs/support
+
+          # Check if the changelog document exists in docs
+          if [ ! -f "docs/support/changelog.md" ]; then
+            # Create the initial file with frontmatter
+            cat > docs/support/changelog.md << 'EOL'
+          ---
+          id: changelog
+          title: Changelog
+          description: Track all the changes to the Flare Developer Hub
+          keywords: [changelog, history, updates, changes]
+          sidebar_position: 5
+          ---
+
+          # Changelog
+
+          This page documents all notable changes to the Flare Developer Hub.
+
+          EOL
+          fi
+
+          # Extract content from the main CHANGELOG.md (skip the header)
+          tail -n +3 CHANGELOG.md > changelog_content.txt
+
+          # Update the changelog in the docs
+          # We need to preserve the frontmatter
+          FRONTMATTER=$(grep -A 6 -- "---" docs/support/changelog.md)
+          echo "$FRONTMATTER" > docs/support/changelog.md
+          echo "" >> docs/support/changelog.md
+          echo "# Changelog" >> docs/support/changelog.md
+          echo "" >> docs/support/changelog.md
+          echo "This page documents all notable changes to the Flare Developer Hub." >> docs/support/changelog.md
+          echo "" >> docs/support/changelog.md
+          cat changelog_content.txt >> docs/support/changelog.md
+
+      - name: Commit and push changes
+        if: steps.changelog.outputs.has_changes == 'true'
+        run: |
+          git config --global user.name "Changelog Bot"
+          git config --global user.email "changelog-bot@example.com"
+
+          git add CHANGELOG.md docs/support/changelog.md
+          git commit -m "docs: update changelog [skip ci]"
+          git push origin main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
