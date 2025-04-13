@@ -220,10 +220,10 @@ const config: Config = {
     },
   ],
   scripts: [
+    // Optimized cookie script loading - defer until after page load
     {
+      src: "/js/cookie-loader.js",
       defer: true,
-      src: "https://cdn-cookieyes.com/client_data/dedcd40fe7e8316d7512b294/script.js",
-      id: "cookieyes",
     },
   ],
 };
