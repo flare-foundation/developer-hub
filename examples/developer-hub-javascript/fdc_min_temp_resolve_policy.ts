@@ -15,11 +15,7 @@ const {
 
 const MinTempAgency = artifacts.require("MinTempAgency");
 
-// yarn hardhat run scripts/weatherInsurance/minTemp/resolvePolicy.ts --network coston2
-
 const policyId = 3;
-
-// Request data
 const apiId = process.env.OPEN_WEATHER_API_KEY ?? "";
 const units = "metric";
 
@@ -31,55 +27,54 @@ const postprocessJq = `{
   minTemp: (.main.temp_min | if . != null then .*pow(10;6) else null end),
   windSpeed: (.wind.speed | if . != null then . *pow(10;6) end),
   windDeg: .wind.deg
-  }`;
+}`;
 
 const abiSignature = `{
-          \"components\": [
-            {
-              \"internalType\": \"int256\",
-              \"name\": \"latitude\",
-              \"type\": \"int256\"
-            },
-            {
-              \"internalType\": \"int256\",
-              \"name\": \"longitude\",
-              \"type\": \"int256\"
-            },
-            {
-              \"internalType\": \"string\",
-              \"name\": \"description\",
-              \"type\": \"string\"
-            },
-            {
-              \"internalType\": \"int256\",
-              \"name\": \"temperature\",
-              \"type\": \"int256\"
-            },
-            {
-              \"internalType\": \"int256\",
-              \"name\": \"minTemp\",
-              \"type\": \"int256\"
-            },
-            {
-              \"internalType\": \"uint256\",
-              \"name\": \"windSpeed\",
-              \"type\": \"uint256\"
-            },
-            {
-              \"internalType\": \"uint256\",
-              \"name\": \"windDeg\",
-              \"type\": \"uint256\"
-            }
-          ],
-          \"internalType\": \"struct DataTransportObject\",
-          \"name\": \"dto\",
-          \"type\": \"tuple\"
-        }`;
+  "components": [
+    {
+      "internalType": "int256",
+      "name": "latitude",
+      "type": "int256"
+    },
+    {
+      "internalType": "int256",
+      "name": "longitude",
+      "type": "int256"
+    },
+    {
+      "internalType": "string",
+      "name": "description",
+      "type": "string"
+    },
+    {
+      "internalType": "int256",
+      "name": "temperature",
+      "type": "int256"
+    },
+    {
+      "internalType": "int256",
+      "name": "minTemp",
+      "type": "int256"
+    },
+    {
+      "internalType": "uint256",
+      "name": "windSpeed",
+      "type": "uint256"
+    },
+    {
+      "internalType": "uint256",
+      "name": "windDeg",
+      "type": "uint256"
+    }
+  ],
+  "internalType": "struct DataTransportObject",
+  "name": "dto",
+  "type": "tuple"
+}`;
 
-// Configuration constants
 const attestationTypeBase = "IJsonApi";
 const sourceIdBase = "WEB2";
-const verifierUrlBase = JQ_VERIFIER_URL_TESTNET;
+const verifierUrlBase = JQ_VERIFIER_URL_TESTNET!;
 
 async function getPolicy(agency: MinTempAgencyInstance, id: number) {
   const response = await agency.registeredPolicies(id);
@@ -98,7 +93,10 @@ async function getPolicy(agency: MinTempAgencyInstance, id: number) {
   return policy;
 }
 
-async function prepareUrl(policy: any) {
+async function prepareUrl(policy: {
+  latitude: number;
+  longitude: number;
+}): Promise<string> {
   return `https://api.openweathermap.org/data/2.5/weather?lat=${
     policy.latitude / 10 ** 6
   }&lon=${policy.longitude / 10 ** 6}&units=${units}&appid=${apiId}`;
@@ -107,11 +105,11 @@ async function prepareUrl(policy: any) {
 async function prepareAttestationRequest(
   apiUrl: string,
   postprocessJq: string,
-  abiSignature: string
+  abiSignature: string,
 ) {
   const requestBody = {
     url: apiUrl,
-    postprocessJq: postprocessJq,
+    postprocessJq,
     abi_signature: abiSignature,
   };
 
@@ -123,13 +121,13 @@ async function prepareAttestationRequest(
     apiKey,
     attestationTypeBase,
     sourceIdBase,
-    requestBody
+    requestBody,
   );
 }
 
 async function retrieveDataAndProof(
   abiEncodedRequest: string,
-  roundId: number
+  roundId: number,
 ) {
   const url = `${COSTON2_DA_LAYER_URL}api/v1/fdc/proof-by-request-round-raw`;
   console.log("Url:", url, "\n");
@@ -139,11 +137,13 @@ async function retrieveDataAndProof(
 async function resolvePolicy(
   agency: MinTempAgencyInstance,
   id: number,
-  proof: any
+  proof: {
+    proof: string;
+    response_hex: string;
+  },
 ) {
   console.log("Proof hex:", proof.response_hex, "\n");
 
-  // A piece of black magic that allows us to read the response type from an artifact
   const IJsonApiVerification = await artifacts.require("IJsonApiVerification");
   const responseType =
     IJsonApiVerification._json.abi[0].inputs[0].components[1];
@@ -151,23 +151,26 @@ async function resolvePolicy(
 
   const decodedResponse = web3.eth.abi.decodeParameter(
     responseType,
-    proof.response_hex
+    proof.response_hex,
   );
   console.log("Decoded proof:", decodedResponse, "\n");
 
-  while (true) {
+  // Retry mechanism instead of while(true)
+  for (let attempt = 1; attempt <= 5; attempt++) {
     try {
       const transaction = await agency.resolvePolicy(id, {
         merkleProof: proof.proof,
         data: decodedResponse,
       });
       console.log("Transaction:", transaction.tx, "\n");
-      break;
+      return;
     } catch (error) {
-      console.log("Error:", error, "\n");
-      sleep(20000);
+      console.error(`Attempt ${attempt} failed:`, error, "\n");
+      await sleep(20000);
     }
   }
+
+  throw new Error("resolvePolicy failed after 5 attempts");
 }
 
 async function main() {
@@ -175,25 +178,22 @@ async function main() {
   console.log("MinTempAgency:", agency.address, "\n");
 
   const policy = await getPolicy(agency, policyId);
-
   const apiUrl = await prepareUrl(policy);
 
   const data = await prepareAttestationRequest(
     apiUrl,
     postprocessJq,
-    abiSignature
+    abiSignature,
   );
   console.log("Data:", data, "\n");
 
   const abiEncodedRequest = data.abiEncodedRequest;
-
   const roundId = await submitAttestationRequest(abiEncodedRequest);
-
   const proof = await retrieveDataAndProof(abiEncodedRequest, roundId);
 
   await resolvePolicy(agency, policyId, proof);
 }
 
-main().then((data) => {
+main().then(() => {
   process.exit(0);
 });
