@@ -33,6 +33,8 @@ const config: Config = {
     locales: ["en"],
   },
 
+  plugins: [require.resolve("./webpack.config.js")],
+
   presets: [
     [
       "classic",
