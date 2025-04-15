@@ -10,7 +10,7 @@ sidebar_position: 6
 
 import CodeBlock from "@theme/CodeBlock";
 import Remix from "@site/src/components/remix";
-import FlareContractRegistryReader from "!!raw-loader!/examples/developer-hub-solidity/FlareContractRegistryReader.sol";
+import FTSOV2Contract from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2Contract.sol";
 
 On Flare networks, contract addresses for enshrined protocol components such as `FtsoV2`, `FdcHub`, `WNat`, and others **should never be hardcoded**.
 Instead, use the **Flare Contract Registry** to retrieve them dynamically.
@@ -31,35 +31,70 @@ The Flare Contract Registry is deployed at the same address on [all networks](/n
 | [FlareContractRegistry](/network/solidity-reference/IFlareContractRegistry) | `0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019` |
 | --------------------------------------------------------------------------- | -------------------------------------------- |
 
-### Solidity Example
+## Contract Registry Library
 
-You can use the following helper contract to fetch a contract address by name:
+[Flare periphery package](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts) includes a `ContractRegistry` library for interacting with the Flare Contract Registry.
 
-<CodeBlock
-  language="solidity"
-  title="contracts/FlareContractRegistryReader.sol"
->
-  {FlareContractRegistryReader}
+In the following example, you can see the `FTSOV2Contract` contract that retrieves the address of the `FtsoV2` contract on the Flare Coston2 network.
+
+<CodeBlock language="solidity" title="contracts/FTSOV2Contract.sol">
+  {FTSOV2Contract}
 </CodeBlock>
 
-Deploy this contract to one of Flare Networks and use the `0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019` address for the `flareContractRegistry` variable.
-
 {/* prettier-ignore */}
-<Remix fileName="FlareContractRegistryReader.sol">Open in Remix</Remix>
+<Remix fileName="FTSOV2Contract.sol">Open in Remix</Remix>
 <br></br>
 
-#### Usage Example
+### Library Functions
 
-To retrieve the address of the `FtsoV2` contract:
+The `ContractRegistry` library provides the following functions:
+
+#### `getAllContracts`
+
+Retrieves all available enshrined contract names.
 
 ```solidity
-FlareContractRegistryReader.getContractAddressByName("FtsoV2");
+function getAllContracts()
+    internal view
+    returns (string[] memory _names, address[] memory _addresses)
 ```
 
-### List of Available Contracts
+#### `getContractAddressByName`
 
-To retrieve all available enshrined contract names, use the `getAllContracts` method:
+Retrieves the address of a contract by its name.
 
 ```solidity
-FlareContractRegistryReader.getAllContracts();
+function getContractAddressByName(
+    string memory _name
+) internal view returns (address)
+```
+
+#### `getContractAddressByHash`
+
+Retrieves the address of a contract by its hash.
+
+```solidity
+function getContractAddressByHash(
+    bytes32 _nameHash
+) internal view returns (address)
+```
+
+#### `getContractAddressesByName`
+
+Retrieves the addresses of multiple contracts by their names.
+
+```solidity
+function getContractAddressesByName(
+    string[] memory _names
+) internal view returns (address[] memory)
+```
+
+#### `getContractAddressesByHash`
+
+Retrieves the addresses of multiple contracts by their hashes.
+
+```solidity
+function getContractAddressesByHash(
+    bytes32[] memory _nameHashes
+) internal view returns (address[] memory)
 ```
