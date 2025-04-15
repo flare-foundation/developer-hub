@@ -22,7 +22,7 @@ import useBaseUrl from "@docusaurus/useBaseUrl";
 
 ## Snowball's `Tree` structure
 
-In the Go implementation from the [snow/consensus/snowball](https://github.com/flare-foundation/go-flare/tree/main/avalanchego/snow/consensus/snowball) submodule, the Snowflake and Snowball protocols share a common interface.
+In the Go implementation from the [snow/consensus/snowball](https://github.com/flare-foundation/go-flare/tree/main/avalanchego/snow/consensus/snowball) package, the Snowflake and Snowball protocols share a common interface.
 For both protocols, decisions are made on the 32-byte binary form of the proposed blocks.
 
 To effectively deal with more than two choices at a time (i.e. `nnary` logic as opposed to binary or unary setups), Snowball implements a `Tree` structure for all concurrent decisions.
@@ -54,4 +54,4 @@ Note that if the counter of a `binaryNode` increases following a successful poll
 `binaryNodes` can finalize only when the confidence counter reaches the globally defined `Beta` value, upon which they are replaced by `unaryNodes`, thus leading to branch trimming.
 
 A key aspect of this implementation is that it avoids running polls for every single bit in the 32-byte representation at each block height.
-Next up we will see how Snowman optimizes the consensus algorithm further, by implementing a different tree-like structure for blocks at different heights.
+Next up we will see how Snowman optimizes the consensus algorithm further, by implementing a graph-like structure for blocks at different heights.
