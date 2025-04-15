@@ -25,24 +25,25 @@ This runs on both the P- and C-chains.
   />
 </div>
 
-The protocol is part of the Snow family of probabilistic gossip protocols, which includes:
+Snowman++ is a Byzantine fault tolerant (BFT) protocol, being part of the wider Snow family of probabilistic protocols, which includes:
 
-- **Slush** is the foundational protocol in the Snow family.
+- **Slush:** the foundational protocol in the Snow family.
   It operates in iterative rounds, during which each node samples a subset of the network and updates its local state according to the sampled majority.
   Nodes terminate simply once a predefined number of rounds has elapsed.
   Slush by itself is not Byzantine fault tolerant.
 
-- **Snowflake** extends Slush by introducing an additional threshold parameter: a node finalizes a state only after a specified number of consecutive queries consistently supports that same state.
+- **Snowflake:** an extension of Slush which introduces an additional threshold parameter for finalization.
+  As a result, a node finalizes a state only after a specified number of consecutive queries consistently supports that same state.
   This refinement enhances Slush by improving its finalization properties.
 
-- **Snowball** augments Snowflake by incorporating confidence counters.
+- **Snowball:** augments Snowflake by incorporating local confidence counters.
   Each time a query reaffirms a particular state, the corresponding confidence counter for that state increments.
   This provides “memory” to the protocol, allowing nodes to accumulate additional certainty in their decisions over time.
 
-- **Snowman** is the linear-chain version of Avalanche’s DAG-based protocol, implementing Snowball principles in a more practical and efficient manner.
-  More precisely, within Snowman there may be multiple Snowball instances running concurrently at various block heights, each awaiting finalization.
+- **Snowman:** while Avalanche was originally designed as a DAG-based protocol, Snowman is the linear-chain version of it.
+  Within Snowman there are multiple Snowball instances running concurrently at various block heights, each awaiting finalization.
   This design aligns with conventional blockchain data structures while preserving the probabilistic and decentralized benefits of the Snowball approach.
 
-- **Snowman++** introduces a soft proposer mechanism, initially granting a single proposer the authority to create a block.
+- **Snowman++:** introduces a soft proposer mechanism, initially granting a single proposer the authority to create a block.
   Over time, additional validators become eligible to propose blocks, with each validator selected according to its stake.
   This design further refines Snowman’s block-production process by incorporating stake-weighted proposer selection.
