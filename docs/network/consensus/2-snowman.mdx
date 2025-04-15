@@ -9,3 +9,52 @@ import TabItem from "@theme/TabItem";
 import CodeBlock from "@theme/CodeBlock";
 import ThemedImage from "@theme/ThemedImage";
 import useBaseUrl from "@docusaurus/useBaseUrl";
+
+While Snowball is used for deciding between concurrent blocks at the same block height, **Snowman** wraps this logic and extends it to a full linear blockchain.
+While Snowman enforces linearity, unfinalized blocks can be temporarily organized into a Directed Acyclic Graph (DAG) structure, which could simply be due to network delays for instance.
+To convert this DAG structure to a linear graph, Snowman uses **Kahn's topological ordering algorithm**.
+
+Naturally, for every block height, a set of block proposers is chosen in a deterministic fashion, as we discuss momentarily.
+This set is randomly determined using a seed based on the block height and on a characteristic that is chain-specific.
+Khan’s algorithm is used to organize blocks into a linear chain by enforcing the correct order of processing.
+More precisely, the algorithm enforces the parent-child relationships within the chain.
+
+- **Example:** A validator might receive block `B` (at height `N`) before block `A` (at height `N-1`).
+  Khan’s algorithm ensures that block `B` is processed only after block `A` is available and processed.
+
+Khan's topological ordering algorithm ensures that:
+
+- A block should not be added twice.
+- A block that is being added should never have a child that was already added.
+
+## Go Implementation
+
+The Snowman consensus is implemented through a `Topological` struct, which uses a graph for tracking the strongly preferred branch.
+Within this structure, topological order is done from leaves towards the genesis block.
+
+For each round, validators report their currently preferred chain, rather than a single bit value, or a single block.
+Votes are then pushed up the graph structure towards the genesis block, respecting parent-child relationships: a vote for a leaf is also a vote for the parent, unless the parent block is already finalized.
+Importantly, there is a Snowball instance for every parent node in this graph structure.
+As such, the key benefit of Snowman is that it is reusing a set of correspondences for multiple instances of Snowball.
+
+## Validator Sampling
+
+A Snowman chain is initialized within the `Manager` interface of the [chains](https://github.com/flare-foundation/go-flare/avalanchego/chains) package.
+This configures the global consensus parameters, as defined in the genesis files, as well as the type of sampling used by the validators.
+
+The widely used sampling process in the consensus protocol is a weighted sampling without replacement, which is enforced in the [snow/validators](https://github.com/flare-foundation/go-flare/avalanchego/snow/validators) package.
+Here the weights are based on the validators' stake.
+
+## Snowman++
+
+Snowman++ introduces a soft proposer mechanism, with a single proposer with the power to issue a block initially.
+The proposer selection is deterministic, based on the validator set and the chain height.
+Validators are selected using a weighted sampling without replacement, with the weight system based on stake.
+
+At each block height, a fixed number of validators is selected, given by the protocol parameter `maxWindows`.
+Based on the position in the sampled set, the selected validators are then assigned a delay dictated by `WindowDuration`: the amount of time the validator must wait before being eligible to propose a block.
+These two parameters are part of the `proposervm`, being configured as follows:
+
+- `maxWindows`: currently set to 6.
+
+- `WindowDuration`: currently set at 5 seconds.
