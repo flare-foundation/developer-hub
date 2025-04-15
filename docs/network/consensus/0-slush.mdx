@@ -1,0 +1,33 @@
+---
+title: Slush
+description: Learn the basics of the consensus protocol running on Flare.
+keywords: [slush, consensus]
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import CodeBlock from "@theme/CodeBlock";
+import ThemedImage from "@theme/ThemedImage";
+import useBaseUrl from "@docusaurus/useBaseUrl";
+
+**Slush** serves as the foundational protocol in the Snow family.
+In Slush, a node repeatedly samples the network and queries each selected peer regarding its current preferred state.
+The protocol is governed by two parameters:
+
+- `K`: the number of nodes included in each sample.
+- `Alpha`: the minimum threshold—constrained such that `K/2 < Alpha <= K`—required for a query to be considered successful.
+  That is, at least `Alpha` nodes must support the same state.
+
+When a query is deemed successful -- i.e., it garners at least `Alpha` votes in favor of a particular state -- the node updates its own preference to match the majority state of the sample.
+The original formulation of Slush was defined for a binary decision scenario, an example of which is shown below for `K=5` and `Alpha=3`.
+
+<ThemedImage
+  alt="Slush Sampling Example"
+  sources={{
+    light: useBaseUrl("img/consensus/slush_light.svg"),
+    dark: useBaseUrl("img/consensus/slush_dark.svg"),
+  }}
+/>
+
+Slush does not incorporate inherent fault tolerance.
+This limitation is evident in its termination process, as the algorithm executes for a predetermined number of rounds rather than terminating based on reaching a consensus resilient against Byzantine faults.
