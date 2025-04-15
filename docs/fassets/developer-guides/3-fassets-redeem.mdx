@@ -13,11 +13,10 @@ import FAssetsRedeem from "!!raw-loader!/examples/developer-hub-solidity/FAssets
 
 ## Overview
 
-The [FAssets](/fassets/overview) system on the Flare Network enables users to interact with non-smart-contract chains (like XRP, BTC, DOGE) by wrapping their tokens into smart contract-compatible assets — called FAssets.
+In this guide, you will learn how to redeem FAssets using the Asset Manager smart contract.
+Redemption is the process of burning FAssets (e.g., FXRP) on Flare in exchange for their equivalent value on the original chain (e.g., XRP on XRPL).
 
-[Redemption](/fassets/redemption) is the process of burning FAssets (e.g., FXRP) on Flare in exchange for their equivalent value on the original chain (e.g., XRP on XRPL).
-
-In this guide, you will learn how to redeem FAssets using asset manager smart contract.
+See the [Redemption](/fassets/redemption) overview for more details.
 
 ## Prerequisites
 
@@ -34,21 +33,26 @@ The following example demonstrates how to redeem FAssets using the `AssetManager
 
 {/* prettier-ignore */}
 <Remix fileName="FAssetsRedeem.sol">Open in Remix</Remix>
-<br></br>
 
 ### Code Breakdown
 
-1. Define the `FAssetsRedeem` contract.
+1. Define the asset manager contract address to interact with it.
 2. Get the asset manager settings to calculate the redeemed amount; for that, you need to get the `lotSizeAMG` and `assetDecimals` from the asset manager [settings](/fassets/developer-guides/fassets-settings-solidity).
 3. Redeem the FAssets using the [`redeem`](/fassets/reference/IAssetManager#redeem) function by specifying the number of lots to redeem and the underlying chain address.
 
+:::info
+In this example, you are not using the executor vault address, but you can use it to redeem FAssets on behalf of another address.
+:::
+
 ## Deploy and Interact with the Smart Contract
 
-To deploy the contract and redeem FAssets you can use the [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit#hardhat).
+To deploy the contract and redeem FAssets, you can use the [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit#hardhat).
+
+Create a new file, for example `scripts/fassets/redeem.ts` and add the following code:
 
 ### Import the Required Contracts
 
-At first, you need to import the required dependencies and contract types:
+At first, you need to import the required dependencies and smart contract TypeScript types:
 
 ```typescript
 import { ethers, run } from "hardhat";
@@ -66,10 +70,10 @@ import {
 
 Define the constants:
 
-- asset manager address;
-- the number of lots to redeem;
-- underlying chain address where the redeemed asset will be sent;
-- FXRP token address.
+- `ASSET_MANAGER_ADDRESS` - asset manager address;
+- `LOTS_TO_REDEEM` - the number of lots to redeem;
+- `UNDERLYING_ADDRESS` - underlying chain address where the redeemed asset will be sent;
+- `FXRP_TOKEN_ADDRESS` - FXRP token address.
 
 ```typescript
 // AssetManager address on Songbird Testnet Coston network
@@ -81,7 +85,7 @@ const FXRP_TOKEN_ADDRESS = "0x36be8f2e1CC3339Cf6702CEfA69626271C36E2fd";
 
 ### Deploy and Verify the Redeem Contract
 
-To deploy and verify the smart contract you can use the following function:
+Deploy and verify the smart contract providing the asset manager address as a constructor argument:
 
 ```typescript
 async function deployAndVerifyContract() {
@@ -113,9 +117,7 @@ async function deployAndVerifyContract() {
 
 ### Transfer FXRP to the Redeem Contract
 
-To redeem FAssets, the invoker must have enough FAssets.
-In this case, the invoker is the `FAssetsRedeem` contract.
-You need to transfer FXRP to the `FAssetsRedeem` contract address after it is deployed.
+To redeem FAssets, you must transfer a sufficient amount of FXRP to the `FAssetsRedeem` contract address after it is deployed, as it acts as the invoker during the redemption process.
 
 ```typescript
 async function transferFXRP(
@@ -147,7 +149,7 @@ During the redemption process, the `AssetManager` emits an events:
 - [`RedemptionRequested`](/fassets/reference/IAssetManagerEvents#redemptionrequested) - holds the agent vault address, redemption request id, the amount of FAssets to redeem, and other important information.
 - [`RedemptionTicketCreated`](/fassets/reference/IAssetManagerEvents#redemptionticketcreated) - holds the redemption ticket information that is updated during the redemption process.
 
-To parse the redemption events you can use the following function:
+To parse the redemption events, you can use the following function:
 
 ```typescript
 async function parseRedemptionEvents(
@@ -184,7 +186,7 @@ async function parseRedemptionEvents(
 
 ### Redeeming FAssets
 
-To put it all together you can use the following function to deploy the contract, transfer FXRP to it, redeem the FAssets and parse the redemption events:
+To put it all together you can use the following function to deploy the contract, transfer FXRP to it, redeem the FAssets, and parse the redemption events:
 
 ```typescript
 async function main() {
@@ -222,17 +224,17 @@ main().catch((error) => {
 
 ### Run the Script
 
-Run the script using the [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit#hardhat) with following command:
+To run the script, use the [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit#hardhat) with the following command:
 
 ```bash
 npx hardhat run scripts/fassets/getLotSize.ts --network coston
 ```
 
-Once the script is executed, the main information is in two events:
+Once the script is executed, two events hold the important information:
 
 #### [`RedemptionRequested`](/fassets/reference/IAssetManagerEvents#redemptionrequested)
 
-This event contains the agent vault address, redeemer address, underlying chain address, amount of FAssets to redeem, redemption fee, and other important information.
+The `RedemptionRequested` event contains the agent vault address, redeemer address, underlying chain address, amount of FAssets to redeem, redemption fee, and other important information.
 
 ```bash
 Event: RedemptionRequested
@@ -265,7 +267,7 @@ You can see the full event description [here](/fassets/reference/IAssetManagerEv
 
 #### [`RedemptionTicketUpdated`](/fassets/reference/IAssetManagerEvents#redemptionticketupdated)
 
-This event holds the redemption ticket information: agent vault address, redemption ticket id and the value of the redemption ticket in underlying chain currency.
+The event `RedemptionTicketUpdated` holds the redemption ticket information like agent vault address, redemption ticket ID and the value of the redemption ticket in underlying chain currency.
 
 For every minting, a redemption ticket is created, and during the redemption process, the redemption ticket is updated with the new redemption status.
 
