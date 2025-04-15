@@ -1,0 +1,179 @@
+---
+slug: consensus
+title: Consensus
+description: Learn the basics of the consensus protocol running on Flare.
+keywords: [consensus, flare-network, snowman]
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import CodeBlock from "@theme/CodeBlock";
+import ThemedImage from "@theme/ThemedImage";
+import useBaseUrl from "@docusaurus/useBaseUrl";
+
+The consensus protocol running on all Flare networks is Snowman++, introduced by [Avalanche](https://docs.avax.network).
+This runs on both the P- and C-chains.
+
+<div style={{ textAlign: "center", margin: "30px 0" }}>
+  <ThemedImage
+    alt="Snow Family of Consensus Protocols"
+    sources={{
+      light: useBaseUrl("img/consensus/consensus_light.svg"),
+      dark: useBaseUrl("img/consensus/consensus_dark.svg"),
+    }}
+  />
+</div>
+
+Snowman++ is a Byzantine fault tolerant (BFT) protocol, being part of the wider Snow family of probabilistic protocols, which includes:
+
+- **Slush:** the foundational protocol in the Snow family.
+  It operates in iterative rounds, during which each node samples a subset of the network and updates its local state according to the sampled majority.
+  Nodes terminate simply once a predefined number of rounds has elapsed.
+  Slush by itself is not Byzantine fault tolerant.
+
+- **Snowflake:** an extension of Slush which introduces an additional threshold parameter for finalization.
+  As a result, a node finalizes a state only after a specified number of consecutive queries consistently supports that same state.
+  This refinement enhances Slush by improving its finalization properties.
+
+- **Snowball:** augments Snowflake by incorporating local confidence counters.
+  Each time a query reaffirms a particular state, the corresponding confidence counter for that state increments.
+  This provides “memory” to the protocol, allowing nodes to accumulate additional certainty in their decisions over time.
+
+- **Snowman:** while Avalanche was originally designed as a DAG-based protocol, Snowman is the linear-chain version of it.
+  Within Snowman there are multiple Snowball instances running concurrently at various block heights, each awaiting finalization.
+  This design aligns with conventional blockchain data structures while preserving the probabilistic and decentralized benefits of the Snowball approach.
+
+- **Snowman++:** introduces a soft proposer mechanism, initially granting a single proposer the authority to create a block.
+  Over time, additional validators become eligible to propose blocks, with each validator selected according to its stake.
+  This design further refines Snowman’s block-production process by incorporating stake-weighted proposer selection.
+
+## Slush
+
+**Slush** serves as the foundational protocol in the Snow family.
+In Slush, a node repeatedly samples the network and queries each selected peer regarding its current preferred state.
+The protocol is governed by two parameters:
+
+- `K`: the number of nodes included in each sample.
+- `Alpha`: the minimum threshold—constrained such that `K/2 < Alpha <= K`—required for a query to be considered successful.
+  That is, at least `Alpha` nodes must support the same state.
+
+When a query is deemed successful - i.e., it garners at least `Alpha` votes in favor of a particular state -- the node updates its own preference to match the majority state of the sample.
+The original formulation of Slush was defined for a binary decision scenario.
+The image below depicts such a binary decision example, where a user samples the network, queries the sampled participants, and updates its preferred state according to the majority.
+The example uses `K=5` and `Alpha=3` for the protocol parameters.
+
+<div style={{ textAlign: "center", margin: "30px 0" }}>
+  <ThemedImage
+    style={{ width: "80%" }}
+    alt="Slush Sampling Example"
+    sources={{
+      light: useBaseUrl("img/consensus/slush_light.svg"),
+      dark: useBaseUrl("img/consensus/slush_dark.svg"),
+    }}
+  />
+</div>
+
+Slush does not incorporate inherent fault tolerance.
+This limitation is evident in its termination process, as the algorithm executes for a predetermined number of rounds rather than terminating based on reaching a consensus resilient against Byzantine faults.
+
+The Slush algorithm is implemented as part of the [go-flare](https://github.com/flare-foundation/go-flare) client, within the [snow/consensus/snowball](https://github.com/flare-foundation/go-flare/tree/main/avalanchego/snow/consensus/snowball) package.
+The global parameters are defined as part of the [genesis configuration](https://github.com/flare-foundation/go-flare/tree/main/avalanchego/genesis).
+
+## Snowball
+
+**Snowflake** and **Snowball** are enhancements to the original Slush protocol, introducing additional global and local parameters to govern when a node may finalize its decision.
+
+- `Beta`: the required number of consecutive successful queries that support the same outcome before a node can finalize.
+  In other words, a node is deemed to be finalized once it achieves the same decision in `Beta` consecutive successful rounds.
+  This represents a significant improvement over Slush, which lacked any dynamic security mechanism within its fixed termination conditions.
+
+- Confidence counter: Snowball adds to this logic an additional local confidence counter, `confidence`, which effectively further extends the protocol memory.
+  This counter tracks the number of consecutive successful polls that have returned the current preference.
+  A node will only update its local **preference** if the counter for a new state exceeds that of the current preference.
+
+### `Tree` structure
+
+In the Go implementation from the [snow/consensus/snowball](https://github.com/flare-foundation/go-flare/tree/main/avalanchego/snow/consensus/snowball) package, the Snowflake and Snowball protocols share a common interface.
+For both protocols, decisions are made on the 32-byte binary form of the proposed blocks.
+
+To effectively deal with more than two choices at a time (i.e. `nnary` logic as opposed to binary or unary setups), Snowball implements a `Tree` structure for all concurrent decisions.
+This implementation is specialized to handle multi-branch conflicts elegantly, by modeling them as a hierarchy, and thus optimizing the algorithm be allowing pruning.
+
+More precisely, concurrent blocks at the same height are organised in a tree-like structure based on the first differing bit.
+As such, when adding a new block, the tree branches out through a `binaryNode` at the first differing bit, with the counting done from the most significant bit to the least significant bit.
+Here, bit indices are defined as:
+
+```plaintext
+[7 6 5 4 3 2 1 0] [15 14 13 12 11 10 9 8] ... [255 254 253 252 251 250 249 248]
+```
+
+An example of how concurrent blocks may be organised within the `Tree` structure is depicted below, where the first differing bit in a byte is also highlighted.
+
+<div style={{ textAlign: "center", margin: "30px 0" }}>
+  <ThemedImage
+    style={{ width: "50%" }}
+    alt="Snowball Tree Implementation"
+    sources={{
+      light: useBaseUrl("img/consensus/snowball_tree_light.svg"),
+      dark: useBaseUrl("img/consensus/snowball_tree_dark.svg"),
+    }}
+  />
+</div>
+
+In the `Tree` implementation, each node in the tree structure holds a `Preference` and a `confidence` counter.
+Note that if the counter of a `binaryNode` increases following a successful poll, this propagates further up the tree towards the root node.
+`binaryNodes` can finalize only when the confidence counter reaches the globally defined `Beta` value, upon which they are replaced by `unaryNodes`, thus leading to branch trimming.
+
+A key aspect of this implementation is that it avoids running polls for every single bit in the 32-byte representation at each block height.
+Next up we will see how Snowman optimizes the consensus algorithm further, by implementing a graph-like structure for blocks at different heights.
+
+## Snowman
+
+While Snowball is used for deciding between concurrent blocks at the same block height, **Snowman** wraps this logic and extends it to a full linear blockchain.
+While Snowman enforces linearity, non-finalized blocks can be temporarily organized into a Directed Acyclic Graph (DAG) structure, which could simply be due to network delays for instance.
+To convert this DAG structure to a linear graph, Snowman uses **Kahn's topological ordering algorithm**.
+
+Naturally, for every block height, a set of block proposers is chosen in a deterministic fashion, as we discuss momentarily.
+This set is randomly determined using a seed based on the block height and on a characteristic that is chain-specific.
+Khan’s algorithm is used to organize blocks into a linear chain by enforcing the correct order of processing.
+More precisely, the algorithm enforces the parent-child relationships within the chain.
+
+- **Example:** A validator might receive block `B` (at height `N`) before block `A` (at height `N-1`).
+  Khan’s algorithm ensures that block `B` is processed only after block `A` is available and processed.
+
+Khan's topological ordering algorithm ensures that:
+
+- A block should not be added twice.
+- A block that is being added should never have a child that was already added.
+
+### Go Implementation
+
+The Snowman consensus is implemented through a `Topological` struct, which uses a graph for tracking the strongly preferred branch.
+Within this structure, topological order is done from leaves towards the genesis block.
+
+For each round, validators report their currently preferred chain, rather than a single bit value, or a single block.
+Votes are then pushed up the graph structure towards the genesis block, respecting parent-child relationships: a vote for a leaf is also a vote for the parent, unless the parent block is already finalized.
+Importantly, there is a Snowball instance for every parent node in this graph structure.
+As such, the key benefit of Snowman is that it is reusing a set of correspondences for multiple instances of Snowball.
+
+### Validator Sampling
+
+A Snowman chain is initialized within the `Manager` interface of the [chains](https://github.com/flare-foundation/go-flare/avalanchego/chains) package.
+This configures the global consensus parameters, as defined in the genesis files, as well as the type of sampling used by the validators.
+
+The widely used sampling process in the consensus protocol is a weighted sampling without replacement, which is enforced in the [snow/validators](https://github.com/flare-foundation/go-flare/avalanchego/snow/validators) package.
+Here the weights are based on the validators' stake.
+
+### Snowman++
+
+Snowman++ introduces a soft proposer mechanism, with a single proposer with the power to issue a block initially.
+The proposer selection is deterministic, based on the validator set and the chain height.
+Validators are selected using a weighted sampling without replacement, with the weight system based on stake.
+
+At each block height, a fixed number of validators is selected, given by the protocol parameter `maxWindows`.
+Based on the position in the sampled set, the selected validators are then assigned a delay dictated by `WindowDuration`: the amount of time the validator must wait before being eligible to propose a block.
+These two parameters are part of the `proposerVM`, being configured as follows:
+
+- `maxWindows`: currently set to 6.
+
+- `WindowDuration`: currently set at 5 seconds.
