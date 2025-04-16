@@ -7,7 +7,8 @@ describe("FtsoV2Consumer", function () {
 
   // Deploy a new instance of the contract before each test
   beforeEach(async function () {
-    const FtsoV2ConsumerFactory = await ethers.getContractFactory("FtsoV2Consumer");
+    const FtsoV2ConsumerFactory =
+      await ethers.getContractFactory("FtsoV2Consumer");
     ftsoV2Consumer = await FtsoV2ConsumerFactory.deploy();
     await ftsoV2Consumer.waitForDeployment();
     // console.log("FtsoV2Consumer deployed to:", await ftsoV2Consumer.getAddress()); // Optional: log address
@@ -44,7 +45,8 @@ describe("FtsoV2Consumer", function () {
   });
 
   it("Should return current feed values for multiple feeds", async function () {
-    const [feedValues, decimals, timestamp] = await ftsoV2Consumer.getFtsoV2CurrentFeedValues();
+    const [feedValues, decimals, timestamp] =
+      await ftsoV2Consumer.getFtsoV2CurrentFeedValues();
 
     // Get the expected number of feeds from the contract's public variable
     const expectedFeedCount = (await ftsoV2Consumer.feedIds()).length;

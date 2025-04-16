@@ -31,7 +31,10 @@ async function main() {
     console.log("\nFLR/USD Price Data:");
     console.log("Price:", result[0].toString());
     console.log("Decimals:", result[1].toString());
-    console.log("Timestamp:", new Date(result[2].toNumber() * 1000).toISOString());
+    console.log(
+      "Timestamp:",
+      new Date(result[2].toNumber() * 1000).toISOString(),
+    );
   } catch (error) {
     console.error("Error testing getFlrUsdPrice:", error);
   }
@@ -41,7 +44,10 @@ async function main() {
     const resultWei = await ftsoV2Consumer.getFlrUsdPriceWei();
     console.log("\nFLR/USD Price Data (Wei):");
     console.log("Price (Wei):", resultWei[0].toString());
-    console.log("Timestamp:", new Date(resultWei[1].toNumber() * 1000).toISOString());
+    console.log(
+      "Timestamp:",
+      new Date(resultWei[1].toNumber() * 1000).toISOString(),
+    );
   } catch (error) {
     console.error("Error testing getFlrUsdPriceWei:", error);
   }
@@ -56,7 +62,9 @@ async function main() {
       console.log(`    Price: ${feedValuesResult[0][i].toString()}`);
       console.log(`    Decimals: ${feedValuesResult[1][i].toString()}`);
     }
-    console.log(`  Timestamp: ${new Date(feedValuesResult[2].toNumber() * 1000).toISOString()}`);
+    console.log(
+      `  Timestamp: ${new Date(feedValuesResult[2].toNumber() * 1000).toISOString()}`,
+    );
   } catch (error) {
     console.error("Error testing getFtsoV2CurrentFeedValues:", error);
   }
