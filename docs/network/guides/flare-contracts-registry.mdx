@@ -10,7 +10,7 @@ sidebar_position: 6
 
 import CodeBlock from "@theme/CodeBlock";
 import Remix from "@site/src/components/remix";
-import FTSOV2Contract from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2Contract.sol";
+import FTSOV2Interface from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2Interface.sol";
 
 On Flare networks, contract addresses for enshrined protocol components such as `FtsoV2`, `FdcHub`, `WNat`, and others **should never be hardcoded**.
 Instead, use the **Flare Contract Registry** to retrieve them dynamically.
@@ -34,68 +34,20 @@ The Flare Contract Registry is deployed at the same address on [all networks](/n
 
 ## Contract Registry Library
 
-[Flare periphery package](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts) includes a `ContractRegistry` library for interacting with the Flare Contract Registry.
+[Flare periphery package](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts) includes a [`ContractRegistry`](https://github.com/flare-foundation/flare-solidity-periphery-package-mirror/blob/master/flare/ContractRegistry.sol) library for interacting with the Flare Contract Registry.
+This library provides a shorthand function to access smart contract interfaces.
+The `ContractRegistry` library simplifies access to official contracts, so you don’t need to remember their names, reducing the risk of typos.
 
-In the following example, you can see the `FTSOV2Contract` contract that retrieves the address of the `FtsoV2` contract on the Flare Coston2 network.
+In the following example, you can see the `FTSOV2Interface` contract that retrieves the address of the `FtsoV2Interface` interface using the `getFtsoV2` function from the `ContractRegistry` library on the Flare Coston2 network.
 
-<CodeBlock language="solidity" title="contracts/FTSOV2Contract.sol">
-  {FTSOV2Contract}
+<CodeBlock language="solidity" title="contracts/FTSOV2Interface.sol">
+  {FTSOV2Interface}
 </CodeBlock>
 
 {/* prettier-ignore */}
-<Remix fileName="FTSOV2Contract.sol">Open in Remix</Remix>
+<Remix fileName="FTSOV2Interface.sol">Open in Remix</Remix>
 <br></br>
 
-### Library Functions
-
-The `ContractRegistry` library provides the following functions:
-
-#### `getAllContracts`
-
-Retrieves all available enshrined contract names.
-
-```solidity
-function getAllContracts()
-  internal view
-  returns (string[] memory _names, address[] memory _addresses)
-```
-
-#### `getContractAddressByName`
-
-Retrieves the address of a contract by its name.
-
-```solidity
-function getContractAddressByName(
-    string memory _name
-) internal view returns (address)
-```
-
-#### `getContractAddressByHash`
-
-Retrieves the address of a contract by its hash.
-
-```solidity
-function getContractAddressByHash(
-  bytes32 _nameHash
-) internal view returns (address)
-```
-
-#### `getContractAddressesByName`
-
-Retrieves the addresses of multiple contracts by their names.
-
-```solidity
-function getContractAddressesByName(
-  string[] memory _names
-) internal view returns (address[] memory)
-```
-
-#### `getContractAddressesByHash`
-
-Retrieves the addresses of multiple contracts by their hashes.
-
-```solidity
-function getContractAddressesByHash(
-  bytes32[] memory _nameHashes
-) internal view returns (address[] memory)
-```
+:::tip
+If there is no shorthand function for the contract you need, you can use the `getContractAddressByName` function to get by name or the `getAllContracts` function to retrieve all the enshrined contracts.
+:::
