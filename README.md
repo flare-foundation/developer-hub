@@ -1,17 +1,17 @@
 # Flare Developer Hub
 
-The decentralized origin for Flare builders ☀️.
+This repository contains the source code and content for the [Flare Developer Hub](https://dev.flare.network) – the decentralized origin for Flare builders ☀️
 
 This site is built with [Docusaurus](https://docusaurus.io/), a modern static site generator.
 
-## 🚀 **Getting Started**
+## 🚀 Getting Started
+
+Follow these steps to set up a local development environment for previewing changes or contributing.
 
 ### Prerequisites
 
-Ensure the following tools are installed:
-
-- [Node.js v20](https://nodejs.org/en/)
-- [nvm](https://github.com/nvm-sh/nvm) for managing multiple Node.js versions
+- [Node.js v20](https://nodejs.org/en/) with [nvm](https://github.com/nvm-sh/nvm).
+- [uv](https://docs.astral.sh/uv/), [Cargo](https://doc.rust-lang.org/cargo/) and [go](https://go.dev/doc/install) for language specific development.
 
 ### Installation
 
@@ -36,20 +36,39 @@ Ensure the following tools are installed:
 
    This launches the development server and automatically opens your default browser. Live reloading ensures changes appear instantly.
 
-## 🧑‍💻 **Code Examples**
+## 📂 Repo Structure
 
-Browse commonly used snippets in [developer-hub/examples/](examples/).
+```plaintext
+flare-foundation/developer-hub/
+├── .github/         # GitHub Actions workflows, issue templates, etc.
+├── automations/     # Scripts & data for automating content updates (feeds, tables).
+├── docgen/          # Tools for auto-generating Solidity documentation.
+├── docs/            # The core documentation content in Markdown (.mdx).
+├── examples/        # Code examples in various languages (Python, JS, Rust, Go, Solidity).
+├── src/             # Docusaurus site source: custom components, pages, CSS, theme overrides.
+├── static/          # Static assets (images, PDFs, OpenAPI specs) served directly.
+├── CONTRIBUTING.md  # Guidelines for contributors.
+├── docusaurus.config.ts # Main Docusaurus site configuration.
+└── sidebars.ts      # Defines the structure of the documentation sidebar.
+```
 
-Supported languages:
+## 🧑‍💻 Development Workflow
 
-- **Python**
-- **JavaScript**
-- **Rust**
-- **Go**
+Common tasks when developing or contributing content.
 
-## 🛠️ **Development Guidelines**
+### ▶️ Running Code Examples
 
-### Documentation Formatting
+The [`examples/`](examples/) directory contains code snippets demonstrating how to interact with Flare protocols.
+Each language subdirectory often has its own `README.md` with setup instructions.
+
+**Supported languages:**
+
+- Python
+- JavaScript/TypeScript
+- Rust
+- Go
+
+### ✨ Formatting Code & Documentation
 
 Ensure consistent formatting using [Prettier](https://prettier.io/):
 
@@ -63,27 +82,13 @@ npm run format
 {/* prettier-ignore */}
 ```
 
-### Code Formatting
+Code examples within the `examples/` directory follow language-specific formatting standards:
 
-All code examples in [**examples/**](examples/) follow language-specific formatters.
+- `gofmt` for Go
+- `cargo fmt` for Rust
+- `ruff` for Python
 
-## 🏗️ **Building for Production**
-
-To create a production-ready build:
-
-```bash
-npm run build
-```
-
-The static files are generated in the `build` directory. To serve the production build locally:
-
-```bash
-npm run serve
-```
-
-**Tip**: Search only works in production builds.
-
-## 📄 **Autogenerate Solidity Documentation**
+### 📄 Generating Solidity documentation
 
 To generate Solidity documentation:
 
@@ -109,29 +114,41 @@ To generate Solidity documentation:
    nvm use 20
    ```
 
-## 🔄 **Automations**
+### 🔄 Running Automations
 
-A set of scripts that:
+1. **Update addresses and feeds:**
 
-- Update language dependencies (from `examples/developer-hub-*`)
-- Update contract addresses (from onchain `ContractRegistry`)
-- Update feed risks (from `automations/*_risk.json`)
-
-**Run all automations:**
-
-1. Ensure [uv](https://docs.astral.sh/uv/) dependencies are synced:
-
-   ```bash
-   cd automations
-   uv sync
-   ```
-
-2. Execute automations:
+   This script updates JSON files used by custom components (e.g., feed tables, contract address lists) by fetching data from the `ContractRegistry` on-chain and referencing risk data defined in `automations/*_risk.json`.
 
    ```bash
    npm run automations
    ```
 
-## 🤝 **Contributing**
+2. **Update language dependencies:**
 
-Contributions are welcome! Before your first PR, read the [**CONTRIBUTING.md**](CONTRIBUTING.md).
+   This script runs package manager updates within the various language subdirectories under `examples/` to refresh their dependencies.
+
+   ```bash
+   npm run update-deps
+   ```
+
+## 🏗️ **Building for Production**
+
+To create a production-ready build:
+
+```bash
+npm run build
+```
+
+The static files are generated in the `build` directory. To serve the production build locally:
+
+```bash
+npm run serve
+```
+
+**Note**: Search only works in production builds.
+
+## 🤝 Contributing
+
+Contributions are highly welcome! Whether it's fixing a typo, improving documentation clarity, adding new examples, or enhancing the site itself, your help is appreciated.
+Before your first PR, read the [CONTRIBUTING.md](CONTRIBUTING.md).

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Script to update dependencies and run automations
-# Usage: ./automations.sh
+# Script to update dependencies for Python, Go, JavaScript, and Rust
+# Usage: ./update-deps.sh
 
 set -e # Exit immediately if a command exits with a non-zero status
 
@@ -42,7 +42,6 @@ JS_SUCCESS=false
 GO_SUCCESS=false
 PY_SUCCESS=false
 RUST_SUCCESS=false
-AUTOMATION_SUCCESS=false
 
 # Update JavaScript dependencies
 if [ -d "examples/developer-hub-javascript" ]; then
@@ -110,28 +109,6 @@ fi
 
 echo -e "\n${GREEN}All dependency updates completed!${NC}"
 
-# Run automation scripts
-echo -e "\n${GREEN}Running automation scripts...${NC}"
-if [ -d "automations" ]; then
-  if goto_dir "automations"; then
-    echo "Running solidity reference table generator..."
-    if uv run solidity_reference_table_generator.py; then
-      echo "Running feed table generator..."
-      if uv run feed_table_generator.py; then
-        AUTOMATION_SUCCESS=true
-        log_success "Automation scripts completed"
-      else
-        log_error "Feed table generator failed"
-      fi
-    else
-      log_error "Solidity reference table generator failed"
-    fi
-    cd ..
-  fi
-else
-  log_warning "Automations directory not found, skipping"
-fi
-
 # Print summary of what was updated
 echo -e "\n${GREEN}===== Update Summary =====${NC}"
 if [ "$JS_SUCCESS" = true ] && [ -f "examples/developer-hub-javascript/package-lock.json" ]; then
@@ -156,12 +133,6 @@ if [ "$RUST_SUCCESS" = true ] && [ -f "examples/developer-hub-rust/Cargo.lock" ]
   log_success "Rust: Cargo.lock updated"
 else
   log_error "Rust: update incomplete or Cargo.lock not found"
-fi
-
-if [ "$AUTOMATION_SUCCESS" = true ]; then
-  log_success "Automation scripts were run successfully"
-else
-  log_error "Automation scripts failed or were skipped"
 fi
 
 # Calculate and display runtime

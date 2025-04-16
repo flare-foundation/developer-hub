@@ -163,11 +163,11 @@ const config: Config = {
               href: "https://flare-systems-explorer.flare.network",
             },
             {
-              label: "P-Chain Explorer",
-              href: "https://flare.space/dapp/p-chain-explorer/",
+              label: "Bug Bounty",
+              href: "https://immunefi.com/bug-bounty/flarenetwork/information/",
             },
             {
-              label: "Grants Program",
+              label: "Grants",
               href: "https://flare.network/grants",
             },
           ],
@@ -176,16 +176,16 @@ const config: Config = {
           title: "Governance",
           items: [
             {
-              label: "Discourse Forum",
-              href: "https://forum.flare.network",
+              label: "Flare Portal",
+              href: "http://portal.flare.network/",
             },
             {
               label: "Governance Proposals",
               href: "https://proposals.flare.network",
             },
             {
-              label: "Flare Portal",
-              href: "http://portal.flare.network/",
+              label: "Discourse Forum",
+              href: "https://forum.flare.network",
             },
           ],
         },
@@ -212,18 +212,19 @@ const config: Config = {
   ],
   stylesheets: [
     {
-      href: "https://cdn.jsdelivr.net/npm/katex@0.13.24/dist/katex.min.css",
+      href: "https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css",
       type: "text/css",
       integrity:
-        "sha384-odtC+0UGzzFL/6PNoE8rX/SPcQDXBJ+uRepguP4QkPCm2LBxH3FA3y+fKSiJ+AmM",
+        "sha384-5TcZemv2l/9On385z///+d7MSYlvIEw9FuZTIdZ14vJLqWphw7e7ZPuOiCHJcFCP",
       crossorigin: "anonymous",
     },
   ],
+  plugins: [require.resolve("./webpack.config.js")],
   scripts: [
+    // Optimized cookie script loading - defer until after page load
     {
+      src: "/js/cookie-loader.js",
       defer: true,
-      src: "https://cdn-cookieyes.com/client_data/dedcd40fe7e8316d7512b294/script.js",
-      id: "cookieyes",
     },
   ],
 };
