@@ -67,6 +67,7 @@ const sidebars: SidebarsConfig = {
             },
           ],
         },
+        "network/consensus",
       ],
     },
     {
