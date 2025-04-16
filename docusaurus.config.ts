@@ -221,6 +221,7 @@ const config: Config = {
       crossorigin: "anonymous",
     },
   ],
+  plugins: [require.resolve("./webpack.config.js")],
   scripts: [
     // Optimized cookie script loading - defer until after page load
     {
