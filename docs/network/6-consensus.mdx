@@ -39,9 +39,9 @@ Snowman++ is a Byzantine fault tolerant (BFT) protocol, being part of the wider 
   Each time a query reaffirms a particular state, the corresponding confidence counter for that state increments.
   This provides “memory” to the protocol, allowing nodes to accumulate additional certainty in their decisions over time.
 
-- **Snowman:** while Avalanche was originally designed as a DAG-based protocol, Snowman is the linear-chain version of it.
+- **Snowman:** while Avalanche originally relied on directed acyclic graph (DAG) structure, Snowman is the linear-chain version of it.
   Within Snowman there are multiple Snowball instances running concurrently at various block heights, each awaiting finalization.
-  This design aligns with conventional blockchain data structures while preserving the probabilistic and decentralized benefits of the Snowball approach.
+  Snowman's key advantage is its ability to leverage a single set of correspondences to drive several simultaneous Snowball processes, thereby enhancing the overall efficiency of the consensus mechanism.
 
 - **Snowman++:** introduces a soft proposer mechanism, initially granting a single proposer the authority to create a block.
   Over time, additional validators become eligible to propose blocks, with each validator selected according to its stake.
@@ -54,7 +54,7 @@ In Slush, a node repeatedly samples the network and queries each selected peer r
 The protocol is governed by two parameters:
 
 - `K`: the number of nodes included in each sample.
-- `Alpha`: the minimum threshold—constrained such that `K/2 < Alpha <= K`—required for a query to be considered successful.
+- `Alpha`: the minimum threshold—constrained such that `K/2 < Alpha < K + 1`—required for a query to be considered successful.
   That is, at least `Alpha` nodes must support the same state.
 
 When a query is deemed successful - i.e., it garners at least `Alpha` votes in favor of a particular state -- the node updates its own preference to match the majority state of the sample.
@@ -97,7 +97,7 @@ In the Go implementation from the [snow/consensus/snowball](https://github.com/f
 For both protocols, decisions are made on the 32-byte binary form of the proposed blocks.
 
 To effectively deal with more than two choices at a time, Snowball implements a `Tree` structure for all concurrent decisions.
-This implementation is specialized to handle multi-branch conflicts elegantly, by modeling them as a hierarchy, and thus optimizing the algorithm be allowing pruning.
+This implementation is specialized to handle multi-branch conflicts elegantly, by modeling them as a hierarchy, and thus optimizing the algorithm by allowing pruning.
 
 More precisely, concurrent blocks at the same height are organized in a tree-like structure based on the first differing bit.
 As such, when adding a new block, the tree branches out through a `binaryNode` at the first differing bit, with the counting done from the most significant bit to the least significant bit.
@@ -130,7 +130,7 @@ Next up we will see how Snowman optimizes the consensus algorithm further, by im
 ## Snowman
 
 While Snowball is used for deciding between concurrent blocks at the same block height, **Snowman** wraps this logic and extends it to a full linear blockchain.
-While Snowman enforces linearity, non-finalized blocks can be temporarily organized into a Directed Acyclic Graph (DAG) structure, which could simply be due to network delays for instance.
+Snowman does enforce linearity, but non-finalized blocks can be temporarily organized into a DAG structure, which could simply be due to network delays for example.
 To convert this DAG structure to a linear graph, Snowman uses **Kahn's topological ordering algorithm**.
 
 Naturally, for every block height, a set of block proposers is chosen in a deterministic fashion, as we discuss momentarily.
@@ -154,7 +154,7 @@ Within this structure, topological order is done from leaves towards the genesis
 For each round, validators report their currently preferred chain, rather than a single bit value, or a single block.
 Votes are then propagated transitively towards the genesis block, respecting parent-child relationships: a vote cast for a leaf implicitly supports its parent, provided that parent has not already been finalized.
 In the diagram below, blocks that have not been finalized are shown with dashed borders.
-A vote cast for block G is then propagated upward to blocks F and C.
+A vote cast for block `G` is then propagated upward to blocks `F` and `C`.
 
 <div style={{ textAlign: "center", margin: "30px 0" }}>
   <ThemedImage
@@ -168,7 +168,7 @@ A vote cast for block G is then propagated upward to blocks F and C.
 </div>
 
 Notably, a separate Snowball instance is running for every parent node within this structure.
-For example, at block C, the three concurrent child blocks are organized using the previously discussed Snowball `Tree` structure.
+For example, at block `C`, the three concurrent child blocks are organized using the previously discussed Snowball `Tree` structure.
 
 Consequently, the primary advantage of Snowman is its ability to leverage a single set of correspondences to drive multiple simultaneous instances of Snowball, thereby achieving efficiency and coherence across the consensus process.
 
