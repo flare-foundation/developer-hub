@@ -99,7 +99,7 @@ For both protocols, decisions are made on the 32-byte binary form of the propose
 To effectively deal with more than two choices at a time (i.e. `nnary` logic as opposed to binary or unary setups), Snowball implements a `Tree` structure for all concurrent decisions.
 This implementation is specialized to handle multi-branch conflicts elegantly, by modeling them as a hierarchy, and thus optimizing the algorithm be allowing pruning.
 
-More precisely, concurrent blocks at the same height are organised in a tree-like structure based on the first differing bit.
+More precisely, concurrent blocks at the same height are organized in a tree-like structure based on the first differing bit.
 As such, when adding a new block, the tree branches out through a `binaryNode` at the first differing bit, with the counting done from the most significant bit to the least significant bit.
 Here, bit indices are defined as:
 
@@ -107,7 +107,7 @@ Here, bit indices are defined as:
 [7 6 5 4 3 2 1 0] [15 14 13 12 11 10 9 8] ... [255 254 253 252 251 250 249 248]
 ```
 
-An example of how concurrent blocks may be organised within the `Tree` structure is depicted below, where the first differing bit in a byte is also highlighted.
+An example of how concurrent blocks may be organized within the `Tree` structure is depicted below, where the first differing bit in a byte is also highlighted.
 
 <div style={{ textAlign: "center", margin: "30px 0" }}>
   <ThemedImage
@@ -152,16 +152,33 @@ The Snowman consensus is implemented through a `Topological` struct, which uses 
 Within this structure, topological order is done from leaves towards the genesis block.
 
 For each round, validators report their currently preferred chain, rather than a single bit value, or a single block.
-Votes are then pushed up the graph structure towards the genesis block, respecting parent-child relationships: a vote for a leaf is also a vote for the parent, unless the parent block is already finalized.
-Importantly, there is a Snowball instance for every parent node in this graph structure.
-As such, the key benefit of Snowman is that it is reusing a set of correspondences for multiple instances of Snowball.
+Votes are then propagated transitively towards the genesis block, respecting parent-child relationships: a vote cast for a leaf implicitly supports its parent, provided that parent has not already been finalized.
+In the diagram below, blocks that have not been finalized are shown with dashed borders.
+A vote cast for block G is then propagated upward to blocks F and C.
+
+<div style={{ textAlign: "center", margin: "30px 0" }}>
+  <ThemedImage
+    style={{ width: "50%" }}
+    alt="Snowman Topological Structure"
+    sources={{
+      light: useBaseUrl("img/consensus/topological_light.svg"),
+      dark: useBaseUrl("img/consensus/topological_dark.svg"),
+    }}
+  />
+</div>
+
+Notably, a separate Snowball instance is running for every parent node within this structure.
+For example, at block C, the three concurrent child blocks are organized using the previously discussed Snowball `Tree` structure.
+
+Consequently, the primary advantage of Snowman is its ability to leverage a single set of correspondences to drive multiple simultaneous instances of Snowball, thereby achieving efficiency and coherence across the consensus process.
+
 
 ### Validator Sampling
 
-A Snowman chain is initialized within the `Manager` interface of the [chains](https://github.com/flare-foundation/go-flare/avalanchego/chains) package.
+A Snowman chain is initialized within the `Manager` interface of the [chains](https://github.com/flare-foundation/go-flare/tree/main/avalanchego/chains) package.
 This configures the global consensus parameters, as defined in the genesis files, as well as the type of sampling used by the validators.
 
-The widely used sampling process in the consensus protocol is a weighted sampling without replacement, which is enforced in the [snow/validators](https://github.com/flare-foundation/go-flare/avalanchego/snow/validators) package.
+The widely used sampling process in the consensus protocol is a weighted sampling without replacement, which is enforced in the [snow/validators](https://github.com/flare-foundation/go-flare/tree/main/avalanchego/snow/validators) package.
 Here the weights are based on the validators' stake.
 
 ### Snowman++
