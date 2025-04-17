@@ -1,78 +1,57 @@
 ---
 title: System Protocols
 description: Describes the core protocols comprising FSP.
-keywords:
-  [flare-network, configuration, blockchain, data, smart-contracts, wallets]
+keywords: [flare-network, signing, reward, uptime, voting, random, system]
 ---
 
 The **Flare Systems Protocol** encompasses the following core system protocols:
 
-1. **P-chain Stake Voting Protocol**
-2. **Signing Policy Definition Protocol**
-3. **Validator Uptime Voting Protocol**
-4. **Reward Voting Protocol**
-5. **Random Number Generation Protocol** (dependent on the [FTSOv2 Scaling](/ftso/scaling/overview))
+1. **Signing Policy Definition Protocol**
+2. **Validator Uptime Voting Protocol**
+3. **Reward Voting Protocol**
+4. **Random Number Generation Protocol** (dependent on [FTSOv2 Scaling](/ftso/scaling/overview))
 
 Protocols with voting frequencies tied to reward epochs are implemented directly on the [`FlareSystemsManager`](/network/fsp/solidity-reference/IFlareSystemsManager) smart contract, while others operate as sub-protocols. Each sub-protocol has a unique protocol ID, except for the system protocols mentioned above.
 
-## P-chain Stake Voting Protocol
-
-- **Protocol ID**: 1
-- **Voting Frequency**: Per voting epoch
-- **Description**: Functions similarly to sub-protocols, using the Flare Systems Client to submit signatures for Merkle tree-based protocol messages. It captures stake and delegation records from the P-chain during each voting epoch.
-- **Finalization**: Occurs on the Relay contract.
-- **Incentives**: Rewards for timely signing and finalization come from inflation. However, mirroring weights to delegators is not incentivized.
-
-**Infrastructure**: Utilizes a Flare P-chain indexer, requiring a specially configured observation node.
-
 ## Signing Policy Definition Protocol
 
-- **Voting Frequency**: Per reward epoch
-- **Description**: Ensures that voter weights for the next reward epoch are locked and signed by a threshold weight of current voters. This information is relayed to other EVM chains, enabling cross-chain message relaying.
+The Signing Policy Definition Protocol is a system protocol which ensures that data providers and their weights for the next reward epoch are locked and signed by a threshold weight of current data providers.
+The protocol works in phases, as follows:
 
-  **Phases**:
+- **Random Number Acquisition**: Around 2 hours before the end of the current reward epoch, a random number is fetched through the [FTSOv2 Scaling](/ftso/scaling/overview) protocol.
+- **Vote Power Block Selection**: Once a random number is obtained a block from the current reward epoch is selected at random.
+  The vote power registered in this selected block will be used for the new reward epoch.
+- **Voter Registration**: Once a random number is obtained, registration for the new reward epoch can begin.
+  This lasts 30 minutes, allowing self-registration based on the selected block’s vote power.
+- **Signing Policy Snapshot**: When the voter registration phase ends, a snapshot of the data providers' addresses and weights is taken.
+- **Signing Policy Sign Phase**: After the voter registration phase, the signing phase begins.
+  In this phase the data providers registered for the ongoing epoch submit signatures for updating the signing policy.
+  This phase ends when the threshold of signatures is reached.
+  Delays beyond 20 minutes or 600 blocks will incur penalties.
 
-  - **Random Number Acquisition**: Triggered 2 hours before the end of the reward epoch. The random number is fetched via the FTSO scaling protocol.
-  - **Vote Power Block Selection**: Occurs after random number acquisition to select a block for vote power.
-  - **Voter Registration**: Lasts 30 minutes, allowing self-registration based on the selected block’s weights.
-  - **Signing Policy Snapshot**: Snapshots voter addresses, weights, and thresholds for the next reward epoch.
-  - **Signing Policy Sign Phase**: Ends when the threshold of signatures is reached. Delays beyond 20 minutes incur penalties.
-
-- **Finalization**: Via the `signNewSigningPolicy` function.
-- **Incentives**: No direct rewards; instead, delays incur penalties by burning fee claims based on the extent of delay.
-
-**Infrastructure**: Utilizes the Flare indexer.
+While there are no direct rewards, delays in finalization cause a global lock of reward claiming and additional penalization when claiming is finally allowed.
+More specifically, each signer gets punished with burn of their fee claims, scaled quadratically with the length of the delay.
 
 ## Validator Uptime Voting Protocol
 
-- **Voting Frequency**: Per reward epoch
-- **Description**: After each reward epoch, voters submit signed lists of validator NodeIDs with sufficient uptime (≥80%). Voting concludes when a threshold weight (e.g., 60%) is reached.
-- **Finalization**: Through the `signUptimeVote` function.
-- **Incentives**: Collective penalization for delays by blocking reward claims.
+Following each reward epoch, data providers submit signed lists of validator NodeIDs that, in their view, achieved sufficient uptime (≥80%) during the preceding epoch.
+The voting process concludes upon reaching a defined threshold weight.
 
-**Infrastructure**: Requires a connection to a local node, reusing the Flare P-chain indexer infrastructure.
+Since the up-time data is needed for calculation of the rewards, the lack of a successful finalization blocks the execution of the reward voting protocol.
 
 ## Reward Voting Protocol
 
-- **Voting Frequency**: Per reward epoch
-- **Description**: After each reward epoch, and once uptime voting is complete, voters aggregate reward claims across sub-protocols into a Merkle tree. A final Merkle root is voted on, enabling the `RewardManager` contract to verify and pay out rewards.
+After each reward epoch, and once uptime voting is complete, data providers calculate cumulative reward claims for all sub protocols.
+The calculation of rewards takes into account all inputs and on-chain records of participation of data providers in a specific sub protocol.
 
-  **Process**:
-
-  - Sub-protocols submit reward claims based on participation data.
-  - The aggregated claims form a Merkle tree, with voting to confirm the root.
-
-- **Finalization**: Via the `signRewards` function.
-- **Incentives**: No special rewards; delays penalize all voters by blocking reward distribution.
-
-**Infrastructure**: Uses sub-protocol-specific scripts and data from the Flare indexer.
+Reward claims across all sub-protocols are aggregated into a Merkle tree.
+Voting takes place for the corresponding Merkle root, and, once confirmed, the `RewardManager` contract can verify individual claims and execute reward payouts.
 
 ## Random Number Generation Protocol
 
-- **Description**: Random numbers are generated by the [FTSOv2 Scaling](/ftso/scaling/overview). These are used for masking commits and are calculated from reveals during the scaling process. The random number forms part of a Merkle tree, confirmed via the Relay contract.
+Random numbers are generated as a byproduct of the [FTSOv2 Scaling](/ftso/scaling/overview) protocol, which employs a Commit & Reveal scheme.
+In this scheme, each commitment includes not only feed values but also a locally generated random number.
+This random number serves to blind the user's commit hash, protecting it against search-based attacks.
 
-## Additional Non-System Sub-Protocols
-
-- **Protocol ID 14**: [FTSOv2 Scaling](/ftso/scaling/overview)
-- **Protocol IDs 20+**: [FDC](/fdc/overview) Instances
-  - Multiple instances allow scaling, lower finalization thresholds, and segregation based on maturity and security considerations.
+Once the reveal phase begins, the random numbers from valid reveals are aggregated into a single random value for the current voting epoch.
+This aggregated random number is included in the Merkle root for the epoch, confirmed via the `Relay` contract.

@@ -54,12 +54,12 @@ Rewards are distributed through **reward claims**, which are data records indica
 - `amount`: Reward amount in FLR.
 - `claimType`: The category of the reward claim, which can be one of the following:
   - `direct`: Rewards directly attributed to the beneficiary (address). Used for undistributed rewards, fund providers, burn claims, or specific rewarding approaches within sub-protocols.
-  - `fee`: Similar to 'direct' but specific to eligible voters. Covers delegation fees (WFLR) and node staking fees.
-  - `wflr`: Rewards for eligible voters, distributed to delegators based on their participation in WFLR.
+  - `fee`: Similar to 'direct' but specific to eligible data providers. Covers delegation fees (WFLR) and node staking fees.
+  - `wflr`: Rewards for eligible data providers, distributed to delegators based on their participation in WFLR.
   - `mirror`: Rewards distributed to delegators based on their participation in WM.
-  - `cchain`: Rewards for eligible voters, distributed based on their share in WC.
+  - `cchain`: Rewards for eligible data providers, distributed based on their share in WC.
 
-Weight-based claims (`wflr`, `mirror`, `cchain`) represent total rewards for voters, to be distributed according to the delegators' participation in the voters' weight.
+Weight-based claims (`wflr`, `mirror`, `cchain`) represent total rewards for data providers, to be distributed according to the delegators' participation in the data providers' weight.
 
 ## Calculation Process
 
@@ -102,19 +102,19 @@ Sub-protocols are designed to encourage fast signature deposition and finalizati
 1. **Finalization Rewards**:
 
    - The first entity to finalize a Merkle root earns the reward.
-   - To avoid centralization, rewards prioritize eligible voters and distribute based on their weight.
+   - To avoid centralization, rewards prioritize eligible data providers and distribute based on their weight.
    - A grace period (20s) allows selected data providers to finalize or attempt finalization before others.
 
 2. **Signing Deposition Rewards**:
-   - Voters submitting signatures within a grace period (10s) receive rewards.
+   - Data providers submitting signatures within a grace period (10s) receive rewards.
    - Signatures submitted until the block of finalization are also rewarded if they meet weight thresholds.
 
 ### Finalization Incentives
 
 During the **grace period** for finalization (20s), selected data providers are rewarded based on a pseudo-random selection algorithm:
 
-- A hash value is used to determine which voters are eligible for finalization rewards based on their signing weight.
-- Voters are selected in proportion to their weights, and rewards are distributed among them.
+- A hash value is used to determine which providers are eligible for finalization rewards based on their signing weight.
+- Providers are selected in proportion to their weights, and rewards are distributed among them.
 
 If finalization is not completed within the grace period, the first to finalize receives the full reward, provided it happens within the extended reward window (`i + 2` voting epochs).
 
@@ -123,9 +123,9 @@ If finalization is not completed within the grace period, the first to finalize 
 Each sub-protocol allocates rewards for:
 
 1. **Finalization**: Rewards for submitting sufficient signatures to finalize a Merkle root.
-2. **Signing Deposition**: Rewards for voters who timely submit valid signatures.
+2. **Signing Deposition**: Rewards for providers who timely submit valid signatures.
 
-The reward amount attributed to a voter is split into:
+The reward amount attributed to a data provider is split into:
 
 - **Fee Claims**: Deducted as delegation fees (WNat delegations).
 - **Weight Participation Claims**: Remaining rewards are distributed among delegators and stakers based on their weights.
