@@ -48,7 +48,7 @@ const sidebars: SidebarsConfig = {
           collapsed: true,
           link: { type: "doc", id: "network/fsp" },
           items: [
-            "network/fsp/protocol-components",
+            "network/fsp/weights-and-signing",
             "network/fsp/system-protocols",
             "network/fsp/offchain-services",
             "network/fsp/governance",
