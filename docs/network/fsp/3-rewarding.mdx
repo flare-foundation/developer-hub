@@ -9,6 +9,42 @@ Flare's sub-protocols utilize a uniform signing weight for decision-making; howe
 
 All rewards are managed through the [`RewardManager`](/network/fsp/solidity-reference/IRewardManager) contract and are claimable after the reward epoch concludes. Sub-protocols implement their own contracts to gather rewarding inputs, which are passed to the Reward Manager for distribution. Funding is provided by sub-protocol-specific contracts, which may also handle inflation-based rewards through automated offers.
 
+## Minimal Conditions
+
+The [FIP.10](https://proposals.flare.network/FIP/FIP_10.html) and [SIP.04](http://proposals.flare.network/SIP/SIP_4.html) governance proposals introduced an incentive structure for participating in all protocols.
+The proposals implemented a set of minimum participation requirements from the data providers in a reward epoch for all Flare protocols.
+Failure to meet **all** these requirements can ultimately lead to loss of rewards across all protocols.
+
+### Passes
+
+The incentive structure introduces the concept of **passes**.
+Each provider has a number of passes, and can gain or lose passes depending on whether they meet the minimum participation requirements for each protocol.
+
+- Newly registered data providers start with zero passes.
+- When a data provider meets the minimum requirements in a reward epoch, they gain a pass.
+  Providers can hold a maximum of 3 passes.
+- When a data provider fails to meet the minimum requirements in a reward epoch, they lose a pass.
+  Providers can lose one pass per protocol per reward epoch.
+- If a provider would lose a pass but doesn’t have any, they lose all rewards for the epoch.
+  That is, a provider with 1 pass who fails to meet 1 minimal requirement will have 0 passes but will still achieve rewards, and a provider with 0 passes who fails to achieve a minimal requirement loses all rewards.
+
+### Minimum Participation Requirements
+
+Each Flare protocol implements the minimum participation requirements, defined across each reward epoch independently.
+FTSO and Staking requirements were introduced in [FIP.10](https://proposals.flare.network/FIP/FIP_10.html), while FDC requirements were defined in [FIP.12](https://proposals.flare.network/FIP/FIP_12.html).
+For completeness, these are also listed below:
+
+- **Staking**: Providers must meet 80% total uptime in the reward epoch with at least 1M FLR in active self-bond.
+  However, in order to earn passes, the provider must have at least 3M FLR in active self-bond and 15M in active stake.
+  Providers with 80% total uptime and at least 1M FLR in active self-bond but not meeting both the 3M FLR active self-bond and 15M active stake requirements neither earn nor lose passes, and still receive eligible rewards.
+
+- **FTSO anchor feeds**: Providers must submit a value estimate that lies within a 0.5% band around the consensus median value in 80% of voting rounds within a reward epoch.
+
+- **FTSO block-latency feeds**: Providers must submit at least 80% of their expected number of updates within a reward epoch, unless they have very low weight, defined as < 0.2% of the total active weight.
+
+- **FDC**: Data providers must successfully participate in 60% of all voting rounds within a reward epoch.
+  That is, they must submit the correct Merkle root for that voting epoch.
+
 ## Claim Structure
 
 Rewards are distributed through **reward claims**, which are data records indicating the allocation of rewards. Each claim consists of the following fields:
@@ -19,7 +55,7 @@ Rewards are distributed through **reward claims**, which are data records indica
 - `claimType`: The category of the reward claim, which can be one of the following:
   - `direct`: Rewards directly attributed to the beneficiary (address). Used for undistributed rewards, fund providers, burn claims, or specific rewarding approaches within sub-protocols.
   - `fee`: Similar to 'direct' but specific to eligible voters. Covers delegation fees (WFLR) and node staking fees.
-  - `wflr`: Rewards for eligible voters, distributed to delegators based on their participation in WWFLR.
+  - `wflr`: Rewards for eligible voters, distributed to delegators based on their participation in WFLR.
   - `mirror`: Rewards distributed to delegators based on their participation in WM.
   - `cchain`: Rewards for eligible voters, distributed based on their share in WC.
 
