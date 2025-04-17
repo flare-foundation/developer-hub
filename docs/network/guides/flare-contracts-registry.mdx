@@ -1,0 +1,104 @@
+---
+slug: flare-contracts-registry
+title: Retrieving Contract Addresses
+authors: [fassko]
+tags: [quickstart, solidity]
+description: Learn how to retrieve contract addresses on Flare Networks
+keywords: [quickstart, solidity, smart-contract, flare-network]
+sidebar_position: 6
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import DocCardList from "@theme/DocCardList";
+import SolidityReference from "@site/src/components/DataTables/SolidityReference";
+
+import CodeBlock from "@theme/CodeBlock";
+import Remix from "@site/src/components/remix";
+import RandomNumberFetcher from "!!raw-loader!/examples/developer-hub-solidity/RandomNumberFetcher.sol";
+
+export const contracts = ["FlareContractRegistry"];
+
+## Overview
+
+Flare provides a registry of enshrined protocol contracts such as `FtsoV2`, `FdcHub`, and `RandomNumberV2`.  
+To ensure reliability, these contract addresses should **always be retrieved dynamically** via the **Flare Contract Registry** rather than hardcoding them.
+Using the registry ensures your contracts, and dApps are resistant to future upgrades and cannot be misled by off-chain or unverified sources.
+
+## Flare Contract Registry Address
+
+The [`FlareContractRegistry`](/network/solidity-reference/IFlareContractRegistry) smart contract is the **only trusted source** for resolving official protocol contract addresses.
+
+The registry is deployed at the same address across all Flare networks:
+
+<Tabs block>
+  <TabItem value="flare" label="Flare Mainnet" default>
+    <SolidityReference
+      network="FlareMainnet"
+      contractNames={contracts}
+      renderAbi={false}
+    />
+  </TabItem>
+  <TabItem value="coston2" label="Flare Testnet Coston2">
+    <SolidityReference
+      network="FlareTestnetCoston2"
+      contractNames={contracts}
+      renderAbi={false}
+    />
+  </TabItem>
+  <TabItem value="songbird" label="Songbird Canary-Network">
+    <SolidityReference
+      network="SongbirdCanaryNetwork"
+      contractNames={contracts}
+      renderAbi={false}
+    />
+  </TabItem>
+  <TabItem value="coston" label="Songbird Testnet Coston">
+    <SolidityReference
+      network="SongbirdTestnetCoston"
+      contractNames={contracts}
+      renderAbi={false}
+    />
+  </TabItem>
+</Tabs>
+
+## Retrieval Methods
+
+In the following code example, the `RandomNumberFetcher` contract retrieves the address of `RandomNumberV2` using the three approaches described below.
+
+<CodeBlock language="solidity" title="contracts/RandomNumberFetcher.sol">
+  {RandomNumberFetcher}
+</CodeBlock>
+
+{/* prettier-ignore */}
+<Remix fileName="RandomNumberFetcher.sol">Open in Remix</Remix>
+
+### 🔴 Hardcoded Address
+
+The `getRandomNumberHardcoded` function below uses a hardcoded address to create an interface instance. Not recommended in production.
+
+:::warning
+
+- Never hardcode contract addresses in production.
+- Avoid using contract addresses obtained from unofficial sources like DMs, social media, or third-party websites.
+- Instead of passing contract addresses directly into constructors, retrieve them dynamically, as shown below.
+  :::
+
+### Flare Contract Registry Smart Contract
+
+The Flare Contract Registry smart contract exposes [`getContractAddressByName`](/network/solidity-reference/IFlareContractRegistry#getcontractaddressbyname) or [`getContractAddressByHash`](/network/solidity-reference/IFlareContractRegistry#getcontractaddressbyhash) to retrieve the address of the contract.
+
+In the code example above, the `getRandomNumberViaRegistryName` function uses the `getContractAddressByName` method to retrieve the address of `RandomNumberV2`.
+
+### Contract Registry Library
+
+The [Flare periphery package](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts) package includes a helper utility [`ContractRegistry`](https://github.com/flare-foundation/flare-solidity-periphery-package-mirror/blob/master/flare/ContractRegistry.sol).
+This library provides shorthand functions for accessing common protocol contracts, e.g., `ContractRegistry.getRandomNumberV2()`.
+
+In the example, the `getRandomNumberViaContractLibrary` function demonstrates this approach.
+
+<br />
+:::tip If the contract you are looking for does not have a shorthand method in
+the `ContractRegistry` library, you can fall back to using
+`getContractAddressByName` or call `getAllContracts` to list all registered
+contracts. :::
