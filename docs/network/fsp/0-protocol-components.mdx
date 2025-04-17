@@ -7,12 +7,12 @@ keywords:
 
 ## Voters
 
-Voters are offchain participants in Flare's protocols, responsible for threshold-weighted voting across all sub-protocols. The system anticipates **100 voters**, selected among validators with the highest vote power.
-
-**Vote Power Sources**:
+Voters are off-chain participants in Flare's protocols, responsible for threshold-weighted voting across all sub-protocols.
+The system anticipates **100 voters**, selected in a decentralized manner among validators with the highest **vote power**.
+The sources of vote power are the following:
 
 - **P-chain Stake**: Adding FLR stake to a validator node.
-- **WNat Delegations**: Community members delegate vote power via the WNat smart contract.
+- **WNat Delegations**: Community members delegate wrapped FLR (WFLR) via the WNat smart contract.
 
 Each voter is identified by an **identity address** (managed securely via cold wallets), used for:
 
@@ -28,14 +28,17 @@ Each voter is identified by an **identity address** (managed securely via cold w
 
 ## Voting Periods
 
-- **Voting Epoch**: The shortest voting unit, lasting **90 seconds**. The first epoch starts at `T0` and increments by `i * 90s`.
-- **Reward Epoch**: Comprises **3360 voting epochs** (approx. 3.5 days). Identified by reward epoch IDs, with each reward epoch starting after the previous one concludes. However, reward epochs may be extended due to network delays.
+Within the core Flare protocols, voting time is divided in units, as follows:
 
-**Voting Rounds**:
+- **Voting Epoch**: The shortest voting unit, lasting **90 seconds**.
+  The first epoch starts at `T0` and increments by `i * 90s`.
+- **Reward Epoch**: Comprises **3360 voting epochs** (approx. 3.5 days).
+  Identified by reward epoch IDs, with each reward epoch starting after the previous one concludes.
+  However, reward epochs may be extended due to network delays.
 
-- Sub-protocols typically vote once per voting epoch.
-- System protocols may vote once per reward epoch.
-- Each voting round is identified by the ID of the epoch in which it started.
+The voting frequency of each sub protocol is usually once per voting epoch, while some system protocols have voting frequency per reward epoch.
+For specific sub-protocols, a **voting round** represents a full voting sequence that starts in a particular voting epochs and typically extends to the next one.
+As a result, voting rounds are identified by the ID of the voting epoch in which they started.
 
 ## Voting Results and Finalization
 
@@ -43,7 +46,8 @@ Each sub-protocol aims to reach consensus on a **Merkle root** for every voting 
 
 - Voters independently compute candidate Merkle roots and submit signed roots on-chain.
 - A root is confirmed if it surpasses a **50%+ voting weight threshold**.
-- Finalization occurs when signatures exceeding the threshold are submitted to the [`Relay`](/network/fsp/solidity-reference/IRelay) contract, which verifies and stores confirmed Merkle roots. These are accessible for proof verification by other smart contracts.
+- Finalization occurs when signatures exceeding the threshold are submitted to the [`Relay`](/network/fsp/solidity-reference/IRelay) contract, which verifies and stores confirmed Merkle roots.
+  These are accessible for proof verification by other smart contracts.
 
 **Protocol Message Structure**:
 
@@ -64,25 +68,53 @@ To verify data on-chain:
 2. The smart contract encodes the data and applies the Merkle proof to match the confirmed root from the **Relay contract**.
 3. If the roots match, the data is verified.
 
-## Voting (Signing) Policies
+## Signing Policies and Weight Systems
 
-Voter eligibility and weights are determined for each **reward epoch** (~3.5 days). The **Signing Policy Definition Protocol** sets the eligible voters, their weights, and the threshold required for confirmation before each reward epoch begins.
+Voter eligibility and weights are determined for each **reward epoch** (~3.5 days).
+The **Signing Policy Definition Protocol** sets the eligible voters, their weights, and the threshold required for confirmation before each reward epoch begins.
 
-**Sources of Voting Weight**:
+Within the FSP and core Flare protocols, there are multiple types of weights, as follows:
 
-- **P-chain Stake ($W_P$)**: Long-term staked FLR.
-- **Mirrored Stake ($W_M$)**: Roughly similar to $W_P$
-- **C-chain Stake ($W_C$)**: Planned for future use.
-- **WNat Delegations ($W_{WFLR}$)**: Community-delegated vote power on the WNat contract.
+- **P-chain Stake ($W_P$)**: The amount of long-term staked FLR tokens on the P-chain to a particular voter.
+  This includes both self-bond as well as delegated stake on all validator nodes assigned to that voter.
+  This weight is only available on the P-chain.
 
-**Aggregated Voting Weight**:
+- **Mirrored Stake ($W_M$)**: Mirroring is the process of recording P-chain state to smart contracts on the C-chain.
+  As such, the mirrored stake is roughly similar to the P-chain stake, though it can for short periods (the mirroring duration) differ from the actual stake on the P-chain.
+  This stake is commonly referred to as `mirrored_weight` within the Flare core protocols.
 
-$$
-W(v, r) = A(W_{M}(v, r), W_{C}(v, r), W_{WFLR}(v, r))
-$$
+- **C-chain Stake ($W_C$)**: Currently under development, planned for future use.
 
-- **Capped WFLR**: Limited to 2.5% of total wrapped weight.
-- **Total Voting Weight**: Calculated by summing up the weights of all eligible voters.
+- **WNat Delegations ($W_{WFLR}$)**: The vote power on the WNat contract, based on both delegated and owned WFLR.
+  This is also known as `delegation_weight`.
+
+- **Capped Delegation Weight ($W'_{WFLR}$)**: Also known as `capped_delegation_weight`, this is the delegation weight, $W_{WFLR}$, limited to 2.5% of total WFLR weight.
+
+- **Registration Weight ($W_{reg}$)**: The weight used when data providers are registered before each reward epoch.
+  It is commonly referred to as `reg_weight`, being defined as:
+  $$
+  W_{reg} = \left(W'_{WFLR} + W_M \right)^{0.75}~.
+  $$
+
+- **Signing Weight ($W_{S}$)**: Known as `signing_weight` or `normalized_weight`, this is a normalized registration weight, such that the sum of all signing weights gets packed into 2-bytes.
+
+- **Total Voting Weight**: Calculated by summing up the signing weights of all eligible voters.
+
+
+Weight systems serve a variety of purposes in Flare's management and enshrined protocols, allowing community members to play an important role in Flare’s core protocols.
+The most widely used weight system throughout the main protocols is the **signing weight**, which is used to define the signing policiy.
+The relevant weights and their uses are listed below.
+
+| Protocol        | Component                                                               | Weight System    |
+| --------------- | ----------------------------------------------------------------------- | ---------------- |
+| **FSP**         | • Updating Signing Policy<br />• Validator Uptime<br />• Reward Signing | $W_S$            |
+| **FTSOv2**      | • Scaling: Weighted Median Calculation                                  | $W'_{WFLR}$      |
+|                 | • Scaling: Signing and Finalization<br />• Fast Updates: Sortition      | $W_S$            |
+| **FDC**         | • Bit Voting<br />• Signing and Finalization                            | $W_S$            |
+| **Staking**     | • Staking Rewards                                                       | $W_P$            |
+| **Governance**  | • Voting                                                                | $W_{WFLR} + W_M$ |
+
+
 
 ## Weight Participation and Fees
 
@@ -96,7 +128,7 @@ A **signing policy** includes:
 
 - `rewardEpochId`: Reward epoch ID.
 - `startVotingRoundId`: Indicates the start of a reward epoch.
-- `voters`: Canonical list of voter addresses.
+- `voters`: Canonical list of voter addresses.**Sources of Voting Weight**:
 - `weights`: Compressed, normalized weights (2-byte values).
 - `threshold`: Usually set to **50%+** of total weight.
 - `seed`: Secure random seed.
