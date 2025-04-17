@@ -8,67 +8,97 @@ keywords: [quickstart, solidity, smart-contract, flare-network]
 sidebar_position: 6
 ---
 
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import DocCardList from "@theme/DocCardList";
+import SolidityReference from "@site/src/components/DataTables/SolidityReference";
+
 import CodeBlock from "@theme/CodeBlock";
 import Remix from "@site/src/components/remix";
-import RandomNumberFetcherViaRegistry from "!!raw-loader!/examples/developer-hub-solidity/RandomNumberFetcherViaRegistry.sol";
-import RandomNumberFetcherViaLibrary from "!!raw-loader!/examples/developer-hub-solidity/RandomNumberFetcherViaLibrary.sol";
+import RandomNumberFetcher from "!!raw-loader!/examples/developer-hub-solidity/RandomNumberFetcher.sol";
 
-On Flare networks, contract addresses for enshrined protocol components such as `FtsoV2`, `FdcHub`, and `RandomNumberV2` should always be retrieved from the **Flare Contract Registry** dynamically.
-This ensures you are using trusted, up-to-date addresses without relying on off-chain or potentially harmful sources.
+export const contracts = ["FlareContractRegistry"];
 
-### Registry Contract Address
+## Overview
 
-All core contract addresses can be retrieved from the [`FlareContractRegistry`](/network/solidity-reference/IFlareContractRegistry) smart contract.
-This is the **only trusted source** of official contract addresses on Flare.
+Flare provides a registry of enshrined protocol contracts such as `FtsoV2`, `FdcHub`, and `RandomNumberV2`.  
+To ensure reliability, these contract addresses should **always be retrieved dynamically** via the **Flare Contract Registry** rather than hardcoding them.
+Using the registry ensures your contracts, and dApps are resistant to future upgrades and cannot be misled by off-chain or unverified sources.
 
-The registry is deployed at the same address across all supported Flare networks:
+## Flare Contract Registry Address
 
-| [FlareContractRegistry](/network/solidity-reference/IFlareContractRegistry) | `0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019` |
-| --------------------------------------------------------------------------- | -------------------------------------------- |
+The [`FlareContractRegistry`](/network/solidity-reference/IFlareContractRegistry) smart contract is the **only trusted source** for resolving official protocol contract addresses.
+
+The registry is deployed at the same address across all Flare networks:
+
+<Tabs block>
+  <TabItem value="flare" label="Flare Mainnet" default>
+    <SolidityReference
+      network="FlareMainnet"
+      contractNames={contracts}
+      renderAbi={false}
+    />
+  </TabItem>
+  <TabItem value="coston2" label="Flare Testnet Coston2">
+    <SolidityReference
+      network="FlareTestnetCoston2"
+      contractNames={contracts}
+      renderAbi={false}
+    />
+  </TabItem>
+  <TabItem value="songbird" label="Songbird Canary-Network">
+    <SolidityReference
+      network="SongbirdCanaryNetwork"
+      contractNames={contracts}
+      renderAbi={false}
+    />
+  </TabItem>
+  <TabItem value="coston" label="Songbird Testnet Coston">
+    <SolidityReference
+      network="SongbirdTestnetCoston"
+      contractNames={contracts}
+      renderAbi={false}
+    />
+  </TabItem>
+</Tabs>
+
+## Retrieval Methods
+
+In the following code example, the `RandomNumberFetcher` contract retrieves the address of `RandomNumberV2` using the three approaches described below.
+
+<CodeBlock language="solidity" title="contracts/RandomNumberFetcher.sol">
+  {RandomNumberFetcher}
+</CodeBlock>
+
+{/* prettier-ignore */}
+<Remix fileName="RandomNumberFetcher.sol">Open in Remix</Remix>
+
+### 🔴 Hardcoded Address
+
+The `getRandomNumberHardcoded` function below uses a hardcoded address to create an interface instance. Not recommended in production.
 
 :::warning
 
 - Never hardcode contract addresses in production.
 - Avoid using contract addresses obtained from unofficial sources like DMs, social media, or third-party websites.
-- Instead of passing contract addresses directly into constructors, retrieve them dynamically as shown below.
+- Instead of passing contract addresses directly into constructors, retrieve them dynamically, as shown below.
   :::
 
-## Retrieving Addresses from the Registry
+### Flare Contract Registry Smart Contract
 
-The registry exposes [`getContractAddressByName`](/network/solidity-reference/IFlareContractRegistry#getcontractaddressbyname) or [`getContractAddressByHash`](/network/solidity-reference/IFlareContractRegistry#getcontractaddressbyhash) to retrieve the address of the contract you need.
+The Flare Contract Registry smart contract exposes [`getContractAddressByName`](/network/solidity-reference/IFlareContractRegistry#getcontractaddressbyname) or [`getContractAddressByHash`](/network/solidity-reference/IFlareContractRegistry#getcontractaddressbyhash) to retrieve the address of the contract.
 
-In the following example, the `RandomNumberFetcherViaRegistry` contract retrieves the address of `RandomNumberV2` via the registry:
+In the code example above, the `getRandomNumberViaRegistryName` function uses the `getContractAddressByName` method to retrieve the address of `RandomNumberV2`.
 
-<CodeBlock
-  language="solidity"
-  title="contracts/RandomNumberFetcherViaRegistry.sol"
->
-  {RandomNumberFetcherViaRegistry}
-</CodeBlock>
+### Contract Registry Library
 
-{/* prettier-ignore */}
-<Remix fileName="RandomNumberFetcherViaRegistry.sol">Open in Remix</Remix>
+The [Flare periphery package](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts) package includes a helper utility [`ContractRegistry`](https://github.com/flare-foundation/flare-solidity-periphery-package-mirror/blob/master/flare/ContractRegistry.sol).
+This library provides shorthand functions for accessing common protocol contracts, e.g., `ContractRegistry.getRandomNumberV2()`.
 
-## Using the Contract Registry Library
+In the example, the `getRandomNumberViaContractLibrary` function demonstrates this approach.
 
-The [`@flarenetwork/flare-periphery-contracts`](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts) package includes a [`ContractRegistry`](https://github.com/flare-foundation/flare-solidity-periphery-package-mirror/blob/master/flare/ContractRegistry.sol) library.
-This library provides convenient shorthand methods to access frequently used contract interfaces without manually specifying their names.
-
-For example, the `RandomNumberFetcherViaLibrary` contract below uses `ContractRegistry.getRandomNumberV2()` to access the `RandomNumberV2` contract directly:
-
-<CodeBlock
-  language="solidity"
-  title="contracts/RandomNumberFetcherViaLibrary.sol"
->
-  {RandomNumberFetcherViaLibrary}
-</CodeBlock>
-
-{/* prettier-ignore */}
-<Remix fileName="RandomNumberFetcherViaLibrary.sol">Open in Remix</Remix>
-<br></br>
-
-:::tip
-If the contract you're looking for does not have a shorthand method in the `ContractRegistry` library, you can fall back to using `getContractAddressByName` or call `getAllContracts` to list all registered contracts.
-:::
-
-By following either of these patterns, you ensure that your dApps and smart contracts are more maintainable, secure, and future-proof when working within the Flare ecosystem.
+<br />
+:::tip If the contract you are looking for does not have a shorthand method in
+the `ContractRegistry` library, you can fall back to using
+`getContractAddressByName` or call `getAllContracts` to list all registered
+contracts. :::
