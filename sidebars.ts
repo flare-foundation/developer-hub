@@ -50,9 +50,8 @@ const sidebars: SidebarsConfig = {
           items: [
             "network/fsp/weights-and-signing",
             "network/fsp/system-protocols",
-            "network/fsp/offchain-services",
-            "network/fsp/governance",
             "network/fsp/rewarding",
+            "network/fsp/offchain-services",
             {
               type: "category",
               label: "FSP Reference",
@@ -67,6 +66,7 @@ const sidebars: SidebarsConfig = {
             },
           ],
         },
+        "network/governance",
         "network/consensus",
       ],
     },
