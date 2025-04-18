@@ -1,22 +1,26 @@
 ---
 title: Weights and Signing
 description: Defines the structure, voting, and weight calculations for FSP.
-keywords: [flare-network, weight, minimal-conditions, signing]
+keywords: [flare-network, weight, signing, voting, epoch]
 ---
 
 ## Data Providers
 
 Data providers are offchain participants in Flare's protocols, responsible for threshold-weighted voting across all sub-protocols.
 The system anticipates **100 data providers**, selected in a decentralized manner among validators with the highest **vote power**.
-The sources of vote power are the following:
 
-- **P-chain Stake**: Adding FLR stake to a validator node.
-- **WNat Delegations**: Community members delegate wrapped FLR (WFLR) via the WNat smart contract.
+Importantly, vote power is community-drive, derived from two key sources:
+
+- **P-chain Stake**: `FLR` staked either directly by validators or delegated to them by other network participants.
+- **WNat Delegations**: Wrapped `FLR` (`WFLR`) delegated by community members via the WNat smart contract.
+
+This design ensures that governance over Flare’s protocols is not dictated by a centralized entity, but instead emerges organically from the collective decisions of token holders and validators.
+Through delegation and staking, the community directly shapes the behavior and evolution of the network.
 
 Each data provider is identified by an **identity address** (managed securely via cold wallets), used for conducting admin operations (e.g., setting fees, signing addresses, delegation addresses).
 Data providers can also set a **signing address** (hot wallet) for protocol participation, and an optional prioritized submission address for on-chain communication.
 
-## Voting Periods
+## Voting
 
 Within the core Flare protocols, time is divided in units, as follows:
 
@@ -27,7 +31,7 @@ A new voting epoch (or reward epoch, respectively) starts immediately after the 
 For specific sub-protocols, a **voting round** represents a full voting sequence that starts in a particular voting epoch and typically extends to the next one.
 As a result, voting rounds are identified by the ID of the voting epoch in which they started.
 
-## Voting Results and Finalization
+### Voting Results and Finalization
 
 Each sub-protocol aims to reach consensus on a **Merkle root** for every voting round:
 
@@ -36,7 +40,7 @@ Each sub-protocol aims to reach consensus on a **Merkle root** for every voting 
 - Finalization occurs when signatures exceeding the threshold are submitted to the [`Relay`](/network/fsp/solidity-reference/IRelay) contract, which verifies and stores confirmed Merkle roots.
   These are accessible for proof verification by other smart contracts.
 
-## Using Confirmed Voting Results
+### Using Confirmed Voting Results
 
 To verify data on-chain:
 
@@ -54,16 +58,16 @@ The [**Signing Policy Definition Protocol**](/network/fsp/system-protocols) sets
 
 Within the FSP and core Flare protocols, there are multiple types of weights, defined as follows:
 
-- **P-chain Stake ($W_P$)**: The amount of long-term staked FLR tokens on the P-chain to a particular data provider.
+- **P-chain Stake ($W_P$)**: The amount of long-term staked `FLR` tokens on the P-chain to a particular data provider.
   This includes both self-bond as well as delegated stake on all validator nodes assigned to that data provider.
   This weight is only available on the P-chain.
 
 - **Mirrored Stake ($W_M$)**: Mirroring is the process of recording P-chain state to smart contracts on the C-chain.
   As such, the mirrored stake is roughly similar to the P-chain stake, though it can for short periods (the mirroring duration) differ from the actual stake on the P-chain.
 
-- **WNat Delegations ($W_{WFLR}$)**: The vote power on the WNat contract, based on both delegated and owned WFLR.
+- **WNat Delegations ($W_{WFLR}$)**: The vote power on the WNat contract, based on both delegated and owned `WFLR` (or `WSGB` for the Songbird Canary-Network, respectively).
 
-- **Capped Delegation Weight ($W'_{WFLR}$)**: The delegation weight, $W_{WFLR}$, limited to 2.5% of total WFLR weight.
+- **Capped Delegation Weight ($W'_{WFLR}$)**: The delegation weight, $W_{WFLR}$, limited to 2.5% of total `WFLR` weight.
 
 - **Registration Weight ($W_{reg}$)**: The weight used when data providers are registered before each reward epoch, being defined as:
 
