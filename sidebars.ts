@@ -49,8 +49,8 @@ const sidebars: SidebarsConfig = {
           link: { type: "doc", id: "network/fsp" },
           items: [
             "network/fsp/weights-and-signing",
-            "network/fsp/system-protocols",
             "network/fsp/rewarding",
+            "network/fsp/system-protocols",
             "network/fsp/offchain-services",
             {
               type: "category",
