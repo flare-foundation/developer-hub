@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 
-import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/TestFtsoV2Interface.sol";
-import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
-import {IFeeCalculator} from "@flarenetwork/flare-periphery-contracts/coston2/IFeeCalculator.sol";
+import { TestFtsoV2Interface } from "@flarenetwork/flare-periphery-contracts/coston2/TestFtsoV2Interface.sol";
+import { ContractRegistry } from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
+import { IFeeCalculator } from "@flarenetwork/flare-periphery-contracts/coston2/IFeeCalculator.sol";
 
 contract FtsoV2Consumer {
-    bytes21 public constant flrUsdId =
-        0x01464c522f55534400000000000000000000000000; // "FLR/USD"
+    bytes21 public constant flrUsdId = 0x01464c522f55534400000000000000000000000000; // "FLR/USD"
 
     // Feed IDs, see https://dev.flare.network/ftso/feeds for full list
     bytes21[] public feedIds = [
@@ -31,11 +30,7 @@ contract FtsoV2Consumer {
     function getFtsoV2CurrentFeedValues()
         external
         view
-        returns (
-            uint256[] memory _feedValues,
-            int8[] memory _decimals,
-            uint64 _timestamp
-        )
+        returns (uint256[] memory _feedValues, int8[] memory _decimals, uint64 _timestamp)
     {
         /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
         TestFtsoV2Interface ftsoV2 = ContractRegistry.getTestFtsoV2();
