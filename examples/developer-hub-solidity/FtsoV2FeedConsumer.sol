@@ -18,17 +18,13 @@ contract FtsoV2Consumer {
 
     function getFlrUsdPrice() external view returns (uint256, int8, uint64) {
         /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
-        TestFtsoV2Interface ftsoV2 = TestFtsoV2Interface(
-            ContractRegistry.getTestFtsoV2()
-        );
+        TestFtsoV2Interface ftsoV2 = ContractRegistry.getTestFtsoV2();
         /* Your custom feed consumption logic. In this example the values are just returned. */
         return ftsoV2.getFeedById(flrUsdId);
     }
     function getFlrUsdPriceWei() external view returns (uint256, uint64) {
         /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
-        TestFtsoV2Interface ftsoV2 = TestFtsoV2Interface(
-            ContractRegistry.getTestFtsoV2()
-        );
+        TestFtsoV2Interface ftsoV2 = ContractRegistry.getTestFtsoV2();
         /* Your custom feed consumption logic. In this example the values are just returned. */
         return ftsoV2.getFeedByIdInWei(flrUsdId);
     }

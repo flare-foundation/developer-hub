@@ -1,42 +1,40 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 
-import {console2} from "forge-std/Test.sol";
-import {FtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/FtsoV2Interface.sol";
-import {IFeeCalculator} from "@flarenetwork/flare-periphery-contracts/coston2/IFeeCalculator.sol";
+import { TestFtsoV2Interface } from "@flarenetwork/flare-periphery-contracts/coston2/TestFtsoV2Interface.sol";
+import { ContractRegistry } from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
+import { IFeeCalculator } from "@flarenetwork/flare-periphery-contracts/coston2/IFeeCalculator.sol";
 
-contract FtsoV2FeedConsumer {
-    FtsoV2Interface internal ftsoV2;
-    IFeeCalculator internal feeCalc;
-    bytes21[] public feedIds;
-    bytes21 public flrUsdId;
-    uint256 public fee;
+contract FtsoV2Consumer {
+    bytes21 public constant flrUsdId = 0x01464c522f55534400000000000000000000000000; // "FLR/USD"
 
-    constructor(address _ftsoV2, address _feeCalc, bytes21 _flrUsdId) {
-        ftsoV2 = FtsoV2Interface(_ftsoV2);
-        feeCalc = IFeeCalculator(_feeCalc);
-        flrUsdId = _flrUsdId;
-        feedIds.push(_flrUsdId);
+    // Feed IDs, see https://dev.flare.network/ftso/feeds for full list
+    bytes21[] public feedIds = [
+        bytes21(0x01464c522f55534400000000000000000000000000), // FLR/USD
+        bytes21(0x014254432f55534400000000000000000000000000), // BTC/USD
+        bytes21(0x014554482f55534400000000000000000000000000) // ETH/USD
+    ];
+
+    function getFlrUsdPrice() external view returns (uint256, int8, uint64) {
+        /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
+        TestFtsoV2Interface ftsoV2 = ContractRegistry.getTestFtsoV2();
+        /* Your custom feed consumption logic. In this example the values are just returned. */
+        return ftsoV2.getFeedById(flrUsdId);
     }
-
-    function checkFees() external returns (uint256 _fee) {
-        fee = feeCalc.calculateFeeByIds(feedIds);
-        return fee;
+    function getFlrUsdPriceWei() external view returns (uint256, uint64) {
+        /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
+        TestFtsoV2Interface ftsoV2 = ContractRegistry.getTestFtsoV2();
+        /* Your custom feed consumption logic. In this example the values are just returned. */
+        return ftsoV2.getFeedByIdInWei(flrUsdId);
     }
-
-    function getFlrUsdPrice() external payable returns (uint256, int8, uint64) {
-        (uint256 feedValue, int8 decimals, uint64 timestamp) = ftsoV2
-            .getFeedById{value: msg.value}(flrUsdId);
-
-        if (fee != msg.value) {
-            console2.log("msg.value %i doesn't match fee %i", msg.value, fee);
-        } else {
-            console2.log("msg.value matches fee");
-        }
-
-        console2.log("feedValue %i", feedValue);
-        console2.log("decimals %i", decimals);
-        console2.log("timestamp %i", timestamp);
-        return (feedValue, decimals, timestamp);
+    function getFtsoV2CurrentFeedValues()
+        external
+        view
+        returns (uint256[] memory _feedValues, int8[] memory _decimals, uint64 _timestamp)
+    {
+        /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
+        TestFtsoV2Interface ftsoV2 = ContractRegistry.getTestFtsoV2();
+        /* Your custom feed consumption logic. In this example the values are just returned. */
+        return ftsoV2.getFeedsById(feedIds);
     }
 }
