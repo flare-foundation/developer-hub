@@ -48,11 +48,10 @@ const sidebars: SidebarsConfig = {
           collapsed: true,
           link: { type: "doc", id: "network/fsp" },
           items: [
-            "network/fsp/protocol-components",
+            "network/fsp/weights-and-signing",
+            "network/fsp/rewarding",
             "network/fsp/system-protocols",
             "network/fsp/offchain-services",
-            "network/fsp/governance",
-            "network/fsp/rewarding",
             {
               type: "category",
               label: "FSP Reference",
@@ -67,6 +66,7 @@ const sidebars: SidebarsConfig = {
             },
           ],
         },
+        "network/governance",
         "network/consensus",
       ],
     },
