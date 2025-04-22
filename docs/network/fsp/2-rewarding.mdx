@@ -1,0 +1,159 @@
+---
+title: Rewarding
+description: Explains the structure for distributing rewards in FSP.
+keywords: [flare-network, reward, minimal-conditions, claim, incentive]
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import CodeBlock from "@theme/CodeBlock";
+import ThemedImage from "@theme/ThemedImage";
+import useBaseUrl from "@docusaurus/useBaseUrl";
+
+Flare's sub-protocols utilize a uniform signing weight for decision-making; however, reward distribution is based on the delegators' participation weights. Each sub-protocol calculates rewards for various participation weight types, allowing delegators to claim rewards according to their specific contribution shares.
+
+All rewards are managed through the [`RewardManager`](/network/fsp/solidity-reference/IRewardManager) contract and are claimable after the reward epoch concludes.
+Sub-protocols implement their own contracts to gather rewarding inputs, which are passed to the Reward Manager for distribution. Funding is provided by sub-protocol-specific contracts, which may also handle inflation-based rewards through automated offers.
+
+## Minimal Conditions
+
+The [FIP.10](https://proposals.flare.network/FIP/FIP_10.html) and [SIP.04](http://proposals.flare.network/SIP/SIP_4.html) governance proposals introduced an incentive structure for participating in all protocols.
+The proposals implemented a set of minimum participation requirements from the data providers in a reward epoch for all Flare protocols.
+These proposals ensure that participation in Flare's **enshrined protocols** is not merely symbolic, but actively upheld by the network's validators through meaningful engagement.
+Failure to meet **all** these requirements can ultimately lead to loss of rewards across all protocols.
+
+### Passes
+
+The incentive structure introduces the concept of **passes**.
+Each provider has a number of passes, and can gain or lose passes depending on whether they meet the minimum participation requirements for each protocol.
+
+- Newly registered data providers start with zero passes.
+- When a data provider meets the minimum requirements in a reward epoch, they gain a pass.
+  Providers can hold a maximum of 3 passes.
+- When a data provider fails to meet the minimum requirements in a reward epoch, they lose a pass.
+  Providers can lose one pass per protocol per reward epoch.
+- If a provider would lose a pass but doesn't have any, they lose all rewards for the epoch.
+  That is, a provider with 1 pass who fails to meet 1 minimal requirement will have 0 passes but will still achieve rewards, and a provider with 0 passes who fails to achieve a minimal requirement loses all rewards.
+
+### Minimum participation requirements
+
+Each Flare protocol implements the minimum participation requirements, defined across each reward epoch independently.
+FTSO and Staking requirements were introduced in [FIP.10](https://proposals.flare.network/FIP/FIP_10.html), while FDC requirements were defined in [FIP.12](https://proposals.flare.network/FIP/FIP_12.html).
+For completeness, these are also listed below:
+
+- **Staking**: Providers must meet 80% total uptime in the reward epoch with at least 1M FLR in active self-bond.
+  However, in order to earn passes, the provider must have at least 3M FLR in active self-bond and 15M in active stake.
+  Providers with 80% total uptime and at least 1M FLR in active self-bond but not meeting both the 3M FLR active self-bond and 15M active stake requirements neither earn nor lose passes, and still receive eligible rewards.
+
+- **FTSO anchor feeds**: Providers must submit a value estimate that lies within a 0.5% band around the consensus median value in 80% of voting rounds within a reward epoch.
+
+- **FTSO block-latency feeds**: Providers must submit at least 80% of their expected number of updates within a reward epoch, unless they have very low weight, defined as < 0.2% of the total active weight.
+
+- **FDC**: Data providers must successfully participate in 60% of all voting rounds within a reward epoch.
+  That is, they must submit the correct Merkle root for that voting epoch.
+
+## Reward Claim structure
+
+All rewards are distributed through **reward claims**, which are data records indicating the allocation of rewards.
+Each reward claim consists of the following fields:
+
+- `rewardEpochId`: Identifier for the reward epoch.
+- `beneficiary`: The address of the reward beneficiary or node ID (20-bytes).
+- `amount`: Reward amount in `FLR`.
+- `claimType`: The category of the reward claim, which can be one of the following:
+  - `direct`: Rewards directly attributed to the beneficiary (address).
+    These claims are used for undistributed rewards, fund providers, burn claims, or specific rewarding approaches within sub-protocols.
+  - `fee`: Similar to `direct` claims, these are also rewards directly attributed to the beneficiary address, which, in this case, can only be an eligible data provider for the given reward epoch.
+    The fees cover `WFLR` delegation fees and node staking fees.
+  - `wflr`: Rewards that should be distributed to community delegators according to their share of `WFLR` (i.e., their contribution to the $W_{WFLR}$ weight).
+    The beneficiary is an eligible data provider for the given reward epoch.
+  - `mirror`: Rewards that should be distributed to stake delegators according to their contribution to the stake-mirrored $W_{M}$ weight.
+    The beneficiary is an eligible data provider for the given reward epoch.
+
+Weight-based claims (`wflr` and `mirror`) represent total rewards for data providers, to be distributed according to the delegators' participation in the data providers' weight.
+We refer to the [Weights and Signing](/network/fsp/weights-and-signing) page for more details on how these weights are calculated.
+
+### Calculation process
+
+Each sub-protocol is responsible for calculating its **partial reward claims** for each reward epoch by:
+
+1. **Data Input**: Determining the relevant data sources (indexers).
+2. **Data Retrieval**: Querying data from indexers.
+3. **Reward Calculation**: Implementing reward algorithms to produce partial reward claims.
+
+Partial reward claims may have a negative amount if penalization is applied.
+This allows misbehavior in one sub-protocol to reduce rewards earned in others, enforcing accountability across the entire system.
+The [Reward Voting Protocol](/network/fsp/system-protocols) aggregates these partial claims into a single claim per beneficiary and type.
+The final claims are structured into a Merkle tree, and the Merkle root is confirmed through a voting process.
+
+### Claiming process
+
+Once the Merkle root is confirmed for a reward epoch, rewards can be claimed via the [`RewardManager`](/network/fsp/solidity-reference/IRewardManager) contract:
+
+- For `direct` or `fee` claims, rewards are transferred directly to the beneficiary once the submitted proof is verified.
+- For **weight-based claims**, the process involves two steps:
+  1. **Initialization**: Submission of a reward claim with a Merkle proof to initialize contract variables.
+  2. **Delegator Claims**: Delegators can then claim their share without needing additional proofs.
+
+Once initialized, delegators can claim rewards through the [`RewardManager`](/network/fsp/solidity-reference/IRewardManager) contract.
+For a given reward epoch, the reward allocated to delegator $x$ associated to a specific data provider (beneficiary address) is calculated as:
+
+$$
+\text{reward} = \frac{w(T, x)}{U_{T}^{weight}}\times U_{T}^{amount}~,
+$$
+
+where:
+
+- $ w(T, x) $ is the weight delegated by delegator $x$ to the beneficiary address for weight type $T$ (i.e. either delegated stake or delegated `WFLR`) during the specified reward epoch.
+  {/* prettier-ignore */}
+- $ U\_{T}^{weight} $ is the total yet unclaimed delegation weight associated with the beneficiary address and weight type $T$, for that epoch.
+  {/* prettier-ignore */}
+- $ U\_{T}^{amount} $ is the total yet unclaimed reward amount for the same beneficiary and epoch.
+
+Once claimed, both the unclaimed amount and weight are reduced accordingly, and the payout is transferred directly to delegator $x$.
+
+## Incentivizing fast signing and finalization
+
+Sub-protocols are designed to encourage fast signature deposition and finalization:
+
+1. **Signing Deposition Rewards**:
+
+   - Data providers submitting signatures within a grace period (10s) from the signature start time will automatically receive rewards.
+   - Signatures submitted until the block of finalization are also rewarded.
+   - If finalization happens after a **hard limit**, the end of the voting round during which the signing round started, then only those signatures submitted before the hard limit are considered for rewards, and only if they exceed a 30% weight threshold.
+
+2. **Finalization Rewards**:
+   - Finalization of a Merkle root can be carried out only once, by the first entity to collect sufficient signing weight of signatures and send them to the voting contract.
+   - During a 20s grace period, a set of selected data providers gets rewarded either for successful finalization or an attempt of it. (i.e. If the call got reverted due to data being already finalized.)
+   - If finalization is not carried out within the grace period, any other data provider is allowed to finalize, and the first entity to do so receives the full finalization reward.
+   - Just like with signature deposition, finalization rewards are only available within a **hard cutoff**: finalization must occur before the end of the voting epoch following the one in which the signature round started.
+
+The diagram below depicts how the signing and finalization grace periods and hard limits are applied for vote epoch $k$.
+
+<div style={{ textAlign: "center", margin: "30px 0" }}>
+  <ThemedImage
+    style={{ width: "60%" }}
+    alt="Slush Sampling Example"
+    sources={{
+      light: useBaseUrl("img/fsp/finalization_light.svg"),
+      dark: useBaseUrl("img/fsp/finalization_dark.svg"),
+    }}
+  />
+</div>
+
+### Selection of Data Providers for finalization
+
+During the grace period for finalization, selected data providers are rewarded based on a pseudo-random selection algorithm:
+
+- A pseudo-random number is generated by hashing the protocol id and the voting round number.
+- Data providers are selected with probability proportional to their signing weight in the active policy, using the previously generated pseudo-random number.
+- Data providers are drawn sequentially until the total selected weight reaches a minimum threshold (set to 5% of total signing weight).
+- The selected providers are rewarded proportionally to their individual weights relative to the total selected weight.
+
+### Reward distribution
+
+Each sub-protocol allocates rewards for **signing deposition** and **finalization**.
+The reward amount attributed to a data provider is split into:
+
+- **Fee Claims**: Deducted as delegation fees (WNat delegations).
+- **Weight Participation Claims**: Remaining rewards are distributed among delegators and stakers based on their weights.
