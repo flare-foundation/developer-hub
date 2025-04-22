@@ -427,14 +427,65 @@ Start your own feed value provider, or **(for testing only)** use the reference 
 docker run --rm -it --publish "0.0.0.0:3101:3101" --network "ftso-v2-deployment_default" ghcr.io/flare-foundation/ftso-v2-example-value-provider
 ```
 
-Once the container is running, you can find the API spec at: http://localhost:3101/api-doc
+Once the container is running, you can find the API spec at: [`http://localhost:3101/api-doc`](http://localhost:3101/api-doc).
 
-#### Troubleshooting
+#### Required endpoints
+
+- **`/feed-values`**
+
+  - **Method**: `POST`
+  - **Description**: Returns the feed values without specifying the voting round, used by FTSOv2 Fast Updates client.
+  - **Request Body**: JSON object containing the feed values.
+  - **Example request:**
+    ```bash
+    curl -X 'POST' 'http://localhost:3101/feed-values/' \
+      -H 'accept: application/json' \
+      -H 'Content-Type: application/json' \
+      -d '{"feeds": [{ "category": 1, "name" : "BTC/USD" }]}'
+    ```
+  - **Example response:**
+    ```json
+    {
+      "data": [
+        {
+          "feed": { "category": 1, "name": "BTC/USD" },
+          "value": 71285.74004472858
+        }
+      ]
+    }
+    ```
+
+- **`/feed-values/<votingRoundId>`**
+
+  - **Method**: `POST`
+  - **Description**: Returns the feed values for the specified voting round, used by FTSOv2 Scaling client.
+  - **Response**: JSON object containing the voting round ID and feed values.
+  - **Example request:**
+    ```bash
+    curl -X 'POST' 'http://localhost:3101/feed-values/0' \
+      -H 'accept: application/json' \
+      -H 'Content-Type: application/json' \
+      -d '{"feeds": [{ "category": 1, "name" : "BTC/USD" }]}'
+    ```
+  - **Example response:**
+    ```json
+    {
+      "votingRoundId": 0,
+      "data": [
+        {
+          "feed": { "category": 1, "name": "BTC/USD" },
+          "value": 71287.34508311428
+        }
+      ]
+    }
+    ```
+
+:::info[Troubleshooting]
 
 For initial testing a fixed value provider can be used that simply returns a constant instead of reading data from external data sources. It can be started by setting the variable `VALUE_PROVIDER_IMPL=fixed`:
 
 ```bash
-docker run --rm -it --env VALUE_PROVIDER_IMPL=fixed --publish "0.0.0.0:3101:3101" --network "ftso-v2-deployment_default" ghcr.io/flare-foundation/ftso-v2-example-value-provider
+docker run --rm -it --env VALUE_PROVIDER_IMPL=fixed --publish "0.0.0.0:3101:3101" ghcr.io/flare-foundation/ftso-v2-example-value-provider
 ```
 
 You should see the following line in the logs:
@@ -442,6 +493,8 @@ You should see the following line in the logs:
 ```plaintext
 WARN [FixedFeed] Initializing FixedFeed, will return 0.01 for all feeds.
 ```
+
+:::
 
 ## Generate configuration and deploy
 
