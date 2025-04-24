@@ -416,24 +416,39 @@ _Repeat these steps for all verifiers you intend to run._
 
 :::warning
 
-The reference implementation of Feed Value Provider is **only provided for testing purposes and should not be relied on**.
-Data providers are expected to reimplement this with their own data sources, following the [REST API specification](https://github.com/flare-foundation/ftso-v2-example-value-provider?tab=readme-ov-file#example-usage).
+The example implementation of Feed Value Provider is **only provided for testing purposes and should not be relied on**.
+Data providers are expected to reimplement this with their own data sources, following the [required endpoints](#required-endpoints).
 
 :::
 
-Start your own feed value provider, or **(for testing only)** use the reference feed value provider:
+Start your own feed value provider, or **(for testing only)** use [flare-foundation/ftso-v2-example-value-provider](https://github.com/flare-foundation/ftso-v2-example-value-provider):
 
 ```bash
-docker run --rm -it --publish "0.0.0.0:3101:3101" --network "ftso-v2-deployment_default" ghcr.io/flare-foundation/ftso-v2-example-value-provider
+docker run --rm -it --publish "0.0.0.0:3101:3101" ghcr.io/flare-foundation/ftso-v2-example-value-provider
 ```
 
 Once the container is running, you can find the API spec at: [`http://localhost:3101/api-doc`](http://localhost:3101/api-doc).
 
+:::info[Troubleshooting]
+
+For initial testing a fixed value provider can be used that simply returns a constant instead of reading data from external data sources. It can be started by setting the variable `VALUE_PROVIDER_IMPL=fixed`.
+
+```bash
+docker run --rm -it --env VALUE_PROVIDER_IMPL=fixed --publish "0.0.0.0:3101:3101" ghcr.io/flare-foundation/ftso-v2-example-value-provider
+```
+
+You should see the following line in the logs:
+
+```plaintext
+WARN [FixedFeed] Initializing FixedFeed, will return 0.01 for all feeds.
+```
+
+:::
+
 #### Required endpoints
 
-- **`/feed-values`**
+- **`POST /feed-values`**
 
-  - **Method**: `POST`
   - **Description**: Returns the feed values without specifying the voting round, used by FTSOv2 Fast Updates client.
   - **Request Body**: JSON object containing the feed values.
   - **Example request:**
@@ -455,9 +470,8 @@ Once the container is running, you can find the API spec at: [`http://localhost:
     }
     ```
 
-- **`/feed-values/<votingRoundId>`**
+- **`POST /feed-values/:votingRoundId`**
 
-  - **Method**: `POST`
   - **Description**: Returns the feed values for the specified voting round, used by FTSOv2 Scaling client.
   - **Response**: JSON object containing the voting round ID and feed values.
   - **Example request:**
@@ -479,22 +493,6 @@ Once the container is running, you can find the API spec at: [`http://localhost:
       ]
     }
     ```
-
-:::info[Troubleshooting]
-
-For initial testing a fixed value provider can be used that simply returns a constant instead of reading data from external data sources. It can be started by setting the variable `VALUE_PROVIDER_IMPL=fixed`:
-
-```bash
-docker run --rm -it --env VALUE_PROVIDER_IMPL=fixed --publish "0.0.0.0:3101:3101" ghcr.io/flare-foundation/ftso-v2-example-value-provider
-```
-
-You should see the following line in the logs:
-
-```plaintext
-WARN [FixedFeed] Initializing FixedFeed, will return 0.01 for all feeds.
-```
-
-:::
 
 ## Generate configuration and deploy
 
