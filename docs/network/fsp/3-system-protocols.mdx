@@ -1,0 +1,58 @@
+---
+title: System Protocols
+description: Describes the core protocols comprising FSP.
+keywords: [flare-network, signing, reward, uptime, voting, random, system]
+---
+
+The **Flare Systems Protocol** encompasses the following core system protocols:
+
+1. **Signing Policy Definition Protocol**
+2. **Validator Uptime Voting Protocol**
+3. **Reward Voting Protocol**
+4. **Random Number Generation Protocol** (dependent on [FTSOv2 Scaling](/ftso/scaling/overview))
+
+Protocols with voting frequencies tied to reward epochs are implemented directly on the [`FlareSystemsManager`](/network/fsp/solidity-reference/IFlareSystemsManager) smart contract, while others operate as sub-protocols. Each sub-protocol has a unique protocol ID, except for the system protocols mentioned above.
+
+## Signing Policy Definition Protocol
+
+The Signing Policy Definition Protocol is a system protocol which ensures that data providers and their weights for the next reward epoch are locked and signed by a threshold weight of current data providers.
+The protocol works in phases, as follows:
+
+- **Random Number Acquisition**: Around 2 hours before the end of the current reward epoch, a random number is fetched through the [FTSOv2 Scaling](/ftso/scaling/overview) protocol.
+- **Vote Power Block Selection**: Once a random number is obtained a block from the current reward epoch is selected at random.
+  The vote power registered in this selected block will be used for the new reward epoch.
+- **Voter Registration**: Once a random number is obtained, registration for the new reward epoch can begin.
+  This lasts 30 minutes, allowing self-registration based on the selected block’s vote power.
+- **Signing Policy Snapshot**: When the voter registration phase ends, a snapshot of the data providers' addresses and weights is taken.
+- **Signing Policy Sign Phase**: After the voter registration phase, the signing phase begins.
+  In this phase the data providers registered for the ongoing epoch submit signatures for updating the signing policy.
+  This phase ends when the threshold of signatures is reached.
+  Delays beyond 20 minutes or 600 blocks will incur penalties.
+
+While there are no direct rewards, delays in finalization cause a global lock of reward claiming and additional penalization when claiming is finally allowed.
+More specifically, each signer gets punished with burn of their fee claims, scaled quadratically with the length of the delay.
+
+## Validator Uptime Voting Protocol
+
+Following each reward epoch, data providers submit signed lists of validator NodeIDs that, in their view, achieved sufficient uptime (≥80%) during the preceding epoch.
+The voting process concludes upon reaching a defined threshold weight.
+
+Since the up-time data is needed for calculation of the rewards, the lack of a successful finalization blocks the execution of the reward voting protocol.
+
+## Reward Voting Protocol
+
+After each reward epoch, and once uptime voting is complete, data providers calculate cumulative reward claims for all sub protocols.
+The calculation of rewards takes into account all inputs and on-chain records of participation of data providers in a specific sub protocol.
+
+Reward claims across all sub-protocols are aggregated into a Merkle tree.
+Voting takes place for the corresponding Merkle root, and, once confirmed, the `RewardManager` contract can verify individual claims and execute reward payouts.
+We refer to [Rewarding](/network/fsp/rewarding) for more details on how rewards are calculated and claimed.
+
+## Random Number Generation Protocol
+
+Random numbers are generated as a byproduct of the [FTSOv2 Scaling](/ftso/scaling/overview) protocol, which employs a Commit & Reveal scheme.
+In this scheme, each commitment includes not only feed values but also a locally generated random number.
+This random number serves to blind the user's commit hash, protecting it against search-based attacks.
+
+Once the reveal phase begins, the random numbers from valid reveals are aggregated into a single random value for the current voting epoch.
+This aggregated random number is included in the Merkle root for the epoch, confirmed via the [`Relay`](/network/fsp/solidity-reference/IRelay) contract.
