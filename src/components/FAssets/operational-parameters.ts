@@ -27,7 +27,7 @@ export const operationalParameters = [
         link: "/fassets/minting#lots",
         values: {
           songbird: {
-            xrp: "100 XRP",
+            xrp: "10 XRP",
             btc: "0.05 BTC",
             doge: "200 DOGE",
           },
