@@ -2,108 +2,113 @@
 title: Governance
 description: Overview of governance in the Flare Systems Protocol.
 keywords:
-  [flare-network, governance, voting, proposals, FIP, STP, management-group]
+  [
+    flare-network,
+    governance,
+    voting,
+    proposals,
+    FIP,
+    STP,
+    management-group,
+    songbird,
+    decentralization,
+  ]
 ---
 
 import ThemedImage from "@theme/ThemedImage";
 import useBaseUrl from "@docusaurus/useBaseUrl";
 
-Flare governance empowers the community by providing a structured process for decision-making across the Flare and Songbird networks.
-This governance framework plays a crucial role in decentralization and allows participants to:
+Governance is the structured process for making decisions about the Flare and Songbird networks. It empowers the community to guide the evolution of the protocols, playing a crucial role in progressive decentralization.
 
-- Propose policy changes
-- Vote on them
-- Execute approved proposals
+Through this framework, participants can:
+
+- Propose changes and improvements.
+- Vote on submitted proposals.
+- Observe the execution of approved proposals.
+
+Official proposals are published on the [Flare Governance Proposals](https://proposals.flare.network/) website.
+Community members cast their votes via the [Flare Portal](https://portal.flare.network/).
 
 ## Proposal types and networks
 
-On Flare Mainnet and Songbird Canary-Network, there are three different types of proposals:
+Three distinct proposal types facilitate network changes, each tailored to a specific network and purpose, with unique voting mechanics:
 
 ### Flare Improvement Proposals (FIPs)
 
+- **Purpose:** Introduce enhancements or changes specifically for the Flare Mainnet.
 - **Network**: Flare Mainnet
 - **Initiator**: Flare Foundation
-- **Default Status**: Rejected by default
 - **Voting Tokens**: `WFLR` (wrapped `FLR`) and staked `FLR`
-- **Approval Condition**: Simple majority vote in favor
-- **Quorum Requirement**: None
-
-FIPs are proposed enhancements designed to improve the stability of Flare Mainnet.
-They follow an acceptance-based voting process, where approval requires a simple majority of cast votes to be in favor.
+- **Voting Mechanism:** Acceptance-based.
+  - **Default Status:** Rejected
+  - **Approval Condition:** Requires a simple majority (more than 50%) of the cast votes to be in favor.
+  - **Quorum Requirement:** None
 
 ### Songbird Test Proposals (STPs)
 
-- **Network**: Songbird Canary-Network
-- **Initiator**: Flare Foundation
-- **Default Status**: Accepted by default
-- **Voting Tokens**: `WSGB` (wrapped `SGB`)
-- **Rejection Conditions**:
-  - **Threshold**: At least 75% of all circulating `SGB` tokens must participate
-  - **Majority**: More than 50% of votes must be against the proposal
-- **Outcome**: STPs are accepted unless both rejection conditions are met
-
-STPs allow rapid testing of proposals on Songbird Canary-Network before their implementation on Flare Mainnet.
-If either the quorum threshold is not met or fewer than half of the votes cast are against, the proposal is accepted.
+- **Purpose:** Allow for rapid testing and validation of potential changes on Songbird Canary-Network _before_ potentially proposing them (as FIPs) on Flare Mainnet.
+- **Network:** Songbird Canary Network
+- **Initiator:** Flare Foundation
+- **Voting Tokens:** Wrapped SGB (`WSGB`)
+- **Voting Mechanism:** Rejection-based.
+  - **Default Status:** Accepted
+  - **Rejection Conditions:** The proposal is rejected _only if both_ of the following conditions are met simultaneously:
+    1.  **Quorum Threshold:** At least 75% of the total circulating `SGB` supply participates in the vote.
+    2.  **Majority Against:** More than 50% of the cast votes are against the proposal.
+  - **Outcome:** If either the quorum is not met OR the vote against is not a majority, the STP is accepted.
 
 ### Songbird Improvement Proposals (SIPs)
 
-- **Network**: Songbird Canary-Network
-- **Initiator**: Flare Foundation
-- **Default Status**: Rejected by default
-- **Voting Tokens**: `WSGB` (wrapped `SGB`)
-- **Approval Condition**: Simple majority vote in favor
-- **Quorum Requirement**: None
-
-SIPs are proposed enhancements designed to improve the stability of Songbird Canary-Network.
-They follow an acceptance-based voting process, where approval requires a simple majority of cast votes to be in favor.
+- **Purpose:** Introduce enhancements or changes specifically for the Songbird Canary Network, independent of Flare Mainnet testing.
+- **Network:** Songbird Canary Network
+- **Initiator:** Flare Foundation
+- **Voting Tokens:** Wrapped SGB (`WSGB`)
+- **Voting Mechanism:** Acceptance-based.
+  - **Default Status:** Rejected
+  - **Approval Condition:** Requires a simple majority (more than 50%) of the cast votes to be in favor.
+  - **Quorum Requirement:** None
 
 ## Voting process
 
 ### Eligibility and Vote Power
 
-To participate in governance, users must either hold wrapped tokens or stake native tokens.
-Voting power is determined by the number of wrapped tokens a user possesses:
+To vote on a proposal, users must hold the relevant network's governance tokens at the time the **Vote Count Block** is determined:
 
-| Network                 | Proposal Type | Native Token | Wrapped Token |
-| ----------------------- | ------------- | ------------ | ------------- |
-| Flare Mainnet           | FIP           | `FLR`        | `WFLR`        |
-| Songbird Canary-Network | STP           | `SGB`        | `WSGB`        |
-| Songbird Canary-Network | SIP           | `SGB`        | `WSGB`        |
+- **FIPs (Flare):** Requires holding `WFLR` or having staked `FLR`.
+- **STPs & SIPs (Songbird):** Requires holding `WSGB`.
 
-The Flare Foundation announces proposals in advance, allowing users to wrap their tokens before voting begins.
+Your **Vote Power** corresponds directly to the amount of eligible tokens held at the snapshot time (Vote Count Block).
 
-#### Vote transfer
-
-Users can transfer their voting power to another address while retaining ownership of their tokens.
-This feature is useful for consolidating votes across multiple self-custody wallets.
-
-- Votes can be transferred to a single address but received from multiple addresses.
-- Transferred votes cannot be further delegated.
-- Once activated, all votes from an account are transferred to the designated address until the delegation is canceled.
-
-**Example**: If an account holds 100 `WSGB` and enables vote delegation, it transfers 100 votes.
-If an additional 100 `WSGB` is acquired later, the delegation automatically transfers 200 votes in the next proposal.
+The Flare Foundation announces proposals well in advance, providing token holders ample time to wrap their `FLR` or `SGB` if they wish to participate in upcoming votes.
 
 ### Vote Count Block
 
-Since token balances fluctuate, a snapshot of all accounts is taken before voting starts.
-This snapshot, known as the **vote count block**, determines the number of votes an account can cast.
+Since token balances change constantly, a specific block number is chosen before voting commences to serve as a snapshot of account balances.
+This **Vote Count Block** determines each participant's voting power for that specific proposal.
 
-To encourage active participation and prevent strategic acquisition of tokens solely for voting, the vote count block is selected randomly.
+To prevent users from acquiring tokens solely to influence a vote just before it starts, the Vote Count Block is selected randomly within a predefined period after the proposal's announcement.
+
+#### Vote transfer
+
+Users can transfer their voting power to another address without transferring ownership of their tokens.
+This is useful for consolidating voting power from multiple wallets into one voting address.
+
+- An address can transfer its votes to only one other address.
+- An address can receive transferred votes from multiple addresses.
+- Transferred votes cannot be further re-transferred.
+- Once activated, all current and future voting power from the delegating account is transferred to the designated address until the delegation is explicitly canceled.
+
+**Example:** If Alice transfers her votes while holding 100 `WSGB`, her designated address receives 100 votes.
+If she later acquires another 100 `WSGB`, her designated address will automatically have 200 votes in the next proposal, provided the transfer remains active.
 
 ### Voting procedure
 
-The governance voting process follows a structured sequence:
+Each governance proposal follows a structured lifecycle:
 
-1. **Proposal Announcement:** The Flare Foundation publishes proposals on [Flare Governance Proposals](https://proposals.flare.network/), the Flare website and social media channels (see footer for links).
-2. **Notice Period:** A minimum one reward epoch window allows for discussion, clarifications, and potential cancellation of flawed proposals.
-3. **Block Selection Period:** The vote count block is selected randomly within this timeframe.
-4. **Voting Period:** Voting occurs on the [Flare Portal](https://portal.flare.network/) and usually lasts one week (around two reward epochs). Results are published at the conclusion.
-
-The voting process follows these key principles:
-
-- **Threshold condition:** Some proposals require a minimum quorum for validity.
-- **Majority condition:** More than 50% of votes cast must support or oppose the proposal.
+1.  **Proposal Announcement:** The Flare Foundation publishes the detailed proposal on the [Flare Governance Proposals](https://proposals.flare.network/) site, the main Flare website, and official social media channels.
+2.  **Notice Period:** A minimum period (typically one reward epoch) allows the community to discuss the proposal, ask questions, and identify potential issues. Flawed proposals might be cancelled during this time.
+3.  **Block Selection Period:** A window during which the random Vote Count Block is determined.
+4.  **Voting Period:** Token holders cast their votes on the [Flare Portal](https://portal.flare.network/). This period usually lasts one week (approximately two reward epochs).
 
 <ThemedImage
   alt="Governance Proposal Diagram"
@@ -115,25 +120,29 @@ The voting process follows these key principles:
 
 ## Proposal execution
 
-Once a proposal is accepted, execution occurs based on its implementation method:
+Once a proposal is formally accepted through the voting process, its implementation depends on the nature of the required changes:
 
-- **Smart Contract Execution:** Governance contracts enable automatic execution through contract calls.
-- **Manual Execution:** Proposals requiring offchain actions are executed by the Flare Foundation.
-- **Future Automation:** Over time, additional automation mechanisms may be introduced.
+- **Smart Contract Execution:** Changes implemented directly within protocol smart contracts can often be executed automatically via governance contract calls.
+- **Manual Execution:** Proposals requiring offchain actions, coordination, or complex system updates are typically executed by the Flare Foundation.
+- **Future Automation:** The system is designed to incorporate more on-chain automation for execution as the protocols evolve.
 
 ## Management Group
 
-The [FIP.02](https://proposals.flare.network/FIP/FIP_2.html) governance proposal (and [STP.03](https://proposals.flare.network/STP/STP_3.html) for Songbird, respectively) introduced a **Management Group** of data providers, whose initial role was to:
+Introduced via [FIP.02](https://proposals.flare.network/FIP/FIP_2.html) (Flare) and [STP.03](https://proposals.flare.network/STP/STP_3.html) (Songbird), the **Management Group** is a specialized governance body composed of eligible FTSO data providers.
 
-- Report any instances of **collusion** within the FTSO protocol.
-- Participate in collective decision-making through voting to determine whether punitive actions - such as **chilling** (temporary suspension) or **banning** - should be enforced against misbehaving data providers.
+**Initial Role:**
 
-To qualify for the Management Group, data providers must be actively participating in the core protocols. be eligible for rewards, and must not have been recently punished.
+- Monitor and report instances of **collusion** among Flare Time Series Oracle (FTSO) data providers.
+- Vote collectively on punitive actions (like **chilling** or **banning**) against providers confirmed to be acting maliciously.
 
-Following the adoption of [FIP.08](https://proposals.flare.network/FIP/FIP_8.html) and [FIP.11](https://proposals.flare.network/FIP/FIP_11.html), the responsibilities of the Management Group were expanded to include:
+**Expanded Responsibilities (Post-FIP.08, FIP.11, FIP.12):**
 
-- Voting on adding new feeds to the [FTSO](/ftso/overview) protocol.
-- Voting on adding new attestation types to the [FDC](/fdc/overview) protocol.
-- Voting on adjusting protocol parameters, as outlined in [FIP.11](https://proposals.flare.network/FIP/FIP_11.html) and [FIP.12](https://proposals.flare.network/FIP/FIP_12.html).
+Following subsequent approved proposals, the Management Group's mandate grew to include voting on:
+
+- Adding new data feeds to the [FTSO protocol](/ftso/overview).
+- Adding new attestation types to the [FDC protocol](/fdc/overview).
+- Adjusting specific protocol parameters as defined in [FIP.11](https://proposals.flare.network/FIP/FIP_11.html) and [FIP.12](https://proposals.flare.network/FIP/FIP_12.html).
+
+**Qualification:** To be part of the Management Group, data providers must be active participants in the core protocols, eligible for rewards, and have a clean recent conduct record (i.e., not recently punished).
 
 Together, these responsibilities position the Management Group as a key governance body within the ecosystem - responsible not only for safeguarding protocol integrity but also for guiding its ongoing evolution.
