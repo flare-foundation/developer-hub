@@ -10,14 +10,14 @@ from web3 import Web3
 from web3.contract import Contract
 
 # Configuration
-RPC_URL = "https://songbird-api.flare.network/ext/C/rpc"
+RPC_URL = "https://flare-api.flare.network/ext/C/rpc"
 REGISTRY_ADDRESS = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
-EXPLORER_API_URL = "https://songbird-explorer.flare.network/api"
+EXPLORER_API_URL = "https://flare-explorer.flare.network/api"
 ISSUES_FILE = Path("issues.md")
 MAX_MARKET_CAP_RANK = 100
 HEADER_TEMPLATE = """---
 title: "[auto_req]: Potential New Feeds"
-assignees: swarna1101
+assignees: dineshpinto
 labels: "enhancement"
 ---
 """
