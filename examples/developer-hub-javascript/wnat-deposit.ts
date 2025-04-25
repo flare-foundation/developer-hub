@@ -6,7 +6,7 @@ const WNAT_ADDRESS = "0xC67DCE33D7A8efA5FfEB961899C73fe01bCe9273";
 async function main() {
   const IWNat = (await ethers.getContractAt(
     "@flarenetwork/flare-periphery-contracts/coston2/IWNat.sol:IWNat",
-    WNAT_ADDRESS
+    WNAT_ADDRESS,
   )) as unknown as IWNatInstance;
 
   // Deposit 0.1 ETH (or whatever amount you want)
