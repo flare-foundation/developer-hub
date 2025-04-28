@@ -1,0 +1,293 @@
+---
+sidebar_position: 2
+slug: from-source
+title: Run from Source
+description: Build and run a node from source code.
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+This guide will walk you through deploying an RPC node from the [source code](https://github.com/flare-foundation/go-flare).
+Please inspect the [hardware requirements](/run-node/hardware-requirements) before proceeding.
+
+### Prerequisites
+
+Ensure you have the following tools installed:
+|                                                    | **Version** |
+| :------------------------------------------------- | :---------- |
+| **[Go](https://golang.org/doc/install)**           | `1.21.8`  |
+| **[git](https://git-scm.com/downloads)**           | `latest`    |
+| **[GCC](https://gcc.gnu.org/install/)**            | `latest`    |
+| **[jq](https://stedolan.github.io/jq/download/)**  | `latest`    |
+| **[rsync](https://rsync.samba.org/download.html)** | `latest`    |
+| **[Ubuntu](https://ubuntu.com)**                   | `>=24.10`   |
+
+### Build the binary
+
+Retrieve the source code from the latest stable release and build the binary:
+
+```bash
+git clone --branch v1.10.0 https://github.com/flare-foundation/go-flare.git
+cd go-flare/avalanchego
+./scripts/build.sh
+```
+
+The resulting executable will be stored in `build/avalanchego`.
+
+Verify the installation by running:
+
+```bash
+go test $(go list ./... | grep -v /tests/) # avalanchego unit tests
+cd ../coreth
+go test ./... # coreth unit tests
+cd -
+```
+
+### Run the node
+
+This is the simplest command to quickly get your node up and running. The next section explains the parameters used here, along with additional parameters you may wish to configure.
+
+<Tabs groupId="network" block>
+  <TabItem value="flare" label="Flare Mainnet" default>
+
+    ```bash
+    ./build/avalanchego --network-id=flare \
+                        --http-host= \
+                        --bootstrap-ips="$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeIP"}' -H 'content-type:application/json;' https://flare-bootstrap.flare.network/ext/info | jq -r '.result.ip')" \
+                        --bootstrap-ids="$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeID"}' -H 'content-type:application/json;' https://flare-bootstrap.flare.network/ext/info | jq -r '.result.nodeID')"
+    ```
+
+  </TabItem>
+  <TabItem value="coston2" label="Flare Testnet Coston2">
+
+    ```bash
+    ./build/avalanchego --network-id=costwo \
+                        --http-host= \
+                        --bootstrap-ips="$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeIP"}' -H 'content-type:application/json;' https://coston2-bootstrap.flare.network/ext/info | jq -r '.result.ip')" \
+                        --bootstrap-ids="$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeID"}' -H 'content-type:application/json;' https://coston2-bootstrap.flare.network/ext/info | jq -r '.result.nodeID')"
+    ```
+
+  </TabItem>
+  <TabItem value="songbird" label="Songbird Canary-Network">
+
+    ```bash
+    ./build/avalanchego --network-id=songbird \
+                        --http-host= \
+                        --bootstrap-ips="$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeIP"}' -H 'content-type:application/json;' https://songbird-bootstrap.flare.network/ext/info | jq -r '.result.ip')" \
+                        --bootstrap-ids="$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeID"}' -H 'content-type:application/json;' https://songbird-bootstrap.flare.network/ext/info | jq -r '.result.nodeID')"
+    ```
+
+  </TabItem>
+  <TabItem value="coston" label="Songbird Testnet Coston">
+
+    ```bash
+    ./build/avalanchego --network-id=coston \
+                        --http-host= \
+                        --bootstrap-ips="$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeIP"}' -H 'content-type:application/json;' https://coston-bootstrap.flare.network/ext/info | jq -r '.result.ip')" \
+                        --bootstrap-ids="$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeID"}' -H 'content-type:application/json;' https://coston-bootstrap.flare.network/ext/info | jq -r '.result.nodeID')"
+    ```
+
+  </TabItem>
+</Tabs>
+
+After a lot of log messages the node should start synchronizing with the network, which might take anywhere from a few hours to a few days depending on the chosen network and hardware specification.
+Node syncing can be stopped at any time.
+Use the same command to resume the node syncing from where it left off.
+
+You will know your node is fully booted and accepting transactions when the output of this command contain the field `"healthy" : true` in the returned JSON object:
+
+```bash
+curl http://127.0.0.1:9650/ext/health | jq
+```
+
+:::note
+
+If the node gets stuck during bootstrap (or it takes far longer than the estimates given above), try adding the parameter `--bootstrap-retry-enabled=false` when running the node.
+
+:::
+
+### Additional configuration
+
+These are some of the most relevant CLI parameters you can use. Read more about them in the [Avalanche documentation](https://docs.avax.network/nodes/maintain/avalanchego-config-flags).
+
+{/* prettier-ignore */}
+- [`--bootstrap-ips`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--bootstrap-ips-string),
+  [`--bootstrap-ids`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--bootstrap-ids-string):
+  IP address and node ID of the peer used to connect to the rest of the network for bootstrapping.
+
+  <details>
+  <summary>Determining your peer's IP address and node ID.</summary>
+
+  <Tabs groupId="network">
+    <TabItem value="flare" label="Flare Mainnet" default>
+
+      Peer's IP address:
+      ```bash
+      curl -m 10 -s -H 'content-type:application/json;' \
+        --data '{
+          "jsonrpc":"2.0",
+          "id":1,
+          "method":"info.getNodeIP"
+        }' \
+        https://flare-bootstrap.flare.network/ext/info | jq -r '.result.ip'
+      ```
+      Peer's node ID:
+      ```bash
+      curl -m 10 -s -H 'content-type:application/json;' \
+        --data '{
+          "jsonrpc":"2.0",
+          "id":1,
+          "method":"info.getNodeID"
+        }' \
+        https://flare-bootstrap.flare.network/ext/info | jq -r '.result.nodeID'
+      ```
+
+    </TabItem>
+    <TabItem value="coston2" label="Flare Testnet Coston2">
+
+      Peer's IP address:
+      ```bash
+      curl -m 10 -s -H 'content-type:application/json;' \
+        --data '{
+          "jsonrpc":"2.0",
+          "id":1,
+          "method":"info.getNodeIP"
+        }' \
+        https://coston2-bootstrap.flare.network/ext/info | jq -r ".result.ip"
+      ```
+
+      Peer's node ID:
+      ```bash
+      curl -m 10 -s -H 'content-type:application/json;' \
+        --data '{
+          "jsonrpc":"2.0",
+          "id":1,
+          "method":"info.getNodeID"
+        }' \
+        https://coston2-bootstrap.flare.network/ext/info | jq -r ".result.nodeID"
+      ```
+
+    </TabItem>
+    <TabItem value="songbird" label="Songbird Canary-Network">
+
+      Peer's IP address:
+      ```bash
+      curl -m 10 -s -H 'content-type:application/json;' \
+        --data '{
+          "jsonrpc":"2.0",
+          "id":1,
+          "method":"info.getNodeIP"
+        }' \
+        https://songbird-bootstrap.flare.network/ext/info | jq -r ".result.ip"
+      ```
+      Peer's node ID:
+      ```bash
+      curl -m 10 -s -H 'content-type:application/json;' \
+        --data '{
+          "jsonrpc":"2.0",
+          "id":1,
+          "method":"info.getNodeID"
+        }' \
+        https://songbird-bootstrap.flare.network/ext/info | jq -r ".result.nodeID"
+      ```
+
+    </TabItem>
+    <TabItem value="coston" label="Songbird Testnet Coston">
+
+      Peer's IP address:
+      ```bash
+      curl -m 10 -s -H 'content-type:application/json;' \
+        --data '{
+          "jsonrpc":"2.0",
+          "id":1,
+          "method":"info.getNodeIP"
+        }' \
+        https://coston-bootstrap.flare.network/ext/info | jq -r ".result.ip"
+      ```
+      Peer's node ID:
+      ```bash
+      curl -m 10 -s -H 'content-type:application/json;' \
+        --data '{
+          "jsonrpc":"2.0",
+          "id":1,
+          "method":"info.getNodeID"
+        }' \
+        https://coston-bootstrap.flare.network/ext/info | jq -r ".result.nodeID"
+      ```
+
+    </TabItem>
+  </Tabs>
+
+  </details>
+
+- [`--http-host`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--http-host-string): Use `--http-host=` (empty) to allow connections from other machines. Otherwise, only connections from `localhost` are accepted.
+
+- [`--http-port`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--http-port-int): The port through which the node will listen to API requests. The default value is `9650`.
+
+- [`--staking-port`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--staking-port-int): The port through which the network peers will connect to this node externally. Having this port accessible from the internet is required for correct node operation. The default value is `9651`.
+
+- [`--db-dir`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--db-dir-string-file-path): Directory where the database is stored, defaults to `~/.avalanchego/db`. Make sure to use a disk with enough space as recommended in the [hardware requirements](/run-node/hardware-requirements) page. For example, you can use this option to store the database on an external drive.
+
+- [`--chain-config-dir`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--chain-config-dir-string): Optional JSON configuration file for using non-default values.
+
+  <details>
+  <summary>Sample JSON configuration for RPC nodes.</summary>
+
+  For archival nodes, set `"pruning-enabled": false` to disable pruning. Note that archival nodes require significantly more disk space than standard RPC nodes.
+
+  ```json title="<chain-config-dir>/C/config.json"
+  {
+    "snowman-api-enabled": false,
+    "coreth-admin-api-enabled": false,
+    "eth-apis": [
+      "eth",
+      "eth-filter",
+      "net",
+      "web3",
+      "internal-eth",
+      "internal-blockchain",
+      "internal-transaction"
+    ],
+    "rpc-gas-cap": 50000000,
+    "rpc-tx-fee-cap": 100,
+    "pruning-enabled": true,
+    "local-txs-enabled": false,
+    "api-max-duration": 0,
+    "api-max-blocks-per-request": 0,
+    "allow-unfinalized-queries": false,
+    "allow-unprotected-txs": false,
+    "remote-tx-gossip-only-enabled": false,
+    "log-level": "info"
+  }
+  ```
+
+  </details>
+
+## Node maintenance
+
+In some cases, your node might not work correctly or you might receive unusual messages that are difficult to troubleshoot. Use the following solutions to ensure your node stays healthy:
+
+- **Ensure Adequate Peers:** When your node has fewer than 16 peers, it will not work correctly. To retrieve the number of connected peers, run the following command and look for the line containing `connectedPeers`:
+
+  ```bash
+  curl http://127.0.0.1:9650/ext/health | jq
+  ```
+
+  To automate the process, use:
+
+  ```bash
+  curl -s http://127.0.0.1:9650/ext/health | jq -r ".checks.network.message.connectedPeers"
+  ```
+
+- **Check Disk Space:** If your node does not sync after a long time and abruptly stops working, ensure the database location has sufficient disk space. Remember, the database size might change significantly during bootstrapping.
+
+- **Resolve Connection Issues:** If you receive unusual messages after making submissions or when transactions are reverted, your node might not be connected correctly. Ensure the database location has sufficient disk space, then restart the node.
+
+- **Handle Bootstrap Errors:** If you receive an error related to `GetAcceptedFrontier` during bootstrapping, your node was disconnected during the process. Restart the node if you see the following error:
+
+  ```plaintext
+  failed to send GetAcceptedFrontier(MtF8bVH241hetCQJgsKEdKyJBs8vhp1BC, 11111111111111111111111111111111LpoYY, NUMBER)
+  ```
+
+- **Restart Unhealthy Nodes:** If your node syncs but remains unhealthy for no discernible reason, restart the node.

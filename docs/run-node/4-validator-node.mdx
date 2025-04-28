@@ -1,14 +1,20 @@
 ---
-sidebar_position: 2
-slug: validator-node
-title: Validator Node
+sidebar_position: 4
+slug: register-node-as-validator
+title: Register Node as a Validator
 description: Secure Flare by reaching consensus on state transitions.
 ---
 
 import Tabs from "@theme/Tabs";
 import TabItem from "@theme/TabItem";
 
-A validator node is essential for securing the network by validating transactions and blocks, and participating in the consensus process. Deploying validator nodes enables participation in the consensus mechanism and allows for the collection of rewards provided by the network to those who help secure it.
+This guide explains how to register a node as a validator.
+On Flare chains, any node can be registered as a validator by performing a self-bond on the P-chain against the node's Node-ID, effectively activating the node as a validator.
+Before this can happen, there are a number of requirements that must be met with regard to the node's security, staking requirements and operational use.
+It is assumed that you have already followed the steps to have a running node either [from source](/run-node/from-source) or [via Docker](/run-node/using-docker).
+
+A validator node is essential for securing the network by validating transactions and blocks, and participating in the consensus process.
+Deploying validator nodes enables participation in the consensus mechanism and allows for the collection of rewards provided by the network to those who help secure it.
 
 Validator nodes perform the following tasks:
 
@@ -16,7 +22,8 @@ Validator nodes perform the following tasks:
 - **Consensus:** Reach agreement with other validators on the transactions to be added to the blockchain.
 - **Block Addition:** Bundle the agreed-upon transactions into a block and append it to the blockchain.
 
-On Flare, data protocols such as the [Flare Time Series Oracle](/run-node/ftso-data-provider) and [Flare Data Connector](/run-node/fdc-attestation-provider) are enshrined into the network. This requires validators to perform additional tasks to secure the network and earn rewards.
+On Flare, data protocols such as the Flare Time Series Oracle and Flare Data Connector are enshrined into the network.
+This requires validators to perform additional tasks to secure the network and earn rewards, including running an [FSP provider](/run-node/fsp-provider).
 
 <details>
 <summary>**Flare Staking Phases**</summary>
@@ -41,7 +48,8 @@ Since staking occurs on the P-chain, staked tokens cannot access rewards managed
 
 **Phase 2 (Oct 2023, current)**
 
-Once FTSO data providers have gathered enough stake to ensure the network's continued operation, all stakes loaned by the Flare Foundation to the launch validators will be withdrawn. Professional validators are expected to cease operations unless they provide their own stake. The Flare Foundation might delegate stake to KYC-verified FTSO data providers to help initiate the system. This process, known as stake boosting, will run for a limited time. Staked funds can earn [FlareDrops](https://flare.network/flaredrop-guide/) and participate in governance but not earn [FTSO](https://flare.network/ftso/) delegation rewards.
+Once FTSO data providers have gathered enough stake to ensure the network's continued operation, all stakes loaned by the Flare Foundation to the launch validators will be withdrawn.
+Professional validators are expected to cease operations unless they provide their own stake. The Flare Foundation might delegate stake to KYC-verified FTSO data providers to help initiate the system. This process, known as stake boosting, will run for a limited time. Staked funds can earn [FlareDrops](https://flare.network/flaredrop-guide/) and participate in governance but not earn [FTSO](https://flare.network/ftso/) delegation rewards.
 
 Staking rewards will:
 
@@ -51,7 +59,8 @@ Staking rewards will:
 
 **Phase 3**
 
-Once secure communication between the P- and C-chains is established, staking rewards will be managed entirely onchain. The goal is for funds staked on the P-chain to have the same rights as wrapped FLR on the C-chain, enabling them to earn [FTSO](https://flare.network/ftso/) rewards, [FlareDrops](https://flare.network/flaredrop-guide/), and participate in governance.
+Once secure communication between the P- and C-chains is established, staking rewards will be managed entirely onchain.
+The goal is for funds staked on the P-chain to have the same rights as wrapped FLR on the C-chain, enabling them to earn [FTSO](https://flare.network/ftso/) rewards, [FlareDrops](https://flare.network/flaredrop-guide/), and participate in governance.
 
 **Summary of Phases**
 
@@ -70,33 +79,41 @@ Once secure communication between the P- and C-chains is established, staking re
 
 ## Hardware requirements
 
-Validator nodes have the same hardware requirements as RPC nodes. Refer to the [Hardware requirements](/run-node/rpc-node#hardware-requirements) section of the RPC node guide.
+Validator nodes have the same hardware requirements as RPC nodes.
+Refer to the [Hardware requirements](/run-node/hardware-requirements) page for more information.
 
 ## Setup
 
-Validator nodes have a similar setup process as RPC nodes. Refer to the RPC node guide for [setup on bare-metal](/run-node/rpc-node#setup-on-bare-metal) or [setup with Docker](/run-node/rpc-node#setup-with-docker).
-The difference between RPC nodes and validator nodes comes from the configuration detailed ahead.
+## Configure the node
 
-### Configure the node
+:::warning
 
-:::danger
-Validator security impacts the security of the entire network. To configure your node for security:
+Validator security impacts the security of the entire network.
+To configure your node for security:
 
 - **Don't** allow port `9650` to be reached externally.
 - **Don't** allow password authentication over SSH.
 - **Don't** run any non-validator services on the same IP.
+- **Don't** use the same node for validation and RPC API access.
 
 :::
 
 In addition to the above, the following security measures are recommended for further hardening:
 
-- **Do** firewall the machine. Only the ports required for validator operation should be open (i.e. only the staking port, which defaults to `9651`).
+- **Do** front the machine with a firewall. Only the staking port is required for validator functionality, which defaults to `9651`.
 
 - **Don't** allow any ICMP traffic.
 
 - **Don't** allow the node to accept RPC API requests, only use it as a validator. Deploy a separate RPC node for tasks requiring RPC API access.
 
 - **Don't** enable the more than the minimum set of EVM APIs when configuring your node.
+
+## Configure the validator node
+
+Validator nodes serve one purpose, to validate transactions and reach consensus on the state transitions of the blockchain.
+As a result, the configuration should differ from that of an RPC node, specifically a number of the `eth-apis` should be disabled.
+
+See the sample configuration below for a validator node:
 
 <details>
 <summary>Sample JSON configuration for validator nodes.</summary>
@@ -140,16 +157,49 @@ In addition to the above, the following security measures are recommended for fu
 
 </details>
 
-### Run the node
+## Staking key and certificate
 
-Start your node by following the **Run the node** section of the [RPC node](/run-node/rpc-node) guide.
+When a node is started, it will generate a `staker.key` and `staker.crt` in the `~/.avalanchego/staking` directory.
+These files define your node's identity (Node-ID) and is the identifier used when staking.
+Before registering your node as a validator, you should backup these files and keep them safe.
+Refer to the [Avalanche documentation](https://build.avax.network/docs/nodes/maintain/backup-restore) for an in-depth breakdown of backup and restoration of staking keys and certificates.
 
-:::info
-
-If you have a pre-registered validator key, you just need to add these parameters to the launch command:
+If you decide to move these files to a secure location, you can add the following parameters in your start command to start the node with the existing key and certificate and thus persist the Node-ID:
 
 ```bash
 --staking-tls-cert-file=<NODE_CRT_PATH> --staking-tls-key-file=<NODE_KEY_PATH>
 ```
 
-:::
+Confirm your node's Node-ID by running the following command:
+
+```bash
+curl --data '{
+  "jsonrpc":"2.0",
+  "method":"info.getNodeID",
+  "id":1,
+  "params":{}
+}' http://localhost:9650/ext/info | jq -r ".result.nodeID"
+```
+
+## Staking
+
+A node becomes a validator when it's owner stakes to their node, referred to as a self-bond.
+The self-bond is performed on the P-chain against the node's Node-ID.
+To understand requirements for the staking process and how to stake, refer to the [Using Flare Stake Tool](/network/guides/using-flare-stake-tool) page.
+
+Once the self-bond is complete and the staking start time is reached, the node will join the current validator set.
+You can inspect the validator's status by running the following command:
+
+```bash
+curl --data '{
+    "jsonrpc": "2.0",
+    "method": "platform.getCurrentValidators",
+    "params": {
+      "nodeIDs": ["<NODE_ID>"]
+    },
+    "id": 1
+}' -H 'content-type:application/json;' https://flare-api.flare.network/ext/P | jq
+```
+
+Observe the `uptime` and `connected` fields to ensure the node is healthy and connected to the network.
+Additionally, you can use the [validator monitoring site](https://flare-validators.flare.network/) to observe the validator's status.
