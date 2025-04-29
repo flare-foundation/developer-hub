@@ -1,0 +1,147 @@
+---
+title: Swap and Redeem FAssets
+tags: [intermediate, fassets]
+slug: fassets-swap-redeem
+description: Learn how to swap and redeem FAssets
+keywords: [fassets, flare-network]
+sidebar_position: 4
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import Remix from "@site/src/components/remix";
+import FAssetsSwapAndRedeemContract from "!!raw-loader!/examples/developer-hub-solidity/FAssetsSwapAndRedeem.sol";
+import FAssetsSwapAndRedeemScript from "!!raw-loader!/examples/developer-hub-javascript/fAssetsSwapAndRedeem.ts";
+import RedemptionProcessPrerequisites from "./_redemption_process_prerequisites.mdx";
+
+## Overview
+
+In this guide, you will learn how to swap WCFLR for FXRP and redeem FXRP for FAssets using the Uniswap V2 router (BlazeSwap) and the FAssets Asset Manager.
+
+<RedemptionProcessPrerequisites />
+
+## Swap and Redeem Smart Contract
+
+The following example demonstrates a Solidity smart contract that swaps WCFLR for FXRP and then redeems FXRP for FAssets.
+
+<CodeBlock language="solidity" title="contracts/fassets/SwapAndRedeem.sol">
+  {FAssetsSwapAndRedeemContract}
+</CodeBlock>
+
+This contract has two main functions:
+- swaps WCFLR for FXRP using a BlazeSwap router (Uniswap V2 compatible);
+- redeems FAssets (FXRP) to an XRPL address using FAssets asset manager.
+
+#### Required Imports
+
+The following imports are required for the contract:
+
+- IERC20 from OpenZeppelin: For interacting with ERC20 tokens.
+- IAssetManager: Interface to FAssets asset manager.
+- AssetManagerSettings: Data structure used to retrieve redemption settings.
+
+### Interfaces
+
+The contract defines an `ISwapRouter` interface for interacting with a Uniswap V2-compatible router:
+
+- swapExactTokensForTokens: Swaps an exact amount of input tokens.
+- getAmountsIn: Calculates how much input is needed for a given output.
+
+### State Variables and Constructor
+
+The following state variables are defined in the contract:
+
+- `router`: Uniswap V2 router contract; in this example, it is the BlazeSwap router;
+- `assetManager`: Asset Manager handling FXRP redemption;
+- `token`: Token to swap (WCFLR in the swap path);
+- `swapPath`: Array of addresses defining the swap route (e.g., WCFLR → FXRP).
+
+To instantiate the contract, the constructor sets up the Uniswap router, FAssets asset manager, and swap path.
+It initializes the token as the first token in the swap path.
+
+### Main Function: `swapAndRedeem`
+
+The `swapAndRedeem` function orchestrates the entire process:
+
+1. Validation
+
+    - checks if the sender has enough WCFLR balance
+    - verifies if the smart contract has the FAssets FXRP allowance to spend for the redemption;
+
+2. Transfers
+
+  - transfers WCFLR from the user to the contract;
+  - approves Uniswap router to spend WCFLR to perform the swapping tokens;
+
+4. Swap
+
+  - executes the swap from WCFLR to FXRP using the provided swap path;
+  - sets a swap deadline (current timestamp + 10 minutes);
+
+5. Redemption
+
+  - redeems the received FXRP into FAssets;
+  - the XRP funds are transferred to the underlying XRPL address;
+
+### Helper Function: calculateRedemptionAmountIn
+
+The `calculateRedemptionAmountIn` function:
+- takes the number of FXRP lots to redeem;
+- retrieves the lot size from the FAssets asset manager;
+- calculates the amount of WCFLR required to complete the swap and redemption.
+
+## Execute the Swap and Redeem
+
+To execute the swap and redeem process, you need to deploy the smart contract instance and call the `swapAndRedeem` function.
+
+<CodeBlock language="typescript" title="scripts/fassets/swapAndRedeem.ts">
+  {FAssetsSwapAndRedeemScript}
+</CodeBlock>
+
+### Code Breakdown
+
+1. Import necessary dependencies and defines constants:
+
+    - `ASSET_MANAGER_ADDRESS`: FAssets Asset Manager contract address;
+    - `LOTS_TO_REDEEM`: number of FAsset lots to redeem (set to 1);
+    - `UNDERLYING_ADDRESS`: XRPL address that will receive the redeemed FAssets;
+    - `SWAP_ROUTER_ADDRESS`: Uniswap V2 compatible router address;
+    - `SWAP_PATH`: token addresses defining swap path (from WCFLR to FXRP).
+
+2. Deploy and Verify the SwapAndRedeem contract.
+
+3. Calculate Required Amounts
+    
+    - calls `calculateRedemptionAmountIn` to determine the required WCFLR amount
+
+4. Approve the router to spend the calculated WCFLR amount.
+
+    :::warning
+
+    In a production environment, you should use a more secure method to approve spending the tokens.
+
+    :::
+
+5. Perform the Swap and Redemption
+
+    - calls `swapAndRedeem` to complete the FAssets redemption process
+
+### Run the Script
+
+To run the script, use the [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit#hardhat) with the following command:
+
+```bash
+npx hardhat run scripts/fassets/swapAndRedeem.ts --network coston
+```
+
+The script outputs transaction details, including swap amounts and redemption results.
+
+For an in-depth explanation of the FAssets redemption process, refer to the [FAssets Redeem Guide](/fassets/developer-guides/fassets-redeem).
+
+## Conclusion
+
+In this guide, you learned how to:
+
+- swap WCFLR for FXRP using Uniswap V2 compatible BlazeSwap router;
+- redeem FXRP into FAssets and send them to an XRPL address
+
+The complete code is in the [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit#hardhat).
