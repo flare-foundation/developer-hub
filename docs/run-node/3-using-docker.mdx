@@ -460,25 +460,73 @@ There are several environment variables to adjust your workload at runtime.
 The example Docker and Docker Compose guides above assumed some defaults and utilized built-in automation scripts for most of the configuration.
 Outlined below are all options available:
 
-| **Variable Name**                  | **Default**                                        | **Description**                                                          |
+|                  **Variable Name** | **Default**                                        | **Description**                                                          |
 | ---------------------------------: | :------------------------------------------------- | :----------------------------------------------------------------------- |
-|                       `NETWORK_ID` |                                           `costwo` |                                             The network ID to connect to |
-|                        `HTTP_HOST` |                                          `0.0.0.0` |                                                HTTP host binding address |
-|                        `HTTP_PORT` |                                             `9650` |                                     The listening port for the HTTP host |
-|                     `STAKING_PORT` |                                             `9651` |                                 The staking port for bootstrapping nodes |
-|                        `PUBLIC_IP` |                                            (empty) |             Public facing IP. Must be set if `AUTOCONFIGURE_PUBLIC_IP=0` |
-|                           `DB_DIR` |                                          `/app/db` |                                          The database directory location |
-|                          `DB_TYPE` |                                          `leveldb` |                                             The database type to be used |
-|                    `BOOTSTRAP_IPS` |                                            (empty) |                                           A list of bootstrap server IPs |
-|                    `BOOTSTRAP_IDS` |                                            (empty) |                                           A list of bootstrap server IDs |
-|                 `CHAIN_CONFIG_DIR` |                                        `/app/conf` |      Configuration folder where you should mount your configuration file |
-|                          `LOG_DIR` |                                        `/app/logs` |                                                        Logging directory |
-|                        `LOG_LEVEL` |                                             `info` |                     Logging verbosity level that is logged into the file |
-|          `AUTOCONFIGURE_PUBLIC_IP` |                                                `0` |     Set to 1 to autoconfigure `PUBLIC_IP`, skipped if `PUBLIC_IP` is set |
-|          `AUTOCONFIGURE_BOOTSTRAP` |                                                `0` |            Set to 1 to autoconfigure `BOOTSTRAP_IPS` and `BOOTSTRAP_IDS` |
-| `AUTOCONFIGURE_BOOTSTRAP_ENDPOINT` | `https://coston2-bootstrap.flare.network/ext/info` |         Endpoint used for bootstrapping when `AUTOCONFIGURE_BOOTSTRAP=1` |
-| `AUTOCONFIGURE_FALLBACK_ENDPOINTS` |                                            (empty) | Comma-divided fallback bootstrap endpoints if the primary endpoint fails |
-|                  `EXTRA_ARGUMENTS` |                                            (empty) |                                   Extra arguments passed to flare binary |
+|                       `NETWORK_ID` | `costwo`                                           | The network ID to connect to                                             |
+|                        `HTTP_HOST` | `0.0.0.0`                                          | HTTP host binding address                                                |
+|                        `HTTP_PORT` | `9650`                                             | The listening port for the HTTP host                                     |
+|                     `STAKING_PORT` | `9651`                                             | The staking port for bootstrapping nodes                                 |
+|                        `PUBLIC_IP` | (empty)                                            | Public facing IP. Must be set if `AUTOCONFIGURE_PUBLIC_IP=0`             |
+|                           `DB_DIR` | `/app/db`                                          | The database directory location                                          |
+|                          `DB_TYPE` | `leveldb`                                          | The database type to be used                                             |
+|                    `BOOTSTRAP_IPS` | (empty)                                            | A list of bootstrap server IPs                                           |
+|                    `BOOTSTRAP_IDS` | (empty)                                            | A list of bootstrap server IDs                                           |
+|                 `CHAIN_CONFIG_DIR` | `/app/conf`                                        | Configuration folder where you should mount your configuration file      |
+|                          `LOG_DIR` | `/app/logs`                                        | Logging directory                                                        |
+|                        `LOG_LEVEL` | `info`                                             | Logging verbosity level that is logged into the file                     |
+|          `AUTOCONFIGURE_PUBLIC_IP` | `0`                                                | Set to 1 to autoconfigure `PUBLIC_IP`, skipped if `PUBLIC_IP` is set     |
+|          `AUTOCONFIGURE_BOOTSTRAP` | `0`                                                | Set to 1 to autoconfigure `BOOTSTRAP_IPS` and `BOOTSTRAP_IDS`            |
+| `AUTOCONFIGURE_BOOTSTRAP_ENDPOINT` | `https://coston2-bootstrap.flare.network/ext/info` | Endpoint used for bootstrapping when `AUTOCONFIGURE_BOOTSTRAP=1`         |
+| `AUTOCONFIGURE_FALLBACK_ENDPOINTS` | (empty)                                            | Comma-divided fallback bootstrap endpoints if the primary endpoint fails |
+|                  `EXTRA_ARGUMENTS` | (empty)                                            | Extra arguments passed to flare binary                                   |
+
+## Updating the node
+
+To update your node to a newer version using Docker:
+
+1.  Find the latest stable tag (`<new_tag>`) from the [Flare Docker Hub tags page](https://hub.docker.com/r/flarefoundation/go-flare/tags).
+
+2.  Stop and remove the old container:
+
+  <Tabs groupId="Docker" block>
+    <TabItem value="docker-cli" label="Docker CLI" default>
+
+      ```bash
+      docker stop <your_container_name> # e.g., flare-observer
+      docker rm <your_container_name>
+      ```
+
+    </TabItem>
+    <TabItem value="docker-compose" label="Docker Compose">
+
+      ```bash
+      docker compose -f /opt/observer/docker-compose.yaml down
+      ```
+
+    </TabItem>
+
+  </Tabs>
+
+3.  Start the new container:
+
+  <Tabs groupId="Docker" block>
+    <TabItem value="docker-cli" label="Docker CLI" default>
+
+        Run the same `docker run` command as before, but replace `<latest_tag>` with `<new_tag>`. Your data in `/mnt/db` (or your chosen volume) will be preserved.
+
+    </TabItem>
+
+  <TabItem value="docker-compose" label="Docker Compose">
+
+        ```bash
+        LATEST_TAG="vX.Y.Z" # <-- Replace with the actual latest tag e.g v1.10.0
+        yq -i ".services.observer.image = flarefoundation/go-flare:${LATEST_TAG}" /opt/observer/docker-compose.yaml
+        docker compose -f /opt/observer/docker-compose.yaml up -d
+        ```
+
+      </TabItem>
+
+  </Tabs>
 
 ## Node maintenance
 
@@ -497,13 +545,13 @@ In some cases, your node might not work correctly or you might receive unusual m
   ```
 
 - **Check Disk Space:** If your node does not sync after a long time and abruptly stops working, ensure the database location has sufficient disk space.
-Remember, the database size might change significantly during bootstrapping.
+  Remember, the database size might change significantly during bootstrapping.
 
 - **Resolve Connection Issues:** If you receive unusual messages after making submissions or when transactions are reverted, your node might not be connected correctly.
-Ensure the database location has sufficient disk space, then restart the node.
+  Ensure the database location has sufficient disk space, then restart the node.
 
 - **Handle Bootstrap Errors:** If you receive an error related to `GetAcceptedFrontier` during bootstrapping, your node was disconnected during the process.
-Restart the node if you see the following error:
+  Restart the node if you see the following error:
 
   ```plaintext
   failed to send GetAcceptedFrontier(MtF8bVH241hetCQJgsKEdKyJBs8vhp1BC, 11111111111111111111111111111111LpoYY, NUMBER)
