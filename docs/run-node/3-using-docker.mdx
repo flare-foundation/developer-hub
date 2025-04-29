@@ -8,13 +8,10 @@ description: Run a node using Docker.
 import Tabs from "@theme/Tabs";
 import TabItem from "@theme/TabItem";
 
-This guide will walk you through deploying an RPC node using a container image.
-You can find all available images on [Docker Hub](https://hub.docker.com/r/flarefoundation/go-flare).
-Please inspect the [hardware requirements](/run-node/hardware-requirements) before proceeding.
+This guide will walk you through deploying an RPC node using the [go-flare](https://hub.docker.com/r/flarefoundation/go-flare) images on Docker Hub.
+Make sure to inspect the [hardware requirements](/run-node/hardware-requirements) before proceeding.
 
-## Setup with Docker
-
-### Prerequisites
+## Prerequisites
 
 - [Docker Engine](https://docs.docker.com/engine/install/)
 - [jq](https://stedolan.github.io/jq/download/) (optional, but recommended)
@@ -27,70 +24,76 @@ To avoid using `sudo` each time you run the `docker` command, add your user to t
 
 ```bash
 sudo usermod -a -G docker $USER
-# Log out and log back in or restart your system for the changes to take effect
 ```
+
+Log out and log back in or restart your system for the changes to take effect.
 
 :::
 
-### Configure the machine
+## Configure the machine
 
-#### Disk setup
+### Disk setup
 
 This setup varies depending on your use case, but essentially you need to have a local directory with sufficient space for the blockchain data to be stored and persisted in.
 In this guide, there is an additional disk mounted at `/mnt/db` which is used to persist the blockchain data.
-After you have a machine set up and ready to go, find the additional disk, format it if necessary, and mount to a directory:
 
-```bash
-lsblk
-#############################################
-# NAME    MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
-# sda       8:0    0   10G  0 disk
-# ├─sda1    8:1    0  9.9G  0 part /
-# ├─sda14   8:14   0    3M  0 part
-# └─sda15   8:15   0  124M  0 part /boot/efi
-# sdb       8:16   0  300G  0 disk
-# ^-- Device identified as db disk via size
-#############################################
-sudo mkdir /mnt/db
-sudo chown -R <user>:<group> /mnt/db
-sudo mkfs.ext4 -m 0 -E lazy_itable_init=0,lazy_journal_init=0,discard /dev/sdb
-sudo mount /dev/sdb /mnt/db
-```
+1. After you have a machine set up and ready to go, find the additional disk, format it if necessary, and mount to a directory:
 
-:::info
+   - Replace `<user>:<group>` with the username and primary group of the user who will run the docker or docker compose commands.
+     This is often your own username, which can be found using `id -u -n` (user) and `id -g -n` (group), or often simply `${USER}:${USER}`
+     It is recommended that this isn't the root user for security reasons.
+   - Ensure you are replacing `/dev/sdb` with your actual device, since it could be different to the example.
 
-- Replace `<user>` with the user you wish to start your containerized RPC node with.
-  It is recommended that this isn't the root user for security reasons.
-- Ensure you are replacing `/dev/sdb` with your actual device, since it could be different to the example.
+   :::warning[Data Loss]
 
-:::
+   The following `mkfs.ext4` command will **erase all data** on the specified device (`/dev/sdb` in this example).
+   Double-check the selected device and that it does not contain any important data before proceeding.
 
-Confirm the new disk is mounted:
+   :::
 
-```bash hl_lines="7"
-lsblk
-#############################################
-# NAME    MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
-# sda       8:0    0   10G  0 disk
-# ├─sda1    8:1    0  9.9G  0 part /
-# ├─sda14   8:14   0    3M  0 part
-# └─sda15   8:15   0  124M  0 part /boot/efi
-# sdb       8:16   0  300G  0 disk /mnt/db
-# ^-- Device now has mountpoint set to /mnt/db
-#############################################
-```
+   ```bash
+   lsblk
+   #############################################
+   # NAME    MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+   # sda       8:0    0   10G  0 disk
+   # ├─sda1    8:1    0  9.9G  0 part /
+   # ├─sda14   8:14   0    3M  0 part
+   # └─sda15   8:15   0  124M  0 part /boot/efi
+   # sdb       8:16   0  300G  0 disk
+   # ^-- Device identified as db disk via size
+   #############################################
+   sudo mkdir /mnt/db
+   sudo chown -R <user>:<group> /mnt/db
+   sudo mkfs.ext4 -m 0 -E lazy_itable_init=0,lazy_journal_init=0,discard /dev/sdb
+   sudo mount /dev/sdb /mnt/db
+   ```
 
-Look for your device name and mount point specified in the output to confirm the mount worked.
+2. Confirm the new disk is mounted:
 
-Backup the original `fstab` file (to revert changes if needed) and update `/etc/fstab` to make sure the device is mounted when the system reboots:
+   ```bash hl_lines="7"
+   lsblk
+   #############################################
+   # NAME    MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+   # sda       8:0    0   10G  0 disk
+   # ├─sda1    8:1    0  9.9G  0 part /
+   # ├─sda14   8:14   0    3M  0 part
+   # └─sda15   8:15   0  124M  0 part /boot/efi
+   # sdb       8:16   0  300G  0 disk /mnt/db
+   # ^-- Device now has mountpoint set to /mnt/db
+   #############################################
+   ```
 
-```bash
-cp /etc/fstab /etc/fstab.backup
-fstab_entry="UUID=$(sudo blkid -o value -s UUID /dev/sdb) /mnt/db ext4 discard,defaults 0 2"
-echo "$fstab_entry" | sudo tee -a /etc/fstab
-```
+   Look for your device name and mount point specified in the output to confirm the mount worked.
 
-#### Configuration File and Logs Directory Setup
+3. Backup the original `fstab` file (to revert changes if needed) and update `/etc/fstab` to make sure the device is mounted when the system reboots:
+
+   ```bash
+   cp /etc/fstab /etc/fstab.backup
+   fstab_entry="UUID=$(sudo blkid -o value -s UUID /dev/sdb) /mnt/db ext4 discard,defaults 0 2"
+   echo "$fstab_entry" | sudo tee -a /etc/fstab
+   ```
+
+### Configuration File and Logs Directory Setup
 
 Once the disk setup is complete, you can define the configuration file and logs directory for the RPC node.
 These will be mounted from your local machine to the specified directories on your container.
@@ -98,43 +101,43 @@ These will be mounted from your local machine to the specified directories on yo
 Mounting the logs directory allows you to access the logs generated by the workload directly on your local machine.
 This saves you the effort of using `docker logs` and lets you inspect the files in your local directory instead.
 
-Create the local directories and change ownership to the same user you used to run the container:
+1. Create the local directories and change ownership to the same user you used to run the container:
 
-```bash
-sudo mkdir -p /opt/flare/conf
-sudo mkdir /opt/flare/logs
-sudo chown -R <user>:<group> /opt/flare
-```
+   ```bash
+   sudo mkdir -p /opt/flare/conf
+   sudo mkdir /opt/flare/logs
+   sudo chown -R <user>:<group> /opt/flare
+   ```
 
-Create the configuration file:
+2. Create the configuration file:
 
-```json title="/opt/flare/conf/config.json"
-{
-  "snowman-api-enabled": false,
-  "coreth-admin-api-enabled": false,
-  "eth-apis": [
-    "eth",
-    "eth-filter",
-    "net",
-    "web3",
-    "internal-eth",
-    "internal-blockchain",
-    "internal-transaction"
-  ],
-  "rpc-gas-cap": 50000000,
-  "rpc-tx-fee-cap": 100,
-  "pruning-enabled": true,
-  "local-txs-enabled": false,
-  "api-max-duration": 0,
-  "api-max-blocks-per-request": 0,
-  "allow-unfinalized-queries": false,
-  "allow-unprotected-txs": false,
-  "remote-tx-gossip-only-enabled": false,
-  "log-level": "info"
-}
-```
+   ```json title="/opt/flare/conf/config.json"
+   {
+     "snowman-api-enabled": false,
+     "coreth-admin-api-enabled": false,
+     "eth-apis": [
+       "eth",
+       "eth-filter",
+       "net",
+       "web3",
+       "internal-eth",
+       "internal-blockchain",
+       "internal-transaction"
+     ],
+     "rpc-gas-cap": 50000000,
+     "rpc-tx-fee-cap": 100,
+     "pruning-enabled": true,
+     "local-txs-enabled": false,
+     "api-max-duration": 0,
+     "api-max-blocks-per-request": 0,
+     "allow-unfinalized-queries": false,
+     "allow-unprotected-txs": false,
+     "remote-tx-gossip-only-enabled": false,
+     "log-level": "info"
+   }
+   ```
 
-### Run the node
+## Run the node
 
 This guide will show examples of running the node using both Docker CLI and Docker Compose.
 
@@ -142,125 +145,125 @@ This guide will show examples of running the node using both Docker CLI and Dock
 
 - [Docker Compose](#using-docker-compose)
 
-#### Using Docker CLI
+### Using Docker CLI
 
-<Tabs groupId="network" block>
-  <TabItem value="flare" label="Flare Mainnet" default>
+1. Retrieve the tag from the latest stable release:
 
-    Use the [go-flare](https://hub.docker.com/layers/flarefoundation/go-flare/v1.10.0/images/sha256-b102727a3c7e2731a897b3ed8c2b38b6449bbbfe2543f88c2f354486fbdaaa2e) Docker image.
+   ```bash
+   # 1. Find the latest stable release tag from:
+   #    https://hub.docker.com/r/flarefoundation/go-flare/tags
+   # 2. Set the tag name in the variable below (only use versioned tags):
+   LATEST_STABLE="vX.Y.Z" # <-- REPLACE vX.Y.Z WITH THE ACTUAL LATEST TAG e.g. v1.10.0
+   ```
 
-    Start the container:
+2. Start the container:
 
-    ```bash
-    docker run -d --name flare-observer \
-               -e NETWORK_ID="flare" \
-               -e AUTOCONFIGURE_BOOTSTRAP="1" \
-               -e AUTOCONFIGURE_PUBLIC_IP="1" \
-               -e AUTOCONFIGURE_BOOTSTRAP_ENDPOINT="https://flare-bootstrap.flare.network/ext/info" \
-               -v /mnt/db:/app/db -v /opt/flare/conf:/app/conf/C \
-               -v /opt/flare/logs:/app/logs \
-               -p 0.0.0.0:9650:9650 \
-               -p 0.0.0.0:9651:9651 \
-               flarefoundation/go-flare:v1.10.0
-    ```
+   <Tabs groupId="network" block>
 
-    Confirm your container is running and inspect that logs are printing:
+   <TabItem value="flare" label="Flare Mainnet" default>
 
-    ```bash
-    docker ps
-    docker logs flare-observer -f
-    ```
+   ```bash
+   docker run -d --name flare-observer \
+     -e NETWORK_ID="flare" \
+     -e AUTOCONFIGURE_BOOTSTRAP="1" \
+     -e AUTOCONFIGURE_PUBLIC_IP="1" \
+     -e AUTOCONFIGURE_BOOTSTRAP_ENDPOINT="https://flare-bootstrap.flare.network/ext/info" \
+     -v /mnt/db:/app/db -v /opt/flare/conf:/app/conf/C \
+     -v /opt/flare/logs:/app/logs \
+     -p 0.0.0.0:9650:9650 \
+     -p 0.0.0.0:9651:9651 \
+     flarefoundation/go-flare:${LATEST_STABLE}
+   ```
 
-  </TabItem>
-  <TabItem value="coston2" label="Flare Testnet Coston2">
+   Confirm your container is running and inspect that logs are printing:
 
-    Use the [go-flare](https://hub.docker.com/layers/flarefoundation/go-flare/v1.10.0/images/sha256-b102727a3c7e2731a897b3ed8c2b38b6449bbbfe2543f88c2f354486fbdaaa2e) Docker image.
+   ```bash
+   docker ps
+   docker logs flare-observer -f
+   ```
 
-    Start the container:
+   </TabItem>
 
-    ```bash
-    docker run -d --name coston2-observer \
-               -e NETWORK_ID="costwo" \
-               -e AUTOCONFIGURE_BOOTSTRAP="1" \
-               -e AUTOCONFIGURE_PUBLIC_IP="1" \
-               -e AUTOCONFIGURE_BOOTSTRAP_ENDPOINT="https://coston2-bootstrap.flare.network/ext/info" \
-               -v /mnt/db:/app/db -v /opt/flare/conf:/app/conf/C \
-               -v /opt/flare/logs:/app/logs \
-               -p 0.0.0.0:9650:9650 \
-               -p 0.0.0.0:9651:9651 \
-               flarefoundation/go-flare:v1.10.0
-    ```
+   <TabItem value="coston2" label="Flare Testnet Coston2">
 
-    Confirm your container is running and inspect that logs are printing:
+   ```bash
+   docker run -d --name coston2-observer \
+     -e NETWORK_ID="costwo" \
+     -e AUTOCONFIGURE_BOOTSTRAP="1" \
+     -e AUTOCONFIGURE_PUBLIC_IP="1" \
+     -e AUTOCONFIGURE_BOOTSTRAP_ENDPOINT="https://coston2-bootstrap.flare.network/ext/info" \
+     -v /mnt/db:/app/db -v /opt/flare/conf:/app/conf/C \
+     -v /opt/flare/logs:/app/logs \
+     -p 0.0.0.0:9650:9650 \
+     -p 0.0.0.0:9651:9651 \
+     flarefoundation/go-flare:${LATEST_STABLE}
+   ```
 
-    ```bash
-    docker ps
-    docker logs coston2-observer -f
-    ```
+   Confirm your container is running and inspect that logs are printing:
 
-  </TabItem>
-  <TabItem value="songbird" label="Songbird Canary-Network">
+   ```bash
+   docker ps
+   docker logs coston2-observer -f
+   ```
 
-    Use the [go-flare](https://hub.docker.com/layers/flarefoundation/go-flare/v1.10.0/images/sha256-b102727a3c7e2731a897b3ed8c2b38b6449bbbfe2543f88c2f354486fbdaaa2e) Docker image.
+   </TabItem>
 
-    Start the container:
+   <TabItem value="songbird" label="Songbird Canary-Network">
 
-    ```bash
-    docker run -d --name songbird-observer \
-               -e NETWORK_ID="songbird" \
-               -e AUTOCONFIGURE_BOOTSTRAP="1" \
-               -e AUTOCONFIGURE_PUBLIC_IP="1" \
-               -e AUTOCONFIGURE_BOOTSTRAP_ENDPOINT="https://songbird-bootstrap.flare.network/ext/info" \
-               -v /mnt/db:/app/db -v /opt/flare/conf:/app/conf/C \
-               -v /opt/flare/logs:/app/logs \
-               -p 0.0.0.0:9650:9650 \
-               -p 0.0.0.0:9651:9651 \
-               flarefoundation/go-flare:v1.10.0
-    ```
+   ```bash
+   docker run -d --name songbird-observer \
+     -e NETWORK_ID="songbird" \
+     -e AUTOCONFIGURE_BOOTSTRAP="1" \
+     -e AUTOCONFIGURE_PUBLIC_IP="1" \
+     -e AUTOCONFIGURE_BOOTSTRAP_ENDPOINT="https://songbird-bootstrap.flare.network/ext/info" \
+     -v /mnt/db:/app/db -v /opt/flare/conf:/app/conf/C \
+     -v /opt/flare/logs:/app/logs \
+     -p 0.0.0.0:9650:9650 \
+     -p 0.0.0.0:9651:9651 \
+     flarefoundation/go-flare:${LATEST_STABLE}
+   ```
 
-    Confirm your container is running and inspect that logs are printing:
+   Confirm your container is running and inspect that logs are printing:
 
-    ```bash
-    docker ps
-    docker logs songbird-observer -f
-    ```
+   ```bash
+   docker ps
+   docker logs songbird-observer -f
+   ```
 
-  </TabItem>
-  <TabItem value="coston" label="Songbird Testnet Coston">
+   </TabItem>
 
-    Use the [go-flare](https://hub.docker.com/layers/flarefoundation/go-flare/v1.10.0/images/sha256-b102727a3c7e2731a897b3ed8c2b38b6449bbbfe2543f88c2f354486fbdaaa2e) Docker image.
+   <TabItem value="coston" label="Songbird Testnet Coston">
 
-    Start the container:
+   ```bash
+   docker run -d --name coston-observer \
+     -e NETWORK_ID="coston" \
+     -e AUTOCONFIGURE_BOOTSTRAP="1" \
+     -e AUTOCONFIGURE_PUBLIC_IP="1" \
+     -e AUTOCONFIGURE_BOOTSTRAP_ENDPOINT="https://coston-bootstrap.flare.network/ext/info" \
+     -v /mnt/db:/app/db -v /opt/flare/conf:/app/conf/C \
+     -v /opt/flare/logs:/app/logs \
+     -p 0.0.0.0:9650:9650 \
+     -p 0.0.0.0:9651:9651 \
+     flarefoundation/go-flare:${LATEST_STABLE}
+   ```
 
-    ```bash
-    docker run -d --name coston-observer \
-               -e NETWORK_ID="coston" \
-               -e AUTOCONFIGURE_BOOTSTRAP="1" \
-               -e AUTOCONFIGURE_PUBLIC_IP="1" \
-               -e AUTOCONFIGURE_BOOTSTRAP_ENDPOINT="https://coston-bootstrap.flare.network/ext/info" \
-               -v /mnt/db:/app/db -v /opt/flare/conf:/app/conf/C \
-               -v /opt/flare/logs:/app/logs \
-               -p 0.0.0.0:9650:9650 \
-               -p 0.0.0.0:9651:9651 \
-               flarefoundation/go-flare:v1.10.0
-    ```
+   Confirm your container is running and inspect that logs are printing:
 
-    Confirm your container is running and inspect that logs are printing:
+   ```bash
+   docker ps
+   docker logs coston-observer -f
+   ```
 
-    ```bash
-    docker ps
-    docker logs coston-observer -f
-    ```
+   </TabItem>
 
-  </TabItem>
-</Tabs>
+   </Tabs>
 
-Once you have confirmed that the container is running, use Ctrl+C to exit the following of logs and check your container's `/ext/health` endpoint.
-Only when the RPC node is fully synced will you see `"healthy": true`, but this otherwise confirms your container's HTTP port `9650` is accessible from your local machine.
+3. Once you have confirmed that the container is running, use Ctrl+C to exit the following of logs and check your container's `/ext/health` endpoint.
+   Only when the RPC node is fully synced will you see `"healthy": true`, but this otherwise confirms your container's HTTP port `9650` is accessible from your local machine.
 
-```bash
-curl http://localhost:9650/ext/health | jq
-```
+   ```bash
+   curl http://localhost:9650/ext/health | jq
+   ```
 
 <details>
 <summary>Explanation of the CLI arguments.</summary>
@@ -324,29 +327,33 @@ curl http://localhost:9650/ext/health | jq
 
 </details>
 
-#### Using Docker Compose
+### Using Docker Compose
 
 Docker Compose for this use case is a good way to simplify your setup of running the RPC node. Adding all necessary configurations into a single file that can be run with a simple command.
 
 In this guide the `docker-compose.yaml` file is created in `/opt/observer` but the location is entirely up to you.
 
-Create the working directory and set the ownership.
+1.  Create the working directory and set the ownership.
 
-```bash
-sudo mkdir /opt/observer
-sudo chown -R <user>:<group> /opt/observer
-```
+    ```bash
+    sudo mkdir /opt/observer
+    sudo chown -R <user>:<group> /opt/observer
+    ```
 
-Create the `docker-compose.yaml` file:
+2.  Create the `docker-compose.yaml` file:
 
-<Tabs groupId="network" block>
-  <TabItem value="flare" label="Flare Mainnet" default>
+    <Tabs groupId="network" block>
+
+    <TabItem value="flare" label="Flare Mainnet" default>
 
     ```yaml title="/opt/observer/docker-compose.yaml"
     services:
       observer:
         container_name: flare-observer
-        image: flarefoundation/go-flare:v1.10.0
+        # 1. Find the latest stable release tag from:
+        #    https://hub.docker.com/r/flarefoundation/go-flare/tags
+        # 2. Set the tag name in the variable below (only use versioned tags):
+        image: flarefoundation/go-flare:vX.Y.Z # <-- REPLACE vX.Y.Z WITH THE ACTUAL LATEST TAG e.g. v1.10.0
         restart: on-failure
         environment:
           - NETWORK_ID=flare
@@ -362,14 +369,18 @@ Create the `docker-compose.yaml` file:
           - 0.0.0.0:9651:9651
     ```
 
-  </TabItem>
-  <TabItem value="coston2" label="Flare Testnet Coston2">
+    </TabItem>
+
+    <TabItem value="coston2" label="Flare Testnet Coston2">
 
     ```yaml title="/opt/observer/docker-compose.yaml"
     services:
       observer:
         container_name: coston2-observer
-        image: flarefoundation/go-flare:v1.10.0
+        # 1. Find the latest stable release tag from:
+        #    https://hub.docker.com/r/flarefoundation/go-flare/tags
+        # 2. Set the tag name in the variable below (only use versioned tags):
+        image: flarefoundation/go-flare:vX.Y.Z # <-- REPLACE vX.Y.Z WITH THE ACTUAL LATEST TAG e.g. v1.10.0
         restart: on-failure
         environment:
           - NETWORK_ID=costwo
@@ -385,14 +396,18 @@ Create the `docker-compose.yaml` file:
           - 0.0.0.0:9651:9651
     ```
 
-  </TabItem>
-  <TabItem value="songbird" label="Songbird Canary-Network">
+    </TabItem>
+
+    <TabItem value="songbird" label="Songbird Canary-Network">
 
     ```yaml title="/opt/observer/docker-compose.yaml"
     services:
       observer:
         container_name: songbird-observer
-        image: flarefoundation/go-flare:v1.10.0
+        # 1. Find the latest stable release tag from:
+        #    https://hub.docker.com/r/flarefoundation/go-flare/tags
+        # 2. Set the tag name in the variable below (only use versioned tags):
+        image: flarefoundation/go-flare:vX.Y.Z # <-- REPLACE vX.Y.Z WITH THE ACTUAL LATEST TAG e.g. v1.10.0
         restart: on-failure
         environment:
           - NETWORK_ID=songbird
@@ -408,14 +423,18 @@ Create the `docker-compose.yaml` file:
           - 0.0.0.0:9651:9651
     ```
 
-  </TabItem>
-  <TabItem value="coston" label="Songbird Testnet Coston">
+    </TabItem>
+
+    <TabItem value="coston" label="Songbird Testnet Coston">
 
     ```yaml title="/opt/observer/docker-compose.yaml"
     services:
       observer:
         container_name: coston-observer
-        image: flarefoundation/go-flare:v1.10.0
+        # 1. Find the latest stable release tag from:
+        #    https://hub.docker.com/r/flarefoundation/go-flare/tags
+        # 2. Set the tag name in the variable below (only use versioned tags):
+        image: flarefoundation/go-flare:vX.Y.Z # <-- REPLACE vX.Y.Z WITH THE ACTUAL LATEST TAG e.g. v1.10.0
         restart: on-failure
         environment:
           - NETWORK_ID=coston
@@ -431,35 +450,37 @@ Create the `docker-compose.yaml` file:
           - 0.0.0.0:9651:9651
     ```
 
-  </TabItem>
-</Tabs>
+    </TabItem>
 
-Run Docker Compose:
+    </Tabs>
 
-```bash
-docker compose -f /opt/observer/docker-compose.yaml up -d
-```
+3.  Run Docker Compose:
 
-When the command completes, check the container is running and inspect that logs are being generated:
+    ```bash
+    docker compose -f /opt/observer/docker-compose.yaml up -d
+    ```
 
-```bash
-docker ps
-docker compose logs -f
-```
+4.  When the command completes, check the container is running and inspect that logs are being generated:
 
-Once you have confirmed the container is running, use Ctrl+C to exit the following of logs and check your container's `/ext/health` endpoint.
-Only when the RPC node is fully synced will you see `"healthy": true`, but this otherwise confirms your container's HTTP port (9650) is accessible from your local machine.
+    ```bash
+    docker ps
+    docker compose logs -f
+    ```
 
-```bash
-curl http://localhost:9650/ext/health | jq
-```
+5.  Once you have confirmed the container is running, use Ctrl+C to exit the following of logs and check your container's `/ext/health` endpoint.
+    Only when the RPC node is fully synced will you see `"healthy": true`, but this otherwise confirms your container's HTTP port (9650) is accessible from your local machine.
 
-### Additional configuration
+        ```bash
+        curl http://localhost:9650/ext/health | jq
+        ```
+
+## Additional configuration
 
 There are several environment variables to adjust your workload at runtime.
 The example Docker and Docker Compose guides above assumed some defaults and utilized built-in automation scripts for most of the configuration.
 Outlined below are all options available:
 
+|                  **Variable Name** | **Default**                                        | **Description**                                                          |
 |                  **Variable Name** | **Default**                                        | **Description**                                                          |
 | ---------------------------------: | :------------------------------------------------- | :----------------------------------------------------------------------- |
 |                       `NETWORK_ID` | `costwo`                                           | The network ID to connect to                                             |
@@ -479,54 +500,6 @@ Outlined below are all options available:
 | `AUTOCONFIGURE_BOOTSTRAP_ENDPOINT` | `https://coston2-bootstrap.flare.network/ext/info` | Endpoint used for bootstrapping when `AUTOCONFIGURE_BOOTSTRAP=1`         |
 | `AUTOCONFIGURE_FALLBACK_ENDPOINTS` | (empty)                                            | Comma-divided fallback bootstrap endpoints if the primary endpoint fails |
 |                  `EXTRA_ARGUMENTS` | (empty)                                            | Extra arguments passed to flare binary                                   |
-
-## Updating the node
-
-To update your node to a newer version using Docker:
-
-1.  Find the latest stable tag (`<new_tag>`) from the [Flare Docker Hub tags page](https://hub.docker.com/r/flarefoundation/go-flare/tags).
-
-2.  Stop and remove the old container:
-
-  <Tabs groupId="Docker" block>
-    <TabItem value="docker-cli" label="Docker CLI" default>
-
-      ```bash
-      docker stop <your_container_name> # e.g., flare-observer
-      docker rm <your_container_name>
-      ```
-
-    </TabItem>
-    <TabItem value="docker-compose" label="Docker Compose">
-
-      ```bash
-      docker compose -f /opt/observer/docker-compose.yaml down
-      ```
-
-    </TabItem>
-
-  </Tabs>
-
-3.  Start the new container:
-
-  <Tabs groupId="Docker" block>
-    <TabItem value="docker-cli" label="Docker CLI" default>
-
-        Run the same `docker run` command as before, but replace `<latest_tag>` with `<new_tag>`. Your data in `/mnt/db` (or your chosen volume) will be preserved.
-
-    </TabItem>
-
-  <TabItem value="docker-compose" label="Docker Compose">
-
-        ```bash
-        LATEST_TAG="vX.Y.Z" # <-- Replace with the actual latest tag e.g v1.10.0
-        yq -i ".services.observer.image = flarefoundation/go-flare:${LATEST_TAG}" /opt/observer/docker-compose.yaml
-        docker compose -f /opt/observer/docker-compose.yaml up -d
-        ```
-
-      </TabItem>
-
-  </Tabs>
 
 ## Node maintenance
 
