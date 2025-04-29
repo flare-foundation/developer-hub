@@ -1,22 +1,20 @@
 ---
 sidebar_position: 3
 slug: using-docker
-title: Run with Docker
-description: Run a node using Docker.
+title: Run using Docker
+description: Run a Flare node using Docker.
 ---
 
 import Tabs from "@theme/Tabs";
 import TabItem from "@theme/TabItem";
 
 This guide will walk you through deploying an RPC node using the [go-flare](https://hub.docker.com/r/flarefoundation/go-flare) images on Docker Hub.
-Make sure to inspect the [hardware requirements](/run-node/hardware-requirements) before proceeding.
 
 ## Prerequisites
 
+- A machine meeting the [minimum hardware requirements](/run-node/system-requirements).
 - [Docker Engine](https://docs.docker.com/engine/install/)
-- [jq](https://stedolan.github.io/jq/download/) (optional, but recommended)
-
-This guide uses Docker Engine installed on Debian Linux.
+- [jq](https://stedolan.github.io/jq/download/)
 
 :::tip
 
@@ -153,7 +151,7 @@ This guide will show examples of running the node using both Docker CLI and Dock
    # 1. Find the latest stable release tag from:
    #    https://hub.docker.com/r/flarefoundation/go-flare/tags
    # 2. Set the tag name in the variable below (only use versioned tags):
-   LATEST_STABLE="vX.Y.Z" # <-- REPLACE vX.Y.Z WITH THE ACTUAL LATEST TAG e.g. v1.10.0
+   LATEST_TAG="vX.Y.Z" # <-- REPLACE vX.Y.Z WITH THE ACTUAL LATEST TAG e.g. v1.10.0
    ```
 
 2. Start the container:
@@ -172,7 +170,7 @@ This guide will show examples of running the node using both Docker CLI and Dock
      -v /opt/flare/logs:/app/logs \
      -p 0.0.0.0:9650:9650 \
      -p 0.0.0.0:9651:9651 \
-     flarefoundation/go-flare:${LATEST_STABLE}
+     flarefoundation/go-flare:${LATEST_TAG}
    ```
 
    Confirm your container is running and inspect that logs are printing:
@@ -196,7 +194,7 @@ This guide will show examples of running the node using both Docker CLI and Dock
      -v /opt/flare/logs:/app/logs \
      -p 0.0.0.0:9650:9650 \
      -p 0.0.0.0:9651:9651 \
-     flarefoundation/go-flare:${LATEST_STABLE}
+     flarefoundation/go-flare:${LATEST_TAG}
    ```
 
    Confirm your container is running and inspect that logs are printing:
@@ -220,7 +218,7 @@ This guide will show examples of running the node using both Docker CLI and Dock
      -v /opt/flare/logs:/app/logs \
      -p 0.0.0.0:9650:9650 \
      -p 0.0.0.0:9651:9651 \
-     flarefoundation/go-flare:${LATEST_STABLE}
+     flarefoundation/go-flare:${LATEST_TAG}
    ```
 
    Confirm your container is running and inspect that logs are printing:
@@ -244,7 +242,7 @@ This guide will show examples of running the node using both Docker CLI and Dock
      -v /opt/flare/logs:/app/logs \
      -p 0.0.0.0:9650:9650 \
      -p 0.0.0.0:9651:9651 \
-     flarefoundation/go-flare:${LATEST_STABLE}
+     flarefoundation/go-flare:${LATEST_TAG}
    ```
 
    Confirm your container is running and inspect that logs are printing:
@@ -474,13 +472,12 @@ In this guide the `docker-compose.yaml` file is created in `/opt/observer` but t
         curl http://localhost:9650/ext/health | jq
         ```
 
-## Additional configuration
+### Additional configuration
 
 There are several environment variables to adjust your workload at runtime.
 The example Docker and Docker Compose guides above assumed some defaults and utilized built-in automation scripts for most of the configuration.
 Outlined below are all options available:
 
-|                  **Variable Name** | **Default**                                        | **Description**                                                          |
 |                  **Variable Name** | **Default**                                        | **Description**                                                          |
 | ---------------------------------: | :------------------------------------------------- | :----------------------------------------------------------------------- |
 |                       `NETWORK_ID` | `costwo`                                           | The network ID to connect to                                             |
@@ -501,7 +498,49 @@ Outlined below are all options available:
 | `AUTOCONFIGURE_FALLBACK_ENDPOINTS` | (empty)                                            | Comma-divided fallback bootstrap endpoints if the primary endpoint fails |
 |                  `EXTRA_ARGUMENTS` | (empty)                                            | Extra arguments passed to flare binary                                   |
 
-## Node maintenance
+## Update the node
+
+To update your node to a newer go-flare version:
+
+<Tabs groupId="Docker" block>
+  <TabItem value="docker-cli" label="Docker CLI" default>
+
+    1.  Find the latest stable tag from the go-flare Docker Hub [tags page](https://hub.docker.com/r/flarefoundation/go-flare/tags).
+
+    2.  Stop and remove the old container:
+
+        ```bash
+        docker stop <your_container_name> # e.g., flare-observer
+        docker rm <your_container_name>
+        ```
+
+    3. Update the `LATEST_TAG` to the new stable tag and run the same `docker run` command as [previously detailed](/run-node/using-docker#using-docker-cli).
+        Your data in `/mnt/db` (or your chosen volume) will be preserved.
+
+  </TabItem>
+  <TabItem value="docker-compose" label="Docker Compose">
+
+    1.  Find the latest stable tag from the go-flare Docker Hub [tags page](https://hub.docker.com/r/flarefoundation/go-flare/tags).
+
+    2.  Stop the old container:
+
+        ```bash
+        docker compose -f /opt/observer/docker-compose.yaml down
+        ```
+
+    3.  Update the `docker-compose.yaml` file with the new tag and start the new container:
+
+        ```bash
+        LATEST_TAG="vX.Y.Z" # <-- Replace with the actual latest tag e.g v1.10.0
+        yq -i ".services.observer.image = flarefoundation/go-flare:${LATEST_TAG}" /opt/observer/docker-compose.yaml
+        docker compose -f /opt/observer/docker-compose.yaml up -d
+        ```
+
+  </TabItem>
+
+</Tabs>
+
+## Maintain the node
 
 In some cases, your node might not work correctly or you might receive unusual messages that are difficult to troubleshoot. Use the following solutions to ensure your node stays healthy:
 

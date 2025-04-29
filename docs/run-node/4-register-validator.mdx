@@ -2,118 +2,58 @@
 sidebar_position: 4
 slug: register-validator
 title: Register as Validator
-description: Secure Flare by reaching consensus on state transitions.
+description: Register your node as a validator.
 ---
 
 import Tabs from "@theme/Tabs";
 import TabItem from "@theme/TabItem";
 
 This guide explains how to register a node as a validator.
-On Flare chains, any node can be registered as a validator by performing a self-bond on the P-chain against the node's Node-ID, effectively activating the node as a validator.
-Before this can happen, there are a number of requirements that must be met with regard to the node's security, staking requirements and operational use.
-It is assumed that you have already followed the steps to have a running node either [from source](/run-node/from-source) or [via Docker](/run-node/using-docker).
+On Flare, any node can be registered as a validator by performing a self-bond on the P-chain against the node's Node-ID, effectively activating the node as a validator.
 
-A validator node is essential for securing the network by validating transactions and blocks, and participating in the consensus process.
-Deploying validator nodes enables participation in the consensus mechanism and allows for the collection of rewards provided by the network to those who help secure it.
-
-Validator nodes perform the following tasks:
+Validator nodes are essential for securing the network, and perform the following tasks:
 
 - **Validation:** Ensure the validity of transactions.
 - **Consensus:** Reach agreement with other validators on the transactions to be added to the blockchain.
 - **Block Addition:** Bundle the agreed-upon transactions into a block and append it to the blockchain.
 
-On Flare, data protocols such as the Flare Time Series Oracle and Flare Data Connector are enshrined into the network.
-This requires validators to perform additional tasks to secure the network and earn rewards, including running an [Flare Entity](/run-node/flare-entity).
+On Flare, data protocols such as the [Flare Time Series Oracle](/ftso/overview) and [Flare Data Connector](/fdc/overview) are enshrined into the network.
+To fully participate and earn all potential rewards, validators must also run a [Flare Entity](/run-node/flare-entity) to contribute to these protocols.
 
-<details>
-<summary>**Flare Staking Phases**</summary>
+## Prerequisites
 
-Deployment will occur in three phases, during which:
+- A machine meeting the [minimum hardware requirements](/run-node/system-requirements).
+- A running Flare node, installed [using Docker](/run-node/using-docker) or [from source](/run-node/from-source).
+- Minimum self-bond amount of 1M FLR (see [Stake requirements](#stake-requirements)).
 
-1. Infrastructure entities will be progressively on-boarded to ensure the network remains operational.
-2. Current FTSO data providers must build a minimum stake to function as validators.
-3. Existing validators need to enhance their capabilities to become data providers.
+## Secure the node
 
-Each phase will gradually relinquish control, allowing the network to validate independently of the Flare Foundation.
+Validator security is paramount, as it directly impacts the integrity and stability of the entire Flare network.
+A compromised or poorly configured validator poses a risk to the network and your stake.
 
-**Launch (Jul 2022)**
+:::danger[Critical Security Measures]
+Failure to implement these measures significantly increases the risk to your node and potentially the network:
 
-At network launch, 20 validators had their node IDs hard-coded into the client software, preventing other validators from participating. The Flare Foundation managed these nodes and gradually reassigned 16 of them to 4 external entities to increase decentralization. These entities, known as professional validators, are experienced infrastructure providers managing blockchain nodes. During this period, FTSO data providers operated entirely independently of validators.
+- **NEVER** expose the node's main P2P/RPC port (default: `9650`) to the public internet. Use a firewall to **only allow** inbound connections on the staking port (default: `9651/TCP`).
+- **NEVER** use the same node instance for both validation and serving public RPC API requests. Public APIs expose your node to potential DoS attacks and exploits that could halt your validator. Run a separate node for RPC needs.
+- **ALWAYS** disable password authentication for SSH. Use strong, key-based authentication exclusively. Consider disabling root login via SSH.
+  :::
 
-**Phase 1 (July 2023)**
+### Recommended Hardening
 
-A network fork enabled Avalanche's proof-of-stake mechanism, opening validation to everyone. Simultaneously, all stakes from the original validators expired. The Flare Foundation loaned all the stakes for the initial validators, maintaining the distribution of validation power while testing proof-of-stake. After some FTSO data providers completed a KYC process, the Flare Foundation loaned them funds to deploy validation nodes and act as validators.
-
-Since staking occurs on the P-chain, staked tokens cannot access rewards managed by smart contracts on the C-chain. To address this, a communication mechanism between the two chains is being developed. All staking rewards are manually calculated offchain and then distributed onchain. These calculations will initially be private for fine-tuning and will become public in Phase 2 for verification.
-
-**Phase 2 (Oct 2023, current)**
-
-Once FTSO data providers have gathered enough stake to ensure the network's continued operation, all stakes loaned by the Flare Foundation to the launch validators will be withdrawn.
-Professional validators are expected to cease operations unless they provide their own stake. The Flare Foundation might delegate stake to KYC-verified FTSO data providers to help initiate the system. This process, known as stake boosting, will run for a limited time. Staked funds can earn [FlareDrops](https://flare.network/flaredrop-guide/) and participate in governance but not earn [FTSO](https://flare.network/ftso/) delegation rewards.
-
-Staking rewards will:
-
-- Consider validator uptime and staked amount, which is publicly monitored.
-- Require that the validator is also an FTSO data provider consistently rewarded for accurate prices.
-- Be manually calculated offchain using a public script and then distributed onchain.
-
-**Phase 3**
-
-Once secure communication between the P- and C-chains is established, staking rewards will be managed entirely onchain.
-The goal is for funds staked on the P-chain to have the same rights as wrapped FLR on the C-chain, enabling them to earn [FTSO](https://flare.network/ftso/) rewards, [FlareDrops](https://flare.network/flaredrop-guide/), and participate in governance.
-
-**Summary of Phases**
-
-|                                                   | Launch | Phase 1 | Phase 2\* | Phase 3 |
-| ------------------------------------------------- | :----: | :-----: | :-------: | :-----: |
-| Validation open to everybody                      |   ❌   |   ✅    |    ✅     |   ✅    |
-| Validators must provide own stake                 |   ❌   |   ❌    |    ✅     |   ✅    |
-| Validators must be data providers to earn rewards |   ❌   |   ❌    |    ✅     |   ✅    |
-| Locked stake can earn staking rewards             |   ❌   |   ❌    |    ✅     |   ✅    |
-| Staking rewards are handled onchain               |   ❌   |   ❌    |    ❌     |   ✅    |
-| Same rights for staked and wrapped tokens         |   ❌   |   ❌    |    ❌     |   ✅    |
-
-\*Current Phase
-
-</details>
-
-## Hardware requirements
-
-Validator nodes have the same hardware requirements as RPC nodes.
-Refer to the [Hardware requirements](/run-node/hardware-requirements) page for more information.
-
-## Setup
+- Configure your node to **enable only** the essential APIs required for validation (often just `["web3"]` within `eth-apis`). Explicitly disable admin APIs (`snowman-api-enabled`, `coreth-admin-api-enabled`).
+- **Firewall Best Practices:**
+  - Implement a stateful firewall with a default-deny policy for inbound traffic.
+  - Explicitly allow only the necessary staking port (`9651/TCP`).
+  - Consider blocking unnecessary outbound traffic.
+  - Block ICMP traffic (ping, traceroute) unless specifically needed for monitoring within a trusted network.
+- **Do not** run other network-facing applications (e.g., web servers, databases, other blockchain nodes) on the same operating system instance or IP address as your validator.
+- **Regularly update** the underlying operating system and the go-flare node software to apply the latest security patches.
 
 ## Configure the node
 
-:::warning
-
-Validator security impacts the security of the entire network.
-To configure your node for security:
-
-- **Don't** allow port `9650` to be reached externally.
-- **Don't** allow password authentication over SSH.
-- **Don't** run any non-validator services on the same IP.
-- **Don't** use the same node for validation and RPC API access.
-
-:::
-
-In addition to the above, the following security measures are recommended for further hardening:
-
-- **Do** front the machine with a firewall. Only the staking port is required for validator functionality, which defaults to `9651`.
-
-- **Don't** allow any ICMP traffic.
-
-- **Don't** allow the node to accept RPC API requests, only use it as a validator. Deploy a separate RPC node for tasks requiring RPC API access.
-
-- **Don't** enable the more than the minimum set of EVM APIs when configuring your node.
-
-## Configure the validator node
-
-Validator nodes serve one purpose, to validate transactions and reach consensus on the state transitions of the blockchain.
-As a result, the configuration should differ from that of an RPC node, specifically a number of the `eth-apis` should be disabled.
-
-Sample configuration:
+As described in [Secure the node](#secure-the-node), a validator node should have minimal APIs enabled.
+Below is a sample `config.json` demonstrating a secure configuration with limited `eth-apis` and disabled admin APIs:
 
 ```json title="config.json"
 {
@@ -177,6 +117,101 @@ curl --data '{
 ```
 
 ## Staking
+
+### Staking phases
+
+The deployment of validator staking on Flare occurs in three distinct phases, each with its own set of rules and requirements.
+The following table summarizes the key differences between the phases:
+
+|                                                   | Launch | Phase 1 | Phase 2\* | Phase 3 |
+| ------------------------------------------------- | :----: | :-----: | :-------: | :-----: |
+| Validation open to everybody                      |   ❌   |   ✅    |    ✅     |   ✅    |
+| Validators must provide own stake                 |   ❌   |   ❌    |    ✅     |   ✅    |
+| Validators must be data providers to earn rewards |   ❌   |   ❌    |    ✅     |   ✅    |
+| Locked stake can earn staking rewards             |   ❌   |   ❌    |    ✅     |   ✅    |
+| Staking rewards are handled onchain               |   ❌   |   ❌    |    ❌     |   ✅    |
+| Same rights for staked and wrapped tokens         |   ❌   |   ❌    |    ❌     |   ✅    |
+
+\*Current phase
+
+<details>
+<summary>Detailed breakdown of staking phases.</summary>
+
+The Flare network is designed to be progressively decentralized, with the transition occurring in three phases:
+
+1. Infrastructure entities will be progressively on-boarded to ensure the network remains operational.
+2. Current FTSO data providers must build a minimum stake to function as validators.
+3. Existing validators need to enhance their capabilities to become data providers.
+
+Each phase will gradually relinquish control, allowing the network to validate independently of the Flare Foundation.
+
+**Launch (Jul 2022)**
+
+At network launch, 20 validators had their node IDs hard-coded into the client software, preventing other validators from participating. The Flare Foundation managed these nodes and gradually reassigned 16 of them to 4 external entities to increase decentralization. These entities, known as professional validators, are experienced infrastructure providers managing blockchain nodes. During this period, FTSO data providers operated entirely independently of validators.
+
+**Phase 1 (July 2023 - Oct 2023)**
+
+A network fork enabled Avalanche's proof-of-stake mechanism, opening validation to everyone. Simultaneously, all stakes from the original validators expired. The Flare Foundation loaned all the stakes for the initial validators, maintaining the distribution of validation power while testing proof-of-stake. After some FTSO data providers completed a KYC process, the Flare Foundation loaned them funds to deploy validation nodes and act as validators.
+
+Since staking occurs on the P-chain, staked tokens cannot access rewards managed by smart contracts on the C-chain. To address this, a communication mechanism between the two chains is being developed. All staking rewards are manually calculated offchain and then distributed onchain. These calculations will initially be private for fine-tuning and will become public in Phase 2 for verification.
+
+**Phase 2 (Current)**
+
+Once FTSO data providers have gathered enough stake to ensure the network's continued operation, all stakes loaned by the Flare Foundation to the launch validators will be withdrawn.
+Professional validators are expected to cease operations unless they provide their own stake. The Flare Foundation might delegate stake to KYC-verified FTSO data providers to help initiate the system. This process, known as stake boosting, will run for a limited time. Staked funds can earn [FlareDrops](https://flare.network/flaredrop-guide/) and participate in governance but not earn [FTSO](https://flare.network/ftso/) delegation rewards.
+
+Staking rewards will:
+
+- Consider validator uptime and staked amount, which is publicly monitored.
+- Require that the validator is also an FTSO data provider consistently rewarded for accurate prices.
+- Be manually calculated offchain using a public script and then distributed onchain.
+
+**Phase 3**
+
+Once secure communication between the P- and C-chains is established, staking rewards will be managed entirely onchain.
+The goal is for funds staked on the P-chain to have the same rights as wrapped FLR on the C-chain, enabling them to earn [FTSO](https://flare.network/ftso/) rewards, [FlareDrops](https://flare.network/flaredrop-guide/), and participate in governance.
+
+</details>
+
+### Stake requirements
+
+| **Requirement**                              | **Value** |
+| -------------------------------------------- | --------- |
+| Minimum self-bond amount                     | 1M FLR    |
+| Minimum delegation amount                    | 50K FLR   |
+| Minimum stake duration                       | 2 months  |
+| Minimum delegation duration                  | 2 weeks   |
+| Stake delay                                  | immediate |
+| Delegation factor                            | 15 times  |
+| Maximum total stake                          | 200M FLR  |
+| Maximum validators per infrastructure entity | 4         |
+
+<details>
+<summary>Understanding the requirements.</summary>
+
+- **Minimum self-bond amount:** Minimum stake that an entity must provide to become a validator. This setting reduces staking requests, which frees network resources.
+
+- **Minimum delegation amount:** Validators can accept stake delegations from any FLR holder, so their stake and validation rewards are increased.
+  The specified value is the minimum stake amount that can be delegated. This setting reduces delegation requests, which frees network resources. Validators can set a staking fee and will earn staking rewards for its own self-bond and a fee on any stake delegated on them.
+  This stake delegation is not related to FTSO delegation nor governance delegation.
+
+- **Minimum stake duration:** Minimum amount of time that self-bond funds must remain staked, and therefore locked.
+- **Minimum delegation duration:** Minimum amount of time that delegated funds must remain staked, and therefore locked. This setting does not change. It is included in this list for clarity.
+- **Stake delay:** Duration that passes between the time when funds are staked and the time when they become effective. During this period funds are locked. This delay provided added security when staking was enabled for the first time and stakes were small, since any suspicious stake could be analyzed before it became effective. Now that larger stakes are in place this restriction will be lifted to simplify onboarding of new validators.
+  Note that there is no such delay involved when withdrawing staked funds once the staking period expires.
+
+- **Delegation factor:** The total amount that can be staked to a validator is limited to its self-bond times this factor. For example, with the proposed value of 15, if a validator has a self-bond stake of 1M FLR, the total sum of all stakes, including delegations, cannot exceed 15M FLR. This allows for 14M FLR of delegations.
+
+- **Maximum total stake:** Maximum stake per validator, including self-bond and delegations.
+
+- **Maximum validators per infrastructure entity:** A single infrastructure entity can include up to this amount of validators.
+  Infrastructure entities also include FTSO data providers. For example, a single FTSO data provider can create up to 4 validators, each one with its own stake, and claim the validation rewards for all of them.
+  This restriction is not enforced by the P-chain staking mechanism but by the mirroring service, and will not take effect until [Staking Phase 3](#staking).
+  If an infrastructure entity has more than one validator, each of the validators must fulfill the above requirements.
+
+See [FIP.05](https://proposals.flare.network/FIP/FIP_5.html) for further details.
+
+</details>
 
 A node becomes a validator when it's owner stakes to their node, referred to as a self-bond.
 The self-bond is performed on the P-chain against the node's Node-ID.

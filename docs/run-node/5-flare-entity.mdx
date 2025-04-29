@@ -493,6 +493,22 @@ WARN [FixedFeed] Initializing FixedFeed, will return 0.01 for all feeds.
     }
     ```
 
+<details>
+<summary>Remove specific exchanges from the example value provider.</summary>
+
+If you want to remove specific exchanges from the example value provider, you can do so by modifying `src/config/feeds.json`:
+
+Example removing Binance and Bybit exchanges with `jq`:
+
+```bash
+curl -fs -o feeds.json https://raw.githubusercontent.com/flare-foundation/ftso-v2-example-value-provider/refs/heads/main/src/config/feeds.json && \
+  cp feeds.json feeds.json.bak && \
+  jq 'map(.sources |= map(select(.exchange | ascii_downcase != "binance" and ascii_downcase != "bybit")))' feeds.json > feeds.clean && \
+  mv feeds.clean feeds.json
+```
+
+</details>
+
 ## Generate configuration and deploy
 
 1. Clone [flare-systems-deployment](https://github.com/flare-foundation/flare-systems-deployment) repository:
