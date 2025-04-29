@@ -5,7 +5,6 @@ const WNAT_ADDRESS = "0x767b25A658E8FC8ab6eBbd52043495dB61b4ea91";
 
 const iWNatArtifact = artifacts.require("IWNat");
 
-
 // Run with command
 // npx hardhat run scripts/wnat/withdraw.ts --network coston
 async function main() {
@@ -21,4 +20,3 @@ main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });
-
