@@ -54,16 +54,17 @@ Make sure to check the [hardware requirements](/run-node/system-requirements) be
 
 ## Run the node
 
-1. Start by fetching the bootstrap IP and node ID from the network:
+1. The following command is the simplest way to quickly get your node up and running. The next section explains the parameters used here, along with additional parameters you may wish to configure.
 
    <Tabs groupId="network" block>
 
    <TabItem value="flare" label="Flare Mainnet" default>
 
    ```bash
-   BOOTSTRAP_IP=$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeIP"}' -H 'content-type:application/json;' https://flare-bootstrap.flare.network/ext/info | jq -r '.result.ip')
-   BOOTSTRAP_ID=$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeID"}' -H 'content-type:application/json;' https://flare-bootstrap.flare.network/ext/info | jq -r '.result.nodeID')
-   echo "Flare Bootstrap Info -> IP: $BOOTSTRAP_IP ID: $BOOTSTRAP_ID"
+   ./build/avalanchego --network-id=flare \
+                       --http-host= \
+                       --bootstrap-ips="$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeIP"}' -H 'content-type:application/json;' https://flare-bootstrap.flare.network/ext/info  | jq -r '.result.ip')" \
+                       --bootstrap-ids="$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeID"}' -H 'content-type:application/json;' https://flare-bootstrap.flare.network/ext/info | jq -r '.result.nodeID')"
    ```
 
    </TabItem>
@@ -71,9 +72,10 @@ Make sure to check the [hardware requirements](/run-node/system-requirements) be
    <TabItem value="coston2" label="Flare Testnet Coston2">
 
    ```bash
-   BOOTSTRAP_IP=$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeIP"}' -H 'content-type:application/json;' https://coston2-bootstrap.flare.network/ext/info | jq -r '.result.ip')
-   BOOTSTRAP_ID=$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeID"}' -H 'content-type:application/json;' https://coston2-bootstrap.flare.network/ext/info | jq -r '.result.nodeID')
-   echo "Coston2 Bootstrap Info -> IP: $BOOTSTRAP_IP ID: $BOOTSTRAP_ID"
+   ./build/avalanchego --network-id=costwo \
+                       --http-host= \
+                       --bootstrap-ips="$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeIP"}' -H 'content-type:application/json;' https://coston2-bootstrap.flare.network/ext/info  | jq -r '.result.ip')" \
+                       --bootstrap-ids="$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeID"}' -H 'content-type:application/json;' https://coston2-bootstrap.flare.network/ext/info | jq -r '.result.nodeID')"
    ```
 
    </TabItem>
@@ -81,9 +83,10 @@ Make sure to check the [hardware requirements](/run-node/system-requirements) be
    <TabItem value="songbird" label="Songbird Canary-Network">
 
    ```bash
-   BOOTSTRAP_IP=$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeIP"}' -H 'content-type:application/json;' https://songbird-bootstrap.flare.network/ext/info | jq -r '.result.ip')
-   BOOTSTRAP_ID=$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeID"}' -H 'content-type:application/json;' https://songbird-bootstrap.flare.network/ext/info | jq -r '.result.nodeID')
-   echo "Songbird Bootstrap Info -> IP: $BOOTSTRAP_IP ID: $BOOTSTRAP_ID"
+   ./build/avalanchego --network-id=songbird \
+                       --http-host= \
+                       --bootstrap-ips="$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeIP"}' -H 'content-type:application/json;' https://songbird-bootstrap.flare.network/ext/info  | jq -r '.result.ip')" \
+                       --bootstrap-ids="$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeID"}' -H 'content-type:application/json;' https://songbird-bootstrap.flare.network/ext/info | jq -r '.result.nodeID')"
    ```
 
    </TabItem>
@@ -91,54 +94,17 @@ Make sure to check the [hardware requirements](/run-node/system-requirements) be
    <TabItem value="coston" label="Songbird Testnet Coston">
 
    ```bash
-   BOOTSTRAP_IP=$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeIP"}' -H 'content-type:application/json;' https://coston-bootstrap.flare.network/ext/info  | jq -r '.result.ip')
-   BOOTSTRAP_ID=$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeID"}' -H 'content-type:application/json;' https://coston-bootstrap.flare.network/ext/info | jq -r '.result.nodeID')
-   echo "Coston Bootstrap Info -> IP: $BOOTSTRAP_IP ID: $BOOTSTRAP_ID"
+   ./build/avalanchego --network-id=coston \
+                       --http-host= \
+                       --bootstrap-ips="$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeIP"}' -H 'content-type:application/json;' https://coston-bootstrap.flare.network/ext/info  | jq -r '.result.ip')" \
+                       --bootstrap-ids="$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeID"}' -H 'content-type:application/json;' https://coston-bootstrap.flare.network/ext/info | jq -r '.result.nodeID')"
    ```
 
    </TabItem>
 
    </Tabs>
 
-2. The following command is simplest way to quickly get your node up and running. The next section explains the parameters used here, along with additional parameters you may wish to configure.
-
-   <Tabs groupId="network" block>
-
-   <TabItem value="flare" label="Flare Mainnet" default>
-
-   ```bash
-   ./build/avalanchego --network-id=flare --http-host= --bootstrap-ips="$BOOTSTRAP_IP" --bootstrap-ids="$BOOTSTRAP_ID" \
-   ```
-
-   </TabItem>
-
-   <TabItem value="coston2" label="Flare Testnet Coston2">
-
-   ```bash
-   ./build/avalanchego --network-id=costwo --http-host= --bootstrap-ips="$BOOTSTRAP_IP" --bootstrap-ids="$BOOTSTRAP_ID"
-   ```
-
-   </TabItem>
-
-   <TabItem value="songbird" label="Songbird Canary-Network">
-
-   ```bash
-   ./build/avalanchego --network-id=songbird --http-host= --bootstrap-ips="$BOOTSTRAP_IP" --bootstrap-ids="$BOOTSTRAP_ID"
-   ```
-
-   </TabItem>
-
-   <TabItem value="coston" label="Songbird Testnet Coston">
-
-   ```bash
-   ./build/avalanchego --network-id=coston --http-host= --bootstrap-ips="$BOOTSTRAP_IP" --bootstrap-ids="$BOOTSTRAP_ID"
-   ```
-
-   </TabItem>
-
-   </Tabs>
-
-3. After a lot of log messages the node should start synchronizing with the network, which might take anywhere from a **few hours to a few days** depending on the chosen network and hardware specification.
+2. After a lot of log messages the node should start synchronizing with the network, which might take anywhere from a **few hours to a few days** depending on the chosen network and hardware specification.
    Node syncing can be stopped at any time.
    Use the same command to resume the node syncing from where it left off.
 
@@ -161,7 +127,7 @@ These are some of the most relevant CLI parameters you can use. Read more about 
 {/* prettier-ignore */}
 - [`--bootstrap-ips`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--bootstrap-ips-string),
   [`--bootstrap-ids`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--bootstrap-ids-string):
-  IP address and node ID of the peer used to connect to the rest of the network for bootstrapping.
+  IP address and node ID of the peer used to connect to the rest of the network for bootstrapping. In the run command above, the bootstrap details are programmatically retrieved from the Flare bootstrap nodes upon startup. This is the recommended approach as the bootstrap node's IP and ID can rotate.
 
 - [`--http-host`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--http-host-string): Use `--http-host=` (empty) to allow connections from other machines. Otherwise, only connections from `localhost` are accepted.
 
@@ -231,16 +197,6 @@ To update your node to a newer version of go-flare:
     ```
 
 5.  Restart the node using the same run command and parameters as [before](#run-the-node).
-    The node will resume syncing using the updated binary.
-
-    ```bash
-    # Example restart command (using previously set variables)
-    ./build/avalanchego --network-id=flare \
-      --http-host= \
-      --bootstrap-ips="$BOOTSTRAP_IP" \
-      --bootstrap-ids="$BOOTSTRAP_ID" \
-      # Add any other custom flags you use
-    ```
 
 ## Maintain the node
 
