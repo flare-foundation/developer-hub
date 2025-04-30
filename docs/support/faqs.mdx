@@ -1,67 +1,184 @@
 ---
 slug: faqs
 title: FAQs
-description: Frequently asked questions when building on Flare.
-keywords: [faq, frequently-asked-questions, flare-network, support]
+description: Frequently Asked Questions for developers building on Flare.
+keywords:
+  [
+    faq,
+    frequently-asked-questions,
+    troubleshooting,
+    faucet,
+    grants,
+    support,
+    evm,
+    solidity,
+    flare-network,
+    songbird-network,
+  ]
 ---
 
 import SetEvmVersionRemix from "/static/img/set-evm-version-remix.png";
 
-### Why am I getting `invalid opcode: opcode 0x5f not defined`?
+This page answers common questions encountered by developers building applications on Flare networks.
 
-Flare supports EVM versions up to London, which does not support the `PUSH0` opcode, leading to this error. To fix this:
+## Technical Troubleshooting
+
+### Why am I getting `invalid opcode: opcode 0x5f not defined` when deploying or interacting with my contract?
+
+**Cause:** This error typically occurs because your contract was compiled with a Solidity version (usually >=0.8.20) that defaults to the `shanghai` EVM version (or later), which introduced the `PUSH0` (0x5f) opcode. Flare and Songbird currently support EVM versions up to `london`, which does not recognize this opcode.
+
+**Solution:** You need to explicitly tell your compiler to target the `london` EVM version.
 
 - **Using Remix:** Set EVM version to `london` in the **Advanced Configurations** section of the **Solidity Compiler** tab:
 
   <img src={SetEvmVersionRemix} style={{ width: 300 }} />
 
-- **Using Hardhat or Foundry:** Set EVM version to `london` in [hardhat.config.ts](https://github.com/flare-foundation/flare-hardhat-starter/blob/master/hardhat.config.ts#L34) or [foundry.toml](https://github.com/flare-foundation/flare-foundry-starter/blob/master/foundry.toml).
+- **Using Hardhat:** Set `evmVersion: "london"` within the `solidity` configuration object in your `hardhat.config.ts` (or `.js`):
 
-- **Using Standard Solidity JSON:** Set `evmVersion` to `london`:
+  ```typescript
+  // hardhat.config.ts
+  import { HardhatUserConfig } from "hardhat/config";
+  // ... other imports
+
+  const config: HardhatUserConfig = {
+    solidity: {
+      version: "0.8.24", // Example version
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 200,
+        },
+        evmVersion: "london", // Add this line
+      },
+    },
+    // ... other configurations
+  };
+
+  export default config;
+  ```
+
+  _See the [Hardhat Starter Kit config](https://github.com/flare-foundation/flare-hardhat-starter/blob/master/hardhat.config.ts#L34) for a full example._
+
+- **Using Foundry:** Add `evm_version = "london"` under the `[profile.default]` section in your `foundry.toml`:
+
+  ```toml
+  # foundry.toml
+  [profile.default]
+  src = "src"
+  out = "out"
+  libs = ["lib"]
+  # ... other settings
+  evm_version = "london" # Add this line
+  ```
+
+  _See the [Foundry Starter Kit config](https://github.com/flare-foundation/flare-foundry-starter/blob/master/foundry.toml) for a full example._
+
+- **Using Standard Solidity JSON Input:** Set `evmVersion` to `london` within the `settings` object:
 
   ```json
   {
+    "language": "Solidity",
+    "sources": {
+      /* ... */
+    },
     "settings": {
       "optimizer": {
         /* ... */
       },
-      "evmVersion": "london"
+      "evmVersion": "london", // Set this
+      "outputSelection": {
+        /* ... */
+      }
     }
   }
   ```
 
-- **Using `solc` CLI:** Set `--evm-version` to `london`:
-
+- **Using `solc` CLI:** Use the `--evm-version london` flag:
   ```bash
-  solc --evm-version london <args>
+  solc --evm-version london --optimize --abi --bin YourContract.sol -o build/
   ```
 
-### Where can I get Flare testnet tokens?
+## Network & Tokens
 
-You can get:
+### Where can I get testnet tokens (faucet)?
 
-- Testnet C2FLR from the [Coston2 Faucet](https://faucet.flare.network/coston2).
+Flare provides faucets for its public testnets:
 
-- Testnet CFLR from the [Coston Faucet](https://faucet.flare.network/coston).
+- **Flare Testnet Coston2:** Get C2FLR from the [Coston2 Faucet](https://faucet.flare.network/coston2). Use Coston2 for testing applications intended for Flare mainnet.
+- **Songbird Testnet Coston:** Get CFLR from the [Coston Faucet](https://faucet.flare.network/coston). Use Coston for testing applications intended for the Songbird canary network.
 
-To understand the difference between Coston and Coston2, see the [Network Configuration](/network/overview#configuration) page.
+### How do I add Flare/Songbird networks to my wallet (e.g., MetaMask)?
 
-### I have a project I would like to build on Flare. Can I get a grant?
+The easiest way is to visit the respective block explorer, scroll down to the footer, and click the "Add Network" button:
 
-Yes! Grants from the Flare Foundation are designed to support innovative and impactful projects in order to accelerate the growth of the Flare ecosystem. Whether you're an independent innovator or part of a larger team, if you believe that you can make valuable contributions to the Flare ecosystem, we'd like to hear from you.
+- **Flare Mainnet:** [Flarescan](https://flarescan.com/) or [Flare Explorer](https://flare-explorer.flare.network/)
+- **Coston2 Testnet:** [Coston2 Flarescan](https://coston2.testnet.flarescan.com/) or [Coston2 Explorer](https://coston2-explorer.flare.network/)
+- **Songbird Canary-Network:** [Songbird Flarescan](https://songbird.flarescan.com/) or [Songbird Explorer](https://songbird-explorer.flare.network/)
+- **Coston Testnet:** [Coston Flarescan](https://coston.testnet.flarescan.com/) or [Coston Explorer](https://coston-explorer.flare.network/)
 
-Learn more about [Grants](https://flare.network/grants/).
+Alternatively, you can add them manually using the details on the [Network Configuration](/network/overview#configuration) page.
 
-### Where can I get technical support?
+### What's the difference between Flare and Songbird?
 
-Connect with the rapidly growing community of developers building on Flare.
+- **Flare (FLR):** The main production network with real economic value.
+- **Songbird (SGB):** A "canary network" - blockchain used for testing protocol-level features and dApps in a live environment with real consequences before they are potentially deployed to Flare. It serves as a proving ground.
 
-- Engage with Flare's developer community on [Telegram](https://t.me/FlareNetwork).
+Read more on the [Network Overview](/network/overview) page.
 
-- Contribute to Flare's open-source codebase on [GitHub](https://github.com/flare-foundation/).
+### Which RPC endpoint should I use?
 
-- Join the community on [Discord](https://discord.com/invite/flarenetwork).
+- **For Development/Testing:** The [Public RPCs](/network/overview#configuration) are convenient for getting started. However, they have rate limits and shared resources.
+- **For Production Applications:** It is **strongly recommended** to use a dedicated RPC endpoint from a provider for better performance, reliability, and support. See the [Developer Tools](/network/developer-tools#rpcs) page for options.
+- **For Running Nodes:** You can also run your own [RPC node](/run-node/rpc-node).
+
+### What is the block time and finality on Flare?
+
+Flare networks use the Snowman++ consensus protocol.
+
+- **Block Time:** Approximately 1.8 seconds.
+- **Finality:** Near-instantaneous (single-slot finality). Once a block is accepted by consensus, it's considered final.
+
+Learn more on the [Consensus](/network/consensus) page.
+
+## Development Resources
+
+### Where can I find the addresses of Flare's core smart contracts?
+
+The addresses for contracts like `WNat`, `FtsoV2`, `FdcHub`, etc., vary by network.
+
+1.  **Use the `FlareContractRegistry`:** This contract acts as a directory. It has the **same address** (`0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019`) on **all** Flare networks (Flare, Coston2, Songbird, Coston). You can query its [`getContractAddressByName`](/network/solidity-reference/IFlareContractRegistry#getcontractaddressbyname) or [`getAllContracts`](/network/solidity-reference/IFlareContractRegistry#getallcontracts) methods to find the addresses of other contracts on the specific network you are connected to.
+2.  **Check the Solidity Reference:** Deployed contract addresses for each network are listed on the relevant reference pages for convenience:
+    - [Network Reference](/network/solidity-reference)
+    - [FSP Reference](/network/fsp/solidity-reference)
+    - [FTSOv2 Reference](/ftso/solidity-reference)
+    - [Scaling Reference](/ftso/scaling/solidity-reference)
+    - [FDC Reference](/fdc/reference)
+    - [FAssets Reference](/fassets/reference)
+
+### Are there official developer tools or SDKs?
+
+Flare maintains several resources to aid development:
+
+- **Language-Specific Guides:** Tutorials for interacting with Flare using [JavaScript](/network/guides/flare-for-javascript-developers), [Python](/network/guides/flare-for-python-developers), [Go](/network/guides/flare-for-go-developers), and [Rust](/network/guides/flare-for-rust-developers).
+- **Starter Kits:** Pre-configured project templates for [Hardhat & Foundry](/network/guides/hardhat-foundry-starter-kit).
+- **Developer Tools List:** A curated list of [RPCs, Indexers, Bridges, SDKs, and more](/network/developer-tools).
 
 ### Where can I learn about Flare-specific terminology?
 
-Learn more about the terminology used in the Flare ecosystem on the [Terminology](/support/terminology) page.
+Learn more about the terminology used in the Flare ecosystem (like FTSO, FSP, PDA, etc.) on the [Terminology](/support/terminology) page.
+
+## Community & Support
+
+### I have a project I would like to build on Flare. Can I get a grant?
+
+Yes! The Flare Foundation offers grants to support innovative projects that contribute to the ecosystem's growth.
+Learn more and apply on the [Flare Grants Program](https://flare.network/grants/) page.
+
+### Where can I get technical support or ask questions?
+
+Connect with Flare's developer community and the team through these channels:
+
+- **Flare Experts:** Get dedicated [Developer Support](https://flare.network/resources/developer-support) from a Flare expert.
+- **Discord:** The primary channel for developer Q&A, discussions, and support. Join the [Flare Network Discord](https://discord.com/invite/flarenetwork) and head to the developer channels.
+- **Telegram:** Engage with the broader community on [Telegram](https://t.me/FlareNetwork) (may be less developer-focused).
+- **GitHub:** Report issues, contribute to code, or explore the open-source repositories at [Flare Foundation GitHub](https://github.com/flare-foundation/). (Best for code-specific issues, not general Q&A).

@@ -190,7 +190,7 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Copyright © Flare ${new Date().getFullYear()}`,
+      copyright: `© Flare ${new Date().getFullYear()}`,
     },
     prism: {
       additionalLanguages: ["solidity", "bash", "json", "toml", "diff"],

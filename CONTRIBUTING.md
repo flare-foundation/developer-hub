@@ -27,16 +27,17 @@ We welcome contributions via:
     **Format:** `<type>(<scope>): <description>`
 
     **Common Types:**
-    | Type | Description |
+
+    | Type       | Description                               |
     | :--------- | :---------------------------------------- |
-    | `feat` | New feature |
-    | `fix` | Bug fix |
-    | `docs` | Documentation updates |
-    | `chore` | Maintenance tasks (build, deps) |
-    | `test` | Adding or improving tests |
+    | `feat`     | New feature                               |
+    | `fix`      | Bug fix                                   |
+    | `docs`     | Documentation updates                     |
+    | `chore`    | Maintenance tasks (build, deps)           |
+    | `test`     | Adding or improving tests                 |
     | `refactor` | Code improvements without feature changes |
-    | `style` | Formatting changes (whitespace, etc.) |
-    | `ci` | CI pipeline changes |
+    | `style`    | Formatting changes (whitespace, etc.)     |
+    | `ci`       | CI pipeline changes                       |
 
     **Example:**
 
@@ -67,15 +68,17 @@ We welcome contributions via:
 
 For consistency, follow these styles when creating or updating diagrams:
 
-| Element                      | Light Mode | Dark Mode | Notes                      |
-| :--------------------------- | :--------- | :-------- | :------------------------- |
-| Arrow Width                  | `1px`      | `1px`     |                            |
-| Arrow Color                  | `#595959`  | `#ffffff` |                            |
-| Border Width                 | `1px`      | `1px`     |                            |
-| **Border Color (Highlight)** | `#e62058`  | `#e62058` | Use for emphasis           |
-| Border Color (Normal)        | `#595959`  | `#ffffff` | Default border             |
-| **Onchain Border Style**     | `Solid`    | `Solid`   |                            |
-| **Offchain Border Style**    | `Dashed`   | `Dashed`  | _Use only if mixing types_ |
+| Element                  | Light Mode | Dark Mode | Notes                                              |
+| :----------------------- | :--------- | :-------- | :------------------------------------------------- |
+| Arrow Width              | `1px`      | `1px`     |                                                    |
+| Arrow Color              | `#595959`  | `#ffffff` |                                                    |
+| Border Width             | `1px`      | `1px`     |                                                    |
+| Border Color (Highlight) | `#e62058`  | `#e62058` | Use for emphasis                                   |
+| Border Color (Normal)    | `#595959`  | `#ffffff` | Default border                                     |
+| Onchain Border Style     | `Solid`    | `Solid`   |                                                    |
+| Offchain Border Style    | `Dashed`   | `Dashed`  | \_Use only if mixing onchain and offchain elements |
+
+See the architecture diagram on the homepage as an [example](https://dev.flare.network/#understand-the-architecture).
 
 ## Need Help?
 

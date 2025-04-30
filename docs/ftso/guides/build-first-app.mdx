@@ -25,146 +25,105 @@ import FtsoV2ConsumerHardhat from "!!raw-loader!/examples/developer-hub-solidity
 import FtsoV2ConsumerTestHardhat from "!!raw-loader!/examples/developer-hub-javascript/ftso_v2_consumer_hardhat.ts";
 import FtsoV2ConsumerHardhatDeploy from "!!raw-loader!/examples/developer-hub-javascript/deployFTSOConsumer.ts";
 
-This guide is for developers who want to build a FTSOv2 application.
-
-Choose your development framework:
+This guide is for developers who want to build an FTSOv2 application using either [Foundry](https://book.getfoundry.sh) or [Hardhat](https://hardhat.org).
 
 <Tabs groupId="framework">
-<TabItem value="foundry" label="Foundry" default>
+  <TabItem value="foundry" label="Foundry" default>
 
-## Building with Foundry
+    In this guide, you will learn how to:
 
-In this guide, you will learn how to:
+    - Create a contract to read the price of FLR/USD from FTSOv2 using [flare-periphery-contracts](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts).
 
-- Create a contract to read the price of FLR/USD from FTSOv2 using [flare-periphery-contracts](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts).
+    - Compile your contract using Foundry [forge](https://book.getfoundry.sh/reference/forge/).
 
-- Compile your contract using Foundry [forge](https://book.getfoundry.sh/reference/forge/).
+    - Deploy your contract to Flare Testnet Coston2, and interact with it using Foundry [cast](https://book.getfoundry.sh/reference/cast/).
 
-- Deploy your contract to Flare Testnet Coston2, and interact with it using Foundry [cast](https://book.getfoundry.sh/reference/cast/).
+  </TabItem>
+  <TabItem value="hardhat" label="Hardhat">
 
-### Prerequisites
+    In this guide, you will learn how to:
 
-Ensure you have the following tools installed:
+    - Create a contract to read the price of FLR/USD from FTSOv2 using [flare-periphery-contracts](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts).
 
-- [Foundry](https://book.getfoundry.sh/getting-started/installation)
-- [Node.js](https://nodejs.org/en/download/)
+    - Compile your contract using [Hardhat](https://hardhat.org) and run tests.
 
-### Clone the Foundry template
+    - Deploy your contract to Flare Testnet Coston2.
+    </TabItem>
 
-1. Clone the [flare-foundry-starter](https://github.com/flare-foundation/flare-foundry-starter) and navigate into the project directory:
+</Tabs>
 
-   ```bash
-   git clone https://github.com/flare-foundation/flare-foundry-starter.git
-   cd flare-foundry-starter
-   ```
+## Prerequisites
 
-2. Install the project dependencies:
+<Tabs groupId="framework">
+  <TabItem value="foundry" label="Foundry" default>
 
-   ```bash
-   forge soldeer install
-   ```
+    Ensure you have the following tools installed:
 
-3. You might need to modify `remappings.txt` so `/src` paths are read correctly, e.g.:
+    - [Foundry](https://book.getfoundry.sh/getting-started/installation)
+    - [Node.js](https://nodejs.org/en/download/)
 
-   ```plaintext title="remappings.txt"
-   @openzeppelin-contracts/=dependencies/@openzeppelin-contracts-5.2.0-rc.1/
-   flare-periphery/=dependencies/flare-periphery-0.0.1/
-   forge-std/=dependencies/forge-std-1.9.5/src/
-   forge-std/=dependencies/forge-std-1.9.5/
-   surl/=dependencies/surl-0.0.0/src/
-   surl/=dependencies/surl-0.0.0/
-   ```
+  </TabItem>
+  <TabItem value="hardhat" label="Hardhat">
 
-### Create and compile a contract
+    Ensure you have the following tools installed:
 
-Now, you can create a contract that consumes data from FTSOv2.
+    - [npm](https://nodejs.org/en/learn/getting-started/an-introduction-to-the-npm-package-manager) or [yarn](https://yarnpkg.com)
+    - [Node.js](https://nodejs.org/en/download/)
 
-1. Create a contract file `src/FtsoV2FeedConsumer.sol`, and add the following code to it:
+    </TabItem>
 
-   <CodeBlock language="solidity" title="src/FtsoV2FeedConsumer.sol">
-     {FtsoV2FeedConsumerFoundry}
-   </CodeBlock>
+</Tabs>
 
-2. Set EVM version to `london` in `foundry.toml`:
+## Clone the template
 
-   ```toml title="foundry.toml"
-   [profile.default]
-   ...
-   evm_version = "london"
-   ```
+<Tabs groupId="framework">
+  <TabItem value="foundry" label="Foundry" default>
 
-3. To ensure everything is set up correctly, compile the contract by running:
+    1. Clone the [flare-foundry-starter](https://github.com/flare-foundation/flare-foundry-starter) and navigate into the project directory:
 
-   ```bash
-   forge build
-   ```
+        ```bash
+        git clone https://github.com/flare-foundation/flare-foundry-starter.git
+        cd flare-foundry-starter
+        ```
 
-   The output should indicate that the compilation was successful.
+    2. Install the project dependencies:
 
-   ```plaintext
-   [⠊] Compiling...
-   [⠃] Compiling 27 files with Solc 0.8.27
-   [⠊] Solc 0.8.27 finished in 853.78ms
-   Compiler run successful!
-   ```
+        ```bash
+        forge soldeer install
+        ```
 
-### Write tests
+    3. You might need to modify `remappings.txt` so `/src` paths are read correctly, e.g.:
 
-Before deploying, it's important to write tests for your contract.
+        ```plaintext title="remappings.txt"
+        @openzeppelin-contracts/=dependencies/@openzeppelin-contracts-5.2.0-rc.1/
+        flare-periphery/=dependencies/flare-periphery-0.0.1/
+        forge-std/=dependencies/forge-std-1.9.5/src/
+        forge-std/=dependencies/forge-std-1.9.5/
+        surl/=dependencies/surl-0.0.0/src/
+        surl/=dependencies/surl-0.0.0/
+        ```
 
-1. Create a test file `test/FtsoV2FeedConsumer_foundry.t.sol`, and add the following code:
+  </TabItem>
+  <TabItem value="hardhat" label="Hardhat">
 
-   <CodeBlock language="solidity" title="test/FtsoV2FeedConsumer_foundry.t.sol">
-     {FtsoV2FeedConsumerTestFoundry}
-   </CodeBlock>
+    1. Clone the [flare-hardhat-starter](https://github.com/flare-foundation/flare-hardhat-starter) and install dependencies:
 
-2. Run the tests:
+        ```bash
+        git clone https://github.com/flare-foundation/flare-hardhat-starter.git
+        cd flare-hardhat-starter
+        ```
 
-   ```bash
-   forge test
-   ```
+    2. Install the project dependencies:
 
-   You should see a successful test result like this:
+        ```bash
+        yarn install
+        ```
 
-   ```plaintext
-   [⠊] Compiling...
-   [⠘] Compiling 27 files with Solc 0.8.27
-   [⠃] Solc 0.8.27 finished in 797.51ms
-   Compiler run successful!
+    3. Copy the environment file and set your private key:
 
-   Ran 2 tests for test/FtsoV2FeedConsumer_foundry.t.sol:FtsoV2FeedConsumerTestFoundry
-   [PASS] testCheckFees() (gas: 21085)
-   [PASS] testGetFlrUsdPrice() (gas: 25610)
-   Logs:
-     msg.value matches fee
-     feedValue 150000
-     decimals 7
-     timestamp 1
-
-   Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 7.72ms (2.91ms CPU time)
-
-   Ran 1 test suite in 122.65ms (7.72ms CPU time): 2 tests passed, 0 failed, 0 skipped (2 total tests)
-   ```
-
-### Deploy and interact with the contract
-
-You can now deploy your contract to Flare Testnet Coston2.
-
-1.  Generate a new wallet using the [cast](https://book.getfoundry.sh/reference/cast/):
-
-    ```bash
-    cast wallet new
-    ```
-
-    The output will look something like:
-
-    ```plaintext
-    Successfully created new keypair.
-    Address:     0x3f6BdD26f2AE4e77AcDfA1FA24B2774ed93984B4
-    Private key: 0x84cf77b009a92777f75b49864e4166ddcaf8f3f5f119a19b226ab362a0cf7bf5
-    ```
-
-2.  Store your wallet details and the RPC URL as environment variables:
+        ```bash
+        cp .env.example .env
+        ```
 
     :::danger
 
@@ -174,285 +133,357 @@ You can now deploy your contract to Flare Testnet Coston2.
 
     :::
 
-    ```bash
-    export ACCOUNT=<address above>
-    export ACCOUNT_PRIVATE_KEY=<private key above>
-    export RPC_URL="https://coston2-api.flare.network/ext/C/rpc"
-    ```
+    </TabItem>
 
-3.  Use the [Coston2 Faucet](https://faucet.flare.network/coston2) to get some testnet C2FLR tokens. You can verify that the 100 C2FLR has arrived in your wallet:
+</Tabs>
 
-    ```bash
-    cast balance $ACCOUNT -r $RPC_URL -e
-    ```
+## Create and compile a contract
 
-4.  The final step before deploying is to set the constructor arguments with the address of [`FtsoV2`](/ftso/solidity-reference) and [`FeeCalculator`](/ftso/solidity-reference) on Flare Testnet Coston2 and the [feed ID](/ftso/feeds) of FLR/USD:
+<Tabs groupId="framework">
+  <TabItem value="foundry" label="Foundry" default>
 
-    ```bash
-    export FTSOV2_COSTON2=0x3d893C53D9e8056135C26C8c638B76C8b60Df726
-    export FEECALCULATOR_COSTON2=0x88A9315f96c9b5518BBeC58dC6a914e13fAb13e2
-    export FLRUSD_FEED_ID=0x01464c522f55534400000000000000000000000000
-    ```
+    1. Create a contract file `src/FtsoV2FeedConsumer.sol`, and add the following code to it:
 
-    You can now deploy the contract:
+        <CodeBlock language="solidity" title="src/FtsoV2FeedConsumer.sol">
+          {FtsoV2FeedConsumerFoundry}
+        </CodeBlock>
 
-    ```bash
-    forge create src/FtsoV2FeedConsumer.sol:FtsoV2FeedConsumer --private-key $ACCOUNT_PRIVATE_KEY --rpc-url $RPC_URL --constructor-args $FTSOV2_COSTON2 $FEECALCULATOR_COSTON2 $FLRUSD_FEED_ID
-    ```
+    2. Set EVM version to `london` in `foundry.toml`:
 
-    If the deployment is successful, the output will display the contract address, save that for later use:
+        ```toml title="foundry.toml"
+        [profile.default]
+        ...
+        evm_version = "london"
+        ```
+
+    3. To ensure everything is set up correctly, compile the contract by running:
+
+        ```bash
+        forge build
+        ```
+
+      The output should indicate that the compilation was successful.
+
+      ```plaintext
+      [⠊] Compiling...
+      [⠃] Compiling 27 files with Solc 0.8.27
+      [⠊] Solc 0.8.27 finished in 853.78ms
+      Compiler run successful!
+      ```
+
+  </TabItem>
+  <TabItem value="hardhat" label="Hardhat">
+
+    1. Create a contract file `contracts/FTSOV2Consumer.sol`:
+
+        <CodeBlock language="solidity" title="contracts/FTSOV2Consumer.sol">
+          {FtsoV2ConsumerHardhat}
+        </CodeBlock>
+
+    2. Set EVM version to `london` in `hardhat.config.ts`:
+
+        ```typescript
+        module.exports = {
+          solidity: {
+            version: "0.8.27",
+            settings: {
+              evmVersion: "london",
+              optimizer: {
+                enabled: true,
+                runs: 200,
+              },
+            },
+          },
+        };
+        ```
+
+    3. Compile the contract:
+
+        ```bash
+        npx hardhat compile
+        ```
+
+    </TabItem>
+
+</Tabs>
+
+## Write tests
+
+<Tabs groupId="framework">
+  <TabItem value="foundry" label="Foundry" default>
+
+    1. Create a test file `test/FtsoV2FeedConsumer_foundry.t.sol`, and add the following code:
+
+        <CodeBlock language="solidity" title="test/FtsoV2FeedConsumer_foundry.t.sol">
+          {FtsoV2FeedConsumerTestFoundry}
+        </CodeBlock>
+
+    2. Run the tests:
+
+        ```bash
+        forge test
+        ```
+
+    You should see a successful test result like this:
 
     ```plaintext
     [⠊] Compiling...
-    [⠘] Compiling 24 files with Solc 0.8.27
-    [⠃] Solc 0.8.27 finished in 733.41ms
+    [⠘] Compiling 27 files with Solc 0.8.27
+    [⠃] Solc 0.8.27 finished in 797.51ms
     Compiler run successful!
-    Deployer: 0x3f6BdD26f2AE4e77AcDfA1FA24B2774ed93984B4
-    Deployed to: 0x80Ee4091348d9fA4B4A84Eb525c25049EbDa6152
-    Transaction hash: 0x38604a643695959dd9fa5547d95610fb0b7393c7e8358079f47ed4bdb53c9a8f
+
+    Ran 2 tests for test/FtsoV2FeedConsumer_foundry.t.sol:FtsoV2FeedConsumerTestFoundry
+    [PASS] testCheckFees() (gas: 21085)
+    [PASS] testGetFlrUsdPrice() (gas: 25610)
+    Logs:
+      msg.value matches fee
+      feedValue 150000
+      decimals 7
+      timestamp 1
+
+    Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 7.72ms (2.91ms CPU time)
+
+    Ran 1 test suite in 122.65ms (7.72ms CPU time): 2 tests passed, 0 failed, 0 skipped (2 total tests)
     ```
 
-    ```bash
-    export DEPLOYMENT_ADDRESS=<deployed to address above>
-    ```
+  </TabItem>
+  <TabItem value="hardhat" label="Hardhat">
 
-5.  Use `cast` to interact with the contract, note that this command uses the environment variables defined in the sections above.:
+    1. Create a test directory and file `test/FtsoV2Consumer.test.ts`:
 
-    ```bash
-    cast send --private-key $ACCOUNT_PRIVATE_KEY --rpc-url $RPC_URL -j --value 0 $DEPLOYMENT_ADDRESS "getFlrUsdPrice()"
-    ```
+        <CodeBlock language="typescript" title="test/FtsoV2ConsumerHardhat.ts">
+          {FtsoV2ConsumerTestHardhat}
+        </CodeBlock>
 
-    <details>
+    2. Run the tests:
 
-    <summary>Expected output of the command above.</summary>
+        ```bash
+        npx hardhat test
+        ```
 
-    ```json
-    {
-      "status": "0x1",
-      "cumulativeGasUsed": "0x1cbab",
-      "logs": [
+  </TabItem>
+</Tabs>
+
+## Deploy and interact with contract
+
+<Tabs groupId="framework">
+  <TabItem value="foundry" label="Foundry" default>
+
+    1.  Generate a new wallet using the [cast](https://book.getfoundry.sh/reference/cast/):
+
+        ```bash
+        cast wallet new
+        ```
+
+        The output will look something like:
+
+        ```plaintext
+        Successfully created new keypair.
+        Address:     0x3f6BdD26f2AE4e77AcDfA1FA24B2774ed93984B4
+        Private key: 0x84cf77b009a92777f75b49864e4166ddcaf8f3f5f119a19b226ab362a0cf7bf5
+        ```
+
+    2.  Store your wallet details and the RPC URL as environment variables:
+
+        :::danger
+
+        - Never share your private keys.
+        - Never put your private keys in source code.
+        - Never commit private keys to a Git repository.
+
+        :::
+
+        ```bash
+        export ACCOUNT=<address above>
+        export ACCOUNT_PRIVATE_KEY=<private key above>
+        export RPC_URL="https://coston2-api.flare.network/ext/C/rpc"
+        ```
+
+    3.  Use the [Coston2 Faucet](https://faucet.flare.network/coston2) to get some testnet C2FLR tokens. You can verify that the 100 C2FLR has arrived in your wallet:
+
+        ```bash
+        cast balance $ACCOUNT -r $RPC_URL -e
+        ```
+
+    4.  The final step before deploying is to set the constructor arguments with the address of [`FtsoV2`](/ftso/solidity-reference) and [`FeeCalculator`](/ftso/solidity-reference) on Flare Testnet Coston2 and the [feed ID](/ftso/feeds) of FLR/USD:
+
+        ```bash
+        export FTSOV2_COSTON2=0x3d893C53D9e8056135C26C8c638B76C8b60Df726
+        export FEECALCULATOR_COSTON2=0x88A9315f96c9b5518BBeC58dC6a914e13fAb13e2
+        export FLRUSD_FEED_ID=0x01464c522f55534400000000000000000000000000
+        ```
+
+        You can now deploy the contract:
+
+        ```bash
+        forge create src/FtsoV2FeedConsumer.sol:FtsoV2FeedConsumer --private-key $ACCOUNT_PRIVATE_KEY --rpc-url $RPC_URL --constructor-args $FTSOV2_COSTON2 $FEECALCULATOR_COSTON2 $FLRUSD_FEED_ID
+        ```
+
+        If the deployment is successful, the output will display the contract address, save that for later use:
+
+        ```plaintext
+        [⠊] Compiling...
+        [⠘] Compiling 24 files with Solc 0.8.27
+        [⠃] Solc 0.8.27 finished in 733.41ms
+        Compiler run successful!
+        Deployer: 0x3f6BdD26f2AE4e77AcDfA1FA24B2774ed93984B4
+        Deployed to: 0x80Ee4091348d9fA4B4A84Eb525c25049EbDa6152
+        Transaction hash: 0x38604a643695959dd9fa5547d95610fb0b7393c7e8358079f47ed4bdb53c9a8f
+        ```
+
+        ```bash
+        export DEPLOYMENT_ADDRESS=<deployed to address above>
+        ```
+
+    5.  Use `cast` to interact with the contract, note that this command uses the environment variables defined in the sections above.:
+
+        ```bash
+        cast send --private-key $ACCOUNT_PRIVATE_KEY --rpc-url $RPC_URL -j --value 0 $DEPLOYMENT_ADDRESS "getFlrUsdPrice()"
+        ```
+
+        <details>
+
+        <summary>Expected output of the command above.</summary>
+
+        ```json
         {
-          "address": "0x1000000000000000000000000000000000000002",
-          "topics": [
-            "0xe7aa66356adbd5e839ef210626f6d8f6f72109c17fadf4c4f9ca82b315ae79b4"
+          "status": "0x1",
+          "cumulativeGasUsed": "0x1cbab",
+          "logs": [
+            {
+              "address": "0x1000000000000000000000000000000000000002",
+              "topics": [
+                "0xe7aa66356adbd5e839ef210626f6d8f6f72109c17fadf4c4f9ca82b315ae79b4"
+              ],
+              "data": "0x00000000000000000000000098b8e9b5830f04fe3b8d56a2f8455e337037ba280000000000000000000000000000000000000000000000000000000000004231",
+              "blockHash": "0x94f50404f8205caff551ef2b08d20afc4c080bd7b8231cd3941f1a7a6b1b80dd",
+              "blockNumber": "0xb2b972",
+              "transactionHash": "0x3fdc9cf00456a7878476877b6f8ae5c994dd3c224ca792f965f718340fd98402",
+              "transactionIndex": "0x0",
+              "logIndex": "0x0",
+              "removed": false
+            },
+            {
+              "address": "0x1000000000000000000000000000000000000002",
+              "topics": [
+                "0xe7aa66356adbd5e839ef210626f6d8f6f72109c17fadf4c4f9ca82b315ae79b4"
+              ],
+              "data": "0x0000000000000000000000004f52e61907b0ed9f26b88f16b2510a4ca524d6d00000000000000000000000000000000000000000000000000000000000003099",
+              "blockHash": "0x94f50404f8205caff551ef2b08d20afc4c080bd7b8231cd3941f1a7a6b1b80dd",
+              "blockNumber": "0xb2b972",
+              "transactionHash": "0x3fdc9cf00456a7878476877b6f8ae5c994dd3c224ca792f965f718340fd98402",
+              "transactionIndex": "0x0",
+              "logIndex": "0x1",
+              "removed": false
+            },
+            {
+              "address": "0x1000000000000000000000000000000000000002",
+              "topics": [
+                "0xe7aa66356adbd5e839ef210626f6d8f6f72109c17fadf4c4f9ca82b315ae79b4"
+              ],
+              "data": "0x000000000000000000000000d2a1bb23eb350814a30dd6f9de78bb2c8fdd9f1d0000000000000000000000000000000000000000000000000000000000003b68",
+              "blockHash": "0x94f50404f8205caff551ef2b08d20afc4c080bd7b8231cd3941f1a7a6b1b80dd",
+              "blockNumber": "0xb2b972",
+              "transactionHash": "0x3fdc9cf00456a7878476877b6f8ae5c994dd3c224ca792f965f718340fd98402",
+              "transactionIndex": "0x0",
+              "logIndex": "0x2",
+              "removed": false
+            },
+            {
+              "address": "0x1000000000000000000000000000000000000002",
+              "topics": [
+                "0xe7aa66356adbd5e839ef210626f6d8f6f72109c17fadf4c4f9ca82b315ae79b4"
+              ],
+              "data": "0x0000000000000000000000006892bdbbb14e1c9bd46bf31e7bac94d038fc82a6000000000000000000000000000000000000000000000000000000000000422d",
+              "blockHash": "0x94f50404f8205caff551ef2b08d20afc4c080bd7b8231cd3941f1a7a6b1b80dd",
+              "blockNumber": "0xb2b972",
+              "transactionHash": "0x3fdc9cf00456a7878476877b6f8ae5c994dd3c224ca792f965f718340fd98402",
+              "transactionIndex": "0x0",
+              "logIndex": "0x3",
+              "removed": false
+            },
+            {
+              "address": "0x1000000000000000000000000000000000000002",
+              "topics": [
+                "0xe7aa66356adbd5e839ef210626f6d8f6f72109c17fadf4c4f9ca82b315ae79b4"
+              ],
+              "data": "0x000000000000000000000000bd33bdff04c357f7fc019e72d0504c24cf4aa0100000000000000000000000000000000000000000000000000000000000008f11",
+              "blockHash": "0x94f50404f8205caff551ef2b08d20afc4c080bd7b8231cd3941f1a7a6b1b80dd",
+              "blockNumber": "0xb2b972",
+              "transactionHash": "0x3fdc9cf00456a7878476877b6f8ae5c994dd3c224ca792f965f718340fd98402",
+              "transactionIndex": "0x0",
+              "logIndex": "0x4",
+              "removed": false
+            },
+            {
+              "address": "0x1000000000000000000000000000000000000002",
+              "topics": [
+                "0xe7aa66356adbd5e839ef210626f6d8f6f72109c17fadf4c4f9ca82b315ae79b4"
+              ],
+              "data": "0x000000000000000000000000a90db6d10f856799b10ef2a77ebcbf460ac71e520000000000000000000000000000000000000000000000000000000000004e9c",
+              "blockHash": "0x94f50404f8205caff551ef2b08d20afc4c080bd7b8231cd3941f1a7a6b1b80dd",
+              "blockNumber": "0xb2b972",
+              "transactionHash": "0x3fdc9cf00456a7878476877b6f8ae5c994dd3c224ca792f965f718340fd98402",
+              "transactionIndex": "0x0",
+              "logIndex": "0x5",
+              "removed": false
+            },
+            {
+              "address": "0x1000000000000000000000000000000000000002",
+              "topics": [
+                "0xe7aa66356adbd5e839ef210626f6d8f6f72109c17fadf4c4f9ca82b315ae79b4"
+              ],
+              "data": "0x0000000000000000000000000b162ca3acf3482d3357972e12d794434085d839000000000000000000000000000000000000000000000000000000000000e5a6",
+              "blockHash": "0x94f50404f8205caff551ef2b08d20afc4c080bd7b8231cd3941f1a7a6b1b80dd",
+              "blockNumber": "0xb2b972",
+              "transactionHash": "0x3fdc9cf00456a7878476877b6f8ae5c994dd3c224ca792f965f718340fd98402",
+              "transactionIndex": "0x0",
+              "logIndex": "0x6",
+              "removed": false
+            }
           ],
-          "data": "0x00000000000000000000000098b8e9b5830f04fe3b8d56a2f8455e337037ba280000000000000000000000000000000000000000000000000000000000004231",
-          "blockHash": "0x94f50404f8205caff551ef2b08d20afc4c080bd7b8231cd3941f1a7a6b1b80dd",
-          "blockNumber": "0xb2b972",
+          "logsBloom": "0x000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000004000000000800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "type": "0x2",
           "transactionHash": "0x3fdc9cf00456a7878476877b6f8ae5c994dd3c224ca792f965f718340fd98402",
           "transactionIndex": "0x0",
-          "logIndex": "0x0",
-          "removed": false
-        },
-        {
-          "address": "0x1000000000000000000000000000000000000002",
-          "topics": [
-            "0xe7aa66356adbd5e839ef210626f6d8f6f72109c17fadf4c4f9ca82b315ae79b4"
-          ],
-          "data": "0x0000000000000000000000004f52e61907b0ed9f26b88f16b2510a4ca524d6d00000000000000000000000000000000000000000000000000000000000003099",
           "blockHash": "0x94f50404f8205caff551ef2b08d20afc4c080bd7b8231cd3941f1a7a6b1b80dd",
           "blockNumber": "0xb2b972",
-          "transactionHash": "0x3fdc9cf00456a7878476877b6f8ae5c994dd3c224ca792f965f718340fd98402",
-          "transactionIndex": "0x0",
-          "logIndex": "0x1",
-          "removed": false
-        },
-        {
-          "address": "0x1000000000000000000000000000000000000002",
-          "topics": [
-            "0xe7aa66356adbd5e839ef210626f6d8f6f72109c17fadf4c4f9ca82b315ae79b4"
-          ],
-          "data": "0x000000000000000000000000d2a1bb23eb350814a30dd6f9de78bb2c8fdd9f1d0000000000000000000000000000000000000000000000000000000000003b68",
-          "blockHash": "0x94f50404f8205caff551ef2b08d20afc4c080bd7b8231cd3941f1a7a6b1b80dd",
-          "blockNumber": "0xb2b972",
-          "transactionHash": "0x3fdc9cf00456a7878476877b6f8ae5c994dd3c224ca792f965f718340fd98402",
-          "transactionIndex": "0x0",
-          "logIndex": "0x2",
-          "removed": false
-        },
-        {
-          "address": "0x1000000000000000000000000000000000000002",
-          "topics": [
-            "0xe7aa66356adbd5e839ef210626f6d8f6f72109c17fadf4c4f9ca82b315ae79b4"
-          ],
-          "data": "0x0000000000000000000000006892bdbbb14e1c9bd46bf31e7bac94d038fc82a6000000000000000000000000000000000000000000000000000000000000422d",
-          "blockHash": "0x94f50404f8205caff551ef2b08d20afc4c080bd7b8231cd3941f1a7a6b1b80dd",
-          "blockNumber": "0xb2b972",
-          "transactionHash": "0x3fdc9cf00456a7878476877b6f8ae5c994dd3c224ca792f965f718340fd98402",
-          "transactionIndex": "0x0",
-          "logIndex": "0x3",
-          "removed": false
-        },
-        {
-          "address": "0x1000000000000000000000000000000000000002",
-          "topics": [
-            "0xe7aa66356adbd5e839ef210626f6d8f6f72109c17fadf4c4f9ca82b315ae79b4"
-          ],
-          "data": "0x000000000000000000000000bd33bdff04c357f7fc019e72d0504c24cf4aa0100000000000000000000000000000000000000000000000000000000000008f11",
-          "blockHash": "0x94f50404f8205caff551ef2b08d20afc4c080bd7b8231cd3941f1a7a6b1b80dd",
-          "blockNumber": "0xb2b972",
-          "transactionHash": "0x3fdc9cf00456a7878476877b6f8ae5c994dd3c224ca792f965f718340fd98402",
-          "transactionIndex": "0x0",
-          "logIndex": "0x4",
-          "removed": false
-        },
-        {
-          "address": "0x1000000000000000000000000000000000000002",
-          "topics": [
-            "0xe7aa66356adbd5e839ef210626f6d8f6f72109c17fadf4c4f9ca82b315ae79b4"
-          ],
-          "data": "0x000000000000000000000000a90db6d10f856799b10ef2a77ebcbf460ac71e520000000000000000000000000000000000000000000000000000000000004e9c",
-          "blockHash": "0x94f50404f8205caff551ef2b08d20afc4c080bd7b8231cd3941f1a7a6b1b80dd",
-          "blockNumber": "0xb2b972",
-          "transactionHash": "0x3fdc9cf00456a7878476877b6f8ae5c994dd3c224ca792f965f718340fd98402",
-          "transactionIndex": "0x0",
-          "logIndex": "0x5",
-          "removed": false
-        },
-        {
-          "address": "0x1000000000000000000000000000000000000002",
-          "topics": [
-            "0xe7aa66356adbd5e839ef210626f6d8f6f72109c17fadf4c4f9ca82b315ae79b4"
-          ],
-          "data": "0x0000000000000000000000000b162ca3acf3482d3357972e12d794434085d839000000000000000000000000000000000000000000000000000000000000e5a6",
-          "blockHash": "0x94f50404f8205caff551ef2b08d20afc4c080bd7b8231cd3941f1a7a6b1b80dd",
-          "blockNumber": "0xb2b972",
-          "transactionHash": "0x3fdc9cf00456a7878476877b6f8ae5c994dd3c224ca792f965f718340fd98402",
-          "transactionIndex": "0x0",
-          "logIndex": "0x6",
-          "removed": false
+          "gasUsed": "0x1cbab",
+          "effectiveGasPrice": "0x6fc23ac00",
+          "from": "0x3f6bdd26f2ae4e77acdfa1fa24b2774ed93984b4",
+          "to": "0x80ee4091348d9fa4b4a84eb525c25049ebda6152",
+          "contractAddress": null
         }
-      ],
-      "logsBloom": "0x000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000004000000000800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-      "type": "0x2",
-      "transactionHash": "0x3fdc9cf00456a7878476877b6f8ae5c994dd3c224ca792f965f718340fd98402",
-      "transactionIndex": "0x0",
-      "blockHash": "0x94f50404f8205caff551ef2b08d20afc4c080bd7b8231cd3941f1a7a6b1b80dd",
-      "blockNumber": "0xb2b972",
-      "gasUsed": "0x1cbab",
-      "effectiveGasPrice": "0x6fc23ac00",
-      "from": "0x3f6bdd26f2ae4e77acdfa1fa24b2774ed93984b4",
-      "to": "0x80ee4091348d9fa4b4a84eb525c25049ebda6152",
-      "contractAddress": null
-    }
-    ```
+        ```
 
-    </details>
+        </details>
 
-You can see the transaction using the [Coston2 Explorer](https://coston2.testnet.flarescan.com/) by searching for its `transactionHash`.
+    You can see the transaction using the [Coston2 Explorer](https://coston2.testnet.flarescan.com/) by searching for its `transactionHash`.
 
-Congratulations! You've built your first app using FTSOv2.
+    Congratulations! You've built your first FTSOv2 app using Foundry.
 
-</TabItem>
+  </TabItem>
+  <TabItem value="hardhat" label="Hardhat">
 
-<TabItem value="hardhat" label="Hardhat">
+    1. Create a deployment script `scripts/deployFTSOConsumer.ts`:
 
-## Building with Hardhat
+        <CodeBlock language="typescript" title="scripts/deployFTSOConsumer.ts">
+          {FtsoV2ConsumerHardhatDeploy}
+        </CodeBlock>
 
-In this guide, you will learn how to:
+    2. Deploy to Flare Testnet Coston2:
 
-- Create a contract to read the price of FLR/USD from FTSOv2 using [flare-periphery-contracts](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts).
+        ```bash
+        npx hardhat run scripts/deployFTSOConsumer.ts --network coston2
+        ```
 
-- Compile your contract using [Hardhat](https://hardhat.org) and run tests.
+    3. Interact with the contract:
 
-- Deploy your contract to Flare Testnet Coston2.
+        Copy and paste the deployed contract address into the [Coston2 explorer](https://coston2-explorer.flare.network/) to view and interact with the contract.
 
-### Prerequisites
+    Congratulations! You've built your first FTSOv2 app using Hardhat.
 
-Ensure you have the following tools installed:
-
-- [Node.js](https://nodejs.org/en) v18.0 or higher
-- [npm](https://nodejs.org/en/learn/getting-started/an-introduction-to-the-npm-package-manager) or [yarn](https://yarnpkg.com)
-
-### Clone the Hardhat template
-
-1. Clone the [flare-hardhat-starter](https://github.com/flare-foundation/flare-hardhat-starter) and install dependencies:
-
-   ```bash
-   git clone https://github.com/flare-foundation/flare-hardhat-starter.git
-   cd flare-hardhat-starter
-   yarn install
-   ```
-
-2. Copy the environment file and set your private key:
-
-   ```bash
-   cp .env.example .env
-   ```
-
-:::danger
-
-- Never share your private keys.
-- Never put your private keys in source code.
-- Never commit private keys to a Git repository.
-  :::
-
-### Create and compile a contract
-
-1. Create a contract file `contracts/FTSOV2Consumer.sol`:
-
-   <CodeBlock language="solidity" title="contracts/FTSOV2Consumer.sol">
-     {FtsoV2ConsumerHardhat}
-   </CodeBlock>
-
-2. Set EVM version to `london` in `hardhat.config.ts`:
-
-   ```typescript
-   module.exports = {
-     solidity: {
-       version: "0.8.27",
-       settings: {
-         evmVersion: "london",
-         optimizer: {
-           enabled: true,
-           runs: 200,
-         },
-       },
-     },
-   };
-   ```
-
-3. Compile the contract:
-
-   ```bash
-   npx hardhat compile
-   ```
-
-### Write tests
-
-1. Create a test directory and file `test/FtsoV2Consumer.test.ts`:
-
-   <CodeBlock language="typescript" title="test/FtsoV2ConsumerHardhat.ts">
-     {FtsoV2ConsumerTestHardhat}
-   </CodeBlock>
-
-2. Run the tests:
-
-   ```bash
-   npx hardhat test
-   ```
-
-### Deploy and interact with the contract
-
-1. Create a deployment script `scripts/deployFTSOConsumer.ts`:
-
-   <CodeBlock language="typescript" title="scripts/deployFTSOConsumer.ts">
-     {FtsoV2ConsumerHardhatDeploy}
-   </CodeBlock>
-
-2. Deploy to Coston2:
-
-   ```bash
-   npx hardhat run scripts/deployFTSOConsumer.ts --network coston2
-   ```
-
-3. Interact with the contract:
-
-Copy and paste the deployed contract address into the Coston2 block explorer [here](https://coston2-explorer.flare.network/) to view and interact with the contract.
-
-Congratulations! You've built your first FTSOv2 app using Hardhat.
-
-</TabItem>
+  </TabItem>
 </Tabs>
 
 :::tip[What's next]
