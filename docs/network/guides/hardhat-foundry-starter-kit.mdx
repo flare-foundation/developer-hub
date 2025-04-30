@@ -15,237 +15,183 @@ import TabItem from "@theme/TabItem";
 
 The starter kit includes a basic setup for configuring Hardhat and Foundry, along with examples on how to compile, test and deploy smart contracts on Flare.
 
-## Hardhat
+## Prerequisites
 
-### Getting Started
+<Tabs groupId="framework">
+  <TabItem value="hardhat" label="Hardhat" default>
 
-If you're new to Hardhat, review Hardhat's documentation on [Getting Started with Hardhat](https://hardhat.org/hardhat-runner/docs/getting-started#overview).
+    If you're new to Hardhat, review Hardhat's documentation on [Getting Started with Hardhat](https://hardhat.org/hardhat-runner/docs/getting-started#overview).
 
-Install the following prerequisites:
+    Install the following tools:
 
-- [Node.js](https://nodejs.org/en) v18.0 or higher
-- [npm](https://nodejs.org/en/learn/getting-started/an-introduction-to-the-npm-package-manager) or [yarn](https://yarnpkg.com)
+    - [Node.js](https://nodejs.org/en) v18.0 or higher
+    - [npm](https://nodejs.org/en/learn/getting-started/an-introduction-to-the-npm-package-manager) or [yarn](https://yarnpkg.com)
 
-:::tip
+    :::tip
 
-[Hardhat for Visual Studio Code](https://hardhat.org/hardhat-vscode) is the official Hardhat extension that adds advanced support for Solidity to VSCode. If you use VSCode, give it a try!
+    [Hardhat for Visual Studio Code](https://hardhat.org/hardhat-vscode) is the official Hardhat extension that adds advanced support for Solidity to VSCode. If you use VSCode, give it a try!
 
-:::
-
-:::info
-
-OpenZeppelin version `4.x` is used for this Starter Kit, ensure you refer to the correct version of the [OpenZeppelin documentation](https://docs.openzeppelin.com/contracts/4.x/).
-
-:::
-
-### Setup
-
-#### Cloning and installing dependencies
-
-Clone the [template repository](https://github.com/flare-foundation/flare-hardhat-starter) and navigate into the project directory.
-
-```bash
-git clone https://github.com/flare-foundation/flare-hardhat-starter.git
-cd flare-hardhat-starter
-```
-
-Install the project dependencies.
-
-<Tabs groupId="jsmanager">
-  <TabItem value="npm" label="npm" default>
-
-    ```bash
-    npm install
-    ```
+    :::
 
   </TabItem>
-  <TabItem value="yarn" label="yarn">
+  <TabItem value="foundry" label="Foundry">
 
-    ```bash
-    yarn
-    ```
+    If you're new to Foundry, review Foundry's documentation on [Getting Started with Foundry](https://book.getfoundry.sh).
 
-    </TabItem>
+    Install the following tools:
 
-</Tabs>
-
-#### Setting up environment variables
-
-Copy the example environment file and update it with your settings.
-
-```bash
-cp .env.example .env
-```
-
-Open the `.env` file and set your `PRIVATE_KEY`.
-
-```text
-PRIVATE_KEY=your_private_key_here
-```
-
-:::danger
-
-- Never share your private keys.
-- Never put your private keys in source code.
-- Never commit private keys to a Git repository.
-
-:::
-
-### Compile, test and deploy
-
-Compile the smart contracts to generate the necessary artifacts.
-
-<Tabs groupId="jsmanager">
-  <TabItem value="npm" label="npm" default>
-
-    ```bash
-    npx hardhat compile
-    ```
-
-  </TabItem>
-  <TabItem value="yarn" label="yarn">
-
-    ```bash
-    yarn hardhat compile
-    ```
+    - [Foundry](https://book.getfoundry.sh/getting-started/installation.html)
 
   </TabItem>
 </Tabs>
 
-This command compiles all `.sol` files in the `/contracts` folder and generates artifacts needed for testing.
+## Clone the template
 
-#### Testing your contracts
+<Tabs groupId="framework">
+  <TabItem value="hardhat" label="Hardhat">
 
-Run the provided test suite to ensure everything is set up correctly.
+    1. Clone the [flare-hardhat-starter](https://github.com/flare-foundation/flare-hardhat-starter) and navigate into the project directory.
 
-<Tabs groupId="jsmanager">
-  <TabItem value="npm" label="npm" default>
+        ```bash
+        git clone https://github.com/flare-foundation/flare-hardhat-starter.git
+        cd flare-hardhat-starter
+        ```
 
-    ```bash
-    npx hardhat test
-    ```
+    2. Install the project dependencies.
+
+        ```bash
+        npm install
+        ```
+
+    3. Copy the example environment file and update it with your settings.
+
+        ```bash
+        cp .env.example .env
+        ```
+
+    4. Open the `.env` file and set your `PRIVATE_KEY`.
+
+        ```text
+        PRIVATE_KEY=your_private_key_here
+        ```
+
+        :::danger
+
+        - Never share your private keys.
+        - Never put your private keys in source code.
+        - Never commit private keys to a Git repository.
+
+        :::
 
   </TabItem>
-  <TabItem value="yarn" label="yarn">
+  <TabItem value="foundry" label="Foundry">
 
-    ```bash
-    yarn hardhat test
-    ```
+    1. Clone the [flare-foundry-starter](https://github.com/flare-foundation/flare-foundry-starter) and navigate into the project directory.
+
+        ```bash
+        git clone https://github.com/flare-foundation/flare-foundry-starter.git
+        cd flare-foundry-starter
+        ```
+
+    2. Install the project dependencies.
+
+        ```bash
+        forge soldeer install
+        ```
+
+    3. You might need to modify `remappings.txt` so `/src` paths are read correctly, e.g.:
+
+        ```bash
+        @openzeppelin-contracts/=dependencies/@openzeppelin-contracts-5.2.0-rc.1/
+        flare-periphery/=dependencies/flare-periphery-0.0.1/
+        forge-std/=dependencies/forge-std-1.9.5/src/
+        forge-std/=dependencies/forge-std-1.9.5/
+        surl/=dependencies/surl-0.0.0/src/
+        surl/=dependencies/surl-0.0.0/
+        ```
+
+    4. Copy `.env.example` to `.env` and update it with your settings.
+
+        Add `PRIVATE_KEY` to your environment variables.
+
+        ```text
+        PRIVATE_KEY=your_private_key_here
+        ```
+
+        :::danger
+
+        - Never share your private keys.
+        - Never put your private keys in source code.
+        - Never commit private keys to a Git repository.
+
+        :::
+
+    5. You now need to add the information from the `.env` file to your bash profile:
+
+        ```bash
+        source .env
+        ```
+
+        You need to do this every time you open a new terminal or change the `.env` file.
 
   </TabItem>
 </Tabs>
 
-#### Deploying your contracts
+## Compile, test and deploy
 
-Review and modify `hardhat.config.ts` to specify the networks you want to deploy to. The details for Flare Mainnet, Flare Testnet Coston2, Songbird Canary-Network and Songbird Testnet Coston are already included.
+<Tabs groupId="framework">
+  <TabItem value="hardhat" label="Hardhat">
 
-Optionally you can add the API keys for either [Flarescan](https://flarescan.com) or [Flare Explorer](https://flarescan.com) in the `.env` file.
+    1. Compile the smart contracts to generate the necessary artifacts.
 
-<Tabs groupId="jsmanager">
-  <TabItem value="npm" label="npm" default>
+        ```bash
+        npx hardhat compile
+        ```
 
-    ```bash
-    npx hardhat run scripts/tryDeployment.ts
-    ```
+        This command compiles all `.sol` files in the `/contracts` folder and generates artifacts needed for testing.
+
+    2. Run the provided test suite to ensure everything is set up correctly.
+
+        ```bash
+        npx hardhat test
+        ```
+
+    3. Review and modify `hardhat.config.ts` to specify the networks you want to deploy to. The details for Flare Mainnet, Flare Testnet Coston2, Songbird Canary-Network and Songbird Testnet Coston are already included.
+
+    Optionally you can add the API keys for either [Flarescan](https://flarescan.com) or [Flare Explorer](https://flarescan.com) in the `.env` file.
+
+        ```bash
+        npx hardhat run scripts/tryDeployment.ts
+        ```
+
+    Congratulations! You have successfully integrated Flare into Hardhat.
 
   </TabItem>
-  <TabItem value="yarn" label="yarn">
-  
-    ```bash
-    yarn hardhat run scripts/tryDeployment.ts
-    ```
+  <TabItem value="foundry" label="Foundry">
+
+    1. Compile the smart contracts to generate the necessary artifacts.
+
+        ```bash
+        forge build
+        ```
+
+        This command compiles all `.sol` files in the `/src` folder and generates artifacts needed for testing.
+
+    2. Run the provided test suite to ensure everything is set up correctly.
+
+        ```bash
+        forge test
+        ```
+
+    3. Run the deployment script using Foundry:
+
+        ```bash
+        forge script script/Counter.s.sol --broadcast --private-key $PRIVATE_KEY --rpc-url <RPC_URL>
+        ```
+
+        Replace `<RPC_URL>` with the RPC endpoint of the network you are deploying to. A list of RPC endpoints for Flare networks can be found in Flare's [Network Configuration](/network/overview#configuration).
+
+    Congratulations! You have successfully integrated Flare into Foundry.
 
   </TabItem>
 </Tabs>
-
-## Foundry
-
-### Getting Started
-
-If you're new to Foundry, review Foundry's documentation on [Getting Started with Foundry](https://book.getfoundry.sh).
-
-Install the following prerequisites:
-
-- [Foundry](https://book.getfoundry.sh/getting-started/installation.html)
-
-### Setup
-
-#### Cloning and installing dependencies
-
-Clone the [flare-foundry-starter](https://github.com/flare-foundation/flare-foundry-starter) and navigate into the project directory.
-
-```bash
-git clone https://github.com/flare-foundation/flare-foundry-starter.git
-cd flare-foundry-starter
-```
-
-Install the project dependencies.
-
-```bash
-forge soldeer install
-```
-
-You might need to modify `remappings.txt` so `/src` paths are read correctly, e.g.:
-
-```bash
-@openzeppelin-contracts/=dependencies/@openzeppelin-contracts-5.2.0-rc.1/
-flare-periphery/=dependencies/flare-periphery-0.0.1/
-forge-std/=dependencies/forge-std-1.9.5/src/
-forge-std/=dependencies/forge-std-1.9.5/
-surl/=dependencies/surl-0.0.0/src/
-surl/=dependencies/surl-0.0.0/
-```
-
-#### Setting up environment variables
-
-Copy `.env.example` to `.env` and update it with your settings.
-
-Add `PRIVATE_KEY` to your environment variables.
-
-```text
-PRIVATE_KEY=your_private_key_here
-```
-
-:::danger
-
-- Never share your private keys.
-- Never put your private keys in source code.
-- Never commit private keys to a Git repository.
-
-:::
-
-You now need to add the information from the `.env` file to your bash profile:
-
-```bash
-source .env
-```
-
-You need to do this every time you open a new terminal or change the `.env` file.
-
-### Compile, test and deploy
-
-Compile the smart contracts to generate the necessary artifacts.
-
-```bash
-forge build
-```
-
-This command compiles all `.sol` files in the `/src` folder and generates artifacts needed for testing.
-
-#### Testing contracts
-
-Run the provided test suite to ensure everything is set up correctly.
-
-```bash
-forge test
-```
-
-#### Deploying your contracts
-
-Run the deployment script using Foundry:
-
-```bash
-forge script script/Counter.s.sol --broadcast --private-key $PRIVATE_KEY --rpc-url <RPC_URL>
-```
-
-Replace `<RPC_URL>` with the RPC endpoint of the network you are deploying to. A list of RPC endpoints for Flare networks can be found in Flare's [Network Configuration](/network/overview#configuration).

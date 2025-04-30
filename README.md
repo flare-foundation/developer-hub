@@ -118,7 +118,7 @@ To generate Solidity documentation:
 
 1. **Update addresses and feeds:**
 
-   This script updates JSON files used by custom components (e.g., feed tables, contract address lists) by fetching data from the `ContractRegistry` on-chain and referencing risk data defined in `automations/*_risk.json`.
+   This script updates JSON files used by custom components (e.g., feed tables, contract address lists) by fetching data from the `ContractRegistry` onchain and referencing risk data defined in `automations/*_risk.json`.
 
    ```bash
    npm run automations
