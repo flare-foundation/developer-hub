@@ -28,7 +28,7 @@ async function deployAndVerifyContract() {
       address: fassetsSwapAndRedeemAddress,
       constructorArguments: args,
     });
-  } catch (e: any) {
+  } catch (e) {
     console.log(e);
   }
 
