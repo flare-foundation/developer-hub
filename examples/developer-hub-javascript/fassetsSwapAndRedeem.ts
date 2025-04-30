@@ -1,3 +1,4 @@
+// 1. Dependancies and constants
 import { run } from "hardhat";
 
 import { SwapAndRedeemInstance } from "../../typechain-types";
@@ -14,6 +15,7 @@ const SWAP_PATH = [
   "0x36be8f2e1CC3339Cf6702CEfA69626271C36E2fd", // FXRP
 ];
 
+// 2. Deploy and verify the `SwapAndRedeem` smart contract
 async function deployAndVerifyContract() {
   const SwapAndRedeem = artifacts.require("SwapAndRedeem");
   const args = [SWAP_ROUTER_ADDRESS, ASSET_MANAGER_ADDRESS, SWAP_PATH];
@@ -36,8 +38,10 @@ async function deployAndVerifyContract() {
 }
 
 async function main() {
+  // 2. Deploy and verify the `SwapAndRedeem` smart contract
   const swapAndRedeem: SwapAndRedeemInstance = await deployAndVerifyContract();
 
+  // 3. Calculate Required Amounts
   const swapAndRedeemAddress = await swapAndRedeem.address;
   const amounts = await swapAndRedeem.calculateRedemptionAmountIn(LOTS_TO_REDEEM);
   const amountIn = amounts.amountIn;
@@ -45,14 +49,14 @@ async function main() {
   console.log("Amount of tokens out (FXRP): ", amountOut.toString());
   console.log("Amount of tokens in (WCFLR): ", amountIn.toString());
 
-  // Get WCFLR token
+  // 4. Approve spending WCFLR tokens
   const ERC20 = artifacts.require("ERC20");
   const wcflr: ERC20Instance = await ERC20.at(SWAP_PATH[0]);
 
   const approveTx = await wcflr.approve(swapAndRedeemAddress, amountOut);
   console.log("Approve transaction: ", approveTx);
 
-  // Swap and redeem
+  // 5. Swap WCFLR for FXRP and redeem to underlying XRP token on XRP Ledger
   const swapResult = await swapAndRedeemAddress.swapAndRedeem(LOTS_TO_REDEEM, UNDERLYING_ADDRESS);
   console.log("Swap and redeem transaction: ", swapResult);
 }

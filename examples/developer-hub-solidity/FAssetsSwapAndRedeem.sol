@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
+// 1. Required Imports
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {IAssetManager} from "@flarenetwork/flare-periphery-contracts/coston/IAssetManager.sol";
 import {AssetManagerSettings} from 
     "@flarenetwork/flare-periphery-contracts/coston/userInterfaces/data/AssetManagerSettings.sol";
+
+// 2. Interfaces
 
 // Uniswap V2 Router interface needed for this example to communicate with BlazeSwap
 interface ISwapRouter {
@@ -27,6 +30,9 @@ interface ISwapRouter {
 
 // Contract to swap WCFLR for FXRP and redeem FAssets
 contract SwapAndRedeem {
+
+    // 3. State Variables and Constructor
+
     // Uniswap V2 Router interface to communicate with BlazeSwap
     ISwapRouter public immutable router;
     // FAssets assset manager interface
@@ -54,6 +60,8 @@ contract SwapAndRedeem {
 
         token = IERC20(_swapPath[0]);
     }
+
+    // 4. Main Function: `swapAndRedeem`
 
     // Swap WCFLR for FXRP and redeem FAssets
     // @param _lots: number of lots to redeem
@@ -138,6 +146,8 @@ contract SwapAndRedeem {
             _redeemedAmountUBA
         );
     }
+
+    // 5. Helper Function: `calculateRedemptionAmountIn`
 
     // Calculate the amount needed to swap to FXRP and redeem
     // @param _lots: number of lots to redeem
