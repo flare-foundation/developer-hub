@@ -5,8 +5,7 @@ pragma solidity ^0.8.25;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {IAssetManager} from "@flarenetwork/flare-periphery-contracts/coston/IAssetManager.sol";
-import {AssetManagerSettings} from 
-    "@flarenetwork/flare-periphery-contracts/coston/userInterfaces/data/AssetManagerSettings.sol";
+import {AssetManagerSettings} from "@flarenetwork/flare-periphery-contracts/coston/userInterfaces/data/AssetManagerSettings.sol";
 
 // 2. Interfaces
 
@@ -30,7 +29,6 @@ interface ISwapRouter {
 
 // Contract to swap WCFLR for FXRP and redeem FAssets
 contract SwapAndRedeem {
-
     // 3. State Variables and Constructor
 
     // Uniswap V2 Router interface to communicate with BlazeSwap

@@ -43,7 +43,8 @@ async function main() {
 
   // 3. Calculate Required Amounts
   const swapAndRedeemAddress = await swapAndRedeem.address;
-  const amounts = await swapAndRedeem.calculateRedemptionAmountIn(LOTS_TO_REDEEM);
+  const amounts =
+    await swapAndRedeem.calculateRedemptionAmountIn(LOTS_TO_REDEEM);
   const amountIn = amounts.amountIn;
   const amountOut = amounts.amountOut;
   console.log("Amount of tokens out (FXRP): ", amountOut.toString());
@@ -57,11 +58,14 @@ async function main() {
   console.log("Approve transaction: ", approveTx);
 
   // 5. Swap WCFLR for FXRP and redeem to underlying XRP token on XRP Ledger
-  const swapResult = await swapAndRedeemAddress.swapAndRedeem(LOTS_TO_REDEEM, UNDERLYING_ADDRESS);
+  const swapResult = await swapAndRedeemAddress.swapAndRedeem(
+    LOTS_TO_REDEEM,
+    UNDERLYING_ADDRESS,
+  );
   console.log("Swap and redeem transaction: ", swapResult);
 }
 
-main().catch(error => {
+main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });
