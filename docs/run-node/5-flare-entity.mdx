@@ -69,7 +69,7 @@ Currently, claiming rewards needs to be performed [manually](https://github.com/
 Before deploying the Flare Entity components, several one-time registration steps must be completed on-chain.
 This involves registering operational addresses for the Flare System Provider (FSP), funding them, registering a sortition key for Fast Updates, and linking your validator node ID to your entity's identity.
 
-### Register FSP addresses
+### Register and fund FSP addresses
 
 You need five specific addresses for FSP operations.
 You can register them using an automated script (Testnets only) or manually via contract calls (Mainnet).
@@ -217,7 +217,7 @@ On mainnet, or if you prefer not to use the automated script on testnets, you mu
     | `SigningPolicy`    | [`proposeSigningPolicyAddress`](/network/fsp/solidity-reference/IEntityManager#proposesigningpolicyaddress)       | [`confirmSigningPolicyAddressRegistration`](/network/fsp/solidity-reference/IEntityManager#confirmsigningpolicyaddressregistration)       |
     | `Delegation`       | [`proposeDelegationAddress`](/network/fsp/solidity-reference/IEntityManager#proposedelegationaddress)             | [`confirmDelegationAddressRegistration`](/network/fsp/solidity-reference/IEntityManager#confirmdelegationaddressregistration)             |
 
-### Fund FSP addresses
+#### Fund FSP addresses
 
 All registered FSP addresses (`Identity`, `Submit`, `SubmitSignatures`, `SigningPolicy`, `Delegation`) require funding with the network's native token (FLR, SGB, etc.) to cover transaction gas fees.
 
@@ -485,47 +485,36 @@ Review initial logs via `docker compose logs <service_name>` (e.g., `docker comp
 
 ## Setup FTSO
 
-To participate in the Flare Time Series Oracle (FTSO), you need a Feed Value Provider service. This section details its requirements and provides steps for testing.
+To participate in the Flare Time Series Oracle (FTSO), your Flare Entity needs access to real-time price data for various assets.
+This is provided by a **Feed Value Provider** service that you must run.
+It fetches price data from your chosen external sources (e.g., multiple exchanges) and serves it via a specific API endpoint to your Flare Entity's FTSO clients (Fast Updates Client and FTSO Client).
 
-### Feed value provider
+:::warning[Implement Your Own Production Provider]
 
-:::warning
+The example implementation referenced below ([`flare-foundation/ftso-v2-example-value-provider`](https://github.com/flare-foundation/ftso-v2-example-value-provider)) retrieves data from public sources but is intended ONLY for testing, demonstration, or initial integration purposes.
 
-The example implementation of Feed Value Provider is **only provided for testing purposes and should not be relied on**.
-Data providers are expected to reimplement this with their own data sources, following the [required endpoints](#required-endpoints).
+For reliable mainnet operation and reward eligibility, you MUST implement, deploy, and maintain your own robust Feed Value Provider. This involves:
 
-:::
-
-Start your own feed value provider, or **(for testing only)** use [flare-foundation/ftso-v2-example-value-provider](https://github.com/flare-foundation/ftso-v2-example-value-provider):
-
-```bash
-docker run --rm -it --publish "0.0.0.0:3101:3101" ghcr.io/flare-foundation/ftso-v2-example-value-provider
-```
-
-Once the container is running, you can find the API spec at: [`http://localhost:3101/api-doc`](http://localhost:3101/api-doc).
-
-:::info[Troubleshooting]
-
-For initial testing a fixed value provider can be used that simply returns a constant instead of reading data from external data sources. It can be started by setting the variable `VALUE_PROVIDER_IMPL=fixed`.
-
-```bash
-docker run --rm -it --env VALUE_PROVIDER_IMPL=fixed --publish "0.0.0.0:3101:3101" ghcr.io/flare-foundation/ftso-v2-example-value-provider
-```
-
-You should see the following line in the logs:
-
-```plaintext
-WARN [FixedFeed] Initializing FixedFeed, will return 0.01 for all feeds.
-```
+- Sourcing data from diverse, reliable, low-latency upstream providers (exchanges, APIs).
+- Implementing logic for data cleaning, validation, and aggregation (e.g., VWAP).
+- Ensuring high availability and performance of your service.
+  Failure to provide accurate, timely, and robust data through your provider will negatively impact your FTSO performance and rewards.
 
 :::
 
-#### Required endpoints
+### Running a custom provider
+
+- Develop your service adhering strictly to the [Required Endpoints Specification](#required-endpoints-specification) below.
+- Deploy your custom provider service using production-grade practices (e.g., as a container with restart policies, behind a load balancer if needed, with monitoring).
+- The provider's API endpoint must be network-accessible from the environment where your main Flare Entity services run (i.e., where the `flare-systems-deployment` Docker containers will run). It typically _does not_ need public internet exposure. Note down its internal network URL (e.g., `http://<provider-internal-ip>:<port>`) for the `VALUE_PROVIDER_URL` variable in the final deployment configuration.
+
+#### Required endpoints specification
+
+Your custom Feed Value Provider must implement the following HTTP `POST` endpoints. Both endpoints expect and return JSON payloads (`Content-Type: application/json`).
 
 - **`POST /feed-values`**
 
   - **Description**: Returns the feed values without specifying the voting round, used by FTSOv2 Fast Updates client.
-  - **Request Body**: JSON object containing the feed values.
   - **Example request:**
     ```bash
     curl -X 'POST' 'http://localhost:3101/feed-values/' \
@@ -548,7 +537,6 @@ WARN [FixedFeed] Initializing FixedFeed, will return 0.01 for all feeds.
 - **`POST /feed-values/:votingRoundId`**
 
   - **Description**: Returns the feed values for the specified voting round, used by FTSOv2 Scaling client.
-  - **Response**: JSON object containing the voting round ID and feed values.
   - **Example request:**
     ```bash
     curl -X 'POST' 'http://localhost:3101/feed-values/0' \
@@ -569,6 +557,29 @@ WARN [FixedFeed] Initializing FixedFeed, will return 0.01 for all feeds.
     }
     ```
 
+### Using the example provider
+
+For testing and development, you can run the [flare-foundation/ftso-v2-example-value-provider](https://github.com/flare-foundation/ftso-v2-example-value-provider):
+
+```bash
+# Exposes the example provider API on port 3101 of the host machine
+docker run --rm -it --publish "0.0.0.0:3101:3101" ghcr.io/flare-foundation/ftso-v2-example-value-provider
+```
+
+If running Docker locally, the API documentation is typically available at [`http://localhost:3101/api-doc`](http://localhost:3101/api-doc).
+
+:::info[Fixed Value Troubleshooting]
+
+To test integration without live data, run the example provider in fixed mode:
+
+```bash
+docker run --rm -it --env VALUE_PROVIDER_IMPL=fixed --publish "0.0.0.0:3101:3101" ghcr.io/flare-foundation/ftso-v2-example-value-provider
+```
+
+Check container logs for `WARN [FixedFeed] Initializing FixedFeed....`
+
+:::
+
 <details>
 <summary>Remove specific exchanges from the example value provider.</summary>
 
@@ -587,13 +598,15 @@ curl -fs -o feeds.json https://raw.githubusercontent.com/flare-foundation/ftso-v
 
 ### Create Fast Updates accounts
 
-Create **at least three** accounts for submitting FTSOv2 Fast Updates prices.
-These can be any accounts **not used** for the five accounts in [FSP addresses](#register-fsp-addresses).
-Note down the private keys of these accounts, as they will be used later.
+The FTSOv2 Fast Updates protocol uses dedicated accounts for submitting frequent price updates, separate from the main FSP addresses to manage transaction nonces effectively.
+
+- Generate at least three (3) new, unique blockchain accounts. These accounts must **not** be any of the five main [FSP addresses](#register-fsp-addresses) (`Identity`, `Submit`, etc.).
+- Securely store the private keys for these newly created accounts. You will need them later for the `FAST_UPDATES_ACCOUNTS` variable in the final deployment `.env` file.
+- Ensure each of these new Fast Updates accounts is funded with a sufficient amount of the network's native token (e.g., FLR, SGB) to cover the gas costs of frequent transaction submissions. Monitor balances periodically.
 
 ## Run Flare Entity
 
-Now that all prerequisites are met, registrations are complete, and the FDC/FTSO components are configured, you can deploy the main Flare Entity system using the `flare-systems-deployment` repository.
+With prerequisites met, registrations complete, and FDC/FTSO components configured, you can now deploy and run the main Flare Entity system using the `flare-systems-deployment` Docker Compose setup.
 
 1. Clone [flare-systems-deployment](https://github.com/flare-foundation/flare-systems-deployment) repository:
 
@@ -602,54 +615,95 @@ Now that all prerequisites are met, registrations are complete, and the FDC/FTSO
    cd flare-systems-deployment
    ```
 
-2. Copy the sample configuration file:
+2. Copy the example environment file:
 
    ```bash
    cp .env.example .env
    ```
 
-3. Fill out all the values using the information from [Registration](#registration), [Setup FDC](#setup-fdc) and [Setup FTSO](#setup-ftso), the main variables to set are:
+3. Carefully edit the `.env` file, providing the correct values gathered during the previous setup stages.
+   While reviewing `env.example` for _all_ possible settings is recommended (defaults may not suit all environments), ensure these key variables are correctly set based on your Registration, FDC, and FTSO setup:
 
-   - `NODE_RPC_URL` and (optional) `NODE_API_KEY`: Your RPC Node or a [private RPC provider](/network/developer-tools#rpcs).
+   - `NODE_RPC_URL`, `NODE_API_KEY` (optional): Your RPC Node or a [private RPC provider](/network/developer-tools#rpcs).
    - `IDENTITY`: Public `Identity` address from [FSP addresses](#register-fsp-addresses).
    - `SUBMIT_PK`, `SIGNATURES_PK`, `SIGNING_PK`: Private keys from [FSP addresses](#register-fsp-addresses).
    - `VALUE_PROVIDER_URL`: URL of the [feed value provider](#feed-value-provider).
    - `FAST_UPDATES_ACCOUNTS`: Private keys of the [Fast Updates accounts](#create-fast-updates-accounts).
    - `FAST_UPDATES_SORTITION_PRIVATE_KEY`: Private key of the [sortition key](#register-sortition-key).
-   - `<NETWORK>_<ATTESTATION_TYPE>_URL`: URLs of the FDC [verifiers](#start-indexers-and-verifiers) for each network and attestation type. For example, `BTC_PAYMENT_URL` for Bitcoin Payment attestations.
-   - (optional) `<NETWORK>_<ATTESTATION_TYPE>_API_KEY`: API keys for the FDC [verifiers](#start-indexers-and-verifiers) for each network and attestation type.
+   - FDC Verifier URLs (`<NETWORK>_<ATTESTATION_TYPE>_URL`): URLs for each FDC [verifier services](#start-indexers-and-verifiers) you deployed (e.g., `BTC_PAYMENT_URL=http://<verifier-ip>:port`).
+   - FDC Verifier API Keys (`<NETWORK>_<ATTESTATION_TYPE>_API_KEY`, Optional): API keys configured for your FDC verifiers, if any.
 
-4. Generate the required configurations, you will need to rerun this command if you change your `.env` file:
+   <br></br>
+
+   :::danger[Secure Your `.env` File]
+
+   This `.env` file contains **highly sensitive private keys and API keys**. Protect this file rigorously:
+
+   - Set strict file permissions (e.g., `chmod 600 .env`) so only the owner can read/write.
+   - Ensure it's **never** committed to Git or any version control system.
+   - Limit access to the server and user account running the deployment.
+     Compromise of these keys can lead to loss of funds, unauthorized actions, and compromised entity.
+
+   :::
+
+4. Run the provided script. This uses your `.env` file to populate the specific configuration files used internally by each Docker service.
 
    ```bash
    ./populate_config.sh
    ```
 
-5. Deploy the instance with the provided `docker-compose.yaml`
+   _Remember to **re-run this script** every time you make changes to your `.env` file._
+
+5. Use Docker Compose to start all Flare Entity services defined in `docker-compose.yaml` in detached mode (`-d`).
 
    ```bash
    docker compose up -d
    ```
 
-:::tip[Verify Deployment]
+   _Note: The first run will download all necessary Docker images, which may take several minutes depending on image sizes and network speed._
 
-Once the deployment is up (`docker ps` should show multiple containers running), monitor the logs of the key components (like `system-client`, `c-chain-indexer`, `fast-updates-client`, `ftso-client`, `fdc-client`) using `docker compose logs <service_name>` to ensure they are connecting, registering (if applicable for the epoch), and starting their processes correctly.
+If your Flare Entity is working correctly, congratulations!
 
-Refer to the [Troubleshooting](#troubleshooting) and [Maintenance](#maintenance) sections for common issues and checks.
+### Verify deployment success
 
-:::
+After starting, confirm the containers are running (`docker ps`). Crucially, monitor the initial logs of key components to ensure they start correctly, connect to necessary services (RPC node, database, verifiers, Feed Value Provider), and enter their operational loops. Use `docker compose logs -f <service_name>` to tail logs in real-time.
+
+Key services to check include: `system-client`, `c-chain-indexer`, `fast-updates-client`, `ftso-client`, `fdc-client`.
+
+Look for successful connections, registration messages (if applicable for the current reward epoch timing), and absence of repeating critical errors.
+
+Refer to the [Troubleshooting](#troubleshooting) and [Maintenance](#maintenance) sections for common issues and ongoing checks.
 
 ## Update Flare Entity
 
-To update the Flare Entity, you can use the `docker compose pull` command to pull the latest image and then restart the services:
+Keep your Flare Entity software up-to-date with the latest official releases provided through the Docker images.
 
-```bash
-docker compose pull
-docker compose up -d
-```
+1.  (Optional) For a potentially cleaner update, especially if major changes occurred, you can stop the running containers:
 
-This will ensure that you are running the latest version of the Flare Entity components.
-If you have made changes to the `.env` file, remember to run `./populate_config.sh` again before restarting the services.
+    ```bash
+    docker compose down
+    ```
+
+2.  Fetch the newest images specified in the project's `docker-compose.yaml` file:
+
+    ```bash
+    docker compose pull
+    ```
+
+3.  (If Required) If the new software version requires changes to configuration, carefully modify your `.env` file according to the release notes, and **then re-run the configuration generation script**:
+
+    ```bash
+    # Modify .env if necessary...
+    ./populate_config.sh
+    ```
+
+4.  Start the services using the updated images (and configuration, if changed). `docker compose up -d` will typically recreate containers whose images have changed.
+
+    ```bash
+    docker compose up -d
+    ```
+
+5.  After restarting, re-check container status (`docker ps`) and monitor logs as described in the [Verify deployment success](#verify-deployment-success) above to ensure all services start correctly with the new versions.
 
 ## Troubleshooting
 
@@ -659,23 +713,17 @@ To get your validator logo and name listed on the explorers, open a PR on [TowoL
 
 :::
 
-- **`system-client` is not doing anything**
+- **`system-client` is not doing anything:** Likely, your entity is not registered as a voter for the current reward epoch. There is a time window for voter registration on every reward epoch, and if you leave things running you should eventually see `RegisterVoter success` in the logs. It should then start submitting data successfully in the **following** reward epoch.
 
-  Likely, your entity is not registered as a voter for the current reward epoch. There is a time window for voter registration on every reward epoch, and if you leave things running you should eventually see `RegisterVoter success` in the logs. It should then start submitting data successfully in the **following** reward epoch.
+- **`system-client` fails to fetch sub-protocol data:** The `c-chain-indexer` may still be indexing data, once it's finished you should see `Indexer at block x` in the logs. If it's still processing blocks you will see various errors across all services.
 
-- **`system-client` fails to fetch sub-protocol data**
+- **`fast-updates` client is not doing anything:** If you have low weight it may take some time until you are selected to submit an update.
 
-  The `c-chain-indexer` may still be indexing data, once it's finished you should see `Indexer at block x` in the logs. If it's still processing blocks you will see various errors across all services.
-
-- **`fast-updates` client is not doing anything**
-
-  If you have low weight it may take some time until you are selected to submit an update.
-
-- **Icon and logo don't show up on Flare explorers**
-
-  To get your validator logo and name listed on the explorers, open a PR on [TowoLabs/ftso-signal-providers](https://github.com/TowoLabs/ftso-signal-providers).
+- **Icon and logo don't show up on Flare explorers:** To get your validator logo and name listed on the explorers, open a PR on [TowoLabs/ftso-signal-providers](https://github.com/TowoLabs/ftso-signal-providers).
 
 ## Maintenance
+
+Ongoing maintenance is crucial for a reliable Flare Entity.
 
 - **Basic health checks**:
 
@@ -733,3 +781,7 @@ To get your validator logo and name listed on the explorers, open a PR on [TowoL
     Set an alert if there is no `Relaying finished for protocol ...` for 5-10 minutes (protocol 100 is FTSOv2 and protocol 200 is FDC)
 
     :::
+
+- **Log Management**: Container logs can consume significant disk space over time. Implement a strategy:
+  - Configure Docker's logging driver (default `json-file`) globally (`/etc/docker/daemon.json`) or per-service in `docker-compose.yaml` to limit log size and file count (e.g., `max-size: "100m"`, `max-file: "5"`). Refer to [Docker logging documentation](https://docs.docker.com/config/containers/logging/configure/).
+  - Periodically use `docker system prune` or remove old log files manually if rotation is not configured.
