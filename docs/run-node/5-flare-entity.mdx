@@ -713,75 +713,110 @@ To get your validator logo and name listed on the explorers, open a PR on [TowoL
 
 :::
 
-- **`system-client` is not doing anything:** Likely, your entity is not registered as a voter for the current reward epoch. There is a time window for voter registration on every reward epoch, and if you leave things running you should eventually see `RegisterVoter success` in the logs. It should then start submitting data successfully in the **following** reward epoch.
+<details>
+<summary>`system-client` is not doing anything</summary>
 
-- **`system-client` fails to fetch sub-protocol data:** The `c-chain-indexer` may still be indexing data, once it's finished you should see `Indexer at block x` in the logs. If it's still processing blocks you will see various errors across all services.
+Likely, your entity is not registered as a voter for the current reward epoch. There is a time window for voter registration on every reward epoch, and if you leave things running you should eventually see `RegisterVoter success` in the logs. It should then start submitting data successfully in the **following** reward epoch.
 
-- **`fast-updates` client is not doing anything:** If you have low weight it may take some time until you are selected to submit an update.
+</details>
 
-- **Icon and logo don't show up on Flare explorers:** To get your validator logo and name listed on the explorers, open a PR on [TowoLabs/ftso-signal-providers](https://github.com/TowoLabs/ftso-signal-providers).
+<details>
+<summary>`system-client` fails to fetch sub-protocol data</summary>
+
+The `c-chain-indexer` may still be indexing data, once it's finished you should see `Indexer at block x` in the logs. If it's still processing blocks you will see various errors across all services.
+
+</details>
+
+<details>
+<summary>`fast-updates` client is not doing anything</summary>
+
+If you have low weight it may take some time until you are selected to submit an update.
+
+</details>
+
+<details>
+<summary>Icon and logo don't show up on Flare explorers</summary>
+
+To get your validator logo and name listed on the explorers, open a PR on [TowoLabs/ftso-signal-providers](https://github.com/TowoLabs/ftso-signal-providers).
+
+</details>
 
 ## Maintenance
 
 Ongoing maintenance is crucial for a reliable Flare Entity.
 
-- **Basic health checks**:
+<details>
+<summary>Basic health checks</summary>
 
-  - Monitor the `/ext/health` endpoint for validator status
-  - Check validator connectivity using this [API endpoint](https://build.avax.network/docs/api-reference/p-chain/api#platformgetcurrentvalidators) to verify uptime/connected values
-  - For advanced monitoring, use Avalanche's [Grafana dashboards](https://support.avax.network/en/articles/6159074-grafana-dashboards) which are compatible with Flare
+- Monitor the `/ext/health` endpoint for validator status
+- Check validator connectivity using this [API endpoint](https://build.avax.network/docs/api-reference/p-chain/api#platformgetcurrentvalidators) to verify uptime/connected values
+- For advanced monitoring, use Avalanche's [Grafana dashboards](https://support.avax.network/en/articles/6159074-grafana-dashboards) which are compatible with Flare
 
-- **FDC health monitoring**:
+</details>
 
-  - Query each FDC verifier with: `GET http://{verifier-host}:{verifier-port}/verifier/{chain}/health`
+<details>
+<summary>FDC health monitoring</summary>
 
-- **FTSO health monitoring**:
+Query each FDC verifier with: `GET http://{verifier-host}:{verifier-port}/verifier/{chain}/health`
 
-  - Check minimal conditions status with:
+</details>
 
-    ```bash
-    curl -s 'https://flare-systems-explorer.flare.network/backend-url/api/v0/entity?limit=100&offset=0&sort_ascending=true&sort_by=' | jq '.results[] | select(.identity_address == "YOUR_IDENTITY_ADDRESS") | .entityminimalconditions'
-    ```
+<details>
+<summary>FTSO health monitoring</summary>
 
-  - For registration, your log should contain:
+- Check minimal conditions status with:
 
-    ```plaintext
-    [01-03|23:02:03.175] INFO epoch/registry_utils.go:187 Voter 0x25f42DEf3fCc078DE8895Cd01de8AB6514020548 registered for epoch 3589
-    [01-04|05:02:04.096] INFO epoch/registry_utils.go:187 Voter 0x25f42DEf3fCc078DE8895Cd01de8AB6514020548 registered for epoch 3590
-    [01-04|11:02:07.113] INFO epoch/registry_utils.go:187 Voter 0x25f42DEf3fCc078DE8895Cd01de8AB6514020548 registered for epoch 3591
-    [01-04|17:02:03.136] INFO epoch/registry_utils.go:187 Voter 0x25f42DEf3fCc078DE8895Cd01de8AB6514020548 registered for epoch 3592
-    [01-04|23:02:03.217] INFO epoch/registry_utils.go:187 Voter 0x25f42DEf3fCc078DE8895Cd01de8AB6514020548 registered for epoch 3593
-    ```
+  ```bash
+  curl -s 'https://flare-systems-explorer.flare.network/backend-url/api/v0/entity?limit=100&offset=0&sort_ascending=true&sort_by=' | jq '.results[] | select(.identity_address == "YOUR_IDENTITY_ADDRESS") | .entityminimalconditions'
+  ```
 
-  - For submissions, your log should contain:
+- For registration, your log should contain:
 
-    ```plaintext
-    [01-06|14:39:10.366] INFO protocol/submitter.go:76 Submitter submitSignatures successfully sent tx
-    [01-06|14:39:31.273] INFO protocol/submitter.go:76 Submitter submit1 successfully sent tx
-    [01-06|14:39:53.107] INFO protocol/submitter.go:76 Submitter submit2 successfully sent tx
-    ```
+  ```plaintext
+  [01-03|23:02:03.175] INFO epoch/registry_utils.go:187 Voter 0x25f42DEf3fCc078DE8895Cd01de8AB6514020548 registered for epoch 3589
+  [01-04|05:02:04.096] INFO epoch/registry_utils.go:187 Voter 0x25f42DEf3fCc078DE8895Cd01de8AB6514020548 registered for epoch 3590
+  [01-04|11:02:07.113] INFO epoch/registry_utils.go:187 Voter 0x25f42DEf3fCc078DE8895Cd01de8AB6514020548 registered for epoch 3591
+  [01-04|17:02:03.136] INFO epoch/registry_utils.go:187 Voter 0x25f42DEf3fCc078DE8895Cd01de8AB6514020548 registered for epoch 3592
+  [01-04|23:02:03.217] INFO epoch/registry_utils.go:187 Voter 0x25f42DEf3fCc078DE8895Cd01de8AB6514020548 registered for epoch 3593
+  ```
 
-    :::tip[Set an alert]
+- For submissions, your log should contain:
 
-    Set an alert if there is no `Submitter ... successfully sent tx` message for 5-10 minutes
+  ```plaintext
+  [01-06|14:39:10.366] INFO protocol/submitter.go:76 Submitter submitSignatures successfully sent tx
+  [01-06|14:39:31.273] INFO protocol/submitter.go:76 Submitter submit1 successfully sent tx
+  [01-06|14:39:53.107] INFO protocol/submitter.go:76 Submitter submit2 successfully sent tx
+  ```
 
-    :::
+  :::tip[Set an alert]
 
-  - For finalization verification, your log should contain:
+  Set an alert if there is no `Submitter ... successfully sent tx` message for 5-10 minutes
 
-    ```plaintext
-    [01-05|15:55:54.641] INFO finalizer/relay_client.go:168 Relaying finished for protocol 100 with success
-    [01-05|15:55:55.686] INFO finalizer/relay_client.go:168 Relaying finished for protocol 200 with success
-    [01-05|15:57:25.608] INFO finalizer/relay_client.go:168 Relaying finished for protocol 100 with non fatal error
-    [01-05|15:57:28.937] INFO finalizer/relay_client.go:168 Relaying finished for protocol 200 with non fatal error
-    ```
+  :::
 
-    :::tip[Set an alert]
+- For finalization verification, your log should contain:
 
-    Set an alert if there is no `Relaying finished for protocol ...` for 5-10 minutes (protocol 100 is FTSOv2 and protocol 200 is FDC)
+  ```plaintext
+  [01-05|15:55:54.641] INFO finalizer/relay_client.go:168 Relaying finished for protocol 100 with success
+  [01-05|15:55:55.686] INFO finalizer/relay_client.go:168 Relaying finished for protocol 200 with success
+  [01-05|15:57:25.608] INFO finalizer/relay_client.go:168 Relaying finished for protocol 100 with non fatal error
+  [01-05|15:57:28.937] INFO finalizer/relay_client.go:168 Relaying finished for protocol 200 with non fatal error
+  ```
 
-    :::
+  :::tip[Set an alert]
 
-- **Log Management**: Container logs can consume significant disk space over time. Implement a strategy:
-  - Configure Docker's logging driver (default `json-file`) globally (`/etc/docker/daemon.json`) or per-service in `docker-compose.yaml` to limit log size and file count (e.g., `max-size: "100m"`, `max-file: "5"`). Refer to [Docker logging documentation](https://docs.docker.com/config/containers/logging/configure/).
-  - Periodically use `docker system prune` or remove old log files manually if rotation is not configured.
+  Set an alert if there is no `Relaying finished for protocol ...` for 5-10 minutes (protocol 100 is FTSOv2 and protocol 200 is FDC)
+
+  :::
+
+</details>
+
+<details>
+<summary>Log Management</summary>
+
+Container logs can consume significant disk space over time. Implement a strategy:
+
+- Configure Docker's logging driver (default `json-file`) globally (`/etc/docker/daemon.json`) or per-service in `docker-compose.yaml` to limit log size and file count (e.g., `max-size: "100m"`, `max-file: "5"`). Refer to [Docker logging documentation](https://docs.docker.com/config/containers/logging/configure/).
+- Periodically use `docker system prune` or remove old log files manually if rotation is not configured.
+
+</details>
