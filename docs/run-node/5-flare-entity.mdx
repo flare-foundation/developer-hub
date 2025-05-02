@@ -58,9 +58,9 @@ After the introduction of [minimal conditions](/network/fsp/rewarding#minimal-co
 :::
 
 - **FSP (FTSO, FDC)** reward information is available at [flare-foundation/fsp-rewards](https://github.com/flare-foundation/fsp-rewards/tree/main/flare) and on the [Discourse Forum](https://forum.flare.network/t/fsp-rewards-data) (see XLSX file for historical reward data). Updated every reward epoch (3.5 days), with epochs starting on Monday and Thursday.
-- **Staking** reward information is available at [flare-foundation/reward-scripts](https://github.com/flare-foundation/reward-scripts/tree/main/generated-files/validator-rewards). Updated every 4 reward epochs (14 days), with epochs starting on Monday and Thursday.
+- **Staking** reward information is available at [flare-foundation/reward-scripts](https://github.com/flare-foundation/reward-scripts/tree/main/generated-files). Updated every reward epoch (3.5 days), with epochs starting on Monday and Thursday.
 
-Currently, claiming rewards needs to be performed [manually](https://github.com/flare-foundation/FTSO-Scaling/blob/main/scripts/rewards/README.md#claiming-rewards). Automated solutions are being worked upon to simplify this process.
+Currently, claiming rewards needs to be performed manually for both [FSP rewards](https://github.com/flare-foundation/FTSO-Scaling/blob/main/scripts/rewards/README.md#claiming-rewards) and [validator staking rewards](/network/guides/using-flare-stake-tool#claiming-rewards). Automated solutions are being worked upon to simplify this process.
 
 ## Registration
 
@@ -751,6 +751,11 @@ You can verify if your entity meets the required minimal conditions for FSP rewa
 - **Eligibility:** Your entity must show a **`YES`** status for a specific reward epoch to be eligible for FSP rewards for that period. The requirements themselves are defined in [FIP.10](/network/fsp/rewarding#minimal-conditions).
 - **Pass System:** Meeting minimal conditions earns a "pass" (up to a maximum of 3 stored passes). These passes act as a buffer, automatically covering occasional performance dips (like missed submissions or uptime issues) in subsequent epochs, thus preventing immediate reward loss. If you fail to meet conditions and have no passes, FSP rewards for that epoch are forfeited.
 
+Verify your entity's minimal conditions via CLI - entity address specified should be without 0x prefix:
+
+```bash
+curl "https://flare-systems-explorer-backend.flare.network/api/v0/entity?query=<entity-address>" -H "Accept: application/json" | jq -r '.results[0].entityminimalconditions'
+```
 </details>
 
 <details>
@@ -760,8 +765,21 @@ Reward amounts for both staking and FSP participation are calculated and publish
 
 - **Validator Staking Rewards:**
 
-  - Typically released every 4 reward epochs (approx. every 14 days).
+  - Calculated per reward epoch (every 3.5 days, starting Mon/Thu) and claimable every 4 reward epochs (approx. every 14 days).
   - Check the `validator-rewards` directory within the **[flare-foundation/reward-scripts](https://github.com/flare-foundation/reward-scripts/tree/main/generated-files/validator-rewards)** repository on GitHub.
+
+  Inspect your entity's validator rewards for a specific epoch via CLI:
+
+  ```bash
+  NODE_ID="<your-node-id>"
+  EPOCH_ID="<reward-epoch-id>"
+  curl -s "https://raw.githubusercontent.com/flare-foundation/reward-scripts/refs/heads/main/generated-files/reward-epoch-${EPOCH_ID}/nodes-data.json" | \
+    jq --arg node_id "${NODE_ID}" \
+    '.[] |
+    select(.nodeId == $node_id) |
+    (.validatorRewardAmount | tonumber / 1000000000000000000) |
+    "Validator Rewards: \((. * 100 | floor) / 100) FLR"'
+   ```
 
 - **FSP (FTSO & FDC) Rewards:**
   - Calculated per reward epoch (every 3.5 days, starting Mon/Thu). Requires meeting minimal conditions requirements.
@@ -769,6 +787,18 @@ Reward amounts for both staking and FSP participation are calculated and publish
     - **GitHub:** **[flare-foundation/fsp-rewards](https://github.com/flare-foundation/fsp-rewards/tree/main/flare)** repository (look for files named by epoch).
     - **Forum:** The **[FSP Rewards Data thread](https://forum.flare.network/t/fsp-rewards-data)** on the Flare Discourse Forum often has summary files (like XLSX) and related discussions.
 
+  Inspect your entity's FSP rewards for a specific epoch via CLI:
+
+  ```bash
+  ENTITY_ADDRESS="0x<your-entity-address>"
+  EPOCH_ID="<reward-epoch-id>"
+  curl -s "https://raw.githubusercontent.com/flare-foundation/fsp-rewards/refs/heads/main/flare/${EPOCH_ID}/reward-distribution-data.json" | \
+    jq --arg entity_address "${ENTITY_ADDRESS}" \
+    '.rewardClaims[] |
+    select(.body.beneficiary == $entity_address) |
+    (.body.amount | tonumber / 1000000000000000000) |
+    "FSP Rewards: \((. * 100 | floor) / 100) FLR"'
+  ```
 </details>
 
 <details>
