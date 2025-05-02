@@ -36,6 +36,28 @@ function getAgentInfo(address _agentVault)
     returns (AgentInfo.Info memory);
 ```
 
+### `reserveCollateral`
+
+Reserves collateral for minting FAssets. Before paying underlying assets for minting, the minter must reserve collateral and pay a collateral reservation fee.
+
+Parameters:
+
+- `_agentVault`: Agent vault address
+- `_lots`: Number of lots for which to reserve collateral
+- `_maxMintingFeeBIPS`: Maximum minting fee (BIPS) that can be charged by the agent - best practice is to copy the current agent's published fee; used to prevent agent from front-running reservation request and increasing fee
+- `_executor`: Account that is allowed to execute minting (besides minter and agent)
+- `_minterUnderlyingAddresses`: Array of minter's underlying addresses - needed only if handshake is required
+
+```solidity
+function reserveCollateral(
+    address _agentVault,
+    uint256 _lots,
+    uint256 _maxMintingFeeBIPS,
+    address payable _executor,
+    string[] calldata _minterUnderlyingAddresses
+) external payable;
+```
+
 ### `redeem`
 
 Redeem number of lots of FAssets.
@@ -101,4 +123,140 @@ function agentRedemptionQueue(
     uint256 _pageSize
 ) external view
     returns (RedemptionTicketInfo.Data[] memory _queue, uint256 _nextRedemptionTicketId);
+```
+
+## Events
+
+### `CollateralReserved`
+
+Emitted when a minter has reserved collateral, paid the reservation fee, and is expected to pay the underlying funds. The agent's collateral is reserved at this point.
+
+Parameters:
+
+- `agentVault`: Address of the agent vault
+- `minter`: Address of the minter
+- `collateralReservationId`: ID of the collateral reservation
+- `valueUBA`: Value in underlying base amount
+- `feeUBA`: Fee in underlying base amount
+- `firstUnderlyingBlock`: First block number on the underlying chain
+- `lastUnderlyingBlock`: Last block number on the underlying chain
+- `lastUnderlyingTimestamp`: Last timestamp on the underlying chain
+- `paymentAddress`: Address for payment
+- `paymentReference`: Reference for payment
+- `executor`: Address of the executor
+- `executorFeeNatWei`: Fee for the executor in NAT wei
+
+```solidity
+event CollateralReserved(
+    address indexed agentVault,
+    address indexed minter,
+    uint256 indexed collateralReservationId,
+    uint256 valueUBA,
+    uint256 feeUBA,
+    uint256 firstUnderlyingBlock,
+    uint256 lastUnderlyingBlock,
+    uint256 lastUnderlyingTimestamp,
+    string paymentAddress,
+    bytes32 paymentReference,
+    address executor,
+    uint256 executorFeeNatWei
+);
+```
+
+### `CollateralReservationRejected`
+
+Emitted when an agent rejects the collateral reservation request due to the minter's identity. The reserved collateral is released.
+
+Parameters:
+
+- `agentVault`: Address of the agent vault
+- `minter`: Address of the minter
+- `collateralReservationId`: ID of the collateral reservation
+
+```solidity
+event CollateralReservationRejected(
+    address indexed agentVault,
+    address indexed minter,
+    uint256 indexed collateralReservationId
+);
+```
+
+### `CollateralReservationCancelled`
+
+Emitted when a minter cancels the collateral reservation request due to agent inactivity. The reserved collateral is released.
+
+Parameters:
+
+- `agentVault`: Address of the agent vault
+- `minter`: Address of the minter
+- `collateralReservationId`: ID of the collateral reservation
+
+```solidity
+event CollateralReservationCancelled(
+    address indexed agentVault,
+    address indexed minter,
+    uint256 indexed collateralReservationId
+);
+```
+
+### `MintingExecuted`
+
+Emitted when a minter has successfully paid the underlying funds in time and received the FAssets. The agent's collateral is locked at this point.
+
+Parameters:
+
+- `agentVault`: Address of the agent vault
+- `collateralReservationId`: ID of the collateral reservation
+- `mintedAmountUBA`: Amount of FAssets minted in underlying base amount
+- `agentFeeUBA`: Fee paid to the agent in underlying base amount
+- `poolFeeUBA`: Fee paid to the pool in underlying base amount
+
+```solidity
+event MintingExecuted(
+    address indexed agentVault,
+    uint256 indexed collateralReservationId,
+    uint256 mintedAmountUBA,
+    uint256 agentFeeUBA,
+    uint256 poolFeeUBA
+);
+```
+
+### `MintingPaymentDefault`
+
+Emitted when a minter fails to pay the underlying funds in time. The collateral reservation fee is paid to the agent and the reserved collateral is released.
+
+Parameters:
+
+- `agentVault`: Address of the agent vault
+- `minter`: Address of the minter
+- `collateralReservationId`: ID of the collateral reservation
+- `reservedAmountUBA`: Amount that was reserved in underlying base amount
+
+```solidity
+event MintingPaymentDefault(
+    address indexed agentVault,
+    address indexed minter,
+    uint256 indexed collateralReservationId,
+    uint256 reservedAmountUBA
+);
+```
+
+### `CollateralReservationDeleted`
+
+Emitted when both the minter and agent fail to present any proof within the attestation time window, and the agent calls `unstickMinting` to release the reserved collateral.
+
+Parameters:
+
+- `agentVault`: Address of the agent vault
+- `minter`: Address of the minter
+- `collateralReservationId`: ID of the collateral reservation
+- `reservedAmountUBA`: Amount that was reserved in underlying base amount
+
+```solidity
+event CollateralReservationDeleted(
+    address indexed agentVault,
+    address indexed minter,
+    uint256 indexed collateralReservationId,
+    uint256 reservedAmountUBA
+);
 ```
