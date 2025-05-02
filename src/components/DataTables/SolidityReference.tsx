@@ -25,6 +25,7 @@ interface NetworkLinksMap {
 interface SolidityReferenceProps {
   network: string;
   contractNames: string[];
+  renderAbi?: boolean;
 }
 
 const networkLinks: NetworkLinksMap = {
@@ -53,6 +54,7 @@ const networkLinks: NetworkLinksMap = {
 const SolidityReference: React.FC<SolidityReferenceProps> = ({
   network,
   contractNames,
+  renderAbi = true,
 }) => {
   const links = networkLinks[network];
   const networkData: ContractData[] = tableData[network] || [];
@@ -114,7 +116,7 @@ const SolidityReference: React.FC<SolidityReferenceProps> = ({
         <tr className="table-header">
           <th>Contract</th>
           <th>Address</th>
-          <th>ABI</th>
+          {renderAbi && <th>ABI</th>}
         </tr>
       </thead>
       <tbody>
@@ -123,7 +125,9 @@ const SolidityReference: React.FC<SolidityReferenceProps> = ({
             <tr key={index} className="table-row">
               <td className="contract-name">{row.name}</td>
               <td className="contract-address">{renderAddress(row.address)}</td>
-              <td className="contract-abi">{renderAbiLink(row.abiLink)}</td>
+              {renderAbi && (
+                <td className="contract-abi">{renderAbiLink(row.abiLink)}</td>
+              )}
             </tr>
           ))
         ) : (
