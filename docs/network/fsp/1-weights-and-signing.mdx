@@ -14,11 +14,11 @@ Importantly, vote power is community-drive, derived from two key sources:
 - **P-chain Stake**: `FLR` staked either directly by validators or delegated to them by other network participants.
 - **WNat Delegations**: Wrapped `FLR` (`WFLR`) delegated by community members via the WNat smart contract.
 
-This design ensures that governance over Flare’s protocols is not dictated by a centralized entity, but instead emerges organically from the collective decisions of token holders and validators.
+This design ensures that governance over Flare's protocols is not dictated by a centralized entity, but instead emerges organically from the collective decisions of token holders and validators.
 Through delegation and staking, the community directly shapes the behavior and evolution of the network.
 
 Each data provider is identified by an **identity address** (managed securely via cold wallets), used for conducting admin operations (e.g., setting fees, signing addresses, delegation addresses).
-Data providers can also set a **signing address** (hot wallet) for protocol participation, and an optional prioritized submission address for on-chain communication.
+Data providers can also set a **signing address** (hot wallet) for protocol participation, and an optional prioritized submission address for onchain communication.
 
 ## Voting
 
@@ -35,14 +35,14 @@ As a result, voting rounds are identified by the ID of the voting epoch in which
 
 Each sub-protocol aims to reach consensus on a **Merkle root** for every voting round:
 
-- Data providers independently compute candidate Merkle roots and submit signed roots on-chain.
+- Data providers independently compute candidate Merkle roots and submit signed roots onchain.
 - A root is confirmed if it surpasses a **50%+ voting weight threshold**, as defined below.
 - Finalization occurs when signatures exceeding the threshold are submitted to the [`Relay`](/network/fsp/solidity-reference/IRelay) contract, which verifies and stores confirmed Merkle roots.
   These are accessible for proof verification by other smart contracts.
 
 ### Using confirmed voting results
 
-To verify data on-chain:
+To verify data onchain:
 
 1. Smart contracts receive:
    - Protocol data (structured as a Solidity struct).
@@ -79,25 +79,25 @@ Within the FSP and core Flare protocols, there are multiple types of weights, de
 
 - **Total Voting Weight**: Calculated by summing up the signing weights of all eligible data providers.
 
-Weight systems serve a variety of purposes in Flare's management and enshrined protocols, allowing community members to play an important role in Flare’s core protocols.
+Weight systems serve a variety of purposes in Flare's management and enshrined protocols, allowing community members to play an important role in Flare's core protocols.
 The most widely used weight system throughout the main protocols is the **signing weight**, which is part of the **signing policy**.
 
 The relevant weights and their uses are listed below.
 
-| Protocol       | Component                                                                                       | Weight System    |
-| -------------- | ----------------------------------------------------------------------------------------------- | ---------------- |
-| **FSP**        | • Updating Signing Policy<br />• Validator Uptime<br />• Reward Signing                         | $W_S$            |
-| **FTSOv2**     | • Scaling: Weighted Median Calculation<br />• Scaling: Accuracy Rewards                         | $W'_{WFLR}$      |
-|                | • Scaling: Signing and Finalization (through FSP)<br />• Block-latency: Sortition and Rewarding | $W_S$            |
-| **FDC**        | • Bit Voting<br />• Signing and Finalization (through FSP)<br />• Rewarding                     | $W_S$            |
-| **Staking**    | • Staking Rewards                                                                               | $W_P$            |
-| **Governance** | • Voting                                                                                        | $W_{WFLR} + W_M$ |
+| **Protocol**   | **Component**                                                                                   | **Weight System** |
+| -------------- | ----------------------------------------------------------------------------------------------- | ----------------- |
+| **FSP**        | • Updating Signing Policy<br />• Validator Uptime<br />• Reward Signing                         | $W_S$             |
+| **FTSOv2**     | • Scaling: Weighted Median Calculation<br />• Scaling: Accuracy Rewards                         | $W'_{WFLR}$       |
+|                | • Scaling: Signing and Finalization (through FSP)<br />• Block-latency: Sortition and Rewarding | $W_S$             |
+| **FDC**        | • Bit Voting<br />• Signing and Finalization (through FSP)<br />• Rewarding                     | $W_S$             |
+| **Staking**    | • Staking Rewards                                                                               | $W_P$             |
+| **Governance** | • Voting                                                                                        | $W_{WFLR} + W_P$  |
 
 ### Signing Policy thresholds
 
 A **signing policy** includes:
 
-- `rewardEpochId`: Reward epoch ID.voter
+- `rewardEpochId`: Reward epoch ID.
 - `startVotingRoundId`: Indicates the start of a reward epoch.
 - `voters`: Canonical list of data provider addresses.
 - `weights`: Compressed, normalized weights (2-byte values).
