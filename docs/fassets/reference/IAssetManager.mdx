@@ -121,6 +121,27 @@ function collateralReservationFee(
 ) external view returns (uint256 _reservationFeeNATWei);
 ```
 
+### `executeMinting`
+
+After obtaining proof of underlying payment, the minter calls this method to finish the minting and collect the minted FAssets.
+
+Note: May only be called by:
+- The minter (creator of the collateral reservation request)
+- The executor appointed by the minter
+- The agent owner (owner of the agent vault in the collateral reservation)
+
+Parameters:
+
+- `_payment`: Proof of the underlying payment (must contain exact `value + fee` amount and correct payment reference)
+- `_collateralReservationId`: Collateral reservation ID
+
+```solidity
+function executeMinting(
+    IPayment.Proof calldata _payment,
+    uint256 _collateralReservationId
+) external nonReentrant;
+```
+
 ### `redeem`
 
 Redeem number of lots of FAssets.
