@@ -57,10 +57,10 @@ After the introduction of [minimal conditions](/network/fsp/rewarding#minimal-co
 
 :::
 
-- **FSP (FTSO, FDC)** reward information is available at [flare-foundation/fsp-rewards](https://github.com/flare-foundation/fsp-rewards/tree/main/flare) and on the [Discourse Forum](https://forum.flare.network/t/fsp-rewards-data) (see XLSX file for historical reward data). Updated every reward epoch (3.5 days), with epochs starting on Monday and Thursday.
-- **Staking** reward information is available at [flare-foundation/reward-scripts](https://github.com/flare-foundation/reward-scripts/tree/main/generated-files). Updated every reward epoch (3.5 days), with epochs starting on Monday and Thursday.
+- [FSP rewards](https://github.com/flare-foundation/FTSO-Scaling/blob/main/scripts/rewards/README.md#claiming-rewards) information is available at [flare-foundation/fsp-rewards](https://github.com/flare-foundation/fsp-rewards/tree/main/flare) and on the [Discourse Forum](https://forum.flare.network/t/fsp-rewards-data) (see XLSX file for historical reward data). Updated every reward epoch (3.5 days), with epochs starting on Monday and Thursday.
+- [Validator staking rewards](/network/guides/using-flare-stake-tool#claiming-rewards) information is available at [flare-foundation/reward-scripts](https://github.com/flare-foundation/reward-scripts/tree/main/generated-files). Updated every reward epoch (3.5 days), with epochs starting on Monday and Thursday.
 
-Currently, claiming rewards needs to be performed manually for both [FSP rewards](https://github.com/flare-foundation/FTSO-Scaling/blob/main/scripts/rewards/README.md#claiming-rewards) and [validator staking rewards](/network/guides/using-flare-stake-tool#claiming-rewards). Automated solutions are being worked upon to simplify this process.
+Learn how to check your Flare Entity rewards in the [FAQs](#faqs) section.
 
 ## Registration
 
@@ -739,143 +739,175 @@ To get your validator logo and name listed on the explorers, open a PR on [TowoL
 
 </details>
 
-## Maintenance
-
-Ongoing maintenance is crucial for a reliable Flare Entity.
+## FAQs
 
 <details>
 <summary>How do I check if my Flare Entity meets Minimal Conditions?</summary>
 
-You can verify if your entity meets the required minimal conditions for FSP reward eligibility using the **[Flare Systems Explorer](https://flare-systems-explorer.flare.network/providers?tab=minimalConditions)**. Navigate to the **Minimal Conditions** tab.
+Meeting [minimal conditions](/network/fsp/rewarding#minimal-conditions) for availability and performance in each reward epoch is necessary for FSP reward eligibility.
+You can check your entity's status using two primary methods:
 
-- **Eligibility:** Your entity must show a **`YES`** status for a specific reward epoch to be eligible for FSP rewards for that period. The requirements themselves are defined in [FIP.10](/network/fsp/rewarding#minimal-conditions).
-- **Pass System:** Meeting minimal conditions earns a "pass" (up to a maximum of 3 stored passes). These passes act as a buffer, automatically covering occasional performance dips (like missed submissions or uptime issues) in subsequent epochs, thus preventing immediate reward loss. If you fail to meet conditions and have no passes, FSP rewards for that epoch are forfeited.
+**Method 1: Flare Systems Explorer (Web Interface)**
 
-Verify your entity's minimal conditions via CLI - entity address specified should be without 0x prefix:
+This is the easiest and most reliable way to check your status.
 
-```bash
-curl "https://flare-systems-explorer-backend.flare.network/api/v0/entity?query=<entity-address>" -H "Accept: application/json" | jq -r '.results[0].entityminimalconditions'
-```
+1.  Navigate to the **Minimal Conditions** tab on the [Flare Systems Explorer](https://flare-systems-explorer.flare.network/providers?tab=minimalConditions).
+2.  Find your entity by searching for your `Identity` address.
+3.  Review the status column for the relevant reward epoch(s). A **`YES`** indicates conditions were met for that epoch.
+
+**Method 2: Explorer Backend API (Command Line)**
+
+You can query the API that powers the explorer for programmatic access.
+
+1.  You'll need your entity's registered `Identity` address, without the `0x` prefix.
+
+    ```bash
+    IDENTITY_ADDRESS="563...1a8" # <-- REPLACE WITH YOUR Identity ADDRESS WITHOUT 0x
+    ```
+
+2.  Query the API and extract the minimal conditions status:
+
+    ```bash
+    curl "https://flare-systems-explorer-backend.flare.network/api/v0/entity?query=${IDENTITY_ADDRESS}" \
+      -H "Accept: application/json" | jq -r '.results[0].entityminimalconditions'
+    ```
+
+3.  An example output might look like:
+
+    ```json
+    {
+      "id": 184955,
+      "reward_epoch": 289, // Epoch the status applies to
+      "ftso_scaling": true,
+      "ftso_fast_updates": true,
+      "staking": true,
+      "fdc": true,
+      "passes_held": 3,
+      "strikes": 0,
+      "new_number_of_passes": 3,
+      "eligible_for_reward": true, // Indicates minimal conditions met
+      "entity": 42
+    }
+    ```
 
 </details>
 
 <details>
-<summary>Where can I find calculated rewards data?</summary>
+<summary>Where can I find calculated rewards data and my specific rewards?</summary>
 
 Reward amounts for both staking and FSP participation are calculated and published periodically. Always refer to official Flare sources for the latest data locations.
 
-- **Validator Staking Rewards:**
+**Validator Staking Rewards:**
 
-  - Calculated per reward epoch (every 3.5 days, starting Mon/Thu) and claimable every 4 reward epochs (approx. every 14 days).
-  - Check the `validator-rewards` directory within the **[flare-foundation/reward-scripts](https://github.com/flare-foundation/reward-scripts/tree/main/generated-files/validator-rewards)** repository on GitHub.
+Calculated per reward epoch (every 3.5 days, starting Mon/Thu) and claimable every 4 reward epochs (approx. every 14 days).
+Check the `validator-rewards` directory within the **[flare-foundation/reward-scripts](https://github.com/flare-foundation/reward-scripts/tree/main/generated-files/validator-rewards)** repository on GitHub.
+To inspect your entity's validator rewards for a specific epoch via CLI:
 
-  Inspect your entity's validator rewards for a specific epoch via CLI:
+1. Get your `NODE_ID` and the `EPOCH_ID` from the [Flare Systems Explorer](https://flare-systems-explorer.flare.network/providers).
 
-  ```bash
-  NODE_ID="<your-node-id>"
-  EPOCH_ID="<reward-epoch-id>"
-  curl -s "https://raw.githubusercontent.com/flare-foundation/reward-scripts/refs/heads/main/generated-files/reward-epoch-${EPOCH_ID}/nodes-data.json" | \
-    jq --arg node_id "${NODE_ID}" \
-    '.[] |
-    select(.nodeId == $node_id) |
-    (.validatorRewardAmount | tonumber / 1000000000000000000) |
-    "Validator Rewards: \((. * 100 | floor) / 100) FLR"'
-  ```
+   ```bash
+   NODE_ID="NodeID-CoN...RS" # <-- REPLACE WITH YOUR Node ID
+   EPOCH_ID="288" # <-- REPLACE WITH THE REWARD EPOCH YOU WANT TO CHECK
+   ```
 
-- **FSP (FTSO & FDC) Rewards:**
+2. Use the following command to fetch and display your validator rewards:
 
-  - Calculated per reward epoch (every 3.5 days, starting Mon/Thu). Requires meeting minimal conditions requirements.
-  - Published data is usually available shortly after epoch finalization at:
-    - **GitHub:** **[flare-foundation/fsp-rewards](https://github.com/flare-foundation/fsp-rewards/tree/main/flare)** repository (look for files named by epoch).
-    - **Forum:** The **[FSP Rewards Data thread](https://forum.flare.network/t/fsp-rewards-data)** on the Flare Discourse Forum often has summary files (like XLSX) and related discussions.
+   ```bash
+   curl -s "https://raw.githubusercontent.com/flare-foundation/reward-scripts/refs/heads/main/generated-files/reward-epoch-${EPOCH_ID}/nodes-data.json" | \
+     jq --arg node_id "${NODE_ID}" \
+     '.[] |
+     select(.nodeId == $node_id) |
+     (.validatorRewardAmount | tonumber / 1000000000000000000) |
+     "Validator Rewards: \((. * 100 | floor) / 100) FLR"'
+   ```
 
-  Inspect your entity's FSP rewards for a specific epoch via CLI:
+**FSP (FTSO & FDC) Rewards:**
 
-  ```bash
-  ENTITY_ADDRESS="0x<your-entity-address>"
-  EPOCH_ID="<reward-epoch-id>"
-  curl -s "https://raw.githubusercontent.com/flare-foundation/fsp-rewards/refs/heads/main/flare/${EPOCH_ID}/reward-distribution-data.json" | \
-    jq --arg entity_address "${ENTITY_ADDRESS}" \
-    '.rewardClaims[] |
-    select(.body.beneficiary == $entity_address) |
-    (.body.amount | tonumber / 1000000000000000000) |
-    "FSP Rewards: \((. * 100 | floor) / 100) FLR"'
-  ```
+Calculated per reward epoch (every 3.5 days, starting Mon/Thu). Requires meeting minimal conditions requirements.
+Published data is usually available shortly after epoch finalization at:
 
-  </details>
+- **GitHub:** **[flare-foundation/fsp-rewards](https://github.com/flare-foundation/fsp-rewards/tree/main/flare)** repository (look for files named by epoch).
+- **Forum:** The **[FSP Rewards Data thread](https://forum.flare.network/t/fsp-rewards-data)** on the Flare Discourse Forum often has summary files (like XLSX) and related discussions.
+
+To inspect your entity's FSP rewards for a specific epoch via CLI:
+
+1. Get your `IDENTITY_ADDRESS` and the `EPOCH_ID` from the [Flare Systems Explorer](https://flare-systems-explorer.flare.network/providers).
+
+   ```bash
+   IDENTITY_ADDRESS="0x5...1A8" # <-- REPLACE WITH YOUR Identity ADDRESS
+   EPOCH_ID="288" # <-- REPLACE WITH THE REWARD EPOCH YOU WANT TO CHECK
+   ```
+
+2. Use the following command to fetch and display your FSP rewards:
+
+   ```bash
+   curl -s "https://raw.githubusercontent.com/flare-foundation/fsp-rewards/refs/heads/main/flare/${EPOCH_ID}/reward-distribution-data.json" | \
+     jq --arg identity_address "${IDENTITY_ADDRESS}" \
+     '.rewardClaims[] |
+     select(.body.beneficiary == ($identity_address | ascii_downcase)) |
+     (.body.amount | tonumber / 1000000000000000000) |
+     "FSP Rewards: \((. * 100 | floor) / 100) FLR"'
+   ```
+
+</details>
 
 <details>
-<summary>Basic health checks</summary>
+<summary>How does the pass system work with minimal conditions?</summary>
+
+Successfully meeting minimal conditions in an epoch typically earns your entity a "pass" (you can hold up to 3 passes).
+These act as a buffer - if your entity occasionally fails to meet conditions (e.g., due to minor submission issues or downtime), a pass is automatically consumed to maintain reward eligibility for that epoch.
+If conditions are not met and you have zero passes remaining, FSP rewards for that epoch are forfeited. [Learn more](/network/fsp/rewarding#passes).
+
+</details>
+
+<details>
+<summary>How can I monitor the health of my Flare Entity?</summary>
+
+Consistent monitoring is key to maintaining performance and reward eligibility. Here are primary areas and methods:
+
+**1. Validator node health:**
 
 - Monitor the `/ext/health` endpoint for validator status
 - Check validator connectivity using this [API endpoint](https://build.avax.network/docs/api-reference/p-chain/api#platformgetcurrentvalidators) to verify uptime/connected values
 - For advanced monitoring, use Avalanche's [Grafana dashboards](https://support.avax.network/en/articles/6159074-grafana-dashboards) which are compatible with Flare
 
-</details>
+**2. FDC health monitoring:**
 
-<details>
-<summary>FDC health monitoring</summary>
+- Query the health endpoint exposed by each FDC verifier service you run:
+  `GET http://{verifier-host}:{verifier-port}/verifier/{chain}/health`
+  (Replace placeholders with your verifier's host, port, and the relevant chain like `btc`, `doge`, `xrp`, `eth`). Look for a success status/response.
 
-Query each FDC verifier with: `GET http://{verifier-host}:{verifier-port}/verifier/{chain}/health`
+**3. FTSO health monitoring:**
 
-</details>
+- Check minimal conditions status via the [Flare Systems Explorer](https://flare-systems-explorer.flare.network/providers?tab=minimalConditions) or the backend API detailed previously in the FAQ.
 
-<details>
-<summary>FTSO health monitoring</summary>
+- Monitor the logs of your running Docker containers (`docker compose logs <service_name>`) for errors and key operational messages:
 
-- Check minimal conditions status with:
+  - **Registration:** Look for `RegisterVoter success` messages in the `system-client` logs around the start of reward epochs.
 
-  ```bash
-  curl -s 'https://flare-systems-explorer.flare.network/backend-url/api/v0/entity?limit=100&offset=0&sort_ascending=true&sort_by=' | jq '.results[] | select(.identity_address == "YOUR_IDENTITY_ADDRESS") | .entityminimalconditions'
-  ```
+    ```plaintext
+    # Example Registration Log Entry (Timestamp/Address vary)
+    INFO epoch/registry_utils.go:187 Voter 0x... registered for epoch ...
+    ```
 
-- For registration, your log should contain:
+  - **Submissions:** Look for `Submitter ... successfully sent tx` messages in `system-client` logs during voting periods. Absence for >10 mins may indicate issues.
 
-  ```plaintext
-  [01-03|23:02:03.175] INFO epoch/registry_utils.go:187 Voter 0x25f42DEf3fCc078DE8895Cd01de8AB6514020548 registered for epoch 3589
-  [01-04|05:02:04.096] INFO epoch/registry_utils.go:187 Voter 0x25f42DEf3fCc078DE8895Cd01de8AB6514020548 registered for epoch 3590
-  [01-04|11:02:07.113] INFO epoch/registry_utils.go:187 Voter 0x25f42DEf3fCc078DE8895Cd01de8AB6514020548 registered for epoch 3591
-  [01-04|17:02:03.136] INFO epoch/registry_utils.go:187 Voter 0x25f42DEf3fCc078DE8895Cd01de8AB6514020548 registered for epoch 3592
-  [01-04|23:02:03.217] INFO epoch/registry_utils.go:187 Voter 0x25f42DEf3fCc078DE8895Cd01de8AB6514020548 registered for epoch 3593
-  ```
+    ```plaintext
+    # Example Submission Log Entries (Timestamp/Type vary)
+    INFO protocol/submitter.go:76 Submitter submitSignatures successfully sent tx
+    INFO protocol/submitter.go:76 Submitter submit1 successfully sent tx
+    ```
 
-- For submissions, your log should contain:
+    **Alerting Tip:** Set alerts if no successful submission messages appear for 5-10 minutes during active voting periods.
 
-  ```plaintext
-  [01-06|14:39:10.366] INFO protocol/submitter.go:76 Submitter submitSignatures successfully sent tx
-  [01-06|14:39:31.273] INFO protocol/submitter.go:76 Submitter submit1 successfully sent tx
-  [01-06|14:39:53.107] INFO protocol/submitter.go:76 Submitter submit2 successfully sent tx
-  ```
+  - **Finalization:** Look for `Relaying finished for protocol ... with success` messages in `system-client` logs after voting periods. Non-fatal errors may occur but should be investigated if persistent. (Protocol 100 = FTSOv2, Protocol 200 = FDC).
 
-  :::tip[Set an alert]
+    ```plaintext
+    # Example Finalization Log Entries (Timestamp/Status vary)
+    INFO finalizer/relay_client.go:168 Relaying finished for protocol 100 with success
+    INFO finalizer/relay_client.go:168 Relaying finished for protocol 200 with success
+    ```
 
-  Set an alert if there is no `Submitter ... successfully sent tx` message for 5-10 minutes
-
-  :::
-
-- For finalization verification, your log should contain:
-
-  ```plaintext
-  [01-05|15:55:54.641] INFO finalizer/relay_client.go:168 Relaying finished for protocol 100 with success
-  [01-05|15:55:55.686] INFO finalizer/relay_client.go:168 Relaying finished for protocol 200 with success
-  [01-05|15:57:25.608] INFO finalizer/relay_client.go:168 Relaying finished for protocol 100 with non fatal error
-  [01-05|15:57:28.937] INFO finalizer/relay_client.go:168 Relaying finished for protocol 200 with non fatal error
-  ```
-
-  :::tip[Set an alert]
-
-  Set an alert if there is no `Relaying finished for protocol ...` for 5-10 minutes (protocol 100 is FTSOv2 and protocol 200 is FDC)
-
-  :::
-
-</details>
-
-<details>
-<summary>Log Management</summary>
-
-Container logs can consume significant disk space over time. Implement a strategy:
-
-- Configure Docker's logging driver (default `json-file`) globally (`/etc/docker/daemon.json`) or per-service in `docker-compose.yaml` to limit log size and file count (e.g., `max-size: "100m"`, `max-file: "5"`). Refer to [Docker logging documentation](https://docs.docker.com/config/containers/logging/configure/).
-- Periodically use `docker system prune` or remove old log files manually if rotation is not configured.
+    **Alerting Tip:** Set alerts if no successful finalization messages appear for protocols 100/200 within 5-10 minutes after a voting round should have completed.
 
 </details>
