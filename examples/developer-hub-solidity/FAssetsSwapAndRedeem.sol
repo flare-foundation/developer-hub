@@ -109,7 +109,6 @@ contract SwapAndRedeem {
         uint256 _deadline = block.timestamp + 10 minutes;
         address[] memory path = swapPath;
 
-
         // Swap tokens to FXRP using BlazeSwap (Uniswap V2 router interface)
         (uint256[] memory _amountsSent, uint256[] memory _amountsRecv) = _swap(
             _amountIn,
