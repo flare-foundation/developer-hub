@@ -38,8 +38,8 @@ This contract has two main functions:
 
 The contract uses the following dependencies:
 
-- `IERC20` (OpenZeppelin) - standard ERC-20 interface.
-- `IAssetManager` — interface to the FAssets Asset Manager.
+- `IERC20` OpenZeppelin standard ERC-20 interface.
+- `IAssetManager` interface to the FAssets Asset Manager.
 - `AssetManagerSettings` is used to retrieve lot size and configuration.
 
 ### 2. Interfaces
@@ -53,9 +53,9 @@ The `ISwapRouter` interface allows interaction with a Uniswap V2-compatible rout
 
 Defined state variables:
 
-- `router`: Uniswap V2 router contract; in this example, it is the BlazeSwap router;
-- `assetManager`: Asset Manager handling FXRP redemption;
-- `token`: Token to swap (WCFLR in the swap path);
+- `router`: Uniswap V2 router contract; in this example, it is the BlazeSwap router.
+- `assetManager`: Asset Manager handling FXRP redemption.
+- `token`: Token to swap (WCFLR in the swap path).
 - `swapPath`: Array of addresses defining the swap route (e.g., WCFLR → FXRP).
 
 To instantiate the contract, the constructor sets up the Uniswap router, FAssets asset manager, and swap path.
@@ -65,33 +65,25 @@ It initializes the token as the first token in the swap path.
 
 The `swapAndRedeem` is the core function that executes the swap and redemption flow.
 
-#### 1. Validation
+- **1. Validation**
+  - Ensure the caller has sufficient WCFLR balance.
+  - Confirm the contract has enough FXRP allowance for redemption.
 
-- Ensures the caller has enough WCFLR.
-- Checks the contract has FXRP allowance to redeem.
+- **2. Transfer**
+  - Move WCFLR from the caller to the contract.
+  - Approve the router to spend WCFLR on behalf of the contract.
 
-#### 2. Transfer
+- **3. Swap**
+  - Perform the swap from WCFLR to FXRP using the specified swap path.
+  - Apply a 10-minute deadline for the swap operation.
 
-- Transfers WCFLR from the caller to the contract.
-- Approves the router to spend WCFLR.
+- **4. Redemption**
+  - Redeem the obtained FXRP through the FAssets system.
+  - Transfer the resulting XRP to the caller's XRPL address.
 
-#### 4. Swap
-
-- Executes the swap from WCFLR to FXRP using the provided swap path.
-- Uses a 10-minute deadline.
-
-#### 5. Redemption
-
-- Redeems the received FXRP using FAssets;
-- Sends XRP to the underlying XRPL address.
-
-### 5. Helper Function: `calculateRedemptionAmountIn`
-
-The `calculateRedemptionAmountIn` function:
-
-- takes the number of FXRP lots to redeem;
-- retrieves the lot size from the FAssets asset manager;
-- calculates the amount of WCFLR required to complete the swap and redemption.
+- **5. Helper Function: `calculateRedemptionAmountIn`**
+  - Accept the number of FXRP lots intended for redemption.
+  - Fetch the lot size from the FAssets asset manager and calculate the WCFLR needed for swap and redemption.
 
 ## Execute the Swap and Redeem
 
@@ -103,33 +95,27 @@ To execute the swap and redeem process, you need to deploy the smart contract in
 
 ### Code Breakdown
 
-#### 1. Dependencies and Constants
+- **1. Dependencies and Constants**
+  - `ASSET_MANAGER_ADDRESS`: The address of the FAssets Asset Manager contract.
+  - `LOTS_TO_REDEEM`: The number of FAsset lots to redeem (typically set to 1).
+  - `UNDERLYING_ADDRESS`: The XRPL address that will receive the redeemed assets.
+  - `SWAP_ROUTER_ADDRESS`: The address of the Uniswap V2-compatible swap router.
+  - `SWAP_PATH`: An array of token addresses defining the swap path from WCFLR to FXRP.
 
-- `ASSET_MANAGER_ADDRESS`: FAssets Asset Manager contract address;
-- `LOTS_TO_REDEEM`: number of FAsset lots to redeem (set to 1);
-- `UNDERLYING_ADDRESS`: XRPL address that will receive the redeemed assets;
-- `SWAP_ROUTER_ADDRESS`: Uniswap V2 compatible router address;
-- `SWAP_PATH`: token addresses defining swap path (from WCFLR to FXRP).
+- **2. Deploy and Verify**
+  - Deploys the `SwapAndRedeem` contract and verifies it using [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit).
 
-#### 2. Deploy and Verify
+- **3. Calculate Redemption Amounts**
+  - Calls `calculateRedemptionAmountIn` to determine the required WCFLR amount.
 
-- Deploys the `SwapAndRedeem` contract and verifies it using [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit).
+- **4. Approve Tokens**
+  - Uses the ERC-20 `approve` method to allow the contract to spend WCFLR.
+    :::warning
+    In a production environment, you should use a secure method to approve spending the tokens.
+    :::
 
-#### 3. Calculate Redemption Amounts
-
-- calls `calculateRedemptionAmountIn` to determine the required WCFLR amount
-
-#### 4. Approve Tokens
-
-- Uses the ERC-20 `approve` method to allow the contract to spend WCFLR.
-
-  :::warning
-  In a production environment, you should use a secure method to approve spending the tokens.
-  :::
-
-#### 5. Execute the Swap and Redemption
-
-- Calls `swapAndRedeem` to complete the FAssets redemption process
+- **5. Execute the Swap and Redemption**
+  - Calls `swapAndRedeem` to complete the FAssets redemption process.
 
 ### Run the Script
 

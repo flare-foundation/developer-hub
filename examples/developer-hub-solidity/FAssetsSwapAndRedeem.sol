@@ -41,12 +41,6 @@ contract SwapAndRedeem {
     // Path to swap WCFLR for FXRP
     address[] public swapPath;
 
-    event RedemptionNeeded(uint256 amountIn, uint256 amountOut);
-    event SwapStarted(uint256 amount, address[] path, uint256 deadline);
-    event SwapCompleted(uint256[] amountsSent, uint256[] amountsRecv);
-    event RedeemStarted(uint256 lots, string redeemerUnderlyingAddressString);
-    event Redeemed(uint256 lots, uint256 redeemedAmountUBA);
-
     constructor(
         address _router,
         address _assetManager,
@@ -111,13 +105,10 @@ contract SwapAndRedeem {
             "Router approval failed"
         );
 
-        emit RedemptionNeeded(_amountIn, _amountOut);
-
         // Set the deadline for the swap (10 minutes)
         uint256 _deadline = block.timestamp + 10 minutes;
         address[] memory path = swapPath;
 
-        emit SwapStarted(msg.value, swapPath, _deadline);
 
         // Swap tokens to FXRP using BlazeSwap (Uniswap V2 router interface)
         (uint256[] memory _amountsSent, uint256[] memory _amountsRecv) = _swap(
@@ -127,14 +118,8 @@ contract SwapAndRedeem {
             _deadline
         );
 
-        emit SwapCompleted(_amountsSent, _amountsRecv);
-
-        emit RedeemStarted(_lots, _redeemerUnderlyingAddressString);
-
         // Redeem FAssets from FXRP to the redeemer's underlying XRPL address
         _redeemedAmountUBA = _redeem(_lots, _redeemerUnderlyingAddressString);
-
-        emit Redeemed(_lots, _redeemedAmountUBA);
 
         return (
             _amountOut,
@@ -178,6 +163,8 @@ contract SwapAndRedeem {
             assetManager.redeem(
                 _lots,
                 _redeemerUnderlyingAddressString,
+                // The account that is allowed to execute redemption default (besides redeemer and agent).
+                // In this case it is not used
                 payable(address(0))
             );
     }
