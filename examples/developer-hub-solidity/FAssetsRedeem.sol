@@ -33,6 +33,8 @@ contract FAssetsRedeem {
         uint256 redeemedAmountUBA = assetManager.redeem(
             _lots,
             _redeemerUnderlyingAddressString,
+            // The account that is allowed to execute redemption default (besides redeemer and agent).
+            // In this case it is not used
             payable(address(0))
         );
 
