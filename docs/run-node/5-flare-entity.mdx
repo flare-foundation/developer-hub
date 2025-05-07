@@ -73,11 +73,11 @@ You need five specific addresses for FSP operations.
 You can register them using an automated script (Testnets only) or manually via contract calls (Mainnet).
 
 <details>
-<summary>Method 1: Automated Registration (Testnet only).</summary>
+<summary>Method 1: Automated Registration (Testnets only).</summary>
 
 :::danger
 
-This automated method requires placing private keys in a configuration file.
+This automated method requires placing private keys in a JSON file.
 This significantly increases security risk and is **NOT recommended for mainnet**.
 Use this method **only** where key security is less critical.
 For mainnet, **always use Method 2: Manual process.**
@@ -88,103 +88,72 @@ On testnets, you can automate the registration of your five FSP addresses **and*
 
 1. Clone and build [flare-smart-contracts-v2](https://github.com/flare-foundation/flare-smart-contracts-v2/):
 
-```bash
-git clone https://github.com/flare-foundation/flare-smart-contracts-v2/
-cd flare-smart-contracts-v2
-yarn
-yarn c
-```
+   ```bash
+   git clone https://github.com/flare-foundation/flare-smart-contracts-v2/
+   cd flare-smart-contracts-v2
+   yarn
+   yarn c
+   ```
 
 2. Create an `entities.json` file with the following account addresses and private keys. Generate a sortition private key by following step 1 in [Register sortition key](#register-sortition-key). :
 
-```json
-[
-  {
-    "identity": {
-      "address": "<address>",
-      "privateKey": "<private key hex>"
-    },
-    "submit": {
-      "address": "<address>",
-      "privateKey": "<private key hex>"
-    },
-    "submitSignatures": {
-      "address": "<address>",
-      "privateKey": "<private key hex>"
-    },
-    "signingPolicy": {
-      "address": "<address>",
-      "privateKey": "<private key hex>"
-    },
-    "delegation": {
-      "address": "<address>",
-      "privateKey": "<private key hex>"
-    },
-    "sortitionPrivateKey": "<private key hex>" // docker run --rm ghcr.io/flare-foundation/fast-updates/go-client:latest keygen
-  }
-]
-```
+   ```json
+   [
+     {
+       "identity": {
+         "address": "<address>",
+         "privateKey": "<private key hex>"
+       },
+       "submit": {
+         "address": "<address>",
+         "privateKey": "<private key hex>"
+       },
+       "submitSignatures": {
+         "address": "<address>",
+         "privateKey": "<private key hex>"
+       },
+       "signingPolicy": {
+         "address": "<address>",
+         "privateKey": "<private key hex>"
+       },
+       "delegation": {
+         "address": "<address>",
+         "privateKey": "<private key hex>"
+       },
+       "sortitionPrivateKey": "<private key hex>"
+     }
+   ]
+   ```
 
-3. Configure your `.env`:
+3. Rename `.env.template` to `.env` and add the path to your `entities.json` file:
 
-<Tabs groupId="network">
-  <TabItem value="coston2" label="Flare Testnet Coston2" default>
+   ```text title=".env"
+   ENTITIES_FILE_PATH=entities.json # <-- REPLACE WITH PATH TO YOUR entities.json
+   ```
 
-    ```text title=".env"
-    ENTITIES_FILE_PATH="<path to entities.json>"
-    COSTON2_RPC=<non-public Coston2 RPC>
-    CHAIN_CONFIG="coston2"
-    ```
+4. Run the registration tasks ([`register-entities.ts`](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/deployment/tasks/register-entities.ts) and [`register-public-keys.ts`](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/deployment/tasks/register-public-keys.ts)):
 
-  </TabItem>
-  <TabItem value="songbird" label="Songbird Canary-Network">
+   <Tabs groupId="network">
 
-    ```text title=".env"
-    ENTITIES_FILE_PATH="<path to entities.json>"
-    SONGBIRD_RPC=<non-public Songbird RPC>
-    CHAIN_CONFIG="songbird"
-    ```
+   <TabItem value="coston2" label="Flare Testnet Coston2" default>
 
-  </TabItem>
-  <TabItem value="coston" label="Songbird Testnet Coston">
+   ```bash
+   yarn run register_entities_network_coston2
+   yarn run register_public_keys_network_coston2
+   ```
 
-    ```text title=".env"
-    ENTITIES_FILE_PATH="<path to entities.json>"
-    COSTON_RPC=<non-public Coston RPC>
-    CHAIN_CONFIG="coston"
-    ```
+   </TabItem>
 
-  </TabItem>
-</Tabs>
+   <TabItem value="coston" label="Songbird Testnet Coston">
 
-4. Run the registration tasks:
+   ```bash
+   yarn run register_entities_network_coston
+   yarn run register_public_keys_network_coston
+   ```
 
-<Tabs groupId="network">
-  <TabItem value="coston2" label="Flare Testnet Coston2" default>
+   </TabItem>
 
-    ```bash
-    yarn hardhat --network coston2 register-entities
-    yarn hardhat --network coston2 register-public-keys
-    ```
-
-  </TabItem>
-  <TabItem value="songbird" label="Songbird Canary-Network">
-
-    ```bash
-    yarn hardhat --network songbird register-entities
-    yarn hardhat --network songbird register-public-keys
-    ```
-
-  </TabItem>
-  <TabItem value="coston" label="Songbird Testnet Coston">
-
-    ```bash
-    yarn hardhat --network coston register-entities
-    yarn hardhat --network coston register-public-keys
-    ```
-
-  </TabItem>
-</Tabs>
+   </Tabs>
 
 If these scripts complete successfully, you have registered both the FSP addresses and the sortition key.
 You can proceed directly to [Fund FSP addresses](#fund-fsp-addresses).
@@ -193,7 +162,7 @@ You can proceed directly to [Fund FSP addresses](#fund-fsp-addresses).
 
 #### Method 2: Manual registration
 
-On mainnet, or if you prefer not to use the automated script on testnets, you must manually register the required FSP addresses by interacting directly with the `EntityManager` smart contract.
+On mainnet, or if you prefer not to use the automated script on testnets, you must manually register the required FSP addresses by interacting directly with the [`EntityManager`](/network/fsp/solidity-reference/IEntityManager) smart contract.
 
 1.  Ensure you have generated the following five addresses and **securely stored their private keys**. Understand their roles:
 
