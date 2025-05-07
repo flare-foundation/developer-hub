@@ -36,6 +36,113 @@ function getAgentInfo(address _agentVault)
     returns (AgentInfo.Info memory);
 ```
 
+### `reserveCollateral`
+
+Reserves collateral for minting FAssets.
+Before paying underlying assets for minting, the minter must reserve collateral and pay a collateral reservation fee.
+
+Parameters:
+
+- `_agentVault`: Agent vault address
+- `_lots`: Number of lots for which to reserve collateral
+- `_maxMintingFeeBIPS`: Maximum minting fee (BIPS) that can be charged by the agent - best practice is to copy the current agent's published fee; used to prevent agent from front-running reservation request and increasing fee
+- `_executor`: Account that is allowed to execute minting (besides minter and agent)
+- `_minterUnderlyingAddresses`: Array of minter's underlying addresses - needed only if handshake is required
+
+```solidity
+function reserveCollateral(
+    address _agentVault,
+    uint256 _lots,
+    uint256 _maxMintingFeeBIPS,
+    address payable _executor,
+    string[] calldata _minterUnderlyingAddresses
+) external payable;
+```
+
+### `approveCollateralReservation`
+
+Agent approves the collateral reservation request after checking the minter's identity.
+
+Parameters:
+
+- `_collateralReservationId`: Collateral reservation ID
+
+```solidity
+function approveCollateralReservation(
+    uint256 _collateralReservationId
+) external notEmergencyPaused;
+```
+
+### `rejectCollateralReservation`
+
+Agent rejects the collateral reservation request after checking the minter's identity.
+The collateral reservation fee is returned to the minter.
+
+Parameters:
+
+- `_collateralReservationId`: Collateral reservation ID
+
+```solidity
+function rejectCollateralReservation(
+    uint256 _collateralReservationId
+) external nonReentrant;
+```
+
+### `cancelCollateralReservation`
+
+Minter cancels the collateral reservation request if the agent didn't respond in time.
+The collateral reservation fee is returned to the minter.
+
+Parameters:
+
+- `_collateralReservationId`: Collateral reservation ID
+
+```solidity
+function cancelCollateralReservation(
+    uint256 _collateralReservationId
+) external nonReentrant;
+```
+
+### `collateralReservationFee`
+
+Returns the collateral reservation fee amount.
+
+Parameters:
+
+- `_lots`: The number of lots for which to reserve collateral
+
+Returns:
+
+- `_reservationFeeNATWei`: The amount of reservation fee in NAT wei
+
+```solidity
+function collateralReservationFee(
+    uint256 _lots
+) external view returns (uint256 _reservationFeeNATWei);
+```
+
+### `executeMinting`
+
+After obtaining proof of underlying payment, the minter calls this method to finish the minting and collect the minted FAssets.
+
+Note: May only be called by:
+
+- The minter (creator of the collateral reservation request)
+- The executor appointed by the minter
+- The agent owner (owner of the agent vault in the collateral reservation)
+
+Parameters:
+
+- `_payment`: Proof of the underlying payment (must contain exact `value + fee` amount and correct payment reference)
+- `_collateralReservationId`: Collateral reservation ID
+
+```solidity
+function executeMinting(
+    IPayment.Proof calldata _payment,
+    uint256 _collateralReservationId
+) external nonReentrant;
+```
+
 ### `redeem`
 
 Redeem number of lots of FAssets.
