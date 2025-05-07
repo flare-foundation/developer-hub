@@ -1,24 +1,18 @@
 ---
-title: Proof of Reserves (deprecated)
+title: Proof of Reserves
 authors: [nikerzetic, filipkoprivec]
 description: Verifying stablecoin reserves with FDC.
 tags: [advanced, ethereum, fdc, hardhat]
 keywords: [ethereum, flare-data-connector, evm, flare-network]
 sidebar_position: 10
-unlisted: true
+unlisted: false
 ---
 
 import CodeBlock from "@theme/CodeBlock";
 import VerifyReservesScript from "!!raw-loader!/examples/developer-hub-javascript/fdc_verify_proof_of_reserves.ts";
 
-:::danger
-Since May 2025 this guide is considered deprecated.
-The `JsonApi` attestation type has been update to a new version, `Web2Json`.
-You can find the updated version of this guide [here](/fdc/guides/hardhat/proof-of-reserves).
-:::
-
 This is a guide on how to build a simple dApp using the [Flare Data Connector](/fdc/overview).
-It demonstrates how multiple attestation types, namely the [EVMTransaction](/fdc/attestation-types/evm-transaction) and [JsonApi](/fdc/attestation-types/deprecated-json-api), can be combined within the same app.
+It demonstrates how multiple attestation types, namely the [EVMTransaction](/fdc/attestation-types/evm-transaction) and [Web2Json](/fdc/attestation-types/web-2-json), can be combined within the same app.
 
 The app that we will be building is called `proofOfReserves`, which enables onchain verification that a stablecoin's circulating supply is backed by sufficient offchain reserves.
 We will first describe what issue the app is addressing, and then provide a detailed walkthrough through its source code.
@@ -38,7 +32,7 @@ Implementing this verification system presents three technical challenges:
 2. **Reading onchain state**: We need to access the total token supply data from various blockchain networks.
 3. **Cross-chain data collection**: We need to aggregate token supply information across multiple chains.
 
-The [Flare Data Connector (FDC)](/fdc/overview) provides solutions for both accessing Web2 APIs through the [JsonApi](/fdc/attestation-types/deprecated-json-api) attestation type and collecting cross-chain data via the [EVMTransaction](/fdc/attestation-types/evm-transaction) attestation type.
+The [Flare Data Connector (FDC)](/fdc/overview) provides solutions for both accessing Web2 APIs through the [Web2Json](/fdc/attestation-types/web-2-json) attestation type and collecting cross-chain data via the [EVMTransaction](/fdc/attestation-types/evm-transaction) attestation type.
 For reading onchain state, we deploy a dedicated contract that reads the token supply and emits this data as an event.
 
 This guide will walk through all the components needed to build the complete `proofOfReserves` verification system.
@@ -115,7 +109,7 @@ This contract evaluates whether the claimed dollar reserves are sufficient to ba
 
 The core functionality is contained in the `verifyReserves` function, which accepts two parameters:
 
-- An `IJsonApi.Proof` struct containing attested data from the Web2 API about dollar reserves
+- An `IWeb2Json.Proof` struct containing attested data from the Web2 API about dollar reserves
 - An array of `IEVMTransaction.Proof` structs containing attested data about token supplies from various blockchains
 
 The function aggregates the total token supply from all chains and compares it against the claimed reserves.
@@ -127,7 +121,7 @@ pragma solidity ^0.8.25;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IEVMTransaction} from "@flarenetwork/flare-periphery-contracts/coston2/IEVMTransaction.sol";
-import {IJsonApi} from "@flarenetwork/flare-periphery-contracts/coston2/IJsonApi.sol";
+import {IWeb2Json} from "@flarenetwork/flare-periphery-contracts/coston2/IWeb2Json.sol";
 import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -148,7 +142,7 @@ contract ProofOfReserves is Ownable {
         tokenStateReaders[readerAddress] = tokenAddress;
     }
 
-    function verifyReserves(IJsonApi.Proof calldata jsonProof, IEVMTransaction.Proof[] calldata transactionProofs)
+    function verifyReserves(IWeb2Json.Proof calldata jsonProof, IEVMTransaction.Proof[] calldata transactionProofs)
         external
         returns (bool)
     {
@@ -177,8 +171,8 @@ The contract defines several important components:
 
 - **Access Control**: The `updateAddress` function, protected by the `onlyOwner` modifier, provides a secure mechanism to update the registry mapping.
 
-To properly decode data from the [JsonApi](/fdc/attestation-types/deprecated-json-api) attestation, we need to define a data structure that matches our expected format.
-Following patterns from the [JsonApi attestation type guide](/fdc/guides/foundry/deprecated-json-api), we create a simple `DataTransportObject` struct:
+To properly decode data from the [Web2Json](/fdc/attestation-types/web-2-json) attestation, we need to define a data structure that matches our expected format.
+Following patterns from the [Web2Json attestation type guide](/fdc/guides/foundry/web-2-json), we create a simple `DataTransportObject` struct:
 
 ```solidity title="contracts/proofOfReserves/ProofOfReserves.sol"
 struct DataTransportObject {
@@ -187,13 +181,13 @@ struct DataTransportObject {
 ```
 
 This structure contains a single field to store the reserve amount received from the Web2 API.
-With this definition in place, we can now decode the `abi_encoded_data` within the `IJsonApi.Proof` struct and access its `reserves` field.
+With this definition in place, we can now decode the `abi_encoded_data` within the `IWeb2Json.Proof` struct and access its `reserves` field.
 Before accessing this data, we must first validate the proof - more on that later.
 
-For processing JsonApi proofs, we implement the following function:
+For processing Web2Json proofs, we implement the following function:
 
 ```solidity title="contracts/proofOfReserves/ProofOfReserves.sol:ProofOfReserves"
-    function readReserves(IJsonApi.Proof calldata proof) private returns (uint256) {
+    function readReserves(IWeb2Json.Proof calldata proof) private returns (uint256) {
         require(isValidProof(proof), "Invalid json proof");
         DataTransportObject memory data = abi.decode(proof.data.responseBody.abi_encoded_data, (DataTransportObject));
         debugClaimedReserves = data.reserves;
@@ -232,8 +226,8 @@ Using the `ContractRegistry` library they contact the `FdcVerification` contract
 
 ```solidity title="contracts/proofOfReserves/ProofOfReserves.sol:ProofOfReserves"
 
-    function isValidProof(IJsonApi.Proof calldata proof) private view returns (bool) {
-        return ContractRegistry.auxiliaryGetIJsonApiVerification().verifyJsonApi(proof);
+    function isValidProof(IWeb2Json.Proof calldata proof) private view returns (bool) {
+        return ContractRegistry.auxiliaryGetIWeb2JsonVerification().verifyWeb2Json(proof);
     }
 
     function isValidProof(IEVMTransaction.Proof calldata proof) private view returns (bool) {
@@ -557,8 +551,8 @@ const {
 Next, we define an `AttestationRequest` type.
 This will allow us to present the request data in a better organized format.
 Then, we prepare a list of requests, each populated with the data specified by its corresponding attestation type.
-The only two attestation types we need for this example are `IEVMTransaction` and `JsonApi`.
-For a more detailed explanation of the included fields, look at the appropriate type specification ([IEVMTransaction](/fdc/attestation-types/evm-transaction) and [JsonApi](/fdc/attestation-types/deprecated-json-api)).
+The only two attestation types we need for this example are `IEVMTransaction` and `Web2Json`.
+For a more detailed explanation of the included fields, look at the appropriate type specification ([IEVMTransaction](/fdc/attestation-types/evm-transaction) and [Web2Json](/fdc/attestation-types/web-2-json)).
 
 In this guide, we will be comparing the total supplies of previously deployed tokens (with an arbitrary initial supply of `666`), to the claimed reserves of a real stablecoin.
 We will obtain the dollar reserves from the API at the address: `https://api.htdigitalassets.com/alm-stablecoin-db/metrics/current_reserves_amount`.
@@ -606,18 +600,21 @@ type AttestationRequest = {
 
 const requests: AttestationRequest[] = [
   {
-    source: "jsonApi",
-    sourceIdBase: "WEB2",
-    verifierUrlBase: JQ_VERIFIER_URL_TESTNET!,
-    verifierApiKey: JQ_VERIFIER_API_KEY!,
-    urlTypeBase: "",
-    data: {
-      apiUrl:
-        "https://api.htdigitalassets.com/alm-stablecoin-db/metrics/current_reserves_amount",
-      postprocessJq: `{reserves: .value | gsub(\",\";\"\") | sub(\"\\\\.\\\\d*\";\"\")}`,
-      abiSignature: `{\"components\": [{\"internalType\": \"uint256\",\"name\": \"reserves\",\"type\": \"uint256\"}],\"internalType\": \"struct DataTransportObject\",\"name\": \"dto\",\"type\": \"tuple\"}`,
+        source: "web2json",
+        sourceIdBase: "PublicWeb2",
+        verifierUrlBase: WEB2JSON_VERIFIER_URL_TESTNET,
+        verifierApiKey: VERIFIER_API_KEY_TESTNET,
+        urlTypeBase: "",
+        data: {
+            apiUrl: "https://api.htdigitalassets.com/alm-stablecoin-db/metrics/current_reserves_amount",
+            httpMethod: "GET",
+            headers: "{}",
+            queryParams: "{}",
+            body: "{}",
+            postProcessJq: `{reserves: .value | gsub(",";"") | sub("\\\\.\\\\d*";"")}`,
+            abiSignature: `{"components": [{"internalType": "uint256","name": "reserves","type": "uint256"}],"internalType": "struct DataTransportObject","name": "dto","type": "tuple"}`,
+        },
     },
-  },
   {
     source: "coston",
     sourceIdBase: "testSGB",
@@ -647,7 +644,7 @@ If we wanted to include additional sources, we would specify them here.
 If the new source were a new chain, no further change to the code would be needed.
 
 We prepare all attestation requests using helper functions from the `flare-hardhat-starter` repository.
-We save the returned abi encoded data to a mapping from the source (`jsonApi`, `coston`, and `coston2`) to the data of the corresponding response.
+We save the returned abi encoded data to a mapping from the source (`Web2Json`, `coston`, and `coston2`) to the data of the corresponding response.
 
 The procedure is enclosed within the `prepareAttestationRequests` function.
 
@@ -661,8 +658,8 @@ async function prepareAttestationRequests(transactions: AttestationRequest[]) {
   for (const transaction of transactions) {
     console.log(`(${transaction.source})\n`);
 
-    if (transaction.source === "jsonApi") {
-      const responseData = await prepareJsonApiAttestationRequest(transaction);
+    if (transaction.source === "Web2Json") {
+      const responseData = await prepareWeb2JsonAttestationRequest(transaction);
       console.log("Data:", responseData, "\n");
       data.set(transaction.source, responseData.abiEncodedRequest);
     } else {
@@ -766,30 +763,30 @@ async function retrieveDataAndProofs(
 ...
 ```
 
-Before the data can be used, we must decode it to an appropriate Solidity struct (`IEVMTransaction.Response` and `IJsonAPi.Response` respectively).
-We read the abi signature from Hardhat-generated artifacts (`IEVMTransactionVerification._json.abi[0].inputs[0].components[1]` and `IJsonApiVerification._json.abi[0].inputs[0].components[1]`).
-Afterwards, we save them as proof structs (`IEVMTransaction.Proof` and `IJsonAPi.Proof`).
+Before the data can be used, we must decode it to an appropriate Solidity struct (`IEVMTransaction.Response` and `IWeb2Json.Response` respectively).
+We read the abi signature from Hardhat-generated artifacts (`IEVMTransactionVerification._json.abi[0].inputs[0].components[1]` and `IWeb2JsonVerification._json.abi[0].inputs[0].components[1]`).
+Afterwards, we save them as proof structs (`IEVMTransaction.Proof` and `IWeb2Json.Proof`).
 The logic is enclosed in `prepareDataAndProofs` function.
 
 ```typescript title="scripts/proofOfReserves/verifyProofOfReserves.ts"
 ...
 
 async function prepareDataAndProofs(data: Map<string, any>) {
-  const IJsonApiVerification = await artifacts.require("IJsonApiVerification");
+  const IWeb2JsonVerification = await artifacts.require("IWeb2JsonVerification");
   const IEVMTransactionVerification = await artifacts.require(
     "IEVMTransactionVerification"
   );
 
   const jsonProof = {
-    merkleProof: data.get("jsonApi").proof,
+    merkleProof: data.get("Web2Json").proof,
     data: web3.eth.abi.decodeParameter(
-      IJsonApiVerification._json.abi[0].inputs[0].components[1],
-      data.get("jsonApi").response_hex
+      IWeb2JsonVerification._json.abi[0].inputs[0].components[1],
+      data.get("Web2Json").response_hex
     ),
   };
   var transactionProofs: any[] = [];
   for (const [source, proof] of data.entries()) {
-    if (source !== "jsonApi") {
+    if (source !== "Web2Json") {
       const decodedProof = web3.eth.abi.decodeParameter(
         IEVMTransactionVerification._json.abi[0].inputs[0].components[1],
         proof.response_hex
