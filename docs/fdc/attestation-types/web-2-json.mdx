@@ -1,0 +1,46 @@
+---
+title: Web2Json
+description: Data retrieval from Web2 JSON APIs with JQ transformations.
+keywords: [fdc, oracle, flare-data-connector, flare-network, json, api, web2]
+sidebar_position: 1
+unlisted: false
+---
+
+An attestation type that fetches JSON data from the given URL, applies a jq filter to transform the returned result, and finally returns the structured data as ABI encoded data.
+
+**Supported sources:** WEB2
+
+## Request body
+
+| Field           | Solidity type | Description                                                                                                                                       |
+| --------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `url`           | `string`      | URL of the data source.                                                                                                                           |
+| `httpMethod`    | `string`      | HTTP method to be used for the request. Supported methods: GET, POST, PUT, PATCH, DELETE.                                                         |
+| `headers`       | `string`      | Stringified key-value pairs representing headers to be used in the request. Use `{}` if no headers are required.                                  |
+| `queryParams`   | `string`      | Stringified key-value pairs representing query parameters to be appended to the URL of the request. Use `{}` if no query parameters are required. |
+| `body`          | `string`      | Stringified key-value pairs representing the body to be used in the request. Use `{}` if the body is not required.                                |
+| `postProcessJq` | `string`      | jq filter used to post-process the JSON response from the URL.                                                                                    |
+| `abiSignature`  | `string`      | ABI signature of the struct used to encode the data after jq post-processing.                                                                     |
+
+## Response body
+
+| Field            | Solidity type | Description                                                      |
+| ---------------- | ------------- | ---------------------------------------------------------------- |
+| `abiEncodedData` | `bytes`       | Raw binary data encoded to match the function parameters in ABI. |
+
+## Lowest Used Timestamp
+
+For `lowestUsedTimestamp`, `0xffffffffffffffff` ($2^{64}-1$ in hex) is used.
+
+## Verification
+
+The JSON response is queried from the provided URL source using the specified HTTP method, headers, query parameters, and body.
+If the query is unsuccessful (e.g., attempts to access a disallowed IP or hostname, attempts to redirect, takes longer than 1 second, returns a JSON response with more than 5000 keys or a depth greater than 10, returns a content-type other than "application/json", or does not return a valid JSON response), the request is rejected.
+
+The provided jq filter is applied to the valid JSON response.
+If the jq filter exceeds 5000 characters, if jq filtering fails, or if jq filtering takes longer than 500 milliseconds, the request is rejected.
+
+The provided ABI signature is used to encode the jq-filtered JSON data.
+If encoding fails, the request is rejected.
+
+`LowestUsedTimestamp` is unlimited.
