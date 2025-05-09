@@ -21,7 +21,6 @@ contract RandomNumberFetcher {
         RandomNumberV2Interface randomNumberV2 = RandomNumberV2Interface(
             0x92a6E1127262106611e1e129BB64B6D8654273F7
         );
-
         return randomNumberV2.getRandomNumber();
     }
 
@@ -39,16 +38,13 @@ contract RandomNumberFetcher {
         IFlareContractRegistry flareContractRegistry = IFlareContractRegistry(
             0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019
         );
-
         // Get the address of the Random Number V2 contract
         address randomNumberV2Address = flareContractRegistry
             .getContractAddressByName("RandomNumberV2");
-
         // Create an interface instance pointing to the contract address
         RandomNumberV2Interface randomNumberV2 = RandomNumberV2Interface(
             randomNumberV2Address
         );
-
         return randomNumberV2.getRandomNumber();
     }
 
@@ -65,7 +61,6 @@ contract RandomNumberFetcher {
         // Get the RandomNumberV2 contract interface using the ContractRegistry library
         RandomNumberV2Interface randomNumberV2 = ContractRegistry
             .getRandomNumberV2();
-
         return randomNumberV2.getRandomNumber();
     }
 }
