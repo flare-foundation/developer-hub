@@ -8,73 +8,83 @@ import {
 } from "../../fdcExample/Base";
 
 const {
-  JQ_VERIFIER_URL_TESTNET,
-  JQ_VERIFIER_API_KEY_TESTNET,
+  WEB2JSON_VERIFIER_URL_TESTNET,
+  VERIFIER_API_KEY_TESTNET,
   COSTON2_DA_LAYER_URL,
 } = process.env;
 
 const MinTempAgency = artifacts.require("MinTempAgency");
 
-const policyId = 3;
+// yarn hardhat run scripts/weatherInsurance/minTemp/resolvePolicy.ts --network coston2
+
+const policyId = 0;
+
+// Request data
 const apiId = process.env.OPEN_WEATHER_API_KEY ?? "";
 const units = "metric";
 
-const postprocessJq = `{
-  latitude: (.coord.lat | if . != null then .*pow(10;6) else null end),
-  longitude: (.coord.lon | if . != null then .*pow(10;6) else null end),
+const apiUrl = "https://api.openweathermap.org/data/2.5/weather";
+const httpMethod = "GET";
+const headers = JSON.stringify({ "Content-Type": "application/json" });
+const body = "{}";
+
+const postProcessJq = `{
+  latitude: (.coord.lat | if . != null then .*pow(10;6) else 0 end | floor),
+  longitude: (.coord.lon | if . != null then .*pow(10;6) else 0 end | floor),
   description: .weather[0].description,
-  temperature: (.main.temp | if . != null then .*pow(10;6) else null end),
-  minTemp: (.main.temp_min | if . != null then .*pow(10;6) else null end),
-  windSpeed: (.wind.speed | if . != null then . *pow(10;6) end),
+  temperature: (.main.temp | if . != null then .*pow(10;6) else 0 end | floor),
+  minTemp: (.main.temp_min | if . != null then .*pow(10;6) else 0 end | floor),
+  windSpeed: (.wind.speed | if . != null then . *pow(10;6) else 0 end | floor),
   windDeg: .wind.deg
-}`;
+  }`;
 
 const abiSignature = `{
-  "components": [
-    {
-      "internalType": "int256",
-      "name": "latitude",
-      "type": "int256"
-    },
-    {
-      "internalType": "int256",
-      "name": "longitude",
-      "type": "int256"
-    },
-    {
-      "internalType": "string",
-      "name": "description",
-      "type": "string"
-    },
-    {
-      "internalType": "int256",
-      "name": "temperature",
-      "type": "int256"
-    },
-    {
-      "internalType": "int256",
-      "name": "minTemp",
-      "type": "int256"
-    },
-    {
-      "internalType": "uint256",
-      "name": "windSpeed",
-      "type": "uint256"
-    },
-    {
-      "internalType": "uint256",
-      "name": "windDeg",
-      "type": "uint256"
-    }
-  ],
-  "internalType": "struct DataTransportObject",
-  "name": "dto",
-  "type": "tuple"
-}`;
+          "components": [
+            {
+              "internalType": "int256",
+              "name": "latitude",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
+              "name": "longitude",
+              "type": "int256"
+            },
+            {
+              "internalType": "string",
+              "name": "description",
+              "type": "string"
+            },
+            {
+              "internalType": "int256",
+              "name": "temperature",
+              "type": "int256"
+            },
+            {
+              "internalType": "int256",
+              "name": "minTemp",
+              "type": "int256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "windSpeed",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "windDeg",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct DataTransportObject",
+          "name": "dto",
+          "type": "tuple"
+        }`;
 
-const attestationTypeBase = "IJsonApi";
-const sourceIdBase = "WEB2";
-const verifierUrlBase = JQ_VERIFIER_URL_TESTNET!;
+// Configuration constants
+const attestationTypeBase = "Web2Json";
+const sourceIdBase = "PublicWeb2";
+const verifierUrlBase = WEB2JSON_VERIFIER_URL_TESTNET;
 
 async function getPolicy(agency: MinTempAgencyInstance, id: number) {
   const response = await agency.registeredPolicies(id);
@@ -93,28 +103,41 @@ async function getPolicy(agency: MinTempAgencyInstance, id: number) {
   return policy;
 }
 
-async function prepareUrl(policy: {
-  latitude: number;
-  longitude: number;
-}): Promise<string> {
-  return `https://api.openweathermap.org/data/2.5/weather?lat=${
-    policy.latitude / 10 ** 6
-  }&lon=${policy.longitude / 10 ** 6}&units=${units}&appid=${apiId}`;
+function prepareQueryParams(policy: { latitude: number; longitude: number }) {
+  const queryParams = {
+    lat: policy.latitude / 10 ** 6,
+    lon: policy.longitude / 10 ** 6,
+    units: units,
+    appid: apiId,
+  };
+  return JSON.stringify(queryParams);
 }
 
 async function prepareAttestationRequest(
   apiUrl: string,
-  postprocessJq: string,
+  httpMethod: string,
+  headers: string,
+  queryParams: string,
+  body: string,
+  postProcessJq: string,
   abiSignature: string,
 ) {
   const requestBody = {
     url: apiUrl,
-    postprocessJq,
-    abi_signature: abiSignature,
+    httpMethod: httpMethod,
+    headers: headers,
+    queryParams: queryParams,
+    body: body,
+    postProcessJq: postProcessJq,
+    abiSignature: abiSignature,
   };
 
-  const url = `${verifierUrlBase}JsonApi/prepareRequest`;
-  const apiKey = JQ_VERIFIER_API_KEY_TESTNET!;
+  console.log(
+    `Query string: ${apiUrl}?${queryParams.replaceAll(":", "=").replaceAll(",", "&").replaceAll("{", "").replaceAll("}", "").replaceAll('"', "")}\n`,
+  );
+
+  const url = `${verifierUrlBase}Web2Json/prepareRequest`;
+  const apiKey = VERIFIER_API_KEY_TESTNET;
 
   return await prepareAttestationRequestBase(
     url,
@@ -144,9 +167,12 @@ async function resolvePolicy(
 ) {
   console.log("Proof hex:", proof.response_hex, "\n");
 
-  const IJsonApiVerification = await artifacts.require("IJsonApiVerification");
+  // A piece of black magic that allows us to read the response type from an artifact
+  const IWeb2JsonVerification = await artifacts.require(
+    "IWeb2JsonVerification",
+  );
   const responseType =
-    IJsonApiVerification._json.abi[0].inputs[0].components[1];
+    IWeb2JsonVerification._json.abi[0].inputs[0].components[1];
   console.log("Response type:", responseType, "\n");
 
   const decodedResponse = web3.eth.abi.decodeParameter(
@@ -155,7 +181,6 @@ async function resolvePolicy(
   );
   console.log("Decoded proof:", decodedResponse, "\n");
 
-  // Retry mechanism instead of while(true)
   for (let attempt = 1; attempt <= 5; attempt++) {
     try {
       const transaction = await agency.resolvePolicy(id, {
@@ -163,14 +188,12 @@ async function resolvePolicy(
         data: decodedResponse,
       });
       console.log("Transaction:", transaction.tx, "\n");
-      return;
+      break;
     } catch (error) {
-      console.error(`Attempt ${attempt} failed:`, error, "\n");
+      console.log("Error:", error, "\n");
       await sleep(20000);
     }
   }
-
-  throw new Error("resolvePolicy failed after 5 attempts");
 }
 
 async function main() {
@@ -178,22 +201,29 @@ async function main() {
   console.log("MinTempAgency:", agency.address, "\n");
 
   const policy = await getPolicy(agency, policyId);
-  const apiUrl = await prepareUrl(policy);
+
+  const queryParams = prepareQueryParams(policy);
 
   const data = await prepareAttestationRequest(
     apiUrl,
-    postprocessJq,
+    httpMethod,
+    headers,
+    queryParams,
+    body,
+    postProcessJq,
     abiSignature,
   );
   console.log("Data:", data, "\n");
 
   const abiEncodedRequest = data.abiEncodedRequest;
+
   const roundId = await submitAttestationRequest(abiEncodedRequest);
+
   const proof = await retrieveDataAndProof(abiEncodedRequest, roundId);
 
   await resolvePolicy(agency, policyId, proof);
 }
 
-main().then(() => {
+void main().then(() => {
   process.exit(0);
 });

@@ -16,7 +16,7 @@ import ExpirePolicy from "!!raw-loader!/examples/developer-hub-javascript/fdc_mi
 import ResolvePolicy from "!!raw-loader!/examples/developer-hub-javascript/fdc_min_temp_resolve_policy.ts";
 import RetireUnclaimedPolicy from "!!raw-loader!/examples/developer-hub-javascript/fdc_min_temp_retire_unclaimed_policy.ts";
 
-In this guide, we will examine an example of a simple insurance dApp that uses the FDC's [JsonApi](/fdc/guides/hardhat/json-api) attestation type.
+In this guide, we will examine an example of a simple insurance dApp that uses the FDC's [Web2Json](/fdc/guides/hardhat/web-2-json) attestation type.
 The dApp will allow users to create insurance policies for temperatures at specific coordinates falling below a specified threshold.
 Other users will be able to claim those policies, and the policies will be settled automatically by the contract.
 
@@ -63,7 +63,7 @@ With that we can now focus on the technical aspects of the procedure described a
 
 The contract that we will define will be called `MinTempAgency`.
 This name coincides with the field name in the response on a call to the [OpenWeather](https://openweathermap.org/api) API, which we will be using to acquire weather data.
-We will use the [Flare Data Connector](/fdc/overview) to collect the weather data so, in keeping with the [JsonApi guide](/fdc/guides/hardhat/json-api), we start by defining a `DataTransportObject` which will determine how the FDC should encode the data.
+We will use the [Flare Data Connector](/fdc/overview) to collect the weather data so, in keeping with the [Web2Json guide](/fdc/guides/hardhat/web-2-json), we start by defining a `DataTransportObject` which will determine how the FDC should encode the data.
 
 ```solidity title="contracts/weatherInsurance/MinTempAgency.sol"
 struct DataTransportObject {
@@ -217,7 +217,7 @@ Otherwise, the contract is open for a reentrancy attack.
 
 The code that resolves a policy has been extended to provide a better description of conditions that revert the function.
 The function first collects the policy with the provided ID, and checks that its status is `Open`.
-Then, it validates the provided proof with the `isJsonApiProofValid` helper function.
+Then, it validates the provided proof with the `isWeb2JsonProofValid` helper function.
 If the proof is valid, the `resolvePolicy` function decodes the enclosed data to at `DataTransportObject` struct.
 
 Several checks follow.
@@ -236,10 +236,10 @@ Finally, if all checks have passed, the function marks the policy as `Settled`, 
 A `PolicySettled` event is emitted.
 
 ```solidity title="contracts/weatherInsurance/MinTempAgency.sol"
-    function resolvePolicy(uint256 id, IJsonApi.Proof calldata proof) public {
+    function resolvePolicy(uint256 id, IWeb2Json.Proof calldata proof) public {
         Policy memory policy = registeredPolicies[id];
         require(policy.status == PolicyStatus.Open, "Policy not open");
-        require(isJsonApiProofValid(proof), "Invalid proof");
+        require(isWeb2JsonProofValid(proof), "Invalid proof");
         DataTransportObject memory dto = abi.decode(proof.data.responseBody.abi_encoded_data, (DataTransportObject));
         require(
             block.timestamp >= policy.startTimestamp,
@@ -286,11 +286,11 @@ A `PolicySettled` event is emitted.
     }
 ```
 
-The `IJsonAPi.Proof` is validated as demonstrated in the [JsonApi guide](/fdc/guides/hardhat/json-api).
+The `IWeb2Json.Proof` is validated as demonstrated in the [Web2Json guide](/fdc/guides/hardhat/web-2-json).
 
 ```solidity title="contracts/weatherInsurance/MinTempAgency.sol"
-    function isJsonApiProofValid(IJsonApi.Proof calldata _proof) private view returns (bool) {
-        return ContractRegistry.auxiliaryGetIJsonApiVerification().verifyJsonApi(_proof);
+    function isWeb2JsonProofValid(IWeb2Json.Proof calldata _proof) private view returns (bool) {
+        return ContractRegistry.getFdcVerification().verifyJsonApi(_proof);
     }
 ```
 
@@ -343,8 +343,8 @@ The `getInsurer` function allows us to query policy insurers, while the `getAllP
     }
 ```
 
-Like in the [JsonApi guide](/fdc/guides/hardhat/json-api), we define an `abiSignatureHack` function, that will allow us to extract the ABI signature of the `DataTransportObject` from the Hardhat-generated artifacts.
-This will be important in the next section of this guide, where we will submit a JsonApi attestation request to the FDC.
+Like in the [Web2Json guide](/fdc/guides/hardhat/web-2-json), we define an `abiSignatureHack` function, that will allow us to extract the ABI signature of the `DataTransportObject` from the Hardhat-generated artifacts.
+This will be important in the next section of this guide, where we will submit a Web2Json attestation request to the FDC.
 
 ```solidity title="contracts/weatherInsurance/MinTempAgency.sol"
     function abiSignatureHack(DataTransportObject memory dto) public pure {}
@@ -367,7 +367,7 @@ The first script deploys the `MinTempAgency` contract and prints its address to 
 We save the address to a `scripts/weatherInsurance/minTemp/config.ts` file because we will access it in other scripts.
 
 ```typescript title="scripts/weatherInsurance/minTemp/config.ts"
-export const agencyAddress = "0x04Ca06E78EFaF061173Ca3591f96fE148923707d";
+export const agencyAddress = "0x991dEEEc12084Afa2FB318145E03fC87009E709f";
 ```
 
 Next, we will create a new policy with the following parameters:
@@ -400,11 +400,7 @@ const apiId = process.env.OPEN_WEATHER_API_KEY ?? "";
 
 const units = "metric";
 
-const apiUrl = `https://api.openweathermap.org/data/2.5/weather
-                \?lat\=${latitude}
-                \&lon\=${longitude}
-                \&appid\=${apiId}
-                \&units\=${units}`;
+const apiUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${apiId}&units=${units}`;
 ```
 
 The script collects the appropriate coordinates as described above.
@@ -430,12 +426,13 @@ In this example, the policy claimed has the ID of `0`.
 </CodeBlock>
 
 The script for resolving a policy is slightly more complicated.
-It involves making a JsonApi attestation request to the FDC and providing the returned proof to the `MinTempAgency` contract.
-To learn more about the JsonApi attestation request look at the [related guide](/fdc/guides/hardhat/json-api), or its [spec](/fdc/attestation-types/json-api).
+It involves making a Web2Json attestation request to the FDC and providing the returned proof to the `MinTempAgency` contract.
+To learn more about the Web2Json attestation request look at the [related guide](/fdc/guides/hardhat/web-2-json), or its [spec](/fdc/attestation-types/web-2-json).
 
 We prepare an attestation request using the verifier server.
 We do so by making a POST request to the appropriate endpoint;
-in this case, the URL is `https://jq-verifier-test.flare.rocks/JsonApi/prepareRequest`.
+{/* TODO add the new address when available */}
+in this case, the URL is ``.
 
 The URL we will be submitting to the FDC is the one already mentioned above.
 More specifically:
@@ -522,10 +519,10 @@ const abiSignature = `{
        }`;
 ```
 
-The intermediate steps more or less follow the ones in the [JsonApi guide](/fdc/guides/hardhat/json-api).
+The intermediate steps more or less follow the ones in the [Web2Json guide](/fdc/guides/hardhat/web-2-json).
 We make a POST request to the verifier server and thus prepare the attestation request.
 We submit the ABI-encoded request to the FDC, wait for the current voting round to finalize, and then collect the data from a DA Layer server.
-Finally, we decode the data to an `IJsonAPi.Response` struct and add it to an `IJsonAPi.Proof` struct, which we input into the `resolvePolicy` function, along with the policy ID, of the `MinTempAgency` at the address from the `config.ts` file.
+Finally, we decode the data to an `IWeb2Json.Response` struct and add it to an `IWeb2Json.Proof` struct, which we input into the `resolvePolicy` function, along with the policy ID, of the `MinTempAgency` at the address from the `config.ts` file.
 
 The entire script looks as follows.
 

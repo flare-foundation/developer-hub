@@ -20,11 +20,12 @@ const ProofOfReserves = artifacts.require("ProofOfReserves");
 
 const {
   VERIFIER_URL_TESTNET,
-  VERIFIER_API_KEY,
-  JQ_VERIFIER_URL_TESTNET,
-  JQ_VERIFIER_API_KEY,
+  VERIFIER_API_KEY_TESTNET,
+  WEB2JSON_VERIFIER_URL_TESTNET,
   COSTON2_DA_LAYER_URL,
 } = process.env;
+
+// yarn hardhat run scripts/proofOfReserves/verifyProofOfReserves.ts --network coston2
 
 type AttestationRequest = {
   source: string;
@@ -37,52 +38,60 @@ type AttestationRequest = {
 
 const requests: AttestationRequest[] = [
   {
-    source: "jsonApi",
-    sourceIdBase: "WEB2",
-    verifierUrlBase: JQ_VERIFIER_URL_TESTNET!,
-    verifierApiKey: JQ_VERIFIER_API_KEY!,
+    source: "web2json",
+    sourceIdBase: "PublicWeb2",
+    verifierUrlBase: WEB2JSON_VERIFIER_URL_TESTNET,
+    verifierApiKey: VERIFIER_API_KEY_TESTNET,
     urlTypeBase: "",
     data: {
       apiUrl:
         "https://api.htdigitalassets.com/alm-stablecoin-db/metrics/current_reserves_amount",
-      postprocessJq: `{reserves: .value | gsub(",":"") | sub("\\.\\d*":"")}`,
+      httpMethod: "GET",
+      headers: "{}",
+      queryParams: "{}",
+      body: "{}",
+      postProcessJq: `{reserves: .value | gsub(",";"") | sub("\\\\.\\\\d*";"")}`,
       abiSignature: `{"components": [{"internalType": "uint256","name": "reserves","type": "uint256"}],"internalType": "struct DataTransportObject","name": "dto","type": "tuple"}`,
     },
   },
   {
     source: "coston",
     sourceIdBase: "testSGB",
-    verifierUrlBase: VERIFIER_URL_TESTNET!,
-    verifierApiKey: VERIFIER_API_KEY!,
+    verifierUrlBase: VERIFIER_URL_TESTNET,
+    verifierApiKey: VERIFIER_API_KEY_TESTNET,
     urlTypeBase: "sgb",
     data: {
-      transactionHash: transactionHashes.get("coston")!,
+      transactionHash: transactionHashes.get("coston"),
     },
   },
   {
     source: "coston2",
     sourceIdBase: "testFLR",
-    verifierUrlBase: VERIFIER_URL_TESTNET!,
-    verifierApiKey: VERIFIER_API_KEY!,
+    verifierUrlBase: VERIFIER_URL_TESTNET,
+    verifierApiKey: VERIFIER_API_KEY_TESTNET,
     urlTypeBase: "flr",
     data: {
-      transactionHash: transactionHashes.get("coston2")!,
+      transactionHash: transactionHashes.get("coston2"),
     },
   },
 ];
 
-async function prepareJsonApiAttestationRequest(
+async function prepareWeb2JsonAttestationRequest(
   transaction: AttestationRequest,
 ) {
-  const attestationTypeBase = "IJsonApi";
+  const attestationTypeBase = "Web2Json";
 
   const requestBody = {
     url: transaction.data.apiUrl,
-    postprocessJq: transaction.data.postprocessJq,
-    abi_signature: transaction.data.abiSignature,
+    httpMethod: transaction.data.httpMethod,
+    headers: transaction.data.headers,
+    queryParams: transaction.data.queryParams,
+    body: transaction.data.body,
+    postProcessJq: transaction.data.postProcessJq,
+    abiSignature: transaction.data.abiSignature,
   };
 
-  const url = `${transaction.verifierUrlBase}JsonApi/prepareRequest`;
+  const url = `${transaction.verifierUrlBase}Web2Json/prepareRequest`;
   const apiKey = transaction.verifierApiKey;
 
   return await prepareAttestationRequestBase(
@@ -131,8 +140,8 @@ async function prepareAttestationRequests(transactions: AttestationRequest[]) {
   for (const transaction of transactions) {
     console.log(`(${transaction.source})\n`);
 
-    if (transaction.source === "jsonApi") {
-      const responseData = await prepareJsonApiAttestationRequest(transaction);
+    if (transaction.source === "web2json") {
+      const responseData = await prepareWeb2JsonAttestationRequest(transaction);
       console.log("Data:", responseData, "\n");
       data.set(transaction.source, responseData.abiEncodedRequest);
     } else {
@@ -177,7 +186,7 @@ async function retrieveDataAndProofs(
 ) {
   console.log("\nRetrieving data and proofs...\n");
 
-  const proofs: Map<string, Record<string, unknown>> = new Map();
+  const proofs: Map<string, unknown> = new Map();
 
   const url = `${COSTON2_DA_LAYER_URL}api/v1/fdc/proof-by-request-round-raw`;
   console.log("Url:", url, "\n");
@@ -212,27 +221,27 @@ async function retrieveDataAndProofs(
   return proofs;
 }
 
-async function prepareDataAndProofs(
-  data: Map<string, Record<string, unknown>>,
-) {
-  const IJsonApiVerification = await artifacts.require("IJsonApiVerification");
+async function prepareDataAndProofs(data: Map<string, unknown>) {
+  const IWeb2JsonVerification = await artifacts.require(
+    "IWeb2JsonVerification",
+  );
   const IEVMTransactionVerification = await artifacts.require(
     "IEVMTransactionVerification",
   );
 
   const jsonProof = {
-    merkleProof: data.get("jsonApi")?.proof,
+    merkleProof: data.get("web2json").proof,
     data: web3.eth.abi.decodeParameter(
-      IJsonApiVerification._json.abi[0].inputs[0].components[1],
-      data.get("jsonApi")?.response_hex as string,
+      IWeb2JsonVerification._json.abi[0].inputs[0].components[1],
+      data.get("web2json").response_hex,
     ),
   };
   const transactionProofs: Array<Record<string, unknown>> = [];
   for (const [source, proof] of data.entries()) {
-    if (source !== "jsonApi") {
+    if (source !== "web2json") {
       const decodedProof = web3.eth.abi.decodeParameter(
         IEVMTransactionVerification._json.abi[0].inputs[0].components[1],
-        proof.response_hex as string,
+        proof.response_hex,
       );
       transactionProofs.push({
         merkleProof: proof.proof,
@@ -261,7 +270,7 @@ async function submitDataAndProofsToProofOfReserves(
   const [jsonProof, transactionProofs] = await prepareDataAndProofs(data);
 
   await proofOfReserves.verifyReserves(jsonProof, transactionProofs);
-  const sufficientReserves = true;
+  const sufficientReserves: boolean = true;
   return sufficientReserves;
 }
 
@@ -273,6 +282,6 @@ async function main() {
   console.log("Sufficient reserves:", sufficientReserves);
 }
 
-main().then(() => {
+void main().then(() => {
   process.exit(0);
 });
