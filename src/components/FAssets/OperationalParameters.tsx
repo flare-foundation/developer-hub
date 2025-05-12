@@ -7,8 +7,14 @@ import { operationalParameters } from "./operational-parameters";
 
 export default function OperationalParameters({
   sectionTitle,
+  hideXrp = false,
+  hideBtc = false,
+  hideDoge = false,
 }: {
   sectionTitle: string;
+  hideXrp?: boolean;
+  hideBtc?: boolean;
+  hideDoge?: boolean;
 }) {
   const operationalParametersSection = operationalParameters.find(
     (section) => section.title === sectionTitle,
@@ -26,9 +32,9 @@ export default function OperationalParameters({
         <thead>
           <tr>
             <th>Parameter</th>
-            <th>XRP</th>
-            <th>BTC</th>
-            <th>DOGE</th>
+            {!hideXrp && <th>XRP</th> }
+            { !hideBtc && <th>BTC</th> }
+            { !hideDoge && <th>DOGE</th> }
           </tr>
         </thead>
         <tbody>
@@ -47,21 +53,27 @@ export default function OperationalParameters({
                 <br />
                 {parameter.description}
               </td>
-              <td
-                dangerouslySetInnerHTML={{
-                  __html: parameter.values[network].xrp,
-                }}
-              />
-              <td
-                dangerouslySetInnerHTML={{
-                  __html: parameter.values[network].btc,
-                }}
-              />
-              <td
-                dangerouslySetInnerHTML={{
-                  __html: parameter.values[network].doge,
-                }}
-              />
+              {!hideXrp && (
+                <td
+                  dangerouslySetInnerHTML={{
+                    __html: parameter.values[network].xrp,
+                  }}
+                />
+              )}
+              {!hideBtc && (
+                <td
+                  dangerouslySetInnerHTML={{
+                    __html: parameter.values[network].btc,
+                  }}
+                />  
+              )}
+              {!hideDoge && (
+                <td
+                  dangerouslySetInnerHTML={{
+                    __html: parameter.values[network].doge,
+                  }}
+                />
+              )}
             </tr>
           ))}
         </tbody>

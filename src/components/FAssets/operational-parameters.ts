@@ -1188,4 +1188,131 @@ export const operationalParameters = [
       },
     ],
   },
+  {
+    title: "Core Vault Manager",
+    parameters: [
+      {
+        name: "Escrow amount",
+        description:
+          "The amount of XRP to escrow (setting to 0 disables escrowing).",
+        values: {
+          songbird: {
+            xrp: "150k XRP",
+          },
+          coston: {
+            xrp: "10k XRP",
+          },
+        },
+      },
+      {
+        name: "Minimal left amount in the multisig",
+        description:
+          "The minimal amount that will be left on the multisig after escrowing.",
+        values: {
+          songbird: {
+            xrp: "150k XRP",
+          },
+          coston: {
+            xrp: "10k XRP",
+          },
+        },
+      },
+      {
+        name: "Escrow expiration time",
+        description:
+          "The time of day (UTC) when the escrows expire. Exactly one escrow per day will expire.",
+        values: {
+          songbird: {
+            xrp: "50400 (14:00 UTC)",
+          },
+          coston: {
+            xrp: "43200 (12:00 UTC)",
+          },
+        },
+      },
+      {
+        name: "Max expected fee",
+        description:
+          "Maximum expected fee charged by the chain for a payment",
+        values: {
+          songbird: {
+            xrp: "0.0004 XRP (400 drops)",
+          },
+          coston: {
+            xrp: "0.0001 XRP (100 drops)",
+          },
+        },
+      },
+    ]
+  },
+  {
+    title: "Core Vault Settings",
+    parameters: [
+      {
+        name: "Minting left on agent's address",
+        description:
+          "Minimum amount of minting left on agent's address after transfer to core vault. Expressed as percentage of agent's minting capacity (calculated from agent's vault and pool collateral).",
+        values: {
+          songbird: {
+            xrp: "15%",
+          },
+          coston: {
+            xrp: "20%",
+          },
+        },
+      },
+      {
+        name: "Transfer to core vault time",
+        description:
+          "The extra time for an agent's transfer to the core vault, compared to ordinary redemption payment.",
+        values: {
+          songbird: {
+            xrp: "15 minutes",
+          },
+          coston: {
+            xrp: "2 hours",
+          },
+        },
+      },
+      {
+        name: "Transfer fee to Core Vault",
+        description:
+          "Fee (in percentage of transfer amount) paid by agent for transfer to the core vault.",
+        values: {
+          songbird: {
+            xrp: "0",
+          },
+          coston: {
+            xrp: "0",
+          },
+        },
+      },
+      {
+        name: "Minimum number of lots for direct redemption",
+        description:
+          "The minimum number of lots that a direct redemption from core vault can take",
+        values: {
+          songbird: {
+            xrp: "1000",
+          },
+          coston: {
+            xrp: "10",
+          },
+        },
+      },
+      {
+        name: "Redemption fee",
+        description:
+          "Fee (in percentage of redemption amount) paid by the redeemer for direct redemptions from the core vault.",
+        values: {
+          songbird: {
+            xrp: "0",
+          },
+          coston: {
+            xrp: "0",
+          },
+        },
+      }
+    ]
+  }
 ];
