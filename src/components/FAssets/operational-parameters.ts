@@ -548,7 +548,7 @@ export const operationalParameters = [
         settingName: "confirmationByOthersAfter",
         values: {
           songbird: {
-            xrp: "2 hours",
+            xrp: "6 hours",
             btc: "4 hours",
             doge: "4 hours",
           },
@@ -1267,7 +1267,7 @@ export const operationalParameters = [
           "The extra time for an agent's transfer to the core vault, compared to ordinary redemption payment.",
         values: {
           songbird: {
-            xrp: "15 minutes",
+            xrp: "2 hours",
           },
           coston: {
             xrp: "2 hours",
