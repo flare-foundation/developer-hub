@@ -9,8 +9,8 @@ import TabItem from "@theme/TabItem";
 import ThemedImage from "@theme/ThemedImage";
 import useBaseUrl from "@docusaurus/useBaseUrl";
 
-This guide provides a sample deployment configuration for infrastructure providers looking to a Flare Entity, consisting of a validator node and a data provider system (FSP) for the Flare network.
-The [FSP](/network/fsp) consists of [Flare Time Series Oracle (FTSO)](https://dev.flare.network/ftso/overview) and [Flare Data Connector (FDC)](https://dev.flare.network/fdc/overview).
+This guide will walk you through setting up a Flare Entity, consisting of a validator node and a data provider system (FSP) for the Flare network.
+The [FSP](/network/fsp) consists of [Flare Time Series Oracle (FTSO)](https://dev.flare.network/ftso/overview) and [Flare Data Connector (FDC)](https://dev.flare.network/fdc/overview) sub-protocols.
 
 <ThemedImage
   alt="Data Provider System for FSP"
@@ -33,7 +33,8 @@ A Flare Entity consists of the following six components:
 
 - A machine meeting the [minimum hardware requirements](/run-node/system-requirements).
 - A registered [validator node](/run-node/register-validator).
-- [Docker Engine](https://docs.docker.com/engine/install/), ensure the Docker data root directory has sufficient disk space. If necessary, configure Docker to use a specific storage location or mount point (refer to Docker's [storage documentation](https://docs.docker.com/engine/storage/)).
+- [Docker Engine](https://docs.docker.com/engine/install/), ensure the Docker data root directory has sufficient disk space.
+  If necessary, configure Docker to use a specific storage location or mount point (refer to Docker's [storage documentation](https://docs.docker.com/engine/storage/)).
 - [jq](https://jqlang.github.io/jq/)
 - [envsubst](https://www.gnu.org/software/gettext/manual/html_node/envsubst-Invocation.html)
 - [yarn](https://yarnpkg.com) (optional, for performing [automated registration](#register-and-fund-fsp-addresses) on testnets)
@@ -54,19 +55,21 @@ Log out and log back in or restart your system for the changes to take effect.
 
 :::warning[Minimal conditions]
 
-After the introduction of [minimal conditions](/network/fsp/rewarding#minimal-conditions) in [FIP.10](https://proposals.flare.network/FIP/FIP_10.html#21-new-incentive-structure), a Flare Entity needs to be both **available** and **performant** across all Flare protocols in order to be eligible for rewards.
+After the introduction of [minimal conditions](/network/fsp/rewarding#minimal-conditions) in [FIP.10](https://proposals.flare.network/FIP/FIP_10.html), a Flare Entity needs to be both **available** and **performant** across all Flare protocols in order to be eligible for rewards.
 
 :::
 
-- [FSP rewards](https://github.com/flare-foundation/FTSO-Scaling/blob/main/scripts/rewards/README.md#claiming-rewards) information is available at [flare-foundation/fsp-rewards](https://github.com/flare-foundation/fsp-rewards/tree/main/flare) and on the [Discourse Forum](https://forum.flare.network/t/fsp-rewards-data) (see XLSX file for historical reward data). Updated every reward epoch (3.5 days), with epochs starting on Monday and Thursday.
-- [Validator staking rewards](/network/guides/using-flare-stake-tool#claiming-rewards) information is available at [flare-foundation/reward-scripts](https://github.com/flare-foundation/reward-scripts/tree/main/generated-files). Updated every reward epoch (3.5 days), with epochs starting on Monday and Thursday.
+- [FSP rewards](https://github.com/flare-foundation/FTSO-Scaling/blob/main/scripts/rewards/README.md#claiming-rewards) information is available at [flare-foundation/fsp-rewards](https://github.com/flare-foundation/fsp-rewards/tree/main/flare) and on the [Discourse Forum](https://forum.flare.network/t/fsp-rewards-data) (see XLSX file for historical reward data).
+  Updated every reward epoch (3.5 days).
+- [Validator staking rewards](/network/guides/using-flare-stake-tool#claiming-rewards) information is available at [flare-foundation/reward-scripts](https://github.com/flare-foundation/reward-scripts/tree/main/generated-files).
+  Updated every 4 reward epochs (14 days).
 
 Learn how to check your Flare Entity rewards in the [FAQs](#faqs) section.
 
 ## Registration
 
-Before deploying the Flare Entity components, several one-time registration steps must be completed on-chain.
-This involves registering operational addresses for the Flare System Provider (FSP), funding them, registering a sortition key for Fast Updates, and linking your validator node ID to your entity's identity.
+Before deploying the Flare Entity components, several one-time registration steps must be completed onchain.
+This involves registering FSP operational addresses, funding them, registering a sortition key for Fast Updates, and linking your validator node ID to your entity's identity.
 
 ### Register and fund FSP addresses
 
@@ -96,7 +99,8 @@ On testnets, you can automate the registration of your five FSP addresses **and*
    yarn c
    ```
 
-2. Create an `entities.json` file with the following account addresses and private keys. Generate a sortition private key by following step 1 in [Register sortition key](#register-sortition-key). :
+2. Create an `entities.json` file with the following account addresses and private keys.
+   Generate a sortition private key by following step 1 in [Register sortition key](#register-sortition-key):
 
    ```json
    [
@@ -163,7 +167,7 @@ You can proceed directly to [Fund FSP addresses](#fund-fsp-addresses).
 
 #### Method 2: Manual registration
 
-On mainnet, or if you prefer not to use the automated script on testnets, you must manually register the required FSP addresses by interacting directly with the [`EntityManager`](/network/fsp/solidity-reference/IEntityManager) smart contract.
+On mainnet, or if you prefer not to use the automated script on testnets, you must manually register the required FSP addresses by interacting directly with the [`EntityManager`](/network/fsp/solidity-reference/IEntityManager) contract.
 
 1.  Ensure you have generated the following five addresses and **securely stored their private keys**. Understand their roles:
 
@@ -171,11 +175,12 @@ On mainnet, or if you prefer not to use the automated script on testnets, you mu
     - `Submit`: Used for sending FTSO commit/reveal transactions.
     - `SubmitSignatures`: Used for sending FTSO result signatures (often separate from `Submit` to manage transaction nonces).
     - `SigningPolicy`: Used for signing FTSO data during voting and for reward epoch configurations.
-    - `Delegation`: Public address for receiving WNat delegations to increase vote power and collect rewards.
+    - `Delegation`: Public address for receiving WNat (e.g., WFLR, WC2FLR) delegations to increase vote power and collect rewards.
 
-2.  For each address role (`Submit`, `SubmitSignatures`, `SigningPolicy`, `Delegation`), perform the two-step propose-confirm process using the `EntityManager` contract (see [FSP Solidity Reference](/network/fsp/solidity-reference)):
+2.  For each address role (`Submit`, `SubmitSignatures`, `SigningPolicy`, `Delegation`), perform the two-step propose-confirm process using the `EntityManager` contract (see [FSP Reference](/network/fsp/solidity-reference)):
 
-    - **Step A (Propose):** Call the relevant `propose<Role>Address` method from your `Identity` address. Provide the address you want to register for that role as the argument.
+    - **Step A (Propose):** Call the relevant `propose<Role>Address` method from your `Identity` address.
+      Provide the address you want to register for that role as the argument.
     - **Step B (Confirm):** Call the corresponding `confirm<Role>AddressRegistration` method from the address you are actually registering (e.g., call `confirmSubmitAddressRegistration` using the `Submit` address's private key).
 
     | Role to Register   | Step A: Method Called by `Identity` Address                                                                       | Step B: Method Called by Proposed Address                                                                                                 |
@@ -189,7 +194,7 @@ On mainnet, or if you prefer not to use the automated script on testnets, you mu
 
 All registered FSP addresses (`Identity`, `Submit`, `SubmitSignatures`, `SigningPolicy`, `Delegation`) require funding with the network's native token (FLR, SGB, etc.) to cover transaction gas fees.
 
-Additionally, the `Delegation` address needs sufficient Wrapped Native Token (WNat) balance to achieve voting power in the FTSO protocols.
+Additionally, the `Delegation` address needs sufficient WNat balance to achieve voting power in the FTSO protocols.
 You can wrap native tokens directly to this address or receive delegations from the community.
 
 - Wrapping Portals:
@@ -227,8 +232,8 @@ This key pair is used for the FTSOv2 Fast Updates protocol.
          ```bash
          # Replace placeholders with your actual values
          docker run --rm ghcr.io/flare-foundation/fast-updates/go-client:latest keygen \
-           --key <YOUR_GENERATED_SORTITION_PrivateKey> \
-           --address <YOUR_IDENTITY_ADDRESS>
+           --key PrivateKey \ # <-- REPLACE WITH YOUR GENERATED PrivateKey
+           --address Identity  # <-- REPLACE WITH YOUR Identity ADDRESS
          ```
 
          This will generate a signature of the form:
@@ -237,7 +242,8 @@ This key pair is used for the FTSOv2 Fast Updates protocol.
          Signature generated: 0x10b0f6b68acf899944ce9406c807f38e904401dcf962d7fdd9943b0dee0222321f6863ed9f46d048695942793f1c16158b9a886b6ff2120390f5ddcbbdb0d3b02d8fff2c8f0583c8269650f97a169f5c5ea04ce3bdd91ca959188ac2cf2ff517
          ```
 
-      2. Call the [`registerPublicKey`](/network/fsp/solidity-reference/IEntityManager#registerpublickey) method from your `Identity` address. Provide the `PublicKeyX`, `PublicKeyY` (from Step 1), and the `Signature` (from Step 2a) as arguments.
+      2. Call the [`registerPublicKey`](/network/fsp/solidity-reference/IEntityManager#registerpublickey) method from your `Identity` address.
+         Provide the `PublicKeyX`, `PublicKeyY` (from Step 1), and the `Signature` (from Step 2a) as arguments.
 
          ```solidity
          registerPublicKey(
@@ -249,7 +255,7 @@ This key pair is used for the FTSOv2 Fast Updates protocol.
 
 ### Register validator node
 
-Link your registered validator node's ID to your Flare Entity `Identity` address via the `EntityManager` contract.
+Link your registered validator node's ID to your Flare Entity `Identity` address via the [`EntityManager`](/network/fsp/solidity-reference/IEntityManager) contract.
 
 1. Find your active validator node's `staker.key` and `staker.crt` files (Default paths: `~/.avalanchego/staking/`).
 
@@ -259,10 +265,10 @@ Link your registered validator node's ID to your Flare Entity `Identity` address
    PATH_TO_CRT=~/.avalanchego/staking/staker.crt
    ZERO_PREFIX=0000000000000000000000000000000000000000000000000000000000000000
    PATH_TO_KEY=~/.avalanchego/staking/staker.key
-   IDENTITY_ADDRESS=ab...123 # <-- REPLACE WITH YOUR IDENTITY ADDRESS WITHOUT 0x prefix
+   IDENTITY_ADDRESS=ab...123 # <-- REPLACE WITH YOUR Identity ADDRESS WITHOUT 0x prefix
    ```
 
-3. Generate hex values, use the following commands to generate the required contract arguments from your validator files and identity address.
+3. Use the following commands to generate the required contract arguments:
 
    `_nodeId` (NodeID derived from certificate):
 
@@ -282,7 +288,8 @@ Link your registered validator node's ID to your Flare Entity `Identity` address
    echo -n $ZERO_PREFIX$IDENTITY_ADDRESS | xxd -r -p | openssl dgst -sha256 -sign $PATH_TO_KEY | xxd -p | tr -d '\n' | sed -e 's/^/0x/;' && echo
    ```
 
-4. Call the [`registerNodeId`](/network/fsp/solidity-reference/IEntityManager#registernodeid) method on `EntityManager` using your Identity address. Provide the hex values generated in Step 3 as arguments.
+4. Call the [`registerNodeId`](/network/fsp/solidity-reference/IEntityManager#registernodeid) method on `EntityManager` using your Identity address.
+   Provide the hex values generated in Step 3 as arguments.
 
    ```solidity
    registerNodeId(
@@ -300,7 +307,8 @@ These components securely retrieve and verify data from various blockchains for 
 
 The FDC handles data differently depending on the source chain type:
 
-- **UTXO-Based Chains** (e.g., Bitcoin, Dogecoin, Ripple): An indexer service syncs with the blockchain, storing relevant data locally. A Verifier API server then exposes this indexed data.
+- **UTXO-Based Chains** (e.g., Bitcoin, Dogecoin): An indexer service syncs with the blockchain, storing relevant data locally.
+  A Verifier API server then exposes this indexed data.
 - **EVM Chains** (e.g., Ethereum, Flare, Songbird): The Verifier API server queries an RPC node directly for necessary data.
 
 :::warning[Resource Intensive]
@@ -312,7 +320,7 @@ Ensure your system meets these combined requirements (see main [System Requireme
 
 ### Required components
 
-The `fdc-suite-deployment` repository provides configurations for deploying the following components:
+The [fdc-suite-deployment](https://github.com/flare-foundation/fdc-suite-deployment.git) repository provides configurations for deploying the following components:
 
 #### Blockchain node images
 
@@ -332,16 +340,19 @@ The `fdc-suite-deployment` repository provides configurations for deploying the 
 | XRP     | [flare-foundation/verifier-xrp-indexer](https://github.com/flare-foundation/verifier-xrp-indexer)   | [flare-foundation/verifier-indexer-api](https://github.com/flare-foundation/verifier-indexer-api) |
 | EVM     | -                                                                                                   | [flare-foundation/evm-verifier](https://github.com/flare-foundation/evm-verifier)                 |
 
-:::info Flexibility and Dependencies
+<details>
+<summary>EVM verification, using existing nodes and dependencies.</summary>
 
-- EVM Verification: Note that Flare Mainnet and Songbird Canary-Network nodes (see [Run Node guides](/run-node/)) are also implicitly required for EVM verification tasks run by the FDC Client later, but are typically run as part of your core Flare Entity / Validator setup, not within the `fdc-suite-deployment`.
-- Using Existing Nodes: You are not required to deploy all listed blockchain node images using this repository. If you operate your own compatible RPC nodes (e.g., for Bitcoin), you can **configure the corresponding Verifier/Indexer `.env` file (detailed below) with your node's RPC URL and credentials** instead of starting the node image provided here.
-- Splitting Deployment: While possible to run components across multiple servers, this guide focuses on the single-machine setup provided by the repository, which may be simpler to manage.
-- Dependencies: Indexers and Verifiers require access to a synced and operational blockchain node for their respective chain. Ensure node availability before starting dependent services.
+- **EVM Verification:** Note that Flare Mainnet and Songbird Canary-Network nodes (see [Run Node guides](/run-node/)) are also implicitly required for EVM verification tasks run by the FDC Client later, but are typically run as part of your core Flare Entity / Validator setup, not within the `fdc-suite-deployment`.
+- **Using Existing Nodes:** You are not required to deploy all listed blockchain node images using this repository.
+  If you operate your own compatible RPC nodes (e.g., for Bitcoin), you can **configure the corresponding Verifier/Indexer `.env` file (detailed below) with your node's RPC URL and credentials** instead of starting the node image provided here.
+- **Splitting Deployment:** While possible to run components across multiple servers, this guide focuses on the single-machine setup provided by the repository, which may be simpler to manage.
+- **Dependencies:** Indexers and Verifiers require access to a synced and operational blockchain node for their respective chain.
+  Ensure node availability before starting dependent services.
 
-:::
+</details>
 
-### Configuring blockchain nodes
+### Configure blockchain nodes
 
 1. Start by cloning the [flare-foundation/fdc-suite-deployment](https://github.com/flare-foundation/fdc-suite-deployment.git) repo:
 
@@ -350,14 +361,15 @@ The `fdc-suite-deployment` repository provides configurations for deploying the 
    cd fdc-suite-deployment
    ```
 
-2. (optional) Build Docker images. Images are typically pulled automatically from GHCR. If manual building is needed:
+2. (optional) Images are typically pulled automatically from the GitHub Container Registry. If manual building is needed:
 
    ```bash
    # Clone the specific component repo first, then build
    # docker build -t <image-tag> . # replace image tag with tag used in docker-compose.yaml
    ```
 
-3. To configure node authentication, navigate into the specific node's directory (e.g., `nodes-mainnet/btc`) within the cloned repo and generate credentials where required. **Keep generated credentials secure** as they will be needed for the Verifier configuration.
+3. To configure node authentication, navigate into the specific node's directory (e.g., `nodes-mainnet/btc`) within the cloned repo and generate credentials where required.
+   **Keep generated credentials secure** as they will be needed for the Verifier configuration.
 
    - **Bitcoin (BTC) / Dogecoin (DOGE):**
 
@@ -365,7 +377,7 @@ The `fdc-suite-deployment` repository provides configurations for deploying the 
      # Example for BTC
      cd nodes-mainnet/btc
      ./generate-password.sh # Follow prompts or use ./rpcauth.py <USER> <PASS>
-     # Note the generated username/password/rpcauth string for later use
+     # Note down the generated username/password/rpcauth string for later use
      cd ../.. # Return to fdc-suite-deployment root
      ```
 
@@ -379,15 +391,16 @@ The `fdc-suite-deployment` repository provides configurations for deploying the 
      openssl rand -hex 32 > nodes-mainnet/eth/jwt.hex
      ```
 
-:::warning[Default Port Exposure]
+:::warning[Exposing ports]
 
-The default `docker-compose.yaml` files provided in `fdc-suite-deployment` for blockchain nodes might expose standard RPC ports. Review the `ports` section in the relevant `docker-compose.yaml` files and adjust firewall rules on your host machine accordingly to restrict access based on your security policy.
+The default `docker-compose.yaml` files provided in `fdc-suite-deployment` for blockchain nodes might expose standard RPC ports.
+Review the `ports` section in the relevant `docker-compose.yaml` files and adjust firewall rules on your host machine accordingly to restrict access based on your security policy.
 
 :::
 
-### Configuring indexers and verifiers
+### Configure indexers and verifiers
 
-Configuration for the indexer and verifier services is managed centrally via the `.env` file in the root of the `fdc-suite-deployment` repository.
+Configuration for the indexer and verifier services is managed centrally via the `.env` file in the root of the `fdc-suite-deployment` repo.
 
 1.  Create and Edit `.env`:
 
@@ -395,16 +408,19 @@ Configuration for the indexer and verifier services is managed centrally via the
     cp .env.example .env
     ```
 
-    Now, carefully edit the `.env` file, providing correct values for all variables relevant to the FDC components you are deploying. Pay close attention to:
+    Now, carefully edit the `.env` file, providing values for all variables relevant to the FDC components you are deploying. Pay close attention to:
 
     - **RPC Node Connection Details (`*_URL`, `*_RPC_USERNAME`, `*_RPC_PASSWORD` / `*_RPC_AUTH`)**: Provide the full URL and credentials for connecting to each required blockchain node.
 
       - If using nodes deployed via `fdc-suite-deployment` on the _same host_, you can often use `172.17.0.1` (Docker's default bridge IP) as the hostname in the URL (e.g., `http://admin:<PASSWORD>@172.17.0.1:8332/` for BTC, using the password generated earlier).
       - If using _external_ nodes (your own or third-party), use their publicly accessible RPC endpoint URL and associated credentials.
 
-    - **Start Block Number (`*_START_BLOCK_NUMBER`)**: Crucial for the first run only. Set this for each UTXO indexer (BTC, DOGE, XRP) to a block number finalized approximately **14 days prior** to the current date. (Tip: Use a blockchain explorer for the respective chain to find a block number from around that time). This limits initial indexing duration. **Do not change this value on subsequent restarts** unless intentionally resetting the indexer database; the indexer will automatically resume.
+    - **Start Block Number (`*_START_BLOCK_NUMBER`)**: Crucial for the first run only. Set this for each UTXO indexer (BTC, DOGE, XRP) to a block number finalized approximately **14 days prior** to the current date.
+      (Tip: Use a blockchain explorer for the respective chain to find a block number from around that time). This limits initial indexing duration.
+      **Do not change this value on subsequent restarts** unless intentionally resetting the indexer database; the indexer will automatically resume.
     - **Testnet Mode (`TESTNET`):** Set to `true` if deploying for Coston/Coston2, otherwise `false` (or omit).
-    - **Verifier API Keys (`VERIFIER_API_KEYS`)**: Set one or more comma-separated **secret keys**. These keys grant access to your verifier API servers and will be needed by the FDC Client (in the main Flare Entity deployment). Generate strong, unique keys.
+    - **Verifier API Keys (`VERIFIER_API_KEYS`)**: Set one or more comma-separated **secret keys**. These keys grant access to your verifier API servers and will be needed by the FDC Client (in the main Flare Entity deployment).
+      Generate strong, unique keys.
     - **Database Passwords (`*_DB_PASSWORD`)**: Set secure, random passwords for the internal indexer databases.
 
 2.  After saving your `.env` file, run the provided script. This injects your `.env` values into the configuration templates used by the individual services.
@@ -413,11 +429,16 @@ Configuration for the indexer and verifier services is managed centrally via the
     ./generate-config.sh
     ```
 
-    _(This populates files in `verifiers/`, `evm-verifier/`, etc.)_
+    _This populates files in `verifiers/`, `evm-verifier/`, etc. Remember to **re-run this script** every time you make changes to your `.env` file._
 
 ### Start FDC Services
 
-**Important Order:** Start the required blockchain nodes **before** starting their corresponding indexers and verifiers. Ensure nodes are running and ideally synced (or making good progress) first.
+:::warning[Order of starting services]
+
+The order of starting the services is crucial.
+Ensure that the blockchain nodes are fully operational and ideally synced before starting their corresponding indexers and verifiers.
+
+:::
 
 #### Start blockchain nodes
 
@@ -446,7 +467,6 @@ _Repeat for all verifiers corresponding to the chains you need._
 :::tip[Verify FDC Services & Initial Indexing]
 
 After starting the FDC nodes, indexers, and verifiers, check their status using `docker ps`.
-
 Review initial logs via `docker compose logs <service_name>` (e.g., `docker compose logs btc-indexer` in the `verifiers/btc` directory) to confirm startup without immediate errors.
 
 :::
@@ -474,56 +494,64 @@ For reliable mainnet operation and reward eligibility, you MUST implement, deplo
 
 - Develop your service adhering strictly to the [Required Endpoints Specification](#required-endpoints-specification) below.
 - Deploy your custom provider service using production-grade practices (e.g., as a container with restart policies, behind a load balancer if needed, with monitoring).
-- The provider's API endpoint must be network-accessible from the environment where your main Flare Entity services run (i.e., where the `flare-systems-deployment` Docker containers will run). It typically _does not_ need public internet exposure. Note down its internal network URL (e.g., `http://<provider-internal-ip>:<port>`) for the `VALUE_PROVIDER_URL` variable in the final deployment configuration.
+- The provider's API endpoint must be network-accessible from the environment where your [main Flare Entity services run](#run-flare-entity) (i.e., where the `flare-systems-deployment` Docker containers will run).
+  It typically _does not_ need public internet exposure. Note down its internal network URL (e.g., `http://<provider-internal-ip>:<port>`) for the `VALUE_PROVIDER_URL` variable in the final deployment configuration.
 
 #### Required endpoints specification
 
-Your custom Feed Value Provider must implement the following HTTP `POST` endpoints. Both endpoints expect and return JSON payloads (`Content-Type: application/json`).
+Your custom Feed Value Provider must implement the following two HTTP `POST` endpoints. Both endpoints expect and return JSON payloads (`Content-Type: application/json`).
 
-- **`POST /feed-values`**
+<details>
+<summary>**`POST /feed-values`**</summary>
 
-  - **Description**: Returns the feed values without specifying the voting round, used by FTSOv2 Fast Updates client.
-  - **Example request:**
-    ```bash
-    curl -X 'POST' 'http://localhost:3101/feed-values/' \
-      -H 'accept: application/json' \
-      -H 'Content-Type: application/json' \
-      -d '{"feeds": [{ "category": 1, "name" : "BTC/USD" }]}'
-    ```
-  - **Example response:**
-    ```json
-    {
-      "data": [
-        {
-          "feed": { "category": 1, "name": "BTC/USD" },
-          "value": 71285.74004472858
-        }
-      ]
-    }
-    ```
+- **Description**: Returns the feed values without specifying the voting round, used by FTSOv2 Fast Updates client.
+  For category and name values, refer to [FTSOv2 block-latency feeds](/ftso/feeds).
+- **Example request:**
+  ```bash
+  curl -X 'POST' 'http://localhost:3101/feed-values/' \
+    -H 'accept: application/json' \
+    -H 'Content-Type: application/json' \
+    -d '{"feeds": [{ "category": 1, "name" : "BTC/USD" }]}'
+  ```
+- **Example response:**
+  ```json
+  {
+    "data": [
+      {
+        "feed": { "category": 1, "name": "BTC/USD" },
+        "value": 71285.74004472858
+      }
+    ]
+  }
+  ```
 
-- **`POST /feed-values/:votingRoundId`**
+</details>
 
-  - **Description**: Returns the feed values for the specified voting round, used by FTSOv2 Scaling client.
-  - **Example request:**
-    ```bash
-    curl -X 'POST' 'http://localhost:3101/feed-values/0' \
-      -H 'accept: application/json' \
-      -H 'Content-Type: application/json' \
-      -d '{"feeds": [{ "category": 1, "name" : "BTC/USD" }]}'
-    ```
-  - **Example response:**
-    ```json
-    {
-      "votingRoundId": 0,
-      "data": [
-        {
-          "feed": { "category": 1, "name": "BTC/USD" },
-          "value": 71287.34508311428
-        }
-      ]
-    }
-    ```
+<details>
+<summary>**`POST /feed-values/:votingRoundId`**</summary>
+
+- **Description**: Returns the feed values for the specified voting round, used by FTSOv2 Scaling client. For category and name values, refer to [FTSOv2 anchor feeds](/ftso/scaling/anchor-feeds).
+- **Example request:**
+  ```bash
+  curl -X 'POST' 'http://localhost:3101/feed-values/0' \
+    -H 'accept: application/json' \
+    -H 'Content-Type: application/json' \
+    -d '{"feeds": [{ "category": 1, "name" : "BTC/USD" }]}'
+  ```
+- **Example response:**
+  ```json
+  {
+    "votingRoundId": 0,
+    "data": [
+      {
+        "feed": { "category": 1, "name": "BTC/USD" },
+        "value": 71287.34508311428
+      }
+    ]
+  }
+  ```
+
+</details>
 
 ### Using the example provider
 
@@ -536,7 +564,8 @@ docker run --rm -it --publish "0.0.0.0:3101:3101" ghcr.io/flare-foundation/ftso-
 
 If running Docker locally, the API documentation is typically available at [`http://localhost:3101/api-doc`](http://localhost:3101/api-doc).
 
-:::info[Fixed Value Troubleshooting]
+<details>
+<summary>Troubleshooting without live data.</summary>
 
 To test integration without live data, run the example provider in fixed mode:
 
@@ -546,7 +575,7 @@ docker run --rm -it --env VALUE_PROVIDER_IMPL=fixed --publish "0.0.0.0:3101:3101
 
 Check container logs for `WARN [FixedFeed] Initializing FixedFeed....`
 
-:::
+</details>
 
 <details>
 <summary>Remove specific exchanges from the example value provider.</summary>
@@ -574,7 +603,7 @@ The FTSOv2 Fast Updates protocol uses dedicated accounts for submitting frequent
 
 ## Run Flare Entity
 
-With prerequisites met, registrations complete, and FDC/FTSO components configured, you can now deploy and run the main Flare Entity system using the `flare-systems-deployment` Docker Compose setup.
+With prerequisites met, registrations complete, and FDC/FTSO components configured, you can now deploy and run the main Flare Entity system:
 
 1. Clone [flare-systems-deployment](https://github.com/flare-foundation/flare-systems-deployment) repository:
 
@@ -610,7 +639,7 @@ With prerequisites met, registrations complete, and FDC/FTSO components configur
    - Set strict file permissions (e.g., `chmod 600 .env`) so only the owner can read/write.
    - Ensure it's **never** committed to Git or any version control system.
    - Limit access to the server and user account running the deployment.
-     Compromise of these keys can lead to loss of funds, unauthorized actions, and compromised entity.
+     Compromise of these keys can lead to loss of funds, unauthorized actions, and a compromised entity.
 
    :::
 
@@ -630,8 +659,6 @@ With prerequisites met, registrations complete, and FDC/FTSO components configur
 
    _Note: The first run will download all necessary Docker images, which may take several minutes depending on image sizes and network speed._
 
-If your Flare Entity is working correctly, congratulations!
-
 ### Verify deployment success
 
 After starting, confirm the containers are running (`docker ps`). Crucially, monitor the initial logs of key components to ensure they start correctly, connect to necessary services (RPC node, database, verifiers, Feed Value Provider), and enter their operational loops. Use `docker compose logs -f <service_name>` to tail logs in real-time.
@@ -639,6 +666,8 @@ After starting, confirm the containers are running (`docker ps`). Crucially, mon
 Key services to check include: `system-client`, `c-chain-indexer`, `fast-updates-client`, `ftso-client`, `fdc-client`.
 
 Look for successful connections, registration messages (if applicable for the current reward epoch timing), and absence of repeating critical errors.
+
+If your Flare Entity is working correctly, congratulations!
 
 Refer to the [Troubleshooting](#troubleshooting) and [FAQs](#faqs) sections for common issues and ongoing checks.
 
@@ -703,6 +732,19 @@ If you have low weight it may take some time until you are selected to submit an
 </details>
 
 <details>
+<summary>Insufficient funds errors on `fast-updates` client</summary>
+
+If your Fast Updates client is showing the following error, it means that the account you are using to submit transactions does not have enough funds to cover the gas fees.
+
+```plaintext
+[04-28|09:49:30.890]  ERROR  client/transaction_queue.go:139  Error executing transaction: insufficient funds for gas * price + value: address 0x57...7B6d have (0) want (187500000000000000)
+```
+
+You need to fund [all Fast Updates accounts](#create-fast-updates-accounts) account with enough native tokens to cover the gas fees.
+
+</details>
+
+<details>
 <summary>Icon and logo don't show up on Flare explorers</summary>
 
 To get your validator logo and name listed on the explorers, open a PR on [TowoLabs/ftso-signal-providers](https://github.com/TowoLabs/ftso-signal-providers).
@@ -725,7 +767,7 @@ This is the easiest and most reliable way to check your status.
 2.  Find your entity by searching for your `Identity` address.
 3.  Review the status column for the relevant reward epoch(s). A **`YES`** indicates conditions were met for that epoch.
 
-**Method 2: Explorer Backend API (Command Line)**
+**Method 2: Explorer Backend API (CLI)**
 
 You can query the API that powers the explorer for programmatic access.
 
@@ -748,14 +790,14 @@ You can query the API that powers the explorer for programmatic access.
     {
       "id": 184955,
       "reward_epoch": 289, // Epoch the status applies to
-      "ftso_scaling": true,
-      "ftso_fast_updates": true,
-      "staking": true,
-      "fdc": true,
+      "ftso_scaling": true, // Meets minimal condition for FTSO Scaling
+      "ftso_fast_updates": true, // Meets minimal condition for FTSO Fast Updates
+      "staking": true, // Meets minimal condition for staking
+      "fdc": true, // Meets minimal condition for FDC
       "passes_held": 3,
       "strikes": 0,
       "new_number_of_passes": 3,
-      "eligible_for_reward": true, // Indicates minimal conditions met
+      "eligible_for_reward": true, // All minimal conditions met => eligible for rewards
       "entity": 42
     }
     ```
@@ -765,12 +807,14 @@ You can query the API that powers the explorer for programmatic access.
 <details>
 <summary>Where can I find calculated rewards data and my specific rewards?</summary>
 
-Reward amounts for both staking and FSP participation are calculated and published periodically. Always refer to official Flare sources for the latest data locations.
+Reward amounts for both staking and FSP participation are calculated and published periodically.
+Always refer to official Flare sources for the latest data locations.
 
 **Validator Staking Rewards:**
 
 Calculated per reward epoch (every 3.5 days, starting Mon/Thu) and claimable every 4 reward epochs (approx. every 14 days).
 Check the `validator-rewards` directory within the **[flare-foundation/reward-scripts](https://github.com/flare-foundation/reward-scripts/tree/main/generated-files/validator-rewards)** repository on GitHub.
+
 To inspect your entity's validator rewards for a specific epoch via CLI:
 
 1. Get your `NODE_ID` and the `EPOCH_ID` from the [Flare Systems Explorer](https://flare-systems-explorer.flare.network/providers).
@@ -879,5 +923,12 @@ Consistent monitoring is key to maintaining performance and reward eligibility. 
     ```
 
     **Alerting Tip:** Set alerts if no successful finalization messages appear for protocols 100/200 within 5-10 minutes after a voting round should have completed.
+
+</details>
+
+<details>
+<summary>How can I opt-out of receiving FlareDrops?</summary>
+
+To opt-out of receiving all future FlareDrops, you need to call the [`optOutOfAirdrop`](/network/solidity-reference/IDistributionToDelegators#optoutofairdrop) method on the [`DistributionToDelegators`](/network/solidity-reference) contract with your `Identity` address.
 
 </details>
