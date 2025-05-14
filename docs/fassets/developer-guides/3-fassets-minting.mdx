@@ -1,0 +1,141 @@
+---
+title: Mint FAssets
+tags: [intermediate, fassets]
+slug: fassets-mint
+description: Learn how to mint FAssets
+keywords: [fassets, flare-network]
+sidebar_position: 3
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import Remix from "@site/src/components/remix";
+import FAssetsReserveCollateral from "!!raw-loader!/examples/developer-hub-javascript/fassetsReserveCollateral.ts";
+import FAssetsCreateXrpPayment from "!!raw-loader!/examples/developer-hub-javascript/fassetsCreateXrpPayment.ts";
+import FAssetsExecuteMinting from "!!raw-loader!/examples/developer-hub-javascript/fassetsExecuteMinting.ts";
+
+## Overview
+
+In this guide, you will learn how to mint FAssets.
+
+Minting FAssets is the process of wrapping for instance XRP from the XRP Ledger into an FAsset, enabling it to be used within the Flare blockchain ecosystem.
+
+See the [Minting](/fassets/minting) overview for more details.
+
+## Prerequisites
+
+- [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit)
+- [Flare Network Periphery Contracts](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts)
+
+## Minting Process
+
+The minting process is a multi-step process that involves the following steps:
+
+1. Reserve collateral from the FAssets agent and send the underlying assets to agent, in this case XRP
+2. Use the Flare Data Connector to submit the proof that the XRP has been sent to the agent
+3. Execute the minting by providing the underlying payment proof from the Flare Data Connector
+
+## Reserve Collateral
+
+The following code is an example of how to reserve collateral.
+
+<CodeBlock language="typescript" title="scripts/fassets/reserveCollateral.ts">
+  {FAssetsReserveCollateral}
+</CodeBlock>
+
+### FAssets Collateral Reservation Script Breakdown
+
+1. **Define Constants**
+
+  - `ASSET_MANAGER_ADDRESS`: FXRP AssetManager address on Songbird Testnet (Coston).
+  - `LOTS_TO_MINT`: Number of FAsset lots to reserve.
+  - `UNDERLYING_ADDRESS`: Target XRP Ledger address for the minted asset.
+  - `ZERO_ADDRESS`: Placeholder for `executor` (not used in this script).
+
+2. **Find Best Agent Function**
+
+  - Retrieves a list of up to 100 available agents.
+  - Filters those with enough `freeCollateralLots`.
+  - Sorts agents by `feeBIPS` (lowest fee first).
+  - Randomly selects an agent with status `NORMAL`.
+
+3. **Parse `CollateralReserved` Event**
+
+  - Scans `rawLogs` in the transaction receipt.
+  - Uses the contract ABI to parse logs and detect the `CollateralReserved` event.
+  - Extracts the event arguments.
+
+4. **Main Function Entry**
+
+  - Entry point of the script where the minting reservation process starts.
+
+5. **Find the Best Agent**
+
+  - Calls `findBestAgent()` with the required number of lots.
+  - Ensures a suitable agent is selected to back the minting request.
+
+6. **Get Agent Info**
+
+  - Fetches agent metadata from `getAgentInfo()`.
+  - Includes important values, in this script the agent's `feeBIPS` is beeing used to calculate the collateral reservation fee.
+
+7. **Calculate Collateral Reservation Fee**
+
+  - Calls `collateralReservationFee()` with `LOTS_TO_MINT`.
+  - Determines how much native token must be sent with the reservation transaction.
+
+8. **Reserve Collateral**
+
+  - Calls `reserveCollateral()` with parameters and sends the fee as `msg.value`:
+    - Selected agent vault
+    - Number of lots
+    - Agent fee
+    - Underlying address
+
+9. **Get Asset Minting Decimals**
+
+  - Calls `assetMintingDecimals()` to determine the XRP token's precision.
+
+10. **Parse `CollateralReserved` Event**
+
+  - Calls `parseCollateralReservedEvent()` with the transaction receipt.
+  - Extracts values like `collateralReservationId`, `valueUBA`, `feeUBA`, and payment details.
+
+11. **Calculate Total XRP value user needs to send to agent**
+
+  - Adds `valueUBA + feeUBA` to get total UBA to be paid.
+  - Converts XRP using the retrieved decimals.
+
+## Create Payment on Underlying Blockchain (XRP Ledger)
+
+<CodeBlock language="typescript" title="scripts/fassets/xrpPayment.ts">
+  {FAssetsCreateXrpPayment}
+</CodeBlock>
+
+### XRP Payment Script Breakdown
+
+1. **Install the xrpl package** with `npm install xrpl` to use the XRPL JavaScript SDK.
+2. **Define the function to send XRP with a reference**
+3. **Create a client to connect to the XRP Ledger Testnet**
+4. **Load the sender wallet**
+5. **Construct the payment transaction**
+6. **Sign and submit the transaction**
+
+## Get the Flare Data Connector proof
+
+To get the proof needed for minting FAssets, you need to use the [Flare Data Connector (FDC)](/fdc/overview) to verify your XRP payment. The process involves preparing an attestation request, submitting it to the FDC, and retrieving the proof.
+
+You can use the [FDC Payment](/fdc/guides/hardhat/payment) example script to get the proof. Provide the correct XRP transaction details to the script and it will return the proof.
+
+## Execute Minting
+
+Once you have the proof from the FDC, you can execute the minting with following code:
+
+<CodeBlock language="typescript" title="scripts/fassets/executeMinting.ts">
+  {FAssetsExecuteMinting}
+</CodeBlock>
+
+
+
+## Next Steps
+
+
