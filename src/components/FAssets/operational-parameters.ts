@@ -1232,8 +1232,7 @@ export const operationalParameters = [
       },
       {
         name: "Max expected fee",
-        description:
-          "Maximum expected fee charged by the chain for a payment",
+        description: "Maximum expected fee charged by the chain for a payment",
         values: {
           songbird: {
             xrp: "0.0004 XRP (400 drops)",
@@ -1243,7 +1242,7 @@ export const operationalParameters = [
           },
         },
       },
-    ]
+    ],
   },
   {
     title: "Core Vault Settings",
@@ -1312,7 +1311,7 @@ export const operationalParameters = [
             xrp: "0",
           },
         },
-      }
-    ]
-  }
+      },
+    ],
+  },
 ];

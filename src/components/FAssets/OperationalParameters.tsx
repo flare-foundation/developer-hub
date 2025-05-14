@@ -32,9 +32,9 @@ export default function OperationalParameters({
         <thead>
           <tr>
             <th>Parameter</th>
-            {!hideXrp && <th>XRP</th> }
-            { !hideBtc && <th>BTC</th> }
-            { !hideDoge && <th>DOGE</th> }
+            {!hideXrp && <th>XRP</th>}
+            {!hideBtc && <th>BTC</th>}
+            {!hideDoge && <th>DOGE</th>}
           </tr>
         </thead>
         <tbody>
@@ -65,7 +65,7 @@ export default function OperationalParameters({
                   dangerouslySetInnerHTML={{
                     __html: parameter.values[network].btc,
                   }}
-                />  
+                />
               )}
               {!hideDoge && (
                 <td
