@@ -8,7 +8,7 @@ import {
 // 1. AssetManager address on Songbird Testnet Coston network
 const ASSET_MANAGER_ADDRESS = "0x56728e46908fB6FcC5BCD2cc0c0F9BB91C3e4D34";
 
-async function parseExecutemintingEvents(receipt: any) {
+async function parseExecutemintingEvents(receipt) {
   console.log("\nParsing events...", receipt.rawLogs);
   const assetManager = (await ethers.getContractAt(
     "IAssetManager",

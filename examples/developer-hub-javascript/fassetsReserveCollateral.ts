@@ -72,7 +72,7 @@ async function findBestAgent(
 // 3. Function to parse the CollateralReserved event
 
 async function parseCollateralReservedEvent(
-  transactionReceipt: any,
+  transactionReceipt,
   decimals: number,
 ) {
   console.log("\nParsing events...", transactionReceipt.rawLogs);
