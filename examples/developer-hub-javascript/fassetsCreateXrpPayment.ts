@@ -1,8 +1,13 @@
-// 1. install xrpl package:
-// npm install xrpl
+// 1. install xrpl package
+// https://www.npmjs.com/package/xrpl
 import { Client, Wallet, xrpToDrops, Payment, TxResponse } from "xrpl";
 
-// 2. Define the function to send XRP with a reference
+// 2. Define the constants
+const AGENT_ADDRESS = "r4KgCNzn9ZuNjpf17DEHZnyyiqpuj599Wm"; // Agent underlying chain address
+const AMOUNT_XRP = "20.05"; // XRP amount to send
+const PAYMENT_REFERENCE =
+  "4642505266410001000000000000000000000000000000000000000000f655fb"; // Reference
+
 async function send20XrpWithReference() {
   // 3. Create a client to connect to the XRP Ledger Testnet
   const client = new Client("wss://s.altnet.rippletest.net:51233"); // Testnet
@@ -16,12 +21,11 @@ async function send20XrpWithReference() {
     TransactionType: "Payment",
     Account: wallet.classicAddress,
     // Agent underlying chain address
-    Destination: "r4KgCNzn9ZuNjpf17DEHZnyyiqpuj599Wm",
+    Destination: AGENT_ADDRESS,
     // XRP amount to send
-    Amount: xrpToDrops("20.05"),
+    Amount: xrpToDrops(AMOUNT_XRP),
     // Payment reference
-    InvoiceID:
-      "4642505266410001000000000000000000000000000000000000000000f655fb", // Reference
+    InvoiceID: PAYMENT_REFERENCE, // Reference
   };
 
   console.log(paymentTx);
