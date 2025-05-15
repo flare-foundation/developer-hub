@@ -65,6 +65,8 @@ The following code demonstrates how to reserve collateral by calling the [`reser
 
 ## Send Payment on XRP Ledger
 
+The next step is to send the XRP Ledger payment to the agent, and you can use this script to do that.
+
 <CodeBlock language="typescript" title="scripts/fassets/xrpPayment.ts">
   {FAssetsCreateXrpPayment}
 </CodeBlock>
@@ -80,13 +82,13 @@ The following code demonstrates how to reserve collateral by calling the [`reser
 
 ## Generate Proof with Flare Data Connector
 
-Use the [FDC Payment](/fdc/guides/hardhat/payment) script to generate a Merkle proof by providing the XRP transaction details.
-
-FDC returns an attestation response with the required proof structure to execute minting.
+Use the [FDC Payment](/fdc/guides/hardhat/payment) script to validate the XRP payment and generate a Merkle proof.
 
 ## Execute Minting
 
-Once you have the proof, call [`executeMinting()`](/fassets/reference/IAssetManager#executeminting) to mint FAssets.
+Once the XRP payment is validated, you can retrieve the FDC proof from the [Data Availability Layer](/fdc/overview#data-availability-layer) and call the [`executeMinting()`](/fassets/reference/IAssetManager#executeminting) function on the AssetManager contract.
+
+This script demonstrates how to retrieve the FDC proof and execute minting.
 
 <CodeBlock language="typescript" title="scripts/fassets/executeMinting.ts">
   {FAssetsExecuteMinting}
@@ -98,7 +100,7 @@ Once you have the proof, call [`executeMinting()`](/fassets/reference/IAssetMana
 2. Declare the constant `ASSET_MANAGER_ADDRESS` pointing to the FXRP AssetManager on the Songbird Testnet (Coston network).
 
 3. Set the collateral reservation ID to the previously reserved minting request.
-4. Set the Flare Data Connector (FDC) round ID to retrieve the proof for.
+4. Set the Flare Data Connector (FDC) round ID to retrieve the proof.
 5. Prepare the FDC request payload data.
 6. Function to get the proof from the FDC. It sends a POST request to the [Flare Data Availability Layer](/fdc/overview#data-availability-layer) and returns a Merkle proof and attestation response from FDC.
 7. Retrieve the FDC proof from the Data Availability Layer.
