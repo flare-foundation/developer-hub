@@ -86,17 +86,16 @@ async function parseCollateralReservedEvent(transactionReceipt) {
         data: log.data,
       });
 
-      if (parsedLog) {
-        const collateralReservedEvents = ["CollateralReserved"];
+      if (!parsedLog) continue;
 
-        if (collateralReservedEvents.includes(parsedLog.name)) {
-          console.log(`\nEvent: ${parsedLog.name}`);
-          console.log("Arguments:", parsedLog.args);
-          const collateralReservedEvent = parsedLog.args;
+      const collateralReservedEvents = ["CollateralReserved"];
+      if (!collateralReservedEvents.includes(parsedLog.name)) continue;
 
-          return collateralReservedEvent;
-        }
-      }
+      console.log(`\nEvent: ${parsedLog.name}`);
+      console.log("Arguments:", parsedLog.args);
+      const collateralReservedEvent = parsedLog.args;
+
+      return collateralReservedEvent;
     } catch (e) {
       console.log("Error parsing event:", e);
     }
