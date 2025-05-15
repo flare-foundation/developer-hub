@@ -74,7 +74,7 @@ async function getProof(roundId: number) {
   return await proofAndData.json();
 }
 
-async function parseEvents(receipt: any) {
+async function parseEvents(receipt) {
   console.log("\nParsing events...", receipt.rawLogs);
 
   const assetManager = (await ethers.getContractAt(
