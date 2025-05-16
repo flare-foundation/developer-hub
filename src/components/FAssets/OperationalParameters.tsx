@@ -48,7 +48,23 @@ export default function OperationalParameters({
                 ) : (
                   <b>{parameter.name}</b>
                 )}
-                &nbsp;{" "}
+                &nbsp; <br />
+                {parameter.settingName && parameter.interfaceLink && (
+                  <>
+                    <Link to={parameter.interfaceLink}>
+                      {parameter.settingName}
+                    </Link>
+                    &nbsp;
+                  </>
+                )}
+                {parameter.interfaceLink && parameter.functionName && (
+                  <>
+                    <Link to={parameter.interfaceLink}>
+                      {parameter.functionName}
+                    </Link>
+                    &nbsp;
+                  </>
+                )}
                 {parameter.settingName && <code>{parameter.settingName}</code>}
                 <br />
                 {parameter.description}

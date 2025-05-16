@@ -1193,6 +1193,9 @@ export const operationalParameters = [
     parameters: [
       {
         name: "Escrow amount",
+        settingName: "_escrowAmount",
+        functionName: "getSettings",
+        interfaceLink: "/fassets/reference/ICoreVaultManager#getsettings",
         description:
           "The amount of XRP to escrow (setting to 0 disables escrowing).",
         values: {
@@ -1206,6 +1209,9 @@ export const operationalParameters = [
       },
       {
         name: "Minimal left amount in the multisig",
+        settingName: "_minimalAmount",
+        functionName: "getSettings",
+        interfaceLink: "/fassets/reference/ICoreVaultManager#getsettings",
         description:
           "The minimal amount that will be left on the multisig after escrowing.",
         values: {
@@ -1219,6 +1225,9 @@ export const operationalParameters = [
       },
       {
         name: "Escrow expiration time",
+        settingName: "_escrowEndTimeSeconds",
+        functionName: "getSettings",
+        interfaceLink: "/fassets/reference/ICoreVaultManager#getsettings",
         description:
           "The time of day (UTC) when the escrows expire. Exactly one escrow per day will expire.",
         values: {
@@ -1232,6 +1241,9 @@ export const operationalParameters = [
       },
       {
         name: "Max expected fee",
+        settingName: "_fee",
+        functionName: "getSettings",
+        interfaceLink: "/fassets/reference/ICoreVaultManager#getsettings",
         description: "Maximum expected fee charged by the chain for a payment",
         values: {
           songbird: {
@@ -1249,6 +1261,9 @@ export const operationalParameters = [
     parameters: [
       {
         name: "Minting left on agent's address",
+        functionName: "getCoreVaultMinimumAmountLeftBIPS",
+        interfaceLink:
+          "/fassets/reference/ICoreVaultSettings#getcorevaultminimumamountleftbips",
         description:
           "Minimum amount of minting left on agent's address after transfer to core vault. Expressed as percentage of agent's minting capacity (calculated from agent's vault and pool collateral).",
         values: {
@@ -1262,6 +1277,9 @@ export const operationalParameters = [
       },
       {
         name: "Transfer to core vault time",
+        functionName: "getCoreVaultTransferTimeExtensionSeconds",
+        interfaceLink:
+          "/fassets/reference/ICoreVaultSettings#getcorevaulttransfertimeextensionseconds",
         description:
           "The extra time for an agent's transfer to the core vault, compared to ordinary redemption payment.",
         values: {
@@ -1275,6 +1293,9 @@ export const operationalParameters = [
       },
       {
         name: "Transfer fee to Core Vault",
+        functionName: "getCoreVaultTransferTimeExtensionSeconds",
+        interfaceLink:
+          "/fassets/reference/ICoreVaultSettings#getcorevaulttransferfeebips",
         description:
           "Fee (in percentage of transfer amount) paid by agent for transfer to the core vault.",
         values: {
@@ -1288,6 +1309,9 @@ export const operationalParameters = [
       },
       {
         name: "Minimum number of lots for direct redemption",
+        functionName: "getCoreVaultMinimumRedeemLots",
+        interfaceLink:
+          "/fassets/reference/ICoreVaultSettings#getcorevaultminimumredeemlots",
         description:
           "The minimum number of lots that a direct redemption from core vault can take",
         values: {
@@ -1301,6 +1325,9 @@ export const operationalParameters = [
       },
       {
         name: "Redemption fee",
+        functionName: "getCoreVaultRedemptionFeeBIPS",
+        interfaceLink:
+          "/fassets/reference/ICoreVaultSettings#getcorevaultredemptionfeebips",
         description:
           "Fee (in percentage of redemption amount) paid by the redeemer for direct redemptions from the core vault.",
         values: {
