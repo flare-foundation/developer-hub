@@ -15,7 +15,7 @@ export default function App() {
       return;
     }
 
-    //  1) Provider & signer —
+    // 1) Provider & signer —
     const provider = new ethers.BrowserProvider(window.ethereum);
     await provider.send("eth_requestAccounts", []);
     const signer = await provider.getSigner();
@@ -48,19 +48,16 @@ export default function App() {
     const nonce       = ethers.hexlify(ethers.randomBytes(32));
     const message = {
       from,
-      to,
+      to,      
       value: ethers.parseUnits(amount, 6).toString(),
       validAfter,
       validBefore,
       nonce
     };
 
-    
     // 4) Sign 
     const rawSig = await signer.signTypedData(domain, types, message);
     const { v, r, s } = ethers.Signature.from(rawSig);
-
-
 
     //  5) POST to your relayer —
     const resp = await fetch(`${RELAYER_URL}/relay-transfer`, {
@@ -74,3 +71,27 @@ export default function App() {
       alert("Relayer failed: " + err.error);
       return;
     }
+
+    const { txHash } = await resp.json();
+    alert("✅ Sent! On-chain tx hash:\n" + txHash);
+  }
+
+  return (
+    <div style={{ padding: 20, maxWidth: 400 }}>
+      <h1>Gasless USD₮0 Demo</h1>
+      <input
+        placeholder="Recipient address"
+        value={to}
+        onChange={e => setTo(e.target.value)}
+        style={{ width: "100%", marginBottom: 8 }}
+      />
+      <input
+        placeholder="Amount (e.g. 0.5)"
+        value={amount}
+        onChange={e => setAmount(e.target.value)}
+        style={{ width: "100%", marginBottom: 12 }}
+      />
+      <button onClick={sendGasless}>Send Gasless</button>
+    </div>
+  );
+}

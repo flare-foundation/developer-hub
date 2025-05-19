@@ -1,7 +1,8 @@
 import express from "express";
 import cors from "cors";
 import { JsonRpcProvider, Wallet, Contract } from "ethers";
-import USD0Abi from "./USD0.json" with { type: "json" };
+import USD0Abi from "./USD0.json";
+
 import "dotenv/config";
 
 // 1) Load + validate env
@@ -46,9 +47,9 @@ app.post("/relay-transfer", async (req, res) => {
       v, r, s,
       { gasLimit: 120_000 }
     );
-    const receipt = await tx.wait();
+    await tx.wait();
     res.json({ txHash: tx.hash });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Relayer error:", err);
     res.status(500).json({ error: err.message });
   }
