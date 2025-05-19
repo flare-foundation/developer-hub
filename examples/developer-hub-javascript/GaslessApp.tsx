@@ -1,4 +1,5 @@
-// @ts-nocheck
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+// @ts-nocheck
 import { useState } from "react";
 import { ethers } from "ethers";
 import USD0Abi from "./USD0.json";
