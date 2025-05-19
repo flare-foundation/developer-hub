@@ -29,6 +29,13 @@ A Flare Entity consists of the following six components:
 5. **Feed Value Provider**: Retrieves data from exchanges and supplies current feed values (prices).
 6. **FDC Client**: Provides FDC protocol voting round data to the System Client.
 
+:::warning[Rewards and Minimal conditions]
+
+After the introduction of [minimal conditions](/network/fsp/rewarding#minimal-conditions) in [FIP.10](https://proposals.flare.network/FIP/FIP_10.html), a Flare Entity needs to be both **available** and **performant** across all Flare protocols in order to be eligible for rewards.
+Learn how to check if your Flare Entity meets minimal conditions and the rewards it accrued in the [FAQs](#faqs) section (see **FAQ F1** and **FAQ F2**).
+
+:::
+
 ## Prerequisites
 
 - A machine meeting the [minimum hardware requirements](/run-node/system-requirements).
@@ -50,21 +57,6 @@ sudo usermod -a -G docker $USER
 Log out and log back in or restart your system for the changes to take effect.
 
 :::
-
-## Rewards
-
-:::warning[Minimal conditions]
-
-After the introduction of [minimal conditions](/network/fsp/rewarding#minimal-conditions) in [FIP.10](https://proposals.flare.network/FIP/FIP_10.html), a Flare Entity needs to be both **available** and **performant** across all Flare protocols in order to be eligible for rewards.
-
-:::
-
-- [FSP rewards](https://github.com/flare-foundation/FTSO-Scaling/blob/main/scripts/rewards/README.md#claiming-rewards) information is available at [flare-foundation/fsp-rewards](https://github.com/flare-foundation/fsp-rewards/tree/main/flare) and on the [Discourse Forum](https://forum.flare.network/t/fsp-rewards-data) (see XLSX file for historical reward data).
-  Updated every reward epoch (3.5 days).
-- [Validator staking rewards](/network/guides/using-flare-stake-tool#claiming-rewards) information is available at [flare-foundation/reward-scripts](https://github.com/flare-foundation/reward-scripts/tree/main/generated-files).
-  Updated every 4 reward epochs (14 days).
-
-Learn how to check your Flare Entity rewards in the [FAQs](#faqs) section.
 
 ## Registration
 
@@ -711,28 +703,28 @@ To get your validator logo and name listed on the explorers, open a PR on [TowoL
 :::
 
 <details>
-<summary>`system-client` is not doing anything</summary>
+<summary>T1. `system-client` is not doing anything</summary>
 
 Likely, your entity is not registered as a voter for the current reward epoch. There is a time window for voter registration on every reward epoch, and if you leave things running you should eventually see `RegisterVoter success` in the logs. It should then start submitting data successfully in the **following** reward epoch.
 
 </details>
 
 <details>
-<summary>`system-client` fails to fetch sub-protocol data</summary>
+<summary>T2. `system-client` fails to fetch sub-protocol data</summary>
 
 The `c-chain-indexer` may still be indexing data, once it's finished you should see `Indexer at block x` in the logs. If it's still processing blocks you will see various errors across all services.
 
 </details>
 
 <details>
-<summary>`fast-updates` client is not doing anything</summary>
+<summary>T3. `fast-updates` client is not doing anything</summary>
 
 If you have low weight it may take some time until you are selected to submit an update.
 
 </details>
 
 <details>
-<summary>Insufficient funds errors on `fast-updates` client</summary>
+<summary>T4. Insufficient funds errors on `fast-updates` client</summary>
 
 If your Fast Updates client is showing the following error, it means that the account you are using to submit transactions does not have enough funds to cover the gas fees.
 
@@ -745,7 +737,7 @@ You need to fund [all Fast Updates accounts](#create-fast-updates-accounts) acco
 </details>
 
 <details>
-<summary>Icon and logo don't show up on Flare explorers</summary>
+<summary>T5. Icon and logo don't show up on Flare explorers</summary>
 
 To get your validator logo and name listed on the explorers, open a PR on [TowoLabs/ftso-signal-providers](https://github.com/TowoLabs/ftso-signal-providers).
 
@@ -754,7 +746,7 @@ To get your validator logo and name listed on the explorers, open a PR on [TowoL
 ## FAQs
 
 <details>
-<summary>How do I check if my Flare Entity meets Minimal Conditions?</summary>
+<summary>F1. How do I check if my Flare Entity meets Minimal Conditions?</summary>
 
 Meeting [minimal conditions](/network/fsp/rewarding#minimal-conditions) for availability and performance in each reward epoch is necessary for FSP reward eligibility.
 You can check your entity's status using two primary methods:
@@ -805,14 +797,14 @@ You can query the API that powers the explorer for programmatic access.
 </details>
 
 <details>
-<summary>Where can I find calculated rewards data and my specific rewards?</summary>
+<summary>F2. Where can I find calculated rewards data and my specific rewards?</summary>
 
 Reward amounts for both staking and FSP participation are calculated and published periodically.
 Always refer to official Flare sources for the latest data locations.
 
 **Validator Staking Rewards:**
 
-Calculated per reward epoch (every 3.5 days, starting Mon/Thu) and claimable every 4 reward epochs (approx. every 14 days).
+Calculated every 4 reward epochs (every 14 days, starting Mon/Thu).
 Check the `validator-rewards` directory within the **[flare-foundation/reward-scripts](https://github.com/flare-foundation/reward-scripts/tree/main/generated-files/validator-rewards)** repository on GitHub.
 
 To inspect your entity's validator rewards for a specific epoch via CLI:
@@ -866,16 +858,34 @@ To inspect your entity's FSP rewards for a specific epoch via CLI:
 </details>
 
 <details>
-<summary>How does the pass system work with minimal conditions?</summary>
+<summary>F3. How does the pass system work with minimal conditions?</summary>
 
-Successfully meeting minimal conditions in an epoch typically earns your entity a "pass" (you can hold up to 3 passes).
-These act as a buffer - if your entity occasionally fails to meet conditions (e.g., due to minor submission issues or downtime), a pass is automatically consumed to maintain reward eligibility for that epoch.
-If conditions are not met and you have zero passes remaining, FSP rewards for that epoch are forfeited. [Learn more](/network/fsp/rewarding#passes).
+The pass system is an incentive mechanism for Flare Entities.
+Each entity has a number of passes, which can be gained or lost based on their performance in meeting the minimum participation requirements for each protocol within a reward epoch.
+
+Here's how it works:
+
+- **Starting Passes:** Newly registered entities begin with zero passes.
+- **Gaining Passes:** When an entity successfully meets all the [minimum conditions](/network/fsp/rewarding#minimal-conditions) in a reward epoch, they gain one pass.
+- **Maximum Passes:** An entity can hold a maximum of three passes.
+- **Losing Passes:** If an entity fails to meet the minimum condition for a protocol in a reward epoch, they will lose one pass.
+  It's important to note that entities can lose multiple passes for failing across multiple protocols within that reward epoch.
+- **Consequences of Losing Passes:**
+  - If an entity has one pass and fails to meet one minimal condition, they will be reduced to zero passes but will still receive FSP rewards for that epoch.
+  - However, if an entity has zero passes and fails to meet a minimal condition, they will forfeit all FSP rewards for that epoch. For information on where to find reward data, see **FAQ F2**.
+
+Refer to **FAQ F1** to check how many passes your Flare Entity has.
+
+:::warning[Missing registration]
+
+If you are fail to register for a reward epoch your Flare Entity will lose all passes, as well as all FSP rewards for that reward epoch.
+
+:::
 
 </details>
 
 <details>
-<summary>How can I monitor the health of my Flare Entity?</summary>
+<summary>F4. How can I monitor the health of my Flare Entity?</summary>
 
 Consistent monitoring is key to maintaining performance and reward eligibility. Here are primary areas and methods:
 
@@ -927,7 +937,7 @@ Consistent monitoring is key to maintaining performance and reward eligibility. 
 </details>
 
 <details>
-<summary>How can I opt-out of receiving FlareDrops?</summary>
+<summary>F5. How can I opt-out of receiving FlareDrops?</summary>
 
 To opt-out of receiving all future FlareDrops, you need to call the [`optOutOfAirdrop`](/network/solidity-reference/IDistributionToDelegators#optoutofairdrop) method on the [`DistributionToDelegators`](/network/solidity-reference) contract with your `Identity` address.
 
