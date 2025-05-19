@@ -10,18 +10,20 @@ const {
   FLARE_RPC_URL,
   USD0_ADDRESS,
   RELAYER_PRIVATE_KEY,
-  PORT = "3000"
+  PORT = "3000",
 } = process.env;
 
 if (!FLARE_RPC_URL || !USD0_ADDRESS || !RELAYER_PRIVATE_KEY) {
-  console.error("❌ Missing FLARE_RPC_URL, USD0_ADDRESS or RELAYER_PRIVATE_KEY");
+  console.error(
+    "❌ Missing FLARE_RPC_URL, USD0_ADDRESS or RELAYER_PRIVATE_KEY",
+  );
   process.exit(1);
 }
 
 // 2) Set up ethers.js
-const provider      = new JsonRpcProvider(FLARE_RPC_URL);
+const provider = new JsonRpcProvider(FLARE_RPC_URL);
 const relayerWallet = new Wallet(RELAYER_PRIVATE_KEY, provider);
-const usd0          = new Contract(USD0_ADDRESS, USD0Abi, relayerWallet);
+const usd0 = new Contract(USD0_ADDRESS, USD0Abi, relayerWallet);
 
 // 3) Create Express app
 const app = express();
@@ -44,8 +46,10 @@ app.post("/relay-transfer", async (req, res) => {
       payload.validAfter,
       payload.validBefore,
       payload.nonce,
-      v, r, s,
-      { gasLimit: 120_000 }
+      v,
+      r,
+      s,
+      { gasLimit: 120_000 },
     );
     await tx.wait();
     res.json({ txHash: tx.hash });

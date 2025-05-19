@@ -13,7 +13,7 @@ import Withdraw from "!!raw-loader!/examples/developer-hub-javascript/GaslessRel
 
 ## Introduction
 
-Flare’s USD₮0 integration delivers truly native, cross-chain USDT transfer on Flare with zero gas for end users. 
+Flare’s USD₮0 integration delivers truly native, cross-chain USDT transfer on Flare with zero gas for end users.
 In this guide, you’ll learn how to set up a gasless transfer—also called a meta‑transaction. With this approach, users can move tokens without paying gas themselves; instead, a third party (for example, a relayer or the dApp owner) covers the fees on their behalf.
 
 The gasless transfer of USD₮0 uses **EIP‑712** to structure and present transaction data for safe off‑chain signing, and **EIP‑3009** to extend ERC‑20 with `transferWithAuthorization(...)`, allowing a relayer to submit the signed payload on‑chain and cover the gas fee.
@@ -24,9 +24,8 @@ The USD₮0 contracts on Flare are:
 
 ‣ The implementation: 0x779Ded0c9e1022225f8E0630b35a9b54bE713736
 
-You can check the details of the verified contract on the [Flare Explorer](https://flare-explorer.flare.network/address/0x779Ded0c9e1022225f8E0630b35a9b54bE713736?tab=contract). 
+You can check the details of the verified contract on the [Flare Explorer](https://flare-explorer.flare.network/address/0x779Ded0c9e1022225f8E0630b35a9b54bE713736?tab=contract).
 Note that on this guide we use USD₮0 as an example, but a similar logic can apply for other assets as well.
-
 
 ## About EIP-3009
 
@@ -35,18 +34,18 @@ This pattern separates **authorization** (user intent) from **execution** (oncha
 
 - **`transferWithAuthorization(from, to, value, validAfter, validBefore, nonce, v, r, s)`**  
   Moves tokens from `from` to `to` if:
-  - The signature `(v, r, s)` matches `from`  
-  - The current time is between `validAfter` and `validBefore`  
-  - `nonce` has not been used before  
+
+  - The signature `(v, r, s)` matches `from`
+  - The current time is between `validAfter` and `validBefore`
+  - `nonce` has not been used before
 
 - **`receiveWithAuthorization(from, to, value, validAfter, validBefore, nonce, v, r, s)`**  
   Similar to `transferWithAuthorization`, but allows a recipient or relayer to pull tokens from the signer’s balance—useful for collecting fees on receipt.
 
 Both functions include **Timestamps** to prevent stale authorizations, and a **nonce** to prevent replay attacks.
 
-Next, we’ll put theory into practice by wiring up a simple front‑end and relayer. The front‑end will craft a transfer message, have the user sign it in their wallet, and forward that signature to the relayer. 
+Next, we’ll put theory into practice by wiring up a simple front‑end and relayer. The front‑end will craft a transfer message, have the user sign it in their wallet, and forward that signature to the relayer.
 The relayer will verify the signature, submit the corresponding onchain transaction, and pay the FLR gas fee on behalf of the user.
-
 
 ## Front‑End: Building & Signing Your Meta‑Transaction
 
@@ -74,10 +73,9 @@ Below is a code snippet that you can copy‑paste into your React application:
   {Deposit}
 </CodeBlock>
 
-
 ## Relayer: Submitting the Signed Transfer
 
-Now let’s build the back‑end that turns the user’s signature into a real onchain transaction.  
+Now let’s build the back‑end that turns the user’s signature into a real onchain transaction.
 
 The relayer is a small Express service that:
 
@@ -87,15 +85,16 @@ The relayer is a small Express service that:
 4. Exposes a simple **health‑check** at `GET /` to confirm the service is running.
 5. Implements `POST /relay-transfer`, which:
 
-   * Destructures `{ payload, v, r, s }` from the request body.
-   * Calls `usd0.transferWithAuthorization(...)`, passing the six payload fields plus `v r s`, and sets an explicit `gasLimit` of `120_000`.
-   * Waits for the transaction to mine, then returns `{ txHash }`; on error it returns `{ error }`.
+   - Destructures `{ payload, v, r, s }` from the request body.
+   - Calls `usd0.transferWithAuthorization(...)`, passing the six payload fields plus `v r s`, and sets an explicit `gasLimit` of `120_000`.
+   - Waits for the transaction to mine, then returns `{ txHash }`; on error it returns `{ error }`.
+
 6. **Starts listening** on `PORT` (default `3000`) and logs a success message.
 
 Below is the code you'll need to implement this service:
 
 <CodeBlock language="typescript" title="scripts/src/Relayer.ts">
-  {Deposit}
+  {Withdraw}
 </CodeBlock>
 <br />
 
