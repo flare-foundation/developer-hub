@@ -1,0 +1,204 @@
+---
+title: Gasless USD₮0 Transfers
+tags: [intermediate, javascript]
+authors: [vmmunoza]
+description: Enable gasless USD₮0 transfers on Flare.
+keywords: [gasless, usdt0, meta-transactions, flare-network, eip-3009, eip-712]
+sidebar_position: 9
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import Deposit from "!!raw-loader!/examples/developer-hub-javascript/GaslessApp.tsx";
+import Withdraw from "!!raw-loader!/examples/developer-hub-javascript/GaslessRelayer.ts";
+import USD0 from "!!raw-loader!/examples/developer-hub-javascript/USD0.json";
+
+Flare's USD₮0 integration enables native, gasless USDT transfers (also known as meta-transactions) on the Flare network, allowing your end-users to avoid paying gas fees directly.
+In this guide, you will build a system for gasless USD₮0 transfers:
+
+1. A **frontend application** where users authorize token transfers by signing a message, without needing to submit an on-chain transaction themselves.
+2. A **backend relayer service** that takes this signed authorization and submits the actual transaction to the Flare network, covering the gas fees on the user's behalf.
+
+This powerful pattern significantly enhances user experience by abstracting away the complexities and costs of network gas fees.
+
+:::tip[Beyond USD₮0]
+
+This guide uses USD₮0 as the primary example, but the underlying principles and a similar implementation logic can be applied to other ERC-20 tokens on Flare that support EIP-3009.
+
+:::
+
+## Meta-transactions
+
+Meta-transactions separate the authorization of an action (by the user) from its execution (by a third-party relayer).
+This is key to enabling gasless experiences. Two Ethereum Improvement Proposals (EIPs) are central to this implementation:
+
+### EIP-712: Typed Structured Data Hashing and Signing
+
+[EIP-712](https://eips.ethereum.org/EIPS/eip-712) standardizes the way structured data is hashed and signed.
+Instead of signing an obscure hexadecimal string, users are presented with a human-readable message in their wallets, detailing what they are authorizing.
+This ensures transparent offchain signing.
+
+### EIP-3009: Transfer with Authorization
+
+[EIP-3009](https://eips.ethereum.org/EIPS/eip-3009) extends the ERC-20 token standard to include support for meta-transactions.
+It allows a token holder to sign an authorization message offchain, which can then be relayed by another account (the relayer) to execute the transfer on-chain.
+The relayer pays the gas fees for this on-chain execution.
+
+EIP-3009 introduces two key functions, including:
+
+- **`transferWithAuthorization`**: This function moves tokens from the from address (the authorizer) to the to address.
+  It only executes if the provided signature `(v, r, s)` correctly matches the `from` address for the given payload, the current blockchain time is within the `validAfter` and `validBefore` timestamps, and the unique `nonce` has not been previously used by the `from` address for this contract.
+
+  ```solidity
+  transferWithAuthorization(
+      address from, // Payer's address (Authorizer)
+      address to, // Payee's address
+      uint256 value, // Amount to be transferred
+      uint256 validAfter, // The time after which this is valid (unix time)
+      uint256 validBefore, // The time before which this is valid (unix time)
+      uint256 nonce, // Unique nonce
+      uint8 v, // v of the signature
+      bytes32 r, // r of the signature
+      bytes32 s // s of the signature
+  ) external;
+  ```
+
+- **`receiveWithAuthorization`**: Similar to `transferWithAuthorization`, this function allows a designated party (often the recipient or a relayer) to "pull" tokens from the authorizer's account.
+  This can be useful for scenarios like collecting fees upon receipt of services. (The implementation details are analogous to `transferWithAuthorization`).
+
+Both functions incorporate **timestamps** (`validAfter`, `validBefore`) to prevent stale authorizations from being executed indefinitely and a **nonce** (a number used once) to protect against replay attacks, ensuring a signed message can only be submitted once.
+
+## Prerequisites
+
+Before you begin, ensure you have the following:
+
+- An **EVM compatible wallet** (e.g., Metamask). You can find suitable options on the [Flare Wallets](https://flare.network/wallets) page.
+- A **Relayer Account:** An EOA on Flare Mainnet, funded with sufficient FLR to cover the gas costs of relaying transactions.
+- **Development Environment:**
+  - [Node.js](https://nodejs.org/) (v18 or later)
+  - A package manager (`npm` or `yarn`)
+  - A [React](https://reactjs.org/) frontend setup, preferably using [Vite](https://vitejs.dev/) for quick project scaffolding.
+- **USD₮0 Contract Details:**
+  - Official USD₮0 contract address (`TetherTokenOFTExtension`) for Flare Mainnet.
+    Always refer to the [official USD₮0 documentation](https://docs.usdt0.to/technical-documentation/developer#flare) for the latest addresses.
+  - The ABI for the USD₮0 contract. For this guide, we only need the `name` and`transferWithAuthorization` functions.
+    <details>
+      <summary>Relevant portion of USD₮0 contract ABI</summary>
+      <CodeBlock language="json" title="USD0.json">
+        {USD0}
+      </CodeBlock>
+    </details>
+
+## Implementation
+
+Now, let's build the two main components of our gasless transfer system: the backend relayer and the frontend application.
+
+### Build the Relayer service
+
+The relayer is a Node.js Express service responsible for submitting the user's signed authorization to the blockchain.
+
+1. Create a `.env` file in your relayer project's root directory.
+   These variables configure the relayer's connection to Flare Mainnet and its operational parameters.
+
+   ```dotenv
+   FLARE_RPC_URL=https://flare-api.flare.network/ext/C/rpc # RPC for Flare Mainnet
+   USD0_ADDRESS=0xe7cd86e13AC4309349F30B3435a9d337750fC82D # USD₮0 token contract
+   RELAYER_PRIVATE_KEY=0x...abc # Relayer's private key funded with FLR
+   PORT=3000 # Port to listen on
+   ```
+
+2. Develop your relayer script (`Relayer.ts`). This script will:
+
+   1. **Connect** to Flare using `JsonRpcProvider`, create a `Wallet` from `RELAYER_PRIVATE_KEY`, and instantiate the USD₮0 contract with that wallet.
+   2. **Spin up an Express server** with CORS and JSON parsing.
+   3. **Expose a health-check** at `GET /` to confirm the service is running.
+   4. **Implement** `POST /relay-transfer`, which:
+      - Destructures `{ payload, v, r, s }` from the request body.
+      - Calls `usd0.transferWithAuthorization(...)`, passing the six payload fields plus `v r s`, and sets an explicit `gasLimit` of `120_000`.
+      - Waits for the transaction to mine, then returns `{ txHash }`; on error it returns `{ error }`.
+   5. **Start listening** on `PORT` (default `3000`) and log a success message.
+
+   Here's an example implementation:
+
+   <CodeBlock language="typescript" title="Relayer.ts">
+     {Withdraw}
+   </CodeBlock>
+
+3. Install dependencies and run the Relayer:
+
+   ```bash
+   # Install dependencies (example)
+   # npm install express ethers cors dotenv
+   # npm install -D typescript tsx @types/express @types/cors
+
+   # Run the relayer
+   npx tsx Relayer.ts
+   ```
+
+You should see a log message indicating the relayer is listening on the specified port.
+This service must be running for the frontend to successfully relay meta-transactions.
+
+### Build the frontend
+
+The frontend allows users to authorize transfers without directly paying gas. It uses React and Vite.
+
+1. In your frontend project's root directory, create a `.env` file. Vite exposes these variables to your app via `import.meta.env`:
+
+   ```dotenv
+   VITE_USD0_ADDRESS=0xe7cd86e13AC4309349F30B3435a9d337750fC82D # the onchain USD₮0 token contract
+   VITE_RELAYER_URL=http://localhost:3000 # your relayer endpoint
+   ```
+
+2. Develop the frontend component (`App.tsx`). The main application component will handle:
+
+   1. **Connect the wallet** (`window.ethereum`) and request an account.
+   2. **Instantiate** an `ethers.BrowserProvider` and `Signer`.
+   3. **Fetch** the token's EIP-712 domain (name, version, chainId, contract).
+   4. **Define** the `TransferWithAuthorization` typed-data fields.
+   5. **Build** the payload object - serializing `value` to a string so it JSON-encodes correctly, and setting a one-hour validity window plus a fresh 32-byte nonce.
+   6. **Call** `signer.signTypedData(domain, types, message)` to pop the wallet and produce a signature.
+   7. **Extract** `(v, r, s)` from that signature.
+   8. **POST** the JSON payload plus `(v, r, s)` to your relayer at `${VITE_RELAYER_URL}/relay-transfer`.
+
+   Here's an example implementation:
+
+   <CodeBlock language="typescript" title="App.tsx">
+     {Deposit}
+   </CodeBlock>
+
+3. Install dependencies and run the frontend:
+
+   ```bash
+   # Install dependencies (example, if starting a new Vite + React + TS project)
+   # npm create vite@latest my-gasless-app -- --template react-ts
+   # cd my-gasless-app
+   # npm install ethers
+
+   # Run the frontend development server
+   npm run dev
+   ```
+
+   Vite will typically start the app and open it in your browser.
+
+## Run the app
+
+1. **Start the Relayer Service:** Navigate to your relayer's project directory in a terminal and run `npx tsx Relayer.ts` (or your configured start script). Confirm it's listening.
+2. **Start the Frontend:** Open another terminal, navigate to your frontend's project directory, and run `npm run dev`.
+3. **Interact with the frontend:**
+   1. Open the frontend application in your web browser and connect your EVM wallet (ensure it's set to Flare Mainnet).
+   2. Enter a recipient address and the amount of USD₮0 to transfer.
+   3. Click **Send Gasless**. Your wallet will prompt you for a signature (this is offchain and gas-free for you).
+   4. Once signed, the frontend sends the authorization to the relayer, which then submits the actual transaction to Flare Mainnet, paying the gas fee.
+   5. Observe the feedback from the application for transaction status, and check the transaction on [Flarescan](https://flarescan.com).
+
+Congratulations! You've now implemented a foundational system for gasless USD₮0 transfers on Flare Mainnet.
+This approach leverages EIP-712 and EIP-3009 to create a significantly improved user experience by abstracting away gas fees.
+
+## Further enhancements
+
+For a production-ready application, consider these further enhancements:
+
+- **Robust Error Handling:** Implement comprehensive error handling and user-friendly feedback mechanisms in both the frontend and relayer.
+- **Input Validation & Security:** Add thorough validation for all inputs to the relayer to prevent abuse and ensure data integrity. Implement security best practices (e.g., rate limiting, authentication if needed).
+- **Dynamic Gas Strategy:** Instead of a fixed gas limit, the relayer could dynamically estimate gas prices and limits for transactions to optimize costs and improve reliability.
+- **Transaction Monitoring:** Provide users with clear status updates on their relayed transactions.
+- **Nonce Management:** While EIP-3009 handles nonce checking at the contract level, your relayer might benefit from its own nonce tracking or management for specific users if it needs to handle multiple pending transactions for the same user.
