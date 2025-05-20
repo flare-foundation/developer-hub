@@ -1,11 +1,21 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-// @ts-nocheck
 import { useState } from "react";
-import { ethers } from "ethers";
+import { ethers, Eip1193Provider } from "ethers";
 import USD0Abi from "./USD0.json";
 
+// Environment variables
 const USD0_ADDRESS = import.meta.env.VITE_USD0_ADDRESS!;
 const RELAYER_URL = import.meta.env.VITE_RELAYER_URL!;
+
+// Constants
+const EIP712_DOMAIN_VERSION = "1";
+const SIGNATURE_VALIDITY_PERIOD_SECONDS = 3600; // 1 hour
+const USD0_DECIMALS = 6;
+
+declare global {
+  interface Window {
+    ethereum?: Eip1193Provider;
+  }
+}
 
 export default function App() {
   const [to, setTo] = useState("");
@@ -13,25 +23,30 @@ export default function App() {
 
   async function sendGasless() {
     if (!window.ethereum) {
-      alert("Please install MetaMask");
+      alert("Please install MetaMask or a compatible Ethereum wallet.");
       return;
     }
 
-    // 1) Provider & signer —
+    // 1) Provider & Signer
     const provider = new ethers.BrowserProvider(window.ethereum);
     await provider.send("eth_requestAccounts", []);
     const signer = await provider.getSigner();
-    const from = await signer.getAddress();
 
-    //  2) Domain & types for EIP-712 —
-    const chainId = (await provider.getNetwork()).chainId;
-    const contract = new ethers.Contract(USD0_ADDRESS, USD0Abi, signer);
+    // 2) EIP-712 Domain Data (Fetched in parallel)
+    const tokenContract = new ethers.Contract(USD0_ADDRESS, USD0Abi, provider);
+    const [signerAddress, network, tokenName] = await Promise.all([
+      signer.getAddress(),
+      provider.getNetwork(),
+      tokenContract.name() as Promise<string>, // Explicitly type if ABI isn't fully typed
+    ]);
+
     const domain = {
-      name: await contract.name(),
-      version: "1",
-      chainId,
+      name: tokenName,
+      version: EIP712_DOMAIN_VERSION,
+      chainId: network.chainId,
       verifyingContract: USD0_ADDRESS,
     };
+
     const types = {
       TransferWithAuthorization: [
         { name: "from", type: "address" },
@@ -43,38 +58,35 @@ export default function App() {
       ],
     };
 
-    //  3) Build the payload message —
-    const now = Math.floor(Date.now() / 1000);
-    const validAfter = now;
-    const validBefore = now + 3600;
-    const nonce = ethers.hexlify(ethers.randomBytes(32));
+    // 3) Build the payload message
+    const nowSeconds = Math.floor(Date.now() / 1000);
     const message = {
-      from,
+      from: signerAddress,
       to,
-      value: ethers.parseUnits(amount, 6).toString(),
-      validAfter,
-      validBefore,
-      nonce,
+      value: ethers.parseUnits(amount, USD0_DECIMALS).toString(),
+      validAfter: nowSeconds,
+      validBefore: nowSeconds + SIGNATURE_VALIDITY_PERIOD_SECONDS,
+      nonce: ethers.hexlify(ethers.randomBytes(32)),
     };
 
-    // 4) Sign
-    const rawSig = await signer.signTypedData(domain, types, message);
-    const { v, r, s } = ethers.Signature.from(rawSig);
+    // 4) Sign Typed Data
+    const signature = await signer.signTypedData(domain, types, message);
+    const { v, r, s } = ethers.Signature.from(signature);
 
-    //  5) POST to your relayer —
-    const resp = await fetch(`${RELAYER_URL}/relay-transfer`, {
+    // 5) POST to Relayer
+    const response = await fetch(`${RELAYER_URL}/relay-transfer`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ payload: message, v, r, s }),
     });
-    if (!resp.ok) {
-      const err = await resp.json();
-      console.error("Relayer error", err);
-      alert("Relayer failed: " + err.error);
-      return;
-    }
 
-    const { txHash } = await resp.json();
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({
+        error: "Relayer request failed with status: " + response.status,
+      }));
+      throw new Error(errorData.error || "Relayer request failed.");
+    }
+    const { txHash } = await response.json();
     alert("✅ Sent! On-chain tx hash:\n" + txHash);
   }
 
