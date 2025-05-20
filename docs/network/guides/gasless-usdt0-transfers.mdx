@@ -10,14 +10,12 @@ sidebar_position: 9
 import CodeBlock from "@theme/CodeBlock";
 import Deposit from "!!raw-loader!/examples/developer-hub-javascript/GaslessApp.tsx";
 import Withdraw from "!!raw-loader!/examples/developer-hub-javascript/GaslessRelayer.ts";
+import USD0 from "!!raw-loader!/examples/developer-hub-javascript/USD0.json";
 
 Flare's USD₮0 integration enables native USDT transfers on the Flare network, allowing end-users to experience zero gas fees.
 In this guide, you'll learn how to set up a gasless transfer - also called a meta-transaction. With this approach, users can move tokens without paying gas themselves; instead, a third party (for example, a relayer or the dApp owner) covers the fees on their behalf.
 
 The gasless transfer of USD₮0 uses **EIP-712** to structure and present transaction data for safe off-chain signing, and **EIP-3009** to extend ERC-20 with `transferWithAuthorization`, allowing a relayer to submit the signed payload on-chain and cover the gas fee.
-
-The latest USD₮0 contract addresses on Flare can be found in the [USD₮0 docs](https://docs.usdt0.to/technical-documentation/developer#flare), where `TetherTokenOFTExtension` is the proxy contract address you interact with, which conforms to the ERC-20 standard.
-The contract implementation can be found by navigating to the `TetherTokenOFTExtension` contract on Flarescan and clicking on **Contract → Read as Proxy**.
 
 :::tip[Assets other than USD₮0]
 
@@ -28,7 +26,9 @@ This guide uses USD₮0 as an example, but a similar logic applies for other ass
 ## EIP-3009
 
 [EIP-3009](https://eips.ethereum.org/EIPS/eip-3009) adds meta-transaction support to ERC-20 tokens: instead of calling `transfer(...)` directly, a user signs a concise off-chain authorization, then a relayer can submit that signature onchain via `transferWithAuthorization`, paying for the gas fees.
-This pattern separates **authorization** (user intent) from **execution** (onchain relay). EIP-3009 adds two core functions:
+This pattern separates **authorization** (user intent) from **execution** (onchain relay).
+
+EIP-3009 adds two core functions, both of which include timestamps to prevent stale authorizations, and a **nonce** to prevent replay attacks:
 
 - **`transferWithAuthorization`**: Moves tokens from `from` to `to` if the signature `(v, r, s)` matches `from`, the current time is between `validAfter` and `validBefore`, and `nonce` has not been used before
 
@@ -47,20 +47,6 @@ This pattern separates **authorization** (user intent) from **execution** (oncha
   ```
 
 - **`receiveWithAuthorization`**: Similar to `transferWithAuthorization`, but allows a recipient or relayer to pull tokens from the signer's balance - useful for collecting fees on receipt.
-  `solidity
-function receiveWithAuthorization(
-    address from, // Payer's address (Authorizer)
-    address to, // Payee's address
-    uint256 value, // Amount to be transferred
-    uint256 validAfter, // The time after which this is valid (unix time)
-    uint256 validBefore, // The time before which this is valid (unix time)
-    uint256 nonce, // Unique nonce
-    uint8 v, // v of the signature
-    bytes32 r, // r of the signature
-    bytes32 s // s of the signature
-) external;
-`
-  Both functions include timestamps to prevent stale authorizations, and a **nonce** to prevent replay attacks.
 
 Next, we'll put theory into practice by wiring up a simple frontend and relayer. The frontend will craft a transfer message, have the user sign it in their wallet, and forward that signature to the relayer.
 The relayer will verify the signature, submit the corresponding onchain transaction, and pay the FLR gas fee on behalf of the user.
@@ -70,7 +56,13 @@ The relayer will verify the signature, submit the corresponding onchain transact
 - An EVM compatible wallet such as Metamask. Discover suitable options on the [Flare Wallets](https://flare.network/wallets) page.
 - A relayer address funded with FLR.
 - [React](https://reactjs.org) and [Vite](https://vitejs.dev)
-- USDT0 ABI saved as `USD0.json`, you can fetch this from [Flarescan](https://flarescan.com/address/0xe7cd86e13AC4309349F30B3435a9d337750fC82D/contract/14/code#abi)
+- USD₮0 contract addresses and ABI (see `TetherTokenOFTExtension` in [USD₮0 docs](https://docs.usdt0.to/technical-documentation/developer#flare)).
+  <details>
+    <summary>Relevant portion of USD₮0 contract ABI</summary>
+    <CodeBlock language="json" title="USD0.json">
+      {USD0}
+    </CodeBlock>
+  </details>
 
 ## Setup relay service
 
