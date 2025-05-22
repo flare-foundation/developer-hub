@@ -1156,14 +1156,14 @@ export const operationalParameters = [
           "The pool top-up token discount values added tokens at a slight discount to market price, increasing system stability, shown as a factor on the Agent UI.",
         values: {
           songbird: {
-            xrp: "0.5%",
-            btc: "0.5%",
-            doge: "0.5%",
+            xrp: "99.5%",
+            btc: "99.5%",
+            doge: "99.5%",
           },
           coston: {
-            xrp: "10%",
-            btc: "10%",
-            doge: "10%",
+            xrp: "90%",
+            btc: "90%",
+            doge: "90%",
           },
         },
       },
@@ -1175,14 +1175,14 @@ export const operationalParameters = [
         link: "/fassets/liquidation#stopping-liquidations",
         values: {
           songbird: {
-            xrp: "1%",
-            btc: "1%",
-            doge: "1%",
+            xrp: "99%",
+            btc: "99%",
+            doge: "99%",
           },
           coston: {
-            xrp: "1%",
-            btc: "1%",
-            doge: "1%",
+            xrp: "99%",
+            btc: "99%",
+            doge: "99%",
           },
         },
       },

@@ -33,7 +33,7 @@ contract SwapAndRedeem {
 
     // Uniswap V2 Router interface to communicate with BlazeSwap
     ISwapRouter public immutable router;
-    // FAssets assset manager interface
+    // FAssets asset manager interface
     IAssetManager public immutable assetManager;
     // FAssets token (FXRP)
     IERC20 public immutable token;
