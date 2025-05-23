@@ -10,7 +10,7 @@ import {
 const { COSTON2_DA_LAYER_URL, VERIFIER_URL_TESTNET, VERIFIER_API_KEY_TESTNET } =
   process.env;
 
-// 2. AssetManager address on Songbird Testnet Coston2 network
+// 2. AssetManager address on Flare Testnet Coston2 network
 const ASSET_MANAGER_ADDRESS = "0xDeD50DA9C3492Bee44560a4B35cFe0e778F41eC5";
 
 // 3. Collateral reservation ID
