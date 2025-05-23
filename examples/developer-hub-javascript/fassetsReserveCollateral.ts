@@ -7,8 +7,8 @@ import {
 
 // 1. Define constants
 
-// AssetManager address on Songbird Testnet Coston network
-const ASSET_MANAGER_ADDRESS = "0x56728e46908fB6FcC5BCD2cc0c0F9BB91C3e4D34";
+// AssetManager address on Songbird Testnet Coston2 network
+const ASSET_MANAGER_ADDRESS = "0xDeD50DA9C3492Bee44560a4B35cFe0e778F41eC5";
 // Number of lots to reserve
 const LOTS_TO_MINT = 1;
 // XRP Ledger address

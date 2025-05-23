@@ -7,11 +7,11 @@ import {
 } from "../../typechain-types";
 
 // 1. Environment variables
-const { COSTON_DA_LAYER_URL, VERIFIER_URL_TESTNET, VERIFIER_API_KEY_TESTNET } =
+const { COSTON2_DA_LAYER_URL, VERIFIER_URL_TESTNET, VERIFIER_API_KEY_TESTNET } =
   process.env;
 
-// 2. AssetManager address on Songbird Testnet Coston network
-const ASSET_MANAGER_ADDRESS = "0x56728e46908fB6FcC5BCD2cc0c0F9BB91C3e4D34";
+// 2. AssetManager address on Songbird Testnet Coston2 network
+const ASSET_MANAGER_ADDRESS = "0xDeD50DA9C3492Bee44560a4B35cFe0e778F41eC5";
 
 // 3. Collateral reservation ID
 const COLLATERAL_RESERVATION_ID = 18615047;
@@ -57,7 +57,7 @@ async function prepareFdcRequest(
 async function getProof(roundId: number) {
   const request = await prepareFdcRequest(transactionId, inUtxo, utxo);
   const proofAndData = await fetch(
-    `${COSTON_DA_LAYER_URL}api/v0/fdc/get-proof-round-id-bytes`,
+    `${COSTON2_DA_LAYER_URL}api/v0/fdc/get-proof-round-id-bytes`,
     {
       method: "POST",
       headers: {
@@ -109,7 +109,7 @@ async function main() {
   // 7. Get proof from FDC
   const proof = await getProof(TARGET_ROUND_ID);
 
-  // FAssets FXRP asset manager on Songbird Testnet Coston network
+  // FAssets FXRP asset manager on Songbird Testnet Coston2 network
   const AssetManager = artifacts.require("IAssetManager");
   const assetManager: IAssetManagerInstance = await AssetManager.at(
     ASSET_MANAGER_ADDRESS,
