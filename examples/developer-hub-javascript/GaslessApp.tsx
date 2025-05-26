@@ -87,7 +87,7 @@ export default function App() {
       throw new Error(errorData.error || "Relayer request failed.");
     }
     const { txHash } = await response.json();
-    alert("✅ Sent! On-chain tx hash:\n" + txHash);
+    alert("✅ Sent! Onchain tx hash:\n" + txHash);
   }
 
   return (
