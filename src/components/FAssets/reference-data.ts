@@ -4,7 +4,7 @@ export const reference = [
       flare: "AssetManagerController",
       coston2: "AssetManagerController",
       songbird: "AssetManagerController",
-      coston: "AssetManagerController"
+      coston: "AssetManagerController",
     },
     address: {
       flare: "",
@@ -20,7 +20,7 @@ export const reference = [
       flare: "AssetManager XRP",
       coston2: "AssetManager Testnet XRP",
       songbird: "AssetManager XRP",
-      coston: "AssetManager Testnet XRP"
+      coston: "AssetManager Testnet XRP",
     },
     address: {
       flare: "",
@@ -36,7 +36,7 @@ export const reference = [
       flare: "FXRP",
       coston2: "FTestXRP",
       songbird: "FXRP",
-      coston: "FTestXRP"
+      coston: "FTestXRP",
     },
     address: {
       flare: "",
@@ -44,7 +44,6 @@ export const reference = [
       songbird: "0xF9a84f4ec903F4EaB117A9c1098BeC078BA7027d",
       coston: "0x36be8f2e1CC3339Cf6702CEfA69626271C36E2fd",
     },
-    description:
-      "The FAsset-wrapped XRP token, ready for use on Songbird.",
+    description: "The FAsset-wrapped XRP token, ready for use on Songbird.",
   },
 ];

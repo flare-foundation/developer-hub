@@ -6,7 +6,11 @@ import Link from "@docusaurus/Link";
 import { reference } from "./reference-data";
 
 export default function Reference() {
-  function ReferenceTable({ network }: { network: "songbird" | "coston" | "coston2" | "flare" }) {
+  function ReferenceTable({
+    network,
+  }: {
+    network: "songbird" | "coston" | "coston2" | "flare";
+  }) {
     return (
       <table>
         <thead>
@@ -21,38 +25,46 @@ export default function Reference() {
             <tr key={item.name}>
               <td>{item.name[network]}</td>
               <td>
-                {item.address[network] ?
-                <Link to={`https://${network}-explorer.flare.network/address/${item.address[network]}`}>
-                  <code>{item.address[network]}</code>
-                </Link> : "-"
-  }
+                {item.address[network] ? (
+                  <Link
+                    to={`https://${network}-explorer.flare.network/address/${item.address[network]}`}
+                  >
+                    <code>{item.address[network]}</code>
+                  </Link>
+                ) : (
+                  "-"
+                )}
               </td>
               <td>{item.description}</td>
             </tr>
           ))}
         </tbody>
       </table>
-    )
-    
+    );
   }
 
-  return (<Tabs defaultValue="songbird" values={[
-    { label: "Flare Mainnet", value: "flare" },
-    { label: "Flare Testnet Coston2", value: "coston2" },
-    { label: "Songbird Canary-Network", value: "songbird" },
-    { label: "Songbird Testnet Coston", value: "coston" },
-  ]}>
-    <TabItem value="flare">
-      <ReferenceTable network="flare" />
-    </TabItem>
-    <TabItem value="coston2">
-      <ReferenceTable network="coston2" />
-    </TabItem>
-    <TabItem value="songbird">
-      <ReferenceTable network="songbird" />
-    </TabItem>
-    <TabItem value="coston">
-      <ReferenceTable network="coston" />
-    </TabItem>
-  </Tabs>)
+  return (
+    <Tabs
+      defaultValue="songbird"
+      values={[
+        { label: "Flare Mainnet", value: "flare" },
+        { label: "Flare Testnet Coston2", value: "coston2" },
+        { label: "Songbird Canary-Network", value: "songbird" },
+        { label: "Songbird Testnet Coston", value: "coston" },
+      ]}
+    >
+      <TabItem value="flare">
+        <ReferenceTable network="flare" />
+      </TabItem>
+      <TabItem value="coston2">
+        <ReferenceTable network="coston2" />
+      </TabItem>
+      <TabItem value="songbird">
+        <ReferenceTable network="songbird" />
+      </TabItem>
+      <TabItem value="coston">
+        <ReferenceTable network="coston" />
+      </TabItem>
+    </Tabs>
+  );
 }
