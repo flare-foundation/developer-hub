@@ -22,7 +22,7 @@ export default function Reference() {
         </thead>
         <tbody>
           {reference.map((item) => (
-            <tr key={item.name}>
+            <tr key={item.name[network]}>
               <td>{item.name[network]}</td>
               <td>
                 {item.address[network] ? (
