@@ -1,0 +1,155 @@
+---
+title: Web2Json for Custom API
+authors: [nikerzetic, filipkoprivec]
+description: Retrieve arbitrary Web2 data.
+tags: [intermediate, ethereum, fdc, hardhat]
+keywords: [ethereum, flare-data-connector, evm, flare-network]
+sidebar_position: 12
+---
+
+The [Web2Json guide](/fdc/guides/hardhat/web-2-json) demonstrates how the Flare Data Connector can be used to fetch Web2 and store it on the chain.
+The code for this and other examples is available within the [Flare Hardhat starter](https://github.com/flare-foundation/flare-hardhat-starter) repository.
+In this guide, we will see how the `Web2Json` example script within the Flare Hardhat starter can be modified to work with custom data and custom contracts.
+That way, the example code can serve as the base building block for a custom project.
+
+## Necessary modifications
+
+In order to run on custom data, the example code needs to be modified in four places only.
+Those are:
+
+1. The contract within the `contracts/fdcExample/Web2Json.sol` file.
+2. The attestation request parameters at the top of the `scripts/fdcExample/Web2Json.ts`.
+   In particular the parameters:
+
+- `apiUrl`
+- `postProcessJq`
+- `abiSignature`
+
+3. The `deployAndVerifyContract` function within the `scripts/fdcExample/Web2Json.ts` file.
+4. The `interactWithContract` function within the `scripts/fdcExample/Web2Json.ts` file.
+
+## Contract
+
+The contract within the `contracts/fdcExample/Web2Json.sol` file should be changed to reflect the project goals.
+It could be omitted entirely and replaced with multiple files.
+The only requirement is that at least one contract - the one interacting with FDC - implements a function that accepts an `IWeb2Json.Proof` struct parameter.
+
+## Attestation request parameters
+
+```typescript title="scripts/fdcExample/Web2Json.ts"
+// Request data
+const apiUrl = "https://swapi.info/api/people/3";
+const postProcessJq = `{name: .name, height: .height, mass: .mass, numberOfFilms: .films | length, uid: (.url | split("/") | .[-1] | tonumber)}`;
+const httpMethod = "GET";
+const headers = "{}";
+const queryParams = "{}";
+const body = "{}";
+const abiSignature = `{"components": [{"internalType": "string", "name": "name", "type": "string"},{"internalType": "uint256", "name": "height", "type": "uint256"},{"internalType": "uint256", "name": "mass", "type": "uint256"},{"internalType": "uint256", "name": "numberOfFilms", "type": "uint256"},{"internalType": "uint256", "name": "uid", "type": "uint256"}],"name": "task","type": "tuple"}`;
+```
+
+The attestation request parameters should describe the new Web2 source.
+
+The `apiUrl` is the URL of the API.
+It can additionally be configured with the `headers`, `queryParams`, and `body` fields.
+A different `httpMethod` can also be selected.
+
+The `postProcessJq` is the jq-filter that will be applied to the JSON data retrieved from the `apiUrl` API.
+It rearranges and modifies the input JSON into a new JSON.
+The `postProcessJq` filter can be workshopped using an online tool, like [The JQ Playground](https://play.jqlang.org).
+
+The `abiSignature` parameter determines how the modified JSON should be represented in Solidity.
+It is the ABI signature of an appropriate struct.
+
+The easiest way to acquire it is to create a `DataTransportObject` struct with the correct fields within some solidity file.
+Then, create a public dummy function that accepts a `DataTransportObject` parameter.
+After running `yarn hardhat compile` or `npx hardhat compile`, the contract artifact will be created within the `artifacts/contracts` directory.
+The dummy function can be searched for within the file of its parent contract, and the `abiSignature` read from its `inputs` field.
+
+## Deploy and verify function
+
+```typescript title="scripts/fdcExample/Web2Json.ts"
+async function deployAndVerifyContract() {
+  const args: any[] = [];
+  const characterList: MyContractInstance = await MyContract.new(...args);
+  try {
+    await run("verify:verify", {
+      address: characterList.address,
+      constructorArguments: args,
+    });
+  } catch (e: any) {
+    console.log(e);
+  }
+  console.log("MyContract deployed to", characterList.address, "\n");
+  return characterList;
+}
+```
+
+The `deployAndVerifyContract` function should be modified to deploy and verify the new contract.
+If the contract is deployed and verified by another script, and thus the script will only interact with an existing contract, the function should simply return that contract.
+
+```typescript title="scripts/fdcExample/modifiedWeb2Json.ts"
+async function deployAndVerifyContract(address: str) {
+  return MyContract.at(address);
+}
+```
+
+## Interact with contract function
+
+```typescript title="scripts/fdcExample/Web2Json.ts"
+async function interactWithContract(
+  characterList: StarWarsCharacterListV2Instance,
+  proof: any,
+) {
+  console.log("Proof hex:", proof.response_hex, "\n");
+
+  // A piece of black magic that allows us to read the response type from an artifact
+  const IWeb2JsonVerification = await artifacts.require(
+    "IWeb2JsonVerification",
+  );
+  const responseType =
+    IWeb2JsonVerification._json.abi[0].inputs[0].components[1];
+  console.log("Response type:", responseType, "\n");
+
+  const decodedResponse = web3.eth.abi.decodeParameter(
+    responseType,
+    proof.response_hex,
+  );
+  console.log("Decoded proof:", decodedResponse, "\n");
+  const transaction = await characterList.addCharacter({
+    merkleProof: proof.proof,
+    data: decodedResponse,
+  });
+  console.log("Transaction:", transaction.tx, "\n");
+  console.log(
+    "Star Wars Characters:\n",
+    await characterList.getAllCharacters(),
+    "\n",
+  );
+}
+```
+
+The `interactWithContract` function should be modified to interact with the new contract.
+Unless the dApp requires a more intricate interaction with the new contract, only the last few lines should be fundamentally changed.
+Likely, only the parameter type and the contract functions called should change.
+
+```typescript title="scripts/fdcExample/modifiedWeb2Json.ts"
+async function interactWithContract(myContract: MyContractInstance, proof: any) {
+    console.log("Proof hex:", proof.response_hex, "\n");
+
+    // A piece of black magic that allows us to read the response type from an artifact
+    const IWeb2JsonVerification = await artifacts.require("IWeb2JsonVerification");
+    const responseType = IWeb2JsonVerification._json.abi[0].inputs[0].components[1];
+    console.log("Response type:", responseType, "\n");
+
+    const decodedResponse = web3.eth.abi.decodeParameter(responseType, proof.response_hex);
+    console.log("Decoded proof:", decodedResponse, "\n");
+
+    // Only the bellow code fundamentally changed
+    const transaction = await myContract.customFunction({
+ merkleProof: proof.proof,
+ data: decodedResponse,
+ });
+    console.log("Transaction:", transaction.tx, "\n");
+    ...
+}
+```
