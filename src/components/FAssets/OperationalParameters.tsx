@@ -24,7 +24,7 @@ export default function OperationalParameters({
     network,
     parameters,
   }: {
-    network: "songbird" | "coston";
+    network: "songbird" | "coston" | "coston2";
     parameters: (typeof operationalParameters)[number]["parameters"];
   }) {
     return (
@@ -101,10 +101,17 @@ export default function OperationalParameters({
     <Tabs
       defaultValue="songbird"
       values={[
+        { label: "Flare Testnet Coston2", value: "coston2" },
         { label: "Songbird Canary-Network", value: "songbird" },
         { label: "Songbird Testnet Coston", value: "coston" },
       ]}
     >
+      <TabItem value="coston2">
+        <ParameterTable
+          network="coston2"
+          parameters={operationalParametersSection.parameters}
+        />
+      </TabItem>
       <TabItem value="songbird">
         <ParameterTable
           network="songbird"

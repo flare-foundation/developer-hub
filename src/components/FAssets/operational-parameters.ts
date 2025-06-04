@@ -8,6 +8,9 @@ export const operationalParameters = [
         description:
           "Total amount of allowed FAssets in circulation. Once reached, no more FAssets can be minted until some are redeemed. This is intended as a security measure. In the final deployment, this cap will be gradually increased and finally removed.",
         values: {
+          coston2: {
+            xrp: "none",
+          },
           songbird: {
             xrp: "750k XRP",
             btc: "18.5 BTC",
@@ -26,6 +29,9 @@ export const operationalParameters = [
         description: "Minimum quantity required for minting FAssets.",
         link: "/fassets/minting#lots",
         values: {
+          coston2: {
+            xrp: "10 XRP",
+          },
           songbird: {
             xrp: "10 XRP",
             btc: "0.05 BTC",
@@ -44,6 +50,9 @@ export const operationalParameters = [
         description: "Fee applied when reserving collateral for minting..",
         link: "/fassets/minting#collateral-reservation-fee",
         values: {
+          coston2: {
+            xrp: "0.1%",
+          },
           songbird: {
             xrp: "0.5%",
             btc: "0.5%",
@@ -62,6 +71,9 @@ export const operationalParameters = [
         description: "Fee charged during redemption of FAssets.",
         link: "/fassets/redemption#redemption-fee",
         values: {
+          coston2: {
+            xrp: "0.5%",
+          },
           songbird: {
             xrp: "0.5%",
             btc: "1%",
@@ -81,6 +93,9 @@ export const operationalParameters = [
           "Premium paid if an agent fails to meet redemption obligations.",
         link: "/fassets/redemption#redemption-payment-failure",
         values: {
+          coston2: {
+            xrp: "0.5%",
+          },
           songbird: {
             xrp: "5%",
             btc: "2%",
@@ -98,6 +113,9 @@ export const operationalParameters = [
         description:
           "Where does the premium come from when an agent fails to pay the redeemer on time? If the vault CR > 1.1, from the agent's vault. Otherwise, from the agent's vault and the collateral pool.",
         values: {
+          coston2: {
+            xrp: "✅",
+          },
           songbird: {
             xrp: "✅",
             btc: "✅",
@@ -115,6 +133,9 @@ export const operationalParameters = [
         settingName: "maxRedeemedTickets",
         description: "Maximum number of tickets redeemed in a single request.",
         values: {
+          coston2: {
+            xrp: "20",
+          },
           songbird: {
             xrp: "20",
             btc: "20",
@@ -138,6 +159,9 @@ export const operationalParameters = [
         description:
           "The number of underlying blocks during which the minter or agent can pay the underlying value.",
         values: {
+          coston2: {
+            xrp: "500",
+          },
           songbird: {
             xrp: "225",
             btc: "36",
@@ -156,6 +180,9 @@ export const operationalParameters = [
         description:
           "The minimum time allowed for an agent to pay for a redemption or a minter to pay for minting.",
         values: {
+          coston2: {
+            xrp: "15 minutes",
+          },
           songbird: {
             xrp: "15 minutes",
             btc: "6 hours",
@@ -174,6 +201,9 @@ export const operationalParameters = [
         description:
           "The average time between two successive blocks on the underlying chain.",
         values: {
+          coston2: {
+            xrp: "2 seconds",
+          },
           songbird: {
             xrp: "4 seconds",
             btc: "10 minutes",
@@ -192,6 +222,9 @@ export const operationalParameters = [
         description:
           "The amount of time that proofs of payment or nonpayment must be available on the Data Connector.",
         values: {
+          coston2: {
+            xrp: "1 day",
+          },
           songbird: {
             xrp: "1 day",
             btc: "1 day",
@@ -210,6 +243,9 @@ export const operationalParameters = [
         description:
           "The extra amount of time per redemption granted to an agent when many redemption requests occur in a short period of time.",
         values: {
+          coston2: {
+            xrp: "30 seconds",
+          },
           songbird: {
             xrp: "45 seconds",
             btc: "60 seconds",
@@ -234,6 +270,9 @@ export const operationalParameters = [
           "The percentage of underlying assets that must be actively backed at any time.",
         link: "/fassets/overview#agents",
         values: {
+          coston2: {
+            xrp: "100%",
+          },
           songbird: {
             xrp: "98%",
             btc: "99%",
@@ -250,6 +289,9 @@ export const operationalParameters = [
         name: "Vault Collateral Supported Types",
         description: "Types of collateral required in the agent's vault.",
         values: {
+          coston2: {
+            xrp: "<code>USDX</code>",
+          },
           songbird: {
             xrp: "<code>USDX</code>",
             btc: "<code>USDX</code>",
@@ -269,6 +311,9 @@ export const operationalParameters = [
           "The minimum collateral ratio required to avoid liquidation.",
         link: "/fassets/collateral#minimal-cr",
         values: {
+          coston2: {
+            xrp: "1.2",
+          },
           songbird: {
             xrp: "1.2",
             btc: "1.2",
@@ -288,6 +333,9 @@ export const operationalParameters = [
           "The threshold at which collateral is considered unhealthy but liquidation is delayed.",
         link: "/fassets/collateral#liquidation-cr",
         values: {
+          coston2: {
+            xrp: "1.1",
+          },
           songbird: {
             xrp: "1.1",
             btc: "1.1",
@@ -306,6 +354,9 @@ export const operationalParameters = [
         description: "The collateral ratio required to exit liquidation mode.",
         link: "/fassets/collateral#safety-cr",
         values: {
+          coston2: {
+            xrp: "1.2",
+          },
           songbird: {
             xrp: "1.3",
             btc: "1.3",
@@ -322,6 +373,9 @@ export const operationalParameters = [
         name: "Pool Collateral Supported Types",
         description: "Types of collateral required in the collateral pool.",
         values: {
+          coston2: {
+            xrp: "C2FLR",
+          },
           songbird: {
             xrp: "SGB",
             btc: "SGB",
@@ -341,6 +395,9 @@ export const operationalParameters = [
           "The minimum collateral ratio required to avoid liquidation.",
         link: "/fassets/collateral#minimal-cr",
         values: {
+          coston2: {
+            xrp: "1.5",
+          },
           songbird: {
             xrp: "1.5",
             btc: "1.5",
@@ -360,6 +417,9 @@ export const operationalParameters = [
           "The threshold at which collateral is considered unhealthy but liquidation is delayed.",
         link: "/fassets/collateral#liquidation-cr",
         values: {
+          coston2: {
+            xrp: "1.4",
+          },
           songbird: {
             xrp: "1.4",
             btc: "1.4",
@@ -378,6 +438,9 @@ export const operationalParameters = [
         description: "The collateral ratio required to exit liquidation mode.",
         link: "/fassets/collateral#safety-cr",
         values: {
+          coston2: {
+            xrp: "1.6",
+          },
           songbird: {
             xrp: "1.6",
             btc: "1.6",
@@ -396,6 +459,9 @@ export const operationalParameters = [
         description:
           "The minimum amount of pool tokens an agent must hold to be able to mint, as a percentage of the FAssets the agent is currently backing.",
         values: {
+          coston2: {
+            xrp: "50%",
+          },
           songbird: {
             xrp: "50%",
             btc: "50%",
@@ -420,6 +486,9 @@ export const operationalParameters = [
           "Maximum time an agent can remain in CCB before liquidation starts.",
         link: "/fassets/collateral#liquidation-cr",
         values: {
+          coston2: {
+            xrp: "180 seconds",
+          },
           songbird: {
             xrp: "600 seconds",
             btc: "600 seconds",
@@ -436,8 +505,10 @@ export const operationalParameters = [
         name: "Liquidation premium",
         settingName: "liquidationPremium",
         description: "Increases in steps, as time passes.",
-
         values: {
+          coston2: {
+            xrp: "<strong>Step 1</strong>: 5%<br /><strong>Step 2</strong>: 10%<br /><strong>Step 3</strong>: 15%",
+          },
           songbird: {
             xrp: "<strong>Step 1</strong>: 5%<br /><strong>Step 2</strong>: 8%<br /><strong>Step 3</strong>: 12%",
             btc: "<strong>Step 1</strong>: 4%<br /><strong>Step 2</strong>: 8%<br /><strong>Step 3</strong>: 12%",
@@ -456,6 +527,9 @@ export const operationalParameters = [
         description:
           "Elapsed time before the liquidation premium advances to the next step.",
         values: {
+          coston2: {
+            xrp: "180 seconds",
+          },
           songbird: {
             xrp: "300 seconds",
             btc: "300 seconds",
@@ -472,6 +546,9 @@ export const operationalParameters = [
         name: "Liquidation source - Liquidated value",
         description: "Where do the funds come from to pay for liquidations?",
         values: {
+          coston2: {
+            xrp: "The agent's vault",
+          },
           songbird: {
             xrp: "The agent's vault",
             btc: "The agent's vault",
@@ -488,6 +565,9 @@ export const operationalParameters = [
         name: "Liquidation source - Premium",
         description: "Where do the funds come from to pay for liquidations?",
         values: {
+          coston2: {
+            xrp: "The collateral pool",
+          },
           songbird: {
             xrp: "The collateral pool",
             btc: "The collateral pool",
@@ -512,6 +592,9 @@ export const operationalParameters = [
           "After a successful challenge for an illegal operation, the agent goes into full liquidation and the challenger is paid this reward from the agent's vault.",
         link: "/fassets/overview#challengers",
         values: {
+          coston2: {
+            xrp: "300 USD converted to vault collateral",
+          },
           songbird: {
             xrp: "250 USD converted to vault collateral",
             btc: "250 USD converted to vault collateral",
@@ -531,6 +614,9 @@ export const operationalParameters = [
           "If an agent or redeemer becomes unresponsive, anybody can confirm payments and non-payments some time after the request was made, and get a reward from the agent's vault.",
         link: "/fassets/redemption#edge-cases",
         values: {
+          coston2: {
+            xrp: "",
+          },
           songbird: {
             xrp: "",
             btc: "",
@@ -547,6 +633,9 @@ export const operationalParameters = [
         name: "Minimum time",
         settingName: "confirmationByOthersAfter",
         values: {
+          coston2: {
+            xrp: "2 hours",
+          },
           songbird: {
             xrp: "6 hours",
             btc: "4 hours",
@@ -563,6 +652,9 @@ export const operationalParameters = [
         name: "Reward",
         settingName: "confirmationByOthersReward",
         values: {
+          coston2: {
+            xrp: "100 USD (converted to vault collateral)",
+          },
           songbird: {
             xrp: "50 USD (converted to vault collateral)",
             btc: "50 USD (converted to vault collateral)",
@@ -586,6 +678,9 @@ export const operationalParameters = [
         description:
           "Agent has to announce any collateral withdrawal or vault destruction and then wait this time before executing it.",
         values: {
+          coston2: {
+            xrp: "60 seconds",
+          },
           songbird: {
             xrp: "1 hour",
             btc: "1 hour",
@@ -604,6 +699,9 @@ export const operationalParameters = [
         description:
           "Minimum amount of time between updates of any governance setting.",
         values: {
+          coston2: {
+            xrp: "60 seconds",
+          },
           songbird: {
             xrp: "1 day",
             btc: "1 day",
@@ -622,6 +720,9 @@ export const operationalParameters = [
         description:
           "Time between the moment a token is deprecated by governance and it becomes invalid. Agents still using it as vault collateral get liquidated after this time.",
         values: {
+          coston2: {
+            xrp: "1 day",
+          },
           songbird: {
             xrp: "1 day",
             btc: "1 day",
@@ -640,6 +741,9 @@ export const operationalParameters = [
         description:
           "The time the agent has to wait after announcing exit from the list of publicly available agents and executing the exit.",
         values: {
+          coston2: {
+            xrp: "60 seconds",
+          },
           songbird: {
             xrp: "3 hours",
             btc: "3 hours",
@@ -658,6 +762,9 @@ export const operationalParameters = [
         description:
           "The time the agent has to wait between announcing and changing the agent fee or the pool share.",
         values: {
+          coston2: {
+            xrp: "120 seconds",
+          },
           songbird: {
             xrp: "1 hour",
             btc: "1 hour",
@@ -676,6 +783,9 @@ export const operationalParameters = [
         description:
           "The time the agent has to wait between announcing and changing the minting CR (vault or pool).",
         values: {
+          coston2: {
+            xrp: "120 seconds",
+          },
           songbird: {
             xrp: "5 minutes",
             btc: "5 minutes",
@@ -694,6 +804,9 @@ export const operationalParameters = [
         description:
           "The time the agent has to wait between announcing and changing any pool exit and top-up settings.",
         values: {
+          coston2: {
+            xrp: "120 seconds",
+          },
           songbird: {
             xrp: "1 day",
             btc: "1 day",
@@ -712,6 +825,9 @@ export const operationalParameters = [
         description:
           "Once the above time locks expire, agents have this amount of time to execute the requested operation.",
         values: {
+          coston2: {
+            xrp: "1 hour",
+          },
           songbird: {
             xrp: "2 hours",
             btc: "2 hours",
@@ -730,6 +846,9 @@ export const operationalParameters = [
         description:
           "Amount of seconds that a user entering the collateral pool must wait before spending (exit or transfer) the obtained pool tokens.",
         values: {
+          coston2: {
+            xrp: "60 seconds",
+          },
           songbird: {
             xrp: "60 seconds",
             btc: "60 seconds",
@@ -748,6 +867,9 @@ export const operationalParameters = [
         description:
           "Amount of time that must elapse before the system performs a <a href='https://eips.ethereum.org/EIPS/eip-2535' target='_blank'>diamond cut</a>.",
         values: {
+          coston2: {
+            xrp: "2 hours",
+          },
           songbird: {
             xrp: "1 hour",
             btc: "1 hour",
@@ -771,6 +893,9 @@ export const operationalParameters = [
         description:
           "The maximum time for a pause triggered by governance or some other entity.",
         values: {
+          coston2: {
+            xrp: "1 day",
+          },
           songbird: {
             xrp: "3 days",
             btc: "3 days",
@@ -789,6 +914,9 @@ export const operationalParameters = [
         description:
           "The amount of time since the last emergency pause. After it has elapsed, the pause duration counter automatically resets.",
         values: {
+          coston2: {
+            xrp: "1 week",
+          },
           songbird: {
             xrp: "1 week",
             btc: "1 week",
@@ -812,6 +940,9 @@ export const operationalParameters = [
         description:
           "The premium at which agents can buy back their collateral when f-asset is terminated.",
         values: {
+          coston2: {
+            xrp: "0.3%",
+          },
           songbird: {
             xrp: "0.5%",
             btc: "0.5%",
@@ -830,6 +961,9 @@ export const operationalParameters = [
         description:
           "The premium at which agents can burn collateral to unstick a minting process.",
         values: {
+          coston2: {
+            xrp: "0%",
+          },
           songbird: {
             xrp: "0%",
             btc: "0%",
@@ -853,6 +987,9 @@ export const operationalParameters = [
         description:
           "The fee on FAsset token transfer. Each transfer has this value times the transferred amount deducted from its value. The fees get deposited into epochs that are claimable by agents depending on their minting history.",
         values: {
+          coston2: {
+            xrp: "0",
+          },
           songbird: {
             xrp: "0",
             btc: "0",
@@ -871,6 +1008,9 @@ export const operationalParameters = [
         description:
           "The number of epochs to pass before the fees get transferred to new epochs.",
         values: {
+          coston2: {
+            xrp: "16",
+          },
           songbird: {
             xrp: "30",
             btc: "30",
@@ -888,6 +1028,9 @@ export const operationalParameters = [
         settingName: "transferFeeClaimEpochDurationSeconds",
         description: "Duration of each reward epoch.",
         values: {
+          coston2: {
+            xrp: "7 days",
+          },
           songbird: {
             xrp: "3.5 days",
             btc: "3.5 days",
@@ -905,6 +1048,9 @@ export const operationalParameters = [
         settingName: "transferFeeClaimFirstEpochStartTs",
         description: "The first reward epoch timestamp.",
         values: {
+          coston2: {
+            xrp: "Tue Oct 01 2024 12:00:00 GMT",
+          },
           songbird: {
             xrp: "1733122800 (Mon Dec 02 2024 07:00:00 GMT)",
             btc: "1733122800 (Mon Dec 02 2024 07:00:00 GMT)",
@@ -928,6 +1074,9 @@ export const operationalParameters = [
         description:
           "Time after which collateral reservation can be canceled if the handshake isn't completed.",
         values: {
+          coston2: {
+            xrp: "30 seconds",
+          },
           songbird: {
             xrp: "60 seconds",
             btc: "60 seconds",
@@ -946,6 +1095,9 @@ export const operationalParameters = [
         description:
           "The percentage of the collateral reservation fee returned on rejected (or canceled) minting handshake.",
         values: {
+          coston2: {
+            xrp: "",
+          },
           songbird: {
             xrp: "5%",
             btc: "2%",
@@ -964,6 +1116,9 @@ export const operationalParameters = [
         description:
           "Time window within which the agent can reject a redemption request.",
         values: {
+          coston2: {
+            xrp: "120 seconds",
+          },
           songbird: {
             xrp: "120 seconds",
             btc: "120 seconds",
@@ -982,6 +1137,9 @@ export const operationalParameters = [
         description:
           "Time window during which another agent can take over a rejected redemption request.",
         values: {
+          coston2: {
+            xrp: "120 seconds",
+          },
           songbird: {
             xrp: "120 seconds",
             btc: "120 seconds",
@@ -1000,6 +1158,9 @@ export const operationalParameters = [
         description:
           "Portion of compensation factor paid from the agent's vault collateral during redemption rejection.",
         values: {
+          coston2: {
+            xrp: "1.05",
+          },
           songbird: {
             xrp: "1.001",
             btc: "1.001",
@@ -1018,6 +1179,9 @@ export const operationalParameters = [
         description:
           "Portion of compensation factor paid from the pool collateral during redemption rejection.",
         values: {
+          coston2: {
+            xrp: "0",
+          },
           songbird: {
             xrp: "0",
             btc: "0",
@@ -1042,6 +1206,9 @@ export const operationalParameters = [
           "The minting fee is when users (minters) mint FAssets by depositing underlying assets with an agent.",
         link: "/fassets/minting#minting-fee",
         values: {
+          coston2: {
+            xrp: "0.25%",
+          },
           songbird: {
             xrp: "1%",
             btc: "1%",
@@ -1061,6 +1228,9 @@ export const operationalParameters = [
           "The pool share fee is the portion of the minting and redemption fees allocated to pool collateral providers.",
         link: "/fassets/minting#pool-share",
         values: {
+          coston2: {
+            xrp: "40%",
+          },
           songbird: {
             xrp: "30%",
             btc: "30%",
@@ -1080,6 +1250,9 @@ export const operationalParameters = [
           "The minting vault collateral ratio is the minimum collateral required to back FAssets, ensuring value protection against under-collateralization.",
         link: "/fassets/collateral#minting-cr",
         values: {
+          coston2: {
+            xrp: "1.4",
+          },
           songbird: {
             xrp: "1.4",
             btc: "1.4",
@@ -1099,6 +1272,9 @@ export const operationalParameters = [
           "The minting pool collateral ratio ensures the collateral value supports the minted FAssets.",
         link: "/fassets/collateral#minting-cr",
         values: {
+          coston2: {
+            xrp: "1.7",
+          },
           songbird: {
             xrp: "1.7",
             btc: "1.7",
@@ -1118,6 +1294,9 @@ export const operationalParameters = [
           "The pool exit collateral ratio is the minimum collateral ratio agents must maintain when exiting their pool collateral.",
         link: "/fassets/collateral#exit-cr",
         values: {
+          coston2: {
+            xrp: "1.6",
+          },
           songbird: {
             xrp: "1.6",
             btc: "1.6",
@@ -1137,6 +1316,9 @@ export const operationalParameters = [
           "Defines the minimum collateral ratio agents must maintain when topping up pool collateral.",
         link: "/fassets/collateral#top-up-cr",
         values: {
+          coston2: {
+            xrp: "1.5",
+          },
           songbird: {
             xrp: "1.5",
             btc: "1.5",
@@ -1155,6 +1337,9 @@ export const operationalParameters = [
         description:
           "The pool top-up token discount values added tokens at a slight discount to market price, increasing system stability, shown as a factor on the Agent UI.",
         values: {
+          coston2: {
+            xrp: "99.5%",
+          },
           songbird: {
             xrp: "99.5%",
             btc: "99.5%",
@@ -1174,6 +1359,9 @@ export const operationalParameters = [
           "Applied when agents buy back FAssets during liquidation events, shown as a factor on the Agent UI.",
         link: "/fassets/liquidation#stopping-liquidations",
         values: {
+          coston2: {
+            xrp: "99%",
+          },
           songbird: {
             xrp: "99%",
             btc: "99%",
@@ -1199,6 +1387,9 @@ export const operationalParameters = [
         description:
           "The amount of XRP to escrow (setting to 0 disables escrowing).",
         values: {
+          coston2: {
+            xrp: "10k XRP",
+          },
           songbird: {
             xrp: "150k XRP",
           },
@@ -1215,6 +1406,9 @@ export const operationalParameters = [
         description:
           "The minimal amount that will be left on the multisig after escrowing.",
         values: {
+          coston2: {
+            xrp: "10k XRP",
+          },
           songbird: {
             xrp: "150k XRP",
           },
@@ -1231,6 +1425,9 @@ export const operationalParameters = [
         description:
           "The time of day (UTC) when the escrows expire. Exactly one escrow per day will expire.",
         values: {
+          coston2: {
+            xrp: "43200 (12:00 UTC)",
+          },
           songbird: {
             xrp: "50400 (14:00 UTC)",
           },
@@ -1246,6 +1443,9 @@ export const operationalParameters = [
         interfaceLink: "/fassets/reference/ICoreVaultManager#getsettings",
         description: "Maximum expected fee charged by the chain for a payment",
         values: {
+          coston2: {
+            xrp: "0.0001 XRP (100 drops)",
+          },
           songbird: {
             xrp: "0.0004 XRP (400 drops)",
           },
@@ -1267,6 +1467,9 @@ export const operationalParameters = [
         description:
           "Minimum amount of minting left on agent's address after transfer to core vault. Expressed as percentage of agent's minting capacity (calculated from agent's vault and pool collateral).",
         values: {
+          coston2: {
+            xrp: "20%",
+          },
           songbird: {
             xrp: "15%",
           },
@@ -1283,6 +1486,9 @@ export const operationalParameters = [
         description:
           "The extra time for an agent's transfer to the core vault, compared to ordinary redemption payment.",
         values: {
+          coston2: {
+            xrp: "2 hours",
+          },
           songbird: {
             xrp: "2 hours",
           },
@@ -1299,6 +1505,9 @@ export const operationalParameters = [
         description:
           "Fee (in percentage of transfer amount) paid by agent for transfer to the core vault.",
         values: {
+          coston2: {
+            xrp: "0",
+          },
           songbird: {
             xrp: "0",
           },
@@ -1315,6 +1524,9 @@ export const operationalParameters = [
         description:
           "The minimum number of lots that a direct redemption from core vault can take",
         values: {
+          coston2: {
+            xrp: "10",
+          },
           songbird: {
             xrp: "1000",
           },
@@ -1331,6 +1543,9 @@ export const operationalParameters = [
         description:
           "Fee (in percentage of redemption amount) paid by the redeemer for direct redemptions from the core vault.",
         values: {
+          coston2: {
+            xrp: "0",
+          },
           songbird: {
             xrp: "0",
           },
