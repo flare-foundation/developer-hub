@@ -342,14 +342,14 @@ export const operationalParameters = [
         link: "/fassets/collateral#minimal-cr",
         values: {
           songbird: {
-            xrp: "1.2",
-            btc: "1.2",
-            doge: "1.2",
+            xrp: "1.5",
+            btc: "1.5",
+            doge: "1.5",
           },
           coston: {
-            xrp: "1.4",
-            btc: "1.4",
-            doge: "1.4",
+            xrp: "2.0",
+            btc: "2.0",
+            doge: "2.0",
           },
         },
       },
@@ -361,14 +361,14 @@ export const operationalParameters = [
         link: "/fassets/collateral#liquidation-cr",
         values: {
           songbird: {
-            xrp: "1.1",
-            btc: "1.1",
-            doge: "1.1",
+            xrp: "1.4",
+            btc: "1.4",
+            doge: "1.4",
           },
           coston: {
-            xrp: "1.3",
-            btc: "1.3",
-            doge: "1.3",
+            xrp: "1.9",
+            btc: "1.9",
+            doge: "1.9",
           },
         },
       },
@@ -379,14 +379,14 @@ export const operationalParameters = [
         link: "/fassets/collateral#safety-cr",
         values: {
           songbird: {
-            xrp: "1.3",
-            btc: "1.3",
-            doge: "1.3",
+            xrp: "1.6",
+            btc: "1.6",
+            doge: "1.6",
           },
           coston: {
-            xrp: "1.5",
-            btc: "1.5",
-            doge: "1.5",
+            xrp: "2.1",
+            btc: "2.1",
+            doge: "2.1",
           },
         },
       },
