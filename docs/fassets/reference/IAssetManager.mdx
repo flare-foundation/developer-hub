@@ -188,6 +188,38 @@ function redeem(
     returns (uint256 _redeemedAmountUBA);
 ```
 
+### `redemptionPaymentDefault`
+
+If the agent fails to transfer the redeemed underlying assets in a timely manner, the redeemer or appointed executor can invoke this method and receive payment in collateral.
+The agent can also call default if the redeemer is unresponsive to payout the redeemer and free the remaining collateral.
+
+Parameters:
+
+- `_proof`: Proof that the agent did not pay with correct payment reference on the underlying chain.
+- `_redemptionRequestId`: ID of an existing redemption request.
+
+```solidity
+function redemptionPaymentDefault(
+    IReferencedPaymentNonexistence.Proof calldata _proof,
+    uint256 _redemptionRequestId
+) external;
+```
+
+### `rejectedRedemptionPaymentDefault`
+
+If the agent rejected the redemption request and no other agent took over the redemption, the redeemer or appointed executor calls this method and receives payment in collateral.
+The agent can also call default if the redeemer is unresponsive, to payout the redeemer and free the remaining collateral.
+
+Parameters:
+
+- `_redemptionRequestId`: ID of an existing redemption request
+
+```solidity
+function rejectedRedemptionPaymentDefault(
+    uint256 _redemptionRequestId
+) external;
+```
+
 ### `redemptionQueue`
 
 Returns the redemption queue in the form of an array of [`RedemptionTicketInfo`](https://github.com/flare-foundation/fassets/blob/main/contracts/userInterfaces/data/RedemptionTicketInfo.sol) structs.
@@ -232,4 +264,18 @@ function agentRedemptionQueue(
     uint256 _pageSize
 ) external view
     returns (RedemptionTicketInfo.Data[] memory _queue, uint256 _nextRedemptionTicketId);
+```
+
+### `fAsset`
+
+Returns the FAsset token contract (ERC-20) that is managed by this asset manager instance.
+
+Returns:
+
+- `IERC20`: The address of the FAsset token contract
+
+```solidity
+function fAsset()
+    external view
+    returns (IERC20);
 ```
