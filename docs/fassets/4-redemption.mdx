@@ -40,7 +40,16 @@ This is the summary of the redemption process:
 
 5. After the payment is finalized, the agent uses the [FDC](/fdc/overview) to prove the payment and obtain a payment proof.
 
-6. After the payment proof is presented to the FAssets system, the agent's vault collateral and pool collateral that were backing those FAssets are released.
+6. The agent (or, in Core Vault and certain flows, the **executor**) presents the payment proof to the FAssets system, which issues a **redemption ticket**.
+
+   The executor role is responsible for ensuring that the system can finalize redemptions even if the agent is unresponsive or if the flow is managed by a central entity (such as the Core Vault executor).
+
+   The redemption ticket is required to:
+
+   - Prove the payment has occurred.
+   - Trigger burning of the FAssets.
+   - Release the corresponding agent's vault collateral and pool collateral.
+   - Ensure the system tracks the underlying chain balances correctly.
 
    After the collateral is released, it can either back the minting of more FAssets or be withdrawn.
 
@@ -56,7 +65,7 @@ If a payment fails and the failed transaction is recorded on the underlying chai
 In this way, the gas costs of the failed transaction can be accounted for by the FAssets system.
 If the transaction was not recorded, then no gas was spent and reporting is not necessary.
 
-If the agent does not report the failed payment in time, anyone can report the failed payment and receive a reward from the agent's vault.
+If the agent does not report the failed payment in time, anyone (including the executor) can report the failed payment and receive a reward from the agent's vault.
 
 :::info
 
@@ -73,7 +82,7 @@ If the agent does not report the failed payment in time, anyone can report the f
 
 :::
 
-During step 4 above, if any agent does not to pay on the underlying chain, the redeemer completes the following procedure separately for each nonpaying agent:
+During step 4 above, if any agent does not pay on the underlying chain, the redeemer completes the following procedure separately for each nonpaying agent:
 
 1. The redeemer obtains a proof of nonpayment from the Data Connector.
 2. The redeemer presents the nonpayment proofs to the FAssets system, which triggers a redemption failure.
@@ -87,21 +96,21 @@ During step 4 above, if any agent does not to pay on the underlying chain, the r
 ### Unresponsive redeemer
 
 After a redemption nonpayment, the redeemer might not report the failure for some reason.
-In this case, the agent can present a nonpayment proof, and the redeemer receives collateral plus a premium.
+In this case, the agent or the executor can present a nonpayment proof, and the redeemer receives collateral plus a premium.
 After this operation, the underlying backing collateral and the remaining local collateral are released.
 
 ### Unresponsive agent
 
-After a successful payment, the agent might not present the payment proof.
+After a successful payment, the agent might not present the payment proof (redemption ticket).
 
 Because the agent has already paid, the redeemer is not affected.
 However, the system still requires the payment proof to correctly track the agent's balance on the underlying chain.
-After enough time for the agent to present the proof has elapsed, anyone can present the payment proof and receive collateral from the agent's vault.
+After enough time for the agent to present the proof has elapsed, anyone, including the executor, can present the payment proof and receive collateral from the agent's vault as a reward.
 
 ### Expired proof
 
 Proofs provided by the Data Connector are available for only 24 hours, approximately.
-If neither the redeemer nor the agent presents the proof of payment or nonpayment within 24 hours, the regular redeeming process cannot continue, and the agent's collateral could be locked indefinitely.
+If neither the redeemer, the agent, nor the executor presents the proof of payment or nonpayment within 24 hours, the regular redeeming process cannot continue, and the agent's collateral could be locked indefinitely.
 
 The procedure to recover this collateral is the same as the procedure in the minting case.
 
