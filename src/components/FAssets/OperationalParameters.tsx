@@ -7,14 +7,8 @@ import { operationalParameters } from "./operational-parameters";
 
 export default function OperationalParameters({
   sectionTitle,
-  hideXrp = false,
-  hideBtc = false,
-  hideDoge = false,
 }: {
   sectionTitle: string;
-  hideXrp?: boolean;
-  hideBtc?: boolean;
-  hideDoge?: boolean;
 }) {
   const operationalParametersSection = operationalParameters.find(
     (section) => section.title === sectionTitle,
@@ -23,9 +17,15 @@ export default function OperationalParameters({
   function ParameterTable({
     network,
     parameters,
+    hideXrp = false,
+    hideBtc = false,
+    hideDoge = false,
   }: {
     network: "songbird" | "coston" | "coston2";
     parameters: (typeof operationalParameters)[number]["parameters"];
+    hideXrp?: boolean;
+    hideBtc?: boolean;
+    hideDoge?: boolean;
   }) {
     return (
       <table>
@@ -110,6 +110,8 @@ export default function OperationalParameters({
         <ParameterTable
           network="coston2"
           parameters={operationalParametersSection.parameters}
+          hideBtc
+          hideDoge
         />
       </TabItem>
       <TabItem value="songbird">
