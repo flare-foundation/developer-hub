@@ -4,7 +4,7 @@ import { Client, Wallet, xrpToDrops, Payment, TxResponse } from "xrpl";
 
 // 2. Define the constants
 const AGENT_ADDRESS = "r4KgCNzn9ZuNjpf17DEHZnyyiqpuj599Wm"; // Agent underlying chain address
-const AMOUNT_XRP = "20.05"; // XRP amount to send
+const AMOUNT_XRP = "10.025"; // XRP amount to send
 const PAYMENT_REFERENCE =
   "4642505266410001000000000000000000000000000000000000000000f655fb"; // Reference
 
@@ -25,7 +25,13 @@ async function send20XrpWithReference() {
     // XRP amount to send
     Amount: xrpToDrops(AMOUNT_XRP),
     // Payment reference
-    InvoiceID: PAYMENT_REFERENCE, // Reference
+    Memos: [
+      {
+        Memo: {
+          MemoData: PAYMENT_REFERENCE,
+        },
+      },
+    ],
   };
 
   console.log(paymentTx);
