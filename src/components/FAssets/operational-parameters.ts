@@ -25,7 +25,7 @@ export const operationalParameters = [
       },
       {
         name: "Lot size",
-        settingName: "mintingCapAMG",
+        settingName: "lotSizeAMG",
         description: "Minimum quantity required for minting FAssets.",
         link: "/fassets/minting#lots",
         values: {
