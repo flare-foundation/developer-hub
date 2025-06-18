@@ -33,6 +33,24 @@ const config: Config = {
     locales: ["en"],
   },
 
+  // Experimental features in preparation for Docusaurus v4 upgrade
+  future: {
+    v4: {
+      removeLegacyPostBuildHeadAttribute: true,
+      useCssCascadeLayers: true,
+    },
+    experimental_faster: {
+      swcJsLoader: true,
+      swcJsMinimizer: true,
+      swcHtmlMinimizer: true,
+      lightningCssMinimizer: true,
+      rspackBundler: true,
+      rspackPersistentCache: true,
+      ssgWorkerThreads: true,
+      mdxCrossCompilerCache: true,
+    },
+  },
+
   presets: [
     [
       "classic",
