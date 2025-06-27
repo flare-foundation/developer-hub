@@ -1,0 +1,439 @@
+---
+title: Creating and Using Custom Feeds
+tags: [intermediate, ftso, solidity]
+slug: custom-feeds
+description: Learn how to create, manage, and integrate custom data feeds with the FTSO.
+keywords:
+  [
+    ftso,
+    oracle,
+    custom feeds,
+    data feeds,
+    flare-time-series-oracle,
+    flare-network,
+    smart-contracts,
+    solidity,
+  ]
+sidebar_position: 6
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import PriceVerifierCustomFeedSol from "!!raw-loader!/examples/developer-hub-solidity/PriceVerifierCustomFeed.sol";
+import PriceVerificationTs from "!!raw-loader!/examples/developer-hub-javascript/PriceVerification.ts";
+
+## Introduction to Custom Feeds
+
+Custom Feeds extend the Flare Time Series Oracle (FTSO) by allowing developers to create on-chain feeds for arbitrary time-series data. Unlike standard FTSO feeds backed by a network of data providers, Custom Feeds derive their values from custom logic encoded in smart contracts. This enables a wider variety of data to be brought onto the Flare network, such as prices for Liquid Staked Tokens (LSTs), data from specific off-chain APIs, or other bespoke datasets.
+
+As part of Flare Improvement Proposal FIP.13, the Flare Time Series Oracle (FTSO) was enhanced to support [**Custom Feeds**](https://flare.network/news/introduce-custom-feeds-to-ftso). While standard FTSO feeds are secured by the entire network of data providers, Custom Feeds allow developers to create their own on-chain data feeds from any API, secured by a smart contract they control.
+
+This innovation significantly expands the FTSO's capabilities beyond traditional price data, enabling more accurate collateral valuation, reliable liquidation mechanisms, and a broader range of on-chain data for the DeFi ecosystem.
+
+It is important to note that Custom Feeds have a different risk profile. Their security depends on the logic of the specific smart contract implementation. Users and developers must assess each Custom Feed individually to understand how it affects their application's security.
+
+This guide demonstrates how to build a custom price feed that uses the Flare Data Connector (FDC) to fetch data from an external API, verify it on-chain, and make it available to other smart contracts.
+
+## Prerequisites
+
+- A conceptual understanding of smart contracts and Solidity.
+- Familiarity with TypeScript/JavaScript and Node.js.
+- Hardhat development environment set up.
+- Knowledge of the FTSO and an overview of the Flare Data Connector (FDC).
+- Environment variables set up for `WEB2JSON_VERIFIER_URL_TESTNET`, `VERIFIER_API_KEY_TESTNET`, and `COSTON2_DA_LAYER_URL` as used in the `PriceVerification.ts` script.
+
+<Tabs groupId="custom-feeds-guide">
+<TabItem value="concepts" label="Concepts" default>
+
+## The `IICustomFeed` Interface
+
+Any custom feed smart contract must implement the `IICustomFeed` interface, defined in the `@flarenetwork/flare-periphery-contracts` package. This ensures compatibility with the FTSO system. Key functions include:
+
+- `feedId() external view returns (bytes21 _feedId)`: Returns the unique identifier for the feed.
+- `read() public view returns (uint256 value)`: Returns the latest value of the feed.
+- `decimals() external view returns (int8)`: Returns the number of decimals for the feed's value.
+- `calculateFee() external pure returns (uint256 _fee)`: Calculates the fee for reading the feed (can be 0).
+- `getCurrentFeed() external payable returns (uint256 _value, int8 _decimals, uint64 _timestamp)`: A primary way to retrieve the current feed data.
+
+Our example `PriceVerifierCustomFeed.sol` implements these methods.
+
+## Understanding the `PriceVerifierCustomFeed.sol` Contract
+
+The `PriceVerifierCustomFeed.sol` contract is designed to store a historical price for a crypto asset and allow this price to be updated by verifying a proof from the Web2Json FDC module. It then exposes this price through the `IICustomFeed` interface.
+
+### Key Components:
+
+- **State Variables**:
+  The contract maintains several state variables to store its configuration and latest data:
+
+  ```solidity
+  // --- State Variables ---
+  bytes21 public immutable feedIdentifier;
+  string public expectedSymbol;
+  int8 public decimals_;
+  uint256 public latestVerifiedPrice;
+
+  address public owner;
+  // Mapping from symbol hash (e.g., keccak256("BTC")) to CoinGecko ID (e.g., "bitcoin")
+  mapping(bytes32 => string) public symbolToCoinGeckoId;
+  ```
+
+  - `feedIdentifier`: The unique ID for this custom feed.
+  - `expectedSymbol`: The asset symbol this feed tracks (e.g., "BTC").
+  - `decimals_`: The precision for the price.
+  - `latestVerifiedPrice`: Stores the most recent verified price.
+  - `owner`: The address that deployed the contract, with privileges to update mappings.
+  - `symbolToCoinGeckoId`: Maps the hash of a human-readable symbol to an API-specific identifier (CoinGecko IDs).
+
+- **Constructor**:
+  The constructor initializes the feed's immutable properties and sets up initial CoinGecko ID mappings for common assets.
+
+  ```solidity
+  constructor(
+      bytes21 _feedId,
+      string memory _expectedSymbol,
+      int8 _decimals
+  ) {
+      // ... validation logic ...
+      owner = msg.sender;
+      feedIdentifier = _feedId;
+      expectedSymbol = _expectedSymbol;
+      decimals_ = _decimals;
+
+      // Initialize default CoinGecko IDs
+      _setCoinGeckoIdInternal("BTC", "bitcoin");
+      _setCoinGeckoIdInternal("ETH", "ethereum");
+
+      // Ensure the expected symbol has a mapping at deployment time
+      require(
+          bytes(symbolToCoinGeckoId[keccak256(abi.encodePacked(_expectedSymbol))]).length > 0,
+          "Initial symbol not mapped"
+      );
+  }
+  ```
+
+- **`verifyPrice(IWeb2Json.Proof calldata _proof)` Function**:
+  This is the core function for updating the feed's value. It takes a proof object from the Web2Json verifier and performs several checks before updating the price.
+
+  ```solidity
+  function verifyPrice(IWeb2Json.Proof calldata _proof) external {
+      // 1. Extract the CoinGecko ID from the URL in the proof
+      string memory extractedCoinGeckoId = _extractCoinGeckoIdFromUrl(_proof.data.requestBody.url);
+
+      // 2. Get the expected CoinGecko ID from the internal mapping
+      string memory expectedCoinGeckoId = symbolToCoinGeckoId[keccak256(abi.encodePacked(expectedSymbol))];
+      require(bytes(expectedCoinGeckoId).length > 0, "CoinGecko ID not mapped");
+
+      // 3. Verify the extracted ID matches the expected one
+      require(keccak256(abi.encodePacked(extractedCoinGeckoId)) == keccak256(abi.encodePacked(expectedCoinGeckoId)), "CoinGecko ID mismatch");
+
+      // 4. Verify the proof using the FDC Verification contract (statically)
+      require(ContractRegistry.getFdcVerification().verifyJsonApi(_proof), "FDC: Invalid Web2Json proof");
+
+      // 5. Decode the price data from the response body
+      PriceData memory newPriceData = abi.decode(_proof.data.responseBody.abiEncodedData, (PriceData));
+
+      // 6. Store the verified price
+      latestVerifiedPrice = newPriceData.price;
+
+      emit PriceVerified(expectedSymbol, newPriceData.price, _proof.data.requestBody.url);
+  }
+  ```
+
+  The function ensures the proof is for the correct CoinGecko ID, verifies the proof's authenticity using the FDC, decodes the price, stores it, and emits an event.
+
+- **`IICustomFeed` Implementation**:
+  The contract implements the required `IICustomFeed` methods. For example, `read()` and `getCurrentFeed()` return the stored price data. Note that `getCurrentFeed` returns a timestamp of `0` as this example does not track it.
+
+  ```solidity
+  function read() public view override returns (uint256 value) {
+      return latestVerifiedPrice;
+  }
+
+  function decimals() external view override returns (int8) {
+      return decimals_;
+  }
+
+  function feedId() external view override returns (bytes21 _feedId) {
+      return feedIdentifier;
+  }
+
+  function getCurrentFeed() external payable override returns (uint256 _value, int8 _decimals, uint64 _timestamp) {
+      // This example does not charge a fee, so msg.value is not checked
+      return (latestVerifiedPrice, decimals_, 0); // Timestamp is not tracked in this version
+  }
+
+  function calculateFee() external pure override returns (uint256 _fee) {
+      return 0; // No fee for this example custom feed
+  }
+  ```
+
+- **URL Parsing (`_extractCoinGeckoIdFromUrl`)**:
+  A helper function to extract the CoinGecko ID from the API URL string. This is crucial for ensuring the proof corresponds to the correct data source. It is implemented to be robust against variations in the URL structure.
+
+  ```solidity
+  function _extractCoinGeckoIdFromUrl(
+      string memory _url
+  ) internal pure returns (string memory) {
+      // Example URL: "https://api.coingecko.com/api/v3/coins/bitcoin/history?date=DD-MM-YYYY"
+      // We want to extract "bitcoin"
+      bytes memory urlBytes = bytes(_url);
+      bytes memory prefix = bytes("/coins/");
+      bytes memory suffix = bytes("/history");
+
+      uint256 startIndex = _indexOf(urlBytes, prefix);
+      // ... (implementation using _indexOf and slice helpers) ...
+      return string(slice(urlBytes, startIndex, endIndex));
+  }
+  ```
+
+Below is the full `PriceVerifierCustomFeed.sol` contract for your reference:
+
+<details>
+  <summary>
+    View Full <code>PriceVerifierCustomFeed.sol</code> Contract
+  </summary>
+  <CodeBlock
+    language="solidity"
+    title="/examples/developer-hub-solidity/PriceVerifierCustomFeed.sol"
+  >
+    {PriceVerifierCustomFeedSol}
+  </CodeBlock>
+</details>
+
+## Understanding the `PriceVerification.ts` Script
+
+The `PriceVerification.ts` script automates fetching data from CoinGecko via the FDC and submitting it to our `PriceVerifierCustomFeed` contract.
+
+1.  **Configuration**:
+    The script starts by defining essential configuration variables, including API details, JQ filters for processing JSON, and ABI signatures for data encoding.
+
+    ```typescript
+    const priceSymbol = "BTC";
+    const priceDecimals = 2;
+    const coinGeckoIds: { [key: string]: string } = {
+      BTC: "bitcoin",
+      ETH: "ethereum",
+    };
+    // ...
+    const dateToFetch = new Date();
+    dateToFetch.setDate(dateToFetch.getDate() - 2); // Get a recent historical date
+    // ...
+    const fullApiUrl = `https://api.coingecko.com/api/v3/coins/${coinGeckoId}/history`;
+    const postprocessJq = `{price: (.market_data.current_price.usd * ${10 ** priceDecimals} | floor)}`;
+    const abiSig = `{"components": [{"internalType": "uint256","name": "price","type": "uint256"}],"internalType": "struct PriceData","name": "priceData","type": "tuple"}`;
+    const stringifiedQueryParams = JSON.stringify({
+      date: dateString,
+      localization: "false",
+    });
+    ```
+
+2.  **`deployAndVerifyContract()` Function**:
+    This function handles the deployment of the `PriceVerifierCustomFeed` contract and its verification on a block explorer. It constructs the `feedId` from the symbol.
+
+    ```typescript
+    async function deployAndVerifyContract(): Promise<PriceVerifierCustomFeedInstance> {
+      const feedIdString = `${priceSymbol}/USD-HIST`;
+      const feedIdHex = toUtf8HexString(feedIdString)
+        .substring(2)
+        .substring(0, 40);
+      const finalFeedIdHex = `0x21${feedIdHex}`; // 0x21 = Custom Crypto Feed
+
+      const customFeedArgs: any[] = [
+        finalFeedIdHex,
+        priceSymbol,
+        priceDecimals,
+      ];
+      const customFeed: PriceVerifierCustomFeedInstance =
+        await PriceVerifierCustomFeed.new(...customFeedArgs);
+
+      // ... (wait and then run hardhat verify task)
+      return customFeed;
+    }
+    ```
+
+3.  **`prepareAttestationRequests()` Function**:
+    This function calls the Web2Json verifier's `/prepareRequest` endpoint to get an ABI-encoded attestation request. It uses helpers from a base FDC example file.
+
+    ```typescript
+    async function prepareAttestationRequests(
+      transactions: AttestationRequest[],
+    ) {
+      // ... (loops through requests and calls prepareWeb2JsonAttestationRequest)
+      const responseData = await prepareWeb2JsonAttestationRequest(transaction);
+      // ...
+      return data; // Map of source to abiEncodedRequest
+    }
+    ```
+
+4.  **`submitAttestationRequests()` Function**:
+    Submits the ABI-encoded request(s) to the FDC, which returns a `roundId`.
+
+    ```typescript
+    async function submitAttestationRequests(data: Map<string, string>) {
+      // ... (interacts with FDC contract to submit request and get roundId)
+      const transaction = await fdcHub.requestAttestation(abiEncodedRequest, {
+        value: requestFee,
+      });
+      const roundId = await calculateRoundId(transaction);
+      // ...
+      return roundIds; // Map of source to roundId
+    }
+    ```
+
+5.  **`retrieveDataAndProofsWithRetry()` Function**:
+    After a delay, this queries the Data Availability (DA) layer using the `abiEncodedRequest` and `roundId` to get the data and its Merkle proof. It includes logic to wait for the voting round to be finalized.
+
+    ```typescript
+    async function retrieveDataAndProofsWithRetry(
+      data: Map<string, string>,
+      roundIds: Map<string, number>,
+    ) {
+      // ... (waits for round finalization)
+      while (!(await relay.isFinalized(protocolId, roundId))) {
+        await sleep(10000);
+      }
+      // ... (queries DA layer with retry logic)
+      return proofs;
+    }
+    ```
+
+6.  **`submitDataAndProofsToCustomFeed()` Function**:
+    This function first prepares the raw proof from the DA layer into the structure expected by the smart contract, then calls `verifyPrice()`.
+    ```typescript
+    async function submitDataAndProofsToCustomFeed(
+      customFeed: PriceVerifierCustomFeedInstance,
+      proof: any,
+    ) {
+      const tx = await customFeed.verifyPrice(proof);
+      console.log(`Proof for ${priceSymbol}Price submitted successfully...`);
+    }
+    // It is called from main after preparing the proof:
+    const decodedData = await prepareDataAndProofs(proofs);
+    const proof = {
+      merkleProof: proofs.get("web2json").proof,
+      data: decodedData.data,
+    };
+    await submitDataAndProofsToCustomFeed(customFeed, proof);
+    ```
+
+Below is the full `PriceVerification.ts` script for your reference:
+
+<details>
+  <summary>
+    View Full <code>PriceVerification.ts</code> Script
+  </summary>
+  <CodeBlock
+    language="typescript"
+    title="/examples/developer-hub-javascript/PriceVerification.ts"
+  >
+    {PriceVerificationTs}
+  </CodeBlock>
+</details>
+
+</TabItem>
+<TabItem value="hardhat-walkthrough" label="Hardhat Starter Walkthrough">
+
+This guide walks you through using the [Flare Hardhat Starter](https://github.com/flare-foundation/flare-hardhat-starter) to deploy and interact with a custom price feed.
+
+### 1. Clone the Starter Project
+
+First, clone the `flare-hardhat-starter` repository and navigate into the project directory:
+
+```bash
+git clone https://github.com/flare-foundation/flare-hardhat-starter.git
+cd flare-hardhat-starter
+```
+
+### 2. Install Dependencies
+
+Install the project dependencies using `yarn` or `npm`:
+
+```bash
+yarn install
+# or
+npm install
+```
+
+### 3. Set Up Environment Variables
+
+Copy the example environment file and update it with your own credentials.
+
+```bash
+cp .env.example .env
+```
+
+You will need to provide the following:
+
+- `PRIVATE_KEY`: The private key of the account you want to use for deployment on the Coston2 testnet. This account must be funded with C2FLR tokens from the [Coston2 Faucet](https://faucet.flare.network/coston2).
+- `WEB2JSON_VERIFIER_URL_TESTNET`: The URL for the Web2Json Verifier service. You can leave the default value.
+- `VERIFIER_API_KEY_TESTNET`: An API key for the verifier service. You can get one from the [Flare Developer Portal](https://portal.flare.network/).
+- `COSTON2_DA_LAYER_URL`: The URL for the Data Availability Layer on Coston2. You can leave the default value.
+
+:::danger
+Never commit your `.env` file or share your private keys.
+:::
+
+### 4. Run the Verification Script
+
+The `PriceVerification.ts` script, located in the `scripts/customFeeds/` directory, automates the entire process:
+
+1.  Deploys the `PriceVerifierCustomFeed.sol` contract.
+2.  Prepares an attestation request for the CoinGecko API.
+3.  Submits the request to the Flare Data Connector (FDC).
+4.  Waits for the attestation to be finalized.
+5.  Retrieves the proof from the Data Availability layer.
+6.  Submits the proof to the deployed `PriceVerifierCustomFeed` contract.
+
+Execute the script on the `coston2` network:
+
+```bash
+npx hardhat run scripts/customFeeds/PriceVerification.ts --network coston2
+```
+
+### 5. Understanding the Output
+
+The script will log its progress to the console. A successful run will look like this:
+
+```text
+Deploying PriceVerifierCustomFeed...
+PriceVerifierCustomFeed deployed to: 0x... (contract address)
+
+Preparing data...
+// ... (attestation request details)
+
+Submitting attestation requests...
+// ... (transaction details)
+
+Waiting for round 12345 to be finalized...
+Round finalized.
+
+Retrieving proofs...
+// ... (proof details)
+
+Submitting proof to custom feed...
+Proof for BTCPrice submitted successfully...
+
+Latest verified price: 12345
+Price verification process completed successfully.
+```
+
+### 6. Verify on Explorer
+
+Once the script completes, you can view your deployed contract on the [Coston2 Block Explorer](https://coston2-explorer.flare.network/). Use the contract address from the logs to look it up. You can use the **Read Contract** tab to call the `latestVerifiedPrice()` function and see the price that was stored on-chain.
+
+</TabItem>
+</Tabs>
+
+## Proposing a New Custom Feed
+
+Developers can propose a new Custom Feed by submitting a New Feed Request via the [Flare Developer Hub GitHub](https://github.com/flare-foundation/developer-hub). The request should include a business justification and a link to the verified contract. The Flare Foundation will then review the request for eligibility.
+
+## Conclusion
+
+You have now learned how to create a custom FTSO feed using `PriceVerifierCustomFeed.sol`, which sources data from an external API via the Web2Json FDC module. The `PriceVerification.ts` script demonstrates the off-chain process required to fetch, prove, and submit this data to your custom feed contract. This powerful mechanism allows developers to bring diverse and verifiable data onto the Flare network, greatly expanding the possibilities for DeFi and other on-chain applications.
+
+Remember that the security of a Custom Feed depends on the logic within its smart contract and the reliability of its data source and verification mechanism. Always carefully review and test your custom feed implementations.
+
+Once the script completes, you can view your deployed contract on the [Coston2 Block Explorer](https://coston2-explorer.flare.network/). Use the contract address from the logs to look it up. You can use the **Read Contract** tab to call the `latestVerifiedPrice()` function and see the price that was stored on-chain.
