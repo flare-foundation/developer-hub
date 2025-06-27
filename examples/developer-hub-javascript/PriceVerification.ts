@@ -15,12 +15,8 @@ import {
   postRequestToDALayer,
   sleep,
 } from "../fdcExample/Base";
-import { IWeb2JsonVerification } from "../../typechain-types";
 
 const PriceVerifierCustomFeed = artifacts.require("PriceVerifierCustomFeed");
-const IWeb2JsonVerificationArtifact = artifacts.require(
-  "IWeb2JsonVerification",
-);
 
 const {
   WEB2JSON_VERIFIER_URL_TESTNET,
