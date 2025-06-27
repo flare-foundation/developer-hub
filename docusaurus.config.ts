@@ -33,6 +33,12 @@ const config: Config = {
     locales: ["en"],
   },
 
+  // Experimental features in preparation for Docusaurus v4 upgrade
+  future: {
+    v4: true,
+    experimental_faster: true,
+  },
+
   presets: [
     [
       "classic",
