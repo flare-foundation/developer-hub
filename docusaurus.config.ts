@@ -77,7 +77,15 @@ const config: Config = {
       defaultMode: "light",
       respectPrefersColorScheme: true,
     },
-
+    headTags: [
+      {
+        tagName: "meta",
+        attributes: {
+          name: "google-site-verification",
+          content: "S7ko-mhGTnZdYIIAcKUa-IsjtF8x-0wvleX2uDUg0NU",
+        },
+      },
+    ],
     docs: {
       sidebar: {
         autoCollapseCategories: false,
