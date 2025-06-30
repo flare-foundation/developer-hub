@@ -192,8 +192,8 @@ async function retrieveDataAndProofsWithRetry(
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function prepareDataAndProofs(data: Map<string, any>) {
-  // eslint-disable-line @typescript-eslint/no-explicit-any
   const IWeb2JsonVerification = await artifacts.require(
     "IWeb2JsonVerification",
   );
