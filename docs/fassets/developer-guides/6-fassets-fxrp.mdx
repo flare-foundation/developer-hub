@@ -1,0 +1,95 @@
+---
+title: Get FXRP Address
+tags: [intermediate, fassets]
+slug: fassets-fxrp-address
+description: Learn how to get FXRP address for interacting with the FAssets system
+keywords: [fassets, flare-network, fxrp, asset-manager]
+sidebar_position: 6
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import Remix from "@site/src/components/remix";
+import FAssetsSwapAndRedeemContract from "!!raw-loader!/examples/developer-hub-solidity/FAssetsSwapAndRedeem.sol";
+import FAssetsGetFxrpScript from "!!raw-loader!/examples/developer-hub-javascript/fassets_get_fxrp.ts";
+import RedemptionProcessPrerequisites from "./_redemption_process_prerequisites.mdx";
+
+## Overview
+
+In this guide, you will learn how to get the [FXRP](/fassets/reference) address for the FAssets system.
+FXRP is the ERC-20 representation of XRP on the Flare network, enabling you to use XRP in smart contracts and DeFi applications.
+
+## Prerequisites
+
+Before you begin, make sure you have:
+
+- [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit) installed and configured.
+- [Flare Network Periphery Contracts](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts) installed in your project.
+- Basic understanding of [FAssets](/fassets/overview) and how they work.
+
+## Understanding FXRP Address
+
+The FXRP address is the contract address of the [ERC-20 token](https://ethereum.org/en/developers/docs/standards/tokens/erc-20/) that represents XRP on the Flare network and is essential for:
+
+- Interacting with FXRP in smart contracts.
+- Transferring FXRP tokens.
+- Participating in DeFi protocols that use FXRP.
+
+## Getting the FXRP Address
+
+To get the FXRP address, you need to interact with the `AssetManager` contract using the [`IAssetManager`](/fassets/reference/IAssetManager) interface and call the [`fAsset`](/fassets/reference/IAssetManager#fasset) function.
+This function returns the address of the FAsset token contract (ERC-20) that is managed by this asset manager instance.
+
+### Script Code
+
+The following TypeScript script demonstrates how to retrieve the FXRP address:
+
+<CodeBlock language="javascript" title="scripts/fassets/getFXRP.ts">
+  {FAssetsGetFxrpScript}
+</CodeBlock>
+
+### Code Explanation
+
+The script:
+
+1. Connects to the `AssetManager` contract using the [`IAssetManager`](/fassets/reference/IAssetManager) interface.
+2. Calls the [`fAsset()`](/fassets/reference/IAssetManager#fasset) function to get the FXRP token address.
+3. Logs the address to the console.
+
+### Run the Script
+
+To run the script, use the following command:
+
+```bash
+yarn hardhat run scripts/fassets/getFXRP.ts --network coston2
+```
+
+The script will output the FXRP address for the FAssets system on the Coston2 network:
+
+```bash
+FXRP address 0x8b4abA9C4BD7DD961659b02129beE20c6286e17F
+```
+
+:::note Network Addresses
+The FXRP address will be different depending on which network you are using.
+:::
+
+## Using the FXRP Address
+
+Once you have the FXRP address, you can:
+
+1. Use it in your smart contracts to interact with FXRP
+2. Add it to your wallet to track FXRP balances
+3. Use it in DeFi protocols that support FXRP
+
+:::tip Next Steps
+
+In this guide, you learned how to get the FXRP address for the FAssets system by interacting with the `AssetManager` contract using the [`IAssetManager`](/fassets/reference/IAssetManager) interface.
+
+To continue your FAssets development journey, you can:
+
+- Learn how to [mint FXRP](/fassets/developer-guides/fassets-mint).
+- Understand how to [redeem FXRP](/fassets/developer-guides/fassets-redeem).
+- Explore [FAssets system settings](/fassets/operational-parameters).
+- Check the [lot size](/fassets/developer-guides/fassets-settings-node) for FXRP operations.
+
+:::

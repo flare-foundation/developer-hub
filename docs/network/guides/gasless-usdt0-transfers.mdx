@@ -15,7 +15,7 @@ import USD0 from "!!raw-loader!/examples/developer-hub-javascript/USD0.json";
 Flare's USD₮0 integration enables native, gasless USDT transfers (also known as meta-transactions) on the Flare network, allowing your end-users to avoid paying gas fees directly.
 In this guide, you will build a system for gasless USD₮0 transfers:
 
-1. A **frontend application** where users authorize token transfers by signing a message, without needing to submit an on-chain transaction themselves.
+1. A **frontend application** where users authorize token transfers by signing a message, without needing to submit an onchain transaction themselves.
 2. A **backend relayer service** that takes this signed authorization and submits the actual transaction to the Flare network, covering the gas fees on the user's behalf.
 
 This powerful pattern significantly enhances user experience by abstracting away the complexities and costs of network gas fees.
@@ -40,12 +40,12 @@ This ensures transparent offchain signing.
 ### EIP-3009: Transfer with Authorization
 
 [EIP-3009](https://eips.ethereum.org/EIPS/eip-3009) extends the ERC-20 token standard to include support for meta-transactions.
-It allows a token holder to sign an authorization message offchain, which can then be relayed by another account (the relayer) to execute the transfer on-chain.
-The relayer pays the gas fees for this on-chain execution.
+It allows a token holder to sign an authorization message offchain, which can then be relayed by another account (the relayer) to execute the transfer onchain.
+The relayer pays the gas fees for this onchain execution.
 
 EIP-3009 introduces two key functions, including:
 
-- **`transferWithAuthorization`**: This function moves tokens from the from address (the authorizer) to the to address.
+- **`transferWithAuthorization`**: This function moves tokens from the `from` address (the authorizer) to the `to` address.
   It only executes if the provided signature `(v, r, s)` correctly matches the `from` address for the given payload, the current blockchain time is within the `validAfter` and `validBefore` timestamps, and the unique `nonce` has not been previously used by the `from` address for this contract.
 
   ```solidity

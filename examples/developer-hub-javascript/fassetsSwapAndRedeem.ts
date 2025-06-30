@@ -1,4 +1,4 @@
-// 1. Dependancies and constants
+// 1. Dependencies and constants
 import { run } from "hardhat";
 
 import { SwapAndRedeemInstance } from "../../typechain-types";

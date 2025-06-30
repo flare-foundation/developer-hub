@@ -4,7 +4,7 @@ tags: [intermediate, fassets]
 slug: fassets-redeem
 description: Learn how to redeem FAssets
 keywords: [fassets, flare-network]
-sidebar_position: 3
+sidebar_position: 2
 ---
 
 import CodeBlock from "@theme/CodeBlock";
@@ -288,6 +288,16 @@ Once decoding the most important data from the event is:
 - value of the redemption ticket in underlying chain currency is `3440000000` (partially redeemed).
 
 You can read the full event description [here](/fassets/reference/IAssetManagerEvents#redemptionticketupdated).
+
+### Agent Process
+
+The FAssets agent should perform the redemption, and the user needs to get the redeemed assets from the agent.
+
+If the agent is unable to redeem the assets on the underlying chain in the specified time.
+In that case, the user can execute the [`redemptionPaymentDefault`](/fassets/reference/IAssetManager#redemptionpaymentdefault) function to receive compensation from agent's collateral.
+
+If the agent rejects the redemption request and no other agent takes over the redemption, the redeemer or appointed executor calls [`rejectedRedemptionPaymentDefault`](/fassets/reference/IAssetManager#rejectedredemptionpaymentdefault) method and receives payment in collateral.
+The agent can also call default if the redeemer is unresponsive to payout the redeemer and free the remaining collateral.
 
 ## Next Steps
 
