@@ -2,7 +2,6 @@ import { artifacts, web3, run } from "hardhat";
 import {
   PriceVerifierCustomFeedInstance,
   IRelayInstance,
-  IFdcVerificationInstance,
 } from "../../typechain-types";
 import {
   prepareAttestationRequestBase,
@@ -11,7 +10,6 @@ import {
   calculateRoundId,
   toUtf8HexString,
   getRelay,
-  getFdcVerification,
   postRequestToDALayer,
   sleep,
 } from "../fdcExample/Base";
@@ -30,7 +28,7 @@ type AttestationRequest = {
   verifierUrlBase: string;
   verifierApiKey: string;
   urlTypeBase: string;
-  data: any;
+  data: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 };
 
 const priceSymbol = "BTC";
@@ -141,15 +139,13 @@ async function retrieveDataAndProofs(
   roundIds: Map<string, number>,
 ) {
   console.log("\nRetrieving data and proofs...\n");
-  const proofs: Map<string, any> = new Map();
+  const proofs: Map<string, any> = new Map(); // eslint-disable-line @typescript-eslint/no-explicit-any
   const url = `${COSTON2_DA_LAYER_URL}api/v1/fdc/proof-by-request-round-raw`;
   console.log("Url:", url, "\n");
   for (const [source, roundId] of roundIds.entries()) {
     console.log(`(${source})\n`);
     console.log("Waiting for the round to finalize...");
     const relay: IRelayInstance = await getRelay();
-    const fdcVerification: IFdcVerificationInstance =
-      await getFdcVerification();
     const protocolId = 200;
     console.log("Protocol ID:", protocolId);
     while (!(await relay.isFinalized(protocolId, roundId))) {
@@ -197,6 +193,7 @@ async function retrieveDataAndProofsWithRetry(
 }
 
 async function prepareDataAndProofs(data: Map<string, any>) {
+  // eslint-disable-line @typescript-eslint/no-explicit-any
   const IWeb2JsonVerification = await artifacts.require(
     "IWeb2JsonVerification",
   );
@@ -221,7 +218,7 @@ async function deployAndVerifyContract(): Promise<PriceVerifierCustomFeedInstanc
       `Generated feed ID has incorrect length: ${finalFeedIdHex.length}. Expected 44 characters (0x + 42 hex). Feed string: ${feedIdString}`,
     );
   }
-  const customFeedArgs: any[] = [finalFeedIdHex, priceSymbol, priceDecimals];
+  const customFeedArgs: any[] = [finalFeedIdHex, priceSymbol, priceDecimals]; // eslint-disable-line @typescript-eslint/no-explicit-any
   const customFeed: PriceVerifierCustomFeedInstance =
     await PriceVerifierCustomFeed.new(...customFeedArgs);
   console.log(`PriceVerifierCustomFeed deployed to: ${customFeed.address}\n`);
@@ -246,7 +243,7 @@ async function deployAndVerifyContract(): Promise<PriceVerifierCustomFeedInstanc
 
 async function submitDataAndProofsToCustomFeed(
   customFeed: PriceVerifierCustomFeedInstance,
-  proof: any,
+  proof: any, // eslint-disable-line @typescript-eslint/no-explicit-any
 ) {
   console.log("Proof from submitDataAndProofsToCustomFeed:", proof);
   const tx = await customFeed.verifyPrice(proof);
