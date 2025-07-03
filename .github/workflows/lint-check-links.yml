@@ -5,25 +5,62 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
-  build:
-    name: Lint and Check Links
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
+          cache: "npm"
       - name: Install dependencies
         run: npm ci
-      - name: Lint with ESLint
+      - name: Run ESLint
         run: npm run lint
-      - name: Build website
-        run: npm run build
-      - name: Prettier Code
-        run: npm run format:diff
-      - name: Check types
+
+  typecheck:
+    name: TypeScript Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+      - name: Install dependencies
+        run: npm ci
+      - name: Run typecheck
         run: npm run typecheck
+
+  format-check:
+    name: Format with Prettier
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+      - name: Install dependencies
+        run: npm ci
+      - name: Run Prettier check
+        run: npm run format:check
+
+  build-and-link-check:
+    name: Build & Link Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+      - name: Install dependencies
+        run: npm ci
+      - name: Build Docusaurus site
+        run: npm run build
