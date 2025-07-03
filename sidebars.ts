@@ -181,6 +181,7 @@ const sidebars: SidebarsConfig = {
                 },
               ],
             },
+            "fdc/guides/fdc-by-hand",
           ],
         },
         {

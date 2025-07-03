@@ -1,6 +1,7 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { ethers, Eip1193Provider } from "ethers";
 import USD0Abi from "./USD0.json";
+import Heading from "@theme/Heading";
 
 // Environment variables
 const USD0_ADDRESS = import.meta.env.VITE_USD0_ADDRESS!;
@@ -92,7 +93,7 @@ export default function App() {
 
   return (
     <div style={{ padding: 20, maxWidth: 400 }}>
-      <h1>Gasless USD₮0 Demo</h1>
+      <Heading as="h1">Gasless USD₮0 Demo</Heading>
       <input
         placeholder="Recipient address"
         value={to}
