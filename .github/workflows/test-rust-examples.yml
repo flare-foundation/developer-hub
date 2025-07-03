@@ -14,11 +14,20 @@ jobs:
         working-directory: ./examples/developer-hub-rust
     steps:
       - uses: actions/checkout@v4
-      - name: Install dependencies
-        run: cargo build
+      
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
       - name: Format with rustfmt
         run: cargo fmt -- --check
+      
       - name: Lint with clippy
         run: cargo clippy -- -D warnings
+      
       - name: Run tests
         run: ./test.sh
