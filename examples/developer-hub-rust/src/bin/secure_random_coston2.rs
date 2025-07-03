@@ -25,8 +25,8 @@ async fn main() -> Result<()> {
         _randomTimestamp,
     } = random_v2.getRandomNumber().call().await?;
     // Print results
-    println!("Random Number: {:?} ", _randomNumber);
-    println!("Is secure random: {:?} ", _isSecureRandom);
-    println!("Timestamp: {:?} ", _randomTimestamp);
+    println!("Random Number: {_randomNumber:?}");
+    println!("Is secure random: {_isSecureRandom:?}");
+    println!("Timestamp: {_randomTimestamp:?}");
     Ok(())
 }

@@ -26,8 +26,8 @@ async fn main() -> Result<()> {
     // Fetch current feeds
     let FtsoV2::getFeedsByIdReturn { _0, _1, _2 } = ftsov2.getFeedsById(feed_ids).call().await?;
     // Print results
-    println!("Feeds:{:?} ", _0);
-    println!("Decimals:{:?} ", _1);
-    println!("Timestamp:{:?} ", _2);
+    println!("Feeds:{_0:?}");
+    println!("Decimals:{_1:?}");
+    println!("Timestamp:{_2:?}");
     Ok(())
 }

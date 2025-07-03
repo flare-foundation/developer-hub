@@ -1,0 +1,273 @@
+---
+title: Create a Custom Feed
+tags: [intermediate, ftso, solidity]
+slug: create-custom-feed
+description: Bring any time-series data onchain with Custom Feeds.
+keywords:
+  [
+    ftso,
+    oracle,
+    custom feeds,
+    data feeds,
+    flare-time-series-oracle,
+    flare-network,
+    smart-contracts,
+    solidity,
+  ]
+sidebar_position: 6
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import PriceVerifierCustomFeedSol from "!!raw-loader!/examples/developer-hub-solidity/PriceVerifierCustomFeed.sol";
+import PriceVerificationTs from "!!raw-loader!/examples/developer-hub-javascript/PriceVerification.ts";
+import NewGithubIssue from "@site/src/components/newGithubIssue";
+
+Custom Feeds, introduced in [FIP.13](https://proposals.flare.network/FIP/FIP_13.html), extend the FTSO [block-latency feeds](/ftso/feeds) by enabling developers to create onchain feeds for arbitrary time-series data.
+Unlike standard FTSO feeds, which are secured by a decentralized network of data providers, Custom Feeds derive their values from logic defined in a developer-controlled smart contract.
+This expands the FTSO's capabilities beyond traditional price pairs, allowing for a wider variety of data to be brought onto the Flare network, such as prices for Liquid Staked Tokens (LSTs), data from specific offchain APIs, or other bespoke datasets.
+
+:::warning[Risk Profile]
+
+Each Custom Feed has a unique risk profile determined by its smart contract and data source, which users and developers must assess individually.
+
+:::
+
+This guide demonstrates how to build a Custom Feed feed that uses the [Flare Data Connector (FDC)](/fdc/overview) to fetch data from an external API, verify it onchain, and make it available to other smart contracts.
+
+## Prerequisites
+
+Before you begin, ensure you have:
+
+- A conceptual understanding of smart contracts and Solidity.
+- Familiarity with TypeScript/JavaScript and Node.js.
+- Hardhat development environment set up.
+- Knowledge of the FTSO and an overview of the Flare Data Connector (FDC).
+- Environment variables set up for `WEB2JSON_VERIFIER_URL_TESTNET`, `VERIFIER_API_KEY_TESTNET`, and `COSTON2_DA_LAYER_URL` as used in the `PriceVerification.ts` script.
+
+## Concepts
+
+### `IICustomFeed` Interface
+
+To ensure compatibility with the FTSO system, any custom feed contract must implement the `IICustomFeed` interface.
+This interface, found in the [`@flarenetwork/flare-periphery-contracts`](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts) package, acts as a standard entry point for consumers of the data.
+
+#### Key functions
+
+- `feedId() external view returns (bytes21 _feedId)`:Returns the feed's unique identifier. The first byte must be 0x21 to signify a custom feed.
+- `read() public view returns (uint256 value)`: Returns the latest value of the feed.
+- `decimals() external view returns (int8)`: Returns the number of decimals for the feed's value.
+- `calculateFee() external pure returns (uint256 _fee)`: Calculates the fee for reading the feed. This can be zero.
+- `getCurrentFeed() external payable returns (uint256 _value, int8 _decimals, uint64 _timestamp)`: The primary method for retrieving the current feed data, including value, decimals, and a timestamp.
+
+### Onchain contract: `PriceVerifierCustomFeed.sol`
+
+The `PriceVerifierCustomFeed.sol` contract is designed to store a historical price for a crypto asset and allow this price to be updated by verifying a proof from the [Web2Json](/fdc/attestation-types/web-2-json) FDC attestation type.
+It then exposes this price through the `IICustomFeed` interface.
+
+#### Key components
+
+- **State Variables**: The contract stores its configuration and the latest verified price.
+
+  ```solidity
+  // --- State Variables ---
+  bytes21 public immutable feedIdentifier; // Unique ID for this custom feed. ID, e.g., 0x21 + keccak256("BTC/USD-HIST")
+  string public expectedSymbol; // Asset symbol this feed tracks (e.g., "BTC").
+  int8 public decimals_; // Precision for the price.
+  uint256 public latestVerifiedPrice; // Stores the most recent verified price.
+  address public owner; // Address that deployed the contract, with privileges to update mappings.
+  ```
+
+- **Constructor**: Initializes the feed's immutable properties, such as its `feedIdentifier`, symbol, and decimals. It also sets up an initial mapping of asset symbols (e.g., "BTC") to API-specific identifiers (e.g., CoinGecko's "bitcoin").
+
+  ```solidity
+  constructor(
+      bytes21 _feedId,
+      string memory _expectedSymbol,
+      int8 _decimals
+  ) {
+      // ... validation logic ...
+      owner = msg.sender;
+      feedIdentifier = _feedId;
+      expectedSymbol = _expectedSymbol;
+      decimals_ = _decimals;
+      // ...
+  }
+  ```
+
+- **`verifyPrice(IWeb2Json.Proof calldata _proof)`**:
+  This is the heart of the contract.
+  It accepts a proof from the FDC and performs a series of checks before updating the `latestVerifiedPrice`.
+
+  1. **Parses the API URL** from the proof to ensure the data is from the expected source.
+
+  2. **Verifies the proof's authenticity** by calling the FDC's onchain `verifyJsonApi` function.
+
+  3. **Decodes the price data** from the proof's response body.
+
+  4. **Stores the new price** in the `latestVerifiedPrice` state variable.
+
+  5. **Emits an event** to log the update.
+
+  ```solidity
+  function verifyPrice(IWeb2Json.Proof calldata _proof) external {
+      require(ContractRegistry.getFdcVerification().verifyJsonApi(_proof), "FDC: Invalid Web2Json proof");
+
+      PriceData memory newPriceData = abi.decode(_proof.data.responseBody.abiEncodedData, (PriceData));
+      latestVerifiedPrice = newPriceData.price;
+
+      emit PriceVerified(expectedSymbol, newPriceData.price, _proof.data.requestBody.url);
+  }
+  ```
+
+- **`IICustomFeed` Implementation**:
+  The contract provides concrete implementations for the interface methods.
+  For example, `read()` and `getCurrentFeed()` simply return the latestVerifiedPrice and other stored data.
+
+<details>
+  <summary>
+    View full <code>PriceVerifierCustomFeed.sol</code> contract
+  </summary>
+  <CodeBlock
+    language="solidity"
+    title="/examples/developer-hub-solidity/PriceVerifierCustomFeed.sol"
+  >
+    {PriceVerifierCustomFeedSol}
+  </CodeBlock>
+</details>
+
+### Offchain script: `PriceVerification.ts`
+
+The `PriceVerification.ts` script automates fetching data from CoinGecko via the FDC and submitting it to your `PriceVerifierCustomFeed` contract.
+
+It follows these sequential steps:
+
+1. **Deploy Contract:** The script first deploys the `PriceVerifierCustomFeed.sol` contract to the network. It constructs the unique `feedId` by combining the `0x21` prefix with a hash of the asset string (e.g., "BTC/USD-HIST").
+
+2. **Prepare Attestation Request:** It constructs a request for the FDC [Web2Json](/fdc/attestation-types/web-2-json) attestation type, specifying the target API endpoint (CoinGecko), the parameters (which coin and date), and the JQ filter to extract the exact data point (the USD price) from the JSON response.
+
+3. **Submit Request to FDC:** The script sends this request to the FDC, which fetches the data, secures it through an attestation process, and makes a proof available.
+
+4. **Retrieve Proof:** After the attestation round is final, the script queries the [Data Availability (DA)](/fdc/reference/data-availability-api) layer to retrieve the finalized data and its corresponding Merkle proof.
+
+5. **Submit Proof to Custom Feed:** Finally, the script calls the `verifyPrice()` function on the deployed `PriceVerifierCustomFeed` contract, passing the retrieved proof. The contract then executes its verification logic and, if successful, updates the onchain price.
+
+<details>
+  <summary>
+    View full <code>PriceVerification.ts</code> script.
+  </summary>
+  <CodeBlock
+    language="typescript"
+    title="/examples/developer-hub-javascript/PriceVerification.ts"
+  >
+    {PriceVerificationTs}
+  </CodeBlock>
+</details>
+
+## Deploy and use a Custom feed
+
+This guide walks you through using the [Flare Hardhat Starter](https://github.com/flare-foundation/flare-hardhat-starter) to deploy and interact with a custom price feed.
+
+### 1. Clone the hardhat starter
+
+First, clone the [`flare-hardhat-starter`](https://github.com/flare-foundation/flare-hardhat-starter) repository and navigate into the project directory:
+
+```bash
+git clone https://github.com/flare-foundation/flare-hardhat-starter.git
+cd flare-hardhat-starter
+```
+
+### 2. Install dependencies
+
+Install the project dependencies using `npm` or `yarn`:
+
+```bash
+npm install # or yarn install
+```
+
+### 3. Set up environment variables
+
+Copy the example environment file and update it with your own credentials.
+
+```bash
+cp .env.example .env
+```
+
+You will need to provide the following:
+
+- `PRIVATE_KEY`: The private key of the account you want to use for deployment on the Coston2 testnet. This account must be funded with C2FLR tokens from the [Coston2 Faucet](https://faucet.flare.network/coston2).
+- `WEB2JSON_VERIFIER_URL_TESTNET`: The URL for the Web2Json Verifier service. You can leave the default value.
+- `VERIFIER_API_KEY_TESTNET`: An API key for the verifier service. You can get one from the [Flare Developer Portal](https://portal.flare.network/).
+- `COSTON2_DA_LAYER_URL`: The URL for the Data Availability Layer on Coston2. You can leave the default value.
+
+:::danger
+
+Never commit your `.env` file or share your private keys publicly.
+
+:::
+
+### 4. Run the verification script
+
+The `PriceVerification.ts` script, located in `scripts/customFeeds/`, automates the entire process. Execute it on the Coston2 Testnet:
+
+```bash
+npx hardhat run scripts/customFeeds/PriceVerification.ts --network coston2
+```
+
+The script will:
+
+1. Deploy the `PriceVerifierCustomFeed.sol` contract.
+2. Prepare an attestation request for the CoinGecko API.
+3. Submit the request to the Flare Data Connector (FDC).
+4. Wait for the attestation to be finalized.
+5. Retrieve the proof from the Data Availability layer.
+6. Submit the proof to the deployed `PriceVerifierCustomFeed` contract.
+
+### 5. Understanding the output
+
+The script will log its progress.
+A successful run will display the deployed contract address and the final verified price:
+
+```text
+Deploying PriceVerifierCustomFeed...
+PriceVerifierCustomFeed deployed to: 0x... (contract address)
+
+Preparing data...
+// ... (attestation request details)
+
+Submitting attestation requests...
+// ... (transaction details)
+
+Waiting for round 12345 to be finalized...
+Round finalized.
+
+Retrieving proofs...
+// ... (proof details)
+
+Submitting proof to custom feed...
+Proof for BTCPrice submitted successfully...
+
+Latest verified price: 12345
+Price verification process completed successfully.
+```
+
+### 6. Verify on explorer
+
+You can view your deployed contract on the [Coston2 Explorer](https://coston2-explorer.flare.network/).
+Use the contract address from the script's output to look it up. On the **Read Contract** tab, call the `latestVerifiedPrice()` function to confirm the price was stored onchain.
+
+## Propose a new Custom Feed
+
+If you have developed a Custom Feed that could benefit the wider ecosystem, you can propose it for official listing on the [Block-Latency Feeds](/ftso/feeds) page.
+To do so, submit a "New Feed Request" via an issue in the [Flare Developer Hub](https://github.com/flare-foundation/developer-hub) GitHub repository.
+The request should include a business justification and a link to the verified contract on a block explorer.
+The Flare Foundation will review the submission for eligibility.
+
+{/* prettier-ignore */}
+<NewGithubIssue issueType="feed_request">Propose Custom Feed</NewGithubIssue>
+
+## Conclusion
+
+You now have the tools to create FTSO Custom Feeds, bringing diverse, verifiable data from any API onto the Flare network.
+This capability greatly expands the possibilities for DeFi and other onchain applications.
+Remember, the security of your Custom Feed depends entirely on its smart contract logic and data verification process.
+Prioritize careful design and rigorous testing in your implementations.
