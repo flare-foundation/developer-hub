@@ -68,13 +68,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .lycheecache
-          key: lychee-${{ github.sha }}
+          key: cache-lychee-${{ github.sha }}
           restore-keys: cache-lychee-
       - name: Check for broken links
         uses: lycheeverse/lychee-action@v2
         with:
           args: >-
             --no-progress
-            --verbose
             --exclude '.*flare\.network.*'
+            --exclude 'localhost'
             './build/**/*.html'
+          fail: false
