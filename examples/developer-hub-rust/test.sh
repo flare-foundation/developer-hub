@@ -44,11 +44,7 @@ run_test() {
 }
 
 main() {
-    echo "--- Building all example binaries ---"
-    cargo build --bins
-    echo ""
-
-    echo "--- Running All Tests ---"
+    echo "--- Running Tests On Pre-Built Binaries ---"
     run_test "Coston2 Chain ID" "chain_id_coston2" "exact" "Chain ID: 114"
     run_test "Flare Chain ID" "chain_id_flare" "exact" "Chain ID: 14"
     run_test "Coston2 WNat Address" "make_query_coston2" "exact" "WNat address: 0xC67DCE33D7A8efA5FfEB961899C73fe01bCe9273"
