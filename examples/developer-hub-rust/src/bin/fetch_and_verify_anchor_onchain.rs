@@ -95,7 +95,7 @@ mod convert_type {
         // Convert hex to bytes using the hex crate
         let mut bytes = [0u8; 32];
         hex::decode_to_slice(clean_hex, &mut bytes)
-            .map_err(|e| format!("Hex decoding failed: {}", e))?;
+            .map_err(|e| format!("Hex decoding failed: {e}"))?;
 
         Ok(FixedBytes::<32>::from(bytes))
     }
@@ -154,7 +154,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .watch()
         .await?;
 
-    println!("Save Price transaction hash: {}", tx_hash);
+    println!("Save Price transaction hash: {tx_hash}");
 
     let feed_id: FixedBytes<21> = {
         let hex_str = BTC_USD_FEED_ID

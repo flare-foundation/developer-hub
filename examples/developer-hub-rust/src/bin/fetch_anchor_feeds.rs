@@ -22,7 +22,7 @@ pub async fn fetch_anchor_feed(
 
     let mut url = format!("{BASE_URL}api/v0/ftso/anchor-feeds-with-proof");
     if let Some(id) = voting_round_id {
-        url.push_str(&format!("?voting_round_id={}", id));
+        url.push_str(&format!("?voting_round_id={id}"));
     }
 
     let response = client
@@ -40,7 +40,7 @@ pub async fn fetch_anchor_feed(
 #[tokio::main]
 async fn main() {
     match fetch_anchor_feed(FEED_IDS, None).await {
-        Ok(data) => println!("Anchor feeds data: {:?}", data),
-        Err(err) => eprintln!("Error fetching anchor feeds: {}", err),
+        Ok(data) => println!("Anchor feeds data: {data:?}"),
+        Err(err) => eprintln!("Error fetching anchor feeds: {err}"),
     }
 }

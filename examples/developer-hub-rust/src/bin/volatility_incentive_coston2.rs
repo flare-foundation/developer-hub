@@ -39,13 +39,10 @@ async fn main() -> Result<()> {
         incentive.getRange().call().await?;
     let FastUpdatesIncentiveManager::getScaleReturn { _0: scale } =
         incentive.getScale().call().await?;
-    println!(
-        "Sample Size Increase Price: {:?} ",
-        sample_size_increase_price
-    );
-    println!("Current Sample Size: {:?} ", expected_sample_size);
-    println!("Current Range: {:?} ", range);
-    println!("Current Scale: {:?} ", scale);
+    println!("Sample Size Increase Price: {sample_size_increase_price:?}");
+    println!("Current Sample Size: {expected_sample_size:?}");
+    println!("Current Range: {range:?}");
+    println!("Current Scale: {scale:?}");
 
     // Offer the incentive
     let offer = FastUpdatesIncentiveManager::IncentiveOffer {
@@ -59,7 +56,7 @@ async fn main() -> Result<()> {
         .await?
         .watch()
         .await?;
-    println!("Offer Incentive Tx Hash: {:?}", tx_hash);
+    println!("Offer Incentive Tx Hash: {tx_hash:?}");
 
     // Get the new sample size increase price, sample size, range, and scale
     let FastUpdatesIncentiveManager::getCurrentSampleSizeIncreasePriceReturn {
@@ -72,12 +69,9 @@ async fn main() -> Result<()> {
         incentive.getRange().call().await?;
     let FastUpdatesIncentiveManager::getScaleReturn { _0: scale } =
         incentive.getScale().call().await?;
-    println!(
-        "Sample Size Increase Price: {:?} ",
-        sample_size_increase_price
-    );
-    println!("Current Sample Size: {:?} ", exp_sample_size);
-    println!("Current Range: {:?} ", range);
-    println!("Current Scale: {:?} ", scale);
+    println!("Sample Size Increase Price: {sample_size_increase_price:?} ");
+    println!("Current Sample Size: {exp_sample_size:?}");
+    println!("Current Range: {range:?}");
+    println!("Current Scale: {scale:?}");
     Ok(())
 }
