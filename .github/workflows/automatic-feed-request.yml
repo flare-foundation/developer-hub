@@ -8,8 +8,9 @@ on:
 permissions:
   contents: read
   issues: write
+
 jobs:
-  check_feeds:
+  check_and_report:
     name: Run automatic feed request
     runs-on: ubuntu-latest
     defaults:
@@ -18,9 +19,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v6
         with:
           version: "latest"
+          enable-cache: true
       - name: Install dependencies
         run: uv sync
       - name: Generate issues file

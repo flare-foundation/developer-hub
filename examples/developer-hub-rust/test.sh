@@ -1,109 +1,60 @@
 #!/bin/bash
 
-# Run the compiled Rust program and capture its output
-output=$(cargo run --bin chain_id_coston2)
+set -e
+set -o pipefail
 
-# Define the expected output
-expected_output="Chain ID: 114"
+run_test() {
+    local test_name="$1"
+    local binary_name="$2"
+    local check_type="$3"
+    shift 3 # Shift past the first three arguments
+    local expected_patterns=("$@") # The rest of the arguments are the patterns
 
-# Compare the captured output with the expected output
-if [ "$output" == "$expected_output" ]; then
-    echo "chain_id_coston2: Output matches expected output."
-else
-    echo "chain_id_coston2: Output does not match expected output."
-    exit 1
-fi
+    echo -n "Testing: $test_name... "
 
-output=$(cargo run --bin chain_id_flare)
-expected_output="Chain ID: 14"
-if [ "$output" == "$expected_output" ]; then
-    echo "chain_id_flare: Output matches expected output."
-else
-    echo "chain_id_flare: Output does not match expected output."
-    exit 1
-fi
+    # Run the compiled binary and capture its output
+    local output
+    output=$(./target/debug/"$binary_name" | tr -d '\0')
 
-output=$(cargo run --bin ftsov2_config_coston2 | tr -d '\0' )
-if echo "$output" | grep -q "feedId:"; then
-    echo "feedId matches in the output"
-else
-    echo "feedId does not match in output"
-    exit 1
-fi
+    if [ "$check_type" == "exact" ]; then
+        if [ "$output" == "${expected_patterns[0]}" ]; then
+            echo "[PASS]"
+        else
+            echo "[FAIL]"
+            echo "  Expected: '${expected_patterns[0]}'"
+            echo "  Got:      '$output'"
+            exit 1
+        fi
+    elif [ "$check_type" == "contains" ]; then
+        for pattern in "${expected_patterns[@]}"; do
+            if ! echo "$output" | grep -qF "$pattern"; then
+                echo "[FAIL]"
+                echo "  Output did not contain expected pattern: '$pattern'"
+                echo "  Full Output:"
+                echo "$output"
+                exit 1
+            fi
+        done
+        echo "[PASS]"
+    else
+        echo "[FAIL]"
+        echo "  Unknown check type: $check_type"
+        exit 1
+    fi
+}
 
-if echo "$output" | grep -q "rewardBandValue"; then
-    echo "rewardBandValue matches in the outpot"
-else
-    echo "rewardBandValue does not match in  the output"
-    exit 1
-fi
+main() {
+    echo "--- Running Tests On Pre-Built Binaries ---"
+    run_test "Coston2 Chain ID" "chain_id_coston2" "exact" "Chain ID: 114"
+    run_test "Flare Chain ID" "chain_id_flare" "exact" "Chain ID: 14"
+    run_test "Coston2 WNat Address" "make_query_coston2" "exact" "WNat address: 0xC67DCE33D7A8efA5FfEB961899C73fe01bCe9273"
+    run_test "Flare WNat Address" "make_query_flare" "exact" "WNat address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d"
+    run_test "FTSO V2 Config (Coston2)" "ftsov2_config_coston2" "contains" "feedId:" "rewardBandValue" "inflationShare"
+    run_test "FTSO V2 Consumer (Coston2)" "ftsov2_consumer_coston2" "contains" "Feeds:" "Decimals" "Timestamp"
+    run_test "Secure Random (Coston2)" "secure_random_coston2" "contains" "Random Number:" "Is secure random" "Timestamp"
 
-if echo "$output" | grep -q "inflationShare"; then
-    echo "inflationShare matches in the output"
-else
-    echo "inflationShare does not match in the output"
-    exit 1
-fi
+    echo ""
+    echo ">>> All tests passed successfully! <<<"
+}
 
-output=$(cargo run --bin ftsov2_consumer_coston2)
-
-if echo "$output" | grep -q "Feeds:"; then
-    echo "Feeds match in the output"
-else
-    echo "Feeds do no match in the output"
-    exit 1
-fi
-
-if echo "$output" | grep -q "Decimals"; then
-    echo "Decimals match in the output"
-else
-    echo "Decimals do not match in output"
-    exit 1
-fi
-
-if echo "$output" | grep -q "Timestamp"; then
-    echo "Timestamp exists in the output"
-else
-    echo "Timestamp does not match in the output"
-    exit 1
-fi
-
-output=$(cargo run --bin make_query_coston2)
-expected_output="WNat address: 0xC67DCE33D7A8efA5FfEB961899C73fe01bCe9273"
-if [ "$output" == "$expected_output" ]; then
-    echo "WNat address: Output matches expected output."
-else
-    echo "WNat address: Output does not match expected output."
-    exit 1
-fi
-
-output=$(cargo run --bin make_query_flare)
-expected_output="WNat address: 0x1D80c49BbBCd1C0911346656B529DF9E5c2F783d"
-if [ "$output" == "$expected_output" ]; then
-    echo "WNat address: Output matches expected output."
-else
-    echo "WNat address: Output does not match expected output."
-    exit 1
-fi
-
-output=$(cargo run --bin secure_random_coston2)
-if echo "$output" | grep -q "Random Number:"; then
-    echo "Random Number matches in the output"
-else
-    echo "Random Number do no match in the output"
-    exit 1
-fi
-
-if echo "$output" | grep -q "Is secure random"; then
-    echo "Is secure random matches in the output"
-else
-    echo "Is secure random do not match in output"
-    exit 1
-fi
-
-if echo "$output" | grep -q "Timestamp"; then
-    echo "Timestamp exists in the output"
-else
-    echo "Timestamp does not match in the output"
-    exit 1
-fi
+main
