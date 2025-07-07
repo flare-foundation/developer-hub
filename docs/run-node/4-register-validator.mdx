@@ -7,6 +7,7 @@ description: Register your node as a validator.
 
 import Tabs from "@theme/Tabs";
 import TabItem from "@theme/TabItem";
+import DocCardList from "@theme/DocCardList";
 
 This guide explains how to register a node as a validator.
 On Flare, any node can be registered as a validator by performing a self-bond on the P-chain against the node's Node-ID, effectively activating the node as a validator.
@@ -37,9 +38,10 @@ Failure to implement these measures significantly increases the risk to your nod
 - **NEVER** expose the node's main API port (default: `9650`) to the public internet. Use a firewall to **only allow** inbound connections on the staking port (default: `9651/TCP`).
 - **NEVER** use the same node instance for both validation and serving public RPC API requests. Public APIs expose your node to potential DoS attacks and exploits that could halt your validator. Run a separate node for RPC needs.
 - **ALWAYS** disable password authentication for SSH. Use strong, key-based authentication exclusively. Consider disabling root login via SSH.
-  :::
 
-### Recommended Hardening
+:::
+
+### Recommended hardening
 
 - Configure your node to **enable only** the essential APIs required for validation (often just `["web3"]` within `eth-apis`). Explicitly disable admin APIs (`snowman-api-enabled`, `coreth-admin-api-enabled`).
 - **Firewall Best Practices:**
@@ -51,6 +53,8 @@ Failure to implement these measures significantly increases the risk to your nod
 - **Regularly update** the underlying operating system and the go-flare node software to apply the latest security patches.
 
 ## Configure the node
+
+### Sample `config.json`
 
 As described in [Secure the node](#secure-the-node), a validator node should have minimal APIs enabled.
 Below is a sample `config.json` demonstrating a secure configuration with limited `eth-apis` and disabled admin APIs:
@@ -92,20 +96,22 @@ Below is a sample `config.json` demonstrating a secure configuration with limite
 }
 ```
 
-## Staking key and certificate
+### Prepare your staking keys
 
-When a node is started, it will generate a `staker.key` and `staker.crt` in the `~/.avalanchego/staking` directory.
-These files define your node's identity (Node-ID) and is the identifier used when staking.
-Before registering your node as a validator, you should backup these files and keep them safe.
-Refer to the [Avalanche documentation](https://build.avax.network/docs/nodes/maintain/backup-restore) for an in-depth breakdown of backup and restoration of staking keys and certificates.
+Your node's identity is defined by two files, `staker.key` and `staker.crt`, which are created in `~/.avalanchego/staking/` the first time you start the node.
+Your `Node-ID` is derived from these files.
 
-If you decide to move these files to a secure location, you can add the following parameters in your start command to start the node with the existing key and certificate and thus persist the Node-ID:
+:::warning[Backup your staking keys]
 
-```bash
---staking-tls-cert-file=<NODE_CRT_PATH> --staking-tls-key-file=<NODE_KEY_PATH>
-```
+Backup the `staker.key` and `staker.crt` and store them in a secure, private location.
 
-Confirm your node's Node-ID by running the following command:
+:::
+
+To ensure your node maintains the same `Node-ID` across restarts and machine migrations, you must explicitly tell `go-flare` where to find these files.
+
+#### Get your Node-ID
+
+After starting your node for the first time, retrieve and save your `Node-ID`.
 
 ```bash
 curl --data '{
@@ -116,9 +122,95 @@ curl --data '{
 }' http://localhost:9650/ext/info | jq -r ".result.nodeID"
 ```
 
-## Staking
+#### Create a Persistent Staking Directory (Recommended for Docker)
 
-### Staking phases
+To make it easier to manage your keys with Docker, move them to a dedicated directory outside the default location.
+
+```bash
+# Create a dedicated directory
+sudo mkdir -p /opt/flare/staking
+
+# Move your keys
+sudo mv ~/.avalanchego/staking/staker.key /opt/flare/staking/
+sudo mv ~/.avalanchego/staking/staker.crt /opt/flare/staking/
+```
+
+## Run the node
+
+Now, start your node using command-line flags or environment variables that point to your `staker.key` and `staker.crt` files.
+This ensures your node always starts with the correct `Node-ID`.
+
+### From source
+
+Add the `--staking-tls-cert-file` and `--staking-tls-key-file` flags to your [startup command](/run-node/from-source#run-the-node).
+
+```bash
+# Assumes keys are in the default location
+./build/avalanchego --network-id=flare \
+  --http-host= \
+  --bootstrap-ips="$(curl -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeIP"}' -H 'content-type:application/json;' [https://flare-bootstrap.flare.network/ext/info](https://flare-bootstrap.flare.network/ext/info) | jq -r '.result.ip')" \
+  --bootstrap-ids="$(curl -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeID"}' -H 'content-type:application/json;' [https://flare-bootstrap.flare.network/ext/info](https://flare-bootstrap.flare.network/ext/info) | jq -r '.result.nodeID')" \
+  --staking-tls-cert-file="~/.avalanchego/staking/staker.crt" \
+  --staking-tls-key-file="~/.avalanchego/staking/staker.key"
+```
+
+### Using Docker CLI
+
+Modify your [`docker run`](/run-node/using-docker#using-docker-cli) command to [mount the directory](/run-node/register-validator#create-a-persistent-staking-directory-recommended-for-docker) containing your keys into the container and set the environment variables to point to the mounted files.
+
+```bash
+# Find the latest tag at [https://hub.docker.com/r/flarefoundation/go-flare/tags](https://hub.docker.com/r/flarefoundation/go-flare/tags)
+LATEST_TAG="vX.Y.Z" # e.g., v1.10.0
+
+docker run -d --name flare-node \
+  -v /mnt/flare-db:/app/db \
+  -v /opt/flare/conf:/app/conf \
+  -v /opt/flare/staking:/app/staking \ # <-- Mount the staking keys
+  -v /opt/flare/logs:/app/logs \
+  -p 127.0.0.1:9650:9650 \
+  -p 0.0.0.0:9651:9651 \
+  -e NETWORK_ID="flare" \
+  -e AUTOCONFIGURE_BOOTSTRAP="1" \
+  -e AUTOCONFIGURE_BOOTSTRAP_ENDPOINT="[https://flare-bootstrap.flare.network/ext/info](https://flare-bootstrap.flare.network/ext/info)" \
+  -e STAKING_TLS_CERT_FILE="/app/staking/staker.crt" \ # <-- Path inside the container
+  -e STAKING_TLS_KEY_FILE="/app/staking/staker.key" \ # <-- Path inside the container
+  flarefoundation/go-flare:${LATEST_TAG}
+```
+
+### Using Docker Compose
+
+Modify your [`docker-compose.yaml`](/run-node/using-docker#using-docker-compose) file to include the [staking key volume](/run-node/register-validator#create-a-persistent-staking-directory-recommended-for-docker) and environment variables.
+
+```yaml
+services:
+  node:
+    image: flarefoundation/go-flare:vX.Y.Z # <-- REPLACE with the latest stable tag
+    container_name: flare-node
+    restart: on-failure
+    ports:
+      - "127.0.0.1:9650:9650"
+      - "0.0.0.0:9651:9651"
+    volumes:
+      - /mnt/flare-db:/app/db
+      - /opt/flare/conf:/app/conf
+      - /opt/flare/staking:/app/staking # <-- Mount the staking keys
+      - /opt/flare/logs:/app/logs
+    environment:
+      - NETWORK_ID=flare
+      - AUTOCONFIGURE_BOOTSTRAP=1
+      - AUTOCONFIGURE_BOOTSTRAP_ENDPOINT=[https://flare-bootstrap.flare.network/ext/info](https://flare-bootstrap.flare.network/ext/info)
+      - STAKING_TLS_CERT_FILE=/app/staking/staker.crt # <-- Path inside the container
+      - STAKING_TLS_KEY_FILE=/app/staking/staker.key # <-- Path inside the container
+```
+
+## Stake and verify
+
+With your node running and properly identified, the final step is to submit the self-bond transaction.
+
+<details>
+<summary>Staking phases on Flare.</summary>
+
+**Summary:**
 
 The deployment of validator staking on Flare occurs in three distinct phases, each with its own set of rules and requirements.
 The following table summarizes the key differences between the phases:
@@ -134,8 +226,7 @@ The following table summarizes the key differences between the phases:
 
 \*Current phase
 
-<details>
-<summary>Detailed breakdown of staking phases.</summary>
+**Detailed breakdown:**
 
 The Flare network is designed to be progressively decentralized, with the transition occurring in three phases:
 
@@ -175,61 +266,55 @@ The goal is for funds staked on the P-chain to have the same rights as wrapped F
 
 ### Stake requirements
 
-| **Requirement**                              | **Value** |
-| -------------------------------------------- | --------- |
-| Minimum self-bond amount                     | 1M FLR    |
-| Minimum delegation amount                    | 50K FLR   |
-| Minimum stake duration                       | 2 months  |
-| Minimum delegation duration                  | 2 weeks   |
-| Stake delay                                  | immediate |
-| Delegation factor                            | 15 times  |
-| Maximum total stake                          | 200M FLR  |
-| Maximum validators per infrastructure entity | 4         |
-
-<details>
-<summary>Understanding the requirements.</summary>
-
-- **Minimum self-bond amount:** Minimum stake that an entity must provide to become a validator. This setting reduces staking requests, which frees network resources.
-
-- **Minimum delegation amount:** Validators can accept stake delegations from any FLR holder, so their stake and validation rewards are increased.
-  The specified value is the minimum stake amount that can be delegated. This setting reduces delegation requests, which frees network resources. Validators can set a staking fee and will earn staking rewards for its own self-bond and a fee on any stake delegated on them.
-  This stake delegation is not related to FTSO delegation nor governance delegation.
-
-- **Minimum stake duration:** Minimum amount of time that self-bond funds must remain staked, and therefore locked.
-- **Minimum delegation duration:** Minimum amount of time that delegated funds must remain staked, and therefore locked. This setting does not change. It is included in this list for clarity.
-- **Stake delay:** Duration that passes between the time when funds are staked and the time when they become effective. During this period funds are locked. This delay provided added security when staking was enabled for the first time and stakes were small, since any suspicious stake could be analyzed before it became effective. Now that larger stakes are in place this restriction will be lifted to simplify onboarding of new validators.
-  Note that there is no such delay involved when withdrawing staked funds once the staking period expires.
-
-- **Delegation factor:** The total amount that can be staked to a validator is limited to its self-bond times this factor. For example, with the proposed value of 15, if a validator has a self-bond stake of 1M FLR, the total sum of all stakes, including delegations, cannot exceed 15M FLR. This allows for 14M FLR of delegations.
-
-- **Maximum total stake:** Maximum stake per validator, including self-bond and delegations.
-
-- **Maximum validators per infrastructure entity:** A single infrastructure entity can include up to this amount of validators.
-  Infrastructure entities also include FTSO data providers. For example, a single FTSO data provider can create up to 4 validators, each one with its own stake, and claim the validation rewards for all of them.
-  This restriction is not enforced by the P-chain staking mechanism but by the mirroring service, and will not take effect until [Staking Phase 3](#staking).
-  If an infrastructure entity has more than one validator, each of the validators must fulfill the above requirements.
+| **Requirement**                 | **Value** | **Description**                                                                                                 |
+| :------------------------------ | :-------- | :-------------------------------------------------------------------------------------------------------------- |
+| **Minimum self-bond amount**    | 1M FLR    | The minimum stake required to register a validator.                                                             |
+| **Minimum delegation amount**   | 50K FLR   | The minimum amount an FLR holder can delegate to a validator.                                                   |
+| **Minimum stake duration**      | 2 months  | The minimum time a validator's self-bond must be locked.                                                        |
+| **Minimum delegation duration** | 2 weeks   | The minimum time delegated funds must be locked.                                                                |
+| **Stake delay**                 | Immediate | The time between submitting a stake and it becoming active.                                                     |
+| **Delegation factor**           | 15x       | A multiplier on the self-bond that sets the maximum total stake (including delegations) a validator can accept. |
+| **Maximum total stake**         | 200M FLR  | The absolute maximum stake a validator can have, including all delegations.                                     |
+| **Max validators per entity**   | 4         | The maximum number of validators a single entity can operate.                                                   |
 
 See [FIP.05](https://proposals.flare.network/FIP/FIP_5.html) for further details.
 
-</details>
+### Perform the self-bond
 
-A node becomes a validator when it's owner stakes to their node, referred to as a self-bond.
-The self-bond is performed on the P-chain against the node's Node-ID.
-To understand requirements for the staking process and how to stake, refer to the [Using Flare Stake Tool](/network/guides/using-flare-stake-tool) page.
+To perform the actual staking transaction (the self-bond), you will use the Flare Stake Tool.
+Follow the instructions in the guide below to stake FLR to your `Node-ID` (see how to [get your Node-ID](/run-node/register-validator#get-your-node-id)).
 
-Once the self-bond is complete and the staking start time is reached, the node will join the current validator set.
-You can inspect the validator's status by running the following command:
-
-```bash
-curl --data '{
-    "jsonrpc": "2.0",
-    "method": "platform.getCurrentValidators",
-    "params": {
-      "nodeIDs": ["<NODE_ID>"]
+<DocCardList
+  items={[
+    {
+      type: "link",
+      label: "Using Flare Stake Tool",
+      href: "/network/guides/using-flare-stake-tool",
+      description: "Stake FLR using the flare-stake-tool CLI.",
     },
-    "id": 1
-}' -H 'content-type:application/json;' https://flare-api.flare.network/ext/P | jq
-```
+  ]}
+/>
 
-Observe the `uptime` and `connected` fields to ensure the node is healthy and connected to the network.
-Additionally, you can use the [validator monitoring site](https://flare-validators.flare.network/) to observe the validator's status.
+### Verify validator status
+
+Once your self-bond transaction is confirmed and the staking period begins, your node will join the active validator set.
+You can monitor its status using an API call or a validator monitoring site.
+
+- **Via API:**
+
+  ```bash
+  curl --data '{
+      "jsonrpc": "2.0",
+      "method": "platform.getCurrentValidators",
+      "params": {
+        "nodeIDs": ["<NODE_ID>"]
+      },
+      "id": 1
+  }' -H 'content-type:application/json;' https://flare-api.flare.network/ext/P | jq
+  ```
+
+  Check the `uptime` and `connected` fields in the response.
+
+- **Via Web:**
+
+  Use the [Flare Validator Monitoring Site](https://flare-validators.flare.network/) to see your validator's status.
