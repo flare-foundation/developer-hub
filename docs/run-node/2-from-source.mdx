@@ -63,6 +63,7 @@ Make sure to check the [hardware requirements](/run-node/system-requirements) be
    ```bash
    ./build/avalanchego --network-id=flare \
       --http-host= \
+      --http-allowed-hosts="*" \
       --bootstrap-ips="$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeIP"}' -H 'content-type:application/json;' https://flare-bootstrap.flare.network/ext/info  | jq -r '.result.ip')" \
       --bootstrap-ids="$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeID"}' -H 'content-type:application/json;' https://flare-bootstrap.flare.network/ext/info | jq -r '.result.nodeID')"
    ```
@@ -74,6 +75,7 @@ Make sure to check the [hardware requirements](/run-node/system-requirements) be
    ```bash
    ./build/avalanchego --network-id=costwo \
       --http-host= \
+      --http-allowed-hosts="*" \
       --bootstrap-ips="$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeIP"}' -H 'content-type:application/json;' https://coston2-bootstrap.flare.network/ext/info  | jq -r '.result.ip')" \
       --bootstrap-ids="$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeID"}' -H 'content-type:application/json;' https://coston2-bootstrap.flare.network/ext/info | jq -r '.result.nodeID')"
    ```
@@ -85,6 +87,7 @@ Make sure to check the [hardware requirements](/run-node/system-requirements) be
    ```bash
    ./build/avalanchego --network-id=songbird \
       --http-host= \
+      --http-allowed-hosts="*" \
       --bootstrap-ips="$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeIP"}' -H 'content-type:application/json;' https://songbird-bootstrap.flare.network/ext/info  | jq -r '.result.ip')" \
       --bootstrap-ids="$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeID"}' -H 'content-type:application/json;' https://songbird-bootstrap.flare.network/ext/info | jq -r '.result.nodeID')"
    ```
@@ -96,6 +99,7 @@ Make sure to check the [hardware requirements](/run-node/system-requirements) be
    ```bash
    ./build/avalanchego --network-id=coston \
       --http-host= \
+      --http-allowed-hosts="*" \
       --bootstrap-ips="$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeIP"}' -H 'content-type:application/json;' https://coston-bootstrap.flare.network/ext/info  | jq -r '.result.ip')" \
       --bootstrap-ids="$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeID"}' -H 'content-type:application/json;' https://coston-bootstrap.flare.network/ext/info | jq -r '.result.nodeID')"
    ```
@@ -181,19 +185,21 @@ If the node gets stuck during bootstrap (or it takes far longer than the estimat
 These are some of the most relevant CLI parameters you can use. Read more about them in the [Avalanche documentation](https://docs.avax.network/nodes/maintain/avalanchego-config-flags).
 
 {/* prettier-ignore */}
-- [`--bootstrap-ips`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--bootstrap-ips-string),
-  [`--bootstrap-ids`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--bootstrap-ids-string):
+- [`--bootstrap-ips`](https://build.avax.network/docs/nodes/configure/configs-flags#--bootstrap-ips-string),
+  [`--bootstrap-ids`](https://build.avax.network/docs/nodes/configure/configs-flags#--bootstrap-ids-string):
   IP address and node ID of the peer used to connect to the rest of the network for bootstrapping. In the run command above, the bootstrap details are programmatically retrieved from the Flare bootstrap nodes upon startup. This is the recommended approach as the bootstrap node's IP and ID can rotate.
 
-- [`--http-host`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--http-host-string): Use `--http-host=` (empty) to allow connections from other machines. Otherwise, only connections from `localhost` are accepted.
+- [`--http-host`](https://build.avax.network/docs/nodes/configure/configs-flags#--http-host-string): Use `--http-host=` (empty) to allow connections from other machines. Otherwise, only connections from `localhost` are accepted.
 
-- [`--http-port`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--http-port-int): The port through which the node will listen to API requests. The default value is `9650`.
+- [`--http-port`](https://build.avax.network/docs/nodes/configure/configs-flags#--http-port-int): The port through which the node will listen to API requests. The default value is `9650`.
 
-- [`--staking-port`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--staking-port-int): The port through which the network peers will connect to this node externally. Having this port accessible from the internet is required for correct node operation. The default value is `9651`.
+- [`--http-allowed-hosts`](https://build.avax.network/docs/nodes/configure/configs-flags#--http-allowed-hosts-string): Use `--http-allowed-hosts="*"` to allow connections from any machine. Otherwise, only connections from `localhost` are accepted.
 
-- [`--db-dir`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--db-dir-string-file-path): Directory where the database is stored, defaults to `~/.avalanchego/db`. Make sure to use a disk with enough space as recommended in the [hardware requirements](/run-node/system-requirements) page. For example, you can use this option to store the database on an external drive.
+- [`--staking-port`](https://build.avax.network/docs/nodes/configure/configs-flags#--staking-port-int): The port through which the network peers will connect to this node externally. Having this port accessible from the internet is required for correct node operation. The default value is `9651`.
 
-- [`--chain-config-dir`](https://docs.avax.network/nodes/maintain/avalanchego-config-flags#--chain-config-dir-string): Optional JSON configuration file for using non-default values.
+- [`--db-dir`](https://build.avax.network/docs/nodes/configure/configs-flags#--db-dir-string-file-path): Directory where the database is stored, defaults to `~/.avalanchego/db`. Make sure to use a disk with enough space as recommended in the [hardware requirements](/run-node/system-requirements) page. For example, you can use this option to store the database on an external drive.
+
+- [`--chain-config-dir`](https://build.avax.network/docs/nodes/configure/configs-flags#--chain-config-dir-string): Optional JSON configuration file for using non-default values.
 
 #### Sample JSON configuration:
 
