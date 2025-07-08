@@ -136,6 +136,7 @@ This ensures your node always starts with the correct `Node-ID`.
      # highlight-next-line
      -v /opt/flare/staking:/app/staking \
      -v /opt/flare/logs:/app/logs \
+     # highlight-next-line
      -p 127.0.0.1:9650:9650 \
      -p 0.0.0.0:9651:9651 \
      -e NETWORK_ID="flare" \
@@ -148,12 +149,12 @@ This ensures your node always starts with the correct `Node-ID`.
 
 ### Using Docker Compose
 
-1. Ensure you completed the optional [Step 6](/run-node/using-docker#using-docker-compose) of copying your staking keys to a persistent directory outside the default location.
+1. Ensure you completed the optional [Step 5](/run-node/using-docker#using-docker-compose) of copying your staking keys to a persistent directory outside the default location.
 
 2. Modify your [`docker-compose.yaml`](/run-node/using-docker#using-docker-compose) file to include the staking key volume and environment variables.
    For example, if you copied your keys to `/opt/flare/staking/`, your `docker-compose.yaml` would look like:
 
-   ```yaml
+   ```yaml title="/opt/node/docker-compose.yaml"
    # Mount the staking volume and set the staking path environment variables
    services:
      node:
@@ -161,6 +162,7 @@ This ensures your node always starts with the correct `Node-ID`.
        container_name: flare-node
        restart: on-failure
        ports:
+         # highlight-next-line
          - "127.0.0.1:9650:9650"
          - "0.0.0.0:9651:9651"
        volumes:

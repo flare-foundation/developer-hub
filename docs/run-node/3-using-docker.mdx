@@ -16,9 +16,9 @@ This guide will walk you through deploying an RPC node using the [go-flare](http
 - [Docker Engine](https://docs.docker.com/engine/install/)
 - [jq](https://stedolan.github.io/jq/download/)
 
-:::tip
+:::tip[Docker without sudo]
 
-To avoid using `sudo` each time you run the `docker` command, add your user to the Docker group after installation:
+To run `docker` commands without `sudo`, add your user to the `docker` group:
 
 ```bash
 sudo usermod -a -G docker $USER
@@ -30,84 +30,78 @@ Log out and log back in or restart your system for the changes to take effect.
 
 ## Configure the machine
 
+First, you'll prepare your host machine by setting up a dedicated disk for blockchain data and creating necessary configuration directories.
+
 ### Disk setup
 
-This setup varies depending on your use case, but essentially you need to have a local directory with sufficient space for the blockchain data to be stored and persisted in.
-In this guide, there is an additional disk mounted at `/mnt/db` which is used to persist the blockchain data.
+Blockchain data requires significant storage, so it's best practice to use a separate, dedicated disk.
+These steps will guide you through formatting and mounting it.
 
-1. After you have a machine set up and ready to go, find the additional disk, format it if necessary, and mount to a directory:
+1. **Define environment variables:** To prevent errors, define the device name and your current user as variables. This avoids having to manually replace placeholders in every command.
 
-   - Replace `<user>:<group>` with the username and primary group of the user who will run the docker or docker compose commands.
-     This is often your own username, which can be found using `id -u -n` (user) and `id -g -n` (group), or often simply `${USER}:${USER}`
-     It is recommended that this isn't the root user for security reasons.
-   - Ensure you are replacing `/dev/sdb` with your actual device, since it could be different to the example.
+   ```bash
+   # Identify your disk with `lsblk`, then set it here.
+   # ⚠️ DANGER: The device you choose will be completely erased!
+   DISK_DEVICE="/dev/sdb"
+
+   # Set the user and group for directory ownership.
+   DOCKER_USER=$(whoami)
+   ```
+
+2. **Format and mount the disk:** The following commands will create a directory at `/mnt/db`, format your disk, mount it, and grant your user ownership.
 
    :::warning[Data Loss]
 
-   The following `mkfs.ext4` command will **erase all data** on the specified device (`/dev/sdb` in this example).
-   Double-check the selected device and that it does not contain any important data before proceeding.
+   The `mkfs.ext4` command will erase all data on the specified device (`$DISK_DEVICE`).
+   Double-check that you've selected the correct disk and backed up any important data.
 
    :::
 
    ```bash
+   # See a list of available block devices to identify the correct one.
    lsblk
-   #############################################
-   # NAME    MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
-   # sda       8:0    0   10G  0 disk
-   # ├─sda1    8:1    0  9.9G  0 part /
-   # ├─sda14   8:14   0    3M  0 part
-   # └─sda15   8:15   0  124M  0 part /boot/efi
-   # sdb       8:16   0  300G  0 disk
-   # ^-- Device identified as db disk via size
-   #############################################
-   sudo mkdir /mnt/db
-   sudo chown -R <user>:<group> /mnt/db
-   sudo mkfs.ext4 -m 0 -E lazy_itable_init=0,lazy_journal_init=0,discard /dev/sdb
-   sudo mount /dev/sdb /mnt/db
+
+   # Create mount point and set permissions
+   sudo mkdir -p /mnt/db
+   sudo chown -R ${DOCKER_USER}:${DOCKER_USER} /mnt/db
+
+   # Format the disk (EXT4 filesystem)
+   sudo mkfs.ext4 -m 0 -E lazy_itable_init=0,lazy_journal_init=0,discard ${DISK_DEVICE}
+
+   # Mount the disk
+   sudo mount ${DISK_DEVICE} /mnt/db
    ```
 
-2. Confirm the new disk is mounted:
-
-   ```bash hl_lines="7"
-   lsblk
-   #############################################
-   # NAME    MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
-   # sda       8:0    0   10G  0 disk
-   # ├─sda1    8:1    0  9.9G  0 part /
-   # ├─sda14   8:14   0    3M  0 part
-   # └─sda15   8:15   0  124M  0 part /boot/efi
-   # sdb       8:16   0  300G  0 disk /mnt/db
-   # ^-- Device now has mountpoint set to /mnt/db
-   #############################################
-   ```
-
-   Look for your device name and mount point specified in the output to confirm the mount worked.
-
-3. Backup the original `fstab` file (to revert changes if needed) and update `/etc/fstab` to make sure the device is mounted when the system reboots:
+3. **Ensure persistent mounting:** To ensure the disk is automatically mounted after a system reboot, add an entry to `/etc/fstab`. Using the disk's `UUID` is a robust method because device names like `/dev/sdb` can sometimes change.
 
    ```bash
-   cp /etc/fstab /etc/fstab.backup
-   fstab_entry="UUID=$(sudo blkid -o value -s UUID /dev/sdb) /mnt/db ext4 discard,defaults 0 2"
-   echo "$fstab_entry" | sudo tee -a /etc/fstab
+   # Back up your current fstab file
+   sudo cp /etc/fstab /etc/fstab.backup
+
+   # Get the UUID of your newly formatted disk
+   DISK_UUID=$(sudo blkid -o value -s UUID ${DISK_DEVICE})
+
+   # Add the new entry to /etc/fstab
+   echo "UUID=${DISK_UUID} /mnt/db ext4 discard,defaults 0 2" | sudo tee -a /etc/fstab
+
+   # Verify the mount
+   sudo mount -a
+   lsblk | grep /mnt/db
    ```
 
 ### Configuration File and Logs Directory Setup
 
-Once the disk setup is complete, you can define the configuration file and logs directory for the RPC node.
-These will be mounted from your local machine to the specified directories on your container.
+Create directories on your host machine to store the node's configuration file and logs.
+Mounting these allows you to manage them directly without entering the container.
 
-Mounting the logs directory allows you to access the logs generated by the workload directly on your local machine.
-This saves you the effort of using `docker logs` and lets you inspect the files in your local directory instead.
-
-1. Create the local directories and change ownership to the same user you used to run the container:
+1. **Create directories:**
 
    ```bash
-   sudo mkdir -p /opt/flare/conf
-   sudo mkdir /opt/flare/logs
-   sudo chown -R <user>:<group> /opt/flare
+   sudo mkdir -p /opt/flare/conf /opt/flare/logs
+   sudo chown -R ${DOCKER_USER}:${DOCKER_USER} /opt/flare
    ```
 
-2. Create the configuration file:
+2. **Create configuration file:** Create a `config.json` file. This example provides a standard configuration for a public RPC node.
 
    ```json title="/opt/flare/conf/config.json"
    {
@@ -137,15 +131,11 @@ This saves you the effort of using `docker logs` and lets you inspect the files 
 
 ## Run the node
 
-This guide will show examples of running the node using both Docker CLI and Docker Compose.
-
-- [Docker CLI](#using-docker-cli)
-
-- [Docker Compose](#using-docker-compose)
+You can run your node using either the [Docker CLI](#using-docker-cli) directly or with [Docker Compose](#using-docker-compose) for easier management.
 
 ### Using Docker CLI
 
-1. Retrieve the tag from the latest stable release:
+1. **Get the latest stable version tag:**
 
    ```bash
    # 1. Find the latest stable release tag from:
@@ -154,7 +144,7 @@ This guide will show examples of running the node using both Docker CLI and Dock
    LATEST_TAG="vX.Y.Z" # <-- REPLACE vX.Y.Z WITH THE ACTUAL LATEST TAG e.g. v1.11.0
    ```
 
-2. Start the container:
+2. **Start the container:**
 
    <Tabs groupId="network" block>
 
@@ -256,14 +246,14 @@ This guide will show examples of running the node using both Docker CLI and Dock
 
    </Tabs>
 
-3. Once you have confirmed that the container is running, use Ctrl+C to exit the following of logs and check your container's `/ext/health` endpoint.
-   Only when the RPC node is fully synced will you see `"healthy": true`, but this otherwise confirms your container's HTTP port `9650` is accessible from your local machine.
+3. **Check health:** Once the node is running, you can check its health. It will report `"healthy": true` only after it has fully synced.
 
    ```bash
+   # Press Ctrl+C to exit the logs, then run:
    curl http://localhost:9650/ext/health | jq
    ```
 
-4. (Optional) If you plan to [register your node as a validator](/run-node/register-validator).
+4. **(Optional)** If you plan to [register your node as a validator](/run-node/register-validator).
    Make sure to copy the staking keys to a persistent directory outside the default location.
    This is important for ensuring that your staking keys are not lost if the node is restarted or updated.
 
@@ -318,79 +308,44 @@ This guide will show examples of running the node using both Docker CLI and Dock
 <details>
 <summary>Explanation of the CLI arguments.</summary>
 
-**Volumes:**
+**Volumes Mounts**
 
-- `-v /mnt/db:/app/db`
+- `-v /mnt/db:/app/db`: Mount the local database directory to the default database directory of the container.
+- `-v /opt/flare/conf:/app/conf/C`: Mount the local configuration directory to the default location of `config.json`.
+- `-v /opt/flare/logs:/app/logs`: Mount the local logs directory to the workloads default logs directory.
 
-  Mount the local database directory to the default database directory of the container.
+**Port Mappings**
 
-- `-v /opt/flare/conf:/app/conf/C`
+- `-p 0.0.0.0:9651:9651`: Mapping the container's peering port to your local machine so other peers can reach the node and allow it to gain peers on the network.
+- `-p 0.0.0.0:9650:9650`: Mapping the container's HTTP port to your local machine, enabling the querying of the containerized RPC node's HTTP port via your local machine's IP and port.
+  :::warning
 
-  Mount the local configuration directory to the default location of `config.json`.
+  Only expose port **9650** with `0.0.0.0` to make your node's RPC endpoint publicly accessible.
+  If you need external access, it is critical to implement firewall rules that restrict access to specific, trusted IP addresses.
 
-- `-v /opt/flare/logs:/app/logs`
+  :::
 
-  Mount the local logs directory to the workloads default logs directory.
+**Environment Variables**
 
-**Ports:**
-
-- `-p 0.0.0.0:9650:9650`
-
-  Mapping the container's HTTP port to your local machine, enabling the querying of the containerized RPC node's HTTP port via your local machine's IP and port.
-
-  !!! warning
-  Only use binding `0.0.0.0` for port 9650 if you wish to publicly expose your containerized RPC node's endpoint from your machine's public IP address.
-  If you require it to be publicly accessible for another application to use, ensure you set up a firewall rule to only allow port 9650 to be accessible via specific source IP addresses.
-
-- `-p 0.0.0.0:9651:9651`
-
-  Mapping the container's peering port to your local machine so other peers can reach the node and allow it to gain peers on the network.
-
-**Environment Variables:**
-
-- `-e AUTOCONFIGURE_BOOTSTRAP="1"`
-
-  Retrieves the bootstrap endpoints Node-IP and Node-ID automatically.
-
-- `-e NETWORK_ID="<network>"`
-
-  Sets the correct network ID from the provided options below:
-
-  - `coston`
-  - `costwo`
-  - `songbird`
-  - `flare`
-
-- `-e AUTOCONFIGURE_PUBLIC_IP="1"`
-
-  Retrieves your local machine's public IP automatically.
-
-- `-e AUTOCONFIGURE_BOOTSTRAP_ENDPOINT="<bootstrap_host>/ext/info"`
-
-      Defines the bootstrap endpoint used to initialize chain sync.
-      These endpoints can be used to bootstrap your node for each chain:
-
-      - `https://flare-bootstrap.flare.network/ext/info`
-      - `https://coston2-bootstrap.flare.network/ext/info`
-      - `https://songbird-bootstrap.flare.network/ext/info`
-      - `https://coston-bootstrap.flare.network/ext/info`
+- `-e AUTOCONFIGURE_BOOTSTRAP="1"`: Retrieves the bootstrap endpoints Node-IP and Node-ID automatically.
+- `-e NETWORK_ID="<network>"`: Sets the correct network ID, either `flare`, `costwo`, `songbird`, or `coston`.
+- `-e AUTOCONFIGURE_PUBLIC_IP="1"`: Retrieves your local machine's public IP automatically.
+- `-e AUTOCONFIGURE_BOOTSTRAP_ENDPOINT="<bootstrap_host>/ext/info"`: Defines the bootstrap endpoint used to initialize chain sync, a list of them is available on the [Network Configuration](/network/overview#configuration) page.
 
 </details>
 
 ### Using Docker Compose
 
-Docker Compose for this use case is a good way to simplify your setup of running the RPC node. Adding all necessary configurations into a single file that can be run with a simple command.
+Docker Compose simplifies node management by defining the entire configuration in a single YAML file.
 
-In this guide the `docker-compose.yaml` file is created in `/opt/node` but the location is entirely up to you.
-
-1.  Create the working directory and set the ownership.
+1.  **Create a Workspace:** In this guide the `docker-compose.yaml` file is created in `/opt/node` but the location is entirely up to you.
 
     ```bash
     sudo mkdir /opt/node
-    sudo chown -R <user>:<group> /opt/node
+    sudo chown -R ${DOCKER_USER}:${DOCKER_USER} /opt/node
     ```
 
-2.  Create the `docker-compose.yaml` file:
+2.  **Create the `docker-compose.yaml` file:**
 
     <Tabs groupId="network" block>
 
@@ -504,27 +459,30 @@ In this guide the `docker-compose.yaml` file is created in `/opt/node` but the l
 
     </Tabs>
 
-3.  Run Docker Compose:
+3.  **Start the service:** Navigate to your workspace and launch the node in detached mode.
 
     ```bash
-    docker compose -f /opt/node/docker-compose.yaml up -d
+    cd /opt/node
+    docker compose up -d
     ```
 
-4.  When the command completes, check the container is running and inspect that logs are being generated:
+4.  **Monitor logs and check health:**
+
+    Check the status of your service and follow its logs.
 
     ```bash
     docker ps
     docker compose logs -f
     ```
 
-5.  Once you have confirmed the container is running, use Ctrl+C to exit the following of logs and check your container's `/ext/health` endpoint.
-    Only when the RPC node is fully synced will you see `"healthy": true`, but this otherwise confirms your container's HTTP port (9650) is accessible from your local machine.
+    Check the health endpoint to confirm it's running and accessible.
 
-        ```bash
-        curl http://localhost:9650/ext/health | jq
-        ```
+    ```bash
+    # Press Ctrl+C to exit the logs, then run:
+    curl -s http://localhost:9650/ext/health | jq
+    ```
 
-6.  (Optional) If you plan to [register your node as a validator](/run-node/register-validator).
+5.  **(Optional)** If you plan to [register your node as a validator](/run-node/register-validator).
     Make sure to copy the staking keys to a persistent directory outside the default location.
     This is important for ensuring that your staking keys are not lost if the node is restarted or updated.
 
@@ -576,7 +534,8 @@ In this guide the `docker-compose.yaml` file is created in `/opt/node` but the l
 
      </Tabs>
 
-### Additional configuration
+<details>
+<summary>Additional configuration options</summary>
 
 There are several environment variables to adjust your workload at runtime.
 The example Docker and Docker Compose guides above assumed some defaults and utilized built-in automation scripts for most of the configuration.
@@ -602,9 +561,11 @@ Outlined below are all options available:
 | `AUTOCONFIGURE_FALLBACK_ENDPOINTS` | (empty)                                            | Comma-divided fallback bootstrap endpoints if the primary endpoint fails |
 |                  `EXTRA_ARGUMENTS` | (empty)                                            | Extra arguments passed to flare binary                                   |
 
+</details>
+
 ## Update the node
 
-To update your node to a newer go-flare version:
+Keep your node up-to-date with the latest stable release of `go-flare` for security and performance improvements.
 
 <Tabs groupId="Docker" block>
   <TabItem value="docker-cli" label="Docker CLI" default>
@@ -614,8 +575,8 @@ To update your node to a newer go-flare version:
     2.  Stop and remove the old container:
 
         ```bash
-        docker stop <your_container_name> # e.g., flare-node
-        docker rm <your_container_name>
+        docker stop flare-node # Or coston2-node, songbird-node, coston-node
+        docker rm flare-node
         ```
 
     3. Update the `LATEST_TAG` to the new stable tag and run the same `docker run` command as [previously detailed](/run-node/using-docker#using-docker-cli).
@@ -644,33 +605,16 @@ To update your node to a newer go-flare version:
 
 </Tabs>
 
-## Maintain the node
+## Troubleshooting
 
-In some cases, your node might not work correctly or you might receive unusual messages that are difficult to troubleshoot. Use the following solutions to ensure your node stays healthy:
+If you encounter issues, here are some common troubleshooting steps.
 
-- **Ensure Adequate Peers:** When your node has fewer than 16 peers, it will not work correctly. To retrieve the number of connected peers, run the following command and look for the line containing `connectedPeers`:
-
+- **Check Peer Count:** A node needs sufficient peers (typically at least 16) to sync and operate correctly. Use the health endpoint to check your connection count.
   ```bash
-  curl http://127.0.0.1:9650/ext/health | jq
+  # Check the "connectedPeers" value in the output
+  curl -s [http://127.0.0.1:9650/ext/health](http://127.0.0.1:9650/ext/health) | jq '.checks.network.message'
   ```
-
-  To automate the process, use:
-
-  ```bash
-  curl -s http://127.0.0.1:9650/ext/health | jq -r ".checks.network.message.connectedPeers"
-  ```
-
-- **Check Disk Space:** If your node does not sync after a long time and abruptly stops working, ensure the database location has sufficient disk space.
-  Remember, the database size might change significantly during bootstrapping.
-
-- **Resolve Connection Issues:** If you receive unusual messages after making submissions or when transactions are reverted, your node might not be connected correctly.
-  Ensure the database location has sufficient disk space, then restart the node.
-
-- **Handle Bootstrap Errors:** If you receive an error related to `GetAcceptedFrontier` during bootstrapping, your node was disconnected during the process.
-  Restart the node if you see the following error:
-
-  ```plaintext
-  failed to send GetAcceptedFrontier(MtF8bVH241hetCQJgsKEdKyJBs8vhp1BC, 11111111111111111111111111111111LpoYY, NUMBER)
-  ```
-
-- **Restart Unhealthy Nodes:** If your node syncs but remains unhealthy for no discernible reason, restart the node.
+- **Monitor Disk Space:** If your node stops syncing, ensure the database location (`/mnt/db`) has enough free space. Run `df -h /mnt/db` to check.
+- **Restart on Errors:** If the node becomes unhealthy or you see persistent `GetAcceptedFrontier` errors in the logs, a simple restart can often resolve the issue.
+  - Docker CLI: `docker restart <container_name>`
+  - Docker Compose: `cd /opt/node && docker compose restart`
