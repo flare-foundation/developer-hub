@@ -161,7 +161,7 @@ This guide will show examples of running the node using both Docker CLI and Dock
    <TabItem value="flare" label="Flare Mainnet" default>
 
    ```bash
-   docker run -d --name flare-observer \
+   docker run -d --name flare-node \
      -e NETWORK_ID="flare" \
      -e AUTOCONFIGURE_BOOTSTRAP="1" \
      -e AUTOCONFIGURE_PUBLIC_IP="1" \
@@ -177,7 +177,7 @@ This guide will show examples of running the node using both Docker CLI and Dock
 
    ```bash
    docker ps
-   docker logs flare-observer -f
+   docker logs flare-node -f
    ```
 
    </TabItem>
@@ -185,7 +185,7 @@ This guide will show examples of running the node using both Docker CLI and Dock
    <TabItem value="coston2" label="Flare Testnet Coston2">
 
    ```bash
-   docker run -d --name coston2-observer \
+   docker run -d --name coston2-node \
      -e NETWORK_ID="costwo" \
      -e AUTOCONFIGURE_BOOTSTRAP="1" \
      -e AUTOCONFIGURE_PUBLIC_IP="1" \
@@ -201,7 +201,7 @@ This guide will show examples of running the node using both Docker CLI and Dock
 
    ```bash
    docker ps
-   docker logs coston2-observer -f
+   docker logs coston2-node -f
    ```
 
    </TabItem>
@@ -209,7 +209,7 @@ This guide will show examples of running the node using both Docker CLI and Dock
    <TabItem value="songbird" label="Songbird Canary-Network">
 
    ```bash
-   docker run -d --name songbird-observer \
+   docker run -d --name songbird-node \
      -e NETWORK_ID="songbird" \
      -e AUTOCONFIGURE_BOOTSTRAP="1" \
      -e AUTOCONFIGURE_PUBLIC_IP="1" \
@@ -225,7 +225,7 @@ This guide will show examples of running the node using both Docker CLI and Dock
 
    ```bash
    docker ps
-   docker logs songbird-observer -f
+   docker logs songbird-node -f
    ```
 
    </TabItem>
@@ -233,7 +233,7 @@ This guide will show examples of running the node using both Docker CLI and Dock
    <TabItem value="coston" label="Songbird Testnet Coston">
 
    ```bash
-   docker run -d --name coston-observer \
+   docker run -d --name coston-node \
      -e NETWORK_ID="coston" \
      -e AUTOCONFIGURE_BOOTSTRAP="1" \
      -e AUTOCONFIGURE_PUBLIC_IP="1" \
@@ -249,7 +249,7 @@ This guide will show examples of running the node using both Docker CLI and Dock
 
    ```bash
    docker ps
-   docker logs coston-observer -f
+   docker logs coston-node -f
    ```
 
    </TabItem>
@@ -262,6 +262,58 @@ This guide will show examples of running the node using both Docker CLI and Dock
    ```bash
    curl http://localhost:9650/ext/health | jq
    ```
+
+4. (Optional) If you plan to [register your node as a validator](/run-node/register-validator).
+   Make sure to copy the staking keys to a persistent directory outside the default location.
+   This is important for ensuring that your staking keys are not lost if the node is restarted or updated.
+
+    <Tabs groupId="network" block>
+
+    <TabItem value="flare" label="Flare Mainnet" default>
+
+   ```bash
+   # Create a dedicated directory
+   sudo mkdir -p /opt/flare/staking
+   # Move your keys
+   docker cp flare-node:/root/.avalanchego/staking /opt/flare/staking
+   ```
+
+    </TabItem>
+
+    <TabItem value="coston2" label="Flare Testnet Coston2">
+
+   ```bash
+   # Create a dedicated directory
+   sudo mkdir -p /opt/coston2/staking
+   # Move your keys
+   docker cp coston2-node:/root/.avalanchego/staking /opt/coston2/staking
+   ```
+
+    </TabItem>
+
+    <TabItem value="songbird" label="Songbird Canary-Network">
+
+   ```bash
+   # Create a dedicated directory
+   sudo mkdir -p /opt/songbird/staking
+   # Move your keys
+   docker cp songbird-node:/root/.avalanchego/staking /opt/songbird/staking
+   ```
+
+    </TabItem>
+
+    <TabItem value="coston" label="Songbird Testnet Coston">
+
+   ```bash
+   # Create a dedicated directory
+   sudo mkdir -p /opt/coston/staking
+   # Move your keys
+   docker cp coston-node:/root/.avalanchego/staking /opt/coston/staking
+   ```
+
+    </TabItem>
+
+    </Tabs>
 
 <details>
 <summary>Explanation of the CLI arguments.</summary>
@@ -329,13 +381,13 @@ This guide will show examples of running the node using both Docker CLI and Dock
 
 Docker Compose for this use case is a good way to simplify your setup of running the RPC node. Adding all necessary configurations into a single file that can be run with a simple command.
 
-In this guide the `docker-compose.yaml` file is created in `/opt/observer` but the location is entirely up to you.
+In this guide the `docker-compose.yaml` file is created in `/opt/node` but the location is entirely up to you.
 
 1.  Create the working directory and set the ownership.
 
     ```bash
-    sudo mkdir /opt/observer
-    sudo chown -R <user>:<group> /opt/observer
+    sudo mkdir /opt/node
+    sudo chown -R <user>:<group> /opt/node
     ```
 
 2.  Create the `docker-compose.yaml` file:
@@ -344,10 +396,10 @@ In this guide the `docker-compose.yaml` file is created in `/opt/observer` but t
 
     <TabItem value="flare" label="Flare Mainnet" default>
 
-    ```yaml title="/opt/observer/docker-compose.yaml"
+    ```yaml title="/opt/node/docker-compose.yaml"
     services:
-      observer:
-        container_name: flare-observer
+      node:
+        container_name: flare-node
         # 1. Find the latest stable release tag from:
         #    https://hub.docker.com/r/flarefoundation/go-flare/tags
         # 2. Set the tag name in the variable below (only use versioned tags):
@@ -371,10 +423,10 @@ In this guide the `docker-compose.yaml` file is created in `/opt/observer` but t
 
     <TabItem value="coston2" label="Flare Testnet Coston2">
 
-    ```yaml title="/opt/observer/docker-compose.yaml"
+    ```yaml title="/opt/node/docker-compose.yaml"
     services:
-      observer:
-        container_name: coston2-observer
+      node:
+        container_name: coston2-node
         # 1. Find the latest stable release tag from:
         #    https://hub.docker.com/r/flarefoundation/go-flare/tags
         # 2. Set the tag name in the variable below (only use versioned tags):
@@ -398,10 +450,10 @@ In this guide the `docker-compose.yaml` file is created in `/opt/observer` but t
 
     <TabItem value="songbird" label="Songbird Canary-Network">
 
-    ```yaml title="/opt/observer/docker-compose.yaml"
+    ```yaml title="/opt/node/docker-compose.yaml"
     services:
-      observer:
-        container_name: songbird-observer
+      node:
+        container_name: songbird-node
         # 1. Find the latest stable release tag from:
         #    https://hub.docker.com/r/flarefoundation/go-flare/tags
         # 2. Set the tag name in the variable below (only use versioned tags):
@@ -425,10 +477,10 @@ In this guide the `docker-compose.yaml` file is created in `/opt/observer` but t
 
     <TabItem value="coston" label="Songbird Testnet Coston">
 
-    ```yaml title="/opt/observer/docker-compose.yaml"
+    ```yaml title="/opt/node/docker-compose.yaml"
     services:
-      observer:
-        container_name: coston-observer
+      node:
+        container_name: coston-node
         # 1. Find the latest stable release tag from:
         #    https://hub.docker.com/r/flarefoundation/go-flare/tags
         # 2. Set the tag name in the variable below (only use versioned tags):
@@ -455,7 +507,7 @@ In this guide the `docker-compose.yaml` file is created in `/opt/observer` but t
 3.  Run Docker Compose:
 
     ```bash
-    docker compose -f /opt/observer/docker-compose.yaml up -d
+    docker compose -f /opt/node/docker-compose.yaml up -d
     ```
 
 4.  When the command completes, check the container is running and inspect that logs are being generated:
@@ -471,6 +523,58 @@ In this guide the `docker-compose.yaml` file is created in `/opt/observer` but t
         ```bash
         curl http://localhost:9650/ext/health | jq
         ```
+
+6.  (Optional) If you plan to [register your node as a validator](/run-node/register-validator).
+    Make sure to copy the staking keys to a persistent directory outside the default location.
+    This is important for ensuring that your staking keys are not lost if the node is restarted or updated.
+
+     <Tabs groupId="network" block>
+
+     <TabItem value="flare" label="Flare Mainnet" default>
+
+    ```bash
+    # Create a dedicated directory
+    sudo mkdir -p /opt/flare/staking
+    # Move your keys
+    docker compose cp flare-node:/root/.avalanchego/staking /opt/flare/staking
+    ```
+
+     </TabItem>
+
+     <TabItem value="coston2" label="Flare Testnet Coston2">
+
+    ```bash
+    # Create a dedicated directory
+    sudo mkdir -p /opt/coston2/staking
+    # Move your keys
+    docker compose cp coston2-node:/root/.avalanchego/staking /opt/coston2/staking
+    ```
+
+     </TabItem>
+
+     <TabItem value="songbird" label="Songbird Canary-Network">
+
+    ```bash
+    # Create a dedicated directory
+    sudo mkdir -p /opt/songbird/staking
+    # Move your keys
+    docker compose cp songbird-node:/root/.avalanchego/staking /opt/songbird/staking
+    ```
+
+     </TabItem>
+
+     <TabItem value="coston" label="Songbird Testnet Coston">
+
+    ```bash
+    # Create a dedicated directory
+    sudo mkdir -p /opt/coston/staking
+    # Move your keys
+    docker compose cp coston-node:/root/.avalanchego/staking /opt/coston/staking
+    ```
+
+     </TabItem>
+
+     </Tabs>
 
 ### Additional configuration
 
@@ -510,7 +614,7 @@ To update your node to a newer go-flare version:
     2.  Stop and remove the old container:
 
         ```bash
-        docker stop <your_container_name> # e.g., flare-observer
+        docker stop <your_container_name> # e.g., flare-node
         docker rm <your_container_name>
         ```
 
@@ -525,15 +629,15 @@ To update your node to a newer go-flare version:
     2.  Stop the old container:
 
         ```bash
-        docker compose -f /opt/observer/docker-compose.yaml down
+        docker compose -f /opt/node/docker-compose.yaml down
         ```
 
     3.  Update the `docker-compose.yaml` file with the new tag and start the new container:
 
         ```bash
         LATEST_TAG="vX.Y.Z" # <-- Replace with the actual latest tag e.g v1.10.0
-        yq -i ".services.observer.image = flarefoundation/go-flare:${LATEST_TAG}" /opt/observer/docker-compose.yaml
-        docker compose -f /opt/observer/docker-compose.yaml up -d
+        yq -i ".services.node.image = flarefoundation/go-flare:${LATEST_TAG}" /opt/node/docker-compose.yaml
+        docker compose -f /opt/node/docker-compose.yaml up -d
         ```
 
   </TabItem>
