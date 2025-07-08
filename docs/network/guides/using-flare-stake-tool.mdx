@@ -410,6 +410,34 @@ If you encounter any issues during this process, refer to the [Troubleshooting](
    - **amount**: Amount must be provided in FLR units.
    - **node ID**, **start time** and **end time**: Use the values noted down from the [setup](#setup).
 
+   If you are adding a validator node, you also need to provide the proof of possession **BLS public key** and **BLS signature**.
+
+   Retrieve these details using the following command:
+
+   ```bash
+   curl -X POST --data '{
+    "jsonrpc":"2.0",
+    "id"     :1,
+    "method" :"info.getNodeID"
+   }' -H 'content-type:application/json;' 127.0.0.1:9650/ext/info | jq
+   ```
+
+   The output will be similar to the following:
+
+   ```plaintext
+   {
+   "jsonrpc": "2.0",
+   "result": {
+      "nodeID": "NodeID-CGeHNYkQJX4qb21x976PEcNt3FqsUZfXL",
+      "nodePOP": {
+         popBLSPublicKey ---> "publicKey": "0xb6a40b905128c010e4d7b0cbd6f7b7912a1da9a6022a8c720887b5183a4f2f109c678027316ae4757f7f987f1fa5addb",
+         popBLSSignature ---> "proofOfPossession": "0xb9394ef2992a77a3b70440c2fdb3b2a53f23fb8579460322b69a290bf3de7fafc2665b155b5300c08a1e7bcb45bb7eaf0ca7f596650b0423f61f329744e37f6908c1d7e4191378d5f0ff7fd7f8abd02d37a2be9dd95635a0b1f744b043cb5d9e"
+      }
+   },
+   "id": 1
+   }
+   ```
+
 3. If you selected **Add a validator node**, you have to set the **delegation fee**. This is the percentage of all rewards that the node owner keeps.
    The rest is split proportionally between the self-bond and all delegators that contributed stake. 10 means 10%, so the maximum value is 100.
 
@@ -420,6 +448,8 @@ If you encounter any issues during this process, refer to the [Troubleshooting](
    ? Enter start time(E.g. 1693185095): ●●●●●●●●
    ? Enter end time(E.g. 1693185095): ●●●●●●●●
    ? Enter delegation fee(E.g. 10): 10
+   ? Please enter the popBLSPublicKey: 0x●●●●●●●●
+   ? Please enter the popBLSSignature: 0x●●●●●●●●
    ```
 
 4. You are then asked to confirm the staking transaction on your hardware wallet.
