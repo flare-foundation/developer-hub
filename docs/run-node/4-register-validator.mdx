@@ -9,14 +9,15 @@ import Tabs from "@theme/Tabs";
 import TabItem from "@theme/TabItem";
 import DocCardList from "@theme/DocCardList";
 
-This guide explains how to register a node as a validator.
-On Flare, any node can be registered as a validator by performing a self-bond on the P-chain against the node's Node-ID, effectively activating the node as a validator.
+This guide explains how to register your Flare node as a validator.
+On Flare, any node can become a validator by performing a **self-bond** transaction on the P-chain.
+This transaction links your stake to your node's unique `Node-ID`, activating it as a validator.
 
-Validator nodes are essential for securing the network, and perform the following tasks:
+Validator nodes are crucial for the network's security and perform three primary tasks:
 
-- **Validation:** Ensure the validity of transactions.
-- **Consensus:** Reach agreement with other validators on the transactions to be added to the blockchain.
-- **Block Addition:** Bundle the agreed-upon transactions into a block and append it to the blockchain.
+- **Validation:** Verify that new transactions are valid.
+- **Consensus:** Work with other validators on the transactions to be added to the blockchain.
+- **Block Production:** Bundle transactions into blocks and add them to the blockchain.
 
 On Flare, data protocols such as the [Flare Time Series Oracle](/ftso/overview) and [Flare Data Connector](/fdc/overview) are enshrined into the network.
 To fully participate and earn all potential rewards, validators must also run a [Flare Entity](/run-node/flare-entity) to contribute to these protocols.
@@ -46,7 +47,6 @@ Failure to implement these measures significantly increases the risk to your nod
 - Configure your node to **enable only** the essential APIs required for validation (often just `["web3"]` within `eth-apis`). Explicitly disable admin APIs (`snowman-api-enabled`, `coreth-admin-api-enabled`).
 - **Firewall Best Practices:**
   - Implement a stateful firewall with a default-deny policy for inbound traffic.
-  - Explicitly allow only the necessary staking port (`9651/TCP`).
   - Consider blocking unnecessary outbound traffic.
   - Block ICMP traffic (ping, traceroute) unless specifically needed for monitoring within a trusted network.
 - **Do not** run other network-facing applications (e.g., web servers, databases, other blockchain nodes) on the same operating system instance or IP address as your validator.
@@ -98,12 +98,12 @@ Below is a sample `config.json` demonstrating a secure configuration with limite
 
 ### Prepare your staking keys
 
-Your node's identity is defined by two files, `staker.key` and `staker.crt`, which are created in `~/.avalanchego/staking/` the first time you start the node.
+Your node's identity is defined by two files, `staker.key` and `staker.crt`, which are created the first time you start the node.
 Your `Node-ID` is derived from these files.
 
 :::warning[Backup your staking keys]
 
-Backup the `staker.key` and `staker.crt` and store them in a secure, private location.
+Backup the `~/.avalanchego/staking/staker.key` and `~/.avalanchego/staking/staker.crt` and store them in a secure, private location.
 
 :::
 
@@ -145,12 +145,14 @@ This ensures your node always starts with the correct `Node-ID`.
 Add the `--staking-tls-cert-file` and `--staking-tls-key-file` flags to your [startup command](/run-node/from-source#run-the-node).
 
 ```bash
-# Assumes keys are in the default location
+# Assumes staking keys are in the default location
 ./build/avalanchego --network-id=flare \
   --http-host= \
   --bootstrap-ips="$(curl -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeIP"}' -H 'content-type:application/json;' [https://flare-bootstrap.flare.network/ext/info](https://flare-bootstrap.flare.network/ext/info) | jq -r '.result.ip')" \
   --bootstrap-ids="$(curl -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeID"}' -H 'content-type:application/json;' [https://flare-bootstrap.flare.network/ext/info](https://flare-bootstrap.flare.network/ext/info) | jq -r '.result.nodeID')" \
+  # highlight-next-line
   --staking-tls-cert-file="~/.avalanchego/staking/staker.crt" \
+  # highlight-next-line
   --staking-tls-key-file="~/.avalanchego/staking/staker.key"
 ```
 
@@ -162,18 +164,22 @@ Modify your [`docker run`](/run-node/using-docker#using-docker-cli) command to [
 # Find the latest tag at [https://hub.docker.com/r/flarefoundation/go-flare/tags](https://hub.docker.com/r/flarefoundation/go-flare/tags)
 LATEST_TAG="vX.Y.Z" # e.g., v1.10.0
 
+# Mount the staking volume and set the staking path environment variables
 docker run -d --name flare-node \
   -v /mnt/flare-db:/app/db \
   -v /opt/flare/conf:/app/conf \
-  -v /opt/flare/staking:/app/staking \ # <-- Mount the staking keys
+  # highlight-next-line
+  -v /opt/flare/staking:/app/staking \
   -v /opt/flare/logs:/app/logs \
   -p 127.0.0.1:9650:9650 \
   -p 0.0.0.0:9651:9651 \
   -e NETWORK_ID="flare" \
   -e AUTOCONFIGURE_BOOTSTRAP="1" \
   -e AUTOCONFIGURE_BOOTSTRAP_ENDPOINT="[https://flare-bootstrap.flare.network/ext/info](https://flare-bootstrap.flare.network/ext/info)" \
-  -e STAKING_TLS_CERT_FILE="/app/staking/staker.crt" \ # <-- Path inside the container
-  -e STAKING_TLS_KEY_FILE="/app/staking/staker.key" \ # <-- Path inside the container
+  # highlight-next-line
+  -e STAKING_TLS_CERT_FILE="/app/staking/staker.crt" \
+  # highlight-next-line
+  -e STAKING_TLS_KEY_FILE="/app/staking/staker.key" \
   flarefoundation/go-flare:${LATEST_TAG}
 ```
 
@@ -182,6 +188,7 @@ docker run -d --name flare-node \
 Modify your [`docker-compose.yaml`](/run-node/using-docker#using-docker-compose) file to include the [staking key volume](/run-node/register-validator#create-a-persistent-staking-directory-recommended-for-docker) and environment variables.
 
 ```yaml
+# Mount the staking volume and set the staking path environment variables
 services:
   node:
     image: flarefoundation/go-flare:vX.Y.Z # <-- REPLACE with the latest stable tag
@@ -193,14 +200,17 @@ services:
     volumes:
       - /mnt/flare-db:/app/db
       - /opt/flare/conf:/app/conf
-      - /opt/flare/staking:/app/staking # <-- Mount the staking keys
+      # highlight-next-line
+      - /opt/flare/staking:/app/staking
       - /opt/flare/logs:/app/logs
     environment:
       - NETWORK_ID=flare
       - AUTOCONFIGURE_BOOTSTRAP=1
       - AUTOCONFIGURE_BOOTSTRAP_ENDPOINT=[https://flare-bootstrap.flare.network/ext/info](https://flare-bootstrap.flare.network/ext/info)
-      - STAKING_TLS_CERT_FILE=/app/staking/staker.crt # <-- Path inside the container
-      - STAKING_TLS_KEY_FILE=/app/staking/staker.key # <-- Path inside the container
+      # highlight-next-line
+      - STAKING_TLS_CERT_FILE=/app/staking/staker.crt
+      # highlight-next-line
+      - STAKING_TLS_KEY_FILE=/app/staking/staker.key
 ```
 
 ## Stake and verify
