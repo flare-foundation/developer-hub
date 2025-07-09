@@ -9,7 +9,9 @@ Command line reference for interacting with FAssets `AssetManager` contract.
 
 Sourced from `IAssetManager.sol` on [GitHub](https://github.com/flare-foundation/fassets/blob/main/contracts/userInterfaces/IAssetManager.sol).
 
-## Functions
+---
+
+## Information
 
 ### `getSettings`
 
@@ -23,7 +25,7 @@ function getSettings()
     returns (AssetManagerSettings.Data memory);
 ```
 
-### `getAgentInfo`
+#### `getAgentInfo`
 
 Returns detailed information about an agent as the [`AgentInfo`](https://github.com/flare-foundation/fassets/blob/main/contracts/userInterfaces/data/AgentInfo.sol) struct.
 
@@ -39,11 +41,100 @@ function getAgentInfo(address _agentVault)
 
 ### `collateralReservationFee`
 
-Returns the collateral reservation fee amount that has to be passed to the `reserveCollateral` method. Returns the amount in NAT wei.
+Returns the collateral reservation fee amount.
 
 Parameters:
 
 - `_lots`: The number of lots for which to reserve collateral
+
+Returns:
+
+- `_reservationFeeNATWei`: The amount of reservation fee in NAT wei
+
+```solidity
+function collateralReservationFee(
+    uint256 _lots
+) external view returns (uint256 _reservationFeeNATWei);
+```
+
+### `collateralReservationInfo`
+
+Returns the data about the collateral reservation for an ongoing minting.
+Note: once the minting is executed or defaulted, the collateral reservation is deleted and this method fails.
+
+Parameters:
+
+- `_collateralReservationId`: The collateral reservation ID, as used for executing or defaulting the minting
+
+```solidity
+function collateralReservationInfo(uint256 _collateralReservationId)
+    external view
+    returns (CollateralReservationInfo.Data memory);
+```
+
+### `fAsset`
+
+Returns the FAsset token contract (ERC-20) that is managed by this asset manager instance.
+
+Returns:
+
+- `IERC20`: The address of the FAsset token contract
+
+```solidity
+function fAsset()
+    external view
+    returns (IERC20);
+```
+
+## Redemption Queue
+
+### `redemptionQueue`
+
+Returns the redemption queue in the form of an array of [`RedemptionTicketInfo`](https://github.com/flare-foundation/fassets/blob/main/contracts/userInterfaces/data/RedemptionTicketInfo.sol) structs.
+
+Parameters:
+
+- `_firstRedemptionTicketId`: the ticket id to start listing from; if `0`, starts from the beginning
+- `_pageSize`: the maximum number of redemption tickets to return
+
+Returns:
+
+- `_queue`: the (part of) the redemption queue; maximum length is \_pageSize
+- `_nextRedemptionTicketId`: works as a cursor - if the `_pageSize` is reached and there are more tickets, it is the first ticket id not returned; if the end is reached, it is 0
+
+```solidity
+function redemptionQueue(
+    uint256 _firstRedemptionTicketId,
+    uint256 _pageSize
+) external view
+    returns (RedemptionTicketInfo.Data[] memory _queue, uint256 _nextRedemptionTicketId);
+```
+
+### `agentRedemptionQueue`
+
+Returns the redemption queue for specific agent in the form of an array of [`RedemptionTicketInfo`](https://github.com/flare-foundation/fassets/blob/main/contracts/userInterfaces/data/RedemptionTicketInfo.sol) structs.
+
+Parameters:
+
+- `_agentVault`: the agent vault address of the queried agent
+- `_firstRedemptionTicketId`: the ticket id to start listing from; if `0`, starts from the beginning
+- `_pageSize`: the maximum number of redemption tickets to return
+
+Returns:
+
+- `_queue`: the (part of) the redemption queue; maximum length is \_pageSize
+- `_nextRedemptionTicketId`: works as a cursor - if the` _pageSize` is reached and there are more tickets, it is the first ticket id not returned; if the end is reached, it is 0
+
+```solidity
+function agentRedemptionQueue(
+    address _agentVault,
+    uint256 _firstRedemptionTicketId,
+    uint256 _pageSize
+) external view
+    returns (RedemptionTicketInfo.Data[] memory _queue, uint256 _nextRedemptionTicketId);
+```
+
+## Collateral Reservation
 
 ### `reserveCollateral`
 
@@ -66,21 +157,6 @@ function reserveCollateral(
     address payable _executor,
     string[] calldata _minterUnderlyingAddresses
 ) external payable;
-```
-
-### `collateralReservationInfo`
-
-Returns the data about the collateral reservation for an ongoing minting.
-Note: once the minting is executed or defaulted, the collateral reservation is deleted and this method fails.
-
-Parameters:
-
-- `_collateralReservationId`: The collateral reservation ID, as used for executing or defaulting the minting
-
-```solidity
-function collateralReservationInfo(uint256 _collateralReservationId)
-    external view
-    returns (CollateralReservationInfo.Data memory);
 ```
 
 ### `approveCollateralReservation`
@@ -127,23 +203,7 @@ function cancelCollateralReservation(
 ) external nonReentrant;
 ```
 
-### `collateralReservationFee`
-
-Returns the collateral reservation fee amount.
-
-Parameters:
-
-- `_lots`: The number of lots for which to reserve collateral
-
-Returns:
-
-- `_reservationFeeNATWei`: The amount of reservation fee in NAT wei
-
-```solidity
-function collateralReservationFee(
-    uint256 _lots
-) external view returns (uint256 _reservationFeeNATWei);
-```
+## Execute Minting
 
 ### `executeMinting`
 
@@ -166,6 +226,8 @@ function executeMinting(
     uint256 _collateralReservationId
 ) external nonReentrant;
 ```
+
+## Redemption
 
 ### `redeem`
 
@@ -220,62 +282,70 @@ function rejectedRedemptionPaymentDefault(
 ) external;
 ```
 
-### `redemptionQueue`
+## Core Vault Settings
 
-Returns the redemption queue in the form of an array of [`RedemptionTicketInfo`](https://github.com/flare-foundation/fassets/blob/main/contracts/userInterfaces/data/RedemptionTicketInfo.sol) structs.
+Reference for managing and interacting with FAssets `ICoreVaultSettings` contract which is inherited by the `IAssetManager` contract.
 
-Parameters:
+Sourced from `ICoreVaultSettings.sol` on [GitHub](https://github.com/flare-foundation/fassets/blob/main/contracts/userInterfaces/ICoreVaultSettings.sol).
 
-- `_firstRedemptionTicketId`: the ticket id to start listing from; if `0`, starts from the beginning
-- `_pageSize`: the maximum number of redemption tickets to return
+---
 
-Returns:
+### `getCoreVaultManager`
 
-- `_queue`: the (part of) the redemption queue; maximum length is \_pageSize
-- `_nextRedemptionTicketId`: works as a cursor - if the `_pageSize` is reached and there are more tickets, it is the first ticket id not returned; if the end is reached, it is 0
+Returns the core vault manager address. To interact with the Core Vault manager reference the [Core Vault Manager](/fassets/reference/ICoreVaultManager) contract.
 
 ```solidity
-function redemptionQueue(
-    uint256 _firstRedemptionTicketId,
-    uint256 _pageSize
-) external view
-    returns (RedemptionTicketInfo.Data[] memory _queue, uint256 _nextRedemptionTicketId);
-```
-
-### `agentRedemptionQueue`
-
-Returns the redemption queue for specific agent in the form of an array of [`RedemptionTicketInfo`](https://github.com/flare-foundation/fassets/blob/main/contracts/userInterfaces/data/RedemptionTicketInfo.sol) structs.
-
-Parameters:
-
-- `_agentVault`: the agent vault address of the queried agent
-- `_firstRedemptionTicketId`: the ticket id to start listing from; if `0`, starts from the beginning
-- `_pageSize`: the maximum number of redemption tickets to return
-
-Returns:
-
-- `_queue`: the (part of) the redemption queue; maximum length is \_pageSize
-- `_nextRedemptionTicketId`: works as a cursor - if the` _pageSize` is reached and there are more tickets, it is the first ticket id not returned; if the end is reached, it is 0
-
-```solidity
-function agentRedemptionQueue(
-    address _agentVault,
-    uint256 _firstRedemptionTicketId,
-    uint256 _pageSize
-) external view
-    returns (RedemptionTicketInfo.Data[] memory _queue, uint256 _nextRedemptionTicketId);
-```
-
-### `fAsset`
-
-Returns the FAsset token contract (ERC-20) that is managed by this asset manager instance.
-
-Returns:
-
-- `IERC20`: The address of the FAsset token contract
-
-```solidity
-function fAsset()
+function getCoreVaultManager()
     external view
-    returns (IERC20);
+    returns (address);
+```
+
+### `getCoreVaultMinimumAmountLeftBIPS`
+
+Returns the minimum amount of minting left on agent's address after transfer to core vault.
+
+```solidity
+function getCoreVaultMinimumAmountLeftBIPS()
+  external view
+  returns (uint256);
+```
+
+#### `getCoreVaultTransferTimeExtensionSeconds`
+
+Returns the extra time for an agent's transfer to the core vault.
+
+```solidity
+function getCoreVaultTransferTimeExtensionSeconds()
+  external view
+  returns (uint256);
+```
+
+### `getCoreVaultTransferFeeBIPS`
+
+Returns the fee paid by agent for transfer to the core vault.
+
+```solidity
+function getCoreVaultTransferFeeBIPS()
+  external view
+  returns (uint256);
+```
+
+### `getCoreVaultMinimumRedeemLots`
+
+Returns the minimum number of lots that a direct redemption from core vault can take.
+
+```solidity
+function getCoreVaultMinimumRedeemLots()
+  external view
+  returns (uint256);
+```
+
+### `getCoreVaultRedemptionFeeBIPS`
+
+Returns the fee paid by the redeemer for direct redemptions from the core vault.
+
+```solidity
+ function getCoreVaultRedemptionFeeBIPS()
+  external view
+  returns (uint256);
 ```
