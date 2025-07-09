@@ -1,7 +1,18 @@
 ---
 sidebar_position: 4
 slug: register-validator
+tags: [intermediate, infrastructure]
 title: Register as Validator
+keywords:
+  [
+    node,
+    validator,
+    staking,
+    go-flare,
+    infrastructure,
+    flare-network,
+    configuration,
+  ]
 description: Register your node as a validator.
 ---
 
@@ -284,24 +295,36 @@ Follow the instructions in the guide below to stake FLR to your `Node-ID`.
 
 ### Verify validator status
 
+:::tip[Get listed on explorers]
+
+To get your validator logo and name listed on the explorers, open a PR on [TowoLabs/ftso-signal-providers](https://github.com/TowoLabs/ftso-signal-providers).
+
+:::
+
 Once your self-bond transaction is confirmed and the staking period begins, your node will join the active validator set.
 You can monitor its status using an API call or a validator monitoring site.
 
 - **Via API:**
 
   ```bash
+  NODE_ID="" # <-- Replace with your actual Node-ID
   curl --data '{
-      "jsonrpc": "2.0",
-      "method": "platform.getCurrentValidators",
-      "params": {
-        "nodeIDs": ["<NODE_ID>"]
-      },
-      "id": 1
+    "jsonrpc": "2.0",
+    "method": "platform.getCurrentValidators",
+    "params": {
+      "nodeIDs": ["'"${NODE_ID}"'"]
+    },
+    "id": 1
   }' -H 'content-type:application/json;' https://flare-api.flare.network/ext/P | jq
   ```
 
-  Check the `uptime` and `connected` fields in the response.
+  Check the following fields in the response:
+
+  - `uptime`: Percentage of time the queried node has reported the peer as online and validating.
+  - `connected`: If the node is connected and tracks the network.
+
+  See the full P-chain API details in the [Avalanche Documentation](https://build.avax.network/docs/api-reference/p-chain/api).
 
 - **Via Web:**
 
-  Use the [Flare Validator Monitoring Site](https://flare-validators.flare.network/) to see your validator's status.
+  Use the [Flare Validator Tracker](https://flare-validators.flare.network/) to see your validator's status.
