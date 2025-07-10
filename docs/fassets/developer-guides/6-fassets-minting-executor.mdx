@@ -1,0 +1,129 @@
+---
+title: Mint FAssets using the Executor
+tags: [intermediate, fassets]
+slug: fassets-mint-executor
+description: Learn how to mint FAssets using the executor
+keywords: [fassets, flare-network]
+sidebar_position: 6
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import Remix from "@site/src/components/remix";
+import FAssetsReserveCollateralWithExecutor from "!!raw-loader!/examples/developer-hub-javascript/fassetsReserveCollateralWithExecutor.ts";
+import FAssetsCreateXrpPayment from "!!raw-loader!/examples/developer-hub-javascript/fassetsCreateXrpPayment.ts";
+import FAssetsExecuteMinting from "!!raw-loader!/examples/developer-hub-javascript/fassetsExecuteMinting.ts";
+
+## Overview
+
+This guide walks you through the complete process of minting FAssets (e.g., FXRP) on the Flare network using the [executor](/fassets/minting#executor-role).
+
+Minting FAssets is the process of wrapping, for instance, XRP from the XRP Ledger into an FAsset, enabling it to be used within the Flare blockchain ecosystem.
+
+The minting process can be executed by an external actor that monitors pending requests.
+Executors are incentivized but have no special permissions.
+If they fail to execute in time, the request expires, and minting must be restarted.
+
+See the [Minting](/fassets/minting) overview for more details.
+
+## Prerequisites
+
+- [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit)
+- [Flare Network Periphery Contracts](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts)
+
+## Minting Process Steps
+
+The minting process is a multi-step process that involves the following steps:
+
+1. Reserve collateral from a suitable agent and nominate an executor.
+2. Send the underlying asset (e.g., XRP) to the agent.
+3. Use [Flare Data Connector (FDC)](/fdc/overview) to generate proof of payment.
+4. Execute minting with the proof to receive FAssets.
+
+## Reserve Collateral
+
+The following code demonstrates how to reserve collateral by calling the [`reserveCollateral()`](/fassets/reference/IAssetManager#reservecollateral) function on the AssetManager contract.
+
+<CodeBlock language="typescript" title="scripts/fassets/reserveCollateral.ts">
+  {FAssetsReserveCollateralWithExecutor}
+</CodeBlock>
+
+### Collateral Reservation Script Breakdown
+
+1. Define constants
+
+- `ASSET_MANAGER_ADDRESS`: FXRP AssetManager address on Songbird Testnet (Coston).
+- `LOTS_TO_MINT`: Number of FAssets lots to reserve.
+- `UNDERLYING_ADDRESS`: Target XRP Ledger address for the minted asset.
+- `EXECUTOR_ADDRESS`: Executor address that will execute the minting process and provide the proof of underlying asset payment.
+
+2. Retrieve and filter agents with enough free collateral and select the agent with the lowest fee and normal status.
+3. Parse [`CollateralReserved`](/fassets/reference/IAssetManagerEvents#collateralreserved) event.
+4. Start the minting reservation process at the script's entry point.
+5. Call `findBestAgent()` with the required number of lots.
+6. Fetch agent metadata from [`getAgentInfo()`](/fassets/reference/IAssetManager#getagentinfo) to get the agent's `feeBIPS`, which is used to calculate the collateral reservation fee.
+7. Calculate the collateral reservation fee by calling [`collateralReservationFee()`](/fassets/reference/IAssetManager#collateralreservationfee).
+8. Set the executor fee the same as the collateral reservation fee to make this example simpler.
+9. Reserve collateral from agent by calling [`reserveCollateral()`](/fassets/reference/IAssetManager#reservecollateral) with the executor address.
+   The executor fee is on top of the collateral reservation fee in native tokens.
+   The fee is agreed between the minter and the executor.
+10. Call `assetMintingDecimals()` to determine the XRP token's decimal precision.
+11. Parse the [`CollateralReserved`](/fassets/reference/IAssetManagerEvents#collateralreserved) event to get the collateral reservation ID and other important collateral reservation details.
+12. Calculate the total XRP value required for payment.
+
+## Send Payment on XRP Ledger
+
+The next step is to send the XRP Ledger payment to the agent, and you can use this script to do that.
+
+<CodeBlock language="typescript" title="scripts/fassets/xrpPayment.ts">
+  {FAssetsCreateXrpPayment}
+</CodeBlock>
+
+### XRP Payment Script Breakdown
+
+1. Install the `xrpl` package — it's not included in the Flare Hardhat Starter Kit by default.
+2. Specify the correct constants from the reserve collateral script:
+   - `AGENT_ADDRESS` - Agent's XRP Ledger address.
+   - `AMOUNT_XRP` - XRP amount to send.
+   - `PAYMENT_REFERENCE` - Payment reference from the the reserve collateral script.
+3. Create a client to connect to the XRP Ledger Testnet.
+4. Load the sender's wallet.
+5. Construct the payment transaction.
+6. Sign and submit the transaction.
+
+## Generate Proof with Flare Data Connector
+
+The executor will use the [Flare Data Connector Payment](/fdc/guides/hardhat/payment) to validate the XRP payment and generate a Merkle proof.
+
+## Execute Minting
+
+Once the XRP payment is validated, executor can retrieve the FDC proof from the [Data Availability Layer](/fdc/overview#data-availability-layer) and call the [`executeMinting()`](/fassets/reference/IAssetManager#executeminting) function on the AssetManager contract.
+Once the minting is executed, the executor will receive the executor fee in native tokens.
+If the executor fails to execute in time, the request expires, and minting must be restarted.
+
+This script demonstrates how to retrieve the FDC proof and execute minting.
+
+<CodeBlock language="typescript" title="scripts/fassets/executeMinting.ts">
+  {FAssetsExecuteMinting}
+</CodeBlock>
+
+### Execute Minting Script Breakdown
+
+1. Get environment variables.
+2. Declare the constant `ASSET_MANAGER_ADDRESS` pointing to the FXRP AssetManager on the Songbird Testnet (Coston network).
+
+3. Set the collateral reservation ID to the previously reserved minting request.
+4. Set the Flare Data Connector (FDC) round ID to retrieve the proof.
+5. Prepare the FDC request payload data.
+6. Create a function to get the proof from the FDC.
+   It sends a POST request to the [Flare Data Availability Layer](/fdc/overview#data-availability-layer) and returns a Merkle proof and attestation response from FDC.
+7. Retrieve the FDC proof from the Data Availability Layer.
+8. Call the [`executeMinting()`](/fassets/reference/IAssetManager#executeminting) function on the AssetManager contract and send a transaction to the Flare network to convert the attested XRP payment into FXRP (minting).
+9. On a successful transaction call `parseExecutemintingEvents()` to extract and log events [`RedemptionTicketCreated`](/fassets/reference/IAssetManagerEvents#redemptionticketcreated) and [`MintingExecuted`](/fassets/reference/IAssetManagerEvents#mintingexecuted).
+
+## Next Steps
+
+Now that you have successfully minted FAssets using the executor, you can use them in Flare dApps or transfer them to other users or smart contracts within the Flare ecosystem.
+
+:::tip Redeem
+To convert your FAssets (e.g., FXRP) back into the original asset (e.g., XRP), follow the steps in the [FAssets Redemption Guide](/fassets/developer-guides/fassets-redeem).
+:::
