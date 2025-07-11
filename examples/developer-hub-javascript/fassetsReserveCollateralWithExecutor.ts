@@ -5,6 +5,9 @@ import {
   IAssetManagerContract,
 } from "../../typechain-types";
 
+// Initialize the FAssets FXRP AssetManager contract
+const AssetManager = artifacts.require("IAssetManager");
+
 // 1. Define constants
 
 // AssetManager address on Flare Testnet Coston2 network
@@ -105,8 +108,6 @@ async function parseCollateralReservedEvent(transactionReceipt) {
 // 4. Main function
 
 async function main() {
-  // Initialize the FAssets FXRP AssetManager contract
-  const AssetManager = artifacts.require("IAssetManager");
   const assetManager: IAssetManagerInstance = await AssetManager.at(
     ASSET_MANAGER_ADDRESS,
   );
@@ -130,9 +131,7 @@ async function main() {
     "Collateral reservation fee:",
     collateralReservationFee.toString(),
   );
-
-  const IAssetManager = artifacts.require("IAssetManager");
-  const iAssetManager: IAssetManagerInstance = await IAssetManager.at(
+  const iAssetManager: IAssetManagerInstance = await AssetManager.at(
     ASSET_MANAGER_ADDRESS,
   );
 
