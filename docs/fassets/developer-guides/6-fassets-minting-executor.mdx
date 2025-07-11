@@ -32,16 +32,16 @@ See the [Minting](/fassets/minting) overview for more details.
 
 ## Minting Process Steps
 
-The minting process is a multi-step process that involves the following steps:
+The minting process involves the following steps:
 
 1. Reserve collateral from a suitable agent and nominate an executor.
 2. Send the underlying asset (e.g., XRP) to the agent.
-3. Use [Flare Data Connector (FDC)](/fdc/overview) to generate proof of payment.
-4. Execute minting with the proof to receive FAssets.
+3. Use [Flare Data Connector (FDC)](/fdc/overview) to generate a proof of payment.
+4. Execute minting with the proof as a parameter to receive FAssets.
 
 ## Reserve Collateral
 
-The following code demonstrates how to reserve collateral by calling the [`reserveCollateral()`](/fassets/reference/IAssetManager#reservecollateral) function on the AssetManager contract.
+The following code demonstrates how to reserve collateral by calling the [`reserveCollateral`](/fassets/reference/IAssetManager#reservecollateral) function on the AssetManager contract.
 
 <CodeBlock language="typescript" title="scripts/fassets/reserveCollateral.ts">
   {FAssetsReserveCollateralWithExecutor}
@@ -52,7 +52,7 @@ The following code demonstrates how to reserve collateral by calling the [`reser
 1. Define constants
 
 - `ASSET_MANAGER_ADDRESS`: FXRP AssetManager address on Songbird Testnet (Coston).
-- `LOTS_TO_MINT`: Number of FAssets lots to reserve.
+- `LOTS_TO_MINT`: Number of FAssets [lots](/fassets/minting#lots) to reserve.
 - `UNDERLYING_ADDRESS`: Target XRP Ledger address for the minted asset.
 - `EXECUTOR_ADDRESS`: Executor address that will execute the minting process and provide the proof of underlying asset payment.
 
@@ -92,11 +92,11 @@ The next step is to send the XRP Ledger payment to the agent, and you can use th
 
 ## Generate Proof with Flare Data Connector
 
-The executor will use the [Flare Data Connector Payment](/fdc/guides/hardhat/payment) to validate the XRP payment and generate a Merkle proof.
+The executor will use the Flare Data Connector's [Payment attestastion type](/fdc/guides/hardhat/payment) to validate the XRP payment and generate a Merkle proof.
 
 ## Execute Minting
 
-Once the XRP payment is validated, executor can retrieve the FDC proof from the [Data Availability Layer](/fdc/overview#data-availability-layer) and call the [`executeMinting()`](/fassets/reference/IAssetManager#executeminting) function on the AssetManager contract.
+Once the XRP payment is validated, executor can retrieve the FDC proof from the [Data Availability Layer](/fdc/overview#data-availability-layer) and call the [`executeMinting`](/fassets/reference/IAssetManager#executeminting) function on the AssetManager contract.
 Once the minting is executed, the executor will receive the executor fee in native tokens.
 If the executor fails to execute in time, the request expires, and minting must be restarted.
 
@@ -117,8 +117,8 @@ This script demonstrates how to retrieve the FDC proof and execute minting.
 6. Create a function to get the proof from the FDC.
    It sends a POST request to the [Flare Data Availability Layer](/fdc/overview#data-availability-layer) and returns a Merkle proof and attestation response from FDC.
 7. Retrieve the FDC proof from the Data Availability Layer.
-8. Call the [`executeMinting()`](/fassets/reference/IAssetManager#executeminting) function on the AssetManager contract and send a transaction to the Flare network to convert the attested XRP payment into FXRP (minting).
-9. On a successful transaction call `parseExecutemintingEvents()` to extract and log events [`RedemptionTicketCreated`](/fassets/reference/IAssetManagerEvents#redemptionticketcreated) and [`MintingExecuted`](/fassets/reference/IAssetManagerEvents#mintingexecuted).
+8. Call the [`executeMinting`](/fassets/reference/IAssetManager#executeminting) function on the AssetManager contract and send a transaction to the Flare network to convert the attested XRP payment into FXRP (minting).
+9. On a successful transaction call `parseExecutemintingEvents` to extract and log events [`RedemptionTicketCreated`](/fassets/reference/IAssetManagerEvents#redemptionticketcreated) and [`MintingExecuted`](/fassets/reference/IAssetManagerEvents#mintingexecuted).
 
 ## Next Steps
 
