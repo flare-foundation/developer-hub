@@ -131,7 +131,7 @@ async function main() {
     "Collateral reservation fee:",
     collateralReservationFee.toString(),
   );
-  const iAssetManager: IAssetManagerInstance = await AssetManager.at(
+  const assetManager: IAssetManagerInstance = await AssetManager.at(
     ASSET_MANAGER_ADDRESS,
   );
 
@@ -143,7 +143,7 @@ async function main() {
 
   // 9. Reserve collateral
   // https://dev.flare.network/fassets/reference/IAssetManager#reservecollateral
-  const tx = await iAssetManager.reserveCollateral(
+  const tx = await assetManager.reserveCollateral(
     agentVaultAddress,
     LOTS_TO_MINT,
     agentInfo.feeBIPS,
