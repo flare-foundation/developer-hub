@@ -105,24 +105,6 @@ The executor is the actor who submits the payment proof to the Asset Manager, fi
 
 This design ensures timely and reliable minting finalization without relying on a centralized party.
 
-### Trailing Fees
-
-To ensure that agents and collateral pool providers receive steady income, the FAsset system offers an option to enable FAsset token transfer fees, also known as trailing fees.
-
-Whenever FAssets are transferred, a small proportional fee is deducted and contributed to a common pool. In a regular transfer, this fee is subtracted from the payment, meaning the sender pays the exact amount specified in the transfer request, while the receiver ends up receiving a slightly lower amount.
-
-There is also a method where the receiver gets the exact amount specified in the call, while the sender pays more. The fee percentage is a system setting and is typically quite small.
-
-The fees are collected over a certain period, known as an epoch, after which they are distributed among all agents in proportion to each agent's average backed amount during that epoch.
-
-An agent can claim their portion of the fees for an epoch at any time after the epoch ends and before it expires. When making a claim, the fee is distributed between the agent and the pool in the same manner as the minting fee, based on the agent's settings.
-
-## Handshake
-
-Certain jurisdictions may require agents to confirm that those minting or redeeming assets are not engaged in illegal activities. Although the FAsset system does not impose this requirement, it does provide agents with the option to utilize an external service to verify the identities of minters and redeemers before proceeding with minting or redemption.
-
-To enable the handshake, the agent must configure this setting in the agent settings. Once this is enabled, minting and redemption will involve an additional step.
-
 ### Minting
 
 The FAssets agent verifies the minter after the user completes the collateral reservation and pays the collateral reservation fee. The agent is responsible for confirming or rejecting the minter's status. If the agent does not respond within a certain timeframe, the minter has the option to cancel the reservation and receive a full refund of the collateral reservation fee.
@@ -132,16 +114,6 @@ To enable the agent to verify the minter, the collateral reservation must includ
 Users must wait up to 60 seconds before they can cancel their request. If the agent accepts within this time, the user can proceed to mint by depositing the underlying assets. Therefore, it is important for the agent to respond quickly. If the agent does not respond in time, it will depend on whether the user is willing to wait; otherwise, the agent will simply miss the opportunity to mint, but there will be no loss of tokens.
 
 When the agent rejects the minter's request or the minter decides to cancel, the minter will receive a refund of the collateral reservation fee, minus a small percentage (e.g., 5%) that is burned. This burned amount is designed to prevent abuse of the agent by stopping someone from repeatedly reserving collateral from a sanctioned address. If the burned percentage were zero, an attacker could exploit the system without any cost.
-
-### Redemption
-
-The agent has a few minutes to verify the redeemer's addresses and either approve or reject the redemption. If rejected, another agent can take over. If no one takes over, the minter receives the full amount plus a small premium from the rejecting agent, with the premium for a handshake rejection being smaller than for a redemption default.
-
-:::info
-
-An agent may only fulfill part of a request due to insufficient minting or too many small tickets. In these situations, the system allows for a “partial takeover”, where the remaining portion can either be taken over by another agent or covered by collateral from the agent who declined the redemption.
-
-:::
 
 ## Payment Failure
 
