@@ -5,6 +5,9 @@ description: Software Development Kit for performing common operations on Flare.
 keywords: [sdk, flare-network, developer tools]
 ---
 
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
 Flare Transaction SDK ([`@flarenetwork/flare-tx-sdk`](https://www.npmjs.com/package/@flarenetwork/flare-tx-sdk/)) is the official Node.js Software Development Kit for performing common actions on Flare's networks:
 
 - Retrieving account and balance information
@@ -33,9 +36,23 @@ Before you start, ensure you have the following:
 
 To get started, install the SDK into your Node.js project:
 
-```bash
-npm install @flarenetwork/flare-tx-sdk
-```
+<Tabs>
+    <TabItem value="npm" label="npm" default>
+
+      ```bash
+      npm install @flarenetwork/flare-tx-sdk
+      ```
+
+    </TabItem>
+    <TabItem value="yarn" label="yarn">
+
+      ```bash
+      yarn add @flarenetwork/flare-tx-sdk
+      ```
+
+    </TabItem>
+
+</Tabs>
 
 ## Core concepts
 
@@ -77,18 +94,11 @@ async function main() {
   console.log("Fetching balance...");
   const balance = await network.getBalance(publicKey);
   console.log("✅ Balance retrieved successfully!");
-
   // All amounts are returned as wei
   console.log(`   - Available on C-Chain: ${balance.availableOnC} wei`);
   console.log(`   - Wrapped on C-Chain:   ${balance.wrappedOnC} wei`);
   console.log(`   - Available on P-Chain: ${balance.availableOnP} wei`);
   console.log(`   - Staked on P-Chain:    ${balance.stakedOnP} wei`);
-  console.log(
-    `   - Not yet imported to C-Chain: ${balance.notImportedToC} wei`,
-  );
-  console.log(
-    `   - Not yet imported to P-Chain: ${balance.notImportedToP} wei`,
-  );
 }
 
 main().catch(console.error);
@@ -202,7 +212,7 @@ You can also pass additional parameters to modify:
 await network.claimFtsoReward(wallet, rewardOwner, recipient, wrap);
 ```
 
-#### Detailed reward overview
+#### Detailed rewards
 
 ```javascript
 let states = await network.getStateOfFtsoRewards(cAddress);
@@ -216,6 +226,8 @@ It can be empty or it consists of objects of type [`FtsoRewardState`](https://gi
 - `amount` (int) - The reward amount in wei.
 - `claimType` (string) - The type of claim (`DIRECT`, `FEE`, `WNAT`, `MIRROR`, or `CCHAIN`).
 - `initialised` (boolean) - flag indicating if the reward can be claimed without providing proofs.
+
+#### Claim with proofs
 
 Rewards that are not initialized can be claimed using Merkle proofs available in the [flare-foundation/fsp-rewards](https://github.com/flare-foundation/fsp-rewards/) repository.
 
@@ -329,14 +341,8 @@ The SDK streamlines this cross-chain process.
 
 ## Wallet controllers
 
-To sign transactions, you must provide an object that implements the [`Wallet`](https://github.com/flare-foundation/flare-tx-sdk/blob/HEAD/src/wallet/index.ts) interface.
+A controller is a helper class that wraps a standard wallet library (like EIP-1193 for MetaMask or Zondax for Ledger) and produces SDK-compatible [`Wallet`](https://github.com/flare-foundation/flare-tx-sdk/blob/HEAD/src/wallet/index.ts) objects.
 The SDK includes controllers for popular wallet standards to make this easy.
-
-:::tip[What is a Wallet Controller?]
-
-A controller is a helper class that wraps a standard wallet library (like EIP-1193 for MetaMask or Zondax for Ledger) and produces SDK-compatible `Wallet` objects.
-
-:::
 
 ### EIP-1193 Wallets
 
@@ -360,15 +366,15 @@ controller.onWalletChange((newWallet) => {
 
 ### Ledger
 
-Use the [`LedgerWalletController`](https://github.com/flare-foundation/flare-tx-sdk/blob/HEAD/src/wallet/ledger/controller.ts) with the [@zondax/ledger-flare](https://www.npmjs.com/package/@zondax/ledger-flare) or [@ledgerHQ/hw-app-eth](https://www.npmjs.com/package/@ledgerhq/hw-app-eth) libraries to sign with a Ledger device.
+Use the [`LedgerWalletController`](https://github.com/flare-foundation/flare-tx-sdk/blob/HEAD/src/wallet/ledger/controller.ts) with either [`@zondax/ledger-flare`](https://www.npmjs.com/package/@zondax/ledger-flare) or [`@ledgerHQ/hw-app-eth`](https://www.npmjs.com/package/@ledgerhq/hw-app-eth) libraries to sign with a Ledger device.
 
 ```javascript
 import { LedgerWalletController } from "@flarenetwork/flare-tx-sdk";
 
 // Option 1: Setup with Zondax
-// import { FlareApp } from "@zondax/ledger-flare"
-// flrApp = FlareApp(...)
-// const controller = new LedgerWalletController(flrApp, null);
+import { FlareApp } from "@zondax/ledger-flare"
+flrApp = FlareApp(...)
+const controller = new LedgerWalletController(flrApp, null);
 
 // Option 2: Setup with LedgerHQ
 // import { Eth } from "@ledgerHQ/hw-app-eth"
@@ -398,7 +404,8 @@ const wallet = await controller.getWallet("m/44'/60'/0'/0/0");
 
 ### Transaction tracking
 
-For fine-grained control and monitoring, you can register callbacks that fire at different stages of a transaction's lifecycle.
+For fine-grained control and monitoring, you can register [callbacks](https://github.com/flare-foundation/flare-tx-sdk/blob/main/src/network/callback.ts) that fire at different stages of a transaction's lifecycle.
+All
 This is useful for UI updates, logging, or offline signing workflows.
 
 ```javascript
@@ -409,6 +416,7 @@ This is useful for UI updates, logging, or offline signing workflows.
 // Returning `false` will cancel the signing request.
 network.setBeforeTxSignatureCallback(async (data) => {
   console.log("Transaction to be signed:", data.unsignedTxHex);
+  console.log("Transaction ID:", data.txType); // https://github.com/flare-foundation/flare-tx-sdk/blob/main/src/network/txtype.ts
   return true; // Allow signing
 });
 
@@ -417,19 +425,21 @@ network.setBeforeTxSignatureCallback(async (data) => {
 network.setBeforeTxSubmissionCallback(async (data) => {
   console.log("Transaction to be submitted:", data.signedTxHex);
   console.log("Transaction ID:", data.txId);
+  console.log("Transaction type:", data.txType); // https://github.com/flare-foundation/flare-tx-sdk/blob/main/src/network/txtype.ts
   return true; // Allow submission
 });
 
 // 3. After Submission: Get the transaction ID immediately after sending.
 network.setAfterTxSubmissionCallback(async (data) => {
   console.log(`Transaction ${data.txId} submitted. Awaiting confirmation...`);
+  console.log("Transaction type:", data.txType); // https://github.com/flare-foundation/flare-tx-sdk/blob/main/src/network/txtype.ts
   return true; // Wait for confirmation
 });
 
 // 4. After Confirmation: Get the final status of the transaction.
 network.setAfterTxConfirmationCallback(async (data) => {
   console.log(
-    `Transaction ${data.txId} confirmed with status: ${data.txStatus ? "Success" : "Failure"}`,
+    `Transaction ${data.txId} confirmed with status: ${data.txStatus}`,
   );
 });
 ```
