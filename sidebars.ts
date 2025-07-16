@@ -69,6 +69,7 @@ const sidebars: SidebarsConfig = {
             },
           ],
         },
+        "network/flare-tx-sdk",
       ],
     },
     {
