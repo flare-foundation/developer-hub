@@ -269,8 +269,10 @@ async function submitDataAndProofsToProofOfReserves(
 
   const [jsonProof, transactionProofs] = await prepareDataAndProofs(data);
 
-  await proofOfReserves.verifyReserves(jsonProof, transactionProofs);
-  const sufficientReserves: boolean = true;
+  const sufficientReserves: boolean = await proofOfReserves.verifyReserves(
+    jsonProof,
+    transactionProofs,
+  );
   return sufficientReserves;
 }
 
