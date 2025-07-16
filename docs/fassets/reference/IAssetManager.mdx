@@ -157,50 +157,6 @@ function reserveCollateral(
 ) external payable;
 ```
 
-### `approveCollateralReservation`
-
-Agent approves the collateral reservation request after checking the minter's identity.
-
-Parameters:
-
-- `_collateralReservationId`: Collateral reservation ID
-
-```solidity
-function approveCollateralReservation(
-    uint256 _collateralReservationId
-) external notEmergencyPaused;
-```
-
-### `rejectCollateralReservation`
-
-Agent rejects the collateral reservation request after checking the minter's identity.
-The collateral reservation fee is returned to the minter.
-
-Parameters:
-
-- `_collateralReservationId`: Collateral reservation ID
-
-```solidity
-function rejectCollateralReservation(
-    uint256 _collateralReservationId
-) external nonReentrant;
-```
-
-### `cancelCollateralReservation`
-
-Minter cancels the collateral reservation request if the agent didn't respond in time.
-The collateral reservation fee is returned to the minter.
-
-Parameters:
-
-- `_collateralReservationId`: Collateral reservation ID
-
-```solidity
-function cancelCollateralReservation(
-    uint256 _collateralReservationId
-) external nonReentrant;
-```
-
 ## Execute Minting
 
 ### `executeMinting`
@@ -261,21 +217,6 @@ Parameters:
 ```solidity
 function redemptionPaymentDefault(
     IReferencedPaymentNonexistence.Proof calldata _proof,
-    uint256 _redemptionRequestId
-) external;
-```
-
-### `rejectedRedemptionPaymentDefault`
-
-If the agent rejected the redemption request and no other agent took over the redemption, the redeemer or appointed executor calls this method and receives payment in collateral.
-The agent can also call default if the redeemer is unresponsive, to payout the redeemer and free the remaining collateral.
-
-Parameters:
-
-- `_redemptionRequestId`: ID of an existing redemption request
-
-```solidity
-function rejectedRedemptionPaymentDefault(
     uint256 _redemptionRequestId
 ) external;
 ```
