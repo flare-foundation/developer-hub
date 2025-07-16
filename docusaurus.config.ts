@@ -126,20 +126,20 @@ const config: Config = {
           title: "Flare",
           items: [
             {
-              label: "Contact",
-              href: "https://flare.network/resources/developer-support",
+              label: "Support",
+              href: "https://flare.network/resources/technical-support",
             },
             {
-              label: "Our Team",
-              href: "https://flare.network/team",
-            },
-            {
-              label: "Brand Assets",
+              label: "Media Kit",
               href: "https://drive.google.com/drive/u/1/folders/1mPrtIBb2k88E4f1fguEm3eAXLW74xOry",
             },
             {
               label: "Terms & Conditions",
               href: "https://flare.network/privacy-policy/",
+            },
+            {
+              label: "UK Disclaimer",
+              href: "https://flare.network/uk-disclaimer",
             },
           ],
         },
