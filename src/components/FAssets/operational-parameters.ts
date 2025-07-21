@@ -264,28 +264,6 @@ export const operationalParameters = [
     title: "Collateral Ratios",
     parameters: [
       {
-        name: "Backing factor",
-        settingName: "minUnderlyingBackingBIPS",
-        description:
-          "The percentage of underlying assets that must be actively backed at any time.",
-        link: "/fassets/overview#agents",
-        values: {
-          coston2: {
-            xrp: "100%",
-          },
-          songbird: {
-            xrp: "98%",
-            btc: "99%",
-            doge: "95%",
-          },
-          coston: {
-            xrp: "100%",
-            btc: "95%",
-            doge: "100%",
-          },
-        },
-      },
-      {
         name: "Vault Collateral Supported Types",
         description: "Types of collateral required in the agent's vault.",
         values: {
