@@ -17,12 +17,7 @@ contract FAssetsRedeem {
         fAssetToken = _fAssetToken;
     }
 
-    // 2. Approve FAssets for redemption
-    function approveFAssets(uint256 _amount) public returns (bool) {
-        return IERC20(fAssetToken).approve(address(this), _amount);
-    }
-
-    // 3. Redeem FAssets (requires prior approval)
+    // 2. Redeem FAssets (requires prior approval)
     function redeem(
         uint256 _lots,
         string memory _redeemerUnderlyingAddressString
@@ -47,7 +42,7 @@ contract FAssetsRedeem {
         return redeemedAmountUBA;
     }
 
-    // 4. Get the AssetManager settings
+    // 3. Get the AssetManager settings
     function getSettings()
         public
         view
