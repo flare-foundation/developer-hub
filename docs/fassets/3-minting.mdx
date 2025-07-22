@@ -4,40 +4,62 @@ description: Understand how minting works in FAssets.
 keywords: [fassets, xrp, bitcoin, dogecoin, flare-network]
 ---
 
+import ThemedImage from "@theme/ThemedImage";
+import useBaseUrl from "@docusaurus/useBaseUrl";
+
 Minting FAssets is the process of wrapping underlying tokens from connected blockchains into FAssets to be used on the Flare blockchain.
 Any user can mint FAssets.
 
 ## Minting Process
 
+<ThemedImage
+  alt="FAssets Minting Process"
+  sources={{
+    light: useBaseUrl("img/fassets/flare_fassets_minting_light.svg"),
+    dark: useBaseUrl("img/fassets/flare_fassets_minting_dark.svg"),
+  }}
+/>
+
 This is the summary of the minting process:
 
-1. The minter chooses an agent from the publicly available [agent list](/fassets/overview#agents).
-   The choice is based on the minting fee or the amount of free collateral, which must be enough to back the amount to be minted.
-2. The minter sends to the Asset Manager contract a collateral reservation transaction (CRT). The CRT includes:
+### 1. Reserving Collateral
 
-   - The address of the chosen agent.
-   - The amount to mint, which must be a whole number of [lots](/fassets/minting#lots).
-   - The [collateral reservation fee (CRF)](#fees) to compensate for the locked collateral.
-   - The executor's address, if the minter is not the executor.
-   - The executor's fee, if the minter is not the executor.
+The minter chooses an agent from the publicly available [agent list](/fassets/overview#agents).
+The choice is based on the minting fee or the amount of free collateral, which must be enough to back the amount to be minted.
 
-3. The Asset Manager contract locks the agent's collateral in the amount needed to back the whole minting until the underlying payment is proved or disproved.
-   The collateral reservation response is an event issued by the contract, which includes:
+The minter sends to the Asset Manager contract a collateral reservation transaction (CRT). The CRT includes:
 
-   - The agent's address to which the minter must send funds on the underlying chain.
-   - The amount to be paid on the underlying chain, which corresponds to the amount to be minted plus the agent's fee.
-   - The payment reference, which is a unique 32-byte number the minter must include as a memo in the payment on the underlying chain.
-   - The last underlying block and the last underlying timestamp to pay.
-     Valid payments occur either before the last block or before the last timestamp, both inclusive.
-   - The executor's address, if the minter is not the executor.
-   - The executor's fee, if the minter is not the executor.
+    - The address of the chosen agent.
+    - The amount to mint, which must be a whole number of [lots](/fassets/minting#lots).
+    - The [collateral reservation fee (CRF)](#fees) to compensate for the locked collateral.
+    - The executor's address, if the minter is not the executor.
+    - The executor's fee, if the minter is not the executor.
+
+The Asset Manager contract locks the agent's collateral in the amount needed to back the whole minting until the underlying payment is proved or disproved.
+The collateral reservation response is an event issued by the contract, which includes:
+
+    - The agent's address to which the minter must send funds on the underlying chain.
+    - The amount to be paid on the underlying chain, which corresponds to the amount to be minted plus the agent's fee.
+    - The payment reference, which is a unique 32-byte number the minter must include as a memo in the payment on the underlying chain.
+    - The last underlying block and the last underlying timestamp to pay.
+      Valid payments occur either before the last block or before the last timestamp, both inclusive.
+    - The executor's address, if the minter is not the executor.
+    - The executor's fee, if the minter is not the executor.
 
      The time to pay is measured both in the underlying chain's block numbers and block times because the underlying chain might halt for a long time.
      In this situation, the block numbers do not increment but the block timestamps do.
 
-4. After this event is emitted, the minter must pay the full underlying amount plus the fee to the agent on the underlying chain in a certain amount of time.
-5. Using the Data Connector, the minter or executor proves the payment on Flare.
-6. After the payment is proved, the minter or executor executes the minting process, which sends FAssets to the minter's account.
+### 2. Underlying Payment
+
+After this event is emitted, the minter must pay the full underlying amount plus the fee to the agent on the underlying chain in a certain amount of time.
+
+### 3. Payment Proof
+
+Using the [Flare Data Connector](/fdc/overview), the minter or executor proves the payment on Flare network.
+
+### 4. Minting Execution
+
+After the payment is proved, the minter or executor executes the minting process, which sends FAssets to the minter's account.
 
 When minting is executed, the [minting fee](#fees) is split between the agent and the pool:
 
@@ -49,7 +71,7 @@ When minting is executed, the [minting fee](#fees) is split between the agent an
 
 After minting is complete, the Asset Manager creates a [redemption ticket](#redemption-tickets-and-the-redemption-queue), which includes the mint amount and the name of the agent backing the minting.
 
-### Executor Role
+## Executor Role
 
 The execution of the minting process can be performed by an **executor**, an external actor such as a bot or service that monitors pending minting requests.
 Executors are incentivized to act quickly and correctly, but they hold no special permissions.
