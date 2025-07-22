@@ -156,7 +156,7 @@ def generate_feed_data(
 
 
 if __name__ == "__main__":
-    logging.info("Running Feed Table automation...")
+    logger.info("Running Feed Table automation...")
 
     w3 = Web3(Web3.HTTPProvider(RPC_URL))
     logger.debug("Connected to RPC `%s`", RPC_URL)
@@ -199,7 +199,7 @@ if __name__ == "__main__":
     anchor_data = generate_feed_data(feed_names, anchor_risk, coins_list)
     write_data_to_file(ANCHOR_FEEDS_PATH, anchor_data)
 
-    logging.info(
+    logger.info(
         "Feed Table automation: Data successfully saved to %s and %s",
         BLOCK_LATENCY_FEEDS_PATH,
         ANCHOR_FEEDS_PATH,

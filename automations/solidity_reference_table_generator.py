@@ -5,6 +5,7 @@ from pathlib import Path
 from web3 import Web3
 
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 NETWORK_RPCS = {
@@ -57,13 +58,13 @@ def get_solidity_reference(
                     {"name": name, "address": address}
                 )
         except Exception:
-            logging.exception("Error fetching data from %s", network_name)
+            logger.exception("Error fetching data from %s", network_name)
 
     return solidity_reference
 
 
 if __name__ == "__main__":
-    logging.info("Running Solidity Reference automation...")
+    logger.info("Running Solidity Reference automation...")
 
     solidity_reference = get_solidity_reference(
         NETWORK_RPCS, REGISTRY_ADDRESS, REGISTRY_ABI
@@ -73,6 +74,6 @@ if __name__ == "__main__":
     with output_file.open("w") as f:
         json.dump(solidity_reference, f, indent=4)
 
-    logging.info(
+    logger.info(
         "Solidity Reference automation: Data successfully saved to %s", output_file
     )

@@ -1,18 +1,20 @@
 name: Automatic Feed Request
 
 on:
+  schedule:
+    # Once per day at 03:00 UTC
+    - cron: "0 3 * * *"
+  workflow_dispatch:
   push:
-    branches:
-      - main
-
-permissions:
-  contents: read
-  issues: write
+    branches: [main]
 
 jobs:
   check_and_report:
     name: Run automatic feed request
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
     defaults:
       run:
         working-directory: ./automations
@@ -25,19 +27,12 @@ jobs:
           enable-cache: true
       - name: Install dependencies
         run: uv sync
-      - name: Generate issues file
+      - name: Check for new feeds
         run: uv run check_new_feed.py
-      - name: Check if issues file is empty
-        id: check_file
-        run: |
-          if [ -s "automations/issues.md" ]; then
-            echo "file_is_empty=false" >> $GITHUB_OUTPUT
-          else
-            echo "file_is_empty=true" >> $GITHUB_OUTPUT
-          fi
+        id: feed
       - name: Create issue
         uses: JasonEtco/create-an-issue@v2
-        if: steps.check_file.outputs.file_is_empty == 'false'
+        if: steps.feed.outcome == 'success' && steps.feed.conclusion != 'neutral'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:

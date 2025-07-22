@@ -2,25 +2,28 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Final
 
 import requests
-from pycoingecko import CoinGeckoAPI
+from pycoingecko import CoinGeckoAPI  # pyright: ignore[reportMissingTypeStubs]
+from tenacity import retry, stop_after_attempt, wait_exponential_jitter
 from web3 import Web3
 from web3.contract import Contract
 
 # Configuration
-RPC_URL = "https://flare-api.flare.network/ext/C/rpc"
-REGISTRY_ADDRESS = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
-EXPLORER_API_URL = "https://flare-explorer.flare.network/api"
-ISSUES_FILE = Path("issues.md")
-MAX_MARKET_CAP_RANK = 100
-HEADER_TEMPLATE = """---
+RPC_URL: Final[str] = "https://flare-api.flare.network/ext/C/rpc"
+REGISTRY_ADDRESS: Final[str] = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
+EXPLORER_API_URL: Final[str] = "https://flare-explorer.flare.network/api"
+ISSUES_FILE: Final[Path] = Path("issues.md")
+MAX_MARKET_CAP_RANK: Final[int] = 100
+HEADER_TEMPLATE: Final[str] = """---
 title: "[auto_req]: Potential New Feeds"
 assignees: dineshpinto
 labels: "enhancement"
 ---
 """
+
+# Logging
 logging.basicConfig(
     encoding="utf-8",
     level=logging.INFO,
@@ -29,101 +32,113 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def get_contract_abi(contract_address: str) -> dict[str, Any]:
-    """Fetch the ABI for a contract from the Chain Explorer API."""
+class ExplorerError(RuntimeError):
+    """Raised when the chain explorer cannot provide a contract ABI."""
+
+
+@retry(stop=stop_after_attempt(3), wait=wait_exponential_jitter(initial=1, max=8))
+def _get(
+    session: requests.Session, **kwargs: dict[str, str] | str
+) -> requests.Response:
+    """`requests.get` with automatic retry and logging."""
+    logger.debug("GET %s", kwargs.get("url") or kwargs.get("url"))
+    resp = session.get(**kwargs, timeout=10)  # pyright: ignore[reportArgumentType]
+    resp.raise_for_status()
+    return resp
+
+
+def get_contract_abi(
+    contract_address: str, session: requests.Session
+) -> list[dict[str, Any]]:
+    """Return ABI for `contract_address` from the explorer API."""
     params = {"module": "contract", "action": "getabi", "address": contract_address}
-    headers = {"accept": "application/json"}
-
     try:
-        response = requests.get(
-            EXPLORER_API_URL, params=params, headers=headers, timeout=10
+        r = _get(
+            session,
+            url=EXPLORER_API_URL,
+            params=params,
+            headers={"accept": "application/json"},
         )
-        response.raise_for_status()
-        result = response.json().get("result")
-        return json.loads(result)
-    except (requests.RequestException, ValueError, json.JSONDecodeError):
-        logger.exception("Error fetching ABI for contract")
-        sys.exit(1)
+        return json.loads(r.json()["result"])
+    except (requests.RequestException, json.JSONDecodeError, KeyError) as exc:
+        msg = f"Could not fetch ABI for {contract_address}"
+        raise ExplorerError(msg) from exc
 
 
-def format_coin_info(coin_data: dict[str, Any]) -> str:
-    """Format coin data dictionary to a readable string."""
-    coin_info = {
-        "name": coin_data.get("name", "N/A"),
-        "symbol": coin_data.get("symbol", "N/A"),
-        "coingecko_id": coin_data.get("id", "N/A"),
-        "price_change_percentage_24h": coin_data.get("data", {})
-        .get("price_change_percentage_24h", {})
-        .get("usd", "N/A"),
-        "total_volume": coin_data.get("data", {}).get("total_volume", "N/A"),
-        "coingecko_link": f"https://www.coingecko.com/en/coins/{coin_data.get('id', '')}",
-        "description": coin_data.get("data", {}).get("content", {}).get("description")
-        if coin_data.get("data", {}).get("content", {})
-        else "",
-    }
-
-    return "\n".join(f"{key}: {value}" for key, value in coin_info.items())
+def decode_feed_name(feed: bytes) -> str:
+    """Convert feed bytes (returned by contract) to a plain symbol."""
+    return feed[1:].decode().rstrip("\x00").split("/")[0]
 
 
-def get_current_feeds(contract: Contract) -> list[str]:
-    """Fetch the current block latency feeds from the contract."""
-    try:
-        feeds = contract.functions.fetchAllCurrentFeeds().call()
-        return [
-            feed[1:].decode("utf-8").rstrip("\x00").split("/")[0] for feed in feeds[0]
-        ]
-    except Exception:
-        logger.exception("Error fetching current feeds")
-        sys.exit(1)
+def get_current_feeds(contract: Contract) -> set[str]:
+    """Return a **set** of existing feed symbols."""
+    feeds: list[bytes] = contract.functions.fetchAllCurrentFeeds().call()[0]
+    return {decode_feed_name(f) for f in feeds}
 
 
-def write_issues_file(path: Path, header: str, coins: list[dict[str, Any]]) -> None:
-    """Write coin data to the issues.md file."""
-    with path.open("w", encoding="utf-8") as file:
-        file.write(header)
-        file.write("Coins matching criteria:\n\n")
-        for coin in coins:
-            file.write(f"## {coin['name']}\n")
-            file.write(format_coin_info(coin))
-            file.write("\n\n")
-    logger.info("New feeds written to %s", path)
+def prettify_coin(coin: dict[str, Any]) -> str:
+    """Convert `coin` dict into a readable block of Markdown."""
+    d = coin.get("data", {})
+    change_24h = d.get("price_change_percentage_24h", {}).get("usd", "N/A")
+    total_vol = d.get("total_volume", "N/A")
+
+    return (
+        f"name: {coin.get('name', 'N/A')}\n"
+        f"symbol: {coin.get('symbol', 'N/A')}\n"
+        f"coingecko_id: {coin.get('id', 'N/A')}\n"
+        f"price_change_percentage_24h: {change_24h}\n"
+        f"total_volume: {total_vol}\n"
+        f"coingecko_link: https://www.coingecko.com/en/coins/{coin.get('id', '')}\n"
+    )
+
+
+def write_issue(coins: list[dict[str, Any]]) -> None:
+    """Write the Markdown issue file."""
+    body = ["Coins matching criteria:\n"]
+    body += [f"## {c['name']}\n{prettify_coin(c)}\n" for c in coins]
+    ISSUES_FILE.write_text(HEADER_TEMPLATE + "\n".join(body), encoding="utf-8")
+    logger.info("Wrote %d coin(s) to %s", len(coins), ISSUES_FILE)
+
+
+def main() -> None:
+    cg = CoinGeckoAPI()
+    session = requests.Session()
+
+    w3 = Web3(Web3.HTTPProvider(RPC_URL))
+    if not w3.is_connected():
+        msg = f"Cannot reach RPC at {RPC_URL}"
+        raise ConnectionError(msg)
+    logger.info("Connected to RPC %s", RPC_URL)
+
+    registry = w3.eth.contract(
+        address=Web3.to_checksum_address(REGISTRY_ADDRESS),
+        abi=get_contract_abi(REGISTRY_ADDRESS, session),
+    )
+    updater_addr = registry.functions.getContractAddressByName("FastUpdater").call()
+    fast_updater = w3.eth.contract(
+        address=Web3.to_checksum_address(updater_addr),
+        abi=get_contract_abi(updater_addr, session),
+    )
+    logger.info("FastUpdater contract %s", fast_updater.address)
+
+    current_feeds = get_current_feeds(fast_updater)
+
+    trending = cg.get_search_trending()["coins"]  # pyright: ignore[reportUnknownMemberType]
+    logger.info("Found potential coins %s", [f"{c['item']['name']}" for c in trending])
+    candidates = [
+        c["item"]
+        for c in trending
+        if c["item"].get("market_cap_rank", float("inf")) < MAX_MARKET_CAP_RANK
+        and c["item"]["symbol"] not in current_feeds
+    ]
+    if not candidates:
+        sys.exit(78) # Skips GitHub workflow 'if' steps
+    write_issue(candidates)
 
 
 if __name__ == "__main__":
-    w3 = Web3(Web3.HTTPProvider(RPC_URL))
-    logger.info("Connected to RPC `%s`", RPC_URL)
-
-    # Get contract registry
-    registry = w3.eth.contract(
-        address=Web3.to_checksum_address(REGISTRY_ADDRESS),
-        abi=get_contract_abi(REGISTRY_ADDRESS),
-    )
-
-    # Set up contract
-    fast_updater_address = registry.functions.getContractAddressByName(
-        "FastUpdater"
-    ).call()
-    fast_updater = w3.eth.contract(
-        address=Web3.to_checksum_address(fast_updater_address),
-        abi=get_contract_abi(fast_updater_address),
-    )
-    logger.info("Connected to FastUpdater contract `%s`", fast_updater_address)
-
-    # Query block latency feeds
-    current_feeds = get_current_feeds(fast_updater)
-
-    # Fetch trending coins
-    cg = CoinGeckoAPI()
-    trending = cg.get_search_trending()
-
-    # Filter coins based on criteria
-    selected_coins = [
-        coin["item"]
-        for coin in trending["coins"]
-        if coin["item"].get("market_cap_rank", float("inf")) < MAX_MARKET_CAP_RANK
-        and coin["item"].get("symbol") not in current_feeds
-    ]
-
-    # Write results to issues file
-    if selected_coins:
-        write_issues_file(ISSUES_FILE, HEADER_TEMPLATE, selected_coins)
+    try:
+        main()
+    except Exception:
+        logger.exception("Fatal error")
+        sys.exit(1)
