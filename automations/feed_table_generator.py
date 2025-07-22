@@ -2,26 +2,62 @@ import json
 import logging
 import sys
 import time
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, ClassVar, Final
 
 import requests
-from pycoingecko import CoinGeckoAPI
+from pycoingecko import CoinGeckoAPI  # pyright: ignore[reportMissingTypeStubs]
 from tqdm import tqdm
 from web3 import Web3
 
+
+@dataclass(frozen=True)
+class NetworkConfig:
+    name: str
+    rpc_url: str
+    explorer_api_url: str
+    by_name: ClassVar[dict[str, "NetworkConfig"]]
+
+    @classmethod
+    def get(cls, name: str) -> "NetworkConfig":
+        return cls.by_name[name]
+
+
+REGISTRY_ADDRESS: Final[str] = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
+
+NETWORKS: list[NetworkConfig] = [
+    NetworkConfig(
+        name="FlareMainnet",
+        rpc_url="https://flare-api.flare.network/ext/C/rpc",
+        explorer_api_url="https://flare-explorer.flare.network/api",
+    ),
+    NetworkConfig(
+        name="FlareTestnetCoston2",
+        rpc_url="https://coston2-api.flare.network/ext/C/rpc",
+        explorer_api_url="https://coston2-explorer.flare.network/api",
+    ),
+    NetworkConfig(
+        name="SongbirdCanaryNetwork",
+        rpc_url="https://songbird-api.flare.network/ext/C/rpc",
+        explorer_api_url="https://songbird-explorer.flare.network/api",
+    ),
+    NetworkConfig(
+        name="SongbirdTestnetCoston",
+        rpc_url="https://coston-api.flare.network/ext/C/rpc",
+        explorer_api_url="https://coston-explorer.flare.network/api",
+    ),
+]
+
+NetworkConfig.by_name = {net.name: net for net in NETWORKS}
+
+
 # Configuration
-RPC_URL = "https://flare-api.flare.network/ext/C/rpc"
-REGISTRY_ADDRESS = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
-EXPLORER_API_URL = "https://flare-explorer.flare.network/api"
-BLOCK_LATENCY_RISK_PATH = Path("block_latency_risk.json")
-BLOCK_LATENCY_FEEDS_PATH = Path("block_latency_feeds.json")
-ANCHOR_RISK_PATH = Path("anchor_risk.json")
-ANCHOR_FEEDS_PATH = Path("anchor_feeds.json")
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-HARD_CODED_FEEDS = {
+BLOCK_LATENCY_RISK_PATH: Final[Path] = Path("block_latency_risk.json")
+BLOCK_LATENCY_FEEDS_PATH: Final[Path] = Path("block_latency_feeds.json")
+ANCHOR_RISK_PATH: Final[Path] = Path("anchor_risk.json")
+ANCHOR_FEEDS_PATH: Final[Path] = Path("anchor_feeds.json")
+HARD_CODED_FEEDS: Final[dict[str, dict[str, str]]] = {
     "FTM/USD": {
         "name": "Fantom",
         "category": "Crypto",
@@ -30,21 +66,32 @@ HARD_CODED_FEEDS = {
         "name": "Hex Trust USD",
         "category": "Crypto",
     },
+    "JOULE/USD": {
+        "name": "Joule",
+        "category": "Crypto",
+    },
 }
 
+# Logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-class FeedRiskNotFoundError(Exception):
-    pass
+
+class FeedRiskNotFoundError(RuntimeError):
+    """Raised when expected risk data for a feed is missing."""
 
 
-def get_contract_abi(contract_address: str) -> dict:
-    """Get the ABI for a contract from the Chain Explorer API."""
+def get_contract_abi(contract_address: str) -> dict[str, Any]:
+    """Fetch contract ABI from the explorer API."""
     params = {"module": "contract", "action": "getabi", "address": contract_address}
     headers = {"accept": "application/json"}
 
     try:
         response = requests.get(
-            EXPLORER_API_URL, params=params, headers=headers, timeout=10
+            NetworkConfig.get("FlareMainnet").explorer_api_url,
+            params=params,
+            headers=headers,
+            timeout=10,
         )
         response.raise_for_status()
         result = response.json().get("result")
@@ -55,152 +102,125 @@ def get_contract_abi(contract_address: str) -> dict:
 
 
 def get_feed_id(category: str, feed_name: str) -> str:
-    """Convert a feed name to its structured encoded feed ID."""
+    """Encode feed name into a 42-byte hex ID."""
     hex_feed_name = feed_name.encode("utf-8").hex()
     padded_hex_string = (category + hex_feed_name).ljust(42, "0")
     return f"0x{padded_hex_string}"
 
 
-def write_data_to_file(file_path: Path, data: list[dict]) -> None:
-    """Write a markdown table to a file."""
+def read_json(path: Path) -> list[dict[str, Any]]:
+    """Load JSON data from a file."""
     try:
-        with file_path.open("w") as f:
-            json.dump(data, f, indent=4)
-        logger.debug("Successfully wrote data to %s", file_path)
-    except OSError:
-        logger.exception("Failed to write to %s: ", file_path)
-
-
-def read_data_from_file(file_path: Path) -> list[dict]:
-    """Write a markdown table to a file."""
-    try:
-        data = []
-        with file_path.open("r") as f:
-            data = json.load(f)
-        logger.debug("Successfully read data from %s", file_path)
-    except OSError:
-        logger.exception("Failed to read from %s: ", file_path)
-        raise
-    else:
-        return data
-
-
-def get_coins_list(num_pages: int) -> list[dict]:
-    """Get the top 500 coins from CoinGecko."""
-    cg = CoinGeckoAPI()
-    coins = []
-    logger.info("Querying %i pages on CoinGecko...", num_pages)
-    try:
-        for page in tqdm(range(1, num_pages + 1)):
-            coins += cg.get_coins_markets(vs_currency="usd", per_page=250, page=page)
-            time.sleep(1)
+        return json.loads(path.read_text())
     except Exception:
-        logger.exception("Error fetching coins from CoinGecko")
-        sys.exit(1)
-    else:
-        return coins
+        logger.exception("Could not read %s", path)
+        raise
 
 
-def find_coin_by_symbol(coins: list[dict], symbol: str) -> dict | None:
-    """Find a coin in the list by its symbol."""
+def write_json(path: Path, data: list[dict[str, Any]]) -> None:
+    """Write data as pretty JSON to a file."""
+    try:
+        path.write_text(json.dumps(data, indent=4))
+        logger.debug(
+            "Wrote %d items to %s", len(data) if hasattr(data, "__len__") else 1, path
+        )
+    except Exception:
+        logger.exception("Could not write to %s", path)
+        raise
+
+
+def get_coins_list(pages: int = 2) -> list[dict[str, Any]]:
+    """Retrieve top coins from CoinGecko (250 per page)."""
+    cg = CoinGeckoAPI()
+    coins: list[dict[str, Any]] = []
+    for page in tqdm(range(1, pages + 1), desc="Fetching coins"):
+        coins.extend(cg.get_coins_markets(vs_currency="usd", per_page=250, page=page))  # pyright: ignore[reportUnknownMemberType]
+        time.sleep(1)
+    return coins
+
+
+def find_coin_by_symbol(
+    coins: list[dict[str, Any]], symbol: str
+) -> dict[str, Any] | None:
+    """Find a coin dict by its symbol (case-insensitive)."""
     return next(
-        (coin for coin in coins if coin["symbol"].lower() == symbol.lower()), None
+        (c for c in coins if c.get("symbol", "").lower() == symbol.lower()), None
     )
 
 
 def generate_feed_data(
     feed_names: list[str],
     feed_risk: list[dict[str, int]],
-    coins: list[dict],
+    coins: list[dict[str, Any]],
     include_index: bool = False,  # noqa: FBT001,FBT002
-) -> list[dict]:
-    """Generate a list of dictionaries based on feed data."""
-    data = []
+) -> list[dict[str, Any]]:
+    """Combine feed names, risk, and coin info into structured records."""
+    data: list[dict[str, Any]] = []
     for idx, name in enumerate(feed_names):
-        feed_id = get_feed_id("01", name)
-        coin = find_coin_by_symbol(coins, name.split("/")[0])
-
-        # Handle hardcoded feeds
-        if name in HARD_CODED_FEEDS:
-            coin = HARD_CODED_FEEDS[name]
-
-        if not coin:
-            logger.warning("Coin %s not found in CoinGecko data", name)
-            continue
-
         try:
             risk = feed_risk[idx].get("volatility", -1)
         except IndexError as e:
             msg = f"Unable to find risk for {name}"
             raise FeedRiskNotFoundError(msg) from e
 
+        coin = HARD_CODED_FEEDS.get(name) or find_coin_by_symbol(
+            coins, name.split("/")[0]
+        )
+        if not coin:
+            logger.warning("Coin %s not found in CoinGecko data", name)
+            continue
+
+        record: dict[str, Any] = {
+            "feed_name": name,
+            "feed_id": get_feed_id("01", name),
+            "base_asset": coin.get("name"),
+            "category": coin.get("category", "Crypto"),
+            "risk": risk,
+        }
         if include_index:
-            feed_data = {
-                "feed_name": name,
-                "feed_index": idx,
-                "feed_id": feed_id,
-                "base_asset": coin.get("name"),
-                "category": coin.get("category", "Crypto"),
-                "risk": risk,
-            }
-        else:
-            feed_data = {
-                "feed_name": name,
-                "feed_id": feed_id,
-                "base_asset": coin.get("name"),
-                "category": "Crypto",
-                "risk": risk,
-            }
-        data.append(feed_data)
+            record["feed_index"] = idx
+        data.append(record)
     return data
 
 
+def main() -> None:
+    """Orchestrate fetching feeds, enriching with risk and coin data, and writing outputs."""
+    try:
+        w3 = Web3(Web3.HTTPProvider(NetworkConfig.get("FlareMainnet").rpc_url))
+        registry = w3.eth.contract(
+            address=Web3.to_checksum_address(REGISTRY_ADDRESS),
+            abi=get_contract_abi(REGISTRY_ADDRESS),
+        )
+        fast_updater_address = registry.functions.getContractAddressByName(
+            "FastUpdater"
+        ).call()
+        fast_updater = w3.eth.contract(
+            address=Web3.to_checksum_address(fast_updater_address),
+            abi=get_contract_abi(fast_updater_address),
+        )
+        logger.debug("Connected to FastUpdater contract `%s`", fast_updater_address)
+
+        raw_feeds = fast_updater.functions.fetchAllCurrentFeeds().call()[0]
+        feed_names = [f[1:].decode("utf-8").rstrip("\x00") for f in raw_feeds]
+        logger.debug("Found %d block-latency feeds", len(feed_names))
+
+        coins = get_coins_list(pages=8)
+
+        for risk_path, out_path, idx_flag in [
+            (BLOCK_LATENCY_RISK_PATH, BLOCK_LATENCY_FEEDS_PATH, True),
+            (ANCHOR_RISK_PATH, ANCHOR_FEEDS_PATH, False),
+        ]:
+            risks = read_json(risk_path)
+            enriched = generate_feed_data(
+                feed_names, risks, coins, include_index=idx_flag
+            )
+            write_json(out_path, enriched)
+            logger.info("Saved %d records to %s", len(enriched), out_path)
+
+    except Exception:
+        logger.exception("Feed Table automation failed")
+        sys.exit(1)
+
+
 if __name__ == "__main__":
-    logging.info("Running Feed Table automation...")
-
-    w3 = Web3(Web3.HTTPProvider(RPC_URL))
-    logger.debug("Connected to RPC `%s`", RPC_URL)
-
-    # Get contract registry
-    registry = w3.eth.contract(
-        address=Web3.to_checksum_address(REGISTRY_ADDRESS),
-        abi=get_contract_abi(REGISTRY_ADDRESS),
-    )
-
-    # Set up contract
-    fast_updater_address = registry.functions.getContractAddressByName(
-        "FastUpdater"
-    ).call()
-    fast_updater = w3.eth.contract(
-        address=Web3.to_checksum_address(fast_updater_address),
-        abi=get_contract_abi(fast_updater_address),
-    )
-    logger.debug("Connected to FastUpdater contract `%s`", fast_updater_address)
-
-    # Query block latency feeds
-    block_latency_feeds = fast_updater.functions.fetchAllCurrentFeeds().call()
-    feed_names = [
-        feed[1:].decode("utf-8").rstrip("\x00") for feed in block_latency_feeds[0]
-    ]
-    logger.debug("Found %d block-latency feeds", len(feed_names))
-
-    # Query CoinGecko for top N pages, where each page has 250 coins
-    coins_list = get_coins_list(num_pages=8)
-
-    # Write block-latency feeds to file
-    block_latency_risk = read_data_from_file(BLOCK_LATENCY_RISK_PATH)
-    block_latency_data = generate_feed_data(
-        feed_names, block_latency_risk, coins_list, include_index=True
-    )
-    write_data_to_file(BLOCK_LATENCY_FEEDS_PATH, block_latency_data)
-
-    # Write anchor feeds to file
-    anchor_risk = read_data_from_file(ANCHOR_RISK_PATH)
-    anchor_data = generate_feed_data(feed_names, anchor_risk, coins_list)
-    write_data_to_file(ANCHOR_FEEDS_PATH, anchor_data)
-
-    logging.info(
-        "Feed Table automation: Data successfully saved to %s and %s",
-        BLOCK_LATENCY_FEEDS_PATH,
-        ANCHOR_FEEDS_PATH,
-    )
+    main()

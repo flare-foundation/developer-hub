@@ -1,21 +1,57 @@
 import json
 import logging
+import sys
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, ClassVar, Final
 
 from web3 import Web3
 
-logging.basicConfig(level=logging.INFO)
+
+@dataclass(frozen=True)
+class NetworkConfig:
+    name: str
+    rpc_url: str
+    explorer_api_url: str
+    by_name: ClassVar[dict[str, "NetworkConfig"]]
+
+    @classmethod
+    def get(cls, name: str) -> "NetworkConfig":
+        return cls.by_name[name]
 
 
-NETWORK_RPCS = {
-    "FlareMainnet": "https://flare-api.flare.network/ext/C/rpc",
-    "FlareTestnetCoston2": "https://coston2-api.flare.network/ext/C/rpc",
-    "SongbirdCanaryNetwork": "https://songbird-api.flare.network/ext/C/rpc",
-    "SongbirdTestnetCoston": "https://coston-api.flare.network/ext/C/rpc",
-}
-# Flare Contract Registry is the same address on all networks
-REGISTRY_ADDRESS = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
-REGISTRY_ABI = [
+REGISTRY_ADDRESS: Final[str] = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
+
+NETWORKS: list[NetworkConfig] = [
+    NetworkConfig(
+        name="FlareMainnet",
+        rpc_url="https://flare-api.flare.network/ext/C/rpc",
+        explorer_api_url="https://flare-explorer.flare.network/api",
+    ),
+    NetworkConfig(
+        name="FlareTestnetCoston2",
+        rpc_url="https://coston2-api.flare.network/ext/C/rpc",
+        explorer_api_url="https://coston2-explorer.flare.network/api",
+    ),
+    NetworkConfig(
+        name="SongbirdCanaryNetwork",
+        rpc_url="https://songbird-api.flare.network/ext/C/rpc",
+        explorer_api_url="https://songbird-explorer.flare.network/api",
+    ),
+    NetworkConfig(
+        name="SongbirdTestnetCoston",
+        rpc_url="https://coston-api.flare.network/ext/C/rpc",
+        explorer_api_url="https://coston-explorer.flare.network/api",
+    ),
+]
+
+NetworkConfig.by_name = {net.name: net for net in NETWORKS}
+
+
+# Configuration
+OUTPUT_PATH: Final[Path] = Path("solidity_reference.json")
+
+REGISTRY_ABI: Final[list[dict[str, Any]]] = [
     {
         "inputs": [],
         "name": "getAllContracts",
@@ -28,51 +64,56 @@ REGISTRY_ABI = [
     }
 ]
 
+# Logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-def get_solidity_reference(
-    network_rpcs: dict[str, str],
+
+def fetch_contracts(
+    web3: Web3, address: str, abi: list[dict[str, Any]]
+) -> list[dict[str, str]]:
+    """Retrieve all contract names and addresses from the registry."""
+    contract = web3.eth.contract(address=Web3.to_checksum_address(address), abi=abi)
+    names, addresses = contract.functions.getAllContracts().call()
+    return [
+        {"name": name, "address": addr}
+        for name, addr in zip(names, addresses, strict=False)
+    ]
+
+
+def build_solidity_reference(
     registry_address: str,
-    registry_abi: list[dict],
-) -> dict[str, list]:
-    solidity_reference = {}
+    registry_abi: list[dict[str, str]],
+) -> dict[str, list[dict[str, str]]]:
+    """Connect to each network and collect its registry contracts."""
+    reference: dict[str, list[dict[str, str]]] = {}
 
-    for network_name, rpc_url in network_rpcs.items():
-        web3 = Web3(Web3.HTTPProvider(rpc_url))
-
-        if not web3.is_connected():
-            msg = f"Could not connect to the {network_name} with RPC: {rpc_url}"
-            raise ConnectionError(msg)
-
-        contract = web3.eth.contract(
-            address=Web3.to_checksum_address(registry_address), abi=registry_abi
-        )
+    for network in NETWORKS:
+        w3 = Web3(Web3.HTTPProvider(network.rpc_url))
+        if not w3.is_connected():
+            logger.error("Connection failed for %s (%s)", network, network.rpc_url)
+            continue
 
         try:
-            res = contract.functions.getAllContracts().call()
-            contract_names, contract_addresses = res[0], res[1]
-
-            solidity_reference[network_name] = []
-            for name, address in zip(contract_names, contract_addresses, strict=True):
-                solidity_reference[network_name].append(
-                    {"name": name, "address": address}
-                )
+            contracts = fetch_contracts(w3, registry_address, registry_abi)
+            reference[network.name] = contracts
+            logger.info("Fetched %d contracts from %s", len(contracts), network)
         except Exception:
-            logging.exception("Error fetching data from %s", network_name)
+            logger.exception("Error fetching from %s", network)
 
-    return solidity_reference
+    return reference
+
+
+def main() -> None:
+    """Run the automation: fetch and save the solidity registry reference."""
+    try:
+        ref = build_solidity_reference(REGISTRY_ADDRESS, REGISTRY_ABI)
+        OUTPUT_PATH.write_text(json.dumps(ref, indent=4))
+        logger.info("Data successfully saved to %s", OUTPUT_PATH)
+    except Exception:
+        logger.exception("Solidity reference automation failed")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
-    logging.info("Running Solidity Reference automation...")
-
-    solidity_reference = get_solidity_reference(
-        NETWORK_RPCS, REGISTRY_ADDRESS, REGISTRY_ABI
-    )
-
-    output_file = Path("solidity_reference.json")
-    with output_file.open("w") as f:
-        json.dump(solidity_reference, f, indent=4)
-
-    logging.info(
-        "Solidity Reference automation: Data successfully saved to %s", output_file
-    )
+    main()
