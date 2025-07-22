@@ -1,8 +1,9 @@
 import json
 import logging
 import sys
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Final
+from typing import Any, ClassVar, Final
 
 import requests
 from pycoingecko import CoinGeckoAPI  # pyright: ignore[reportMissingTypeStubs]
@@ -10,10 +11,48 @@ from tenacity import retry, stop_after_attempt, wait_exponential_jitter
 from web3 import Web3
 from web3.contract import Contract
 
-# Configuration
-RPC_URL: Final[str] = "https://flare-api.flare.network/ext/C/rpc"
+
+@dataclass(frozen=True)
+class NetworkConfig:
+    name: str
+    rpc_url: str
+    explorer_api_url: str
+    by_name: ClassVar[dict[str, "NetworkConfig"]]
+
+    @classmethod
+    def get(cls, name: str) -> "NetworkConfig":
+        return cls.by_name[name]
+
+
 REGISTRY_ADDRESS: Final[str] = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
-EXPLORER_API_URL: Final[str] = "https://flare-explorer.flare.network/api"
+
+NETWORKS: list[NetworkConfig] = [
+    NetworkConfig(
+        name="FlareMainnet",
+        rpc_url="https://flare-api.flare.network/ext/C/rpc",
+        explorer_api_url="https://flare-explorer.flare.network/api",
+    ),
+    NetworkConfig(
+        name="FlareTestnetCoston2",
+        rpc_url="https://coston2-api.flare.network/ext/C/rpc",
+        explorer_api_url="https://coston2-explorer.flare.network/api",
+    ),
+    NetworkConfig(
+        name="SongbirdCanaryNetwork",
+        rpc_url="https://songbird-api.flare.network/ext/C/rpc",
+        explorer_api_url="https://songbird-explorer.flare.network/api",
+    ),
+    NetworkConfig(
+        name="SongbirdTestnetCoston",
+        rpc_url="https://coston-api.flare.network/ext/C/rpc",
+        explorer_api_url="https://coston-explorer.flare.network/api",
+    ),
+]
+
+NetworkConfig.by_name = {net.name: net for net in NETWORKS}
+
+
+# Configuration
 ISSUES_FILE: Final[Path] = Path("issues.md")
 MAX_MARKET_CAP_RANK: Final[int] = 100
 HEADER_TEMPLATE: Final[str] = """---
@@ -55,7 +94,7 @@ def get_contract_abi(
     try:
         r = _get(
             session,
-            url=EXPLORER_API_URL,
+            url=NetworkConfig.get("FlareMainnet").explorer_api_url,
             params=params,
             headers={"accept": "application/json"},
         )
@@ -104,11 +143,12 @@ def main() -> None:
     cg = CoinGeckoAPI()
     session = requests.Session()
 
-    w3 = Web3(Web3.HTTPProvider(RPC_URL))
+    rpc_url = NetworkConfig.get("FlareMainnet").rpc_url
+    w3 = Web3(Web3.HTTPProvider(rpc_url))
     if not w3.is_connected():
-        msg = f"Cannot reach RPC at {RPC_URL}"
+        msg = f"Cannot reach RPC at {rpc_url}"
         raise ConnectionError(msg)
-    logger.info("Connected to RPC %s", RPC_URL)
+    logger.info("Connected to RPC %s", rpc_url)
 
     registry = w3.eth.contract(
         address=Web3.to_checksum_address(REGISTRY_ADDRESS),
