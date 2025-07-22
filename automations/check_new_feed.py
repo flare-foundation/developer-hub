@@ -132,7 +132,7 @@ def main() -> None:
         and c["item"]["symbol"] not in current_feeds
     ]
     if not candidates:
-        sys.exit(78) # Skips GitHub workflow 'if' steps
+        sys.exit(78)  # Skips GitHub workflow 'if' steps
     write_issue(candidates)
 
 
