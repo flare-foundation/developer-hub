@@ -99,18 +99,18 @@ In the case of `Web2Json`, `requestBody` is a JSON containing the fields:
 - `headers`: `{}`, which defaults to value `{"Content-Type": "application/json"}`
 - `queryParams`: `{}`
 - `body`: `{}`
-- `postProcessJq`: `{name: .name, height: .height, mass: .mass, numberOfFilms: .films | length, uid: (.url | split(\\"/\\") | .[-1] | tonumber)}`
+- `postProcessJq`: `{name: .name, height: .height, mass: .mass, numberOfFilms: .films | length, uid: (.url | split("/") | .[-1] | tonumber)}`
 - `abiSignature`:
 
 ```bash
-{\\"components\\": [
-{\\"internalType\\": \\"string\\", \\"name\\": \\"name\\", \\"type\\": \\"string\\"},
-{\\"internalType\\": \\"uint256\\", \\"name\\": \\"height\\", \\"type\\": \\"uint256\\"},
-{\\"internalType\\": \\"uint256\\", \\"name\\": \\"mass\\", \\"type\\": \\"uint256\\"},
-{\\"internalType\\": \\"uint256\\", \\"name\\": \\"numberOfFilms\\", \\"type\\": \\"uint256\\"},
-{\\"internalType\\": \\"uint256\\", \\"name\\": \\"uid\\", \\"type\\": \\"uint256\\"}
+{"components": [
+{"internalType": "string", "name": "name", "type": "string"},
+{"internalType": "uint256", "name": "height", "type": "uint256"},
+{"internalType": "uint256", "name": "mass", "type": "uint256"},
+{"internalType": "uint256", "name": "numberOfFilms", "type": "uint256"},
+{"internalType": "uint256", "name": "uid", "type": "uint256"}
 ],
-\\"name\\": \\"task\\",\\"type\\": \\"tuple\\"}
+"name": "task","type": "tuple"}
 ```
 
 ```typescript title="scripts/fdcExample/Web2Json.ts"
@@ -154,7 +154,7 @@ function toUtf8HexString(data: string) {
 }
 ```
 
-Because of the `console.log` commands it will produce JSON strings that represent valid requests; we can then pass this to the [interactive verifier](https://fdc-verifiers-testnet.flare.network/verifier/btc/api-doc#/Web2Json/BTCWeb2JsonVerifierController_prepareRequest) to check the response.
+Because of the `console.log` commands it will produce JSON strings that represent valid requests; we can then pass this to the [interactive verifier](https://jq-verifier-test.flare.rocks/api-doc/) to check the response.
 
 The process of posting a request to a verifier server is identical for all attestation types.
 It differs only in values used.
@@ -569,7 +569,7 @@ The response the DA Layer server returns has the following fields:
 - Lastly, `responseHex` is the ABI encoding of the chosen attestation type response struct.
   In this case, it is the `IWeb2Json.Response` struct.
 
-We can ascertain the form of the proof request, as well as examine the response in advance, trough the [interactive documentation](https://fdc-verifiers-testnet.flare.network/verifier/btc/api-doc) of the DA Layer server.
+We can ascertain the form of the proof request, as well as examine the response in advance, trough the [interactive documentation](https://ctn2-data-availability.flare.network/api-doc#/) of the DA Layer server.
 
 <details>
 <summary>An example complete proof response and decoded `IWeb2Json.Response`.</summary>
