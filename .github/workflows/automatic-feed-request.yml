@@ -28,11 +28,24 @@ jobs:
       - name: Install dependencies
         run: uv sync
       - name: Check for new feeds
-        run: uv run check_new_feed.py
         id: feed
+        run: |
+          uv run check_new_feed.py
+          status=$?
+          if [ "$status" -eq 78 ]; then
+            echo "No update needed (exit code 78)."
+            echo "should_create_issue=false" >> $GITHUB_OUTPUT
+            exit 0
+          elif [ "$status" -eq 0 ]; then
+            echo "should_create_issue=true" >> $GITHUB_OUTPUT
+            exit 0
+          else
+            echo "Script failed with exit code $status"
+            exit $status
+          fi
       - name: Create issue
         uses: JasonEtco/create-an-issue@v2
-        if: steps.feed.outcome == 'success' && steps.feed.conclusion != 'neutral'
+        if: steps.feed.outputs.should_create_issue == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
