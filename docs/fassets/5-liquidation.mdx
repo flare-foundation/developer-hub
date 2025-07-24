@@ -60,7 +60,6 @@ However, an agent can still self-close positions to avoid paying a premium to li
 Using BTC as underlying and USDC as collateral, an agent creates a vault to mint FBTC FAssets.
 
 1.  Initial conditions:
-
     - The agent is backing 1 FBTC, currently valued at $20K, according to the FTSO system.
     - The minimal CR is **1.3** for the vault collateral and **2.5** for pool collateral.
     - The agent must hold 20% of the pool's minimal CR.
@@ -69,7 +68,6 @@ Using BTC as underlying and USDC as collateral, an agent creates a vault to mint
     - The liquidation premium factor is 1.1, of which 1.0 is paid in vault collateral, and 0.1 is paid in pool collateral.
 
     At this point, the 1 FBTC is backed by:
-
     - 0.5 BTC underlying.
     - $26K worth of USDC vault collateral.
 
@@ -81,7 +79,6 @@ Using BTC as underlying and USDC as collateral, an agent creates a vault to mint
 
 2.  Now the price of BTC increases from \$20K to $21K.
     As a result:
-
     - The vault CR is $$\frac{\text{\$26K}}{\text{\$21K}} \approx 1.24$$, **below the vault's 1.3 minimal CR**.
     - The pool CR is $$\frac{\text{\$60K}}{\text{\$21K}} \approx 2.86$$, still above the pool's 2.5 minimal CR.
       :::warning
@@ -94,14 +91,12 @@ Using BTC as underlying and USDC as collateral, an agent creates a vault to mint
 3.  A liquidator notices the CR levels and decides to liquidate $10K worth of FAssets by returning 0.48 FBTC to the FAssets system.
 
     The liquidation premium factor is 1.1, so the liquidator receives $11K worth of assets:
-
     - $10K worth of USDC from the agent's vault collateral.
     - $1K worth of FLR from the agent's portion of the collateral pool.
 
       The corresponding $1K worth of CPTs are burned, so their price is unaffected.
 
     At this point, the agent is backing 0.52 FBTC with:
-
     - 0.5 BTC underlying.
 
       The ratio is $$ \frac{0.5}{0.52} \approx 0.96 $$, well above the 50% underlying backing factor.
@@ -128,7 +123,6 @@ The same setup and initial conditions as in Example 1 are used:
 Using BTC as underlying and USDC as collateral, an agent creates a vault to mint FBTC FAssets.
 
 1.  Initial conditions:
-
     - The agent is backing 1 FBTC, currently valued at $20K, according to the FTSO system.
     - The minimal CR is **1.3** for the vault collateral and **2.5** for pool collateral.
     - The agent must hold 20% of the pool's minimal CR.
@@ -137,7 +131,6 @@ Using BTC as underlying and USDC as collateral, an agent creates a vault to mint
     - The liquidation premium factor is 1.1, of which 1.0 is paid in vault collateral, and 0.1 is paid in pool collateral.
 
     At this point, the 1 FBTC is backed by:
-
     - 0.5 BTC underlying.
     - \$26 K worth of USDC vault collateral.
 
@@ -149,7 +142,6 @@ Using BTC as underlying and USDC as collateral, an agent creates a vault to mint
 
 2.  Now the price of BTC increases from \$20K to $30K.
     As a result:
-
     - The vault CR is $$ \frac{\text{\$26\ K}}{\text{\$30\ K}} \approx 0.87 $$, **way below the vault's 1.3 minimal CR**.
     - The pool CR is $$ \frac{\text{\$60\ K}}{\text{\$30\ K}} = 2 $$, **below the vault's 2.5 minimal CR**.
 
@@ -160,14 +152,12 @@ Using BTC as underlying and USDC as collateral, an agent creates a vault to mint
 3.  A liquidator notices this situation and decides to liquidate 1 FBTC, currently worth $30K.
 
     The liquidation premium factor is 1.1, so the liquidator receives $33K worth of assets:
-
     - \$26 K worth of USDC, which is all of the collateral in the agent's vault.
     - \$7 K worth of FLR.
 
     Note that the portion of payment in FLR is higher than in Example 1 because enough USDC in collateral did not exist.
 
     At this point, the agent is backing 0 FBTC, and the remaining collateral is:
-
     - 0.5 BTC underlying.
     - \$0 worth of USDC in vault collateral.
     - \$53 K worth of FLR in pool collateral, of which \$3 K belongs to the agent.
@@ -251,7 +241,6 @@ Therefore, consider these actions:
 
 - **Maintain the underlying balance**: Agents must ensure that the payment plus the transaction fee for a redemption never reduce their balance to an amount lower than the amount required to back the FAssets.
   Agents can ensure that redemptions do not reduce that balance in several ways:
-
   - They can honor redemptions from some other address.
     On UTXO chains, they can also honor redemptions from a combination of addresses.
   - They can top up the underlying address and then send proof of payment to update the tracked balance.
@@ -298,7 +287,6 @@ This challenge is performed in the following way:
 
 1. The challenger obtains proof of the illegal payment using the FDC.
 2. The challenger presents the proof to the FAssets system, which triggers:
-
    - A vault collateral payment from the agent's vault to the challenger's address as a reward.
    - The agent's state for the address is set to [full liquidation](#liquidation-process).
 
