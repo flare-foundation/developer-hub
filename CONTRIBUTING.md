@@ -18,7 +18,6 @@ We welcome contributions via:
     ```
 
 2.  **Follow Style Guides:**
-
     - **Code/Docs:** Run `npm run format` to apply Prettier formatting. Match existing code style.
     - **Diagrams:** Adhere to the [Diagram Style Guide](#diagrams-style-guide) below for consistency.
 

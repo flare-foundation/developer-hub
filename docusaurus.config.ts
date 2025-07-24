@@ -130,7 +130,7 @@ const config: Config = {
               href: "https://flare.network/resources/technical-support",
             },
             {
-              label: "Media Kit",
+              label: "Brand Kit",
               href: "https://drive.google.com/drive/u/1/folders/1mPrtIBb2k88E4f1fguEm3eAXLW74xOry",
             },
             {
