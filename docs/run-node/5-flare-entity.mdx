@@ -618,31 +618,43 @@ With prerequisites met, registrations complete, and FDC/FTSO components configur
 
 3. Carefully edit the `.env` file, providing the correct values gathered during the previous setup stages.
    While reviewing `env.example` for _all_ possible settings is recommended (defaults may not suit all environments), ensure these key variables are correctly set based on your Registration, FDC, and FTSO setup:
-   - `NODE_RPC_URL`, `NODE_API_KEY` (optional): Your RPC Node or a [private RPC provider](/network/developer-tools#rpcs).
-   - `IDENTITY`: Public `Identity` address from [FSP addresses](#register-and-fund-fsp-addresses).
-   - `SUBMIT_PK`, `SIGNATURES_PK`, `SIGNING_PK`: Private keys from [FSP addresses](#register-and-fund-fsp-addresses).
-   - `VALUE_PROVIDER_URL`: URL of the feed value provider in [Setup FTSO](#setup-ftso).
-   - `FAST_UPDATES_ACCOUNTS`: Private keys of the [Fast Updates accounts](#create-fast-updates-accounts).
-   - `FAST_UPDATES_SORTITION_PRIVATE_KEY`: Private key of the [sortition key](#register-sortition-key).
-   - FDC Verifier URLs (`<NETWORK>_<ATTESTATION_TYPE>_URL`): URLs for each FDC [verifier services](#start-indexers-and-verifiers) you deployed (e.g., `BTC_PAYMENT_URL=http://<verifier-ip>:port`).
-   - FDC Verifier API Keys (`<NETWORK>_<ATTESTATION_TYPE>_API_KEY`, Optional): API keys configured for your FDC verifiers, if any.
-   - Set `COMPOSE_PROFILES=fsp,fast-updates` to enable both the FSP and Fast Updates profiles.
-   - By default, you need at least `10000000` blocks of node history.
-     You can adjust this by modifying [`c-chain-indexer.template.toml`](https://github.com/flare-foundation/flare-systems-deployment/blob/main/template-configs/c-chain-indexer.template.toml) to a value near the head of your node.
+   - **RPC**
+     - `NODE_RPC_URL`: Your RPC Node or a [private RPC provider](/network/developer-tools#rpcs).
+     - `NODE_API_KEY` (optional): If your RPC provider requires it.
+   - **Identity & Keys:**
+     - `IDENTITY`: Public `Identity` address from [FSP addresses](#register-and-fund-fsp-addresses).
+     - `SUBMIT_PK`, `SIGNATURES_PK`, `SIGNING_PK`: Private keys from [FSP addresses](#register-and-fund-fsp-addresses).
+   - **FTSO:**
+     - `VALUE_PROVIDER_URL`: URL of the feed value provider in [Setup FTSO](#setup-ftso).
+     - `FAST_UPDATES_ACCOUNTS`: Private keys of the [Fast Updates accounts](#create-fast-updates-accounts).
+     - `FAST_UPDATES_SORTITION_PRIVATE_KEY`: Private key of the [sortition key](#register-sortition-key).
+   - **FDC:**
+     - `<NETWORK>_<ATTESTATION_TYPE>_URL`: URLs for each FDC [verifier services](#start-indexers-and-verifiers) you deployed, e.g. `BTC_PAYMENT_URL=http://<verifier-ip>:port`
+     - `<NETWORK>_<ATTESTATION_TYPE>_API_KEY` (optional): API keys configured for your FDC verifiers, if any.
 
    <br></br>
 
    :::danger[Secure Your `.env` File]
 
-   This `.env` file contains **highly sensitive private keys and API keys**. Protect this file rigorously:
+   This file contains **highly sensitive** private keys and API keys.
+   Compromise of these keys can lead to loss of funds, unauthorized actions, and a compromised entity.
    - Set strict file permissions (e.g., `chmod 600 .env`) so only the owner can read/write.
    - Ensure it's **never** committed to Git or any version control system.
    - Limit access to the server and user account running the deployment.
-     Compromise of these keys can lead to loss of funds, unauthorized actions, and a compromised entity.
 
    :::
 
-4. Run the provided script. This uses your `.env` file to populate the specific configuration files used internally by each Docker service.
+4. Update your `.env` to include all services:
+
+   ```plaintext
+   COMPOSE_PROFILES=fsp,fast-updates
+   ```
+
+5. (Optional) By default, the `c-chain-indexer` requires 10 million blocks (≈20 days) of node history.
+   - To shorten this window, edit [`template-configs/c-chain-indexer.template.toml`](https://github.com/flare-foundation/flare-systems-deployment/blob/main/template-configs/c-chain-indexer.template.toml) to a value closer to the head of your node.
+   - **Do not** go below 350,000 blocks (≈7 days / 2 reward epochs), or the FTSO client may fail.
+
+6. Run the helper script to apply your `.env` settings to each Docker service:
 
    ```bash
    ./populate_config.sh
@@ -650,24 +662,40 @@ With prerequisites met, registrations complete, and FDC/FTSO components configur
 
    _Remember to **re-run this script** every time you make changes to your `.env` file._
 
-5. Use Docker Compose to start all Flare Entity services defined in `docker-compose.yaml` in detached mode (`-d`).
+7. Launch the Flare Entity stack in detached mode:
 
    ```bash
    docker compose up -d
    ```
 
-   _Note: The first run will download all necessary Docker images, which may take several minutes depending on image sizes and network speed._
+   _Note: The first startup will pull all required images. This may take several minutes depending on your network speed._
 
 ### Verify deployment success
 
-After starting, confirm the containers are running (`docker ps`). Crucially, monitor the initial logs of key components to ensure they start correctly, connect to necessary services (RPC node, database, verifiers, Feed Value Provider), and enter their operational loops. Use `docker compose logs -f <service_name>` to tail logs in real-time.
+Once your services are up, follow these steps to confirm everything is running smoothly:
 
-Key services to check include: `system-client`, `c-chain-indexer`, `fast-updates-client`, `ftso-client`, `fdc-client`.
+1. Check running containers:
 
-Look for successful connections, registration messages (if applicable for the current reward epoch timing), and absence of repeating critical errors.
+   ```bash
+   docker ps
+   ```
+
+   Ensure these key containers appear in the list and have `Up` status:
+   - `system-client`
+   - `c-chain-indexer`
+   - `fast-updates-client` (if enabled)
+   - `ftso-client`
+   - `fdc-client`
+
+2. For each critical service, open a live log stream in a separate terminal:
+
+   ```bash
+   docker compose logs -f <service_name>
+   ```
+
+   Replace `<service_name>` with the actual service name (e.g., `system-client`, `c-chain-indexer`, etc.).
 
 If your Flare Entity is working correctly, congratulations!
-
 Refer to the [Troubleshooting](#troubleshooting) and [FAQs](#faqs) sections for common issues and ongoing checks.
 
 ## Update Flare Entity
