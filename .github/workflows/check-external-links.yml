@@ -1,0 +1,44 @@
+name: Check External Links
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check-external-links:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Restore lychee cache
+        uses: actions/cache@v4
+        with:
+          path: .lycheecache
+          key: cache-lychee-${{ github.sha }}
+          restore-keys: cache-lychee-
+      - uses: actions/checkout@v4
+      - name: Link Checker
+        id: lychee
+        uses: lycheeverse/lychee-action@v2
+        with:
+          lycheeVersion: "latest"
+          args: |
+            --cache
+            --verbose
+            --accept '100..=103,200..=299,400,403'
+            --base https://dev.flare.network/
+            --no-progress 
+            --insecure
+            --exclude '^(/|https://dev\.flare\.network/|https?://localhost(?::[0-9]+)?/|https://fdc-verifiers-testnet\.flare\.network/|https://github\.com/flare-foundation/flare-hardhat-starter/|https://github\.com/flare-foundation/flare-foundry-starter/|https://sepolia\.etherscan\.io/|https://metamask\.io/|https://openweathermap\.org/|https://www\.gnu\.org/)'
+            .
+          fail: true
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      - name: Create Issue From File
+        if: steps.lychee.outputs.exit_code != 0
+        uses: peter-evans/create-issue-from-file@v5
+        with:
+          title: Link Checker Report
+          content-filepath: ./lychee/out.md
+          labels: report, automated issue
