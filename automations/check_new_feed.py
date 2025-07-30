@@ -131,6 +131,13 @@ def prettify_coin(coin: dict[str, Any]) -> str:
     )
 
 
+def parse_volume(vol_str: str) -> int:
+    """Parse volume string and return it as an integer."""
+    if not vol_str[0] == "$":
+        raise ValueError(f"Invalid volume string: {vol_str}")
+    return int(vol_str.strip("$").replace(",", ""))
+
+
 def write_issue(coins: list[dict[str, Any]]) -> None:
     """Write the Markdown issue file."""
     body = ["Coins matching criteria:\n"]
@@ -169,6 +176,7 @@ def main() -> None:
         c["item"]
         for c in trending
         if c["item"].get("market_cap_rank", float("inf")) < MAX_MARKET_CAP_RANK
+        and parse_volume(c["item"]["data"]["total_volume"]) > 100_000_000
         and c["item"]["symbol"] not in current_feeds
     ]
     if not candidates:
