@@ -63,6 +63,36 @@ We welcome contributions via:
 - ✅ **Update Documentation:** If your change affects functionality or usage, update relevant documentation.
 - ✅ **Confirm Licensing:** By submitting a PR, you agree to license your contribution under the project's license.
 
+## Formatting an linting guidelines
+
+1. Build the project and verify internal links:
+
+   ```bash
+   npm run build
+   ```
+
+2. Run formatting, linting, and type‑checking:
+
+   ```bash
+   npm run format && npm run lint && npm run typecheck
+   ```
+
+3. Validate external links using [lychee](https://github.com/lycheeverse/lychee):
+
+   ```bash
+   lychee --config lychee.toml .
+   ```
+
+4. (Optional) If you’ve added or modified scripts under any `examples/developer-hub-*/` directory, navigate into that example’s folder and run its formatter and test suite.
+   See the example’s `README.md` for more instructions, e.g.:
+
+   ```bash
+   cd examples/developer-hub-rust/
+   cargo build
+   cargo fmt && cargo clippy --fix
+   cargo test
+   ```
+
 ## Diagrams Style Guide
 
 For consistency, follow these styles when creating or updating diagrams:
