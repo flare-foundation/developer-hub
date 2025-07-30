@@ -63,7 +63,7 @@ We welcome contributions via:
 - ✅ **Update Documentation:** If your change affects functionality or usage, update relevant documentation.
 - ✅ **Confirm Licensing:** By submitting a PR, you agree to license your contribution under the project's license.
 
-## Formatting an linting guidelines
+## Formatting, linting and testing requirements
 
 1. Build the project and verify internal links:
 
