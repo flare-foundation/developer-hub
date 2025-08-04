@@ -45,12 +45,52 @@ This ensures redemption liquidity and protects the system from agent insolvency.
 
 ### Security Design
 
-Each asset type has a dedicated Core Vault, which is managed by a multisig contract under a formal agreement with Flare.
+Each asset type has a dedicated Core Vault, which is managed by a multisig account on the underlying network under a formal agreement with Flare.
 The assets stored in the CV do not belong to any specific agent and can be requested to return to the agent's collateralized security.
 To ensure security, governance has the authority to pause deposits and withdrawals if necessary, such as in the event of a system compromise.
 
 The Core Vault operates through a predefined address on the underlying chain and is managed via a multisig setup with smart contract oversight under formal Flare contracts.
 Governance has the authority to pause operations in the event of a security issue.
+
+## Core Vault Implementation
+
+### Fund Movement on Underlying Networks
+
+The Core Vault operates differently depending on the underlying network:
+
+**For XRP Ledger (XRP CV):**
+
+- The CV is implemented as a **multisig account** on the XRP Ledger.
+- Only the designated **multisig signers** can move XRP from the vault.
+- These signers are authorized by Flare governance and operate under formal agreements.
+- All outgoing transactions require multiple signatures from the authorized signers.
+
+### Agent Ownership Clarification
+
+There's an important distinction between agent ownership and CV ownership:
+
+### Agent Ownership (Standard FAssets)
+
+- Agents hold underlying assets in their own wallets.
+- These assets belong to the specific agent and are part of their collateral.
+- Agents have direct control over these assets.
+
+### Core Vault Ownership
+
+- Assets transferred to the CV become part of a shared pool.
+- These assets **do not belong to any specific agent** once in the CV.
+- The CV is a system-level reserve that any agent can request assets from.
+- This allows for better capital efficiency and system-wide liquidity.
+
+### Agent Collateral Requirements
+
+Agents are required to provide collateral in the form of:
+
+- **Flare's native token (FLR or SGB)**
+- **USDC/USDT (stablecoins)**
+
+When agents transfer underlying assets to the CV, they can reduce their collateral requirements while maintaining their minting capacity.
+The CV acts as a shared reserve that backs the system, allowing agents to operate more efficiently.
 
 ## Operational Workflow
 
