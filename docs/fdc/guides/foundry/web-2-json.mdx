@@ -93,18 +93,18 @@ In the case of `Web2Json`, `requestBody` is a JSON containing the fields:
 - `headers`: `{}`, which defaults to value `{"Content-Type": "application/json"}`
 - `queryParams`: `{}`
 - `body`: `{}`
-- `postProcessJq`: `{name: .name, height: .height, mass: .mass, numberOfFilms: .films | length, uid: (.url | split(\\"/\\") | .[-1] | tonumber)}`
+- `postProcessJq`: `{name: .name, height: .height, mass: .mass, numberOfFilms: .films | length, uid: (.url | split("/") | .[-1] | tonumber)}`
 - `abiSignature`:
 
 ```bash
-{\\"components\\": [
-{\\"internalType\\": \\"string\\", \\"name\\": \\"name\\", \\"type\\": \\"string\\"},
-{\\"internalType\\": \\"uint256\\", \\"name\\": \\"height\\", \\"type\\": \\"uint256\\"},
-{\\"internalType\\": \\"uint256\\", \\"name\\": \\"mass\\", \\"type\\": \\"uint256\\"},
-{\\"internalType\\": \\"uint256\\", \\"name\\": \\"numberOfFilms\\", \\"type\\": \\"uint256\\"},
-{\\"internalType\\": \\"uint256\\", \\"name\\": \\"uid\\", \\"type\\": \\"uint256\\"}
+{"components": [
+{"internalType": "string", "name": "name", "type": "string"},
+{"internalType": "uint256", "name": "height", "type": "uint256"},
+{"internalType": "uint256", "name": "mass", "type": "uint256"},
+{"internalType": "uint256", "name": "numberOfFilms", "type": "uint256"},
+{"internalType": "uint256", "name": "uid", "type": "uint256"}
 ],
-\\"name\\": \\"task\\",\\"type\\": \\"tuple\\"}
+"name": "task","type": "tuple"}
 ```
 
 ### Encoding Functions
@@ -324,7 +324,7 @@ contract PrepareAttestationRequest is Script {
 The code above differs slightly from the [starter example](https://github.com/flare-foundation/flare-foundry-starter).
 But, if we remove the ellipses `...` signifying missing code, we can still run the script.
 
-Because of the `console.log` commands it will produce JSON strings that represent valid requests; we can then pass this to the [interactive verifier](https://fdc-verifiers-testnet.flare.network/verifier/btc/api-doc#/Web2Json/BTCWeb2JsonVerifierController_prepareRequest) to check the response.
+Because of the `console.log` commands it will produce JSON strings that represent valid requests; we can then pass this to the [interactive verifier](https://jq-verifier-test.flare.rocks/api-doc#) to check the response.
 
 We can run the script by calling the following commands in the console.
 
@@ -333,7 +333,7 @@ source .env
 ```
 
 ```bash
-forge script script/fdcExample/Web2Json.s.sol:PrepareAttestationRequest --private-key $PRIVATE_KEY --rpc-url $COSTON2_RPC_URL --etherscan-api-key $FLARE_API_KEY --broadcast  --ffi
+forge script script/fdcExample/Web2Json.s.sol:PrepareAttestationRequest --private-key $PRIVATE_KEY --rpc-url $COSTON2_RPC_URL --etherscan-api-key $FLARE_RPC_API_KEY --broadcast  --ffi
 ```
 
 The prerequisite for this is that the `.env` file is not missing the `PRIVATE KEY` and `COSTON2_RPC_URL` values.
@@ -348,11 +348,11 @@ We place `using Surl for *;` at the start of our `PostRequest` contract, and the
 (, bytes memory data) = url.post(headers, body);
 ```
 
-We construct the URL by appending to the verifier address `https://fdc-verifiers-testnet.flare.network/` the path `verifier/btc/Web2Json/prepareRequest`.
+We construct the URL by appending to the verifier address `https://jq-verifier-test.flare.rocks` the path `/JsonApi/prepareRequest`.
 We can do so dynamically with the following code.
 
 ```solidity title="scrip/fdcExample/Web2Json.s.sol"
-string memory baseUrl = "https://fdc-verifiers-testnet.flare.network/";
+string memory baseUrl = "https://jq-verifier-test.flare.rocks/";
 string memory url = string.concat(
     baseUrl,
     "verifier/",
@@ -910,6 +910,8 @@ contract StarWarsCharacterList {
         }
         return result;
     }
+
+    function abiSignatureHack(DataTransportObject memory dto) public pure {}
 }
 ```
 
@@ -940,7 +942,7 @@ contract DeployContract is Script {
 We deploy the contract with the following console command.
 
 ```bash
-forge script script/fdcExample/Web2Json.s.sol:DeployContract --private-key $PRIVATE_KEY --rpc-url $COSTON2_RPC_URL --etherscan-api-key $FLARE_API_KEY --broadcast --verify --ffi
+forge script script/fdcExample/Web2Json.s.sol:DeployContract --private-key $PRIVATE_KEY --rpc-url $COSTON2_RPC_URL --etherscan-api-key $FLARE_RPC_API_KEY --broadcast --verify --ffi
 ```
 
 Lastly, we define a script that interacts with the above contract.
@@ -972,6 +974,6 @@ contract InteractWithContract is Script {
 We run this script with the console command:
 
 ```bash
-forge script script/fdcExample/Web2Json.s.sol:InteractWithContract --private-key $PRIVATE_KEY --rpc-url $COSTON2_RPC_URL --etherscan-api-key $FLARE_API_KEY --broadcast --ffi
+forge script script/fdcExample/Web2Json.s.sol:InteractWithContract --private-key $PRIVATE_KEY --rpc-url $COSTON2_RPC_URL --etherscan-api-key $FLARE_RPC_API_KEY --broadcast --ffi
 
 ```
