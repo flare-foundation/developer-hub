@@ -6,7 +6,7 @@ use reqwest::Client;
 use serde_json::json;
 
 const BASE_URL: &str = "https://flr-data-availability.flare.network/";
-const API_KEY: &str = "<your-api-key>";
+const API_KEY: &str = "<your-api-key>"; // Optional
 
 const FEED_IDS: &[&str] = &[
     "0x01464c522f55534400000000000000000000000000", // FLR/USD

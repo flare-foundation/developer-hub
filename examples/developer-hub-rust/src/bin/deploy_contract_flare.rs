@@ -7,7 +7,7 @@ use eyre::Result;
 sol!(
     #[sol(rpc)]
     FtsoV2FeedConsumer,
-    "./FtsoV2FeedConsumer.json"
+    "FtsoV2FeedConsumer.json"
 );
 
 #[tokio::main]
@@ -17,9 +17,8 @@ async fn main() -> Result<()> {
     let signer: PrivateKeySigner = private_key.parse().unwrap();
     let wallet = EthereumWallet::from(signer.clone());
     let provider = ProviderBuilder::new()
-        .with_recommended_fillers()
         .wallet(wallet)
-        .on_http("https://flare-api.flare.network/ext/C/rpc".parse()?);
+        .connect_http("https://flare-api.flare.network/ext/C/rpc".parse()?);
 
     let contract = FtsoV2FeedConsumer::deploy(&provider).await?;
     println!("Deployed contract at address: {}", contract.address());

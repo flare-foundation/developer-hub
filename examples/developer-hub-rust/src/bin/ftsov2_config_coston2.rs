@@ -1,5 +1,5 @@
 // THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
-use alloy::{providers::ProviderBuilder, sol};
+use alloy::{primitives::address, providers::ProviderBuilder, sol};
 use eyre::Result;
 
 sol!(
@@ -12,17 +12,16 @@ sol!(
 async fn main() -> Result<()> {
     // FastUpdatesConfiguration address (Flare Testnet Coston2)
     // See https://dev.flare.network/ftso/solidity-reference
-    let address = "0xE7d1D5D58cAE01a82b84989A931999Cb34A86B14".parse()?;
+    let address = address!("222768c5AbCe56Af9Fd75c5f59614a8B7F5dBe80");
     let rpc_url = "https://coston2-api.flare.network/ext/C/rpc".parse()?;
     // Connect to an RPC node
-    let provider = ProviderBuilder::new().on_http(rpc_url);
+    let provider = ProviderBuilder::new().connect_http(rpc_url);
     // Set up contract instance
     let ftsov2_config = FastUpdatesConfiguration::new(address, provider);
     // Fetch feed configurations
-    let FastUpdatesConfiguration::getFeedConfigurationsReturn { _0 } =
-        ftsov2_config.getFeedConfigurations().call().await?;
+    let result = ftsov2_config.getFeedConfigurations().call().await?;
     // Print results
-    for feed in _0 {
+    for feed in result {
         println!(
             "feedId: {}, rewardBandValue: {}, inflationShare: {}",
             String::from_utf8(feed.feedId.as_slice().to_vec())?,
