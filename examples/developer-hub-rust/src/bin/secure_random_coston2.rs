@@ -12,7 +12,7 @@ sol!(
 async fn main() -> Result<()> {
     // Relay address where the secure RNG is served (Flare Testnet Coston2)
     // See https://dev.flare.network/network/solidity-reference
-    let random_v2_address = address!("57a4c3676d08Aa5d15410b5A6A80fBcEF72f3F45");
+    let random_v2_address = address!("97702e350CaEda540935d92aAf213307e9069784");
     let rpc_url = "https://coston2-api.flare.network/ext/C/rpc".parse()?;
     // Connect to an RPC node
     let provider = ProviderBuilder::new().connect_http(rpc_url);
