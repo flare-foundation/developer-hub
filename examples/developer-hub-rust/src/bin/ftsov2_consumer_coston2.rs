@@ -1,5 +1,9 @@
 // THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
-use alloy::{primitives::{fixed_bytes, address}, providers::ProviderBuilder, sol};
+use alloy::{
+    primitives::{address, fixed_bytes},
+    providers::ProviderBuilder,
+    sol,
+};
 use eyre::Result;
 
 sol!(

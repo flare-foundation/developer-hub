@@ -1,7 +1,7 @@
 // THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
 use alloy::{
-    network::EthereumWallet, primitives::U256, providers::ProviderBuilder,
-    signers::local::PrivateKeySigner, sol, primitives::address
+    network::EthereumWallet, primitives::address, primitives::U256, providers::ProviderBuilder,
+    signers::local::PrivateKeySigner, sol,
 };
 use eyre::Result;
 

@@ -1,4 +1,4 @@
-use alloy::{providers::ProviderBuilder, sol, primitives::address};
+use alloy::{primitives::address, providers::ProviderBuilder, sol};
 use eyre::Result;
 
 sol!(
