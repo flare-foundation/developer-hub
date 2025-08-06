@@ -1,5 +1,9 @@
 // THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
-use alloy::{primitives::fixed_bytes, providers::ProviderBuilder, sol};
+use alloy::{
+    primitives::{address, fixed_bytes},
+    providers::ProviderBuilder,
+    sol,
+};
 use eyre::Result;
 
 sol!(
@@ -12,7 +16,7 @@ sol!(
 async fn main() -> Result<()> {
     // FtsoV2 address (Flare Testnet Coston2)
     // See https://dev.flare.network/ftso/solidity-reference
-    let ftso_address = "0x3d893C53D9e8056135C26C8c638B76C8b60Df726".parse()?;
+    let ftso_address = address!("C4e9c78EA53db782E28f28Fdf80BaF59336B304d");
     let rpc_url = "https://coston2-api.flare.network/ext/C/rpc".parse()?;
     let feed_ids = vec![
         fixed_bytes!("01464c522f55534400000000000000000000000000"), // FLR/USD
@@ -20,7 +24,7 @@ async fn main() -> Result<()> {
         fixed_bytes!("014554482f55534400000000000000000000000000"), // ETH/USD
     ];
     // Connect to an RPC node
-    let provider = ProviderBuilder::new().on_http(rpc_url);
+    let provider = ProviderBuilder::new().connect_http(rpc_url);
     // Set up contract instance
     let ftsov2 = FtsoV2::new(ftso_address, provider);
     // Fetch current feeds

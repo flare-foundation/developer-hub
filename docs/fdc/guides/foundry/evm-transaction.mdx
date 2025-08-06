@@ -279,7 +279,7 @@ If you are accessing a different chain, replace the `baseSourceName` with an app
 The code above differs slightly from the [starter example](https://github.com/flare-foundation/flare-foundry-starter).
 But, if we remove the ellipses `...` signifying missing code, we can still run the script.
 
-Because of the `console.log` commands it will produce JSON strings that represent valid requests; we can then pass this to the [interactive verifier](https://fdc-verifiers-testnet.flare.network/verifier/btc/api-doc#/EVMTransaction/BTCEVMTransactionVerifierController_prepareRequest) to check what the response will be.
+Because of the `console.log` commands it will produce JSON strings that represent valid requests; we can then pass this to the [interactive verifier](https://fdc-verifiers-testnet.flare.network/verifier/eth/EVMTransaction/prepareRequest) to check what the response will be.
 
 We can run the script by calling the following commands in the console.
 
@@ -288,7 +288,7 @@ source .env
 ```
 
 ```bash
-forge script script/fdcExample/EVMTransaction.s.sol:PrepareAttestationRequest --private-key $PRIVATE_KEY --rpc-url $COSTON2_RPC_URL --etherscan-api-key $FLARE_API_KEY --broadcast  --ffi
+forge script script/fdcExample/EVMTransaction.s.sol:PrepareAttestationRequest --private-key $PRIVATE_KEY --rpc-url $COSTON2_RPC_URL --etherscan-api-key $FLARE_RPC_API_KEY --broadcast  --ffi
 ```
 
 The prerequisite for this is that the `.env` file is not missing the `PRIVATE KEY` and `COSTON2_RPC_URL` values.
@@ -304,7 +304,7 @@ We place `using Surl for *;` at the start of our `PostRequest` contract, and the
 (, bytes memory data) = url.post(headers, body);
 ```
 
-We construct the URL by appending to the verifier address `https://fdc-verifiers-testnet.flare.network/` the path `verifier/btc/EVMTransaction/prepareRequest`.
+We construct the URL by appending to the verifier address `https://fdc-verifiers-testnet.flare.network/` the path `/verifier/eth/EVMTransaction/prepareRequest`.
 We can do so dynamically with the following code.
 
 ```solidity title="scrip/fdcExample/EVMTransaction.s.sol"
@@ -1004,7 +1004,7 @@ contract DeployContract is Script {
 We deploy the contract with the following console command.
 
 ```bash
-forge script script/fdcExample/EVMTransaction.s.sol:DeployContract --private-key $PRIVATE_KEY --rpc-url $COSTON2_RPC_URL --etherscan-api-key $FLARE_API_KEY --broadcast --verify --ffi
+forge script script/fdcExample/EVMTransaction.s.sol:DeployContract --private-key $PRIVATE_KEY --rpc-url $COSTON2_RPC_URL --etherscan-api-key $FLARE_RPC_API_KEY --broadcast --verify --ffi
 ```
 
 Lastly, we define a script that interacts with the above contract.
@@ -1047,6 +1047,6 @@ contract InteractWithContract is Script {
 We run this script with the console command:
 
 ```bash
-forge script script/fdcExample/EVMTransaction.s.sol:InteractWithContract --private-key $PRIVATE_KEY --rpc-url $COSTON2_RPC_URL --etherscan-api-key $FLARE_API_KEY --broadcast --ffi
+forge script script/fdcExample/EVMTransaction.s.sol:InteractWithContract --private-key $PRIVATE_KEY --rpc-url $COSTON2_RPC_URL --etherscan-api-key $FLARE_RPC_API_KEY --broadcast --ffi
 
 ```
