@@ -175,7 +175,6 @@ You can proceed directly to [Fund FSP addresses](#fund-fsp-addresses).
 On mainnet, or if you prefer not to use the automated script on testnets, you must manually register the required FSP addresses by interacting directly with the [`EntityManager`](/network/fsp/solidity-reference/IEntityManager) contract.
 
 1.  Ensure you have generated the following five addresses and **securely stored their private keys**. Understand their roles:
-
     - `Identity`: The central identity address. **Crucially, keep the private key secure (e.g., cold storage on mainnet).** This address initiates proposals and signs registrations.
     - `Submit`: Used for sending FTSO commit/reveal transactions.
     - `SubmitSignatures`: Used for sending FTSO result signatures (often separate from `Submit` to manage transaction nonces).
@@ -183,7 +182,6 @@ On mainnet, or if you prefer not to use the automated script on testnets, you mu
     - `Delegation`: Public address for receiving WNat (e.g., WFLR, WC2FLR) delegations to increase vote power and collect rewards.
 
 2.  For each address role (`Submit`, `SubmitSignatures`, `SigningPolicy`, `Delegation`), perform the two-step propose-confirm process using the `EntityManager` contract (see [FSP Reference](/network/fsp/solidity-reference)):
-
     - **Step A (Propose):** Call the relevant `propose<Role>Address` method from your `Identity` address.
       Provide the address you want to register for that role as the argument.
     - **Step B (Confirm):** Call the corresponding `confirm<Role>AddressRegistration` method from the address you are actually registering (e.g., call `confirmSubmitAddressRegistration` using the `Submit` address's private key).
@@ -228,10 +226,8 @@ This key pair is used for the FTSOv2 Fast Updates protocol.
     ```
 
 2.  Register public key:
-
     - If you used the **Automated Registration** script on a testnet (Method 1 above), this step is already completed, skip to [Register validator node](#register-validator-node).
     - If you used **Manual Registration** (Method 2) or need to register manually:
-
       1. Create a signature proving your `Identity` address owns the generated sortition private key. Use the `keygen` command again, providing the `PrivateKey` (from Step 1) and your `Identity` address.
 
          ```bash
@@ -375,7 +371,6 @@ The [fdc-suite-deployment](https://github.com/flare-foundation/fdc-suite-deploym
 
 3. To configure node authentication, navigate into the specific node's directory (e.g., `nodes-mainnet/btc`) within the cloned repo and generate credentials where required.
    **Keep generated credentials secure** as they will be needed for the Verifier configuration.
-
    - **Bitcoin (BTC) / Dogecoin (DOGE):**
 
      ```bash
@@ -414,9 +409,7 @@ Configuration for the indexer and verifier services is managed centrally via the
     ```
 
     Now, carefully edit the `.env` file, providing values for all variables relevant to the FDC components you are deploying. Pay close attention to:
-
     - **RPC Node Connection Details (`*_URL`, `*_RPC_USERNAME`, `*_RPC_PASSWORD` / `*_RPC_AUTH`)**: Provide the full URL and credentials for connecting to each required blockchain node.
-
       - If using nodes deployed via `fdc-suite-deployment` on the _same host_, you can often use `172.17.0.1` (Docker's default bridge IP) as the hostname in the URL (e.g., `http://admin:<PASSWORD>@172.17.0.1:8332/` for BTC, using the password generated earlier).
       - If using _external_ nodes (your own or third-party), use their publicly accessible RPC endpoint URL and associated credentials.
 
@@ -625,7 +618,6 @@ With prerequisites met, registrations complete, and FDC/FTSO components configur
 
 3. Carefully edit the `.env` file, providing the correct values gathered during the previous setup stages.
    While reviewing `env.example` for _all_ possible settings is recommended (defaults may not suit all environments), ensure these key variables are correctly set based on your Registration, FDC, and FTSO setup:
-
    - **RPC**
      - `NODE_RPC_URL`: Your RPC Node or a [private RPC provider](/network/developer-tools#rpcs).
      - `NODE_API_KEY` (optional): If your RPC provider requires it.
@@ -646,7 +638,6 @@ With prerequisites met, registrations complete, and FDC/FTSO components configur
 
    This file contains **highly sensitive** private keys and API keys.
    Compromise of these keys can lead to loss of funds, unauthorized actions, and a compromised entity.
-
    - Set strict file permissions (e.g., `chmod 600 .env`) so only the owner can read/write.
    - Ensure it's **never** committed to Git or any version control system.
    - Limit access to the server and user account running the deployment.
@@ -660,7 +651,6 @@ With prerequisites met, registrations complete, and FDC/FTSO components configur
    ```
 
 5. (Optional) By default, the `c-chain-indexer` requires 10 million blocks (≈20 days) of node history.
-
    - To shorten this window, edit [`template-configs/c-chain-indexer.template.toml`](https://github.com/flare-foundation/flare-systems-deployment/blob/main/template-configs/c-chain-indexer.template.toml) to a value closer to the head of your node.
    - **Do not** go below 350,000 blocks (≈7 days / 2 reward epochs), or the FTSO client may fail.
 
@@ -691,7 +681,6 @@ Once your services are up, follow these steps to confirm everything is running s
    ```
 
    Ensure these key containers appear in the list and have `Up` status:
-
    - `system-client`
    - `c-chain-indexer`
    - `fast-updates-client` (if enabled)
@@ -952,7 +941,6 @@ Consistent monitoring is key to maintaining performance and reward eligibility. 
 - Check minimal conditions status via the [Flare Systems Explorer](https://flare-systems-explorer.flare.network/providers?tab=minimalConditions) or the backend API detailed previously in the FAQ.
 
 - Monitor the logs of your running Docker containers (`docker compose logs <service_name>`) for errors and key operational messages:
-
   - **Registration:** Look for `RegisterVoter success` messages in the `system-client` logs around the start of reward epochs.
 
     ```plaintext
