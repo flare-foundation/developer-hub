@@ -1,5 +1,6 @@
 // THIS IS EXAMPLE CODE. DO NOT USE THIS CODE IN PRODUCTION.
-use crate::FtsoV2AnchorFeedConsumer::{FeedData, FeedDataWithProof};
+use crate::FtsoV2Interface::{FeedData, FeedDataWithProof};
+
 use alloy::{
     network::EthereumWallet,
     primitives::{address, hex, FixedBytes},
@@ -133,9 +134,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let wallet = EthereumWallet::from(signer.clone());
 
     let provider = ProviderBuilder::new()
-        .with_recommended_fillers()
         .wallet(wallet)
-        .on_http("https://coston2-api.flare.network/ext/C/rpc".parse()?);
+        .connect_http("https://coston2-api.flare.network/ext/C/rpc".parse()?);
 
     let latest_block = provider.get_block_number().await?;
     println!("Latest block number: {latest_block}");
