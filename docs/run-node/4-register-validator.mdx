@@ -110,7 +110,7 @@ Only provide values which differ from the defaults to avoid issues with future u
 
 ## Run the node
 
-Now, start your node using command-line flags or environment variables that point to your `staker.key` and `staker.crt` files.
+Now, start your node using command-line flags or environment variables that point to your `staker.key`, `staker.crt` and `signer.key` files.
 This ensures your node always starts with the correct `Node-ID`.
 
 ### From source
@@ -124,12 +124,14 @@ This ensures your node always starts with the correct `Node-ID`.
    # Assumes staking keys are in the default location
    ./build/avalanchego --network-id=flare \
      --http-host= \
-     --bootstrap-ips="$(curl -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeIP"}' -H 'content-type:application/json;' [https://flare-bootstrap.flare.network/ext/info](https://flare-bootstrap.flare.network/ext/info) | jq -r '.result.ip')" \
-     --bootstrap-ids="$(curl -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeID"}' -H 'content-type:application/json;' [https://flare-bootstrap.flare.network/ext/info](https://flare-bootstrap.flare.network/ext/info) | jq -r '.result.nodeID')" \
+     --bootstrap-ips="$(curl -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeIP"}' -H 'content-type:application/json;' https://flare-bootstrap.flare.network/ext/info | jq -r '.result.ip')" \
+     --bootstrap-ids="$(curl -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeID"}' -H 'content-type:application/json;' https://flare-bootstrap.flare.network/ext/info | jq -r '.result.nodeID')" \
      # highlight-next-line
      --staking-tls-cert-file="/opt/flare/staking/staker.crt" \
      # highlight-next-line
-     --staking-tls-key-file="/opt/flare/staking/staker.key"
+     --staking-tls-key-file="/opt/flare/staking/staker.key" \
+     # highlight-next-line
+     --staking-signer-key-file="/opt/flare/staking/signer.key"
    ```
 
 ### Using Docker CLI
@@ -155,9 +157,9 @@ This ensures your node always starts with the correct `Node-ID`.
      -p 0.0.0.0:9651:9651 \
      -e NETWORK_ID="flare" \
      -e AUTOCONFIGURE_BOOTSTRAP="1" \
-     -e AUTOCONFIGURE_BOOTSTRAP_ENDPOINT="[https://flare-bootstrap.flare.network/ext/info](https://flare-bootstrap.flare.network/ext/info)" \
+     -e AUTOCONFIGURE_BOOTSTRAP_ENDPOINT="https://flare-bootstrap.flare.network/ext/info" \
      # highlight-next-line
-     -e EXTRA_ARGUMENTS=--staking-tls-cert-file=/app/staking/staker.crt --staking-tls-key-file=/app/staking/staker.key \
+     -e EXTRA_ARGUMENTS=--staking-tls-cert-file=/app/staking/staker.crt --staking-tls-key-file=/app/staking/staker.key --staking-signer-key-file=/app/staking/signer.key \
      flarefoundation/go-flare:${LATEST_TAG}
    ```
 
@@ -188,9 +190,9 @@ This ensures your node always starts with the correct `Node-ID`.
        environment:
          - NETWORK_ID=flare
          - AUTOCONFIGURE_BOOTSTRAP=1
-         - AUTOCONFIGURE_BOOTSTRAP_ENDPOINT=[https://flare-bootstrap.flare.network/ext/info](https://flare-bootstrap.flare.network/ext/info)
+         - AUTOCONFIGURE_BOOTSTRAP_ENDPOINT=https://flare-bootstrap.flare.network/ext/info
          # highlight-next-line
-         - EXTRA_ARGUMENTS=--staking-tls-cert-file=/app/staking/staker.crt --staking-tls-key-file=/app/staking/staker.key
+         - EXTRA_ARGUMENTS=--staking-tls-cert-file=/app/staking/staker.crt --staking-tls-key-file=/app/staking/staker.key --staking-signer-key-file=/app/staking/signer.key
    ```
 
 ## Stake and verify
@@ -280,7 +282,7 @@ curl --data '{
   "method":"info.getNodeID",
   "id":1,
   "params":{}
-}' http://localhost:9650/ext/info | jq -r ".result.nodeID"
+}' -H 'content-type:application/json;' http://localhost:9650/ext/info | jq -r ".result.nodeID"
 ```
 
 Follow the instructions in the guide below to stake FLR to your `Node-ID`.
