@@ -7,6 +7,9 @@ keywords: [intermediate, solidity, smart-contract, flare-network]
 sidebar_position: 9
 ---
 
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
 Staking works by locking funds for a period of time to support a specific network validator. The guide details out how to stake using the [flare-stake-tool](https://github.com/flare-foundation/flare-stake-tool) CLI.
 
 <details>
@@ -74,7 +77,7 @@ Install the following tools:
    |  _| | | (_| | | |  __/  ___) | || (_| |   <  __/ | |___| |___ | |
    |_|   |_|\__,_|_|  \___| |____/ \__\__,_|_|\_\___|  \____|_____|___|
 
-   Version: 3.0.2
+   Version: 4.1.2
    ```
 
 3. You can specify the account from which staking will take place in different ways - [using Ledger](#using-ledger-recommended) or [using a private key](#using-private-key).
@@ -220,7 +223,7 @@ It is highly recommended to [use Ledger](#using-ledger-recommended) instead.
 ### Check validator info
 
 1. Note down the `NodeID` of the validator you want to stake to:
-   - If you created the validator, retrieve its `NodeID` by running:
+   - If you created the validator, retrieve its `NodeID`, `publicKey` and `proofOfPossession` by running:
 
      ```bash
      curl \
@@ -278,6 +281,7 @@ It is highly recommended to [use Ledger](#using-ledger-recommended) instead.
    ```plaintext
    ? What do you want to do? Move assets from C-chain to P-chain
    ? Enter amount (in FLR): 50000
+   ? Enter fees (in FLR): (1)
    ```
 
    :::warning[Transaction Fees]
@@ -295,19 +299,12 @@ It is highly recommended to [use Ledger](#using-ledger-recommended) instead.
    Using network: flare
    Fetching account from ledger...
    Creating export transaction...
-   Using fee of 0.00028075 FLR
-   Please review and sign the transaction on your ledger device...
-   Sending transaction to the node...
-   Transaction with id ●●●●●●●● sent to the node
+   Transaction finalized!
    // highlight-next-line
    Please approve import transaction
    Using network: flare
    Fetching account from ledger...
-   Creating export transaction...
-   Please review and sign the transaction on your ledger device...
-   Sending transaction to the node...
-   Transaction with id ●●●●●●●● sent to the node
-   Finished execution
+   Creating import transaction...
    ```
 
 If you encounter any issues during this process, refer to the [Troubleshooting](#troubleshooting) section.
@@ -324,27 +321,9 @@ If you encounter any issues during this process, refer to the [Troubleshooting](
 
    - If you are going to stake to another node (delegation), select **Delegate to a validator node** (You may need to scroll down to see this option).
 
-   :::info[First-time address registration.]
-
-   The first time you use the **Add a validator node** or **Delegate to a validator node** options you are asked to sign an additional transaction.
-   This step is required so that staking rewards accrued on the P-chain can be claimed on the C-chain and participate in the wider ecosystem.
-
-   This procedure only needs to be done once per P-chain address:
-
-   ```plaintext
-   Checking Address Registration...
-   No address found for key 0x●●●●●●●●
-   Note: You need to register your wallet address before you can delegate your funds
-   // highlight-next-line
-   Please complete this registration transaction to proceed
-   Submitting txn to the chain
-   ```
-
-   :::
-
 2. You then need to provide the following information:
    - **amount**: Amount must be provided in FLR units.
-   - **NodeID**, **start time** and **end time**: Use the values noted down from the [setup](#setup).
+   - **NodeID** and **end time**: Use the values noted down from the [setup](#setup).
 
    If you are adding a validator node, you also need to provide the proof of possession **BLS public key** and **BLS signature**.
 
@@ -381,7 +360,6 @@ If you encounter any issues during this process, refer to the [Troubleshooting](
    ? What do you want to do? Add a validator node
    ? Enter amount (in FLR): 50000
    ? Enter Node NodeId (E.g. NodeID-FQKTLuZHEsjCxPeFTFgsojsucmdyNDsz1): NodeID-●●●●●●●●
-   ? Enter start time(E.g. 1693185095): ●●●●●●●●
    ? Enter end time(E.g. 1693185095): ●●●●●●●●
    ? Enter delegation fee(E.g. 10): 10
    ? Please enter the popBLSPublicKey: 0x●●●●●●●●
@@ -472,28 +450,22 @@ If you encounter any issues, refer to [Troubleshooting](#troubleshooting).
    Using network: flare
    Fetching account from ledger...
    Creating export transaction...
-   Please review and sign the transaction on your ledger device...
-   Sending transaction to the node...
-   Transaction with id ●●●●●●●● sent to the node
+   ? Enter fees (in FLR): (1)
    // highlight-next-line
    Please approve import transaction
    Using network: flare
    Fetching account from ledger...
-   Creating export transaction...
-   Using fee of 0.00028075 FLR
-   Please review and sign the transaction on your ledger device...
-   Sending transaction to the node...
-   Transaction with id ●●●●●●●● sent to the node
+   Creating import transaction...
    Finished execution
    ```
 
 If you encounter any issues, refer to [Troubleshooting](#troubleshooting).
 
-## Claiming rewards
+## Claiming staking rewards
 
 At the end of every reward epoch, participants are rewarded according to how well their chosen validator performed in that period, but these rewards are not claimable yet. Every 4 reward epochs, rewards are accumulated in a dedicated smart contract and can then be claimed from the Flare Stake CLI tool:
 
-1. Select the **Claim Rewards** option when executing:
+1. Select the **Claim staking rewards** option when executing:
 
    ```bash
    flare-stake-tool interactive
@@ -502,27 +474,77 @@ At the end of every reward epoch, participants are rewarded according to how wel
    You are shown the amount of pending rewards (in wei) and are asked how much you want to claim (in FLR):
 
    ```plaintext
-   ? What do you want to do? Claim Rewards
-   Checking your Rewards status...
-   You have unclaimed rewards worth 1000000000000000000
-   ? Enter amount to claim (in FLR): 1
+   ? What do you want to do? Claim staking rewards
+   State of rewards for 0x●●●●●●●●:
+   Total rewards: 2000.0 FLR
+   Claimed rewards: 1010.0 FLR
+   Unclaimed rewards: 990.0 FLR
    ```
 
-2. Select **Receive with another wallet** and enter the C-chain address where you want the rewards to be sent.
-   This can be the same address from where you are staking.
+2. Claim all or a portion of the rewards and optionally choose to wrap them or not:
+
+   <Tabs groupId="claim" block>
+
+   <TabItem value="all" label="Claim All" default>
 
    ```plaintext
-   ? Where do you want to receive your rewards? Receive with another wallet
-   ? Please enter the C-address where you want to receive your rewards: 0x●●●●●●●●
+   ? Do you want to claim all unclaimed rewards? (total unclaimed: 990.0 FLR) Yes
+   ? Should claimed rewards be wrapped? Yes
+   ```
+
+   </TabItem>
+
+   <TabItem value="partial" label="Claim Partial">
+
+   ```plaintext
+   ? Do you want to claim all unclaimed rewards? (total unclaimed: 990.0 FLR) No
+   ? Please enter the amount to claim: 100
+   ? Should claimed rewards be wrapped? Yes
+   ```
+
+   </TabItem>
+
+   </Tabs>
+
+3. Decide the recipient address for the rewards - defaults to the address you used to connect to the Flare Stake Tool.
+
+   ```plaintext
+   ? Please enter the recipient address (default address is reward owner): 0x●●●●●●●●
    ```
 
    You are then asked to confirm the staking transaction on your hardware wallet.
 
-   ```text hl_lines="1"
-   Please sign the transaction on your ledger
-   Submitting txn to the chain
-   Rewards successfully claimed
-   Finished execution
+   ```plaintext
+   Using network: flare
+   Creating claim transaction...
+   Signing transaction...
+   // highlight-next-line
+   Transaction with hash 0x●●●●●●●● built and sent to the network
+   ```
+
+## Transfer P-chain funds to another P-chain address
+
+1. You can transfer P-chain funds to another P-chain address by selecting the **Transfer funds to another P-chain address** option:
+
+   ```bash
+   flare-stake-tool interactive
+   ```
+
+   ```plaintext
+   ? What do you want to do?
+   ❯ Transfer funds to another P-chain address
+   Claim staking rewards
+   Quit
+   ```
+
+2. Select the amount to transfer and the destination P-chain address:
+
+   ```plaintext
+   ? Enter amount (in FLR): 100
+   ? Please enter the destination P-chain address: P-flare●●●●●●●●
+   Using network: flare
+   Fetching account from ledger...
+   Creating transfer transaction...
    ```
 
 ## Troubleshooting
@@ -555,18 +577,38 @@ Try the operation again after a while.
 Transfer operations require [an export and an import transaction](#move-funds-to-p-chain).
 If the export succeeds, but then the import fails, it looks like the funds have disappeared from both chains, but they are still retrievable.
 
-Repeat the failed import operation manually:
+Import the funds using the interactive tool:
 
 - If you are moving funds from the C-chain to the P-chain:
 
   ```bash
-  flare-stake-tool transaction importCP --ledger --blind
+  flare-stake-tool interactive
+  ```
+
+  ```plaintext
+  ? What do you want to do?
+    ❯ Import Funds (in case export fails for either P chain or C chain)
+  ```
+
+  ```plaintext
+  ? Please select the destination chain to which you want to import your funds? (Use arrow keys)
+    ❯ P
   ```
 
 - If you are moving funds from the P-chain to the C-chain:
 
   ```bash
-  flare-stake-tool transaction importPC --ledger --blind
+  flare-stake-tool interactive
+  ```
+
+  ```plaintext
+  ? What do you want to do?
+    ❯ Import Funds (in case export fails for either P chain or C chain)
+  ```
+
+  ```plaintext
+  ? Please select the destination chain to which you want to import your funds? (Use arrow keys)
+    ❯ C
   ```
 
 </details>
