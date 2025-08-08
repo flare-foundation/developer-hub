@@ -4,6 +4,9 @@ on:
   pull_request:
     branches:
       - main
+    paths:
+      - "examples/developer-hub-go/**"
+      - ".github/workflows/test-go-examples.yml"
 
 permissions:
   contents: read
@@ -21,8 +24,8 @@ jobs:
         with:
           go-version: stable
           cache-dependency-path: "examples/developer-hub-go/go.sum"
-      - name: Install dependencies
-        run: go get .
+      - run: go mod download
+      - run: go vet ./...
       - name: Run Tests
         run: |
           go test ./coston2 -v
