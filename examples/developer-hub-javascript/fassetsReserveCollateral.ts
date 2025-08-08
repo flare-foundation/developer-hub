@@ -71,7 +71,7 @@ async function parseCollateralReservedEvent(
 ) {
   console.log("\nParsing events...", transactionReceipt.rawLogs);
 
-  // 5. The logEvents function is included in the Flare starter kit
+  // The logEvents function is included in the Flare starter kit
   const collateralReservedEvents = logEvents(
     transactionReceipt.rawLogs,
     "CollateralReserved",
@@ -81,6 +81,7 @@ async function parseCollateralReservedEvent(
   return collateralReservedEvents[0].decoded;
 }
 
+// 5. Main function
 async function main() {
   // 6. Get the AssetManager contract from the Flare Contract Registry
   const assetManager: IAssetManagerInstance = await getAssetManagerFXRP();
