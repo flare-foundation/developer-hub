@@ -1,0 +1,295 @@
+---
+title: Weather Insurance
+slug: weather-insurance
+authors: [anthonyamadia]
+description: A decentralized weather insurance dApp using the Web2Json attestation type to fetch real-world weather data with Foundry.
+tags: [fdc, foundry]
+keywords:
+  [
+    ethereum,
+    flare-data-connector,
+    evm,
+    foundry,
+    web2json,
+    weather,
+    insurance,
+    oracle,
+  ]
+sidebar_position: 14
+---
+
+import AvailableTestnet from "../_available_testnet.mdx";
+
+In this guide, we will build a decentralized weather insurance application using the Flare Data Connector (FDC) and Foundry. The dApp will allow users to create insurance policies that pay out if the temperature at a specific location drops below a predefined threshold. Insurers can underwrite these policies by locking up collateral. The entire lifecycle of the policy including creation, underwriting, and resolution is managed by a smart contract that uses the FDC's `Web2Json` attestation type to fetch and verify real-world weather data from the OpenWeatherMap API.
+
+All the code described in this guide is available on GitHub in the [Flare Foundry starter repository](https://github.com/flare-foundation/flare-foundry-starter).
+
+<AvailableTestnet />
+
+### The dApp Workflow
+
+Our Weather Insurance dApp involves three main actors:
+
+- **Policyholder**: An entity seeking to insure against the risk of low temperatures. They create a policy and pay a premium.
+- **Insurer**: An entity willing to underwrite the risk in exchange for the premium. They lock up capital to cover the potential payout.
+- **Smart Contract (`MinTempAgency`)**: The trustless intermediary that enforces the policy rules, holds funds in escrow, and uses FDC proofs to automatically resolve policies.
+
+The lifecycle of a policy is as follows:
+
+1.  **Creation**: A policyholder defines the terms (location, duration, temperature threshold, premium, coverage) and deposits the premium into the contract.
+2.  **Claiming (Underwriting)**: An insurer accepts the policy by depositing the full coverage amount. The contract immediately pays the premium to the insurer. If no one underwrites the policy before it starts, it can be retired, and the premium is returned to the policyholder.
+3.  **Resolution**: After the policy's start time, an FDC proof containing weather data for the specified location can be submitted.
+    - If the proof shows the minimum temperature dropped below the threshold during the policy period, the contract pays the coverage amount to the policyholder.
+    - If the policy period ends without a valid claim, an insurer or policyholder can trigger the `expirePolicy` function, and the contract returns the coverage deposit to the insurer.
+
+### The Smart Contract: `MinTempAgency.sol`
+
+The `MinTempAgency` contract orchestrates the entire insurance process. It uses the FDC to fetch weather data, specifically leveraging the `Web2Json` attestation type.
+
+#### Data Structures
+
+To handle the data flow from the OpenWeatherMap API to our smart contract, we define two key structs:
+
+1.  **`DataTransportObject`**: This struct defines the format of the weather data after it has been processed by the FDC's `jq` filter. Its structure must match the `abiSignature` provided in the attestation request.
+
+    ```solidity title="src/weatherInsurance/MinTempAgency.sol"
+    struct DataTransportObject {
+        int256 latitude;
+        int256 longitude;
+        string description;
+        int256 temperature;
+        int256 minTemp;
+        uint256 windSpeed;
+        uint256 windDeg;
+    }
+    ```
+
+2.  **`Policy`**: This struct represents an individual insurance policy, storing all its terms and its current state.
+
+    ```solidity title="src/weatherInsurance/MinTempAgency.sol"
+    enum PolicyStatus { Unclaimed, Open, Settled }
+
+    struct Policy {
+        address holder;
+        int256 latitude;
+        int256 longitude;
+        uint256 startTimestamp;
+        uint256 expirationTimestamp;
+        int256 minTempThreshold;
+        uint256 premium;
+        uint256 coverage;
+        PolicyStatus status;
+        uint256 id;
+    }
+    ```
+
+:::info
+Because Solidity does not support floating-point numbers, we will store fractional values (like temperature and coordinates) as integers scaled by a factor of 10<sup>6</sup>.
+:::
+
+#### Core Functions
+
+- `createPolicy()`: Allows a user to create a new policy by providing its terms and paying the premium. The contract stores the new policy and emits a `PolicyCreated` event.
+- `claimPolicy()`: Allows an insurer to underwrite an `Unclaimed` policy by depositing the required `coverage` amount. The contract then transfers the premium to the insurer.
+- `resolvePolicy()`: This is the key function that uses the FDC. It accepts a `IWeb2Json.Proof` and:
+  1.  Verifies the proof's validity using the `FdcVerification` contract.
+  2.  Decodes the weather data from the proof.
+  3.  Checks that the policy is active and that the location in the proof matches the policy's location.
+  4.  If `minTemp` from the proof is below the policy's `minTempThreshold`, it marks the policy as `Settled` and pays the `coverage` to the policyholder.
+
+  ```solidity title="src/weatherInsurance/MinTempAgency.sol"
+  function resolvePolicy(uint256 id, IWeb2Json.Proof calldata proof) public {
+      Policy storage policy = registeredPolicies[id];
+      require(policy.status == PolicyStatus.Open, "Policy not open");
+      require(isWeb2JsonProofValid(proof), "Invalid proof");
+
+      DataTransportObject memory dto = abi.decode(proof.data.responseBody.abi_encoded_data, (DataTransportObject));
+
+      require(block.timestamp >= policy.startTimestamp, "Policy not yet in effect");
+      if (block.timestamp > policy.expirationTimestamp) {
+          expirePolicy(id);
+          return;
+      }
+
+      require(dto.latitude == policy.latitude && dto.longitude == policy.longitude, "Invalid coordinates");
+      require(dto.minTemp <= policy.minTempThreshold, "Minimum temperature not met");
+
+      policy.status = PolicyStatus.Settled;
+      payable(policy.holder).transfer(policy.coverage);
+      emit PolicySettled(id);
+  }
+  ```
+
+- `expirePolicy()` and `retireUnclaimedPolicy()`: Handle the logic for policies that are not successfully claimed or resolved, returning funds to the appropriate parties.
+
+### The Foundry Scripts Workflow
+
+The entire lifecycle of creating and resolving a policy is managed through a series of Foundry scripts. Each script represents a distinct action performed by a user or an automated process.
+
+#### 1. Deploy the Agency Contract
+
+This script deploys the `MinTempAgency` contract and saves its address to a file in the `data/weatherInsurance/` directory for other scripts to use.
+
+```solidity title="script/MinTemp.s.sol"
+contract DeployAgency is Script {
+    function run() external {
+        vm.createDir(dirPath, true);
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
+        MinTempAgency agency = new MinTempAgency();
+        vm.stopBroadcast();
+
+        string memory filePath = string.concat(dirPath, "_agencyAddress.txt");
+        vm.writeFile(filePath, vm.toString(address(agency)));
+        console.log("MinTempAgency deployed to:", address(agency));
+    }
+}
+```
+
+**Run the script:**
+
+```bash
+forge script script/MinTemp.s.sol:DeployAgency --rpc-url $COSTON2_RPC_URL --broadcast --verify
+```
+
+#### 2. Create an Insurance Policy
+
+This script creates a new insurance policy. A crucial step here is to first query the OpenWeatherMap API off-chain (using Foundry's `ffi` cheatcode) to get the _exact_ coordinates of the nearest weather station. This ensures the coordinates in the policy will match the coordinates in the FDC proof, which is required for successful resolution.
+
+```solidity title="script/MinTemp.s.sol"
+contract CreatePolicy is Script {
+    function run() external {
+        // ...
+        // Fetch the exact coordinates from the API first to ensure they match the proof.
+        string memory apiKey = vm.envString("OPEN_WEATHER_API_KEY");
+        string memory url = string.concat("...", apiKey, "..."); // API URL
+        string memory jsonResponse = string(vm.ffi(...)); // Call API via curl
+
+        string memory latString = vm.parseJsonString(jsonResponse, ".coord.lat");
+        string memory lonString = vm.parseJsonString(jsonResponse, ".coord.lon");
+
+        int256 actualLatitude = FdcBase.stringToScaledInt(latString, 6);
+        int256 actualLongitude = FdcBase.stringToScaledInt(lonString, 6);
+
+        // ... define policy parameters (premium, coverage, etc.) ...
+
+        vm.startBroadcast(deployerPrivateKey);
+        agency.createPolicy{value: premium}(actualLatitude, actualLongitude, ...);
+        vm.stopBroadcast();
+    }
+    // ...
+}
+```
+
+**Run the script:**
+
+```bash
+forge script script/MinTemp.s.sol:CreatePolicy --rpc-url $COSTON2_RPC_URL --broadcast --ffi
+```
+
+#### 3. Claim (Underwrite) a Policy
+
+This script allows an insurer to claim an existing policy by its ID. It reads the policy details from the contract to determine the required coverage amount and sends it along with the transaction.
+
+```solidity title="script/MinTemp.s.sol"
+contract ClaimPolicy is Script {
+    function run(uint256 policyId) external {
+        uint256 insurerPrivateKey = vm.envUint("PRIVATE_KEY");
+        MinTempAgency agency = _getAgency();
+        MinTempAgency.Policy memory policy = agency.getPolicy(policyId);
+        require(policy.status == MinTempAgency.PolicyStatus.Unclaimed, "Policy not in Unclaimed state");
+
+        vm.startBroadcast(insurerPrivateKey);
+        agency.claimPolicy{value: policy.coverage}(policyId);
+        vm.stopBroadcast();
+    }
+    // ...
+}
+```
+
+**Run the script (replace `<POLICY_ID>` with the actual ID, e.g., 0):**
+
+```bash
+forge script script/MinTemp.s.sol:ClaimPolicy --rpc-url $COSTON2_RPC_URL --broadcast --sig "run(uint256)" <POLICY_ID>
+```
+
+#### 4. Resolve a Policy (3-Step FDC Process)
+
+Resolving a policy requires the standard three-step FDC workflow.
+
+##### Step 4.1: Prepare the Resolve Request
+
+This script prepares the `Web2Json` attestation request needed to fetch the weather data. It constructs the API query parameters and the `jq` filter, then calls the FDC verifier to get the final `abiEncodedRequest`.
+
+```solidity title="script/MinTemp.s.sol"
+contract PrepareResolveRequest is Script {
+    function run(uint256 policyId) external {
+        MinTempAgency agency = _getAgency();
+        MinTempAgency.Policy memory policy = agency.getPolicy(policyId);
+
+        bytes memory abiEncodedRequest = prepareFdcRequest(policy.latitude, policy.longitude);
+
+        FdcBase.writeToFile(dirPath, "_resolve_request.txt", StringsBase.toHexString(abiEncodedRequest), true);
+    }
+    // ... helper functions for preparing API and FDC requests ...
+}
+```
+
+**Run the script:**
+
+```bash
+forge script script/MinTemp.s.sol:PrepareResolveRequest --rpc-url $COSTON2_RPC_URL --broadcast --ffi --sig "run(uint256)" <POLICY_ID>
+```
+
+##### Step 4.2: Submit the Resolve Request
+
+This script takes the prepared request from the previous step and submits it to the `FdcHub` contract, saving the `votingRoundId` for the final step.
+
+```solidity title="script/MinTemp.s.sol"
+contract SubmitResolveRequest is Script {
+    function run() external {
+        string memory requestHex = vm.readFile(string.concat(dirPath, "_resolve_request.txt"));
+        bytes memory abiEncodedRequest = vm.parseBytes(requestHex);
+
+        uint256 submissionTimestamp = FdcBase.submitAttestationRequest(abiEncodedRequest);
+        uint256 submissionRoundId = FdcBase.calculateRoundId(submissionTimestamp);
+
+        FdcBase.writeToFile(dirPath, "_resolve_roundId.txt", Strings.toString(submissionRoundId), true);
+    }
+}
+```
+
+**Run the script:**
+
+```bash
+forge script script/MinTemp.s.sol:SubmitResolveRequest --rpc-url $COSTON2_RPC_URL --broadcast
+```
+
+##### Step 4.3: Execute the Resolution
+
+After waiting for the voting round to finalize (90-180 seconds), this script retrieves the proof from the Data Availability Layer and calls the `resolvePolicy` function on the `MinTempAgency` contract, providing the proof.
+
+```solidity title="script/MinTemp.s.sol"
+contract ExecuteResolve is Script {
+    function run(uint256 policyId) external {
+        // ... read requestHex and roundIdStr from files ...
+
+        bytes memory proofData = FdcBase.retrieveProof(protocolId, requestHex, submissionRoundId);
+
+        // ... decode proofData into IWeb2Json.Proof struct ...
+        IWeb2Json.Proof memory finalProof = IWeb2Json.Proof(parsableProof.proofs, proofResponse);
+
+        uint256 privateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(privateKey);
+        agency.resolvePolicy(policyId, finalProof);
+        vm.stopBroadcast();
+    }
+    // ...
+}
+```
+
+**Run the script:**
+
+```bash
+forge script script/MinTemp.s.sol:ExecuteResolve --rpc-url $COSTON2_RPC_URL --broadcast --ffi --sig "run(uint256)" <POLICY_ID>
+```
