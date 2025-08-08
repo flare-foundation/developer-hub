@@ -1,4 +1,4 @@
-import { getFXRPAssetManagerAddress } from "../utils/fassets";
+import { getFXRPAssetManager } from "../utils/fassets";
 import { IAssetManagerInstance } from "../../typechain-types";
 import { logEvents } from "../../scripts/utils/core";
 
@@ -83,8 +83,7 @@ async function parseCollateralReservedEvent(
 
 async function main() {
   // 6. Get the AssetManager contract from the Flare Contract Registry
-  const assetManager: IAssetManagerInstance =
-    await getFXRPAssetManagerAddress();
+  const assetManager: IAssetManagerInstance = await getAssetManagerFXRP();
 
   // 7. Find the best agent with enough free collateral lots
   const agentVaultAddress = await findBestAgent(assetManager, LOTS_TO_MINT);
