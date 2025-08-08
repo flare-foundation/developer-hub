@@ -47,21 +47,21 @@ The following code demonstrates how to reserve collateral by calling the [`reser
 
 1. Define constants
 
-- `ASSET_MANAGER_ADDRESS`: FXRP AssetManager address on Songbird Testnet (Coston).
 - `LOTS_TO_MINT`: Number of FAsset lots to reserve.
-- `UNDERLYING_ADDRESS`: Target XRP Ledger address for the minted asset.
 - `ZERO_ADDRESS`: Placeholder for `executor` (not used in this script).
 
 2. Retrieve and filter agents with enough free collateral and select the agent with the lowest fee and normal status.
 3. Parse [`CollateralReserved`](/fassets/reference/IAssetManagerEvents#collateralreserved) event.
 4. Start the minting reservation process at the script's entry point.
 5. Call `findBestAgent` with the required number of lots.
-6. Fetch agent metadata from [`getAgentInfo`](/fassets/reference/IAssetManager#getagentinfo) to get the agent's `feeBIPS`, which is used to calculate the collateral reservation fee.
-7. Calculate the collateral reservation fee by calling [`collateralReservationFee`](/fassets/reference/IAssetManager#collateralreservationfee).
-8. Reserve collateral from agent by calling [`reserveCollateral`](/fassets/reference/IAssetManager#reservecollateral)
-9. Call `assetMintingDecimals` to determine the XRP token's decimal precision.
-10. Parse the [`CollateralReserved`](/fassets/reference/IAssetManagerEvents#collateralreserved) event.
-11. Calculate the total XRP value required for payment.
+6. Get the asset manager from the [Flare Contract Registry](/fassets/reference/ContractRegistry).
+7. Find the best agent with enough free collateral lots.
+8. Fetch agent metadata from [`getAgentInfo`](/fassets/reference/IAssetManager#getagentinfo) to get the agent's `feeBIPS`, which is used to calculate the collateral reservation fee.
+9. Calculate the collateral reservation fee by calling [`collateralReservationFee`](/fassets/reference/IAssetManager#collateralreservationfee).
+10. Reserve collateral from agent by calling [`reserveCollateral`](/fassets/reference/IAssetManager#reservecollateral)
+11. Call `assetMintingDecimals` to determine the XRP token's decimal precision.
+12. Parse the [`CollateralReserved`](/fassets/reference/IAssetManagerEvents#collateralreserved) event.
+13. Calculate the total XRP value required for payment.
 
 ## Send Payment on XRP Ledger
 
