@@ -175,6 +175,22 @@ You can find this function in the [Flare Hardhat Starter Kit](/network/guides/ha
 In this guide, we are not focusing on the event parsing.
 :::
 
+### Output the  Redemption Result
+
+The following function is used to output the redemption request information.
+
+```typescript
+async function printRedemptionRequestInfo(fAssetsRedeem: any, redemptionRequestedEvents: any[]) {
+    console.log("\n=== Redemption Request Information ===");
+    
+    for (const event of redemptionRequestedEvents) {
+        const redemptionRequestInfo = await fAssetsRedeem
+            .getRedemptionRequestInfo(event.decoded.requestId);
+        console.log("Redemption request info:", redemptionRequestInfo);
+    }
+}
+```
+
 ### Redeeming FAssets
 
 To put it altogether you can use the following function to deploy the contract, transfer FXRP to it, redeem the FAssets, and parse the redemption events:
@@ -216,13 +232,8 @@ async function main() {
     fAssetsRedeem,
   );
 
-  // Get redemption request info for each redemption requested event
-  redemptionRequestedEvents.forEach(async (event: any) => {
-    const redemptionRequestInfo = await fAssetsRedeem.getRedemptionRequestInfo(
-      event.decoded.requestId,
-    );
-    console.log("Redemption request info:", redemptionRequestInfo);
-  });
+  // Print redemption request info for each redemption requested event
+  await printRedemptionRequestInfo(fAssetsRedeem, redemptionRequestedEvents);
 }
 
 main().catch((error) => {
