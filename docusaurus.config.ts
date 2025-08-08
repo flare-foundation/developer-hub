@@ -85,6 +85,16 @@ const config: Config = {
           content: "S7ko-mhGTnZdYIIAcKUa-IsjtF8x-0wvleX2uDUg0NU",
         },
       },
+      {
+        tagName: "link",
+        attributes: {
+          rel: "preload",
+          href: "/fonts/Satoshi/Satoshi-Variable.woff2",
+          as: "font",
+          type: "font/woff2",
+          crossorigin: "anonymous",
+        },
+      },
     ],
     docs: {
       sidebar: {
@@ -191,7 +201,7 @@ const config: Config = {
           items: [
             {
               label: "Flare Portal",
-              href: "http://portal.flare.network/",
+              href: "https://portal.flare.network/",
             },
             {
               label: "Governance Proposals",
