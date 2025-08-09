@@ -4,37 +4,32 @@ This repository contains the source code and content for the [Flare Developer Hu
 
 This site is built with [Docusaurus](https://docusaurus.io/), a modern static site generator.
 
-## 🚀 Getting Started
+> **Note:** This README is for contributors to the Developer Hub source.  
+> If you just want to read the documentation, visit [dev.flare.network](https://dev.flare.network).
 
-Follow these steps to set up a local development environment for previewing changes or contributing.
+## 🚀 Getting Started
 
 ### Prerequisites
 
 - [Node.js v20](https://nodejs.org/en/) with [nvm](https://github.com/nvm-sh/nvm).
-- [uv](https://docs.astral.sh/uv/), [Cargo](https://doc.rust-lang.org/cargo/) and [go](https://go.dev/doc/install) for language specific development.
+- For language-specific [examples](examples/)
+  - [uv](https://docs.astral.sh/uv/) for Python
+  - [Cargo](https://doc.rust-lang.org/cargo/) for Rust
+  - [go](https://go.dev/doc/install) for Go
 
 ### Installation
 
-1. Clone the repository:
+Clone, install dependencies and start the local development server:
 
-   ```bash
-   git clone https://github.com/flare-foundation/developer-hub.git
-   cd developer-hub
-   ```
+```bash
+git clone https://github.com/flare-foundation/developer-hub.git
+cd developer-hub
+npm install
+npm run start
+```
 
-2. Install dependencies:
-
-   ```bash
-   npm install
-   ```
-
-3. Start the local development server:
-
-   ```bash
-   npm run start
-   ```
-
-   This launches the development server and automatically opens your default browser. Live reloading ensures changes appear instantly.
+This launches the local development server with hot-reloading.
+The site will open in your browser automatically.
 
 ## 📂 Repo Structure
 
@@ -56,10 +51,19 @@ flare-foundation/developer-hub/
 
 Common tasks when developing or contributing content.
 
+### 🏗️ **Building for Production**
+
+Search and some features only work in production.
+You can test locally with:
+
+```bash
+npm run build && npm run serve
+```
+
 ### ▶️ Running Code Examples
 
 The [`examples/`](examples/) directory contains code snippets demonstrating how to interact with Flare protocols.
-Each language subdirectory often has its own `README.md` with setup instructions.
+Each language subdirectory (`examples/developer-hub-*`) has its own `README.md` with setup instructions.
 
 **Supported languages:**
 
@@ -68,25 +72,26 @@ Each language subdirectory often has its own `README.md` with setup instructions
 - Rust
 - Go
 
-### ✨ Formatting Code & Documentation
+### ✨ Formatting & Linting
 
-Ensure consistent formatting using [Prettier](https://prettier.io/):
+Run [Prettier](https://prettier.io/) for docs and site code:
 
 ```bash
 npm run format
 ```
 
-**Note**: Prettier support for MDXv3 is evolving ([tracking issue](https://github.com/prettier/prettier/issues/12209)). If needed, bypass Prettier by using:
+Language-specific examples use their native formatters:
 
-```plaintext
-{/* prettier-ignore */}
-```
+- Go → `gofmt` for Go
+- Rust →`cargo fmt` for Rust
+- Python → `ruff` for Python
 
-Code examples within the `examples/` directory follow language-specific formatting standards:
-
-- `gofmt` for Go
-- `cargo fmt` for Rust
-- `ruff` for Python
+> **Note:** Prettier support for MDXv3 is evolving ([tracking issue](https://github.com/prettier/prettier/issues/12209)).
+> To skip formatting for a section:
+>
+> ```plaintext
+> {/* prettier-ignore */}
+> ```
 
 ### 📄 Generating Solidity documentation
 
@@ -118,7 +123,7 @@ To generate Solidity documentation:
 
 1. **Update addresses and feeds:**
 
-   This script updates JSON files used by custom components (e.g., feed tables, contract address lists) by fetching data from the `ContractRegistry` onchain and referencing risk data defined in `automations/*_risk.json`.
+   Fetches latest contract addresses from `ContractRegistry` and feed data for use in site tables and components.
 
    ```bash
    npm run automations
@@ -126,29 +131,19 @@ To generate Solidity documentation:
 
 2. **Update language dependencies:**
 
-   This script runs package manager updates within the various language subdirectories under `examples/` to refresh their dependencies.
+   Updates dependencies in all `examples/*` subdirectories.
 
    ```bash
    npm run update-deps
    ```
 
-## 🏗️ **Building for Production**
-
-To create a production-ready build:
-
-```bash
-npm run build
-```
-
-The static files are generated in the `build` directory. To serve the production build locally:
-
-```bash
-npm run serve
-```
-
-**Note**: Search only works in production builds.
-
 ## 🤝 Contributing
 
-Contributions are highly welcome! Whether it's fixing a typo, improving documentation clarity, adding new examples, or enhancing the site itself, your help is appreciated.
-Before your first PR, read the [CONTRIBUTING.md](CONTRIBUTING.md).
+We welcome contributions of all sizes - from typo fixes to major feature additions.
+
+1. Read the [CONTRIBUTING.md](CONTRIBUTING.md) guidelines.
+2. Fork and create a feature branch:
+   ```bash
+   git checkout -b feature/my-change
+   ```
+3. Commit, push, and open a PR.
