@@ -3,7 +3,7 @@
 ## Tooling
 
 - [Go](https://go.dev/doc/install)
-- [golangci-lint](https://golangci-lint.run/welcome/install/)
+- [golangci-lint](https://golangci-lint.run/docs/welcome/install/)
 
 ## Install dependencies
 
