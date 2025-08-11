@@ -8,23 +8,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {RedemptionRequestInfo} from "flare-periphery-contracts-fassets-test/coston2/data/RedemptionRequestInfo.sol";
 
 contract FAssetsRedeem {
-    // 1. Use the AssetManager contract
-    IAssetManager public immutable assetManager;
-    IERC20 public immutable underlyingToken;
-
-    address public immutable fAssetToken;
-
-    constructor(address _assetManager, address _fAssetToken) {
-        assetManager = IAssetManager(_assetManager);
-        fAssetToken = _fAssetToken;
-    }
-
-    // 2. Approve FAssets for redemption
-    function approveFAssets(uint256 _amount) public returns (bool) {
-        return IERC20(fAssetToken).approve(address(this), _amount);
-    }
-
-    // 3. Redeem FAssets (requires prior approval)
+    // 1. Redeem FAssets
     function redeem(
         uint256 _lots,
         string memory _redeemerUnderlyingAddressString
@@ -47,7 +31,12 @@ contract FAssetsRedeem {
         return redeemedAmountUBA;
     }
 
-    // 4. Get the AssetManager settings
+    function getFXRPAddress() public view returns (address) {
+        IAssetManager assetManager = ContractRegistry.getAssetManagerFXRP();
+        return address(assetManager.fAsset());
+    }
+
+    // 2. Get the AssetManager settings
     function getSettings()
         public
         view
