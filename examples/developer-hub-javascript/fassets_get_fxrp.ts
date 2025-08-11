@@ -5,13 +5,13 @@ import { getAssetManagerFXRP } from "../utils/getters";
 const IAssetManager = artifacts.require("IAssetManager");
 
 async function main() {
-    const assetManager = await getAssetManagerFXRP();
-    const fasset = await assetManager.fAsset();
+  const assetManager = await getAssetManagerFXRP();
+  const fasset = await assetManager.fAsset();
 
-    console.log("FXRP address", fasset);
+  console.log("FXRP address", fasset);
 }
 
-main().catch(error => {
-    console.error(error);
-    process.exitCode = 1;
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
 });

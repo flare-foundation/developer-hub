@@ -19,55 +19,59 @@ const SwapAndRedeem = artifacts.require("SwapAndRedeem");
 
 // 2. Deploy and verify the `SwapAndRedeem` smart contract
 async function deployAndVerifyContract() {
-    const assetManager = await getAssetManagerFXRP();
-    const fassetAddress = await assetManager.fAsset();
-    const swapPath = [WC2FLR, fassetAddress];
+  const assetManager = await getAssetManagerFXRP();
+  const fassetAddress = await assetManager.fAsset();
+  const swapPath = [WC2FLR, fassetAddress];
 
-    const args = [SWAP_ROUTER_ADDRESS, swapPath];
-    const swapAndRedeem: SwapAndRedeemInstance = await SwapAndRedeem.new(...args);
+  const args = [SWAP_ROUTER_ADDRESS, swapPath];
+  const swapAndRedeem: SwapAndRedeemInstance = await SwapAndRedeem.new(...args);
 
-    const fassetsSwapAndRedeemAddress = await swapAndRedeem.address;
+  const fassetsSwapAndRedeemAddress = await swapAndRedeem.address;
 
-    try {
-        await run("verify:verify", {
-            address: fassetsSwapAndRedeemAddress,
-            constructorArguments: args,
-        });
-    } catch (e: any) {
-        console.log(e);
-    }
+  try {
+    await run("verify:verify", {
+      address: fassetsSwapAndRedeemAddress,
+      constructorArguments: args,
+    });
+  } catch (e: any) {
+    console.log(e);
+  }
 
-    console.log("FAssetsSwapAndRedeem deployed to:", fassetsSwapAndRedeemAddress);
+  console.log("FAssetsSwapAndRedeem deployed to:", fassetsSwapAndRedeemAddress);
 
-    return swapAndRedeem;
+  return swapAndRedeem;
 }
 
 async function main() {
-    // 2. Deploy and verify the `SwapAndRedeem` smart contract
-    const swapAndRedeem: SwapAndRedeemInstance = await deployAndVerifyContract();
+  // 2. Deploy and verify the `SwapAndRedeem` smart contract
+  const swapAndRedeem: SwapAndRedeemInstance = await deployAndVerifyContract();
 
-    // 3. Calculate Required Amounts
-    const swapAndRedeemAddress = await swapAndRedeem.address;
-    const amounts = await swapAndRedeem.calculateRedemptionAmountIn(LOTS_TO_REDEEM);
-    const amountIn = amounts.amountIn;
-    const amountOut = amounts.amountOut;
-    console.log("Amount of tokens out (FXRP): ", amountOut.toString());
-    console.log("Amount of tokens in (WCFLR): ", amountIn.toString());
+  // 3. Calculate Required Amounts
+  const swapAndRedeemAddress = await swapAndRedeem.address;
+  const amounts =
+    await swapAndRedeem.calculateRedemptionAmountIn(LOTS_TO_REDEEM);
+  const amountIn = amounts.amountIn;
+  const amountOut = amounts.amountOut;
+  console.log("Amount of tokens out (FXRP): ", amountOut.toString());
+  console.log("Amount of tokens in (WCFLR): ", amountIn.toString());
 
-    // 4. Approve spending WCFLR tokens
-    // Get WCFLR token
-    const ERC20 = artifacts.require("ERC20");
-    const wcflr: ERC20Instance = await ERC20.at(WC2FLR);
+  // 4. Approve spending WCFLR tokens
+  // Get WCFLR token
+  const ERC20 = artifacts.require("ERC20");
+  const wcflr: ERC20Instance = await ERC20.at(WC2FLR);
 
-    const approveTx = await wcflr.approve(swapAndRedeemAddress, amountOut);
-    console.log("Approve transaction: ", approveTx);
+  const approveTx = await wcflr.approve(swapAndRedeemAddress, amountOut);
+  console.log("Approve transaction: ", approveTx);
 
-    // 5. Swap WCFLR for FXRP and redeem to underlying XRP token on XRP Ledger
-    const swapResult = await swapAndRedeem.swapAndRedeem(LOTS_TO_REDEEM, UNDERLYING_ADDRESS);
-    console.log("Swap and redeem transaction: ", swapResult);
+  // 5. Swap WCFLR for FXRP and redeem to underlying XRP token on XRP Ledger
+  const swapResult = await swapAndRedeem.swapAndRedeem(
+    LOTS_TO_REDEEM,
+    UNDERLYING_ADDRESS,
+  );
+  console.log("Swap and redeem transaction: ", swapResult);
 }
 
-main().catch(error => {
-    console.error(error);
-    process.exitCode = 1;
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
 });

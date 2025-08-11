@@ -66,18 +66,22 @@ It initializes the token as the first token in the swap path.
 The `swapAndRedeem` is the core function that executes the swap and redemption flow.
 
 - **1. Validation**
+
   - Ensure the caller has sufficient WCFLR balance.
   - Confirm the contract has enough FXRP allowance for redemption.
 
 - **2. Transfer**
+
   - Move WCFLR from the caller to the contract.
   - Approve the router to spend WCFLR on behalf of the contract.
 
 - **3. Swap**
+
   - Perform the swap from WCFLR to FXRP using the specified swap path.
   - Apply a 10-minute deadline for the swap operation.
 
 - **4. Redemption**
+
   - Redeem the obtained FXRP through the FAssets system.
   - Transfer the resulting XRP to the caller's XRPL address.
 
@@ -105,18 +109,22 @@ To execute the swap and redeem process, you need to deploy the smart contract in
 ### Code Breakdown
 
 - **1. Dependencies and Constants**
+
   - `LOTS_TO_REDEEM`: The number of FAsset lots to redeem (typically set to 1).
   - `UNDERLYING_ADDRESS`: The XRPL address that will receive the redeemed assets.
   - `SWAP_ROUTER_ADDRESS`: The address of the Uniswap V2-compatible swap router.
   - `WC2FLR`: Wrapped CFLR token address.
 
 - **2. Deploy and Verify**
+
   - Deploys the `SwapAndRedeem` contract and verifies it using [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit).
 
 - **3. Calculate Redemption Amounts**
+
   - Calls `calculateRedemptionAmountIn` to determine the required WCFLR amount.
 
 - **4. Approve Tokens**
+
   - Uses the ERC-20 `approve` method to allow the contract to spend WCFLR.
     :::warning
     In a production environment, you should use a secure method to approve spending the tokens.
