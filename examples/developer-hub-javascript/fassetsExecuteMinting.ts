@@ -1,4 +1,4 @@
-import { getFXRPAssetManager } from "../utils/fassets";
+import { getAssetManagerFXRP } from "../utils/fassets";
 import { prepareAttestationRequestBase } from "../utils/fdc";
 import { IAssetManagerInstance } from "../../typechain-types";
 import { logEvents } from "../../scripts/utils/core";
@@ -86,7 +86,7 @@ async function main() {
   // 9. Get proof from FDC
   const proof = await getProof(TARGET_ROUND_ID);
 
-  const assetManager: IAssetManagerInstance = await getFXRPAssetManager();
+  const assetManager: IAssetManagerInstance = await getAssetManagerFXRP();
 
   // 10. Execute minting
   const tx = await assetManager.executeMinting(

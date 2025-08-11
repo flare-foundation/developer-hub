@@ -1,4 +1,4 @@
-import { getFXRPAssetManager } from "../utils/fassets";
+import { getAssetManagerFXRP } from "../utils/fassets";
 import { IAssetManagerInstance } from "../../typechain-types";
 import { logEvents } from "../../scripts/utils/core";
 
@@ -68,7 +68,6 @@ async function findBestAgent(
 // 4. Function to parse the CollateralReserved event
 async function parseCollateralReservedEvent(
   transactionReceipt: any,
-  decimals: number,
 ) {
   console.log("\nParsing events...", transactionReceipt.rawLogs);
 
@@ -140,7 +139,6 @@ async function main() {
   // 13. Parse the CollateralReserved event
   const collateralReservedEvent = await parseCollateralReservedEvent(
     tx.receipt,
-    decimals,
   );
 
   // 14. Get the collateral reservation info
