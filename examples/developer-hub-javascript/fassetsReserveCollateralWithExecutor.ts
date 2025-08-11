@@ -66,9 +66,7 @@ async function findBestAgent(
 }
 
 // 4. Function to parse the CollateralReserved event
-async function parseCollateralReservedEvent(
-  transactionReceipt: any,
-) {
+async function parseCollateralReservedEvent(transactionReceipt: any) {
   console.log("\nParsing events...", transactionReceipt.rawLogs);
 
   // The logEvents function is included in the Flare starter kit
