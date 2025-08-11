@@ -65,6 +65,7 @@ async function findBestAgent(
 }
 
 // 4. Function to parse the CollateralReserved event
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function parseCollateralReservedEvent(transactionReceipt: any) {
   console.log("\nParsing events...", transactionReceipt.rawLogs);
 

@@ -74,6 +74,7 @@ async function getProof(roundId: number) {
 }
 
 // 8. Parse events
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function parseEvents(receipt: any) {
   console.log("\nParsing events...", receipt.rawLogs);
 
