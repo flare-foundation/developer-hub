@@ -10,7 +10,7 @@ import FTSOV2FeedById from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2
 import FTSOV2FeedByIdWei from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedByIdWei.sol";
 import FTSOV2FeedsById from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedsById.sol";
 import FTSOV2FeedsByIdWei from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedsByIdWei.sol";
-import FTSOV2VerifyProof from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2VerifyProof.sol";
+import FTSOV2AnchorConsumer from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2AnchorConsumer.sol";
 
 Primary interface for interacting with FTSOv2. This is a long-term support (LTS) interface, designed to ensure continuity even as underlying contracts evolve or protocols migrate to new versions.
 
@@ -181,13 +181,13 @@ function verifyFeedData(
 <details>
 <summary>Sample contract usage</summary>
 
-<CodeBlock language="solidity" title="FTSOV2VerifyProof.sol">
-  {FTSOV2VerifyProof}
+<CodeBlock language="solidity" title="FTSOV2AnchorConsumer.sol">
+  {FTSOV2AnchorConsumer}
 </CodeBlock>
 
 </details>
 
-<Remix fileName="FTSOV2VerifyProof.sol">Open sample in Remix</Remix>
+<Remix fileName="FTSOV2AnchorConsumer.sol">Open sample in Remix</Remix>
 
 ## Structures
 
