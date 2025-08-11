@@ -9,13 +9,10 @@ sidebar_position: 9
 
 import AvailableTestnet from "../_available_testnet.mdx";
 
-The `EVMTransaction` attestation type enables the verification of transaction details from any EVM-compatible blockchain. You can learn more about it in the official [specification repo](/fdc/attestation-types/evm-transaction).
+We will now demonstrate how the FDC protocol can be used to verify a payment that occurred on one chain (e.g., Sepolia testnet) and trigger an action on another (e.g., Coston2). In this example, verifying a specific USDC transfer on Sepolia will result in the minting of a commemorative NFT on Coston2.
+In this guide, we will follow the steps outlined under User Workflow in the [FDC overview](/fdc/overview).
 
 <AvailableTestnet />
-
-We will now demonstrate how the FDC protocol can be used to verify a payment that occurred on one chain (e.g., Sepolia testnet) and trigger an action on another (e.g., Coston2). In this example, verifying a specific USDC transfer on Sepolia will result in the minting of a commemorative NFT on Coston2.
-
-In this guide, we will follow the steps outlined under User Workflow in the [FDC overview](/fdc/overview).
 
 Our implementation requires handling the FDC voting round finalization process. To manage this, we will use separate scripts in `script/crossChainPayment.s.sol` that handle different stages of the validation process:
 
@@ -191,7 +188,9 @@ forge script script/crossChainPayment.s.sol:SubmitAttestationRequest --rpc-url c
 
 ### 4. Retrieve Proof
 
-After waiting for the voting round to be finalized (typically 90-180 seconds), we can retrieve the proof from a Data Availability Layer provider. You can check if the request was submitted successfully on the [AttestationRequests](https://coston2-systems-explorer.flare.rocks/attestation-request) page on the Flare Systems Explorer website. To check if the round has been finalized, go to the [Finalizations](https://coston2-systems-explorer.flare.rocks/finalizations) page.
+After waiting for the voting round to be finalized (max. 180 seconds), we can retrieve the proof from a Data Availability Layer provider.
+
+You can check if the request was submitted successfully on the [AttestationRequests](https://coston2-systems-explorer.flare.rocks/attestation-request) page on the Flare Systems Explorer website. To check if the round has been finalized, go to the [Finalizations](https://coston2-systems-explorer.flare.rocks/finalizations) page.
 
 The `RetrieveProof` script waits for finalization, polls the DA layer, and saves the complete proof to a file.
 

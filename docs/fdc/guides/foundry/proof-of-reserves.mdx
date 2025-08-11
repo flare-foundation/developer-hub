@@ -18,37 +18,47 @@ sidebar_position: 12
 
 import AvailableTestnet from "../_available_testnet.mdx";
 
-This guide demonstrates how to build a simple Proof of Reserves dApp using the Flare Data Connector (FDC). It showcases how multiple attestation types, namely `EVMTransaction` and `Web2Json`, can be combined within the same application to solve a real-world problem.
+This is a guide on how to build a simple dApp using the [Flare Data Connector](/fdc/overview).
+It demonstrates how multiple attestation types, namely the [EVMTransaction](/fdc/attestation-types/evm-transaction) and [Web2Json](/fdc/attestation-types/web-2-json), can be combined within the same app.
 
-The application enables on-chain verification that a stablecoin's circulating supply across multiple blockchains is backed by sufficient off-chain reserves. We will first describe the problem the app is addressing and then provide a detailed walkthrough of its implementation using Foundry.
+The app that we will be building is called `proofOfReserves`, which enables onchain verification that a stablecoin's circulating supply is backed by sufficient offchain reserves.
+We will first describe what issue the app is addressing, and then provide a detailed walkthrough through its source code.
+All the code for this project is available on GitHub, in the [Flare Foundry Starter](https://github.com/flare-foundation/flare-foundry-starter) repository.
 
-<AvailableTestnet />
+## The problem
 
-### The Problem
+Stablecoins are cryptographic tokens designed to maintain a fixed value, typically pegged to a fiat currency like the US dollar.
+To maintain trust in the system, the issuing institution must hold sufficient reserves to back the tokens in circulation.
 
-Stablecoins are cryptographic tokens designed to maintain a fixed value, typically pegged to a fiat currency like the US dollar. To maintain trust, the issuing institution must hold sufficient reserves to back all tokens in circulation.
-
-The `ProofOfReserves` application demonstrates how to verify that a stablecoin issuer maintains adequate off-chain dollar reserves to cover all of its tokens across multiple blockchains. This verification creates transparency and helps prevent situations where more tokens exist than the backing reserves can support.
+The `proofOfReserves` application demonstrates how to verify that a stablecoin issuer maintains adequate offchain dollar reserves to cover all tokens in circulation across multiple blockchains.
+This verification creates transparency and helps prevent situations where more tokens exist than the backing reserves can support.
 
 Implementing this verification system presents three technical challenges:
 
-1.  **Accessing Off-Chain Data**: We need to query a Web2 API that reports the institution's official dollar reserves.
-2.  **Reading On-Chain State**: We need to access the total token supply data from various blockchain networks where the token is deployed.
-3.  **Cross-Chain Data Aggregation**: We need to aggregate token supply information from multiple chains and compare it to the off-chain reserve data.
+1. **Accessing offchain data**: We need to query a Web2 API that reports the institution's official dollar reserves.
+2. **Reading onchain state**: We need to access the total token supply data from various blockchain networks.
+3. **Cross-chain data collection**: We need to aggregate token supply information across multiple chains.
 
-The Flare Data Connector (FDC) provides solutions for accessing Web2 APIs through the `Web2Json` attestation type and collecting cross-chain data via the `EVMTransaction` attestation type. For reading on-chain state, we deploy a dedicated contract that reads the token supply and emits this data as an event, which can then be attested to.
+The [Flare Data Connector (FDC)](/fdc/overview) provides solutions for both accessing Web2 APIs through the [Web2Json](/fdc/attestation-types/web-2-json) attestation type and collecting cross-chain data via the [EVMTransaction](/fdc/attestation-types/evm-transaction) attestation type.
+For reading onchain state, we deploy a dedicated contract that reads the token supply and emits this data as an event.
 
-### Smart Contract Architecture
+This guide will walk through all the components needed to build the complete `proofOfReserves` verification system.
 
-For our Proof of Reserves implementation, we'll create three distinct smart contracts:
+## Smart Contract Architecture
 
-1.  **`MyStablecoin`**: A custom ERC20 token for testing purposes.
-2.  **`TokenStateReader`**: A utility contract that reads and broadcasts the token's total supply data via an event.
-3.  **`ProofOfReserves`**: The main verification contract that processes attestation proofs.
+For our proof of reserves implementation, we'll create three distinct smart contracts:
+
+1. `MyStablecoin`: A custom ERC20 token for testing
+2. `TokenStateReader`: A utility contract that reads and broadcasts token supply data
+3. `ProofOfReserves`: The main verification contract that processes attestation proofs
+
+Note that in a production environment, we would typically only need two contracts - the main verification contract and a state reader.
+However, since this is a guide and we want flexibility to experiment with different token supply values, we'll also deploy our own stablecoin.
 
 #### Stablecoin Contract
 
-This contract creates a standard ERC20-compatible token with controlled minting, allowing us to simulate a stablecoin for this example.
+Let's start with the stablecoin implementation.
+This contract creates an ERC20-compatible token with additional functionality for burning tokens and controlled minting.
 
 ```solidity title="src/proofOfReserves/Token.sol"
 // SPDX-License-Identifier: MIT
@@ -72,9 +82,16 @@ contract MyStablecoin is ERC20, ERC20Burnable, Ownable {
 }
 ```
 
+Because we are building our app around `@openzeppelin`'s ERC20 token, we can later replace the token with any such instance.
+This means that we can easily modify our app to work with an arbitrary contract that inherits the `ERC20`.
+
 #### TokenStateReader Contract
 
-The FDC's `EVMTransaction` attestation type works by verifying data from events. To get the `totalSupply` of our token on-chain, we deploy this simple contract. Its only function is to read the `totalSupply` of a given ERC20 token and emit it in an event, making the state readable by the FDC.
+The FDC's `EVMTransaction` attestation type works by verifying data from events.
+
+To get the `totalSupply` of our token on-chain, we deploy this simple contract.
+
+Its only function is to read the `totalSupply` of a given ERC20 token and emit it in an event, making the state readable by the FDC.
 
 ```solidity title="src/proofOfReserves/TokenStateReader.sol"
 // SPDX-License-Identifier: MIT
@@ -95,7 +112,16 @@ contract TokenStateReader {
 
 #### ProofOfReserves Contract
 
-This is the core contract that performs the final verification. It takes the attested off-chain reserve data and the attested on-chain supply data from multiple chains, aggregates them, and determines if the reserves are sufficient.
+The final component in our implementation is the `ProofOfReserves` contract, which performs the actual verification of reserve adequacy.
+This contract evaluates whether the claimed dollar reserves are sufficient to back all tokens in circulation across different blockchains.
+
+The core functionality is contained in the `verifyReserves` function, which accepts two parameters:
+
+- An `IWeb2Json.Proof` struct containing attested data from the Web2 API about dollar reserves
+- An array of `IEVMTransaction.Proof` structs containing attested data about token supplies from various blockchains
+
+The function aggregates the total token supply from all chains and compares it against the claimed reserves.
+If sufficient reserves exist (i.e., if the total token supply is less than or equal to the claimed reserves), the function returns `true`; otherwise, it returns `false`.
 
 ```solidity title="src/proofOfReserves/ProofOfReserves.sol"
 // SPDX-License-Identifier: MIT
@@ -170,16 +196,33 @@ contract ProofOfReserves is Ownable {
 }
 ```
 
+---
+
 ### Process Overview
 
-This guide demonstrates deployment on Flare's Coston and Coston2 testnets, but the same approach can be adapted for any EVM chains. The complete process is broken down into sequential scripts:
+This guide demonstrates deployment on Flare's Coston and Coston2 testnets, but the same approach can be adapted for any EVM chain.
+The complete process follows these sequential steps:
 
-1.  **`Deploy`**: Deploys `MyStablecoin` and `TokenStateReader` to both Coston and Coston2, and `ProofOfReserves` to Coston2 only.
-2.  **`ActivateReaders`**: Calls `broadcastTokenSupply` on both chains to create transactions whose events can be attested to.
-3.  **`PrepareRequests`**: Constructs the off-chain FDC requests for both the Web2 reserve data and the on-chain transaction data.
-4.  **`SubmitRequests`**: Submits the prepared requests to the FDC on Coston.
-5.  **`RetrieveProofs`**: Waits for finalization and fetches the proofs from the Data Availability Layer.
-6.  **`VerifyReserves`**: Delivers the proofs to the `ProofOfReserves` contract for final verification.
+1. Deploy and verify the `MyStablecoin` contract on both Coston and Coston2 chains
+2. Deploy and verify the `TokenStateReader` contract on both Coston and Coston2 chains
+3. Deploy and verify the `ProofOfReserves` contract on Coston2 chain only
+4. Save `MyStablecoin`, `TokenStateReader`, and `ProofOfReserves` addresses to `scripts/proofOfReserves/config.ts`
+5. Call the `broadcastTokenSupply` function of both `TokenStateReader` contracts with the corresponding `MyStablecoin` addresses
+6. Save transaction hashes of both function calls to `scripts/proofOfReserves/config.ts`
+7. Request attestation from the [FDC](/fdc/overview), and call `verifyReserves` function of the `ProofOfReserves` with the received data
+
+Throughout this guide, we'll provide separate scripts for each step above, with filenames that clearly indicate their purpose.
+
+:::warning
+While we deploy stablecoin and reader contracts on both chains, the `ProofOfReserves` contract is deployed only on the Coston2 chain, which serves as our verification hub.
+:::
+
+## Scripts
+
+The first three scripts each deploy and verify one of the contracts defined in the first part of the guide, ie. `MyStablecoin`, `TokenStateReader`, and `ProofOfReserves`.
+They are more or less the same script, the only real difference being the contracts deployed, and the arguments that are passed to their constructor.
+
+The `Deploy` script deploys and verifies the `MyStablecoin` contract on the Coston and Coston2 chain.
 
 ### Step 1: Deploy Contracts
 
@@ -230,7 +273,13 @@ forge script script/ProofOfReserves.s.sol:Deploy --rpc-url $COSTON2_RPC_URL --br
 
 ### Step 2: Activate State Readers
 
-The `ActivateReaders` script calls the `broadcastTokenSupply` function on the `TokenStateReader` contracts on both chains. This creates a transaction with a `TotalTokenSupply` event. The script then reads the transaction hash from the Foundry broadcast receipt and saves it to a file. This hash is the input for the `EVMTransaction` attestation.
+The `ActivateReaders` script calls the `broadcastTokenSupply` function on the `TokenStateReader` contracts on both chains.
+
+This creates a transaction with a `TotalTokenSupply` event.
+
+The script then reads the transaction hash from the Foundry broadcast receipt and saves it to a file.
+
+This hash is the input for the `EVMTransaction` attestation.
 
 ```solidity title="script/ProofOfReserves.s.sol"
 contract ActivateReaders is Script {
@@ -270,7 +319,9 @@ forge script script/ProofOfReserves.s.sol:ActivateReaders --rpc-url $COSTON2_RPC
 
 ### Step 3: Prepare Attestation Requests
 
-This script reads the transaction hashes from the files and prepares all the necessary FDC requests. This is an off-chain step that uses `--ffi` to call the verifier APIs and construct the ABI-encoded request bytes.
+This script reads the transaction hashes from the files and prepares all the necessary FDC requests.
+
+This is an off-chain step that uses `--ffi` to call the verifier APIs and construct the ABI-encoded request bytes.
 
 ```solidity title="script/ProofOfReserves.s.sol"
 contract PrepareRequests is Script {
@@ -302,7 +353,9 @@ forge script script/ProofOfReserves.s.sol:PrepareRequests --rpc-url $COSTON_RPC_
 
 ### Step 4: Submit Requests to FDC
 
-This script reads the prepared request bytes from the files and submits them to the `FdcHub` contract, initiating the attestation process for each piece of data. The `votingRoundId` for each request is saved for proof retrieval.
+This script reads the prepared request bytes from the files and submits them to the `FdcHub` contract, initiating the attestation process for each piece of data.
+
+The `votingRoundId` for each request is saved for proof retrieval.
 
 ```solidity title="script/ProofOfReserves.s.sol"
 contract SubmitRequests is Script {
@@ -326,7 +379,7 @@ forge script script/ProofOfReserves.s.sol:SubmitRequests --rpc-url $COSTON_RPC_U
 
 ### Step 5: Retrieve Proofs
 
-After waiting for the voting rounds to finalize (typically 90-180 seconds), this script queries the Data Availability layer for the attestation proofs for all three requests and saves them to files.
+After waiting for the voting rounds to finalize (max. 180 seconds), this script queries the Data Availability layer for the attestation proofs for all three requests and saves them to files.
 
 ```solidity title="script/ProofOfReserves.s.sol"
 contract RetrieveProofs is Script {
@@ -348,7 +401,9 @@ forge script script/ProofOfReserves.s.sol:RetrieveProofs --rpc-url $COSTON_RPC_U
 
 ### Step 6: Verify Reserves
 
-This final script reads the three saved proofs from their files, updates the `ProofOfReserves` contract with the correct reader-to-token mappings, and calls the `verifyReserves` function with all the proofs. The contract performs the on-chain verification, and the script logs the final result.
+This final script reads the three saved proofs from their files, updates the `ProofOfReserves` contract with the correct reader-to-token mappings, and calls the `verifyReserves` function with all the proofs.
+
+The contract performs the on-chain verification, and the script logs the final result.
 
 ```solidity title="script/ProofOfReserves.s.sol"
 contract VerifyReserves is Script {

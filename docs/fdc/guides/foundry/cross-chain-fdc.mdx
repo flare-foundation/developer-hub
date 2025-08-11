@@ -2,7 +2,7 @@
 title: Cross-Chain FDC
 slug: cross-chain-fdc
 authors: [anthonyamadia]
-description: Use the FDC to verify Web2 data on Flare and use the proof to trigger actions on a different chain like the XRPL EVM Sidechain.
+description: Use the FDC data on a non-Flare, like the XRPL EVM Sidechain.
 tags: [fdc, foundry]
 keywords:
   [ethereum, flare-data-connector, evm, cross-chain, web2json, relay, xrpl]
@@ -11,9 +11,14 @@ sidebar_position: 11
 
 import AvailableTestnet from "../_available_testnet.mdx";
 
-This guide demonstrates a powerful cross-chain workflow using the Flare Data Connector (FDC). We will fetch data from a public Web2 API using the `Web2Json` attestation type on a Flare network (Coston2) and then use the resulting proof to trigger a state change on a different EVM-compatible blockchain, the XRPL EVM Sidechain Testnet.
+This guide demonstrates a powerful cross-chain workflow using the Flare Data Connector (FDC).
+We will fetch data from a public Web2 API using the `Web2Json` attestation type on a Flare network (Coston2) and then use the resulting proof to trigger a state change on a different EVM-compatible blockchain, the XRPL EVM Sidechain Testnet.
 
-The key to this cross-chain interaction is the `Relay` contract, which securely transmits the Merkle root from the Flare network to the target chain. This allows a verifier contract on the target chain to confirm the validity of FDC proofs without trusting a centralized intermediary.
+The key to this cross-chain interaction is the `Relay` contract. For a non-Flare chain to verify FDC proofs, the Merkle root of each finalized voting round on Flare must be transmitted to the target chain.
+This is handled by the `Relay` contract, which must be deployed on the target chain.
+For the XRPL EVM Sidechain, Flare provides a relayer service where a backend script listens for `Relay` transactions on Flare and copies them to the `Relay` contract on the target chain which allows a verifier contract on the target chain to confirm the validity of FDC proofs without trusting a centralized intermediary.
+
+Before running any code, you must make sure you deploy the `Relay` contract onto the target chain and save its address to a `.env` file.
 
 <AvailableTestnet />
 
@@ -92,7 +97,9 @@ forge script script/CrossChainFdc.s.sol:DeployInfrastructure --rpc-url $XRPLEVM_
 
 ### 2. Prepare and Submit Request on Source Chain (Coston2)
 
-This step, executed by the `PrepareAndSubmitRequest` script, must be run on a Flare network (Coston2). It prepares the `Web2Json` request off-chain by calling the verifier API and then immediately submits the resulting `abiEncodedRequest` to the FDC on-chain.
+This step, executed by the `PrepareAndSubmitRequest` script, must be run on a Flare network (Coston2).
+
+It prepares the `Web2Json` request off-chain by calling the verifier API and then immediately submits the resulting `abiEncodedRequest` to the FDC on-chain.
 
 The script saves the `abiEncodedRequest` and the resulting `votingRoundId` to files, which will be needed for the final step on the target chain.
 
@@ -141,10 +148,12 @@ forge script script/CrossChainFdc.s.sol:PrepareAndSubmitRequest --rpc-url $COSTO
 
 ### 3. Deliver Proof to Consumer on Target Chain (XRPL EVM Sidechain)
 
-The final script, `DeliverProofToContract`, is executed on the target chain (XRPL EVM Sidechain). It handles deploying the consumer contract, retrieving the proof, and delivering it for verification.
+The final script, `DeliverProofToContract`, is executed on the target chain (XRPL EVM Sidechain).
+
+It handles deploying the consumer contract, retrieving the proof, and delivering it for verification.
 
 1.  **Deploy Consumer Contract**: It first deploys the `StarWarsCharacterListV3` contract, passing it the address of the `FdcVerification` contract deployed in Step 1.
-2.  **Retrieve Proof**: It reads the `abiEncodedRequest` and `votingRoundId` from the files created in Step 2. After waiting for the voting round on Flare to finalize (approx. 90-180 seconds), it polls the Data Availability layer to get the proof.
+2.  **Retrieve Proof**: It reads the `abiEncodedRequest` and `votingRoundId` from the files created in Step 2. After waiting for the voting round on Flare to finalize (max. 180 seconds), it polls the Data Availability layer to get the proof.
 3.  **Interact with Consumer**: It calls `addCharacter` on the deployed consumer contract, passing the `finalProof`. A `value` of 1 wei is sent to cover the fee required by the `Relay` contract to fetch the Merkle root from the source chain.
 
 ```solidity title="script/CrossChainFdc.s.sol"

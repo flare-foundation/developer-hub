@@ -20,7 +20,10 @@ sidebar_position: 14
 
 import AvailableTestnet from "../_available_testnet.mdx";
 
-In this guide, we will build a decentralized weather insurance application using the Flare Data Connector (FDC) and Foundry. The dApp will allow users to create insurance policies that pay out if the temperature at a specific location drops below a predefined threshold. Insurers can underwrite these policies by locking up collateral. The entire lifecycle of the policy including creation, underwriting, and resolution is managed by a smart contract that uses the FDC's `Web2Json` attestation type to fetch and verify real-world weather data from the OpenWeatherMap API.
+In this guide, we will build a decentralized weather insurance application using the Flare Data Connector (FDC) and Foundry.
+The dApp will allow users to create insurance policies that pay out if the temperature at a specific location drops below a predefined threshold.
+Insurers can underwrite these policies by locking up collateral.
+The entire lifecycle of the policy including creation, underwriting, and resolution is managed by a smart contract that uses the FDC's `Web2Json` attestation type to fetch and verify real-world weather data from the OpenWeatherMap API.
 
 All the code described in this guide is available on GitHub in the [Flare Foundry starter repository](https://github.com/flare-foundation/flare-foundry-starter).
 
@@ -154,7 +157,11 @@ forge script script/MinTemp.s.sol:DeployAgency --rpc-url $COSTON2_RPC_URL --broa
 
 #### 2. Create an Insurance Policy
 
-This script creates a new insurance policy. A crucial step here is to first query the OpenWeatherMap API off-chain (using Foundry's `ffi` cheatcode) to get the _exact_ coordinates of the nearest weather station. This ensures the coordinates in the policy will match the coordinates in the FDC proof, which is required for successful resolution.
+This script creates a new insurance policy.
+
+A crucial step here is to first query the OpenWeatherMap API off-chain (using Foundry's `ffi` cheatcode) to get the _exact_ coordinates of the nearest weather station.
+
+This ensures the coordinates in the policy will match the coordinates in the FDC proof, which is required for successful resolution.
 
 ```solidity title="script/MinTemp.s.sol"
 contract CreatePolicy is Script {
