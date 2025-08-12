@@ -31,9 +31,9 @@ The following example demonstrates how to redeem FAssets using the `AssetManager
 
 ### Code Breakdown
 
-1. Define the asset manager contract address to interact with it.
-2. Redeem the FAssets using the [`redeem`](/fassets/reference/IAssetManager#redeem) function by specifying the number of lots to redeem and the underlying chain address.
-3. Retrieve the asset manager settings to calculate the redeemed amount; for this, you need to obtain the `lotSizeAMG` and `assetDecimals` from the asset manager settings [document](/fassets/developer-guides/fassets-settings-solidity).
+1. Redeem the FAssets using the [`redeem`](/fassets/reference/IAssetManager#redeem) function by specifying the number of lots to redeem and the underlying chain address.
+2. Retrieve the asset manager settings to calculate the redeemed amount; for this, you need to obtain the `lotSizeAMG` and `assetDecimals` from the asset manager settings [document](/fassets/developer-guides/fassets-settings-solidity).
+3. Get the redemption request info to check the redemption status.
 
 :::info
 In this example, you are not using the executor vault address, but you can use it to redeem FAssets on behalf of another address.
@@ -50,27 +50,22 @@ Create a new file, for example, `scripts/fassets/redeem.ts` and add the followin
 At first, you need to import the required dependencies and smart contract TypeScript types:
 
 ```typescript
-import { ethers, web3, run } from "hardhat";
+import { web3, run } from "hardhat";
 import { formatUnits } from "ethers";
 
-import {
-  FAssetsRedeemInstance,
-  IAssetManagerContract,
-  ERC20Instance,
-} from "../../typechain-types";
+import { FAssetsRedeemInstance, ERC20Instance } from "../../typechain-types";
+
+import { logEvents } from "../../scripts/utils/core";
 ```
 
 ### Define the Constants
 
 Define the constants:
 
-- `ASSET_MANAGER_ADDRESS` - asset manager address;
 - `LOTS_TO_REDEEM` - the number of lots to redeem;
 - `UNDERLYING_ADDRESS` - underlying chain address where the redeemed asset will be sent;
 
 ```typescript
-// AssetManager address on Flare Testnet Coston2 network
-const ASSET_MANAGER_ADDRESS = "0xDeD50DA9C3492Bee44560a4B35cFe0e778F41eC5";
 const LOTS_TO_REDEEM = 1;
 const UNDERLYING_ADDRESS = "rSHYuiEvsYsKR8uUHhBTuGP5zjRcGt4nm";
 ```
@@ -85,8 +80,8 @@ Import the contract artifacts to interact with the smart contracts:
 
 ```typescript
 const FAssetsRedeem = artifacts.require("FAssetsRedeem");
+const AssetManager = artifacts.require("IAssetManager");
 
-const IAssetManager = artifacts.require("IAssetManager");
 const IERC20 = artifacts.require("IERC20");
 ```
 
@@ -96,19 +91,14 @@ Deploy and verify the smart contract providing the asset manager address as a co
 
 ```typescript
 async function deployAndVerifyContract() {
-  // Get FXRP address first
-  const fxrpAddress = await getFXRPAddress();
-  console.log("FXRP address:", fxrpAddress);
+  const fAssetsRedeem: FAssetsRedeemInstance = await FAssetsRedeem.new();
 
-  const args = [ASSET_MANAGER_ADDRESS, fxrpAddress];
-  const fAssetsRedeem: FAssetsRedeemInstance = await FAssetsRedeem.new(...args);
-
-  const fAssetsRedeemAddress = await fAssetsRedeem.address;
+  const fAssetsRedeemAddress = fAssetsRedeem.address;
 
   try {
     await run("verify:verify", {
-      address: fAssetsRedeem.address,
-      constructorArguments: args,
+      address: fAssetsRedeemAddress,
+      constructorArguments: [],
     });
   } catch (e: any) {
     console.log(e);
@@ -127,7 +117,7 @@ To redeem FAssets, you must approve a sufficient amount of transfer of FXRP to t
 ```typescript
 async function approveFAssets(fAssetsRedeem: any, amountToRedeem: string) {
   console.log("Approving FAssetsRedeem contract to spend FXRP...");
-  const fxrpAddress = await getFXRPAddress();
+  const fxrpAddress = await fAssetsRedeem.getFXRPAddress();
   const fxrp: ERC20Instance = await IERC20.at(fxrpAddress);
 
   const approveTx = await fxrp.approve(
@@ -148,6 +138,7 @@ During the redemption process, the `AssetManager` emits events:
 
 - [`RedemptionRequested`](/fassets/reference/IAssetManagerEvents#redemptionrequested) - holds the agent vault address, redemption request id, the amount of FAssets to redeem, and other important information.
 - [`RedemptionTicketCreated`](/fassets/reference/IAssetManagerEvents#redemptionticketcreated) - holds the redemption ticket information updated during the redemption process.
+- [`RedemptionTicketUpdated`](/fassets/reference/IAssetManagerEvents#redemptionticketupdated) - holds the redemption ticket information updated during the redemption process.
 
 To parse the redemption events, you can use the following function:
 
@@ -158,33 +149,48 @@ async function parseRedemptionEvents(
 ) {
   console.log("\nParsing events...", transactionReceipt.rawLogs);
 
-  // Get AssetManager contract interface
-  const assetManager = (await ethers.getContractAt(
-    "IAssetManager",
-    ASSET_MANAGER_ADDRESS,
-  )) as IAssetManagerContract;
+  const redemptionRequestedEvents = logEvents(
+    transactionReceipt.rawLogs,
+    "RedemptionRequested",
+    AssetManager.abi,
+  );
+  logEvents(
+    transactionReceipt.rawLogs,
+    "RedemptionTicketCreated",
+    AssetManager.abi,
+  );
+  logEvents(
+    transactionReceipt.rawLogs,
+    "RedemptionTicketUpdated",
+    AssetManager.abi,
+  );
 
-  for (const log of transactionReceipt.rawLogs) {
-    try {
-      // Try to parse the log using the AssetManager interface
-      const parsedLog = assetManager.interface.parseLog({
-        topics: log.topics,
-        data: log.data,
-      });
+  return redemptionRequestedEvents;
+}
+```
 
-      if (parsedLog) {
-        const redemptionEvents = [
-          "RedemptionRequested",
-          "RedemptionTicketUpdated",
-        ];
-        if (redemptionEvents.includes(parsedLog.name)) {
-          console.log(`\nEvent: ${parsedLog.name}`);
-          console.log("Arguments:", parsedLog.args);
-        }
-      }
-    } catch (e) {
-      console.log("Error parsing event:", e);
-    }
+:::info
+The `logEvents` function is used to parse and log the events interacting using the [Truffle](https://archive.trufflesuite.com/) suite of tools.
+You can find this function in the [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit).
+In this guide, we are not focusing on the event parsing.
+:::
+
+### Output the Redemption Result
+
+The following function is used to output the redemption request information.
+
+```typescript
+async function printRedemptionRequestInfo(
+  fAssetsRedeem: any,
+  redemptionRequestedEvents: any[],
+) {
+  console.log("\n=== Redemption Request Information ===");
+
+  for (const event of redemptionRequestedEvents) {
+    const redemptionRequestInfo = await fAssetsRedeem.getRedemptionRequestInfo(
+      event.decoded.requestId,
+    );
+    console.log("Redemption request info:", redemptionRequestInfo);
   }
 }
 ```
@@ -222,11 +228,16 @@ async function main() {
     LOTS_TO_REDEEM,
     UNDERLYING_ADDRESS,
   );
-  // const receipt = await tx.wait();
   console.log("Redeem transaction receipt", redeemTx);
 
-  // // Parse events from the transaction
-  await parseRedemptionEvents(redeemTx.receipt, fAssetsRedeem);
+  // Parse events from the transaction
+  const redemptionRequestedEvents = await parseRedemptionEvents(
+    redeemTx.receipt,
+    fAssetsRedeem,
+  );
+
+  // Print redemption request info for each redemption requested event
+  await printRedemptionRequestInfo(fAssetsRedeem, redemptionRequestedEvents);
 }
 
 main().catch((error) => {
@@ -250,21 +261,33 @@ Once the script is executed, two events hold the important information:
 The `RedemptionRequested` event contains the agent vault address, redeemer address, underlying chain address, amount of FAssets to redeem, redemption fee, and other important information.
 
 ```bash
-Event: RedemptionRequested
-Arguments: Result(12) [
-  '0x3c831Fe4417bEFFAc721d24996985eE2dd627053',
-  '0xCA7C9fBbA56E44C508bcb4872775c5fEd169cDb3',
-  1898730n,
-  'rSHYuiEvsYsKR8uUHhBTuGP5zjRcGt4nm',
-  20000000n,
-  20000n,
-  6386165n,
-  6386708n,
-  1744293249n,
-  '0x46425052664100020000000000000000000000000000000000000000001cf8ea',
-  '0x0000000000000000000000000000000000000000',
-  0n
-]
+RedemptionRequested Result {
+  '0': '0xaADbF766Fd9131996C7B270A0cCB2b5c88Fc810D',
+  '1': '0xDc8B65D8C07825280F2A2E08D5b25B9eea892E8f',
+  '2': '6797056',
+  '3': 'rSHYuiEvsYsKR8uUHhBTuGP5zjRcGt4nm',
+  '4': '10000000',
+  '5': '50000',
+  '6': '9113416',
+  '7': '9113939',
+  '8': '1753190628',
+  '9': '0x464250526641000200000000000000000000000000000000000000000067b700',
+  '10': '0x0000000000000000000000000000000000000000',
+  '11': '0',
+  __length__: 12,
+  agentVault: '0xaADbF766Fd9131996C7B270A0cCB2b5c88Fc810D',
+  redeemer: '0xDc8B65D8C07825280F2A2E08D5b25B9eea892E8f',
+  requestId: '6797056',
+  paymentAddress: 'rSHYuiEvsYsKR8uUHhBTuGP5zjRcGt4nm',
+  valueUBA: '10000000',
+  feeUBA: '50000',
+  firstUnderlyingBlock: '9113416',
+  lastUnderlyingBlock: '9113939',
+  lastUnderlyingTimestamp: '1753190628',
+  paymentReference: '0x464250526641000200000000000000000000000000000000000000000067b700',
+  executor: '0x0000000000000000000000000000000000000000',
+  executorFeeNatWei: '0'
+}
 ```
 
 When decoding an event, the most important data from the event is:
@@ -285,12 +308,15 @@ The event `RedemptionTicketUpdated` contains the redemption ticket information, 
 For every minting, a redemption ticket is created, and during the redemption process, the redemption ticket is updated with the new redemption status.
 
 ```bash
-Event: RedemptionTicketUpdated
-Arguments: Result(3) [
-  '0x3c831Fe4417bEFFAc721d24996985eE2dd627053',
-  870n,
-  3440000000n
-]
+RedemptionTicketUpdated Result {
+  '0': '0xaADbF766Fd9131996C7B270A0cCB2b5c88Fc810D',
+  '1': '1628',
+  '2': '5360000000',
+  __length__: 3,
+  agentVault: '0xaADbF766Fd9131996C7B270A0cCB2b5c88Fc810D',
+  redemptionTicketId: '1628',
+  ticketValueUBA: '5360000000'
+}
 ```
 
 Once decoding the most important data from the event is:
