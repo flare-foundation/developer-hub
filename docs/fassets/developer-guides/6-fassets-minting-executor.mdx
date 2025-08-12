@@ -57,24 +57,24 @@ The following code demonstrates how to reserve collateral by calling the [`reser
 
 1. Define constants
 
-- `ASSET_MANAGER_ADDRESS`: FXRP AssetManager address on Songbird Testnet (Coston).
 - `LOTS_TO_MINT`: Number of FAssets [lots](/fassets/minting#lots) to reserve.
-- `UNDERLYING_ADDRESS`: Target XRP Ledger address for the minted asset.
 - `EXECUTOR_ADDRESS`: Executor address that will execute the minting process and provide the proof of underlying asset payment.
 
-2. Retrieve and filter agents with enough free collateral and select the agent with the lowest fee and normal status.
-3. Parse [`CollateralReserved`](/fassets/reference/IAssetManagerEvents#collateralreserved) event.
-4. Start the minting reservation process at the script's entry point.
-5. Call `findBestAgen` with the required number of lots.
-6. Fetch agent metadata from [`getAgentInfo`](/fassets/reference/IAssetManager#getagentinfo) to get the agent's `feeBIPS`, which is used to calculate the collateral reservation fee.
-7. Calculate the collateral reservation fee by calling [`collateralReservationFee`](/fassets/reference/IAssetManager#collateralreservationfee).
-8. Set the executor fee the same as the collateral reservation fee to make this example simpler.
-9. Reserve collateral from agent by calling [`reserveCollateral`](/fassets/reference/IAssetManager#reservecollateral) with the executor address.
-   The executor fee is on top of the collateral reservation fee in native tokens.
-   The fee is agreed between the minter and the executor.
-10. Call `assetMintingDecimals` to determine the XRP token's decimal precision.
-11. Parse the [`CollateralReserved`](/fassets/reference/IAssetManagerEvents#collateralreserved) event to get the collateral reservation ID and other important collateral reservation details.
-12. Calculate the total XRP value required for payment.
+2. Get the AssetManager artifact
+3. Retrieve and filter agents with enough free collateral and select the agent with the lowest fee and normal status.
+4. Parse [`CollateralReserved`](/fassets/reference/IAssetManagerEvents#collateralreserved) event.
+5. Start the minting reservation process at the script's entry point.
+6. Get the asset manager artifact.
+7. Call `findBestAgent` with the required number of lots.
+8. Fetch agent metadata from [`getAgentInfo`](/fassets/reference/IAssetManager#getagentinfo) to get the agent's `feeBIPS`, which is used to calculate the collateral reservation fee.
+9. Calculate the collateral reservation fee by calling [`collateralReservationFee`](/fassets/reference/IAssetManager#collateralreservationfee).
+10. Set the executor fee the same as the collateral reservation fee to make this example simpler.
+11. Reserve collateral from agent by calling [`reserveCollateral`](/fassets/reference/IAssetManager#reservecollateral) with the executor address.
+    The executor fee is on top of the collateral reservation fee in native tokens.
+    The fee is agreed between the minter and the executor.
+12. Call `assetMintingDecimals` to determine the XRP token's decimal precision.
+13. Parse the [`CollateralReserved`](/fassets/reference/IAssetManagerEvents#collateralreserved) event to get the collateral reservation ID and other important collateral reservation details.
+14. Calculate the total XRP value required for payment.
 
 ## Send Payment on XRP Ledger
 

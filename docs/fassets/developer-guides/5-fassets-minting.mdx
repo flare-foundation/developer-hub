@@ -47,21 +47,21 @@ The following code demonstrates how to reserve collateral by calling the [`reser
 
 1. Define constants
 
-- `ASSET_MANAGER_ADDRESS`: FXRP AssetManager address on Songbird Testnet (Coston).
 - `LOTS_TO_MINT`: Number of FAsset lots to reserve.
-- `UNDERLYING_ADDRESS`: Target XRP Ledger address for the minted asset.
 - `ZERO_ADDRESS`: Placeholder for `executor` (not used in this script).
 
 2. Retrieve and filter agents with enough free collateral and select the agent with the lowest fee and normal status.
 3. Parse [`CollateralReserved`](/fassets/reference/IAssetManagerEvents#collateralreserved) event.
 4. Start the minting reservation process at the script's entry point.
 5. Call `findBestAgent` with the required number of lots.
-6. Fetch agent metadata from [`getAgentInfo`](/fassets/reference/IAssetManager#getagentinfo) to get the agent's `feeBIPS`, which is used to calculate the collateral reservation fee.
-7. Calculate the collateral reservation fee by calling [`collateralReservationFee`](/fassets/reference/IAssetManager#collateralreservationfee).
-8. Reserve collateral from agent by calling [`reserveCollateral`](/fassets/reference/IAssetManager#reservecollateral)
-9. Call `assetMintingDecimals` to determine the XRP token's decimal precision.
-10. Parse the [`CollateralReserved`](/fassets/reference/IAssetManagerEvents#collateralreserved) event.
-11. Calculate the total XRP value required for payment.
+6. Get the asset manager from the [Flare Contract Registry](/network/guides/flare-contracts-registry).
+7. Find the best agent with enough free collateral lots.
+8. Fetch agent metadata from [`getAgentInfo`](/fassets/reference/IAssetManager#getagentinfo) to get the agent's `feeBIPS`, which is used to calculate the collateral reservation fee.
+9. Calculate the collateral reservation fee by calling [`collateralReservationFee`](/fassets/reference/IAssetManager#collateralreservationfee).
+10. Reserve collateral from agent by calling [`reserveCollateral`](/fassets/reference/IAssetManager#reservecollateral)
+11. Call `assetMintingDecimals` to determine the XRP token's decimal precision.
+12. Parse the [`CollateralReserved`](/fassets/reference/IAssetManagerEvents#collateralreserved) event.
+13. Calculate the total XRP value required for payment.
 
 ## Send Payment on XRP Ledger
 
@@ -100,16 +100,17 @@ This script demonstrates how to retrieve the FDC proof and execute minting.
 ### Execute Minting Script Breakdown
 
 1. Get environment variables.
-2. Declare the constant `ASSET_MANAGER_ADDRESS` pointing to the FXRP AssetManager on the Songbird Testnet (Coston network).
-
-3. Set the collateral reservation ID to the previously reserved minting request.
-4. Set the Flare Data Connector (FDC) round ID to retrieve the proof.
-5. Prepare the FDC request payload data.
-6. Create a function to get the proof from the FDC.
+2. Set the collateral reservation ID to the previously reserved minting request.
+3. Set the FDC round ID to retrieve the proof.
+4. Provide the FDC request data.
+5. Import the Asset manager contract artifact.
+6. Define the function to prepare the FDC request.
+7. Create a function to get the proof from the FDC.
    It sends a POST request to the [Flare Data Availability Layer](/fdc/overview#data-availability-layer) and returns a Merkle proof and attestation response from FDC.
-7. Retrieve the FDC proof from the Data Availability Layer.
-8. Call the [`executeMinting`](/fassets/reference/IAssetManager#executeminting) function on the AssetManager contract and send a transaction to the Flare network to convert the attested XRP payment into FXRP (minting).
-9. On a successful transaction call `parseExecutemintingEvents` to extract and log events [`RedemptionTicketCreated`](/fassets/reference/IAssetManagerEvents#redemptionticketcreated) and [`MintingExecuted`](/fassets/reference/IAssetManagerEvents#mintingexecuted).
+8. Define the function to parse the events.
+9. Retrieve the FDC proof from the Data Availability Layer.
+10. Call the [`executeMinting`](/fassets/reference/IAssetManager#executeminting) function on the AssetManager contract and send a transaction to the Flare network to convert the attested XRP payment into FXRP (minting).
+11. On a successful transaction call `parseExecutemintingEvents` to extract and log events [`RedemptionTicketCreated`](/fassets/reference/IAssetManagerEvents#redemptionticketcreated) and [`MintingExecuted`](/fassets/reference/IAssetManagerEvents#mintingexecuted).
 
 ## Next Steps
 

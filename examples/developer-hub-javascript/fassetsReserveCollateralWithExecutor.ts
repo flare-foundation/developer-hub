@@ -1,26 +1,19 @@
-import { ethers } from "hardhat";
-
-import {
-  IAssetManagerInstance,
-  IAssetManagerContract,
-} from "../../typechain-types";
-
-// Initialize the FAssets FXRP AssetManager contract
-const AssetManager = artifacts.require("IAssetManager");
+import { getAssetManagerFXRP } from "../utils/fassets";
+import { IAssetManagerInstance } from "../../typechain-types";
+import { logEvents } from "../../scripts/utils/core";
 
 // 1. Define constants
 
-// AssetManager address on Flare Testnet Coston2 network
-const ASSET_MANAGER_ADDRESS = "0xDeD50DA9C3492Bee44560a4B35cFe0e778F41eC5";
 // Number of lots to reserve
 const LOTS_TO_MINT = 1;
-// XRP Ledger address
-const UNDERLYING_ADDRESS = "rSHYuiEvsYsKR8uUHhBTuGP5zjRcGt4nm";
 
 // Executor address
 const EXECUTOR_ADDRESS = "0xb292348a4Cb9f5F008589B3596405FBba6986c55";
 
-// 2. Function to find the best agent with enough free collateral lots
+// 2. Get the AssetManager artifact
+const AssetManager = artifacts.require("IAssetManager");
+
+// 3. Function to find the best agent with enough free collateral lots
 
 // Function from FAssets Bot repository
 // https://github.com/flare-foundation/fasset-bots/blob/main/packages/fasset-bots-core/src/commands/InfoBotCommands.ts#L83
@@ -72,58 +65,38 @@ async function findBestAgent(
   }
 }
 
-// 3. Function to parse the CollateralReserved event
-
-async function parseCollateralReservedEvent(transactionReceipt) {
+// 4. Function to parse the CollateralReserved event
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function parseCollateralReservedEvent(transactionReceipt: any) {
   console.log("\nParsing events...", transactionReceipt.rawLogs);
 
-  const assetManager = (await ethers.getContractAt(
-    "IAssetManager",
-    ASSET_MANAGER_ADDRESS,
-  )) as IAssetManagerContract;
-
-  for (const log of transactionReceipt.rawLogs) {
-    try {
-      const parsedLog = assetManager.interface.parseLog({
-        topics: log.topics,
-        data: log.data,
-      });
-
-      if (!parsedLog) continue;
-
-      const collateralReservedEvents = ["CollateralReserved"];
-      if (!collateralReservedEvents.includes(parsedLog.name)) continue;
-
-      console.log(`\nEvent: ${parsedLog.name}`);
-      console.log("Arguments:", parsedLog.args);
-      const collateralReservedEvent = parsedLog.args;
-
-      return collateralReservedEvent;
-    } catch (e) {
-      console.log("Error parsing event:", e);
-    }
-  }
-}
-
-// 4. Main function
-
-async function main() {
-  const assetManager: IAssetManagerInstance = await AssetManager.at(
-    ASSET_MANAGER_ADDRESS,
+  // The logEvents function is included in the Flare starter kit
+  const collateralReservedEvents = logEvents(
+    transactionReceipt.rawLogs,
+    "CollateralReserved",
+    AssetManager.abi,
   );
 
-  // 5. Find the best agent with enough free collateral lots
+  return collateralReservedEvents[0].decoded;
+}
+
+// 5. Main function
+async function main() {
+  // 6. Get the AssetManager contract from the Flare Contract Registry
+  const assetManager: IAssetManagerInstance = await getAssetManagerFXRP();
+
+  // 7. Find the best agent with enough free collateral lots
   const agentVaultAddress = await findBestAgent(assetManager, LOTS_TO_MINT);
   if (!agentVaultAddress) {
     throw new Error("No suitable agent found with enough free collateral lots");
   }
   console.log(agentVaultAddress);
 
-  // 6. Get the agent info
+  // 8. Get the agent info
   const agentInfo = await assetManager.getAgentInfo(agentVaultAddress);
   console.log("Agent info:", agentInfo);
 
-  // 7. Get the collateral reservation fee according to the number of lots to reserve
+  // 9. Get the collateral reservation fee according to the number of lots to reserve
   // https://dev.flare.network/fassets/minting/#collateral-reservation-fee
   const collateralReservationFee =
     await assetManager.collateralReservationFee(LOTS_TO_MINT);
@@ -131,17 +104,21 @@ async function main() {
     "Collateral reservation fee:",
     collateralReservationFee.toString(),
   );
-  const assetManager: IAssetManagerInstance = await AssetManager.at(
-    ASSET_MANAGER_ADDRESS,
-  );
 
-  // 8. To make this example simpler we're using the same fee for the executor and the agent
+  // 10. To make this example simpler we're using the same fee for the executor and the agent
   const executorFee = collateralReservationFee;
   const totalFee = collateralReservationFee.add(executorFee);
 
   console.log("Total reservation fee:", totalFee.toString());
 
-  // 9. Reserve collateral
+  console.log("agentVaultAddress", agentVaultAddress);
+  console.log("LOTS_TO_MINT", LOTS_TO_MINT);
+  console.log("agentInfo.feeBIPS", agentInfo.feeBIPS);
+  console.log("EXECUTOR_ADDRESS", EXECUTOR_ADDRESS);
+
+  console.log("collateralReservationFee", collateralReservationFee);
+
+  // 11. Reserve collateral
   // https://dev.flare.network/fassets/reference/IAssetManager#reservecollateral
   const tx = await assetManager.reserveCollateral(
     agentVaultAddress,
@@ -149,30 +126,31 @@ async function main() {
     agentInfo.feeBIPS,
     // Not using the executor
     EXECUTOR_ADDRESS,
-    [UNDERLYING_ADDRESS],
     // Sending the collateral reservation fee as native tokens
     { value: totalFee },
   );
 
   console.log("Collateral reservation successful:", tx);
 
-  // 10. Get the asset decimals
+  // 112 Get the asset decimals
   const decimals = await assetManager.assetMintingDecimals();
 
-  // 11. Parse the CollateralReserved event
+  // 13. Parse the CollateralReserved event
   const collateralReservedEvent = await parseCollateralReservedEvent(
     tx.receipt,
   );
 
+  // 14. Get the collateral reservation info
   const collateralReservationInfo =
     await assetManager.collateralReservationInfo(
       collateralReservedEvent.collateralReservationId,
     );
   console.log("Collateral reservation info:", collateralReservationInfo);
 
-  // 11. Calculate the total amount of XRP to pay
-  const totalUBA =
-    collateralReservedEvent.valueUBA + collateralReservedEvent.feeUBA;
+  // 14. Calculate the total XRP value required for payment
+  const valueUBA = BigInt(collateralReservedEvent.valueUBA.toString());
+  const feeUBA = BigInt(collateralReservedEvent.feeUBA.toString());
+  const totalUBA = valueUBA + feeUBA;
   const totalXRP = Number(totalUBA) / 10 ** decimals;
   console.log(`You need to pay ${totalXRP} XRP`);
 }

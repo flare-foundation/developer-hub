@@ -4,21 +4,26 @@ import { run } from "hardhat";
 import { SwapAndRedeemInstance } from "../../typechain-types";
 import { ERC20Instance } from "../../typechain-types/@openzeppelin/contracts/token/ERC20/ERC20";
 
-// AssetManager address on Songbird Testnet Coston network
-const ASSET_MANAGER_ADDRESS = "0x56728e46908fB6FcC5BCD2cc0c0F9BB91C3e4D34";
+import { getAssetManagerFXRP } from "../utils/getters";
+
+// yarn hardhat run scripts/fassets/swapAndRedeem.ts --network coston2
+
 const LOTS_TO_REDEEM = 1;
 const UNDERLYING_ADDRESS = "rSHYuiEvsYsKR8uUHhBTuGP5zjRcGt4nm";
-// BlazeSwap router address on Songbird Testnet Coston network
-const SWAP_ROUTER_ADDRESS = "0xf0D01450C037DB2903CF5Ff638Dd1e2e6B0EEDF4";
-const SWAP_PATH = [
-  "0x767b25A658E8FC8ab6eBbd52043495dB61b4ea91", // WCFLR
-  "0x36be8f2e1CC3339Cf6702CEfA69626271C36E2fd", // FXRP
-];
+
+// BlazeSwap router address on Flare Testnet Coston2 network
+const SWAP_ROUTER_ADDRESS = "0x8D29b61C41CF318d15d031BE2928F79630e068e6";
+const WC2FLR = "0xC67DCE33D7A8efA5FfEB961899C73fe01bCe9273";
+
+const SwapAndRedeem = artifacts.require("SwapAndRedeem");
 
 // 2. Deploy and verify the `SwapAndRedeem` smart contract
 async function deployAndVerifyContract() {
-  const SwapAndRedeem = artifacts.require("SwapAndRedeem");
-  const args = [SWAP_ROUTER_ADDRESS, ASSET_MANAGER_ADDRESS, SWAP_PATH];
+  const assetManager = await getAssetManagerFXRP();
+  const fassetAddress = await assetManager.fAsset();
+  const swapPath = [WC2FLR, fassetAddress];
+
+  const args = [SWAP_ROUTER_ADDRESS, swapPath];
   const swapAndRedeem: SwapAndRedeemInstance = await SwapAndRedeem.new(...args);
 
   const fassetsSwapAndRedeemAddress = await swapAndRedeem.address;
@@ -51,14 +56,15 @@ async function main() {
   console.log("Amount of tokens in (WCFLR): ", amountIn.toString());
 
   // 4. Approve spending WCFLR tokens
+  // Get WCFLR token
   const ERC20 = artifacts.require("ERC20");
-  const wcflr: ERC20Instance = await ERC20.at(SWAP_PATH[0]);
+  const wcflr: ERC20Instance = await ERC20.at(WC2FLR);
 
   const approveTx = await wcflr.approve(swapAndRedeemAddress, amountOut);
   console.log("Approve transaction: ", approveTx);
 
   // 5. Swap WCFLR for FXRP and redeem to underlying XRP token on XRP Ledger
-  const swapResult = await swapAndRedeemAddress.swapAndRedeem(
+  const swapResult = await swapAndRedeem.swapAndRedeem(
     LOTS_TO_REDEEM,
     UNDERLYING_ADDRESS,
   );
