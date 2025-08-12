@@ -7,9 +7,6 @@ keywords: [fassets, flare-network, fxrp, asset-manager]
 sidebar_position: 1
 ---
 
-import CodeBlock from "@theme/CodeBlock";
-import Remix from "@site/src/components/remix";
-import AssetManagerRegistry from "!!raw-loader!/examples/developer-hub-solidity/FAssetsAssetManagerRegistry.sol";
 import ExploringAdditionalParameters from "./_exploring-additional-parameters.mdx";
 
 ## Overview
@@ -19,44 +16,20 @@ These addresses can change between Flare testnets and mainnet deployments, and r
 
 Instead, you should dynamically fetch the FXRP Asset Manager address using the [Flare Contract Registry](/network/guides/flare-contracts-registry), the trusted source for obtaining contract addresses on any Flare network.
 
-In this guide, you will learn:
+## Get the FXRP Asset Manager Address
 
-- How to retrieve the [Asset Manager Controller](/fassets/reference/IAssetManagerController) using the Flare Contract Registry.
-- How to find the specific FXRP [Asset Manager](/fassets/reference/IAssetManager).
-- A sample Solidity contract that encapsulates this logic.
+To get the [FAssets asset manager](/fassets/reference/IAssetManager) address, you can use the [Flare Contract Registry](/network/guides/flare-contracts-registry) library.
+It is included in the [Flare Periphery Contracts package](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts).
 
-## Sample code
+The following example demonstrates how to get the FXRP Asset Manager address using the Flare Contract Registry library in a Solidity contract.
 
-To get the [FAssets asset manager](/fassets/reference/IAssetManager) address, you can use the following smart contract that retrieves the [Asset Manager Controller](/fassets/reference/IAssetManagerController) address from the [Flare contract registry](/network/guides/flare-contracts-registry).
+```solidity
+import { ContractRegistry } from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
+import {IAssetManager} from "@flarenetwork/flare-periphery-contracts/coston2/IAssetManager.sol";
 
-<CodeBlock language="solidity" title="contracts/AssetManagerRegistry.sol">
-  {AssetManagerRegistry}
-</CodeBlock>
-
-{/* prettier-ignore */}
-<Remix fileName="FAssetsAssetManagerRegistry.sol">Open in Remix</Remix>
-<br></br>
-
-### Contract Breakdown
-
-1. Imports the necessary interfaces and libraries from the [Flare Periphery Contracts package](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts).
-2. Defines a constant `TXRP_HASH` that is the hash of the string `TXRP`.
-   This is used to identify the FXRP asset manager.
-3. Implements a function `getFxrpAssetManager` that returns the FXRP [Asset Manager](/fassets/reference/IAssetManager) address.
-4. Uses the `ContractRegistry` library from the Flare Periphery Contracts package to get the [Asset Manager Controller](/fassets/reference/IAssetManagerController) address from the Flare contract registry.
-5. Uses the `IAssetManagerController` interface from the Flare Periphery Contracts package to get all the asset managers from the Asset Manager Controller.
-6. Iterates over the asset managers and returns the FXRP Asset Manager address.
-7. Gets the settings of the asset manager.
-8. Checks if the pool token suffix is `TXRP` and if true returns the FXRP Asset Manager address.
-
-You can find out this sample code in the [Flare starter kit](/network/guides/hardhat-foundry-starter-kit).
-
-:::tip Reusable Library
-
-To reuse this code to get the FXRP Asset Manager address in other smart contracts, you can wrap it in a reusable library.
-This is useful if you want to use the FXRP Asset Manager address in multiple smart contracts and avoid repeating the same code.
-
-:::
+// Get the FXRP Asset Manager address from the Flare contracts registry
+IAssetManager assetManager = ContractRegistry.getAssetManagerFXRP();
+```
 
 ## Next Steps
 
