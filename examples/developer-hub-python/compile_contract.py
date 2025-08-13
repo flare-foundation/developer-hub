@@ -26,7 +26,7 @@ if __name__ == "__main__":
                     }
                 },
                 "optimizer": {"enabled": True, "runs": 200},
-                "evmVersion": "london",
+                "evmVersion": "shanghai",
             },
         },
         solc_version=solc_version,
