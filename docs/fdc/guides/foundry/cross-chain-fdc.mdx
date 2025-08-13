@@ -12,13 +12,15 @@ sidebar_position: 11
 import AvailableTestnet from "../_available_testnet.mdx";
 
 This guide demonstrates a powerful cross-chain workflow using the Flare Data Connector (FDC).
-We will fetch data from a public Web2 API using the `Web2Json` attestation type on a Flare network (Coston2) and then use the resulting proof to trigger a state change on a different EVM-compatible blockchain, the XRPL EVM Sidechain Testnet.
+We will fetch data from a public Web2 API using the [Web2Json](/fdc/attestation-types/web-2-json) attestation type on a Flare network (Coston2) and then use the resulting proof to trigger a state change on a different EVM-compatible blockchain, the XRPL EVM Sidechain Testnet.
 
-The key to this cross-chain interaction is the `Relay` contract. For a non-Flare chain to verify FDC proofs, the Merkle root of each finalized voting round on Flare must be transmitted to the target chain.
+The key to this cross-chain interaction is the `Relay` contract.
+For a non-Flare chain to verify FDC proofs, the Merkle root of each finalized voting round on Flare must be transmitted to the target chain.
 This is handled by the `Relay` contract, which must be deployed on the target chain.
-For the XRPL EVM Sidechain, Flare provides a relayer service where a backend script listens for `Relay` transactions on Flare and copies them to the `Relay` contract on the target chain which allows a verifier contract on the target chain to confirm the validity of FDC proofs without trusting a centralized intermediary.
+For the XRPL EVM Sidechain, Flare provides a relayer service where a backend script listens for `Relay` transactions on Flare and copies them to the `Relay` contract on the target chain.
+This allows a verifier contract on the target chain to confirm the validity of FDC proofs without trusting a centralized intermediary.
 
-Before running any code, you must make sure you deploy the `Relay` contract onto the target chain and save its address to a `.env` file.
+Before running any code, check if the `Relay` contract is already being relayed, or submit a request to the Flare team.
 
 <AvailableTestnet />
 
