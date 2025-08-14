@@ -4,8 +4,9 @@ This repository contains the source code and content for the [Flare Developer Hu
 
 This site is built with [Docusaurus](https://docusaurus.io/), a modern static site generator.
 
-> **Note:** This README is for contributors to the Developer Hub source.  
-> If you just want to read the documentation, visit [dev.flare.network](https://dev.flare.network).
+> **Note:**
+> This README is for contributors to Developer Hub.  
+> If you just want to read the docs, visit [dev.flare.network](https://dev.flare.network).
 
 ## 🚀 Getting Started
 
@@ -86,7 +87,8 @@ Language-specific examples use their native formatters:
 - Rust →`cargo fmt` for Rust
 - Python → `ruff` for Python
 
-> **Note:** Prettier support for MDXv3 is evolving ([tracking issue](https://github.com/prettier/prettier/issues/12209)).
+> **Note:**
+> Prettier support for MDXv3 is evolving ([tracking issue](https://github.com/prettier/prettier/issues/12209)).
 > To skip formatting for a section:
 >
 > ```plaintext
@@ -106,8 +108,7 @@ To generate Solidity documentation:
 2. **Run the Documentation Generator:**
 
    ```bash
-   cd docgen
-   chmod +x generate-solidity-docs.sh
+   cd docgen && chmod +x generate-solidity-docs.sh
    ./generate-solidity-docs.sh
    ```
 
@@ -123,7 +124,7 @@ To generate Solidity documentation:
 
 1. **Update addresses and feeds:**
 
-   Fetches latest contract addresses from `ContractRegistry` and feed data for use in site tables and components.
+   Fetches latest contract addresses from `ContractRegistry` and feed data for use in tables and components.
 
    ```bash
    npm run automations
@@ -132,6 +133,7 @@ To generate Solidity documentation:
 2. **Update language dependencies:**
 
    Updates dependencies in all `examples/*` subdirectories.
+   Use with caution, run all test suites after updating.
 
    ```bash
    npm run update-deps
@@ -146,4 +148,4 @@ We welcome contributions of all sizes - from typo fixes to major feature additio
    ```bash
    git checkout -b feature/my-change
    ```
-3. Commit, push, and open a PR.
+3. Commit and push your changes, and open a PR.

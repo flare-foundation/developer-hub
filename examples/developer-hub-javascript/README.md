@@ -1,6 +1,6 @@
 # developer-hub-javascript
 
-## Tooling (recommended)
+## Prerequisites
 
 - [Node v20](https://nodejs.org/en)
 
@@ -20,4 +20,10 @@ npm run format
 
 ```bash
 npm run lint
+```
+
+## Test
+
+```bash
+npm run test
 ```

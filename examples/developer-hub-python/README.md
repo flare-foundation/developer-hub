@@ -1,6 +1,6 @@
 # developer-hub-python
 
-## Tooling
+## Prerequisites
 
 - [uv](https://docs.astral.sh/uv/)
 
