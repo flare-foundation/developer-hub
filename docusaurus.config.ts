@@ -246,15 +246,25 @@ const config: Config = {
   plugins: [
     require.resolve("./webpack.config.js"),
     [
-      "@signalwire/docusaurus-plugin-llms-txt",
+      "docusaurus-plugin-llms",
       {
-        siteTitle: "Flare Network Developer Hub",
-        siteDescription: "Flare Network Developer Hub Documentation",
-        depth: 3,
-        content: {
-          includePages: true,
-          enableLlmsFullTxt: true,
-        },
+        ignoreFiles: [
+          "**/node_modules/**",
+          "**/.git/**",
+          "**/*.txt",
+        ],
+        // Include order for better organization
+        includeOrder: [
+          "network",
+          "ftso", 
+          "fdc",
+          "fassets",
+          "run-node",
+          "support",
+        ],
+        // Content cleaning options for better LLM consumption
+        excludeImports: true,
+        removeDuplicateHeadings: true,
       },
     ],
   ],
