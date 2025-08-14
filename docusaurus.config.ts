@@ -248,15 +248,11 @@ const config: Config = {
     [
       "docusaurus-plugin-llms",
       {
-        ignoreFiles: [
-          "**/node_modules/**",
-          "**/.git/**",
-          "**/*.txt",
-        ],
+        ignoreFiles: ["**/node_modules/**", "**/.git/**", "**/*.txt"],
         // Include order for better organization
         includeOrder: [
           "network",
-          "ftso", 
+          "ftso",
           "fdc",
           "fassets",
           "run-node",
