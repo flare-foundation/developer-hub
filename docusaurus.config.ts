@@ -243,7 +243,21 @@ const config: Config = {
       crossorigin: "anonymous",
     },
   ],
-  plugins: [require.resolve("./webpack.config.js")],
+  plugins: [
+    require.resolve("./webpack.config.js"),
+    [
+      "@signalwire/docusaurus-plugin-llms-txt",
+      {
+        siteTitle: 'Flare Network Developer Hub',
+        siteDescription: 'Flare Network Developer Hub Documentation',
+        depth: 3,
+        content: {
+          includePages: true,
+          enableLlmsFullTxt: true
+        }
+      }
+    ]
+  ],
   scripts: [
     // Optimized cookie script loading - defer until after page load
     {
