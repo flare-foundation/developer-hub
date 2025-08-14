@@ -1,13 +1,13 @@
 # developer-hub-rust
 
-## Tooling
+## Prerequisites
 
-- [Rust](https://www.rust-lang.org/tools/install)
+- [Cargo](https://doc.rust-lang.org/cargo/)
 
 ## Install dependencies
 
 ```bash
-cargo build
+cargo build --bins
 ```
 
 ## Format
@@ -19,11 +19,12 @@ cargo fmt
 ## Lint
 
 ```bash
-cargo clippy --fix
+cargo clippy --bins -- -D warnings --fix
 ```
 
 ## Test
 
 ```bash
-cargo test
+chmod +x test.sh
+./test.sh
 ```
