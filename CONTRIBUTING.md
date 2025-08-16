@@ -1,6 +1,6 @@
 # Contributing Guidelines
 
-Thank you for helping improve the **Flare Developer Hub**!  
+Thank you for helping improve **Flare Developer Hub**!
 Your contributions make our documentation, tooling, and examples better for everyone.
 
 We welcome:
@@ -10,7 +10,7 @@ We welcome:
 
 ## 🛠 Development Workflow
 
-1.  **Fork and branch:** Create a branch for your work:
+1.  **Fork and branch:** Fork the repo on GitHub and create a branch for your work:
 
     ```bash
     git checkout -b feature/your-feature-name
@@ -20,7 +20,7 @@ We welcome:
     - Documentation (`docs/`)
     - Source code (`src/`)
     - Examples (`examples/`)
-    - automation scripts (`automations/`, `docgen/`)
+    - automation and docgen scripts (`automations/`, `docgen/`)
 
 3.  **Follow Style Guides:**
     - **Code/Docs:** Run [Pre-PR checks](#pre-pr-checks). Match existing code style.
@@ -66,13 +66,13 @@ We welcome:
 - ✅ **Provide Context:** Describe the problem, solution, and link related issues.
 - ✅ **Pass CI:** Fix any GitHub Actions failures before requesting review.
 - ✅ **Update Docs:** If behavior or usage changes.
-- ✅ **Confirm Licensing:** All PRs are submitted under this repo’s license.
+- ✅ **Confirm Licensing:** All PRs are submitted under this repo’s [license](LICENSE).
 
 ## <a id="pre-pr-checks"></a>🔍 Pre-PR Checks
 
 Run these before submitting a PR:
 
-1. **Build & verify internal links:**
+1. **Build & check internal links:**
 
    ```bash
    npm run build
@@ -90,15 +90,15 @@ Run these before submitting a PR:
    lychee --config lychee.toml .
    ```
 
-4. **If you modified examples**, run their formatters/tests:
-   (example for Rust, see `examples/developer-hub-*/README.md` for more instructions)
+4. **If you modified examples**, run their formatters and tests, see `examples/developer-hub-*/README.md` for more instructions.
+   Example for Rust:
 
    ```bash
    cd examples/developer-hub-rust/
    cargo fmt -- --check # Format
    cargo clippy --bins -- -D warnings # Lint
    cargo build --bins --locked # Build
-   chmod +x test.sh && ./test.sh # Tes
+   chmod +x test.sh && ./test.sh # Test
    ```
 
 ## <a id="diagrams-style-guide"></a>🖼 Diagrams Style Guide
