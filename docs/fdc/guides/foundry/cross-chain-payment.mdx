@@ -1,0 +1,265 @@
+---
+title: Cross-Chain Payment
+authors: [anthonyamadia]
+description: Use an EVMTransaction proof to verify a payment on another chain and mint an NFT.
+tags: [fdc, foundry]
+keywords: [ethereum, flare-data-connector, evm, cross-chain, payment]
+sidebar_position: 9
+---
+
+import AvailableTestnet from "../_available_testnet.mdx";
+
+We will now demonstrate how the FDC protocol can be used to verify a payment that occurred on one chain (e.g., Sepolia testnet) and trigger an action on another (e.g., Coston2). In this example, verifying a specific USDC transfer on Sepolia will result in the minting of a commemorative NFT on Coston2.
+In this guide, we will follow the steps outlined under User Workflow in the [FDC overview](/fdc/overview).
+
+<AvailableTestnet />
+
+Our implementation requires handling the FDC voting round finalization process. To manage this, we will use separate scripts in `script/crossChainPayment.s.sol` that handle different stages of the validation process:
+
+```solidity title="script/crossChainPayment.s.sol"
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.25;
+
+import {Script, console} from "forge-std/Script.sol";
+// ... other imports
+
+contract DeployCrossChainPayment is Script {
+ ...
+}
+
+contract PrepareAttestationRequest is Script {
+ ...
+}
+
+contract SubmitAttestationRequest is Script {
+ ...
+}
+
+contract RetrieveProof is Script {
+ ...
+}
+
+contract MintNFT is Script {
+ ...
+}
+```
+
+The names of the included contracts mirror the steps described in the [FDC guide](/fdc/overview). To bridge the separate executions of the scripts, we will save the relevant data of each script to `.txt` files.
+
+:::info
+The code used in this guide is mostly taken from the [Flare Foundry starter repository](https://github.com/flare-foundation/flare-foundry-starter).
+:::
+
+### 1. Deploy Contracts
+
+Before starting the FDC workflow, we need to deploy our contracts. This process involves deploying the necessary infrastructure and the application-specific consumer contract.
+
+#### Deploy Infrastructure & Consumer
+
+The `DeployCrossChainPayment` script deploys the `MyNFT` and `NFTMinter` contracts and correctly configures the `MINTER_ROLE` so that only the `NFTMinter` contract can mint new NFTs. It then saves their addresses to `nftAddress.txt` and `minterAddress.txt`.
+
+```solidity title="script/crossChainPayment.s.sol"
+contract DeployCrossChainPayment is CrossChainPaymentBase {
+    function run() external returns (address nftAddr, address minterAddr) {
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address deployerAddress = vm.addr(deployerPrivateKey);
+
+        vm.startBroadcast(deployerPrivateKey);
+
+        MyNFT nft = new MyNFT(deployerAddress, deployerAddress);
+        NFTMinter minter = new NFTMinter(nft);
+
+        bytes32 minterRole = nft.MINTER_ROLE();
+        nft.grantRole(minterRole, address(minter));
+        nft.revokeRole(minterRole, deployerAddress);
+
+        vm.stopBroadcast();
+
+        nftAddr = address(nft);
+        minterAddr = address(minter);
+
+        vm.createDir(FDC_DATA_DIR, true);
+        string memory nftPath = string.concat(FDC_DATA_DIR, "nftAddress.txt");
+        string memory minterPath = string.concat(FDC_DATA_DIR, "minterAddress.txt");
+
+        vm.writeFile(nftPath, vm.toString(nftAddr));
+        vm.writeFile(minterPath, vm.toString(minterAddr));
+
+        console.log("MyNFT deployed to:", nftAddr);
+        console.log("NFTMinter deployed to:", minterAddr);
+    }
+}
+```
+
+Run the deployment script with the following command:
+
+```bash
+forge script script/crossChainPayment.s.sol:DeployCrossChainPayment --rpc-url coston2 --broadcast
+```
+
+### 2. Prepare Request
+
+The JSON request to the verifier contains the `attestationType`, `sourceId`, and a `requestBody`.
+
+#### Required Fields
+
+For the `EVMTransaction` type, the `requestBody` is a JSON object containing these fields:
+
+- `transactionHash`: The hash of the transaction to verify, as a string.
+- `requiredConfirmations`: The number of blocks to wait for, as a string. `1` is sufficient for this example.
+- `provideInput`: `true` to include transaction input data in the response.
+- `listEvents`: `true` to include decoded logs/events in the response.
+- `logIndices`: An array of specific log indices to include. An empty array `[]` includes all.
+
+#### Reference Documentation
+
+- [EVMTransaction Specification](/fdc/attestation-types/evm-transaction)
+- [Verifier Interactive Docs](https://fdc-verifiers-testnet.flare.network/verifier/eth/api-doc#/)
+
+#### Example Script
+
+The `PrepareAttestationRequest` script constructs and posts this request to the verifier.
+
+```solidity title="script/crossChainPayment.s.sol"
+contract PrepareAttestationRequest is CrossChainPaymentBase {
+    using Surl for *;
+
+    string public constant TRANSACTION_HASH = "0x4e636c6590b22d8dcdade7ee3b5ae5572f42edb1878f09b3034b2f7c3362ef3c";
+    string public constant SOURCE_NAME = "testETH"; // Chain ID for Sepolia
+    string public constant BASE_SOURCE_NAME = "eth";
+
+    function prepareRequestBody() private pure returns (string memory) {
+        return string.concat('{"transactionHash":"', TRANSACTION_HASH, '","requiredConfirmations":"1","provideInput":true,"listEvents":true,"logIndices":[]}');
+    }
+
+    function run() external {
+        vm.createDir(FDC_DATA_DIR, true);
+
+        string memory attestationType = FdcBase.toUtf8HexString(ATTESTATION_TYPE_NAME);
+        string memory sourceId = FdcBase.toUtf8HexString(SOURCE_NAME);
+        string memory requestBody = prepareRequestBody();
+
+        (string[] memory headers, string memory body) = FdcBase.prepareAttestationRequest(attestationType, sourceId, requestBody);
+
+        string memory baseUrl = vm.envString("VERIFIER_URL_TESTNET");
+        string memory url = string.concat(baseUrl, "verifier/", BASE_SOURCE_NAME, "/", ATTESTATION_TYPE_NAME, "/prepareRequest");
+
+        (, bytes memory data) = url.post(headers, body);
+        FdcBase.AttestationResponse memory response = FdcBase.parseAttestationRequest(data);
+
+        FdcBase.writeToFile(FDC_DATA_DIR, string.concat(ATTESTATION_TYPE_NAME, "_abiEncodedRequest.txt"), StringsBase.toHexString(response.abiEncodedRequest), true);
+        console.log("Successfully prepared attestation request and saved to file.");
+    }
+}
+```
+
+Run the script to prepare the request:
+
+```bash
+forge script script/crossChainPayment.s.sol:PrepareAttestationRequest --rpc-url coston2 --broadcast --ffi
+```
+
+### 3. Submit Request to FDC
+
+This step takes the ABI-encoded request generated by the verifier and submits it to the FDC Hub on the Flare network.
+
+The `SubmitAttestationRequest` script reads the request from the file, submits it in a transaction, and saves the resulting `votingRoundId` for the next step.
+
+```solidity title="script/crossChainPayment.s.sol"
+contract SubmitAttestationRequest is CrossChainPaymentBase {
+    function run() external {
+        string memory requestStr = vm.readFile(string.concat(FDC_DATA_DIR, ATTESTATION_TYPE_NAME, "_abiEncodedRequest.txt"));
+        bytes memory request = vm.parseBytes(requestStr);
+
+        uint256 timestamp = FdcBase.submitAttestationRequest(request);
+        uint256 votingRoundId = FdcBase.calculateRoundId(timestamp);
+
+        FdcBase.writeToFile(FDC_DATA_DIR, string.concat(ATTESTATION_TYPE_NAME, "_votingRoundId.txt"), Strings.toString(votingRoundId), true);
+        console.log("Successfully submitted request. Voting Round ID:", votingRoundId);
+    }
+}
+```
+
+Run the script to submit the request:
+
+```bash
+forge script script/crossChainPayment.s.sol:SubmitAttestationRequest --rpc-url coston2 --broadcast
+```
+
+### 4. Retrieve Proof
+
+After waiting for the voting round to be finalized (max. 180 seconds), we can retrieve the proof from a Data Availability Layer provider.
+
+You can check if the request was submitted successfully on the [AttestationRequests](https://coston2-systems-explorer.flare.rocks/attestation-request) page on the Flare Systems Explorer website.
+To check if the round has been finalized, go to the [Finalizations](https://coston2-systems-explorer.flare.rocks/finalizations) page.
+
+The `RetrieveProof` script waits for finalization, polls the DA layer, and saves the complete proof to a file.
+
+```solidity title="script/crossChainPayment.s.sol"
+contract RetrieveProof is CrossChainPaymentBase {
+    uint8 constant FDC_PROTOCOL_ID = 200;
+
+    function run() external {
+        string memory requestHex = vm.readFile(string.concat(FDC_DATA_DIR, ATTESTATION_TYPE_NAME, "_abiEncodedRequest.txt"));
+        uint256 votingRoundId = FdcBase.stringToUint(vm.readFile(string.concat(FDC_DATA_DIR, ATTESTATION_TYPE_NAME, "_votingRoundId.txt")));
+
+        bytes memory proofData = FdcBase.retrieveProofWithPolling(FDC_PROTOCOL_ID, requestHex, votingRoundId);
+
+        FdcBase.ParsableProof memory proof = abi.decode(proofData, (FdcBase.ParsableProof));
+        IEVMTransaction.Response memory proofResponse = abi.decode(proof.responseHex, (IEVMTransaction.Response));
+        IEVMTransaction.Proof memory finalProof = IEVMTransaction.Proof(proof.proofs, proofResponse);
+
+        FdcBase.writeToFile(FDC_DATA_DIR, string.concat(ATTESTATION_TYPE_NAME, "_proof.txt"), StringsBase.toHexString(abi.encode(finalProof)), true);
+        console.log("Successfully retrieved proof and saved to file.");
+    }
+}
+```
+
+Run the script to retrieve the proof:
+
+```bash
+forge script script/crossChainPayment.s.sol:RetrieveProof --rpc-url coston2 --broadcast --ffi
+```
+
+### 5. Use the Data
+
+The final step is to use the verified data on-chain. The `MintNFT` script reads the proof and the `minterAddress` from their respective files. It then calls the `collectAndProcessTransferEvents` function on the `NFTMinter` contract.
+
+The `NFTMinter` contract first verifies the proof by calling `IFdcVerification.verifyEVMTransaction()`. If the proof is valid, it decodes the event data from the proof to confirm that the USDC transfer meets the required conditions (e.g., correct recipient, minimum amount). If all conditions are met, it mints a new NFT to the original sender.
+
+#### Example Script
+
+```solidity title="script/crossChainPayment.s.sol"
+contract MintNFT is CrossChainPaymentBase {
+    function run() external {
+        string memory configPath = string.concat(FDC_DATA_DIR, "minterAddress.txt");
+        address minterAddress = vm.parseAddress(vm.readFile(configPath));
+
+        string memory proofString = vm.readFile(string.concat(FDC_DATA_DIR, ATTESTATION_TYPE_NAME, "_proof.txt"));
+        bytes memory proofBytes = vm.parseBytes(proofString);
+        IEVMTransaction.Proof memory proof = abi.decode(proofBytes, (IEVMTransaction.Proof));
+
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
+
+        NFTMinter minter = NFTMinter(payable(minterAddress));
+        minter.collectAndProcessTransferEvents(proof);
+
+        vm.stopBroadcast();
+
+        console.log("Successfully sent proof to NFTMinter contract.");
+        TokenTransfer[] memory transfers = minter.getTokenTransfers();
+        require(transfers.length > 0, "No token transfer was recorded.");
+        console.log("--- Verification ---");
+        console.log("Recorded Transfer From:", transfers[0].from);
+        console.log("Recorded Transfer To:", transfers[0].to);
+        console.log("Recorded Transfer Amount:", transfers[0].amount);
+    }
+}
+```
+
+Run the script to send the proof to the `NFTMinter` contract and mint the NFT:
+
+```bash
+forge script script/crossChainPayment.s.sol:MintNFT --rpc-url coston2 --broadcast
+```
