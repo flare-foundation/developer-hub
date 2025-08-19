@@ -16,9 +16,9 @@ keywords:
 tags: [intermediate, javascript]
 ---
 
-The Cookbook contains ready-to-use code snippets for common operations with the Flare Transaction SDK.
+This Cookbook contains ready-to-use code snippets for common operations with the Flare Transaction SDK.
 
-## Get account balances
+## Retrieve account balances
 
 The Flare network uses two chains:
 
@@ -55,6 +55,7 @@ Use `Amount.nats()` or `Amount.wnats()` helpers to convert human-readable values
 ## Wrap and transfer
 
 Transfer native FLR and its wrapped form (WFLR) on the C-Chain.
+Wrapping is required for governance and FTSO delegation, since only WFLR can be delegated.
 
 - **FLR** (native token) lives on both chains.
 - **WFLR** (wrapped FLR) exists only on the C-Chain for use in smart contracts and delegation.
@@ -83,7 +84,7 @@ await network.unwrapToNative(wallet, Amount.wnats(1));
 
 :::
 
-## Rewards
+## Claim rewards
 
 Flare supports multiple reward sources: FlareDrops, staking rewards, rNat (e.g. rFLR), and FTSO rewards.
 
@@ -123,8 +124,13 @@ Optional parameters are the same as [FlareDrops](#flaredrops).
 
 rNat tokens (rFLR on Flare) represent vested rewards.
 They are backed by WFLR in a dedicated rNat account.
+The flow of rFLR:
 
-#### List and claim rewards
+```plaintext
+rFLR (reward token) → backed by WFLR → claimable → withdraw → optional penalty if locked.
+```
+
+#### List and claim
 
 ```javascript
 // Get a list of all rNat projects
@@ -143,7 +149,7 @@ Claim rewards for one or more projects:
 await network.claimRNatReward(wallet, [projectId1, projectId2]);
 ```
 
-Claimed rewards are deposited as wrapped coins to the rNat account linked to the wallet's C-chain address.
+Claimed rewards are deposited as wrapped coins to the rNat account linked to the wallet's C-Chain address.
 
 #### Manage balances
 
@@ -174,7 +180,7 @@ The returned [`RNatAccountBalance`](https://github.com/flare-foundation/flare-tx
 You can also withdraw all funds (locked + unlocked):
 
 ```javascript
-await network.withdrawAllFromRNatAccount(wallet, wrap);
+await network.withdrawAllFromRNatAccount(wallet, /* wrap: boolean */ true);
 ```
 
 Withdrawing locked balance incurs a **penalty**, so the withdrawn amount will be reduced.
@@ -220,13 +226,14 @@ if (ftsoRewardAmount > 0) {
 
 Optional parameters:
 
-- `rewardOwner` (address) - C-chain address of the reward owner
-- `recipient` (address) - C-chain address of where the reward should be transferred
+- `rewardOwner` (address) - C-Chain address of the reward owner
+- `recipient` (address) - C-Chain address of where the reward should be transferred
 - `wrap` (bool) - transfer reward as native (default) or wrapped.
 
 #### Claim with proofs
 
 If a reward isn't initialized, you must provide a Merkle proof available in the [flare-foundation/fsp-rewards](https://github.com/flare-foundation/fsp-rewards/) repository.
+As an example for reward epoch 320, see the proofs in [`reward-distribution-data.json`](https://github.com/flare-foundation/fsp-rewards/blob/main/flare/320/reward-distribution-data.json).
 
 ```javascript
 await network.claimFtsoReward(wallet, rewardOwner, recipient, wrap, proofs);
@@ -304,10 +311,10 @@ The SDK automates these steps.
 
    ```javascript
    // Transfer 100 FLR from C-Chain to P-Chain
-   await network.transferToP(wallet, Amount.nats(100););
+   await network.transferToP(wallet, Amount.nats(100));
    ```
 
-2. **Delegate on P-chain:** Once funds are on the P-Chain, you can delegate them.
+2. **Delegate on P-Chain:** Once funds are on the P-Chain, you can delegate them.
 
    ```javascript
    const amountToDelegate = Amount.nats(50);
@@ -331,7 +338,7 @@ The SDK automates these steps.
    await network.transferToC(wallet);
    ```
 
-## Voting on governance proposals
+## Vote on governance proposals
 
 Governance proposals allow community members to vote on protocol decisions using their voting power (based on WFLR balance and staking).
 
@@ -364,19 +371,10 @@ A proposal can be voted on only when its `state` is ACTIVE.
 // Check if a voter has already voted:
 await network.hasCastVoteForFoundationProposal(cAddress, proposalId);
 
-// Cast FOR vote
-await network.castVoteForFoundationProposal(
-  wallet,
-  proposalId,
-  FoundationProposalSupport.FOR,
-);
+const support = FoundationProposalSupport.FOR; // or FoundationProposalSupport.AGAINST
 
-// Cast AGAINST vote
-await network.castVoteForFoundationProposal(
-  wallet,
-  proposalId,
-  FoundationProposalSupport.AGAINST,
-);
+// Cast vote
+await network.castVoteForFoundationProposal(wallet, proposalId, support);
 ```
 
 ### Delegate votes
@@ -395,7 +393,7 @@ let delegate = await network.getCurrentGovernanceVoteDelegate(cAddress);
 
 ```javascript
 // Delegate all vote power to another address:
-await network.delegateGovernanceVotePower(wallet, delegate);
+await network.delegateGovernanceVotePower(wallet, delegateAddress);
 
 // Remove delegation:
 await network.undelegateGovernanceVotePower(wallet);
@@ -416,10 +414,11 @@ const delegate = await network.getVoteDelegateForFoundationProposal(
 );
 ```
 
-Queries may **fail** for older proposals, since historical governance vote data is periodically removed from C-chain storage.
+Queries may **fail** for older proposals, since historical governance vote data is periodically removed from C-Chain storage.
 
 :::
 
 ## Next steps
 
 - Check the [Advanced Features](/network/flare-tx-sdk/advanced-usage) for transaction callbacks and custom wallets.
+- Read the SDK source code on [GitHub](https://github.com/flare-foundation/flare-tx-sdk).

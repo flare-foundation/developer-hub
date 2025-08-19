@@ -25,7 +25,7 @@ This guide walks you through installation, core concepts, and a quick start exam
 
 Before you start, ensure you have the following:
 
-- [Node.js](https://nodejs.org/en/download) v18 or later
+- [Node.js](https://nodejs.org/en/download) v18+ (LTS recommended) and a package manager (npm, yarn, or pnpm)
 - A compatible wallet:
   - **EIP-1193 wallets** (e.g. MetaMask, WalletConnect)
   - **Hardware wallets** (Ledger, Trezor).
@@ -54,15 +54,17 @@ Add the SDK to your project:
 
 ## Core concepts
 
-The SDK is built around two key objects:
+The SDK separates network logic from account management.
+This ensures the same wallet can be used across multiple networks without code changes.
 
 - **`Network`**: Represents the blockchain network you want to connect to. Available networks include:
   - `Network.FLARE`
+  - `Network.COSTON2`
   - `Network.SONGBIRD`
   - `Network.COSTON`
-  - `Network.COSTON2`
 
   The `Network` object provides methods to query balances, transfer tokens, claim rewards, and interact with contracts.
+  It uses Flare's [public RPCs](/network/overview#configuration) by default.
 
 - **`Wallet`**: Represents a user account. The SDK does not store private keys. Instead, it defines a `Wallet` interface which can be implemented by:
   - MetaMask and other browser wallets (`EIP1193WalletController`)
@@ -116,30 +118,30 @@ Example output:
 }
 ```
 
-:::note[Units]
+:::info[Units]
 
 The SDK uses nats (smallest unit of FLR, equivalent to wei).
-Use helpers such as `Amount.nats(x)` for FLR and `Amount.wnats(x)` for WFLR.
+Use helpers methods `Amount.nats(x)` for FLR and `Amount.wnats(x)` for WFLR.
 
 :::
 
 ## Wallet controllers
 
-The SDK doesn't store keys. Instead, it adapts external signers into a common [`Wallet`](https://github.com/flare-foundation/flare-tx-sdk/blob/HEAD/src/wallet/index.ts) interface via controllers.
-This guide shows how to connect EIP-1193 wallets (e.g., MetaMask/WalletConnect), Ledger, Trezor, and how to author a custom wallet.
+Wallet controllers adapt third-party wallets into the SDK's [`Wallet`](https://github.com/flare-foundation/flare-tx-sdk/blob/HEAD/src/wallet/index.ts) interface.
+They handle signing and address derivation, while your keys remain securely stored in the original wallet.
 
-A controller is a helper class that wraps a standard wallet library (like EIP-1193 for MetaMask or Zondax for Ledger) and produces SDK-compatible objects.
-The SDK includes controllers for popular wallet standards to make this easy.
-
-:::tip
-
-If none of the Wallet controllers here meet your needs, you can implement a [custom wallet controller](/network/flare-tx-sdk/advanced-usage#custom-wallets).
-
-:::
+This guide shows how to connect EIP-1193 wallets (e.g., MetaMask/WalletConnect) and hardware wallets (Ledger and Trezor).
 
 ### EIP-1193 (MetaMask, WalletConnect)
 
 Use the [`EIP1193WalletController`](https://github.com/flare-foundation/flare-tx-sdk/blob/HEAD/src/wallet/eip1193/controller.ts) with any browser wallet that exposes an EIP-1193 provider (e.g., `window.ethereum`).
+
+:::tip[Security]
+
+Your private keys **never** leave your wallet.
+The SDK only communicates with the wallet for signing.
+
+:::
 
 ```javascript
 import { Network, EIP1193WalletController } from "@flarenetwork/flare-tx-sdk";
@@ -176,6 +178,13 @@ async function connectEip1193() {
 
 Use the [`LedgerWalletController`](https://github.com/flare-foundation/flare-tx-sdk/blob/HEAD/src/wallet/ledger/controller.ts).
 It supports either Zondax Flare App ([`@zondax/ledger-flare`](https://www.npmjs.com/package/@zondax/ledger-flare)) or Ledger ETH App ([`@ledgerHQ/hw-app-eth`](https://www.npmjs.com/package/@ledgerhq/hw-app-eth)).
+
+:::tip[Security]
+
+Your private keys **never** leave your Ledger device.
+The SDK only communicates with the device for signing.
+
+:::
 
 1.  **Installation:**
 
@@ -233,7 +242,9 @@ It supports either Zondax Flare App ([`@zondax/ledger-flare`](https://www.npmjs.
     import { Eth } from "@ledgerHQ/hw-app-eth"
 
     async function connectLedgerViaEthApp() {
-        ethApp = Eth(...) // add transport here
+        // add Ledger transports here
+        // see https://developers.ledger.com/docs/device-interaction/integration/how_to/transports
+        const ethApp = Eth(...)
         const controller = new LedgerWalletController(null, ethApp);
 
         const path = "m/44'/60'/0'/0/0";
@@ -255,6 +266,13 @@ It supports either Zondax Flare App ([`@zondax/ledger-flare`](https://www.npmjs.
 
 Use the [`TrezorWalletController`](https://github.com/flare-foundation/flare-tx-sdk/blob/HEAD/src/wallet/trezor/controller.ts) with [Trezor Connect](https://connect.trezor.io/9/readme/connect/).
 
+:::tip[Security]
+
+Your private keys **never** leave your Trezor device.
+The SDK only communicates with the device for signing.
+
+:::
+
 1. **Installation:**
 
    ```bash
@@ -268,7 +286,9 @@ Use the [`TrezorWalletController`](https://github.com/flare-foundation/flare-tx-
    import { TrezorWalletController } from "@flarenetwork/flare-tx-sdk";
 
    async function connectTrezor() {
-       TrezorConnect.init(...) // add manifest here
+       // add Trezor manifest
+       // see https://connect.trezor.io/9/methods/other/init/
+       TrezorConnect.init(...)
        const controller = new TrezorWalletController(TrezorConnect);
 
        const path = "m/44'/60'/0'/0/0";
@@ -282,7 +302,14 @@ Use the [`TrezorWalletController`](https://github.com/flare-foundation/flare-tx-
    }
    ```
 
+:::info[Advanced]
+
+If none of the Wallet controllers listed here meet your needs, you can implement a [custom wallet controller](/network/flare-tx-sdk/advanced-usage#custom-wallets).
+
+:::
+
 ## Next steps
 
 - Explore the [Cookbook](/network/flare-tx-sdk/cookbook) for task-oriented guides (balances, transfers, rewards, staking).
 - Check the [Advanced Features](/network/flare-tx-sdk/advanced-usage) for transaction callbacks and custom wallets.
+- Read the SDK source code on [GitHub](https://github.com/flare-foundation/flare-tx-sdk).
