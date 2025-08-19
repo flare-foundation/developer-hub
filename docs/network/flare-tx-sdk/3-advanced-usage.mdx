@@ -1,0 +1,117 @@
+---
+title: Advanced Usage
+description: Lifecycle tracking, custom wallets and advanced features
+keywords:
+  [flare, sdk, advanced, rpc, callbacks, transaction tracking, custom wallet]
+tags: [advanced, javascript]
+---
+
+## Transaction lifecycle tracking
+
+Every transaction goes through a series of stages:
+
+```plaintext
+[Unsigned] → [Before Signature] → [Signed] → [Before Submission]
+→ [Submitted] → [After Submission] → [Confirmed]
+```
+
+The SDK allows you to register callbacks at each stage to inspect or intercept the process.
+This is useful for logging, UI updates, security audits, or offline signing workflows.
+
+### Example
+
+```javascript
+// 1. Before Signing
+network.setBeforeTxSignatureCallback(async (data) => {
+  console.log("Transaction prepared for signing:", data.unsignedTxHex);
+  console.log("Transaction type:", data.txType);
+  // Return false to cancel
+  return true;
+});
+
+// 2. Before Submission
+network.setBeforeTxSubmissionCallback(async (data) => {
+  console.log("About to submit signed tx:", data.signedTxHex);
+  console.log("Transaction ID:", data.txId);
+  return true; // false = cancel
+});
+
+// 3. After Submission
+network.setAfterTxSubmissionCallback(async (data) => {
+  console.log(`Tx ${data.txId} submitted, awaiting confirmation...`);
+  return true;
+});
+
+// 4. After Confirmation
+network.setAfterTxConfirmationCallback(async (data) => {
+  console.log(`Tx ${data.txId} confirmed with status: ${data.txStatus}`);
+});
+```
+
+## Custom wallets
+
+If you're integrating a bespoke signer (custody service, backend signer, or another SDK), implement the [`Wallet`](https://github.com/flare-foundation/flare-tx-sdk/blob/HEAD/src/wallet/index.ts) interface.
+Choose the C-Chain-only interface or dual-chain (C + P) depending on your needs.
+
+### Required methods
+
+### Required Methods
+
+| Method                                  | C-Chain Only | C + P Chain |
+| --------------------------------------- | ------------ | ----------- |
+| `getCAddress(): Promise<string>`        | ✅           | ✅          |
+| `signCTransaction(tx: string)`          | ✅           | ✅          |
+| `signAndSubmitCTransaction(tx: string)` | ✅           | ✅          |
+| `signDigest(digest: string)`            | ✅           | ✅          |
+| `getPublicKey(): Promise<string>`       | -            | ✅          |
+| `signPTransaction(tx: string)`          | -            | ✅          |
+| `signEthMessage(message: string)`       | -            | ✅          |
+
+### Minimal ethers.js wrapper example
+
+This example shows the shape - adapt to your transport and security model.
+This assumes your signer supports `signTransaction`, `sendTransaction`, and `getAddress`.
+
+```javascript
+import type { Wallet as SdkWallet } from "@flarenetwork/flare-tx-sdk";
+// ^ type path: see src/wallet/index.ts in the repo
+import { ethers } from "ethers";
+
+export class EthersWallet implements SdkWallet {
+  constructor(private readonly signer: ethers.Signer) {}
+
+  async getCAddress(): Promise<string> {
+    return this.signer.getAddress();
+  }
+
+  async signCTransaction(unsignedTxHex: string): Promise<string> {
+    const unsigned = ethers.utils.parseTransaction(unsignedTxHex as any);
+    const signed = await this.signer.signTransaction(unsigned);
+    return signed;
+  }
+
+  async signAndSubmitCTransaction(unsignedTxHex: string): Promise<string> {
+    const rawSigned = await this.signCTransaction(unsignedTxHex);
+    const provider = this.signer.provider;
+    if (!provider) throw new Error("Signer has no provider for submission");
+    const sent = await provider.sendTransaction(rawSigned);
+    await sent.wait(); // or return early if you prefer async confirmation
+    return sent.hash;
+  }
+
+  async signDigest(digestHex: string): Promise<string> {
+    // digestHex is a 32-byte hex string
+    return this.signer.signMessage(ethers.utils.arrayify(digestHex));
+  }
+
+  async signEthMessage(message: string): Promise<string> {
+    return this.signer.signMessage(message);
+  }
+}
+```
+
+:::tip
+
+Start with C-Chain only. Add P-Chain support once you need staking or P-Chain operations.
+
+:::
