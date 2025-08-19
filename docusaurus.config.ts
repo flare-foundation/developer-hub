@@ -249,14 +249,19 @@ const config: Config = {
       "docusaurus-plugin-llms",
       {
         ignoreFiles: ["**/node_modules/**", "**/.git/**", "**/*.txt"],
-        // Include order for better organization
         includeOrder: [
-          "network",
-          "ftso",
-          "fdc",
-          "fassets",
-          "run-node",
-          "support",
+          "**/network/**/*.mdx",
+          "**/network/**/*.md",
+          "**/ftso/**/*.mdx",
+          "**/ftso/**/*.md",
+          "**/fdc/**/*.mdx",
+          "**/fdc/**/*.md",
+          "**/fassets/**/*.mdx",
+          "**/fassets/**/*.md",
+          "**/run-node/**/*.mdx",
+          "**/run-node/**/*.md",
+          "**/support/**/*.mdx",
+          "**/support/**/*.md",
         ],
         // Content cleaning options for better LLM consumption
         excludeImports: true,
