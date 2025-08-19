@@ -266,6 +266,9 @@ const config: Config = {
         // Content cleaning options for better LLM consumption
         excludeImports: true,
         removeDuplicateHeadings: true,
+        pathTransformation: {
+          ignorePaths: ['docs'],
+        }
       },
     ],
   ],
