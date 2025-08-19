@@ -267,8 +267,8 @@ const config: Config = {
         excludeImports: true,
         removeDuplicateHeadings: true,
         pathTransformation: {
-          ignorePaths: ['docs'],
-        }
+          ignorePaths: ["docs"],
+        },
       },
     ],
   ],
