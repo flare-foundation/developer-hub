@@ -28,39 +28,7 @@ jobs:
       - name: Build website with LLMs generation
         run: npm run build:llms-fixed
       - name: Verify LLMs files
-        run: |
-          echo "Verifying LLMs files generation..."
-
-          # Check if LLMs files were generated
-          if [ ! -f "build/llms.txt" ] || [ ! -f "build/llms-full.txt" ]; then
-            echo "❌ LLMs files not found!"
-            exit 1
-          fi
-
-          # Check file sizes
-          llms_txt_size=$(wc -c < build/llms.txt)
-          llms_full_size=$(wc -c < build/llms-full.txt)
-          echo "llms.txt: $llms_txt_size bytes"
-          echo "llms-full.txt: $llms_full_size bytes"
-
-          # Verify URLs are correct (no prepended numbers)
-          if grep -q "https://dev\.flare\.network/docs/[^)]*/\d+-" build/llms.txt; then
-            echo "❌ Found URLs with prepended numbers!"
-            exit 1
-          else
-            echo "✅ All URLs are correctly formatted"
-          fi
-
-          # Check content structure
-          sections=$(grep -c "^- \[" build/llms.txt || true)
-          echo "Found $sections sections in llms.txt"
-
-          if [ "$sections" -lt 10 ]; then
-            echo "❌ Too few sections found!"
-            exit 1
-          fi
-
-          echo "✅ LLMs files verified successfully"
+        run: npm run check-llms
       - name: Upload Build Artifact
         uses: actions/upload-pages-artifact@v4
         with:

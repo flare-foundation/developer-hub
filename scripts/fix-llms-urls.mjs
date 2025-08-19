@@ -13,7 +13,7 @@ import path from "path";
 const config = {
   buildDir: "build",
   filesToFix: ["llms.txt", "llms-full.txt"],
-  baseUrl: "https://dev.flare.network/docs/",
+  baseUrl: "https://dev.flare.network/",
 };
 
 function fixUrlsInFile(filePath) {
@@ -22,10 +22,10 @@ function fixUrlsInFile(filePath) {
 
     const content = fs.readFileSync(filePath, "utf8");
 
-    // Fix URLs by removing prepended numbers
-    // Pattern: https://dev.flare.network/docs/network/0-overview -> https://dev.flare.network/docs/network/overview
-    const fixedContent = content.replace(
-      /(https:\/\/dev\.flare\.network\/docs\/[^)]+\/)\d+-([^)]+)/g,
+    // Fix URLs by removing prepended numbers folder
+    // Pattern: https://dev.flare.network/network/0-overview -> https://dev.flare.network/network/overview
+    let fixedContent = content.replace(
+      /(https:\/\/dev\.flare\.network\/[^)]+\/)\d+-([^)]+)/g,
       "$1$2",
     );
 
