@@ -278,30 +278,6 @@ await network.undelegateFromFtso(wallet);
 
 :::
 
-## Interact with C-Chain contracts
-
-The SDK provides helpers for interacting with any smart contract on the C-Chain.
-
-```javascript
-// Call a read-only contract method
-const result = await network.invokeContractCallOnC(contractAddress, abi, "methodName", [param1, param2]);
-
-// Execute a transaction method that changes state
-// The `value` parameter is for payable methods
-await network.invokeContractMethodOnC(wallet, contractAddress, abi, "methodName", value, [param1, param2]);
-
-// You can also use contract names for official Flare contracts
-const contractNames = await network.getFlareContracts(); // See available names
-await network.invokeContractMethodOnC(wallet, "FtsoRewardManager", abi, "claimReward", ...);
-```
-
-:::info
-
-- ABI must match the contract interface.
-- For official Flare contracts, names are predefined and easier to use.
-
-:::
-
 ## Stake on P-Chain
 
 Staking involves moving funds to the P-Chain, delegating them, and later transferring them back.
@@ -418,7 +394,37 @@ Queries may **fail** for older proposals, since historical governance vote data 
 
 :::
 
+## Interact with C-Chain contracts
+
+The SDK provides helpers for interacting with any smart contract on the C-Chain.
+
+```javascript
+// Call a read-only contract method
+const result = await network.invokeContractCallOnC(contractAddress, abi, "methodName", [param1, param2]);
+
+// Execute a transaction method that changes state
+// The `value` parameter is for payable methods
+await network.invokeContractMethodOnC(wallet, contractAddress, abi, "methodName", value, [param1, param2]);
+
+// You can also use contract names for official Flare contracts
+const contractNames = await network.getFlareContracts(); // See available names
+await network.invokeContractMethodOnC(wallet, "FtsoRewardManager", abi, "claimReward", ...);
+```
+
+:::info
+
+- ABI must match the contract interface.
+- For official Flare contracts, names are predefined and easier to use.
+
+:::
+
 ## Next steps
 
 - Check the [Advanced Features](/network/flare-tx-sdk/advanced-usage) for transaction callbacks and custom wallets.
 - Read the SDK source code on [GitHub](https://github.com/flare-foundation/flare-tx-sdk).
+
+:::tip[Need help or found a bug?]
+
+Open an issue on the [flare-foundation/flare-tx-sdk](https://github.com/flare-foundation/flare-tx-sdk) GitHub repository.
+
+:::
