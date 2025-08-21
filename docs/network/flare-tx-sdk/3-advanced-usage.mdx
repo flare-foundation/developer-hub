@@ -8,19 +8,24 @@ tags: [advanced, javascript]
 
 ## Transaction lifecycle tracking
 
-Every transaction goes through a series of stages:
+Every transaction goes through a series of stages.
+The SDK allows you to register callbacks at each stage to inspect or intercept the process.
+This is useful for logging, UI updates, or offline signing workflows.
 
 ```plaintext
-[Unsigned] → [Before Signature] → [Signed] → [Before Submission] → [Submitted] → [After Submission] → [Confirmed]
+Unsigned
+   ↓ sign
+Signed (before submission)
+   ↓ submit
+Submitted (pending confirmation)
+   ↓ confirm
+Confirmed
 ```
-
-The SDK allows you to register callbacks at each stage to inspect or intercept the process.
-This is useful for logging, UI updates, security audits, or offline signing workflows.
 
 ### Example
 
 ```javascript
-// 1. Before Signing
+// 1. Before Signature
 network.setBeforeTxSignatureCallback(async (data) => {
   console.log("Transaction prepared for signing:", data.unsignedTxHex);
   console.log("Transaction type:", data.txType);
@@ -63,7 +68,7 @@ If implementing your own wallet, ensure private keys are never exposed; use secu
 :::info
 
 C-Chain support is sufficient for most applications.
-See [wallet.ts](https://github.com/flare-foundation/flare-tx-sdk/blob/main/src/wallet/wallet.ts) for the full Wallet interface.
+See the full [Wallet](https://github.com/flare-foundation/flare-tx-sdk/blob/main/src/wallet/wallet.ts) interface.
 
 :::
 
@@ -146,12 +151,6 @@ export class EthersWallet implements SdkWallet {
   }
 }
 ```
-
-:::tip
-
-Start with C-Chain only. Add P-Chain support once you need staking or P-Chain operations.
-
-:::
 
 :::tip[Need help or found a bug?]
 

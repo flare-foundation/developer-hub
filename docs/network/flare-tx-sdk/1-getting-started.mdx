@@ -49,6 +49,13 @@ Add the SDK to your project:
       ```
 
     </TabItem>
+    <TabItem value="pnpm" label="pnpm">
+
+      ```bash
+      pnpm add @flarenetwork/flare-tx-sdk
+      ```
+
+    </TabItem>
 
 </Tabs>
 
@@ -66,10 +73,10 @@ This ensures the same wallet can be used across multiple networks without code c
   The `Network` object provides methods to query balances, transfer tokens, claim rewards, and interact with contracts.
   It uses Flare's [public RPCs](/network/overview#configuration) by default.
 
-- **`Wallet`**: Represents a user account. The SDK does not store private keys. Instead, it defines a `Wallet` interface which can be implemented by:
-  - MetaMask and other browser wallets (`EIP1193WalletController`)
-  - Ledger (`LedgerWalletController`)
-  - Trezor (`TrezorWalletController`)
+- **`Wallet`**: Represents a user account. The SDK does not store private keys. Instead, it defines a [`Wallet`](https://github.com/flare-foundation/flare-tx-sdk/blob/HEAD/src/wallet/index.ts) interface which can be implemented by:
+  - MetaMask and other browser wallets - `EIP1193WalletController`
+  - Ledger - `LedgerWalletController`
+  - Trezor - `TrezorWalletController`
   - Your own custom signer
 
 ## Example implementation
@@ -120,8 +127,15 @@ Example output:
 
 :::info[Units]
 
-The SDK uses nats (smallest unit of FLR, equivalent to wei).
-Use helpers methods `Amount.nats(x)` for FLR and `Amount.wnats(x)` for WFLR.
+The SDK uses wei, the smallest unit of FLR (1 FLR = $10^{18}$ wei).
+To convert to wei:
+
+```javascript
+import { Amount } from "@flarenetwork/flare-tx-sdk";
+
+const natsAmount = Amount.nats(10); // convert 10 FLR to wei
+const wNatsAmount = Amount.wnats(10); // convert 10 WFLR to wei
+```
 
 :::
 
