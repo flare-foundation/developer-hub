@@ -47,25 +47,23 @@ const stakedBalance = await network.getBalanceStakedOnP(publicKey);
 
 :::info
 
-Balances are returned in nats (the smallest FLR unit, equivalent to wei).
-Use `Amount.nats()` or `Amount.wnats()` helpers to convert human-readable values.
+The balances are returned in wei, the smallest unit of FLR (1 FLR = $10^{18}$ wei).
 
 :::
 
 ## Wrap and transfer
 
 Transfer native FLR and its wrapped form (WFLR) on the C-Chain.
-Wrapping is required for governance and FTSO delegation, since only WFLR can be delegated.
+Wrapping is required for governance and FTSO delegation.
 
-- **FLR** (native token) lives on both chains.
-- **WFLR** (wrapped FLR) exists only on the C-Chain for use in smart contracts and delegation.
-- The SDK provides simple helpers for wrapping, unwrapping, and transferring.
+- **FLR** (native token) lives on both C and P-Chain.
+- **WFLR** (wrapped FLR) exists only on the C-Chain for use in smart contracts, governance and delegation.
 
 ```javascript
 import { Amount } from "@flarenetwork/flare-tx-sdk";
 
 // Transfer 1 FLR
-await network.transferNative(wallet, recipientAddress, Amount.nats(1)); // Amount.nats handles the conversion to wei
+await network.transferNative(wallet, recipientAddress, Amount.nats(1));
 
 // Wrap 1 FLR -> 1 WFLR
 await network.wrapNative(wallet, Amount.nats(1));
@@ -77,20 +75,13 @@ await network.transferWrapped(wallet, recipientAddress, Amount.wnats(1));
 await network.unwrapToNative(wallet, Amount.wnats(1));
 ```
 
-:::info
-
-- All transfers return a transaction receipt once confirmed.
-- Wrapping/unwrapping is required to participate in FTSO delegation and governance.
-
-:::
-
 ## Claim rewards
 
 Flare supports multiple reward sources: FlareDrops, staking rewards, rNat (e.g. rFLR), and FTSO rewards.
 
 ### FlareDrops
 
-Rewards periodically distributed to token holders.
+[FlareDrops](https://flare.network/news/flaredrop-guide) are rewards periodically distributed to token holders.
 
 ```javascript
 // Check and claim FlareDrop rewards
@@ -102,9 +93,11 @@ if (flareDropAmount > 0) {
 
 Optional parameters:
 
-- `rewardOwner` (address) - C-Chain address of the reward owner
-- `recipient` (address) - C-Chain address to receive the reward
-- `wrap` (bool) - `true` for WFLR, `false` for FLR (default).
+| **Field**     | **Type**  | **Description**                            |
+| ------------- | --------- | ------------------------------------------ |
+| `rewardOwner` | `address` | C-Chain address of the reward owner        |
+| `recipient`   | `address` | C-Chain address to receive the reward      |
+| `wrap`        | `bool`    | `true` for WFLR, `false` for FLR (default) |
 
 ### Staking rewards
 
@@ -139,9 +132,11 @@ let projects = await network.getRNatProjects();
 
 Returns an array of objects of type [`RNatProject`](https://github.com/flare-foundation/flare-tx-sdk/blob/HEAD/src/network/iotype.ts) with:
 
-- `id` (int) - Project ID
-- `name` (string) - Project name
-- `claimingDisabled` (bool) - Whether claiming rewards is disabled for this project
+| **Field**          | **Type** | **Description**                                       |
+| ------------------ | -------- | ----------------------------------------------------- |
+| `id`               | `number` | Project ID                                            |
+| `name`             | `string` | Project name                                          |
+| `claimingDisabled` | `bool`   | Whether claiming rewards is disabled for this project |
 
 Claim rewards for one or more projects:
 
@@ -171,9 +166,11 @@ let balance = await network.getRNatAccountBalance(cAddress);
 
 The returned [`RNatAccountBalance`](https://github.com/flare-foundation/flare-tx-sdk/blob/HEAD/src/network/iotype.ts) object includes:
 
-- `wNatBalance` (int) - Wrapped coin balance (wei)
-- `rNatBalance` (int) - rNat token balance (wei)
-- `lockedBalance` (int) - Locked wrapped coin balance (wei)
+| **Field**       | **Type** | **Description**                   |
+| --------------- | -------- | --------------------------------- |
+| `wNatBalance`   | `bigint` | Wrapped coin balance (wei)        |
+| `rNatBalance`   | `bigint` | rNat token balance (wei)          |
+| `lockedBalance` | `bigint` | Locked wrapped coin balance (wei) |
 
 :::warning[Withdrawing all funds]
 
@@ -226,9 +223,11 @@ if (ftsoRewardAmount > 0) {
 
 Optional parameters:
 
-- `rewardOwner` (address) - C-Chain address of the reward owner
-- `recipient` (address) - C-Chain address of where the reward should be transferred
-- `wrap` (bool) - transfer reward as native (default) or wrapped.
+| **Field**     | **Type**  | **Description**                                           |
+| ------------- | --------- | --------------------------------------------------------- |
+| `rewardOwner` | `address` | C-Chain address of the reward owner                       |
+| `recipient`   | `address` | C-Chain address of where the reward should be transferred |
+| `wrap`        | `bool`    | Transfer reward as native (default) or wrapped            |
 
 #### Claim with proofs
 
@@ -239,10 +238,12 @@ As an example for reward epoch 320, see the proofs in [`reward-distribution-data
 await network.claimFtsoReward(wallet, rewardOwner, recipient, wrap, proofs);
 ```
 
-where `proofs` is an array of objects [`FtsoRewardClaimWithProof`](https://github.com/flare-foundation/flare-tx-sdk/blob/HEAD/src/network/iotype.ts) with:
+`proofs` is an array of [`FtsoRewardClaimWithProof`](https://github.com/flare-foundation/flare-tx-sdk/blob/HEAD/src/network/iotype.ts):
 
-- `merkleProof` (array of string) - The Merkle proof in hexadecimal encoding.
-- `body` ([`FtsoRewardClaim`](https://github.com/flare-foundation/flare-tx-sdk/blob/HEAD/src/network/iotype.ts) ) - Same structure as `FtsoRewardState` without the `initialised` parameter.
+| **Field**     | **Type**                                                                                              | **Description**                           |
+| ------------- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `merkleProof` | `string[]`                                                                                            | The Merkle proof in hexadecimal encoding. |
+| `body`        | [`FtsoRewardClaim`](https://github.com/flare-foundation/flare-tx-sdk/blob/HEAD/src/network/iotype.ts) | Specifying the reward claim details       |
 
 ## Delegate to FTSO providers
 
@@ -256,14 +257,14 @@ import { Amount } from "@flarenetwork/flare-tx-sdk";
 const delegations = await network.getFtsoDelegatesOf(cAddress);
 
 // Delegate 100% to one provider
-await network.delegateToFtso(wallet, provider, Amount.percentages(100));
+await network.delegateToFtso(wallet, providerAddress, Amount.percentages(100));
 
 // Split 50/50 between two providers
 await network.delegateToFtso(
   wallet,
-  provider1,
+  provider1Address,
   Amount.percentages(50),
-  provider2,
+  provider2Address,
   Amount.percentages(50),
 );
 
@@ -271,10 +272,10 @@ await network.delegateToFtso(
 await network.undelegateFromFtso(wallet);
 ```
 
-:::info
+:::info[Basis points]
 
-- Delegations are expressed in basis points (1% = 100 bp).
-- Rewards can later be claimed via [`getClaimableFtsoReward`](#ftso-delegation-rewards).
+Delegations are expressed in basis points (1 % = 100 bp).
+`Amount.percentages()` handles conversion of percent to basis points.
 
 :::
 
@@ -293,8 +294,8 @@ The SDK automates these steps.
 2. **Delegate on P-Chain:** Once funds are on the P-Chain, you can delegate them.
 
    ```javascript
-   const amountToDelegate = Amount.nats(50);
-   const nodeId = "NodeID-P73B..."; // The ID of the validator
+   const amountToDelegate = Amount.nats(50); // 50 FLR
+   const nodeId = "NodeID-P73B..."; // The ID of the validator, see https://flare-systems-explorer.flare.network/validators
    const startTime = Math.floor(Date.now() / 1000); // Current unix timestamp
    const endTime = startTime + 14 * 24 * 60 * 60; // e.g. end in 14 days
 
@@ -303,7 +304,7 @@ The SDK automates these steps.
      amountToDelegate,
      nodeId,
      startTime,
-     endTime,
+     endTime, // optional
    );
    ```
 
@@ -347,6 +348,7 @@ A proposal can be voted on only when its `state` is ACTIVE.
 // Check if a voter has already voted:
 await network.hasCastVoteForFoundationProposal(cAddress, proposalId);
 
+// Indicate direction of vote
 const support = FoundationProposalSupport.FOR; // or FoundationProposalSupport.AGAINST
 
 // Cast vote
@@ -362,12 +364,9 @@ const votePower = await network.getCurrentGovernanceVotePower(cAddress);
 
 // Get current delegate:
 let delegate = await network.getCurrentGovernanceVoteDelegate(cAddress);
-```
+// If `delegate == 0x0` - No delegate assigned
+// If `delegate != 0x0` - Voter's own vote power is zero (all delegated)
 
-- If `delegate == 0x0` - No delegate assigned
-- If `delegate != 0x0` - Voter's own vote power is zero (all delegated)
-
-```javascript
 // Delegate all vote power to another address:
 await network.delegateGovernanceVotePower(wallet, delegateAddress);
 
@@ -390,7 +389,7 @@ const delegate = await network.getVoteDelegateForFoundationProposal(
 );
 ```
 
-Queries may **fail** for older proposals, since historical governance vote data is periodically removed from C-Chain storage.
+Queries **may fail** for older proposals, since historical governance vote data is periodically removed from C-Chain storage.
 
 :::
 
@@ -413,8 +412,8 @@ await network.invokeContractMethodOnC(wallet, "FtsoRewardManager", abi, "claimRe
 
 :::info
 
-- ABI must match the contract interface.
-- For official Flare contracts, names are predefined and easier to use.
+The ABI must match the contract interface.
+For official Flare contracts, i.e. contracts defined in the [`FlareContractRegistry`](/network/solidity-reference/IFlareContractRegistry), names are predefined and easier to use.
 
 :::
 
