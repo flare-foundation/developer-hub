@@ -3,33 +3,46 @@ sidebar_position: 1
 slug: overview
 title: Scaling
 description: Scaling is an advanced framework designed to optimize the functionality and efficiency of FTSOv2.
-keywords: [ftso, oracle, flare-time-series-oracle, flare-network]
+keywords:
+  [
+    ftso,
+    oracle,
+    flare-time-series-oracle,
+    flare-network,
+    commit-reveal,
+    weighted median,
+  ]
 ---
 
 import ThemedImage from "@theme/ThemedImage";
 import useBaseUrl from "@docusaurus/useBaseUrl";
+import YoutubeEmbed from "@site/src/components/youtube";
 
-**Scaling** is an advanced framework designed to optimize the functionality and efficiency of FTSOv2. It operates through data providers who submit feed estimates weighted by their stake in the network. These estimates are processed using a weighted median algorithm to determine consensus feed values. Scaling offers several enhancements:
+**Scaling** is an advanced framework designed to complement FTSOv2's block-latency feeds by providing robust commit-reveal anchored prices every 90 seconds.
+It operates through data providers who submit feed estimates weighted by their stake in the network.
+These estimates are processed using a weighted median algorithm to determine consensus feed values.
+Scaling offers several enhancements:
 
-- Supports up to 1000 data feeds across various asset classes, including equities, commodities, and cryptocurrencies, and offers access to 2 weeks of historical data.
+- **Broad coverage:** Up to 1000 data feeds across equities, commodities, and crypto, with 2 weeks of historical data.
 
-- Uses a commit-reveal process across approximately 100 independent data providers every 90 seconds to ensure data integrity and accuracy.
+- **Integrity:** Commit-reveal with approximately 100 independent providers every 90 seconds.
 
-- Optimizes median value computation and data storage to consume less than 5% of network bandwidth at peak usage.
+- **Efficiency**: Median calculation and optimized storage uses \<5% of network bandwidth at peak usage.
 
 ## Architecture
 
 <ThemedImage
-  alt="Phases of FTSOv2 protocol"
+  alt="Diagram showing Scaling commit-reveal-sign-finalize process."
   sources={{
     light: useBaseUrl("img/ftso-overview/voting_epoch_light.svg"),
     dark: useBaseUrl("img/ftso-overview/voting_epoch_dark.svg"),
   }}
 />
 
-Each phase of Scaling is designed to ensure a secure, efficient, and fair consensus process. The protocol is structured into four phases:
+Scaling is structured into four phases:
 
-- **Commit**: Data providers compute and submit data proposals encoded in a commit hash. To maintain security, the actual feed values are not disclosed at this stage.
+- **Commit**: Data providers compute and submit data proposals encoded in a commit hash.
+  To maintain security, the actual feed values are not disclosed at this stage.
 
 - **Reveal**: Data providers reveal their data to one another, alongside the random numbers used to generate their commit hash.
 
@@ -37,24 +50,33 @@ Each phase of Scaling is designed to ensure a secure, efficient, and fair consen
 
 - **Finalization**: Once a sufficient weight of signatures for the same Merkle root is collected, a randomly chosen provider (or any other entity in case of a failure), can collect and submit them onchain for verification.
 
-Once the finalization phase is complete, the Merkle root is published onchain, making it available to all other smart contracts for verification of calculation results. This structured approach not only maintains data integrity and accuracy but also incentivizes active participation from data providers, contributing to the overall efficiency and reliability of Scaling.
+Once the finalization phase is complete, the Merkle root is published onchain, making it available to all other smart contracts for verification of calculation results.
+This structured approach not only maintains data integrity and accuracy but also incentivizes active participation from data providers, contributing to the overall efficiency and reliability of Scaling.
 
 :::tip[Interested in learning more?]
 
-For a detailed explanation of the FTSOv2 mechanism, read the [FTSOv2 whitepaper](https://flare.network/wp-content/uploads/FTSOv2-White-Paper.pdf).
+For a detailed explanation of the Scaling mechanism, read Section 2 of the [FTSOv2 whitepaper](https://flare.network/wp-content/uploads/FTSOv2-White-Paper.pdf).
 
 :::
 
 ### Weighted Median Calculation
 
-The calculation of the weighted median in Scaling is a crucial process for ensuring accurate consensus on feed values from various data providers. This calculation begins once all valid data estimates are collected, which are then sorted in increasing order based on their feed values. Each data estimate is associated with a weight that corresponds to the voting power of the data provider, which is determined by the amount of stake each provider has. This weighted approach ensures that providers with a higher stake have a proportional impact on the final median calculation, alongside facing a stricter economic cost for misbehavior.
+Scaling uses a weighted median to determine the consensus feed value from multiple data providers.
+This ensures that prices reflect the stake-weighted consensus, rewarding honest participants while making manipulation costly.
 
-The next step involves calculating the total weight, which is the sum of the weights of all valid data submissions. The median threshold is then determined as half of the total weight. This threshold helps identify the point at which the cumulative weight of the sorted data meets or exceeds half of the total weight, indicating the weighted median.
+#### How it works
 
-Starting from the smallest data estimate, the weights are accumulated in the order of the sorted estimates. The weighted median is identified as the data estimate at which the cumulative weight first meets or exceeds the median threshold.
+1. **Collect estimates:** All valid feed submissions are gathered.
+2. **Sort by value:** Estimates are ordered from lowest to highest.
+3. **Assign weights:** Each submission is weighted by the provider's stake (voting power).
+4. **Calculate threshold:** Compute the total weight $W$, then take half ($M = W/2$).
+5. **Accumulate weights:** Move through the sorted list, adding weights until the cumulative total ≥ $M$.
+6. **Select median:** The corresponding feed value is the weighted median.
+
+**In summary:** Line up all providers' values, give each one influence proportional to their stake, then find the middle point of this weighted distribution.
 
 <details> 
-<summary>An illustrative example clarifying the process</summary>
+<summary>Step-by-step illustration.</summary>
 
 Suppose we have the following data estimates from five providers with their corresponding weights:
 
@@ -86,18 +108,49 @@ Accumulate the weights:
 - For 150: Cumulative weight = 1 + 3 = 4
 - For 200: Cumulative weight = 4 + 2 = 6
 
-At this point, the cumulative weight (6) exceeds the median threshold (5.5). Therefore, the weighted median is 200.
+At this point, the cumulative weight (6) exceeds the median threshold (5.5).
+Here, the weighted median is 200, which best represents the majority stake-weighted consensus.
 
 </details>
 
-This weighted median calculation ensures that the consensus feed value reflects the most influential estimates, balancing the data based on the providers' voting power. This method is designed to be robust against outliers and manipulation, ensuring a fair and reliable consensus process.
+This weighted median calculation ensures that the consensus feed value reflects the most influential estimates, balancing the data based on the providers' voting power.
+This method is designed to be robust against outliers and manipulation, ensuring a fair and reliable consensus process.
 
 ### Incentivization Mechanism
 
-The incentivization mechanism in Scaling is designed to ensure active and accurate participation from data providers while maintaining the integrity of the data submission process. The protocol divides the total reward pool for each voting epoch into three main categories: median closeness rewards, signature rewards, and finalization rewards.
+Scaling's incentive model is designed to keep data providers active, accurate, and honest, while ensuring the long-term integrity of the feeds.
+Rewards and penalties are applied each voting epoch, balancing positive incentives with strict accountability.
 
-Rewards are calculated by comparing data submissions to the median value. Providers whose submissions fall within the interquartile range (IQR) band are eligible for median closeness rewards. If a submission is on the boundary of the IQR band, a pseudo-random selection process determines inclusion. Additional reward bands, which are defined by Flare governance and have a fixed percentage around the finalized value, further refine the distribution, ensuring fair and accurate reward allocation.
+#### Rewards
 
-Penalties are imposed for non-matching or omitted reveals to maintain data integrity. Providers with mismatched or missing reveals face reduced rewards or even negative cumulative rewards, making them non-claimable. The protocol also evaluates the quality of random numbers generated during reveals, penalizing omissions to prevent manipulation.
+The total reward pool for each epoch is divided into three parts:
 
-Inflation reward offers, triggered automatically for certain supported feeds, and community reward offers, submitted by any entity before a reward epoch, provide continuous and flexible incentivization. These mechanisms, managed by specific smart contracts, ensure that both common and less frequent feeds are adequately rewarded, promoting a balanced and effective participation from data providers. This comprehensive incentivization scheme encourages honest and active participation, ensuring Scaling's efficiency and reliability.
+- **Median closeness rewards:** Granted to providers whose submissions fall within the interquartile range (IQR) band of the finalized value.
+  - If a submission lies exactly on the IQR boundary, a pseudo-random process determines inclusion.
+  - Additional governance-defined reward bands (fixed % around the finalized value) further refine fair allocation.
+- **Signature rewards:** Earned for correctly signing and contributing to the Merkle tree of revealed values.
+- **Finalization rewards:** Paid to the provider (or fallback entity) that successfully submits the finalized Merkle root onchain.
+
+#### Penalties
+
+To discourage manipulation and negligence:
+
+- **Non-matching or missing reveals:** Reduced or forfeited rewards.
+- **Consistently invalid submissions:** Negative cumulative rewards, making them non-claimable.
+- R**andomness omissions:** Penalties for failing to supply valid random numbers during commit-reveal, preventing gaming of the system.
+
+#### Additional incentives
+
+- **Inflation reward offers:** Automatically triggered for certain feeds to guarantee coverage.
+- **Community reward offers:** Anyone can sponsor extra rewards for specific feeds before a reward epoch.
+
+:::info[Why this matters]
+
+This layered reward and penalty system makes accurate reporting economically attractive and misbehavior costly.
+As a result, Scaling maintains robust participation across both common and niche feeds, strengthening the reliability of Flare's oracle infrastructure.
+
+:::
+
+## Watch the video
+
+<YoutubeEmbed videoId="4mAT1v8gZMQ?si=w6z6Gw6siCTX3Ntg"></YoutubeEmbed>
