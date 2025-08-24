@@ -1,0 +1,335 @@
+---
+title: Getting Started
+description: Connect the SDK to MetaMask, Ledger, Trezor, and more.
+keywords:
+  [
+    flare,
+    sdk,
+    nodejs,
+    getting-started,
+    wallet,
+    walletconnect,
+    ledger,
+    trezor,
+    eip-1193,
+  ]
+tags: [quickstart, javascript]
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+This guide walks you through installation, core concepts, and a quick start example to fetch your first balance.
+
+## Prerequisites
+
+Before you start, ensure you have the following:
+
+- [Node.js](https://nodejs.org/en/download) v18+ (LTS recommended) and a package manager (npm, yarn, or pnpm)
+- A compatible wallet:
+  - **EIP-1193 wallets** (e.g. MetaMask, WalletConnect)
+  - **Hardware wallets** (Ledger, Trezor).
+
+## Installation
+
+Add the SDK to your project:
+
+<Tabs>
+    <TabItem value="npm" label="npm" default>
+
+      ```bash
+      npm install @flarenetwork/flare-tx-sdk
+      ```
+
+    </TabItem>
+    <TabItem value="yarn" label="yarn">
+
+      ```bash
+      yarn add @flarenetwork/flare-tx-sdk
+      ```
+
+    </TabItem>
+    <TabItem value="pnpm" label="pnpm">
+
+      ```bash
+      pnpm add @flarenetwork/flare-tx-sdk
+      ```
+
+    </TabItem>
+
+</Tabs>
+
+## Core concepts
+
+The SDK separates network logic from account management.
+This ensures the same wallet can be used across multiple networks without code changes.
+
+- **`Network`**: Represents the blockchain network you want to connect to. Available networks include:
+  - `Network.FLARE`
+  - `Network.COSTON2`
+  - `Network.SONGBIRD`
+  - `Network.COSTON`
+
+  The `Network` object provides methods to query balances, transfer tokens, claim rewards, and interact with contracts.
+  It uses Flare's [public RPCs](/network/overview#configuration) by default.
+
+- **`Wallet`**: Represents a user account. The SDK does not store private keys. Instead, it defines a [`Wallet`](https://github.com/flare-foundation/flare-tx-sdk/blob/HEAD/src/wallet/index.ts) interface which can be implemented by:
+  - MetaMask and other browser wallets - `EIP1193WalletController`
+  - Ledger - `LedgerWalletController`
+  - Trezor - `TrezorWalletController`
+  - Your own custom signer
+
+## Example implementation
+
+The following example shows how to connect to Flare Mainnet using MetaMask (EIP-1193) and fetch an account's balances.
+
+```javascript
+import { Network, EIP1193WalletController } from "@flarenetwork/flare-tx-sdk";
+
+async function main() {
+  console.log("Connecting to the Flare Mainnet...");
+
+  // 1. Initialize the Network object for Flare Mainnet
+  const network = Network.FLARE;
+
+  // 2. Connect to the active wallet in MetaMask
+  const controller = new EIP1193WalletController(window.ethereum);
+  const wallet = await controller.getActiveWallet();
+
+  // 3. Get the public key from the wallet
+  const publicKey = await wallet.getPublicKey();
+
+  // 4. Derive the C-Chain and P-Chain addresses
+  const cAddress = network.getCAddress(publicKey);
+  const pAddress = network.getPAddress(publicKey);
+  console.log(`C-Chain Address: ${cAddress}, P-Chain Address: ${pAddress}`);
+
+  // 5. Fetch the account's complete balance overview
+  console.log("Fetching balance...");
+  const balance = await network.getBalance(publicKey);
+  console.log("✅ Balance retrieved successfully!");
+  console.log(JSON.stringify(balance, null, 2));
+}
+
+main().catch(console.error);
+```
+
+Example output:
+
+```json
+{
+  "availableOnC": "1000000000000000000",
+  "wrappedOnC": "500000000000000000",
+  "availableOnP": "2000000000000000000",
+  "stakedOnP": "1000000000000000000"
+}
+```
+
+:::info[Units]
+
+The SDK uses wei, the smallest unit of FLR (1 FLR = $10^{18}$ wei).
+To convert to wei:
+
+```javascript
+import { Amount } from "@flarenetwork/flare-tx-sdk";
+
+const natsAmount = Amount.nats(10); // convert 10 FLR to wei
+const wNatsAmount = Amount.wnats(10); // convert 10 WFLR to wei
+```
+
+:::
+
+## Wallet controllers
+
+Wallet controllers adapt third-party wallets into the SDK's [`Wallet`](https://github.com/flare-foundation/flare-tx-sdk/blob/HEAD/src/wallet/index.ts) interface.
+They handle signing and address derivation, while your keys remain securely stored in the original wallet.
+
+This guide shows how to connect EIP-1193 wallets (e.g., MetaMask/WalletConnect) and hardware wallets (Ledger and Trezor).
+
+### EIP-1193 (MetaMask, WalletConnect)
+
+Use the [`EIP1193WalletController`](https://github.com/flare-foundation/flare-tx-sdk/blob/HEAD/src/wallet/eip1193/controller.ts) with any browser wallet that exposes an EIP-1193 provider (e.g., `window.ethereum`).
+
+:::tip[Security]
+
+Your private keys **never** leave your wallet.
+The SDK only communicates with the wallet for signing.
+
+:::
+
+```javascript
+import { Network, EIP1193WalletController } from "@flarenetwork/flare-tx-sdk";
+
+async function connectEip1193() {
+  // Ensure a provider is available
+  if (!window.ethereum) {
+    throw new Error(
+      "No EIP-1193 provider found. Install MetaMask or use WalletConnect.",
+    );
+  }
+
+  // 1. Ask wallet for permission to access accounts
+  await window.ethereum.request?.({ method: "eth_requestAccounts" });
+
+  // 2. Create controller and get the active account as an SDK Wallet
+  const controller = new EIP1193WalletController(window.ethereum);
+  const wallet = await controller.getActiveWallet();
+
+  // 3. Derive addresses and fetch balance
+  const network = Network.FLARE;
+  const publicKey = await wallet.getPublicKey();
+  const cAddress = network.getCAddress(publicKey);
+  const pAddress = network.getPAddress(publicKey);
+
+  const balance = await network.getBalance(publicKey);
+  console.log({ cAddress, pAddress, balance });
+
+  return { controller, wallet, network };
+}
+```
+
+### Ledger
+
+Use the [`LedgerWalletController`](https://github.com/flare-foundation/flare-tx-sdk/blob/HEAD/src/wallet/ledger/controller.ts).
+It supports either Zondax Flare App ([`@zondax/ledger-flare`](https://www.npmjs.com/package/@zondax/ledger-flare)) or Ledger ETH App ([`@ledgerHQ/hw-app-eth`](https://www.npmjs.com/package/@ledgerhq/hw-app-eth)).
+
+:::tip[Security]
+
+Your private keys **never** leave your Ledger device.
+The SDK only communicates with the device for signing.
+
+:::
+
+1.  **Installation:**
+
+     <Tabs groupId="ledger-connector">
+
+     <TabItem value="zondax" label="Zondax (Flare app)" default>
+
+    ```bash
+    npm i @flarenetwork/flare-tx-sdk @zondax/ledger-flare
+    ```
+
+     </TabItem>
+
+     <TabItem value="ledgerhq" label="Ledger (ETH app)">
+
+    ```bash
+    npm i @flarenetwork/flare-tx-sdk @ledgerhq/hw-app-eth
+    ```
+
+     </TabItem>
+
+     </Tabs>
+
+2.  **Connect and derive a wallet:**
+
+     <Tabs groupId="ledger-connector">
+
+     <TabItem value="zondax" label="Zondax (Flare app)" default>
+
+    ```javascript
+    import { Network, LedgerWalletController } from "@flarenetwork/flare-tx-sdk";
+    import { FlareApp } from "@zondax/ledger-flare"
+
+    async function connectLedgerViaZondax() {
+        const flrApp = FlareApp(...) // add transport here
+        const controller = new LedgerWalletController(flrApp, null);
+
+        const path = "m/44'/60'/0'/0/0";
+        const wallet = await controller.getWallet(path);
+
+        const network = Network.FLARE;
+        const pubKey = await wallet.getPublicKey();
+        console.log("Ledger public key:", pubKey);
+
+        return { controller, wallet, network };
+    }
+    ```
+
+     </TabItem>
+
+     <TabItem value="ledgerhq" label="Ledger (ETH app)">
+
+    ```javascript
+    import { LedgerWalletController } from "@flarenetwork/flare-tx-sdk";
+    import { Eth } from "@ledgerHQ/hw-app-eth"
+
+    async function connectLedgerViaEthApp() {
+        // add Ledger transports here
+        // see https://developers.ledger.com/docs/device-interaction/integration/how_to/transports
+        const ethApp = Eth(...)
+        const controller = new LedgerWalletController(null, ethApp);
+
+        const path = "m/44'/60'/0'/0/0";
+        const wallet = await controller.getWallet(path);
+
+        const network = Network.FLARE;
+        const pubKey = await wallet.getPublicKey();
+        console.log("Ledger public key:", pubKey);
+
+        return { controller, wallet, network };
+    }
+    ```
+
+     </TabItem>
+
+     </Tabs>
+
+### Trezor
+
+Use the [`TrezorWalletController`](https://github.com/flare-foundation/flare-tx-sdk/blob/HEAD/src/wallet/trezor/controller.ts) with [Trezor Connect](https://connect.trezor.io/9/readme/connect/).
+
+:::tip[Security]
+
+Your private keys **never** leave your Trezor device.
+The SDK only communicates with the device for signing.
+
+:::
+
+1. **Installation:**
+
+   ```bash
+   npm i @flarenetwork/flare-tx-sdk @trezor/connect
+   ```
+
+2. **Connect and derive a wallet:**
+
+   ```javascript
+   import { TrezorConnect } from '@trezor/connect';
+   import { TrezorWalletController } from "@flarenetwork/flare-tx-sdk";
+
+   async function connectTrezor() {
+       // add Trezor manifest
+       // see https://connect.trezor.io/9/methods/other/init/
+       TrezorConnect.init(...)
+       const controller = new TrezorWalletController(TrezorConnect);
+
+       const path = "m/44'/60'/0'/0/0";
+       const wallet = await controller.getWallet(path);
+
+       const network = Network.FLARE;
+       const pubKey = await wallet.getPublicKey();
+       console.log("Trezor public key:", pubKey);
+
+       return { controller, wallet, network };
+   }
+   ```
+
+:::info[Advanced]
+
+If none of the Wallet controllers listed here meet your needs, you can implement a [custom wallet controller](/network/flare-tx-sdk/advanced-usage#custom-wallets).
+
+:::
+
+## Next steps
+
+- Explore the [Cookbook](/network/flare-tx-sdk/cookbook) for task-oriented guides (balances, transfers, rewards, staking).
+- Check the [Advanced Features](/network/flare-tx-sdk/advanced-usage) for transaction callbacks and custom wallets.
+- Read the SDK source code on [GitHub](https://github.com/flare-foundation/flare-tx-sdk).
+
+:::tip[Need help or found a bug?]
+
+Open an issue on the [flare-foundation/flare-tx-sdk](https://github.com/flare-foundation/flare-tx-sdk) GitHub repository.
+
+:::
