@@ -243,7 +243,35 @@ const config: Config = {
       crossorigin: "anonymous",
     },
   ],
-  plugins: [require.resolve("./webpack.config.js")],
+  plugins: [
+    require.resolve("./webpack.config.js"),
+    [
+      "docusaurus-plugin-llms",
+      {
+        ignoreFiles: ["**/node_modules/**", "**/.git/**", "**/*.txt"],
+        includeOrder: [
+          "**/network/**/*.mdx",
+          "**/network/**/*.md",
+          "**/ftso/**/*.mdx",
+          "**/ftso/**/*.md",
+          "**/fdc/**/*.mdx",
+          "**/fdc/**/*.md",
+          "**/fassets/**/*.mdx",
+          "**/fassets/**/*.md",
+          "**/run-node/**/*.mdx",
+          "**/run-node/**/*.md",
+          "**/support/**/*.mdx",
+          "**/support/**/*.md",
+        ],
+        // Content cleaning options for better LLM consumption
+        excludeImports: true,
+        removeDuplicateHeadings: true,
+        pathTransformation: {
+          ignorePaths: ["docs"],
+        },
+      },
+    ],
+  ],
   scripts: [
     // Optimized cookie script loading - defer until after page load
     {
