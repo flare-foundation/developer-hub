@@ -1,0 +1,210 @@
+---
+title: Cross-Chain FDC
+slug: cross-chain-fdc
+authors: [anthonyamadia]
+description: Use the FDC data on a non-Flare, like the XRPL EVM Sidechain.
+tags: [fdc, foundry]
+keywords:
+  [ethereum, flare-data-connector, evm, cross-chain, web2json, relay, xrpl]
+sidebar_position: 11
+---
+
+import AvailableTestnet from "../_available_testnet.mdx";
+
+This guide demonstrates a powerful cross-chain workflow using the Flare Data Connector (FDC).
+We will fetch data from a public Web2 API using the [Web2Json](/fdc/attestation-types/web-2-json) attestation type on a Flare network (Coston2) and then use the resulting proof to trigger a state change on a different EVM-compatible blockchain, the XRPL EVM Sidechain Testnet.
+
+The key to this cross-chain interaction is the `Relay` contract.
+For a non-Flare chain to verify FDC proofs, the Merkle root of each finalized voting round on Flare must be transmitted to the target chain.
+This is handled by the `Relay` contract, which must be deployed on the target chain.
+For the XRPL EVM Sidechain, Flare provides a relayer service where a backend script listens for `Relay` transactions on Flare and copies them to the `Relay` contract on the target chain.
+This allows a verifier contract on the target chain to confirm the validity of FDC proofs without trusting a centralized intermediary.
+
+Before running any code, check if the `Relay` contract is already being relayed, or submit a request to the Flare team.
+
+<AvailableTestnet />
+
+For this example, we will:
+
+1. Deploy a custom verification infrastructure to the XRPL EVM Sidechain Testnet.
+2. Request data about a Star Wars character from the `swapi.info` API on the Coston2 Testnet.
+3. Submit this request to the FDC on Coston2.
+4. Retrieve the finalized proof and use it to call a consumer contract on the XRPL EVM Sidechain, which verifies the proof and stores the character's data on-chain.
+
+:::info
+The code used in this guide is available in the [Flare Foundry starter repository](https://github.com/flare-foundation/flare-foundry-starter).
+:::
+
+### 1. Deploy Infrastructure on Target Chain (XRPL EVM Sidechain)
+
+This workflow requires a one-time deployment of a persistent infrastructure on the target chain. These core contracts manage contract addresses and proof verification.
+
+- **`AddressUpdater`**: A governance-controlled contract that maintains a registry of key contract addresses, such as the `Relay`.
+- **`FdcVerification`**: A custom verification contract that retrieves the trusted Merkle root from the `Relay` to verify FDC proofs on the target chain. The protocol ID (e.g., 200 for Coston2) configured in this contract must match the FDC instance on the source Flare network.
+
+The `DeployInfrastructure` script handles this setup. On a non-Flare chain, the `Relay` address is a known, pre-deployed address that must be provided in your `.env` file.
+
+```solidity title="script/CrossChainFdc.s.sol"
+// Deploys the persistent CORE INFRASTRUCTURE contracts to the target non-Flare chain.
+contract DeployInfrastructure is Script {
+    function run() external {
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address governance = vm.addr(deployerPrivateKey);
+
+        // On a non-Flare chain, the Relay address is a known, pre-deployed address.
+        // It must be provided in the .env file.
+        address relayAddress = vm.envAddress("RELAY_ADDRESS");
+        console.log("Using Relay address from .env file:", relayAddress);
+        require(relayAddress != address(0), "Error: RELAY_ADDRESS not set in .env or invalid.");
+
+        vm.startBroadcast(deployerPrivateKey);
+
+        AddressUpdater addressUpdater = new AddressUpdater(governance);
+        // The protocol ID must match the one used by the FDC instance on the Flare network (e.g., 200 for Coston2).
+        FdcVerification fdcVerification = new FdcVerification(address(addressUpdater), 200);
+
+        string[] memory names = new string[](2);
+        address[] memory addresses = new address[](2);
+
+        names[0] = "Relay";
+        addresses[0] = relayAddress;
+
+        names[1] = "AddressUpdater";
+        addresses[1] = address(addressUpdater);
+
+        addressUpdater.addOrUpdateContractNamesAndAddresses(names, addresses);
+
+        IIAddressUpdatable[] memory contractsToUpdate = new IIAddressUpdatable[](1);
+        contractsToUpdate[0] = fdcVerification;
+        addressUpdater.updateContractAddresses(contractsToUpdate);
+
+        vm.stopBroadcast();
+
+        vm.createDir(dirPath, true);
+        vm.writeFile(string.concat(dirPath, "addressUpdater.txt"), vm.toString(address(addressUpdater)));
+        vm.writeFile(string.concat(dirPath, "fdcVerification.txt"), vm.toString(address(fdcVerification)));
+
+        console.log("\n--- Infrastructure Deployment Complete on Chain ID:", block.chainid, "---");
+        console.log("AddressUpdater:        ", address(addressUpdater));
+        console.log("FdcVerification:       ", address(fdcVerification));
+    }
+}
+```
+
+Run the script to deploy the core contracts to the XRPL EVM Sidechain. This only needs to be done once.
+
+```bash
+forge script script/CrossChainFdc.s.sol:DeployInfrastructure --rpc-url $XRPLEVM_RPC_URL_TESTNET --broadcast
+```
+
+### 2. Prepare and Submit Request on Source Chain (Coston2)
+
+This step, executed by the `PrepareAndSubmitRequest` script, must be run on a Flare network (Coston2).
+
+It prepares the `Web2Json` request off-chain by calling the verifier API and then immediately submits the resulting `abiEncodedRequest` to the FDC on-chain.
+
+The script saves the `abiEncodedRequest` and the resulting `votingRoundId` to files, which will be needed for the final step on the target chain.
+
+```solidity title="script/CrossChainFdc.s.sol"
+// Prepares and submits the FDC request on the Flare Network.
+contract PrepareAndSubmitRequest is Script {
+    using Surl for *;
+    string public constant SOURCE_NAME = "PublicWeb2";
+
+    function run() external {
+        console.log("--- Preparing and Submitting FDC request on Chain ID:", block.chainid, "---");
+        vm.createDir(dirPath, true);
+
+        string memory attestationType = FdcBase.toUtf8HexString(attestationTypeName);
+        string memory sourceId = FdcBase.toUtf8HexString(SOURCE_NAME);
+
+        string memory apiUrl = "https://swapi.info/api/people/3"; // C-3PO
+        string memory postProcessJq = '{name: .name, height: .height, mass: .mass, numberOfMovies: .films | length, apiUid: (.url | split(\\"/\\") | .[-1] | tonumber)}';
+        string memory abiSignature = '{\\"components\\":[{\\"internalType\\":\\"string\\",\\"name\\":\\"name\\",\\"type\\":\\"string\\"},{\\"internalType\\":\\"uint256\\",\\"name\\":\\"height\\",\\"type\\":\\"uint256\\"},{\\"internalType\\":\\"uint256\\",\\"name\\":\\"mass\\",\\"type\\":\\"uint256\\"},{\\"internalType\\":\\"uint256\\",\\"name\\":\\"numberOfMovies\\",\\"type\\":\\"uint256\\"},{\\"internalType\\":\\"uint256\\",\\"name\\":\\"apiUid\\",\\"type\\":\\"uint256\\"}],\\"name\\":\\"dto\\",\\"type\\":\\"tuple\\"}';
+        string memory requestBody = string.concat('{"url":"',apiUrl,'","httpMethod":"GET","headers":"{}","queryParams":"{}","body":"{}","postProcessJq":"',postProcessJq,'","abiSignature":"',abiSignature,'"}');
+
+        // Prepare request off-chain
+        (string[] memory headers, string memory body) = FdcBase.prepareAttestationRequest(attestationType, sourceId, requestBody);
+        string memory baseUrl = vm.envString("WEB2JSON_VERIFIER_URL_TESTNET");
+        string memory url = string.concat(baseUrl, attestationTypeName, "/prepareRequest");
+        (, bytes memory data) = url.post(headers, body);
+        FdcBase.AttestationResponse memory response = FdcBase.parseAttestationRequest(data);
+
+        // Submit request on-chain
+        uint256 timestamp = FdcBase.submitAttestationRequest(response.abiEncodedRequest);
+        uint256 votingRoundId = FdcBase.calculateRoundId(timestamp);
+
+        // Write data to files for the next step
+        FdcBase.writeToFile(dirPath, "abiEncodedRequest.txt", StringsBase.toHexString(response.abiEncodedRequest), true);
+        FdcBase.writeToFile(dirPath, "votingRoundId.txt", Strings.toString(votingRoundId), true);
+        console.log("Successfully prepared and submitted request. Voting Round ID:", votingRoundId);
+    }
+}
+```
+
+Run the script on **Coston2**:
+
+```bash
+forge script script/CrossChainFdc.s.sol:PrepareAndSubmitRequest --rpc-url $COSTON2_RPC_URL --broadcast --ffi
+```
+
+### 3. Deliver Proof to Consumer on Target Chain (XRPL EVM Sidechain)
+
+The final script, `DeliverProofToContract`, is executed on the target chain (XRPL EVM Sidechain).
+
+It handles deploying the consumer contract, retrieving the proof, and delivering it for verification.
+
+1.  **Deploy Consumer Contract**: It first deploys the `StarWarsCharacterListV3` contract, passing it the address of the `FdcVerification` contract deployed in Step 1.
+2.  **Retrieve Proof**: It reads the `abiEncodedRequest` and `votingRoundId` from the files created in Step 2. After waiting for the voting round on Flare to finalize (max. 180 seconds), it polls the Data Availability layer to get the proof.
+3.  **Interact with Consumer**: It calls `addCharacter` on the deployed consumer contract, passing the `finalProof`. A `value` of 1 wei is sent to cover the fee required by the `Relay` contract to fetch the Merkle root from the source chain.
+
+```solidity title="script/CrossChainFdc.s.sol"
+// Deploys the consumer, waits, retrieves proof, and delivers it on the target chain.
+contract DeliverProofToContract is Script {
+    function run() external {
+        console.log("--- Delivering Proof on Chain ID:", block.chainid, "---");
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+
+        // --- Deploy Consumer Contract ---
+        string memory fdcVerificationPath = string.concat(dirPath, "fdcVerification.txt");
+        require(vm.exists(fdcVerificationPath), "Infrastructure not deployed. Run DeployInfrastructure first.");
+        address fdcVerificationAddress = vm.parseAddress(vm.readFile(fdcVerificationPath));
+
+        vm.startBroadcast(deployerPrivateKey);
+        StarWarsCharacterListV3 characterList = new StarWarsCharacterListV3(fdcVerificationAddress);
+        vm.stopBroadcast();
+        console.log("StarWarsCharacterListV3 consumer deployed to:", address(characterList));
+
+        // --- Retrieve Proof and Interact ---
+        string memory requestHex = vm.readFile(string.concat(dirPath, "abiEncodedRequest.txt"));
+        uint256 votingRoundId = FdcBase.stringToUint(vm.readFile(string.concat(dirPath, "votingRoundId.txt")));
+
+        FdcVerification fdcVerification = FdcVerification(fdcVerificationAddress);
+        uint8 protocolId = fdcVerification.fdcProtocolId();
+
+        bytes memory proofData = FdcBase.retrieveProof(protocolId, requestHex, votingRoundId);
+
+        FdcBase.ParsableProof memory parsedProof = abi.decode(proofData, (FdcBase.ParsableProof));
+        IWeb2Json.Response memory proofResponse = abi.decode(parsedProof.responseHex, (IWeb2Json.Response));
+        IWeb2Json.Proof memory finalProof = IWeb2Json.Proof(parsedProof.proofs, proofResponse);
+
+        console.log("\nDelivering proof to consumer contract...");
+        vm.startBroadcast(deployerPrivateKey);
+        characterList.addCharacter{value: 1}(finalProof);
+        vm.stopBroadcast();
+        console.log("Proof successfully delivered!");
+
+        StarWarsCharacter[] memory characters = characterList.getAllCharacters();
+        require(characters.length > 0, "Verification failed: No character was added.");
+        console.log("\n--- Character Added Verification ---");
+        console.log("Name:", characters[0].name);
+        console.log("BMI:", characters[0].bmi);
+    }
+}
+```
+
+Run the final script on the **XRPL EVM Sidechain**:
+
+```bash
+forge script script/CrossChainFdc.s.sol:DeliverProofToContract --rpc-url $XRPLEVM_RPC_URL_TESTNET --broadcast --ffi
+```

@@ -1,0 +1,429 @@
+---
+title: Cookbook
+description: Recipes for all common SDK operations.
+keywords:
+  [
+    flare,
+    sdk,
+    cookbook,
+    examples,
+    balances,
+    transfers,
+    rewards,
+    staking,
+    governance,
+  ]
+tags: [intermediate, javascript]
+---
+
+This Cookbook contains ready-to-use code snippets for common operations with the Flare Transaction SDK.
+
+## Retrieve account balances
+
+The Flare network uses two chains:
+
+- **C-Chain** (Contract Chain, EVM-compatible, smart contracts)
+- **P-Chain** (Platform Chain, staking & validators)
+
+Both derive addresses from the same public key.
+
+```javascript
+// Get the public key from your wallet
+const publicKey = await wallet.getPublicKey();
+
+// Derive the addresses for each chain
+const cAddress = network.getCAddress(publicKey);
+const pAddress = network.getPAddress(publicKey);
+
+// Get a full balance overview
+const balance = await network.getBalance(publicKey);
+
+// Or, query for specific balances
+const cBalance = await network.getBalanceOnC(cAddress);
+const cWrappedBalance = await network.getBalanceWrappedOnC(publicKeyOrCAddress);
+const pBalance = await network.getBalanceOnP(publicKey);
+const stakedBalance = await network.getBalanceStakedOnP(publicKey);
+```
+
+:::info
+
+The balances are returned in wei, the smallest unit of FLR (1 FLR = $10^{18}$ wei).
+
+:::
+
+## Wrap and transfer
+
+Transfer native FLR and its wrapped form (WFLR) on the C-Chain.
+Wrapping is required for governance and FTSO delegation.
+
+- **FLR** (native token) lives on both C and P-Chain.
+- **WFLR** (wrapped FLR) exists only on the C-Chain for use in smart contracts, governance and delegation.
+
+```javascript
+import { Amount } from "@flarenetwork/flare-tx-sdk";
+
+// Transfer 1 FLR
+await network.transferNative(wallet, recipientAddress, Amount.nats(1));
+
+// Wrap 1 FLR -> 1 WFLR
+await network.wrapNative(wallet, Amount.nats(1));
+
+// Transfer 1 WFLR
+await network.transferWrapped(wallet, recipientAddress, Amount.wnats(1));
+
+// Unwrap 1 WFLR -> 1 FLR
+await network.unwrapToNative(wallet, Amount.wnats(1));
+```
+
+## Claim rewards
+
+Flare supports multiple reward sources: FlareDrops, staking rewards, rNat (e.g. rFLR), and FTSO rewards.
+
+### FlareDrops
+
+[FlareDrops](https://flare.network/news/flaredrop-guide) are rewards periodically distributed to token holders.
+
+```javascript
+// Check and claim FlareDrop rewards
+const flareDropAmount = await network.getClaimableFlareDropReward(cAddress);
+if (flareDropAmount > 0) {
+  await network.claimFlareDropReward(wallet);
+}
+```
+
+Optional parameters:
+
+| **Field**     | **Type**  | **Description**                            |
+| ------------- | --------- | ------------------------------------------ |
+| `rewardOwner` | `address` | C-Chain address of the reward owner        |
+| `recipient`   | `address` | C-Chain address to receive the reward      |
+| `wrap`        | `bool`    | `true` for WFLR, `false` for FLR (default) |
+
+### Staking rewards
+
+Earned from delegating tokens to validators on the P-Chain.
+
+```javascript
+// Check and claim staking rewards
+const stakingRewardAmount = await network.getClaimableStakingReward(cAddress);
+if (stakingRewardAmount > 0) {
+  await network.claimStakingReward(wallet);
+}
+```
+
+Optional parameters are the same as [FlareDrops](#flaredrops).
+
+### rFLR rewards
+
+rNat tokens (rFLR on Flare) represent vested rewards.
+They are backed by WFLR in a dedicated rNat account.
+The flow of rFLR:
+
+```plaintext
+rFLR (reward token) → backed by WFLR → claimable → withdraw → optional penalty if locked.
+```
+
+#### List and claim
+
+```javascript
+// Get a list of all rNat projects
+let projects = await network.getRNatProjects();
+```
+
+Returns an array of objects of type [`RNatProject`](https://github.com/flare-foundation/flare-tx-sdk/blob/HEAD/src/network/iotype.ts) with:
+
+| **Field**          | **Type** | **Description**                                       |
+| ------------------ | -------- | ----------------------------------------------------- |
+| `id`               | `number` | Project ID                                            |
+| `name`             | `string` | Project name                                          |
+| `claimingDisabled` | `bool`   | Whether claiming rewards is disabled for this project |
+
+Claim rewards for one or more projects:
+
+```javascript
+await network.claimRNatReward(wallet, [projectId1, projectId2]);
+```
+
+Claimed rewards are deposited as wrapped coins to the rNat account linked to the wallet's C-Chain address.
+
+#### Manage balances
+
+Check and claim the unlocked balance:
+
+```javascript
+// Check the unlocked balance:
+const unlocked = await network.getUnlockedBalanceWrappedOnRNatAccount(cAddress);
+
+// Withdraw unlocked wrapped coins:
+await network.withdrawFromRNatAccount(wallet);
+```
+
+Get the full balance:
+
+```javascript
+let balance = await network.getRNatAccountBalance(cAddress);
+```
+
+The returned [`RNatAccountBalance`](https://github.com/flare-foundation/flare-tx-sdk/blob/HEAD/src/network/iotype.ts) object includes:
+
+| **Field**       | **Type** | **Description**                   |
+| --------------- | -------- | --------------------------------- |
+| `wNatBalance`   | `bigint` | Wrapped coin balance (wei)        |
+| `rNatBalance`   | `bigint` | rNat token balance (wei)          |
+| `lockedBalance` | `bigint` | Locked wrapped coin balance (wei) |
+
+:::warning[Withdrawing all funds]
+
+You can also withdraw all funds (locked + unlocked):
+
+```javascript
+await network.withdrawAllFromRNatAccount(wallet, /* wrap: boolean */ true);
+```
+
+Withdrawing locked balance incurs a **penalty**, so the withdrawn amount will be reduced.
+
+:::
+
+#### FlareDrops and rFLR
+
+The balance of rNat tokens equals the difference between rewards received and withdrawn.
+Note that the wrapped coins in an rNat account can exceed the rNat token balance.
+
+For example, wrapped coins can grow by claiming FlareDrop rewards earned from vested balances.
+
+Check unclaimed FlareDrop rewards:
+
+```javascript
+let rNatAccountAddress = await network.getRNatAccount(cAddress);
+let amount = await network.getClaimableFlareDropReward(rNatAccountAddress);
+```
+
+Claim them:
+
+```javascript
+await network.claimFlareDropReward(
+  wallet,
+  rNatAccountAddress,
+  rNatAccountAddress,
+  true,
+);
+```
+
+### FTSO delegation rewards
+
+Rewards earned by delegating WFLR to FTSO providers.
+
+```javascript
+// Check and claim FTSO delegation rewards
+const ftsoRewardAmount = await network.getClaimableFtsoReward(cAddress);
+if (ftsoRewardAmount > 0) {
+  await network.claimFtsoReward(wallet);
+}
+```
+
+Optional parameters:
+
+| **Field**     | **Type**  | **Description**                                           |
+| ------------- | --------- | --------------------------------------------------------- |
+| `rewardOwner` | `address` | C-Chain address of the reward owner                       |
+| `recipient`   | `address` | C-Chain address of where the reward should be transferred |
+| `wrap`        | `bool`    | Transfer reward as native (default) or wrapped            |
+
+#### Claim with proofs
+
+If a reward isn't initialized, you must provide a Merkle proof available in the [flare-foundation/fsp-rewards](https://github.com/flare-foundation/fsp-rewards/) repository.
+As an example for reward epoch 320, see the proofs in [`reward-distribution-data.json`](https://github.com/flare-foundation/fsp-rewards/blob/main/flare/320/reward-distribution-data.json).
+
+```javascript
+await network.claimFtsoReward(wallet, rewardOwner, recipient, wrap, proofs);
+```
+
+`proofs` is an array of [`FtsoRewardClaimWithProof`](https://github.com/flare-foundation/flare-tx-sdk/blob/HEAD/src/network/iotype.ts):
+
+| **Field**     | **Type**                                                                                              | **Description**                           |
+| ------------- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `merkleProof` | `string[]`                                                                                            | The Merkle proof in hexadecimal encoding. |
+| `body`        | [`FtsoRewardClaim`](https://github.com/flare-foundation/flare-tx-sdk/blob/HEAD/src/network/iotype.ts) | Specifying the reward claim details       |
+
+## Delegate to FTSO providers
+
+Delegating WFLR to FTSO providers allows you to earn rewards while contributing to decentralized price feeds.
+You may delegate to one or two providers.
+
+```javascript
+import { Amount } from "@flarenetwork/flare-tx-sdk";
+
+// Get current delegations
+const delegations = await network.getFtsoDelegatesOf(cAddress);
+
+// Delegate 100% to one provider
+await network.delegateToFtso(wallet, providerAddress, Amount.percentages(100));
+
+// Split 50/50 between two providers
+await network.delegateToFtso(
+  wallet,
+  provider1Address,
+  Amount.percentages(50),
+  provider2Address,
+  Amount.percentages(50),
+);
+
+// Remove all delegations
+await network.undelegateFromFtso(wallet);
+```
+
+:::info[Basis points]
+
+Delegations are expressed in basis points (1 % = 100 bp).
+`Amount.percentages()` handles conversion of percent to basis points.
+
+:::
+
+## Stake on P-Chain
+
+Staking involves moving funds to the P-Chain, delegating them, and later transferring them back.
+The SDK automates these steps.
+
+1. **Transfer from C to P-Chain:** This operation performs a C-Chain export followed by a P-Chain import automatically.
+
+   ```javascript
+   // Transfer 100 FLR from C-Chain to P-Chain
+   await network.transferToP(wallet, Amount.nats(100));
+   ```
+
+2. **Delegate on P-Chain:** Once funds are on the P-Chain, you can delegate them.
+
+   ```javascript
+   const amountToDelegate = Amount.nats(50); // 50 FLR
+   const nodeId = "NodeID-P73B..."; // The ID of the validator, see https://flare-systems-explorer.flare.network/validators
+   const startTime = Math.floor(Date.now() / 1000); // Current unix timestamp
+   const endTime = startTime + 14 * 24 * 60 * 60; // e.g. end in 14 days
+
+   await network.delegateOnP(
+     wallet,
+     amountToDelegate,
+     nodeId,
+     startTime,
+     endTime, // optional
+   );
+   ```
+
+3. **Transfer from P to C-Chain:** After your delegation period ends, move your funds back to the C-Chain.
+
+   ```javascript
+   // Transfer all available funds from P-Chain back to C-Chain
+   await network.transferToC(wallet);
+   ```
+
+## Vote on governance proposals
+
+Governance proposals allow community members to vote on protocol decisions using their voting power (based on WFLR balance and staking).
+
+```javascript
+// Get active proposals
+const proposals = await network.getFoundationProposalIds();
+
+// Fetch details
+const info = await network.getFoundationProposalInfo(proposalId);
+```
+
+### Proposal states
+
+| State     | Code | Description              |
+| --------- | ---- | ------------------------ |
+| PENDING   | 0    | Voting not started       |
+| ACTIVE    | 1    | Voting in progress       |
+| DEFEATED  | 2    | Vote failed              |
+| SUCCEEDED | 3    | Vote succeeded           |
+| QUEUED    | 4    | Queued for execution     |
+| EXPIRED   | 5    | Expired before execution |
+| EXECUTED  | 6    | Executed                 |
+| CANCELED  | 7    | Canceled                 |
+
+### Cast a vote
+
+A proposal can be voted on only when its `state` is ACTIVE.
+
+```javascript
+// Check if a voter has already voted:
+await network.hasCastVoteForFoundationProposal(cAddress, proposalId);
+
+// Indicate direction of vote
+const support = FoundationProposalSupport.FOR; // or FoundationProposalSupport.AGAINST
+
+// Cast vote
+await network.castVoteForFoundationProposal(wallet, proposalId, support);
+```
+
+### Delegate votes
+
+```javascript
+// Get current vote power of a voter:
+// Includes both the voter’s own vote power and any delegated to them.
+const votePower = await network.getCurrentGovernanceVotePower(cAddress);
+
+// Get current delegate:
+let delegate = await network.getCurrentGovernanceVoteDelegate(cAddress);
+// If `delegate == 0x0` - No delegate assigned
+// If `delegate != 0x0` - Voter's own vote power is zero (all delegated)
+
+// Delegate all vote power to another address:
+await network.delegateGovernanceVotePower(wallet, delegateAddress);
+
+// Remove delegation:
+await network.undelegateGovernanceVotePower(wallet);
+```
+
+:::info[Historical voting data]
+
+You can query a voter's vote power or delegate as applied to a specific proposal:
+
+```javascript
+const votePower = await network.getVotePowerForFoundationProposal(
+  cAddress,
+  proposalId,
+);
+const delegate = await network.getVoteDelegateForFoundationProposal(
+  cAddress,
+  proposalId,
+);
+```
+
+Queries **may fail** for older proposals, since historical governance vote data is periodically removed from C-Chain storage.
+
+:::
+
+## Interact with C-Chain contracts
+
+The SDK provides helpers for interacting with any smart contract on the C-Chain.
+
+```javascript
+// Call a read-only contract method
+const result = await network.invokeContractCallOnC(contractAddress, abi, "methodName", [param1, param2]);
+
+// Execute a transaction method that changes state
+// The `value` parameter is for payable methods
+await network.invokeContractMethodOnC(wallet, contractAddress, abi, "methodName", value, [param1, param2]);
+
+// You can also use contract names for official Flare contracts
+const contractNames = await network.getFlareContracts(); // See available names
+await network.invokeContractMethodOnC(wallet, "FtsoRewardManager", abi, "claimReward", ...);
+```
+
+:::info
+
+The ABI must match the contract interface.
+For official Flare contracts, i.e. contracts defined in the [`FlareContractRegistry`](/network/solidity-reference/IFlareContractRegistry), names are predefined and easier to use.
+
+:::
+
+## Next steps
+
+- Check the [Advanced Features](/network/flare-tx-sdk/advanced-usage) for transaction callbacks and custom wallets.
+- Read the SDK source code on [GitHub](https://github.com/flare-foundation/flare-tx-sdk).
+
+:::tip[Need help or found a bug?]
+
+Open an issue on the [flare-foundation/flare-tx-sdk](https://github.com/flare-foundation/flare-tx-sdk) GitHub repository.
+
+:::

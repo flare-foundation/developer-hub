@@ -1,0 +1,159 @@
+---
+title: Advanced Usage
+description: Lifecycle tracking, custom wallets, and advanced features.
+keywords:
+  [flare, sdk, advanced, rpc, callbacks, transaction tracking, custom wallet]
+tags: [advanced, javascript]
+---
+
+## Transaction lifecycle tracking
+
+Every transaction goes through a series of stages.
+The SDK allows you to register callbacks at each stage to inspect or intercept the process.
+This is useful for logging, UI updates, or offline signing workflows.
+
+```plaintext
+Unsigned
+   ↓ sign
+Signed (before submission)
+   ↓ submit
+Submitted (pending confirmation)
+   ↓ confirm
+Confirmed
+```
+
+### Example
+
+```javascript
+// 1. Before Signature
+network.setBeforeTxSignatureCallback(async (data) => {
+  console.log("Transaction prepared for signing:", data.unsignedTxHex);
+  console.log("Transaction type:", data.txType);
+  // Return false to cancel
+  return true;
+});
+
+// 2. Before Submission
+network.setBeforeTxSubmissionCallback(async (data) => {
+  console.log("About to submit signed tx:", data.signedTxHex);
+  console.log("Transaction ID:", data.txId);
+  return true; // false = cancel
+});
+
+// 3. After Submission
+network.setAfterTxSubmissionCallback(async (data) => {
+  console.log(`Tx ${data.txId} submitted, awaiting confirmation...`);
+  return true;
+});
+
+// 4. After Confirmation
+network.setAfterTxConfirmationCallback(async (data) => {
+  console.log(`Tx ${data.txId} confirmed with status: ${data.txStatus}`);
+});
+```
+
+## Custom wallets
+
+If you're integrating a bespoke signer (custody service, backend signer, or another SDK), implement the [`Wallet`](https://github.com/flare-foundation/flare-tx-sdk/blob/HEAD/src/wallet/index.ts) interface.
+Choose the C-Chain-only interface or dual-chain (C + P) depending on your needs.
+
+:::tip[Security]
+
+If implementing your own wallet, ensure private keys are never exposed; use secure signers where possible.
+
+:::
+
+### Required Methods
+
+:::info
+
+C-Chain support is sufficient for most applications.
+See the full [Wallet](https://github.com/flare-foundation/flare-tx-sdk/blob/main/src/wallet/wallet.ts) interface.
+
+:::
+
+| Method                                                   | C-Chain Only | C + P Chain |
+| -------------------------------------------------------- | ------------ | ----------- |
+| `getCAddress(): Promise<string>`                         | ✅           | ✅          |
+| `signCTransaction(tx: string): Promise<string>`          | ✅           | ✅          |
+| `signAndSubmitCTransaction(tx: string): Promise<string>` | ✅           | ✅          |
+| `signDigest(digest: string): Promise<string>`            | ✅           | ✅          |
+| `getPublicKey(): Promise<string>`                        | -            | ✅          |
+| `signPTransaction(tx: string): Promise<string>`          | -            | ✅          |
+| `signEthMessage(message: string): Promise<string>`       | -            | ✅          |
+
+### Minimal ethers.js wrapper example
+
+This example (using ethers.js v6) shows the shape - adapt to your transport and security model.
+This assumes your signer supports `signTransaction`, `sendTransaction`, and `getAddress`.
+
+```typescript
+import type { Wallet as SdkWallet } from "@flarenetwork/flare-tx-sdk";
+// ^ type path: see src/wallet/index.ts in the repo
+import {
+  Signer,
+  Transaction,
+  getBytes,
+  type TransactionRequest,
+  type Provider,
+} from "ethers";
+
+export class EthersWallet implements SdkWallet {
+  constructor(private readonly signer: Signer) {}
+
+  async getCAddress(): Promise<string> {
+    return await this.signer.getAddress();
+  }
+
+  async signCTransaction(unsignedTxHex: string): Promise<string> {
+    // Parse the (unsigned) serialized tx into a Transaction object
+    const tx = Transaction.from(unsignedTxHex);
+
+    if (tx.signature) {
+      throw new Error(
+        "Expected unsigned transaction, but a signature was present.",
+      );
+    }
+
+    const request: TransactionRequest = {
+      to: tx.to ?? undefined,
+      data: tx.data ?? undefined,
+      value: tx.value ?? undefined,
+      gasLimit: tx.gasLimit ?? undefined,
+      maxFeePerGas: tx.maxFeePerGas ?? undefined,
+      maxPriorityFeePerGas: tx.maxPriorityFeePerGas ?? undefined,
+      nonce: tx.nonce,
+      chainId: tx.chainId,
+      type: tx.type,
+    };
+
+    return await this.signer.signTransaction(request);
+  }
+
+  async signAndSubmitCTransaction(unsignedTxHex: string): Promise<string> {
+    const rawSigned = await this.signCTransaction(unsignedTxHex);
+
+    const provider: Provider | null = this.signer.provider;
+    if (!provider) throw new Error("Signer has no provider for submission.");
+
+    const sent = await provider.sendTransaction(rawSigned);
+    await sent.wait(); // or omit if you want fire-and-forget
+    return sent.hash;
+  }
+
+  async signDigest(digestHex: string): Promise<string> {
+    // This signs the BYTES with the EIP-191 prefix.
+    return await this.signer.signMessage(getBytes(digestHex));
+  }
+
+  async signEthMessage(message: string): Promise<string> {
+    return await this.signer.signMessage(message);
+  }
+}
+```
+
+:::tip[Need help or found a bug?]
+
+Open an issue on the [flare-foundation/flare-tx-sdk](https://github.com/flare-foundation/flare-tx-sdk) GitHub repository.
+
+:::

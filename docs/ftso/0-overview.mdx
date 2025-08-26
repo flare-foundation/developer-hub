@@ -2,14 +2,26 @@
 slug: overview
 title: FTSOv2
 description: FTSOv2 is an enshrined oracle that provides decentralized data feeds to the Flare network.
-keywords: [ftso, oracle, flare-time-series-oracle, flare-network]
+keywords:
+  [
+    ftso,
+    flare-ftso,
+    oracle,
+    flare-time-series-oracle,
+    flare-network,
+    price-feeds,
+    real-time oracle,
+    block-latency feeds,
+  ]
 ---
 
 import ThemedImage from "@theme/ThemedImage";
 import useBaseUrl from "@docusaurus/useBaseUrl";
 import YoutubeEmbed from "@site/src/components/youtube";
 
-The **F**lare **T**ime **S**eries **O**racle **(FTSO)** is an [enshrined oracle](/support/terminology#enshrined-oracle) that provides decentralized data feeds to the Flare network. Since the release of FTSOv1 two years ago, users and applications on Flare have enjoyed consistent and reliable pricing, with zero downtime or failures. FTSOv2 builds on the robust foundation laid by its predecessor, offering several enhancements:
+The **F**lare **T**ime **S**eries **O**racle **(FTSO)** is an [enshrined oracle](/support/terminology#enshrined-oracle) that provides decentralized data feeds to the Flare network.
+Since the release of FTSOv1 two years ago, users and applications on Flare have enjoyed consistent and reliable pricing, with zero downtime or failures.
+FTSOv2 builds on the robust foundation laid by its predecessor, offering several enhancements:
 
 - **Secure.** Enshrined into Flare's core protocol, every oracle feed in FTSOv2 inherits the economic security of the entire network.
 
@@ -23,10 +35,12 @@ The **F**lare **T**ime **S**eries **O**racle **(FTSO)** is an [enshrined oracle]
 
 ## Architecture
 
-FTSOv2 ensures fast, secure, and manipulation-resistant feeds by using a stake-weighted verifiable randomness function (VRF) to select a sample of data providers for incremental delta updates. These updates maintain long-term accuracy by anchoring to Scaling feeds, which use a full commit-reveal process and update every 90 seconds. During high market volatility, volatility incentives can increase the sample size of data providers for a quicker response to market conditions.
+FTSOv2 ensures fast, secure, and manipulation-resistant feeds by using a stake-weighted verifiable randomness function (VRF) to select a sample of data providers for incremental delta updates.
+These updates maintain long-term accuracy by anchoring to Scaling feeds, which use a full commit-reveal process and update every 90 seconds.
+During high market volatility, volatility incentives can increase the sample size of data providers for a quicker response to market conditions.
 
 <ThemedImage
-  alt="FTSO Price Comparison"
+  alt="Diagram comparing FTSO block-latency feeds vs centralized exchange price updates."
   sources={{
     light: useBaseUrl("img/ftso-overview/ref_fast_comparison_social.svg"),
     dark: useBaseUrl("img/ftso-overview/ref_fast_comparison_social_dark.svg"),
@@ -35,11 +49,14 @@ FTSOv2 ensures fast, secure, and manipulation-resistant feeds by using a stake-w
 
 The FTSOv2 architecture consists of four key components:
 
-1. **Verifiably Random Selection:** Each block on Flare triggers the selection of data providers to deliver the next feed update using a stake-weighted Verifiable Randomness Function. This ensures fairness and resistance to manipulation.
+1. **Verifiably Random Selection:** Each block on Flare triggers the selection of data providers to deliver the next feed update using a stake-weighted Verifiable Randomness Function.
+   This ensures fairness and resistance to manipulation.
 
-2. **Incremental Delta Update:** Selected data providers submit new feed updates as fixed incremental deltas applied to the previous feed value. This maintains reliable and continuous updates, ensuring integrity and accuracy.
+2. **Incremental Delta Update:** Selected data providers submit new feed updates as fixed incremental deltas applied to the previous feed value.
+   This maintains reliable and continuous updates, ensuring integrity and accuracy.
 
-3. **Volatility Incentive Mechanism:** To handle periods of high market volatility, FTSOv2 introduces volatility incentives, temporarily increasing the sample size of selected data providers in exchange for a fee. This permissionless mechanism ensures a faster response to significant price movements.
+3. **Volatility Incentive Mechanism:** To handle periods of high market volatility, FTSOv2 introduces volatility incentives, temporarily increasing the sample size of selected data providers in exchange for a fee.
+   This permissionless mechanism ensures a faster response to significant price movements.
 
 4. **Anchoring to Scaling Feeds:** Scaling feeds, which employ a full commit-reveal process across all data providers, act as anchors to ensure long-term accuracy.
 
@@ -51,22 +68,30 @@ For a detailed explanation of the FTSOv2 mechanism, read the [FTSOv2 whitepaper]
 
 ### Verifiably Random Selection
 
-Every block on Flare, generated approximately every 1.8 seconds, initiates the selection of a sample of data providers to deliver the next feed update. This selection process leverages a stake-weighted verifiable randomness function (VRF), where the likelihood of each data provider being chosen is proportional to their stake. The expected sample size is one, and data providers have no control over, nor knowledge of, when they will be selected.
+Every block on Flare, generated approximately every 1.8 seconds, initiates the selection of a sample of data providers to deliver the next feed update.
+This selection process leverages a stake-weighted verifiable randomness function (VRF), where the likelihood of each data provider being chosen is proportional to their stake.
+The expected sample size is one, and data providers have no control over, nor knowledge of, when they will be selected.
 
-In detail, each block has a unique seed value, used by FTSOv2 data providers to generate a personal random score. This score, coupled with a cryptographic proof, ensures its authenticity and verifiability, preventing prediction or manipulation by others. Data providers are chosen based on their scores: those with scores below a certain threshold are selected to make updates. The selection probability is proportional to the data provider's stake, allowing for weighted sampling where participants with a higher stake have a greater chance of being selected. This mechanism ensures fairness and resistance to manipulation.
+In detail, each block has a unique seed value, used by FTSOv2 data providers to generate a personal random score.
+This score, coupled with a cryptographic proof, ensures its authenticity and verifiability.
+Data providers are chosen based on their scores: those with scores below a certain threshold are selected to make updates.
+The selection probability is proportional to the data provider's stake, allowing for weighted sampling where participants with a higher stake have a greater chance of being selected.
 
-To maintain security, the seed value itself evolves pseudo-randomly. This approach balances security and randomness, preventing adversaries from influencing the selection process. The system is designed to be statistically robust, ensuring a reliable and continuous selection of participants to uphold the integrity and accuracy of updates.
+To maintain security, the seed value itself evolves pseudo-randomly. This approach balances security and randomness, preventing adversaries from influencing the selection process.
+The system is designed to be statistically robust, ensuring a reliable and continuous selection of participants to uphold the integrity and accuracy of updates.
 
 ### Incremental Delta Update
 
-The selected data providers submit the new feed update, which is a fixed incremental delta applied to the previous feed value. The base increment size for all updates is `1/2^13 ≈ 0.0122%`, a value determined through extensive market analysis and approved by Flare governance. The delta can be in one of three directions:
+The selected data providers submit the new feed update, which is a fixed incremental delta applied to the previous feed value.
+The base increment size for all updates is `1/2^13 ≈ 0.0122%`, a value determined through extensive market analysis and approved by Flare governance.
+The delta can be in one of three directions:
 
 - **Up (+)**: The new feed value is incrementally increased from the previous value.
 - **Down (–)**: The new feed value is incrementally decreased from the previous value.
 - **Unchanged (0)**: The new feed value remains the same as the previous value.
 
 <ThemedImage
-  alt="FTSO Update Architecture"
+  alt="Diagram of delta updates showing up, down, unchanged adjustments."
   sources={{
     light: useBaseUrl("img/ftso-overview/ftso_update_architecture_light.svg"),
     dark: useBaseUrl("img/ftso-overview/ftso_update_architecture_dark.svg"),
@@ -87,19 +112,29 @@ where,
 - $p$ is the protocol parameter named _precision_, and
 - $\delta$ is the update provided by a data provider, with $\delta(t)$ being one of the three options $\{-1, 0, 1\}$.
 
-The precision parameter is set to a default value of $p = 1/2^{13} ≈  0.0122\%$, which has been rigorously tested against price feeds from centralized exchanges. Another key protocol parameter is the average number of updates submitted per block, with a default value of $e = 1$. The average number of updates submitted per block $e$ can be temporarily increased in exchange for a fee using the volatility incentive mechanism.
+The precision parameter is set to a default value of $p = 1/2^{13} ≈  0.0122\%$, which has been rigorously tested against price feeds from centralized exchanges.
+Another key protocol parameter is the average number of updates submitted per block, with a default value of $e = 1$.
+The average number of updates submitted per block $e$ can be temporarily increased in exchange for a fee using the volatility incentive mechanism.
 
 </details>
 
 ### Volatility Incentive Mechanism
 
-From statistical analysis, FTSOv2's mechanism is capable of capturing over 99% of all price movements under normal market conditions. However, during periods of high market volatility, the small size of each increment may be slower to reflect large price movements. To address this, FTSOv2 introduces volatility incentives, which allows for a temporary increase in the sample size of data providers in exchange for a fee. The volatility incentive mechanism is permissionless, enabling anyone on Flare to trigger it by paying the required fee.
+From statistical analysis, FTSOv2's mechanism is capable of capturing over 99% of all price movements under normal market conditions.
+However, during periods of high market volatility, the small size of each increment may be slower to reflect large price movements.
+To address this, FTSOv2 introduces volatility incentives, which allows for a temporary increase in the sample size of data providers in exchange for a fee.
+The volatility incentive mechanism is permissionless, enabling anyone on Flare to trigger it by paying the required fee.
 
-Typically, the expected sample size is one. With volatility incentives, this sample size is temporarily increased, allowing for more updates and quicker responses to large price movements. Importantly, only the expected sample size increases, not the actual sample size, which further helps protect the protocol against various statistical attacks.
+Typically, the expected sample size is one.
+With volatility incentives, this sample size is temporarily increased, allowing for more updates and quicker responses to large price movements.
+Importantly, only the expected sample size increases, not the actual sample size, which further helps protect FTSOv2 against various statistical attacks.
 
 ### Anchoring to Scaling
 
-FTSOv2's block-latency feeds are designed to be statistically self-correcting. To further ensure their long-term accuracy, FTSOv2 uses the anchor feeds from [Scaling](/ftso/scaling/overview). Anchor feeds utilize a full commit-reveal process across all data providers with an inter-quartile range (IQR) band calculation, and update once every voting epoch (i.e. 90 seconds). Data providers are only rewarded if the block-latency feeds converge to within `±0.25%` of the anchor feeds every voting epoch.
+FTSOv2's block-latency feeds are designed to be statistically self-correcting.
+To further ensure their long-term accuracy, FTSOv2 uses the anchor feeds from [Scaling](/ftso/scaling/overview).
+Anchor feeds utilize a full commit-reveal process across all data providers with an inter-quartile range (IQR) band calculation, and update once every voting epoch (i.e. 90 seconds).
+Data providers are rewarded when the block-latency feeds remains within `±0.25%` of the anchor feeds every voting epoch.
 
 ## Watch the video
 

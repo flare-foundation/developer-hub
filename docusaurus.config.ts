@@ -6,7 +6,7 @@ import rehypeKatex from "rehype-katex";
 
 const config: Config = {
   title: "Flare Developer Hub",
-  tagline: "The decentralized origin for Flare builders.",
+  tagline: "Official documentation for Flare.",
   favicon: "/img/favicon.ico",
 
   // Set the production url of your site here

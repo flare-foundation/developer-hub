@@ -1,6 +1,6 @@
 # developer-hub-go
 
-## Tooling
+## Prerequisites
 
 - [Go](https://go.dev/doc/install)
 - [golangci-lint](https://golangci-lint.run/docs/welcome/install/)

@@ -4,8 +4,9 @@ pragma solidity ^0.8.25;
 // 1. Required Imports
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {IAssetManager} from "@flarenetwork/flare-periphery-contracts/coston/IAssetManager.sol";
-import {AssetManagerSettings} from "@flarenetwork/flare-periphery-contracts/coston/userInterfaces/data/AssetManagerSettings.sol";
+import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
+import {IAssetManager} from "@flarenetwork/flare-periphery-contracts/coston2/IAssetManager.sol";
+import {AssetManagerSettings} from "@flarenetwork/flare-periphery-contracts/coston2/data/AssetManagerSettings.sol";
 
 // 2. Interfaces
 
@@ -33,24 +34,21 @@ contract SwapAndRedeem {
 
     // Uniswap V2 Router interface to communicate with BlazeSwap
     ISwapRouter public immutable router;
-    // FAssets asset manager interface
-    IAssetManager public immutable assetManager;
     // FAssets token (FXRP)
     IERC20 public immutable token;
 
     // Path to swap WCFLR for FXRP
     address[] public swapPath;
 
-    constructor(
-        address _router,
-        address _assetManager,
-        address[] memory _swapPath
-    ) {
+    constructor(address _router, address[] memory _swapPath) {
         router = ISwapRouter(_router);
-        assetManager = IAssetManager(_assetManager);
         swapPath = _swapPath;
 
         token = IERC20(_swapPath[0]);
+    }
+
+    function getAssetManager() public view returns (IAssetManager) {
+        return ContractRegistry.getAssetManagerFXRP();
     }
 
     // 4. Main Function: `swapAndRedeem`
@@ -138,7 +136,8 @@ contract SwapAndRedeem {
     function calculateRedemptionAmountIn(
         uint256 _lots
     ) public view returns (uint256 amountOut, uint256 amountIn) {
-        AssetManagerSettings.Data memory settings = assetManager.getSettings();
+        AssetManagerSettings.Data memory settings = getAssetManager()
+            .getSettings();
         uint256 lotSizeAMG = settings.lotSizeAMG;
 
         // Calculate the amount of WCFLR needed to swap to FXRP
@@ -150,6 +149,8 @@ contract SwapAndRedeem {
         return (amounts[0], amounts[1]);
     }
 
+    // 6. Helper Function: `_redeem`
+
     // Redeem FAssets from FXRP to the redeemer's underlying XRPL address
     // @param _lots: number of lots to redeem
     // @param _redeemerUnderlyingAddressString: redeemer underlying address string (XRP address)
@@ -159,7 +160,7 @@ contract SwapAndRedeem {
         string memory _redeemerUnderlyingAddressString
     ) internal returns (uint256) {
         return
-            assetManager.redeem(
+            getAssetManager().redeem(
                 _lots,
                 _redeemerUnderlyingAddressString,
                 // The account that is allowed to execute redemption default (besides redeemer and agent).

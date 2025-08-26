@@ -37,14 +37,17 @@ To get the FAsset lot size, you can use the following smart contract:
 
 ### Code Breakdown
 
-1. Import the interface `IAssetManager` from the [Flare Periphery Contracts package](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts), which provides access to the FAssets system.
-2. Create a contract called `FAssetsSettings` that will be used to fetch the FAssets settings from the asset manager.
-3. Value `assetManager` holds the address of the FAssets FXRP asset manager contract.
-   The type `IAssetManager` comes from the Flare Periphery Contracts package.
-4. The constructor initializes the contract with the AsseFXRP asset managertManager address.
-5. The `getLotSize` function gets numbers from the FAssets FXRP asset manager settings using the [`getSettings`](/fassets/reference/IAssetManager#getsettings) function returns the complete asset manager settings that you can find in the [FAssets Operational Parameters](/fassets/operational-parameters/#asset-manager-operational-parameters) documentation:
-   - `lotSizeAMG`: The smallest amount you can trade (in AMG units)
-   - `assetDecimals`: How many decimal places the FAssets asset uses
+1. Import the [ContractRegistry library](/network/guides/flare-contracts-registry#contract-registry-library) to access the Flare Network contract registry.
+2. Import the interface `IAssetManager` from the [Flare Periphery Contracts package](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts), which provides access to the FAssets system.
+3. Create a contract called `FAssetsSettings` that will be used to fetch the FAssets settings from the asset manager.
+4. Use the ContractRegistry to get the FAssets FXRP asset manager address.
+5. Use the `getLotSize` function to retrieve settings from the FAssets FXRP asset manager.
+   The function calls [`getSettings`](/fassets/reference/IAssetManager#getsettings) which returns the complete asset manager settings that you can find in the [FAssets Operational Parameters](/fassets/operational-parameters/#asset-manager-operational-parameters) documentation:
+   - `lotSizeAMG`: The smallest amount you can trade (in AMG units).
+   - `assetDecimals`: How many decimal places the FAssets asset uses.
+6. The `getLotSize` function returns two values:
+   - `lotSizeAMG`: The smallest amount you can trade (in AMG units).
+   - `assetDecimals`: How many decimal places the FAssets asset uses.
 
 :::info Flare Hardhat Starter Kit
 Using the [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit) you can quickly deploy the contract and generate TypeChain bindings for seamless TypeScript integration.
@@ -56,34 +59,22 @@ It streamlines development by providing a ready-made project structure, preconfi
 Use the following TypeScript script to deploy the contract and fetch the FAsset settings using the Hardhat tool:
 
 ```typescript title="scripts/fassets/getLotSize.ts"
-import { ethers } from "hardhat";
-import { FAssetsSettingsContract } from "../../typechain-types";
+// yarn hardhat run scripts/fassets/getLotSize.ts --network coston2
 
-// 1. AssetManager address on Songbird Testnet Coston network
-const ASSET_MANAGER_ADDRESS = "0x56728e46908fB6FcC5BCD2cc0c0F9BB91C3e4D34";
+// 1. Get the contract artifact
+const FAssetsSettings = artifacts.require("FAssetsSettings");
 
 async function main() {
-  console.log("Deploying FAssetsSettings...");
+  // 2. Deploy the contract
+  const fAssetsSettings = await FAssetsSettings.new();
+  console.log("FAssetsSettings deployed to:", fAssetsSettings.address);
 
-  // 2.  Get the contract factory
-  const FAssetsSettings = (await ethers.getContractFactory(
-    "FAssetsSettings",
-  )) as FAssetsSettingsContract;
-
-  // 3. Deploy the contract
-  const fAssetsSettings = await FAssetsSettings.deploy(ASSET_MANAGER_ADDRESS);
-  await fAssetsSettings.waitForDeployment();
-  console.log(
-    "FAssetsSettings deployed to:",
-    await fAssetsSettings.getAddress(),
-  );
-
-  // 4. Call getSettings function
+  // 3. Call getSettings function
   const lotSize = await fAssetsSettings.getLotSize();
   console.log("Lot size:", lotSize[0]);
   console.log("Decimals:", lotSize[1]);
 
-  // 5. Convert lot size to XRP
+  // 4. Convert lot size to XRP
   const lotSizeFXRP = Number(lotSize[0]) / Math.pow(10, Number(lotSize[1]));
   console.log("Lot size in XRP", lotSizeFXRP);
 }
@@ -96,24 +87,23 @@ main().catch((error) => {
 
 ### Code Explanation
 
-1. Define the FAssets TXRP asset manager address on the Songbird Testnet Coston network.
-2. Use the Typescript smart contract `FAssetsSettings` type to interact with the contract.
-3. Deploy the `FAssetsSettings` on the network and get the contract address.
-4. Call the `getLotSize` function to get the lot size and asset decimals.
-5. Convert the lot size to XRP.
+1. Get the contract artifact `FAssetsSettings` from the Hardhat artifacts.
+2. Deploy the `FAssetsSettings` on the network and get the contract address.
+3. Call the `getLotSize` function to get the lot size and asset decimals.
+4. Convert the lot size to XRP.
 
 ## Run the Script
 
 Now you can run the script using the Hardhat tool with the following command:
 
 ```bash
-npx hardhat run scripts/fassets/getLotSize.ts --network coston
+npx hardhat run scripts/fassets/getLotSize.ts --network coston2
 ```
 
 You should see the following output:
 
 ```bash
-Compiled 1 Solidity file successfully (evm target: london).
+Compiled 1 Solidity file successfully (evm target: shanghai).
 Deploying FAssetsSettings...
 FAssetsSettings deployed to: 0x40deEaA76224Ca9439D4e1c86F827Be829b89D9E
 Lot size: 20000000n
@@ -126,9 +116,9 @@ Lot size in XRP 20
 This script is included in the [Flare Hardhat Starter Kit](https://github.com/flare-foundation/flare-hardhat-starter).
 
 :::
-Congratulations! You have now deployed a Solidity helper contract and used a TypeScript script to
+Congratulations! You have now deployed a Solidity helper contract and used a TypeScript script to:
 
-- fetch FAsset FXRP lot size and decimals;
-- convert the value to a user-friendly format using decimal precision.
+- Fetch FAsset FXRP lot size and decimals
+- Convert the value to a user-friendly format using decimal precision.
 
 <ExploringAdditionalParameters />

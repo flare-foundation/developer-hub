@@ -1,0 +1,440 @@
+---
+title: Proof of Reserves
+slug: proof-of-reserves
+authors: [anthonyamadia]
+description: A cross-chain Proof of Reserves dApp using the EVMTransaction and Web2Json attestation types.
+tags: [fdc, foundry]
+keywords:
+  [
+    ethereum,
+    flare-data-connector,
+    evm,
+    cross-chain,
+    proof-of-reserves,
+    web2json,
+  ]
+sidebar_position: 12
+---
+
+import AvailableTestnet from "../_available_testnet.mdx";
+
+This is a guide on how to build a simple dApp using the [Flare Data Connector](/fdc/overview).
+It demonstrates how multiple attestation types, namely the [EVMTransaction](/fdc/attestation-types/evm-transaction) and [Web2Json](/fdc/attestation-types/web-2-json), can be combined within the same app.
+
+The app that we will be building is called `proofOfReserves`, which enables onchain verification that a stablecoin's circulating supply is backed by sufficient offchain reserves.
+We will first describe what issue the app is addressing, and then provide a detailed walkthrough through its source code.
+All the code for this project is available on GitHub, in the [Flare Foundry Starter](https://github.com/flare-foundation/flare-foundry-starter) repository.
+
+## The problem
+
+Stablecoins are cryptographic tokens designed to maintain a fixed value, typically pegged to a fiat currency like the US dollar.
+To maintain trust in the system, the issuing institution must hold sufficient reserves to back the tokens in circulation.
+
+The `proofOfReserves` application demonstrates how to verify that a stablecoin issuer maintains adequate offchain dollar reserves to cover all tokens in circulation across multiple blockchains.
+This verification creates transparency and helps prevent situations where more tokens exist than the backing reserves can support.
+
+Implementing this verification system presents three technical challenges:
+
+1. **Accessing offchain data**: We need to query a Web2 API that reports the institution's official dollar reserves.
+2. **Reading onchain state**: We need to access the total token supply data from various blockchain networks.
+3. **Cross-chain data collection**: We need to aggregate token supply information across multiple chains.
+
+The [Flare Data Connector (FDC)](/fdc/overview) provides solutions for both accessing Web2 APIs through the [Web2Json](/fdc/attestation-types/web-2-json) attestation type and collecting cross-chain data via the [EVMTransaction](/fdc/attestation-types/evm-transaction) attestation type.
+For reading onchain state, we deploy a dedicated contract that reads the token supply and emits this data as an event.
+
+This guide will walk through all the components needed to build the complete `proofOfReserves` verification system.
+
+## Smart Contract Architecture
+
+For our proof of reserves implementation, we'll create three distinct smart contracts:
+
+1. `MyStablecoin`: A custom ERC20 token for testing
+2. `TokenStateReader`: A utility contract that reads and broadcasts token supply data
+3. `ProofOfReserves`: The main verification contract that processes attestation proofs
+
+Note that in a production environment, we would typically only need two contracts - the main verification contract and a state reader.
+However, since this is a guide and we want flexibility to experiment with different token supply values, we'll also deploy our own stablecoin.
+
+#### Stablecoin Contract
+
+Let's start with the stablecoin implementation.
+This contract creates an ERC20-compatible token with additional functionality for burning tokens and controlled minting.
+
+```solidity title="src/proofOfReserves/Token.sol"
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.25;
+
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+
+contract MyStablecoin is ERC20, ERC20Burnable, Ownable {
+    constructor(address recipient, address initialOwner)
+        ERC20("MyStablecoin", "MST")
+        Ownable(initialOwner)
+    {
+        _mint(recipient, 666 * 10 ** decimals());
+    }
+
+    function mint(address to, uint256 amount) public onlyOwner {
+        _mint(to, amount);
+    }
+}
+```
+
+Because we are building our app around `@openzeppelin`'s ERC20 token, we can later replace the token with any such instance.
+This means that we can easily modify our app to work with an arbitrary contract that inherits the `ERC20`.
+
+#### TokenStateReader Contract
+
+The FDC's `EVMTransaction` attestation type works by verifying data from events.
+
+To get the `totalSupply` of our token on-chain, we deploy this simple contract.
+
+Its only function is to read the `totalSupply` of a given ERC20 token and emit it in an event, making the state readable by the FDC.
+
+```solidity title="src/proofOfReserves/TokenStateReader.sol"
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.25;
+
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+
+contract TokenStateReader {
+    event TotalTokenSupply(address tokenAddress, uint256 totalSupply);
+
+    function broadcastTokenSupply(ERC20 token) external returns (uint256) {
+        uint256 supply = token.totalSupply();
+        emit TotalTokenSupply(address(token), supply);
+        return supply;
+    }
+}
+```
+
+#### ProofOfReserves Contract
+
+The final component in our implementation is the `ProofOfReserves` contract, which performs the actual verification of reserve adequacy.
+This contract evaluates whether the claimed dollar reserves are sufficient to back all tokens in circulation across different blockchains.
+
+The core functionality is contained in the `verifyReserves` function, which accepts two parameters:
+
+- An `IWeb2Json.Proof` struct containing attested data from the Web2 API about dollar reserves
+- An array of `IEVMTransaction.Proof` structs containing attested data about token supplies from various blockchains
+
+The function aggregates the total token supply from all chains and compares it against the claimed reserves.
+If sufficient reserves exist (i.e., if the total token supply is less than or equal to the claimed reserves), the function returns `true`; otherwise, it returns `false`.
+
+```solidity title="src/proofOfReserves/ProofOfReserves.sol"
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.25;
+
+import {IWeb2Json} from "flare-periphery/src/coston2/IWeb2Json.sol";
+import {IEVMTransaction} from "flare-periphery/src/coston2/IEVMTransaction.sol";
+import {ContractRegistry} from "flare-periphery/src/coston2/ContractRegistry.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+
+// ... helper structs and events
+
+contract ProofOfReserves is Ownable {
+    // ... state variables and events
+
+    mapping(address => address) public tokenStateReaders;
+
+    constructor() Ownable(msg.sender) {}
+
+    function updateAddress(address readerAddress, address tokenAddress) public onlyOwner {
+        tokenStateReaders[readerAddress] = tokenAddress;
+    }
+
+    function verifyReserves(
+        IWeb2Json.Proof calldata jsonProof,
+        IEVMTransaction.Proof[] calldata transactionProofs
+    ) external returns (bool) {
+        uint256 claimedReserves = readReserves(jsonProof);
+
+        uint256 totalTokenSupply = 0;
+        for (uint256 i = 0; i < transactionProofs.length; i++) {
+            totalTokenSupply += readTokenSupply(transactionProofs[i]);
+        }
+
+        return totalTokenSupply <= (claimedReserves * 1 ether);
+    }
+
+    function readReserves(IWeb2Json.Proof calldata proof) private view returns (uint256) {
+        require(isValidProof(proof), "Invalid json proof");
+        // Decode the reserve amount from the proof
+        DataTransportObject memory data = abi.decode(
+            proof.data.responseBody.abi_encoded_data,
+            (DataTransportObject)
+        );
+        return data.reserves;
+    }
+
+    function readTokenSupply(IEVMTransaction.Proof calldata proof) private view returns (uint256) {
+        require(isValidProof(proof), "Invalid transaction proof");
+        uint256 totalSupply = 0;
+        // Loop through all events in the transaction proof
+        for (uint256 i = 0; i < proof.data.responseBody.events.length; i++) {
+            IEVMTransaction.Event memory _event = proof.data.responseBody.events[i];
+            address readerAddress = _event.emitterAddress;
+            (address tokenAddress, uint256 supply) = abi.decode(_event.data, (address, uint256));
+
+            // Ensure the event came from a registered reader for the correct token
+            if (tokenStateReaders[readerAddress] == tokenAddress) {
+                totalSupply += supply;
+            }
+        }
+        return totalSupply;
+    }
+
+    function isValidProof(IWeb2Json.Proof calldata proof) private view returns (bool) {
+        return ContractRegistry.getFdcVerification().verifyWeb2Json(proof);
+    }
+
+    function isValidProof(IEVMTransaction.Proof calldata proof) private view returns (bool) {
+        return ContractRegistry.getFdcVerification().verifyEVMTransaction(proof);
+    }
+}
+```
+
+---
+
+### Process Overview
+
+This guide demonstrates deployment on Flare's Coston and Coston2 testnets, but the same approach can be adapted for any EVM chain.
+The complete process follows these sequential steps:
+
+1. Deploy and verify the `MyStablecoin` contract on both Coston and Coston2 chains
+2. Deploy and verify the `TokenStateReader` contract on both Coston and Coston2 chains
+3. Deploy and verify the `ProofOfReserves` contract on Coston2 chain only
+4. Save `MyStablecoin`, `TokenStateReader`, and `ProofOfReserves` addresses to `scripts/proofOfReserves/config.ts`
+5. Call the `broadcastTokenSupply` function of both `TokenStateReader` contracts with the corresponding `MyStablecoin` addresses
+6. Save transaction hashes of both function calls to `scripts/proofOfReserves/config.ts`
+7. Request attestation from the [FDC](/fdc/overview), and call `verifyReserves` function of the `ProofOfReserves` with the received data
+
+Throughout this guide, we'll provide separate scripts for each step above, with filenames that clearly indicate their purpose.
+
+:::warning
+While we deploy stablecoin and reader contracts on both chains, the `ProofOfReserves` contract is deployed only on the Coston2 chain, which serves as our verification hub.
+:::
+
+## Scripts
+
+The first three scripts each deploy and verify one of the contracts defined in the first part of the guide, ie. `MyStablecoin`, `TokenStateReader`, and `ProofOfReserves`.
+They are more or less the same script, the only real difference being the contracts deployed, and the arguments that are passed to their constructor.
+
+The `Deploy` script deploys and verifies the `MyStablecoin` contract on the Coston and Coston2 chain.
+
+### Step 1: Deploy Contracts
+
+The `Deploy` script handles the initial setup, deploying all necessary contracts to their respective chains and saving their addresses to configuration files for later scripts to use.
+
+```solidity title="script/ProofOfReserves.s.sol"
+contract Deploy is Script {
+    function run() external {
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address owner = vm.addr(deployerPrivateKey);
+        uint256 chainId = block.chainid;
+
+        vm.createDir(dirPath, true);
+        vm.startBroadcast(deployerPrivateKey);
+
+        // Deploy contracts
+        MyStablecoin token = new MyStablecoin(owner, owner);
+        TokenStateReader reader = new TokenStateReader();
+
+        // Write addresses to chain-specific files
+        string memory tokenPath = string.concat(dirPath, "_token_", Strings.toString(chainId), ".txt");
+        string memory readerPath = string.concat(dirPath, "_reader_", Strings.toString(chainId), ".txt");
+        vm.writeFile(tokenPath, vm.toString(address(token)));
+        vm.writeFile(readerPath, vm.toString(address(reader)));
+
+        // Deploy the main contract only to Coston2
+        if (chainId == 114) { // Coston2
+            ProofOfReserves proofOfReserves = new ProofOfReserves();
+            string memory porPath = string.concat(dirPath, "_proofOfReserves_", Strings.toString(chainId), ".txt");
+            vm.writeFile(porPath, vm.toString(address(proofOfReserves)));
+            console.log("ProofOfReserves deployed to:", address(proofOfReserves));
+        }
+
+        vm.stopBroadcast();
+        console.log("--- Deployment Results for Chain ID:", chainId, "---");
+        console.log("MyStablecoin deployed to:", address(token));
+        console.log("TokenStateReader deployed to:", address(reader));
+    }
+}
+```
+
+Run this script on both Coston and Coston2:
+
+```bash
+forge script script/ProofOfReserves.s.sol:Deploy --rpc-url $COSTON_RPC_URL --broadcast
+forge script script/ProofOfReserves.s.sol:Deploy --rpc-url $COSTON2_RPC_URL --broadcast
+```
+
+### Step 2: Activate State Readers
+
+The `ActivateReaders` script calls the `broadcastTokenSupply` function on the `TokenStateReader` contracts on both chains.
+
+This creates a transaction with a `TotalTokenSupply` event.
+
+The script then reads the transaction hash from the Foundry broadcast receipt and saves it to a file.
+
+This hash is the input for the `EVMTransaction` attestation.
+
+```solidity title="script/ProofOfReserves.s.sol"
+contract ActivateReaders is Script {
+    function run() external {
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        uint256 chainId = block.chainid;
+
+        address tokenAddress = vm.parseAddress(vm.readFile(string.concat(dirPath, "_token_", Strings.toString(chainId), ".txt")));
+        address readerAddress = vm.parseAddress(vm.readFile(string.concat(dirPath, "_reader_", Strings.toString(chainId), ".txt")));
+
+        TokenStateReader reader = TokenStateReader(readerAddress);
+        MyStablecoin token = MyStablecoin(tokenAddress);
+
+        vm.startBroadcast(deployerPrivateKey);
+        reader.broadcastTokenSupply(token);
+        vm.stopBroadcast();
+
+        // Read the transaction hash from the broadcast receipt
+        string memory receiptPath = string(abi.encodePacked("broadcast/ProofOfReserves.s.sol/", vm.toString(chainId), "/run-latest.json"));
+        string memory receiptJson = vm.readFile(receiptPath);
+        string memory txHash = receiptJson.readString(".transactions[0].transactionHash");
+
+        string memory txHashPath = string.concat(dirPath, "_txHash_", Strings.toString(chainId), ".txt");
+        vm.writeFile(txHashPath, txHash);
+
+        console.log("Reader activated on chain:", chainId, "with txHash:", txHash);
+    }
+}
+```
+
+Run this script on both chains to generate the necessary on-chain events:
+
+```bash
+forge script script/ProofOfReserves.s.sol:ActivateReaders --rpc-url $COSTON_RPC_URL --broadcast
+forge script script/ProofOfReserves.s.sol:ActivateReaders --rpc-url $COSTON2_RPC_URL --broadcast
+```
+
+### Step 3: Prepare Attestation Requests
+
+This script reads the transaction hashes from the files and prepares all the necessary FDC requests.
+
+This is an off-chain step that uses `--ffi` to call the verifier APIs and construct the ABI-encoded request bytes.
+
+```solidity title="script/ProofOfReserves.s.sol"
+contract PrepareRequests is Script {
+    function run() external {
+        string memory txHashCoston = vm.readFile(string.concat(dirPath, "_txHash_16.txt"));
+        string memory txHashCoston2 = vm.readFile(string.concat(dirPath, "_txHash_114.txt"));
+
+        // Prepare Web2 reserve data request
+        bytes memory web2JsonRequest = prepareWeb2JsonRequest();
+        FdcBase.writeToFile(dirPath, "_Web2Json_request.txt", StringsBase.toHexString(web2JsonRequest), true);
+
+        // Prepare EVM transaction data requests for both chains
+        bytes memory evmCostonRequest = prepareEvmTransactionRequest("testSGB", "sgb", txHashCoston);
+        FdcBase.writeToFile(dirPath, "_EVMTransaction_Coston_request.txt", StringsBase.toHexString(evmCostonRequest), true);
+
+        bytes memory evmCoston2Request = prepareEvmTransactionRequest("testFLR", "flr", txHashCoston2);
+        FdcBase.writeToFile(dirPath, "_EVMTransaction_Coston2_request.txt", StringsBase.toHexString(evmCoston2Request), true);
+    }
+
+    // ... helper functions to call verifier APIs ...
+}
+```
+
+Run the script to prepare all requests:
+
+```bash
+forge script script/ProofOfReserves.s.sol:PrepareRequests --rpc-url $COSTON_RPC_URL --ffi
+```
+
+### Step 4: Submit Requests to FDC
+
+This script reads the prepared request bytes from the files and submits them to the `FdcHub` contract, initiating the attestation process for each piece of data.
+
+The `votingRoundId` for each request is saved for proof retrieval.
+
+```solidity title="script/ProofOfReserves.s.sol"
+contract SubmitRequests is Script {
+    function run() external {
+        _submitRequest("_Web2Json");
+        _submitRequest("_EVMTransaction_Coston");
+        _submitRequest("_EVMTransaction_Coston2");
+    }
+
+    function _submitRequest(string memory attestationType) private {
+        // ... reads request file, submits, and writes roundId file ...
+    }
+}
+```
+
+Run the script to submit all requests to the FDC:
+
+```bash
+forge script script/ProofOfReserves.s.sol:SubmitRequests --rpc-url $COSTON_RPC_URL --broadcast
+```
+
+### Step 5: Retrieve Proofs
+
+After waiting for the voting rounds to finalize (max. 180 seconds), this script queries the Data Availability layer for the attestation proofs for all three requests and saves them to files.
+
+```solidity title="script/ProofOfReserves.s.sol"
+contract RetrieveProofs is Script {
+    function run() external {
+        // ... retrieves and saves Web2Json proof ...
+        // ... retrieves and saves Coston EVM proof ...
+        // ... retrieves and saves Coston2 EVM proof ...
+    }
+
+    // ... helper functions to parse proof data ...
+}
+```
+
+Run the script to fetch the finalized proofs:
+
+```bash
+forge script script/ProofOfReserves.s.sol:RetrieveProofs --rpc-url $COSTON_RPC_URL --ffi
+```
+
+### Step 6: Verify Reserves
+
+This final script reads the three saved proofs from their files, updates the `ProofOfReserves` contract with the correct reader-to-token mappings, and calls the `verifyReserves` function with all the proofs.
+
+The contract performs the on-chain verification, and the script logs the final result.
+
+```solidity title="script/ProofOfReserves.s.sol"
+contract VerifyReserves is Script {
+    function run() external {
+        IWeb2Json.Proof memory web2Proof = abi.decode(/* ... */);
+        IEVMTransaction.Proof memory evmCostonProof = abi.decode(/* ... */);
+        IEVMTransaction.Proof memory evmCoston2Proof = abi.decode(/* ... */);
+
+        address proofOfReservesAddress = vm.parseAddress(/* ... */);
+        // ... read other addresses
+
+        ProofOfReserves por = ProofOfReserves(payable(proofOfReservesAddress));
+
+        IEVMTransaction.Proof[] memory evmProofs = new IEVMTransaction.Proof[](2);
+        evmProofs[0] = evmCostonProof;
+        evmProofs[1] = evmCoston2Proof;
+
+        vm.startBroadcast(vm.envUint("PRIVATE_KEY"));
+        por.updateAddress(readerCostonAddress, tokenCostonAddress);
+        por.updateAddress(readerCoston2Address, tokenCoston2Address);
+        bool success = por.verifyReserves(web2Proof, evmProofs);
+        vm.stopBroadcast();
+
+        console.log("\n--- VERIFICATION COMPLETE ---");
+        console.log("Sufficient Reserves Check Passed:", success);
+    }
+}
+```
+
+Run the script to execute the final verification:
+
+```bash
+forge script script/ProofOfReserves.s.sol:VerifyReserves --rpc-url $COSTON_RPC_URL --broadcast
+```
