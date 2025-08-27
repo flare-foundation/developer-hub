@@ -26,12 +26,12 @@ contract SecureRandomConsumer {
     function getSecureRandomNumber()
         external
         view
-        returns (uint256 randomNumber, bool isSecure, uint256 timestamp)
+        returns (uint256 randomNumber)
     {
         (randomNumber, isSecure, timestamp) = randomV2.getRandomNumber();
-        /* DO NOT USE THE RANDOM NUMBER IF isSecure=false. */
+        /* DO NOT USE if isSecure=false. Wait till the next voting round (90s). */
         require(isSecure, "Random number is not secure");
-        /* Your custom RNG consumption logic. In this example the values are just returned. */
-        return (randomNumber, isSecure, timestamp);
+        /* Your custom RNG consumption logic. Here the random value is just returned. */
+        return randomNumber;
     }
 }

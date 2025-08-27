@@ -224,27 +224,27 @@ This guide is for developers who want to build an FTSOv2 application using eithe
         forge test
         ```
 
-    You should see a successful test result like this:
+        You should see a successful test result:
 
-    ```plaintext
-    [⠊] Compiling...
-    [⠘] Compiling 27 files with Solc 0.8.27
-    [⠃] Solc 0.8.27 finished in 797.51ms
-    Compiler run successful!
+        ```plaintext
+        [⠊] Compiling...
+        [⠘] Compiling 27 files with Solc 0.8.27
+        [⠃] Solc 0.8.27 finished in 797.51ms
+        Compiler run successful!
 
-    Ran 2 tests for test/FtsoV2FeedConsumer_foundry.t.sol:FtsoV2FeedConsumerTestFoundry
-    [PASS] testCheckFees() (gas: 21085)
-    [PASS] testGetFlrUsdPrice() (gas: 25610)
-    Logs:
-      msg.value matches fee
-      feedValue 150000
-      decimals 7
-      timestamp 1
+        Ran 2 tests for test/FtsoV2FeedConsumer_foundry.t.sol:FtsoV2FeedConsumerTestFoundry
+        [PASS] testCheckFees() (gas: 21085)
+        [PASS] testGetFlrUsdPrice() (gas: 25610)
+        Logs:
+          msg.value matches fee
+          feedValue 150000
+          decimals 7
+          timestamp 1
 
-    Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 7.72ms (2.91ms CPU time)
+        Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 7.72ms (2.91ms CPU time)
 
-    Ran 1 test suite in 122.65ms (7.72ms CPU time): 2 tests passed, 0 failed, 0 skipped (2 total tests)
-    ```
+        Ran 1 test suite in 122.65ms (7.72ms CPU time): 2 tests passed, 0 failed, 0 skipped (2 total tests)
+        ```
 
   </TabItem>
   <TabItem value="hardhat" label="Hardhat">
@@ -308,15 +308,20 @@ This guide is for developers who want to build an FTSOv2 application using eithe
     4.  The final step before deploying is to set the constructor arguments with the address of [`FtsoV2`](/ftso/solidity-reference) and [`FeeCalculator`](/ftso/solidity-reference) on Flare Testnet Coston2 and the [feed ID](/ftso/feeds) of FLR/USD:
 
         ```bash
+        # see https://dev.flare.network/ftso/solidity-reference
         export FTSOV2_COSTON2=0x3d893C53D9e8056135C26C8c638B76C8b60Df726
         export FEECALCULATOR_COSTON2=0x88A9315f96c9b5518BBeC58dC6a914e13fAb13e2
+        # see https://dev.flare.network/ftso/feeds
         export FLRUSD_FEED_ID=0x01464c522f55534400000000000000000000000000
         ```
 
         You can now deploy the contract:
 
         ```bash
-        forge create src/FtsoV2FeedConsumer.sol:FtsoV2FeedConsumer --private-key $ACCOUNT_PRIVATE_KEY --rpc-url $RPC_URL --constructor-args $FTSOV2_COSTON2 $FEECALCULATOR_COSTON2 $FLRUSD_FEED_ID
+        forge create src/FtsoV2FeedConsumer.sol:FtsoV2FeedConsumer \
+          --private-key $ACCOUNT_PRIVATE_KEY \
+          --rpc-url $RPC_URL \
+          --constructor-args $FTSOV2_COSTON2 $FEECALCULATOR_COSTON2 $FLRUSD_FEED_ID
         ```
 
         If the deployment is successful, the output will display the contract address, save that for later use:
@@ -338,7 +343,10 @@ This guide is for developers who want to build an FTSOv2 application using eithe
     5.  Use `cast` to interact with the contract, note that this command uses the environment variables defined in the sections above.:
 
         ```bash
-        cast send --private-key $ACCOUNT_PRIVATE_KEY --rpc-url $RPC_URL -j --value 0 $DEPLOYMENT_ADDRESS "getFlrUsdPrice()"
+        cast send \
+          --private-key $ACCOUNT_PRIVATE_KEY \
+          --rpc-url $RPC_URL -j \
+          --value 0 $DEPLOYMENT_ADDRESS "getFlrUsdPrice()"
         ```
 
         <details>
@@ -479,7 +487,7 @@ This guide is for developers who want to build an FTSOv2 application using eithe
 
     3. Interact with the contract:
 
-        Copy and paste the deployed contract address into the [Coston2 explorer](https://coston2-explorer.flare.network/) to view and interact with the contract.
+        Copy and paste the deployed contract address into the [Coston2 explorer](https://coston2.testnet.flarescan.com) to view and interact with the contract.
 
     Congratulations! You've built your first FTSOv2 app using Hardhat.
 
