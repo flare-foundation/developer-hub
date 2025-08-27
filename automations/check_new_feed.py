@@ -29,15 +29,8 @@ class NetworkConfig:
 ISSUES_FILE: Final[Path] = Path("issues.md")
 MAX_MARKET_CAP_RANK: Final[int] = 100
 MIN_USD_VOLUME: Final[int] = 100_000_000
+HEADER_CHAR_LIMIT: Final[int] = 140
 GITHUB_NEUTRAL_EXIT: Final[int] = 78
-HEADER_TEMPLATE: Final[str] = """---
-title: "[auto_req]: Potential New Feeds"
-assignees:
-  - dineshpinto
-labels:
-  - enhancement
----
-"""
 _VOLUME_RE = re.compile(r"^\$?\s*([\d,]+(?:\.\d{1,2})?)$")
 REGISTRY_ADDRESS: Final[str] = "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"
 NETWORKS: list[NetworkConfig] = [
@@ -145,12 +138,45 @@ def parse_volume(vol_str: str) -> int:
     return int(float(num))
 
 
+def _build_header(coins: list[dict[str, Any]]) -> str:
+    """
+    Build the YAML front-matter with a title that lists coin names.
+    """
+    base = "[auto_req]: Potential New Feeds - "
+    symbols_all = [c.get("symbol", "N/A") for c in coins]
+
+    # Accumulate names until a ~140-char title budget is hit; then append "+N more".
+    acc: list[str] = []
+    for symbol in symbols_all:
+        candidate = ", ".join([*acc, symbol])
+        if len(base + candidate) <= HEADER_CHAR_LIMIT:
+            acc.append(symbol)
+        else:
+            break
+    if len(acc) < len(symbols_all):
+        title_symbols = f"{', '.join(acc)} (+{len(symbols_all) - len(acc)} more)"
+    else:
+        title_symbols = ", ".join(acc)
+
+    safe_title_symbols = title_symbols.replace('"', r"\"")
+
+    return (
+        f"---\n"
+        f'title: "{base}{safe_title_symbols}"\n'
+        f"assignees:\n"
+        f"  - dineshpinto\n"
+        f"labels:\n"
+        f"  - enhancement\n"
+        f"---\n"
+    )
+
+
 def write_issue(coins: list[dict[str, Any]]) -> None:
     lines = [
-        "Coins matching [FIP.08](https://proposals.flare.network/FIP/FIP_8.html) criteria:\n"
+        "Feeds potentially matching [FIP.08](https://proposals.flare.network/FIP/FIP_8.html) criteria:\n"
     ]
     lines += [f"## {c.get('name', 'N/A')}\n{prettify_coin(c)}\n" for c in coins]
-    content = HEADER_TEMPLATE + "\n".join(lines)
+    content = _build_header(coins) + "\n".join(lines)
     tmp = ISSUES_FILE.with_suffix(".tmp")
     tmp.write_text(
         content if content.endswith("\n") else content + "\n", encoding="utf-8"
