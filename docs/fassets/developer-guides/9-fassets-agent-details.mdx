@@ -1,0 +1,109 @@
+---
+title: Read FAssets Agent Details
+tags: [intermediate, fassets]
+slug: fassets-agent-details
+description: Learn how to read FAssets agent details
+keywords: [fassets, flare-network]
+sidebar_position: 9
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import Remix from "@site/src/components/remix";
+
+## Overview
+
+In this guide, you will learn how to read FAssets agent details such as agent name, description, logo, and terms of use utilizing the [AgentOwnerRegistry](/fassets/reference/IAgentOwnerRegistry) smart contract.
+This information is essential for building user interfaces that display agent information or for validating agent credentials in your applications.
+
+## Prerequisites
+
+- Basic understanding of [FAssets system](/fassets/overview).
+- [Flare Network Periphery Contracts](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts) package.
+
+## Understanding FAssets Agents
+
+FAssets agents are entities that manage the minting and redemption of FAssets tokens. Each agent has:
+
+- **Management Address**: The address that controls the agent's operations.
+- **Agent Name**: Agent's display name.
+- **Description**: Detailed information about the agent.
+- **Icon URL**: Link to the agent's logo or branding image.
+- **Terms of Use URL**: Link to the agent's terms and conditions.
+
+## Step-by-Step Implementation
+
+### Get the AgentOwnerRegistry Contract Address
+
+The [AgentOwnerRegistry](/fassets/reference/IAgentOwnerRegistry) contract address is stored in the FAssets Asset Manager settings.
+Here's how to retrieve it:
+
+```solidity
+import {IAssetManager} from "@flarenetwork/flare-periphery-contracts/coston2/IAssetManager.sol";
+import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
+
+// Get the Asset Manager instance
+IAssetManager assetManager = ContractRegistry.getAssetManagerFXRP();
+
+// Retrieve the AgentOwnerRegistry address from settings
+address agentOwnerRegistry = assetManager.getSettings().agentOwnerRegistry;
+```
+
+### Access the AgentOwnerRegistry Contract
+
+Create an interface instance to interact with the AgentOwnerRegistry:
+
+```solidity
+import {IAgentOwnerRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/IAgentOwnerRegistry.sol";
+
+IAgentOwnerRegistry agentOwnerRegistryContract = IAgentOwnerRegistry(agentOwnerRegistry);
+```
+
+### Read Agent Details
+
+The [AgentOwnerRegistry](/fassets/reference/IAgentOwnerRegistry) provides several functions to retrieve agent information.
+All functions require the agent's management address as a parameter:
+
+#### Available Functions
+
+- [`getAgentName(address _managementAddress)`](/fassets/reference/IAgentOwnerRegistry#getagentname) - Returns the agent's display name.
+- [`getAgentDescription(address _managementAddress)`](/fassets/reference/IAgentOwnerRegistry#getagentdescription) - Returns the agent's description.
+- [`getAgentIconUrl(address _managementAddress)`](/fassets/reference/IAgentOwnerRegistry#getagenticonurl) - Returns the URL to the agent's icon/logo.
+- [`getAgentTermsOfUseUrl(address _managementAddress)`](/fassets/reference/IAgentOwnerRegistry#getagenttermsofuseurl) - Returns the URL to the agent's terms of use.
+
+#### Complete Example Function
+
+Here's a complete Solidity language function that retrieves all agent details in a single call:
+
+```solidity
+function getAgentDetails(address _managementAddress) external view
+  returns (string memory name, string memory description, string memory iconUrl, string memory termsOfUseUrl) {
+
+  // Get Asset Manager and AgentOwnerRegistry
+  IAssetManager assetManager = ContractRegistry.getAssetManagerFXRP();
+  address agentOwnerRegistryAddress = assetManager.getSettings().agentOwnerRegistry;
+  IAgentOwnerRegistry agentOwnerRegistry = IAgentOwnerRegistry(agentOwnerRegistryAddress);
+
+  // Retrieve all agent details
+  name = agentOwnerRegistry.getAgentName(_managementAddress);
+  description = agentOwnerRegistry.getAgentDescription(_managementAddress);
+  iconUrl = agentOwnerRegistry.getAgentIconUrl(_managementAddress);
+  termsOfUseUrl = agentOwnerRegistry.getAgentTermsOfUseUrl(_managementAddress);
+
+  return (name, description, iconUrl, termsOfUseUrl);
+}
+```
+
+## Conclusion
+
+In this guide, you learned how to read FAssets agent details using the [AgentOwnerRegistry](/fassets/reference/IAgentOwnerRegistry) smart contract.
+This functionality is crucial for building user interfaces that display agent information and for validating agent credentials in your applications.
+
+The complete implementation examples are available in the [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit).
+
+:::tip Next Steps
+To continue your FAssets development journey, you can:
+
+- Learn how to [mint FXRP](/fassets/developer-guides/fassets-mint)
+- Understand how to [redeem FXRP](/fassets/developer-guides/fassets-redeem)
+- Explore [FAssets system settings](/fassets/operational-parameters)
+  :::
