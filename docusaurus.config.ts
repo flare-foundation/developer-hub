@@ -271,7 +271,6 @@ const config: Config = {
         pathTransformation: {
           ignorePaths: ["docs", "1-intro"],
         },
-
       },
     ],
   ],
