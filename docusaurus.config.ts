@@ -250,6 +250,8 @@ const config: Config = {
       {
         ignoreFiles: ["**/node_modules/**", "**/.git/**", "**/*.txt"],
         includeOrder: [
+          "**/*.mdx",
+          "**/*.md",
           "**/network/**/*.mdx",
           "**/network/**/*.md",
           "**/ftso/**/*.mdx",
@@ -267,8 +269,9 @@ const config: Config = {
         excludeImports: true,
         removeDuplicateHeadings: true,
         pathTransformation: {
-          ignorePaths: ["docs"],
+          ignorePaths: ["docs", "1-intro"],
         },
+
       },
     ],
   ],
