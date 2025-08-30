@@ -248,10 +248,15 @@ const config: Config = {
     [
       "docusaurus-plugin-llms",
       {
-        ignoreFiles: ["**/node_modules/**", "**/.git/**", "**/*.txt"],
+        // scope
+        docsDir: "docs",
+        // outputs
+        generateLLMsTxt: true,
+        generateLLMsFullTxt: true,
+        llmsTxtFilename: "llms.txt",
+        llmsFullTxtFilename: "llms-full.txt",
+        // curation
         includeOrder: [
-          "**/*.mdx",
-          "**/*.md",
           "**/network/**/*.mdx",
           "**/network/**/*.md",
           "**/ftso/**/*.mdx",
@@ -265,12 +270,73 @@ const config: Config = {
           "**/support/**/*.mdx",
           "**/support/**/*.md",
         ],
-        // Content cleaning options for better LLM consumption
+        ignoreFiles: [
+          "**/node_modules/**",
+          "**/.git/**",
+          "**/.docusaurus/**",
+          "**/build/**",
+          "**/*.txt",
+        ],
+        includeUnmatchedLast: false,
+        // cleaning
         excludeImports: true,
         removeDuplicateHeadings: true,
-        pathTransformation: {
-          ignorePaths: ["docs", "1-intro"],
-        },
+        // consolidate bundles for better retrieval
+        // no file larger than 250k tokens
+        customLLMFiles: [
+          {
+            filename: "llms-network.txt",
+            includePatterns: ["**/network/**/*.mdx", "**/network/**/*.md"],
+            fullContent: true,
+            title: "Network Documentation",
+            description:
+              "Flare Network concepts, integration guides, SDKs, and API/Solidity references",
+          },
+          {
+            filename: "llms-ftso.txt",
+            includePatterns: ["**/ftso/**/*.mdx", "**/ftso/**/*.md"],
+            fullContent: true,
+            title: "FTSO Documentation",
+            description:
+              "Flare Time Series Oracle (FTSO) concepts, integration guides, and API/Solidity references",
+          },
+          {
+            filename: "llms-fdc.txt",
+            includePatterns: ["**/fdc/**/*.mdx", "**/fdc/**/*.md"],
+            fullContent: true,
+            title: "FDC Documentation",
+            description:
+              "Flare Data Connector (FDC) concepts, integration guides, and API/Solidity references",
+          },
+          {
+            filename: "llms-fassets.txt",
+            includePatterns: ["**/fassets/**/*.mdx", "**/fassets/**/*.md"],
+            fullContent: true,
+            title: "FAssets Documentation",
+            description:
+              "FAssets concepts, integration guides, and API/Solidity references",
+          },
+          {
+            filename: "llms-node-operators.txt",
+            includePatterns: ["**/run-node/**/*.mdx", "**/run-node/**/*.md"],
+            fullContent: true,
+            title: "Flare Node Documentation",
+            description: "Runbooks and guides for Flare node operators",
+          },
+          {
+            filename: "llms-reference.txt",
+            includePatterns: [
+              "**/solidity-reference/**/*.mdx",
+              "**/solidity-reference/**/*.md",
+              "**/reference/**/*.mdx",
+              "**/reference/**/*.md",
+            ],
+            fullContent: true,
+            title: "API and Solidity Reference (All Modules)",
+            description:
+              "Consolidated interfaces and API references across Network, FTSO, FDC and FAssets.",
+          },
+        ],
       },
     ],
   ],
