@@ -30,7 +30,7 @@ The choice is based on the minting fee or the amount of free collateral, which m
 The minter sends to the Asset Manager contract a collateral reservation transaction (CRT). The CRT includes:
 
     - The address of the chosen agent.
-    - The amount to mint, which must be a whole number of [lots](/fassets/minting#lots).
+    - The amount to mint, which must be a positive integer of [lots](/fassets/minting#lots).
     - The [collateral reservation fee (CRF)](#fees) to compensate for the locked collateral.
     - The executor's address, if the minter is not the executor.
     - The executor's fee, if the minter is not the executor.
@@ -265,7 +265,7 @@ The following example shows how the redemption queue works.
 
 ## Lots
 
-Every minting and redemption must be made in a whole number of lots.
+Every minting and redemption must be made in a positive integer of lots.
 Lots serve the following purposes:
 
 - They prevent underlying transaction fees from exceeding minting or redemption fees.
@@ -284,9 +284,9 @@ Some processes generate a fractional number of lots:
 
 - On minting, part of the minting fee is minted as the FAsset fee to the collateral pool.
   This value is usually less than 1 lot.
-- When the lot size is changed, redemptions close only a whole number of lots of each redemption ticket, which leaves the remainder unredeemed.
+- When the lot size is changed, redemptions close only a positive integer of lots of each redemption ticket, which leaves the remainder unredeemed.
 
-These amounts, known as dust, cannot be redeemed directly because redemption requires a whole number of lots.
+These amounts, known as dust, cannot be redeemed directly because redemption requires a positive integer of lots.
 
 In such cases, the generated dust is not included in any redemption ticket.
 Instead, each agent's dust is accumulated until the dust amounts to a whole lot.
