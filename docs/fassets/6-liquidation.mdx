@@ -234,10 +234,10 @@ Fees for gas on the underlying chain can create issues for the FAssets system, s
 Expensive gas fees can cause an address to have fewer assets than it should have and trigger a liquidation.
 Therefore, consider these actions:
 
-- **Cap the gas usage on underlying chains**: On smart-contract chains, the Data Connector defines a cap on the gas amount to enable any simple transaction to pass.
+- **Cap the gas usage on underlying chains**: On smart-contract chains, the Flare Data Connector defines a cap on the gas amount to enable any simple transaction to pass.
   If senders limit their gas amount to this cap and a transaction still fails due to insufficient gas, the failure is considered the receiver's fault, and the transaction is labeled as blocked.
 
-  The gas cap is defined by the Data Connector, not the FAssets system, because it is the Data Connector that labels transactions as blocked.
+  The gas cap is defined by the Flare Data Connector, not the FAssets system, because it is the Flare Data Connector that labels transactions as blocked.
 
 - **Maintain the underlying balance**: Agents must ensure that the payment plus the transaction fee for a redemption never reduce their balance to an amount lower than the amount required to back the FAssets.
   Agents can ensure that redemptions do not reduce that balance in several ways:
@@ -302,7 +302,7 @@ The double payment challenge catches this attempt as soon as the payments are fi
 
 This challenge is performed in the following way:
 
-1. The challenger detects two seemingly legal payments from the same agent's underlying address and with equal payment reference, and obtains proofs for both using the Data Connector.
+1. The challenger detects two seemingly legal payments from the same agent's underlying address and with equal payment reference, and obtains proofs for both using the Flare Data Connector.
 2. The challenger presents the two proofs to the FAssets system and triggers the reward payment and full liquidation.
 
 #### Negative Balance Challenge
@@ -313,7 +313,7 @@ This situation can happen because gas fees might be unknown when redemptions are
 This situation would normally be detected after all payments are reported, but in this way it can be caught as soon as the payments are finalized on the underlying chain:
 
 1. The challenger detects one or more legal payments from the same agent's underlying address and the total outgoing amount exceeds the sum of all redemption values plus the total free balance.
-   The challenger obtains proofs for all of them using the Data Connector.
+   The challenger obtains proofs for all of them using the Flare Data Connector.
 2. The challenger presents all the proofs to the FAssets system, which checks that the transactions are from the agent's underlying address, that they have not been confirmed yet, and that their total really makes the free balance negative.
    Then, it triggers reward payment and full liquidation.
 
