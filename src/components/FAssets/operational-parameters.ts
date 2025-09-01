@@ -13,8 +13,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "750k XRP",
-            btc: "18.5 BTC",
-            doge: "5M DOGE",
           },
           coston: {
             xrp: "none",
@@ -34,8 +32,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "10 XRP",
-            btc: "0.05 BTC",
-            doge: "200 DOGE",
           },
           coston: {
             xrp: "20 XRP",
@@ -55,8 +51,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "0.5%",
-            btc: "0.5%",
-            doge: "0.5%",
           },
           coston: {
             xrp: "0.1%",
@@ -76,8 +70,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "0.5%",
-            btc: "1%",
-            doge: "0.5%",
           },
           coston: {
             xrp: "0.1%",
@@ -98,8 +90,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "5%",
-            btc: "2%",
-            doge: "5%",
           },
           coston: {
             xrp: "10%",
@@ -118,8 +108,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "✅",
-            btc: "✅",
-            doge: "✅",
           },
           coston: {
             xrp: "✅",
@@ -138,8 +126,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "20",
-            btc: "20",
-            doge: "20",
           },
           coston: {
             xrp: "20",
@@ -164,8 +150,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "225",
-            btc: "36",
-            doge: "100",
           },
           coston: {
             xrp: "500",
@@ -185,8 +169,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "15 minutes",
-            btc: "6 hours",
-            doge: "60 minutes",
           },
           coston: {
             xrp: "15 minutes",
@@ -206,8 +188,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "4 seconds",
-            btc: "10 minutes",
-            doge: "1 minute",
           },
           coston: {
             xrp: "2 seconds",
@@ -227,8 +207,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "1 day",
-            btc: "1 day",
-            doge: "1 day",
           },
           coston: {
             xrp: "1 day",
@@ -248,8 +226,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "45 seconds",
-            btc: "60 seconds",
-            doge: "60 seconds",
           },
           coston: {
             xrp: "30 seconds",
@@ -272,8 +248,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "<code>USDX</code>",
-            btc: "<code>USDX</code>",
-            doge: "<code>USDX</code>",
           },
           coston: {
             xrp: "<code>USDX</code>, <code>USDC</code>, <code>USDT</code>, simulated <code>WETH</code>",
@@ -294,35 +268,11 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "1.2",
-            btc: "1.2",
-            doge: "1.2",
           },
           coston: {
             xrp: "1.4",
             btc: "1.4",
             doge: "1.4",
-          },
-        },
-      },
-      {
-        name: "Vault Collateral Call Band CR",
-        settingName: "ccbCR",
-        description:
-          "The threshold at which collateral is considered unhealthy but liquidation is delayed.",
-        link: "/fassets/collateral#liquidation-cr",
-        values: {
-          coston2: {
-            xrp: "1.1",
-          },
-          songbird: {
-            xrp: "1.1",
-            btc: "1.1",
-            doge: "1.1",
-          },
-          coston: {
-            xrp: "1.3",
-            btc: "1.3",
-            doge: "1.3",
           },
         },
       },
@@ -337,8 +287,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "1.3",
-            btc: "1.3",
-            doge: "1.3",
           },
           coston: {
             xrp: "1.5",
@@ -356,8 +304,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "SGB",
-            btc: "SGB",
-            doge: "SGB",
           },
           coston: {
             xrp: "CFLR",
@@ -378,8 +324,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "1.5",
-            btc: "1.5",
-            doge: "1.5",
           },
           coston: {
             xrp: "2.0",
@@ -400,8 +344,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "1.4",
-            btc: "1.4",
-            doge: "1.4",
           },
           coston: {
             xrp: "1.9",
@@ -421,8 +363,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "1.6",
-            btc: "1.6",
-            doge: "1.6",
           },
           coston: {
             xrp: "2.1",
@@ -442,8 +382,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "50%",
-            btc: "50%",
-            doge: "50%",
           },
           coston: {
             xrp: "50%",
@@ -458,28 +396,6 @@ export const operationalParameters = [
     title: "Liquidation",
     parameters: [
       {
-        name: "CCB time",
-        settingName: "ccbTime",
-        description:
-          "Maximum time an agent can remain in CCB before liquidation starts.",
-        link: "/fassets/collateral#liquidation-cr",
-        values: {
-          coston2: {
-            xrp: "180 seconds",
-          },
-          songbird: {
-            xrp: "600 seconds",
-            btc: "600 seconds",
-            doge: "600 seconds",
-          },
-          coston: {
-            xrp: "180 seconds",
-            btc: "180 seconds",
-            doge: "180 seconds",
-          },
-        },
-      },
-      {
         name: "Liquidation premium",
         settingName: "liquidationPremium",
         description: "Increases in steps, as time passes.",
@@ -489,8 +405,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "<strong>Step 1</strong>: 5%<br /><strong>Step 2</strong>: 8%<br /><strong>Step 3</strong>: 12%",
-            btc: "<strong>Step 1</strong>: 4%<br /><strong>Step 2</strong>: 8%<br /><strong>Step 3</strong>: 12%",
-            doge: "<strong>Step 1</strong>: 4%<br /><strong>Step 2</strong>: 8%<br /><strong>Step 3</strong>: 12%",
           },
           coston: {
             xrp: "<strong>Step 1</strong>: 5%<br /><strong>Step 2</strong>: 10%<br /><strong>Step 3</strong>: 15%",
@@ -510,8 +424,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "300 seconds",
-            btc: "300 seconds",
-            doge: "300 seconds",
           },
           coston: {
             xrp: "180 seconds",
@@ -529,8 +441,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "The agent's vault",
-            btc: "The agent's vault",
-            doge: "The agent's vault",
           },
           coston: {
             xrp: "The agent's vault",
@@ -548,8 +458,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "The collateral pool",
-            btc: "The collateral pool",
-            doge: "The collateral pool",
           },
           coston: {
             xrp: "The collateral pool",
@@ -575,8 +483,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "250 USD converted to vault collateral",
-            btc: "250 USD converted to vault collateral",
-            doge: "250 USD converted to vault collateral",
           },
           coston: {
             xrp: "300 USD converted to vault collateral",
@@ -597,8 +503,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "",
-            btc: "",
-            doge: "",
           },
           coston: {
             xrp: "",
@@ -616,8 +520,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "6 hours",
-            btc: "4 hours",
-            doge: "4 hours",
           },
           coston: {
             xrp: "2 hours",
@@ -635,8 +537,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "50 USD (converted to vault collateral)",
-            btc: "50 USD (converted to vault collateral)",
-            doge: "50 USD (converted to vault collateral)",
           },
           coston: {
             xrp: "100 USD (converted to vault collateral)",
@@ -661,8 +561,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "1 hour",
-            btc: "1 hour",
-            doge: "1 hour",
           },
           coston: {
             xrp: "60 seconds",
@@ -682,8 +580,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "1 day",
-            btc: "1 day",
-            doge: "1 day",
           },
           coston: {
             xrp: "60 seconds",
@@ -703,8 +599,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "1 day",
-            btc: "1 day",
-            doge: "1 day",
           },
           coston: {
             xrp: "1 day",
@@ -724,8 +618,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "3 hours",
-            btc: "3 hours",
-            doge: "3 hours",
           },
           coston: {
             xrp: "60 seconds",
@@ -745,8 +637,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "1 hour",
-            btc: "1 hour",
-            doge: "1 hour",
           },
           coston: {
             xrp: "120 seconds",
@@ -766,8 +656,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "5 minutes",
-            btc: "5 minutes",
-            doge: "5 minutes",
           },
           coston: {
             xrp: "120 seconds",
@@ -787,8 +675,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "1 day",
-            btc: "1 day",
-            doge: "1 day",
           },
           coston: {
             xrp: "120 seconds",
@@ -808,8 +694,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "2 hours",
-            btc: "2 hours",
-            doge: "2 hours",
           },
           coston: {
             xrp: "1 hour",
@@ -829,8 +713,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "60 seconds",
-            btc: "60 seconds",
-            doge: "60 seconds",
           },
           coston: {
             xrp: "60 seconds",
@@ -850,8 +732,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "1 hour",
-            btc: "1 hour",
-            doge: "1 hour",
           },
           coston: {
             xrp: "2 hours",
@@ -876,8 +756,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "3 days",
-            btc: "3 days",
-            doge: "3 days",
           },
           coston: {
             xrp: "1 day",
@@ -897,60 +775,11 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "1 week",
-            btc: "1 week",
-            doge: "1 week",
           },
           coston: {
             xrp: "1 week",
             btc: "1 week",
             doge: "1 week",
-          },
-        },
-      },
-    ],
-  },
-  {
-    title: "FAssets Upgrade",
-    parameters: [
-      {
-        name: "Buyback collateral premium",
-        settingName: "buybackCollateralPremium",
-        description:
-          "The premium at which agents can buy back their collateral when f-asset is terminated.",
-        values: {
-          coston2: {
-            xrp: "0.3%",
-          },
-          songbird: {
-            xrp: "0.5%",
-            btc: "0.5%",
-            doge: "0.5%",
-          },
-          coston: {
-            xrp: "0.3%",
-            btc: "0.3%",
-            doge: "0.3%",
-          },
-        },
-      },
-      {
-        name: "Burn collateral premium",
-        settingName: "vaultCollateralBuyForFlare",
-        description:
-          "The premium at which agents can burn collateral to unstick a minting process.",
-        values: {
-          coston2: {
-            xrp: "0%",
-          },
-          songbird: {
-            xrp: "0%",
-            btc: "0%",
-            doge: "0%",
-          },
-          coston: {
-            xrp: "0%",
-            btc: "0%",
-            doge: "0%",
           },
         },
       },
@@ -970,8 +799,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "0",
-            btc: "0",
-            doge: "0",
           },
           coston: {
             xrp: "0",
@@ -991,8 +818,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "30",
-            btc: "30",
-            doge: "30",
           },
           coston: {
             xrp: "16",
@@ -1011,8 +836,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "3.5 days",
-            btc: "3.5 days",
-            doge: "3.5 days",
           },
           coston: {
             xrp: "7 days",
@@ -1031,8 +854,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "1733122800 (Mon Dec 02 2024 07:00:00 GMT)",
-            btc: "1733122800 (Mon Dec 02 2024 07:00:00 GMT)",
-            doge: "1733122800 (Mon Dec 02 2024 07:00:00 GMT)",
           },
           coston: {
             xrp: "Tue Oct 01 2024 12:00:00 GMT",
@@ -1058,8 +879,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "1%",
-            btc: "1%",
-            doge: "1%",
           },
           coston: {
             xrp: "0.25%",
@@ -1080,8 +899,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "30%",
-            btc: "30%",
-            doge: "30%",
           },
           coston: {
             xrp: "40%",
@@ -1102,8 +919,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "1.4",
-            btc: "1.4",
-            doge: "1.4",
           },
           coston: {
             xrp: "1.6",
@@ -1124,8 +939,6 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "1.7",
-            btc: "1.7",
-            doge: "1.7",
           },
           coston: {
             xrp: "2.3",
@@ -1146,56 +959,11 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "1.6",
-            btc: "1.6",
-            doge: "1.6",
           },
           coston: {
             xrp: "2.3",
             btc: "2.3",
             doge: "2.3",
-          },
-        },
-      },
-      {
-        name: "Top-up CR",
-        settingName: "poolTopupCollateralRatioBIPS",
-        description:
-          "Defines the minimum collateral ratio agents must maintain when topping up pool collateral.",
-        link: "/fassets/collateral#top-up-cr",
-        values: {
-          coston2: {
-            xrp: "1.5",
-          },
-          songbird: {
-            xrp: "1.5",
-            btc: "1.5",
-            doge: "1.5",
-          },
-          coston: {
-            xrp: "2.1",
-            btc: "2.1",
-            doge: "2.1",
-          },
-        },
-      },
-      {
-        name: "Top-up discount",
-        settingName: "poolTopupTokenPriceFactorBIPS",
-        description:
-          "The pool top-up token discount values added tokens at a slight discount to market price, increasing system stability, shown as a factor on the Agent UI.",
-        values: {
-          coston2: {
-            xrp: "99.5%",
-          },
-          songbird: {
-            xrp: "99.5%",
-            btc: "99.5%",
-            doge: "99.5%",
-          },
-          coston: {
-            xrp: "90%",
-            btc: "90%",
-            doge: "90%",
           },
         },
       },
@@ -1211,11 +979,28 @@ export const operationalParameters = [
           },
           songbird: {
             xrp: "99%",
-            btc: "99%",
-            doge: "99%",
           },
           coston: {
             xrp: "99%",
+            btc: "99%",
+            doge: "99%",
+          },
+        },
+      },
+      {
+        name: "Redemption Pool Fee Share",
+        settingName: "redemptionPoolFeeShare",
+        description:
+          "Percentage of redemption fees paid to the pool to sustain it during high redemption periods.",
+        values: {
+          coston2: {
+            xrp: "40%",
+          },
+          songbird: {
+            xrp: "30%",
+          },
+          coston: {
+            xrp: "40%",
             btc: "99%",
             doge: "99%",
           },
