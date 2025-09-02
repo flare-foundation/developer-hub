@@ -51,7 +51,8 @@ The collateral reservation response is an event issued by the contract, which in
 
 ### 2. Underlying Payment
 
-After this event is emitted, the minter must pay the full underlying amount plus the fee to the agent on the underlying chain in a certain amount of time.
+After this event is emitted, the minter must pay the full underlying amount plus the fee to the agent on the underlying chain.
+This payment must be completed within a specified time limit.
 
 ### 3. Payment Proof
 
@@ -148,11 +149,11 @@ The [agent's registration process](/fassets/overview#agents) verifies that the a
 The following example shows proof of nonpayment.
 
 <details>
-<summary>Proof of nonpayment example.</summary>
+<summary>Referenced payment nonexistence attestation type example.</summary>
 
 The following example shows how the nonpayment proof works.
 
-The Flare Data Connector's [payment nonexistence attestation type](https://gitlab.com/flarenetwork/state-connector-protocol/-/blob/main/specs/attestations/active-types/ReferencedPaymentNonexistence.md?ref_type=heads) proves nonpayment.
+The Flare Data Connector's [referenced payment nonexistence attestation type](/fdc/attestation-types/referenced-payment-nonexistence) proves nonpayment.
 
 1. The minter sends a request to mint FBTC.
    At the time the request is received, the last mined block on the Bitcoin chain is number 92, with timestamp 09:00 AM.
@@ -172,7 +173,7 @@ The Flare Data Connector's [payment nonexistence attestation type](https://gitla
 5. The agent sends a nonpayment attestation request, which includes the payment reference, the underlying amount that was expected, the last block (100), and the last timestamp (11:00).
 6. Attestation providers attest to the following facts:
    - Block 102 is finalized and has both the number and timestamp larger than required.
-   - Until this block, the required payment either was not made or was not sufficient.
+   - Before this block, the required payment either was not made or was not sufficient.
 
 Now, the mint-payment failure and the nonpayment proof can be submitted to the FAssets system.
 
@@ -243,11 +244,11 @@ The following example shows how the redemption queue works.
 <details>
 <summary>Redemption queue example.</summary>
 
-1.  Bob mints 10 FXRP with Agent 1.
-2.  Alice mints 20 FXRP with Agent 2.
+1.  Alice mints 10 FXRP with Agent 1.
+2.  Bob mints 20 FXRP with Agent 2.
 3.  Charlie mints 5 FXRP with Agent 1.
 
-    After Bob, Alice, and Charlie have minted their FAssets, the redemption queue according to the FIFO method is:
+    After Alice, Bob, and Charlie have minted their FAssets, the redemption queue according to the FIFO method is:
     1. Agent 1 with 10 FXRP.
     2. Agent 2 with 20 FXRP.
     3. Agent 1 with 5 FXRP.
