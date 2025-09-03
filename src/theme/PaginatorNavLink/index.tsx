@@ -1,4 +1,4 @@
-import React, { type JSX } from "react";
+import { type JSX } from "react";
 import clsx from "clsx";
 import Link from "@docusaurus/Link";
 import type { Props } from "@theme/PaginatorNavLink";
