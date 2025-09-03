@@ -12,7 +12,7 @@ This site is built with [Docusaurus](https://docusaurus.io/), a modern static si
 
 ### Prerequisites
 
-- [Node.js v20](https://nodejs.org/en/) with [nvm](https://github.com/nvm-sh/nvm).
+- [Node.js v22](https://nodejs.org/en/) with [nvm](https://github.com/nvm-sh/nvm).
 - For language-specific [examples](examples/)
   - [uv](https://docs.astral.sh/uv/) for Python
   - [Cargo](https://doc.rust-lang.org/cargo/) for Rust
@@ -114,10 +114,10 @@ To generate Solidity documentation:
 
    This pulls the latest smart contracts and generates docs.
 
-3. **Switch Back to Node.js v20:**
+3. **Switch Back to Node.js v22:**
 
    ```bash
-   nvm use 20
+   nvm use 22
    ```
 
 ### 🔄 Running Automations
