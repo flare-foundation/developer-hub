@@ -118,6 +118,8 @@ export default function OperationalParameters({
         <ParameterTable
           network="songbird"
           parameters={operationalParametersSection.parameters}
+          hideBtc
+          hideDoge
         />
       </TabItem>
       <TabItem value="coston">
