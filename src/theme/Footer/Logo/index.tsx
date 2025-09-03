@@ -1,4 +1,4 @@
-import React from "react";
+import React, { type JSX } from "react";
 import clsx from "clsx";
 import Link from "@docusaurus/Link";
 import { useBaseUrlUtils } from "@docusaurus/useBaseUrl";

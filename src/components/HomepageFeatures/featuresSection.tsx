@@ -1,3 +1,5 @@
+import React, { type JSX } from "react";
+
 import classes from "./featuresSection.module.css";
 
 import DataConnector from "@site/static/img/DATACONNECTOR_new.svg";

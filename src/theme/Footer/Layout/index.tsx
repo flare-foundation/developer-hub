@@ -1,4 +1,4 @@
-import React from "react";
+import React, { type JSX } from "react";
 import clsx from "clsx";
 import type { Props } from "@theme/Footer/Layout";
 
