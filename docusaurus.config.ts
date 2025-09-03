@@ -206,7 +206,7 @@ const config: Config = {
             {
               label: "Governance Proposals",
               href: "https://proposals.flare.network",
-            }
+            },
           ],
         },
       ],
