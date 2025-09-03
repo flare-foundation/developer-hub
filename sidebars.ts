@@ -209,11 +209,11 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       link: { type: "doc", id: "fassets/overview" },
       items: [
-        "fassets/collateral",
         "fassets/minting",
         "fassets/redemption",
-        "fassets/liquidation",
+        "fassets/collateral",
         "fassets/core-vault",
+        "fassets/liquidation",
         "fassets/operational-parameters",
         "fassets/songbird",
         {
