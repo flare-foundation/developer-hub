@@ -64,7 +64,9 @@ contract TransferEventListener {
                 _event.topics.length == 0 || // No topics
                 // The topic0 doesn't match the Transfer event
                 _event.topics[0] !=
-                keccak256(abi.encodePacked("Transfer(address,address,uint256)"))
+                    keccak256(
+                        abi.encodePacked("Transfer(address,address,uint256)")
+                    )
             ) {
                 continue;
             }
