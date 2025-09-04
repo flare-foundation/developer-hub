@@ -214,6 +214,7 @@ const sidebars: SidebarsConfig = {
         "fassets/collateral",
         "fassets/core-vault",
         "fassets/liquidation",
+        "fassets/emergency-pause",
         "fassets/operational-parameters",
         "fassets/songbird",
         {
