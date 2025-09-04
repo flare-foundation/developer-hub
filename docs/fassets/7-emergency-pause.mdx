@@ -1,0 +1,69 @@
+---
+title: Emergency Pause System
+description: FAssets emergency pause system
+keywords: [fassets, emergency, pause, security, system-control, maintenance]
+---
+
+## Overview
+
+The FAssets system includes a structured **three-level emergency pause mechanism** that allows governance to selectively restrict operations in response to planned upgrades, critical failures, or security threats. Each level defines a different scope of restrictions, ensuring a balance between **security, system availability, and user protection**.
+
+## Emergency Pause Levels
+
+### Start Operations
+
+This level is intended for scenarios like network upgrades or planned maintenance.
+The goal is to prevent anyone from initiating new actions while allowing operations already in progress to complete before proceeding with maintenance.
+
+#### Halted Operations
+
+- **User/Agent Operations**: [minting](/fassets/minting), [redeeming](/fassets/redemption), [liquidation](/fassets/liquidation), [destroy agent](/fassets/reference/agent-bot#close-agent-vault), [collateral withdrawal](/fassets/reference/agent-bot#withdraw-vault-collateral), [exit available](/fassets/reference/agent-bot#exit-available).
+- **One-Step Operations**: [self mint](/fassets/reference/agent-bot#self-mint-fasset), [self close](/fassets/reference/agent-bot#self-close), [enter](/fassets/reference/agent-bot#enter-available), [create](/fassets/reference/agent-bot#create) agent.
+- **Collateral Pool Operations**: [enter](/fassets/reference/user-bot#enter-pool), [exit](/fassets/reference/user-bot#exit-pool), [withdraw fees](/fassets/reference/agent-bot#withdraw-vault-collateral-1), pay fee debt, [delegate pool collateral](/fassets/reference/agent-bot#delegate-pool-collateral).
+
+#### Use Cases
+
+- Scheduled network upgrades.
+- System configuration or parameter changes.
+- Non-critical security patches.
+
+### Full
+
+This level is designed for critical emergencies.
+It halts practically all activity while preserving essential system functions.
+
+#### Halted Operations
+
+Stops almost everything, except:
+
+- **FAsset transfers**, but users can still move their assets.
+- **Settings modifications**, but governance can still adjust parameters.
+- **System upgrades**, but critical updates can still be deployed.
+
+#### Use Cases
+
+- Confirmed security vulnerabilities.
+- Market manipulation attempts.
+- Critical system failures.
+- Regulatory compliance requirements.
+
+### Full and Transfer
+
+The most restrictive level that freezes all transactional activity, including asset transfers.
+
+#### Halted Operations
+
+This is identical to the FULL level, but it also stops the **FAsset transfers**.
+It completely freezes all movement of the FAssets.
+
+#### Use Cases
+
+- Severe security breaches.
+- Complete system compromise.
+- Emergency asset protection.
+- Extreme market conditions.
+
+## Conclusion
+
+The FAssets emergency pause system provides a robust framework for maintaining system security and stability during critical situations.
+The system can respond appropriately to various types of threats while maintaining essential functionality and protecting user assets.
