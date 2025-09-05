@@ -33,13 +33,13 @@ A transaction is considered "balance decreasing" for the specified address if:
 
 ## Response
 
-| Field                      | Solidity Type | Description                                                            |
-| -------------------------- | ------------- | ---------------------------------------------------------------------- |
-| `blockNumber`              | `uint64`      | Block number containing the transaction.                               |
-| `blockTimestamp`           | `uint64`      | Timestamp of the block containing the transaction.                     |
-| `sourceAddressHash`        | `bytes32`     | Standard hash of the address indicated by `sourceAddressIndicator`.    |
-| `spentAmount`              | `int256`      | Amount spent by the source address in minimal units (can be negative). |
-| `standardPaymentReference` | `bytes32`     | Standardized payment reference of the transaction, if available.       |
+| Field                      | Solidity Type | Description                                                                                    |
+| -------------------------- | ------------- | ---------------------------------------------------------------------------------------------- |
+| `blockNumber`              | `uint64`      | Block number containing the transaction.                                                       |
+| `blockTimestamp`           | `uint64`      | Timestamp of the block containing the transaction.                                             |
+| `sourceAddressHash`        | `bytes32`     | Standard hash of the address indicated by `sourceAddressIndicator`.                            |
+| `spentAmount`              | `int256`      | Amount spent by the source address in minimal units (can be negative).                         |
+| `standardPaymentReference` | `bytes32`     | Standard payment reference of the transaction. Zero value if the transaction has no reference. |
 
 :::warning[Standard Payment Reference]
 
@@ -79,6 +79,7 @@ The verification process is chain-specific and can be computed with a [balance d
 
 - `spentAmount`: Difference between the balance of the address **after** and **before** the transaction. Can be negative.
 - `blockTimestamp`: The **close_time** of the ledger, converted to Unix time.
+- `standardPaymentReference`: [Standard payment reference] for `Payment` transactions, otherwise zero.
 
 :::note[Lowest used timestamp]
 
