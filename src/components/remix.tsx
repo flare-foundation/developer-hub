@@ -1,4 +1,4 @@
-import React from "react";
+import React, { type JSX } from "react";
 import Link from "@docusaurus/Link";
 
 export default function Remix({ children, fileName }): JSX.Element {
