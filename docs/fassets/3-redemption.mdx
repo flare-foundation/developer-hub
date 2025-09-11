@@ -55,8 +55,8 @@ This is the summary of the redemption process:
 
 Agents have a limited time to pay the redeemer on the underlying chain.
 The amount of time is defined by the last block and the last timestamp on the underlying chain.
-If the payment is not made in time, the redeemer has to prove nonpayment to be compensated.
-After the redeemer presents the nonpayment proof, he is paid with the agent's collateral plus a _redemption default premium_.
+If the payment is not made in time, the redeemer has to prove [payment non existence](/fdc/attestation-types/referenced-payment-nonexistence) to be compensated.
+After the redeemer presents the payment non existence proof, he is paid with the agent's collateral plus a _redemption default premium_.
 The premium is intended to encourage the agent to complete redemptions by paying with the underlying asset instead of collateral.
 
 If a payment fails and the failed transaction is recorded on the underlying chain, the agent must submit a proof of failed payment.
@@ -82,8 +82,8 @@ If the agent does not report the failed payment in time, anyone (including the e
 
 During step 4 above, if any agent does not pay on the underlying chain, the redeemer completes the following procedure separately for each nonpaying agent:
 
-1. The redeemer obtains a proof of nonpayment from the Flare Data Connector.
-2. The redeemer presents the nonpayment proofs to the FAssets system, which triggers a redemption failure.
+1. The redeemer obtains a proof of payment non existence from the Flare Data Connector.
+2. The redeemer presents the payment non existence proofs to the FAssets system, which triggers a redemption failure.
 3. The redeemer is paid with collateral, according to the current price plus a premium.
 4. FAssets are overcollateralized, so, even after paying the redeemer with a premium, a remainder is released.
    This remainder is derived by the [system-wide collateral ratio settings](/fassets/collateral#system-wide-thresholds) specified by governance.
@@ -94,7 +94,7 @@ During step 4 above, if any agent does not pay on the underlying chain, the rede
 ### Unresponsive redeemer
 
 After a redemption nonpayment, the redeemer might not report the failure for some reason.
-In this case, the agent or the executor can present a nonpayment proof, and the redeemer receives collateral plus a premium.
+In this case, the agent or the executor can present a payment non existence proof, and the redeemer receives collateral plus a premium.
 After this operation, the underlying backing collateral and the remaining local collateral are released.
 
 ### Unresponsive agent
@@ -108,7 +108,7 @@ After enough time for the agent to present the proof has elapsed, anyone, includ
 ### Expired proof
 
 Proofs provided by the Flare Data Connector are available for only 24 hours, approximately.
-If neither the redeemer, the agent, nor the executor presents the proof of payment or nonpayment within 24 hours, the regular redeeming process cannot continue, and the agent's collateral could be locked indefinitely.
+If neither the redeemer, the agent, nor the executor presents the proof of payment or payment non existence within 24 hours, the regular redeeming process cannot continue, and the agent's collateral could be locked indefinitely.
 
 The procedure to recover this collateral is the same as the procedure in the minting case.
 
