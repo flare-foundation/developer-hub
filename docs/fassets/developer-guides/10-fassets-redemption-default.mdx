@@ -1,0 +1,108 @@
+---
+title: Monitor Redemptions & Execute Defaults
+tags: [intermediate, fassets]
+slug: fassets-redemption-default
+description: Learn how to monitor and handle redemption non-payment scenarios
+keywords: [fassets, flare-network]
+sidebar_position: 10
+---
+
+## Overview
+
+In the FAssets system, once a **redeemer submits a redemption request**, the assigned **agent must send the underlying asset** (e.g., XRP) to the redeemer within a specific time that is defined by the [operational parameters](/fassets/operational-parameters).
+
+This guide explains:
+
+- How to **observe the redemption deadline**.
+- What parameters to use (`underlyingSecondsForPayment`, `underlyingBlocksForPayment`)
+- How to **handle agent failure** by calling [`redemptionPaymentDefault`](/fassets/reference/IAssetManager#redemptionpaymentdefault).
+
+## Prerequisites
+
+- Basic understanding of [FAssets system](/fassets/overview).
+- [Flare Network Periphery Contracts](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts) package.
+
+## Key Operational Parameters
+
+| Parameter                     | Unit    | Purpose                                                                              |
+| ----------------------------- | ------- | ------------------------------------------------------------------------------------ |
+| `underlyingSecondsForPayment` | seconds | The minimum time allowed for an agent to pay for a redemption.                       |
+| `underlyingBlocksForPayment`  | blocks  | The number of underlying blocks during which the agent can pay the underlying value. |
+
+Both values are defined per asset in the FAssets system and can be fetched from the [Asset Manager contract](/fassets/developer-guides/fassets-settings-solidity).
+
+## Monitoring the Redemption Window
+
+When a redemption is created, the [`RedemptionRequested`](/fassets/reference/IAssetManagerEvents#redemptionrequested) event is emitted by the Asset Manager contract.
+
+From this event, you can obtain the following:
+
+- `requestId` - unique identifier for the redemption.
+- `agentVault` - the agent vault responsible for payment.
+- `redeemer` - address requesting redemption.
+- `underlyingAddress` - the destination address on the underlying chain.
+- `paymentReference` - a unique hash for proof tracking.
+- `firstUnderlyingBlock` - the first underlying block to submit payment.
+- `lastUnderlyingBlock` - the last underlying block to submit payment.
+- `lastUnderlyingTimestamp` — the **deadline** on the underlying chain for submitting the redemption payment.
+
+You should wait until this deadline is passed and then check whether the agent has paid the redemption payment in the underlying chain.
+The [`RedemptionPaymentCompleted`](/fassets/reference/IAssetManagerEvents#redemptionpaymentcompleted) event is emitted by the Asset Manager contract when the redemption payment is completed.
+
+## Handling Non-Payment
+
+If the agent fails to pay the redemption payment in the underlying chain, the redeemer or the executor can start the redemption default process.
+
+### Generate the Proof of Payment Non-Existence
+
+With information from the [`RedemptionRequested`](/fassets/reference/IAssetManagerEvents#redemptionrequested) event, you can generate the attestation request for the [ReferencedPaymentNonexistence](/fdc/attestation-types/referenced-payment-nonexistence) attestation type.
+
+Use the following parameters:
+
+- `minimalBlockNumber`: The starting block number of the search range, which is the value of `firstUnderlyingBlock`.
+- `deadlineBlockNumber`: The block number to include as the end of the search range, which is the value of `lastUnderlyingBlock`.
+- `deadlineTimestamp`: The timestamp to include as the end of the search range, which is the value of `lastUnderlyingTimestamp`.
+- `destinationAddressHash`: The standard hash of the address where the payment was expected, which is the value of `underlyingAddress`.
+- `amount`: The required payment amount in minimal units, which is the value of `valueUBA`.
+- `standardPaymentReference`: The specific payment reference that should have been included, which is the value of `paymentReference`.
+- `checkSourceAddresses`: Not used in case of XRP Ledger, always set to false.
+- `sourceAddressesRoot`: Not used in case of XRP Ledger, always set to zero address.
+
+With this information, create the attestation request with the Flare Data Connector and wait for the attestation request to be confirmed.
+
+### Execute the Redemption Default
+
+After the attestation request is confirmed, you can retrieve the proof of payment non-existence of the redemption payment on the XRP Ledger.
+
+The redeemer or executor can execute the redemption default process by calling the [`redemptionPaymentDefault`](/fassets/reference/IAssetManager#redemptionpaymentdefault) function on the Asset Manager contract.
+
+This function requires two parameters:
+
+- `_proof`: The proof of payment non-existence of the redemption payment on the XRP Ledger.
+- `_redemptionRequestId`: The request ID of the redemption request.
+
+It does the following:
+
+- Checks if the proof of payment non-existence is valid.
+- Enough time has passed since the redemption request was created.
+- Executes the compensation payment to the redeemer or the executor from the agent's collateral.
+- Releases the agent's locked collateral.
+- Emits [`RedemptionDefaulted`](/fassets/reference/IAssetManagerEvents#redemptiondefault) event.
+
+## Summary
+
+In this guide, you learned how to monitor redemption requests and handle agent payment failures in the FAssets system:
+
+- **Monitor deadlines**: Track the [`RedemptionRequested`](/fassets/reference/IAssetManagerEvents#redemptionrequested) event and wait for the payment deadline to pass.
+- **Generate proof**: Create a [`ReferencedPaymentNonexistence`](/fdc/attestation-types/referenced-payment-nonexistence) attestation using the [Flare Data Connector](/fdc/overview).
+- **Execute default**: Call [`redemptionPaymentDefault`](/fassets/reference/IAssetManager#redemptionpaymentdefault) to trigger compensation from the agent's collateral.
+
+This process ensures redeemers can recover their funds when agents fail to fulfill payment obligations.
+
+:::tip Next Steps
+To continue your FAssets development journey, you can:
+
+- Understand how to [redeem FXRP](/fassets/developer-guides/fassets-redeem)
+- Learn how to [mint FXRP](/fassets/developer-guides/fassets-mint)
+- Explore [FAssets system settings](/fassets/operational-parameters)
+  :::
