@@ -7,21 +7,31 @@ sidebar_position: 3
 
 `IAssetManagerEvents` is an interface that defines the events emitted by the [`IAssetManager`](/fassets/reference/IAssetManager) contract.
 
-Sourced from `IAssetManagerEvents.sol` on [GitHub](https://github.com/flare-foundation/fassets/blob/main/contracts/userInterfaces/IAssetManagerEvents.sol).
+Sourced from `IAssetManagerEvents.sol` on [GitHub](https://github.com/flare-foundation/fassets/blob/main/contracts/userInterfaces/IAssetManagerEvents.sol).ā
 
-## Events
+## Event Categories
+
+The events are organized into the following categories:
+
+- **[Minting Events](#minting-events)** - Events related to the FAssets minting process.
+- **[Redemption Events](#redemption-events)** - All events related to the FAssets redemption process, including requests, tickets, outcomes, and failures.
+
+## Minting Events
+
+Events related to the FAssets minting process, including collateral reservation, execution, and defaults.
 
 ### `CollateralReserved`
 
-Emitted when a minter has reserved collateral, paid the reservation fee, and is expected to pay the underlying funds. The agent's collateral is reserved at this point.
+Emitted when a minter has reserved collateral, paid the reservation fee, and is expected to pay the underlying funds.
+The agent's collateral is reserved at this point.
 
 Parameters:
 
 - `agentVault`: Address of the agent vault
 - `minter`: Address of the minter
 - `collateralReservationId`: ID of the collateral reservation
-- `valueUBA`: Value in underlying base amount
-- `feeUBA`: Fee in underlying base amount
+- `valueUBA`: Value in the underlying base amount
+- `feeUBA`: Fee in the underlying base amount
 - `firstUnderlyingBlock`: First block number on the underlying chain
 - `lastUnderlyingBlock`: Last block number on the underlying chain
 - `lastUnderlyingTimestamp`: Last timestamp on the underlying chain
@@ -49,7 +59,8 @@ event CollateralReserved(
 
 ### `CollateralReservationRejected`
 
-Emitted when an agent rejects the collateral reservation request due to the minter's identity. The reserved collateral is released.
+Emitted when an agent rejects the collateral reservation request due to the minter's identity.
+The reserved collateral is released.
 
 Parameters:
 
@@ -67,7 +78,8 @@ event CollateralReservationRejected(
 
 ### `CollateralReservationCancelled`
 
-Emitted when a minter cancels the collateral reservation request due to agent inactivity. The reserved collateral is released.
+Emitted when a minter cancels the collateral reservation request due to agent inactivity.
+The reserved collateral is released.
 
 Parameters:
 
@@ -85,15 +97,16 @@ event CollateralReservationCancelled(
 
 ### `MintingExecuted`
 
-Emitted when a minter has successfully paid the underlying funds in time and received the FAssets. The agent's collateral is locked at this point.
+Emitted when a minter has successfully paid the underlying funds in time and received the FAssets.
+The agent's collateral is locked at this point.
 
 Parameters:
 
 - `agentVault`: Address of the agent vault
 - `collateralReservationId`: ID of the collateral reservation
-- `mintedAmountUBA`: Amount of FAssets minted in underlying base amount
-- `agentFeeUBA`: Fee paid to the agent in underlying base amount
-- `poolFeeUBA`: Fee paid to the pool in underlying base amount
+- `mintedAmountUBA`: Amount of FAssets minted in the underlying base amount
+- `agentFeeUBA`: Fee paid to the agent in the underlying base amount
+- `poolFeeUBA`: Fee paid to the pool in the underlying base amount
 
 ```solidity
 event MintingExecuted(
@@ -107,14 +120,15 @@ event MintingExecuted(
 
 ### `MintingPaymentDefault`
 
-Emitted when a minter fails to pay the underlying funds in time. The collateral reservation fee is paid to the agent and the reserved collateral is released.
+Emitted when a minter fails to pay the underlying funds in time.
+The collateral reservation fee is paid to the agent, and the reserved collateral is released.
 
 Parameters:
 
 - `agentVault`: Address of the agent vault
 - `minter`: Address of the minter
 - `collateralReservationId`: ID of the collateral reservation
-- `reservedAmountUBA`: Amount that was reserved in underlying base amount
+- `reservedAmountUBA`: Amount that was reserved in the underlying base amount
 
 ```solidity
 event MintingPaymentDefault(
@@ -134,7 +148,7 @@ Parameters:
 - `agentVault`: Address of the agent vault
 - `minter`: Address of the minter
 - `collateralReservationId`: ID of the collateral reservation
-- `reservedAmountUBA`: Amount that was reserved in underlying base amount
+- `reservedAmountUBA`: Amount that was reserved in the underlying base amount
 
 ```solidity
 event CollateralReservationDeleted(
@@ -144,6 +158,10 @@ event CollateralReservationDeleted(
     uint256 reservedAmountUBA
 );
 ```
+
+## Redemption Events
+
+All events related to the FAssets redemption process, including redemption requests, ticket management, successful redemptions, failures, defaults, and fee distributions.
 
 ### `RedemptionRequested`
 
@@ -167,7 +185,7 @@ event RedemptionRequested(
 
 ### `RedemptionTicketCreated`
 
-Event emitted when a redemption ticket is created when a minting transaction is executed.
+This event is emitted when a redemption ticket is created, when a minting transaction is executed.
 
 Parameters:
 
@@ -186,7 +204,7 @@ Parameters:
 
 - `agentVault`: The address of the agent vault that will redeem the FAssets.
 - `redemptionTicketId`: The ID of the redemption ticket.
-- `ticketValueUBA`: The value of the redemption ticket in underlying chain currency.
+- `ticketValueUBA`: The value of the redemption ticket in the underlying chain currency.
 
 ```solidity
 event RedemptionTicketUpdated(
@@ -207,4 +225,150 @@ event RedemptionPerformed(
     bytes32 transactionHash,
     uint256 redemptionAmountUBA,
     int256 spentUnderlyingUBA);
+```
+
+### `RedemptionRejected`
+
+Emitted when an agent rejects a redemption request due to an invalid redeemer address.
+
+Parameters:
+
+- `agentVault`: Address of the agent vault that rejected the redemption.
+- `redeemer`: Address of the user attempting to redeem (invalid address).
+- `requestId`: Unique identifier for the redemption request.
+- `redemptionAmountUBA`: Amount of FAssets that were requested for redemption.
+
+```solidity
+event RedemptionRejected(
+    address indexed agentVault,
+    address indexed redeemer,
+    uint256 indexed requestId,
+    uint256 redemptionAmountUBA
+);
+```
+
+### `RedemptionRequestIncomplete`
+
+Emitted when a redemption request cannot be fully processed due to insufficient tickets or exceeding allowed redemption limits.
+
+Parameters:
+
+- `redeemer`: Address of the user who requested the redemption.
+- `remainingLots`: Number of FAsset lots that could not be redeemed and are returned to the redeemer.
+
+```solidity
+event RedemptionRequestIncomplete(
+    address indexed redeemer,
+    uint256 remainingLots
+);
+```
+
+### `RedemptionDefault`
+
+Emitted when a redemption payment times out and the redeemer is compensated with collateral instead.
+
+Parameters:
+
+- `agentVault`: Address of the agent vault that failed to complete the payment.
+- `redeemer`: Address of the user who requested the redemption.
+- `requestId`: Unique identifier for the redemption request.
+- `redemptionAmountUBA`: Amount of FAssets that were requested for redemption.
+- `redeemedVaultCollateralWei`: Amount of collateral paid from the agent's vault.
+- `redeemedPoolCollateralWei`: Amount of collateral paid from the collateral pool.
+
+```solidity
+event RedemptionDefault(
+    address indexed agentVault,
+    address indexed redeemer,
+    uint256 indexed requestId,
+    uint256 redemptionAmountUBA,
+    uint256 redeemedVaultCollateralWei,
+    uint256 redeemedPoolCollateralWei
+);
+```
+
+### `RedemptionPaymentBlocked`
+
+Emitted when a redemption payment fails due to the redeemer's address being blocked or gas limit issues.
+
+Parameters:
+
+- `agentVault`: Address of the agent vault that attempted the payment.
+- `redeemer`: Address of the user who requested the redemption.
+- `requestId`: Unique identifier for the redemption request.
+- `transactionHash`: Hash of the failed transaction on the underlying chain.
+- `redemptionAmountUBA`: Amount of FAssets that were requested for redemption.
+- `spentUnderlyingUBA`: Amount of underlying currency spent in the failed attempt (negative value).
+
+```solidity
+event RedemptionPaymentBlocked(
+    address indexed agentVault,
+    address indexed redeemer,
+    uint256 indexed requestId,
+    bytes32 transactionHash,
+    uint256 redemptionAmountUBA,
+    int256 spentUnderlyingUBA
+);
+```
+
+### `RedemptionPaymentFailed`
+
+Emitted when a redemption payment fails due to the agent's own error.
+
+Parameters:
+
+- `agentVault`: Address of the agent vault that failed the payment.
+- `redeemer`: Address of the user who requested the redemption.
+- `requestId`: Unique identifier for the redemption request.
+- `transactionHash`: Hash of the failed transaction on the underlying chain.
+- `spentUnderlyingUBA`: Amount of underlying currency spent in the failed attempt (negative value).
+- `failureReason`: Human-readable description of why the payment failed.
+
+```solidity
+event RedemptionPaymentFailed(
+    address indexed agentVault,
+    address indexed redeemer,
+    uint256 indexed requestId,
+    bytes32 transactionHash,
+    int256 spentUnderlyingUBA,
+    string failureReason
+);
+```
+
+### `RedemptionPoolFeeMinted`
+
+Emitted when part of the redemption fee is re-minted as FAssets and paid to the agent's collateral pool.
+
+Parameters:
+
+- `agentVault`: Address of the agent vault that completed the redemption.
+- `requestId`: Unique identifier for the redemption request.
+- `poolFeeUBA`: Amount of FAssets re-minted and paid as a fee to the collateral pool.
+
+```solidity
+event RedemptionPoolFeeMinted(
+    address indexed agentVault,
+    uint256 indexed requestId,
+    uint256 poolFeeUBA
+);
+```
+
+### `RedeemedInCollateral`
+
+Emitted when FAssets are redeemed in collateral during a self-close exit process.
+
+Parameters:
+
+- `agentVault`: Address of the agent vault that processed the redemption.
+- `redeemer`: Address of the user who requested the redemption.
+- `redemptionAmountUBA`: Amount of FAssets that were redeemed.
+- `paidVaultCollateralWei`: Amount of collateral paid from the agent's vault.
+
+```solidity
+event RedeemedInCollateral(
+    address indexed agentVault,
+    address indexed redeemer,
+    uint256 redemptionAmountUBA,
+    uint256 paidVaultCollateralWei
+);
 ```

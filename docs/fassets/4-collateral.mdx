@@ -213,21 +213,21 @@ It is worth noting that:
 <details>
 <summary>Fee entitlement formulae and examples.</summary>
 
-The following formulas consider all the above information to calculate each provider's due share of FAsset minting fees.
+The following formulas are based on the concept of virtual fees, which are the fees that a provider would be entitled to if they had no fee debt.
 
 The amount of debt a provider $p$ is assigned upon entering a pool is calculated as:
 
 $$
-fee\_debt_p = { added\_collateral_p \over collateral\_in\_pool } \times fees\_in\_pool
+fee\_debt_p = { added\_collateral_p \over collateral\_in\_pool } \times total\_virtual\_fees
 $$
 
 where:
 
 - $added\_collateral_p$ is the amount of FLR tokens that provider $p$ is adding to the pool.
 - $collateral\_in\_pool$ is the amount of FLR tokens in the pool before adding the new tokens.
-- $fees\_in\_pool$ is the amount of FAsset minting fees currently in the pool.
+- $total\_virtual\_fees$ is the sum of all provider's virtual fees.
 
-The following formulas are based on the concept of **virtual fees**, which are the fees that a provider would be entitled to if they had no fee debt.
+The following formulas use **total virtual fees**, which are the gross fees accrued to a provider assuming no prior fee withdrawals, slashing, or outstanding fee debt.
 
 The **total virtual fees** is the sum of all provider's virtual fees and can be expressed as:
 
@@ -269,7 +269,7 @@ The following example shows fee entitlement.
 | An agent creates a new vault.                                         |           0 |            0 |              0 |                  0 |
 | Alice deposits 100 FLR and gets 100 CPTs in return.                   |     **100** |            0 |              0 |                  0 |
 | 10 FAssets of fees are added to the pool due to a mint.               |         100 |       **10** |              0 |             **10** |
-| Bob deposits 100 FLR and gets 100s CPT in return.                     |     **200** |           10 |         **10** |             **20** |
+| Bob deposits 100 FLR and gets 100 CPTs in return.                     |     **200** |           10 |         **10** |             **20** |
 | 10 more FAssets of fees are added to the pool due to another mint.    |         200 |       **20** |             10 |             **30** |
 | Alice withdraws 10 FAssets of fees.                                   |         200 |       **10** |         **20** |                 30 |
 | Bob exits the pool by returning the 100 CPTs and withdrawing 100 FLR. |     **100** |        **5** |         **10** |             **15** |

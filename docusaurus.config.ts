@@ -207,10 +207,6 @@ const config: Config = {
               label: "Governance Proposals",
               href: "https://proposals.flare.network",
             },
-            {
-              label: "Discourse Forum",
-              href: "https://forum.flare.network",
-            },
           ],
         },
       ],
