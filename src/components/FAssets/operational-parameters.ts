@@ -258,7 +258,8 @@ export const operationalParameters = [
       },
       {
         name: "Vault Minimal CR",
-        settingName: "minimalCR",
+        functionName: "getCollateralTypes",
+        interfaceLink: "/fassets/reference/IAssetManager#getcollateraltypes",
         description:
           "The minimum collateral ratio required to avoid liquidation.",
         link: "/fassets/collateral#minimal-cr",
@@ -278,7 +279,8 @@ export const operationalParameters = [
       },
       {
         name: "Vault Collateral Safety CR",
-        settingName: "safetyCR",
+        functionName: "getCollateralTypes",
+        interfaceLink: "/fassets/reference/IAssetManager#getcollateraltypes",
         description: "The collateral ratio required to exit liquidation mode.",
         link: "/fassets/collateral#safety-cr",
         values: {
@@ -314,7 +316,8 @@ export const operationalParameters = [
       },
       {
         name: "Pool Collateral Pool Minimal CR",
-        settingName: "minimalCR",
+        functionName: "getCollateralTypes",
+        interfaceLink: "/fassets/reference/IAssetManager#getcollateraltypes",
         description:
           "The minimum collateral ratio required to avoid liquidation.",
         link: "/fassets/collateral#minimal-cr",
@@ -333,28 +336,9 @@ export const operationalParameters = [
         },
       },
       {
-        name: "Pool Collateral Call Band CR",
-        settingName: "ccbCR",
-        description:
-          "The threshold at which collateral is considered unhealthy but liquidation is delayed.",
-        link: "/fassets/collateral#liquidation-cr",
-        values: {
-          coston2: {
-            xrp: "1.4",
-          },
-          songbird: {
-            xrp: "1.4",
-          },
-          coston: {
-            xrp: "1.9",
-            btc: "1.9",
-            doge: "1.9",
-          },
-        },
-      },
-      {
         name: "Pool Collateral Safety CR",
-        settingName: "safetyCR",
+        functionName: "getCollateralTypes",
+        interfaceLink: "/fassets/reference/IAssetManager#getcollateraltypes",
         description: "The collateral ratio required to exit liquidation mode.",
         link: "/fassets/collateral#safety-cr",
         values: {
