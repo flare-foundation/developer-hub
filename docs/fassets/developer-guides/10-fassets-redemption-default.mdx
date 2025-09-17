@@ -24,6 +24,9 @@ This guide explains:
 
 ## Key Operational Parameters
 
+The FAssets system has specific operational parameters that control the timing of redemption payments.
+These parameters define both the minimum time window and block range during which an agent must complete the underlying payment.
+
 | Parameter                     | Unit    | Purpose                                                                              |
 | ----------------------------- | ------- | ------------------------------------------------------------------------------------ |
 | `underlyingSecondsForPayment` | seconds | The minimum time allowed for an agent to pay for a redemption.                       |
@@ -46,12 +49,21 @@ From this event, you can obtain the following:
 - `lastUnderlyingBlock` - the last underlying block to submit payment.
 - `lastUnderlyingTimestamp` — the **deadline** on the underlying chain for submitting the redemption payment.
 
-You should wait until this deadline is passed and then check whether the agent has paid the redemption payment in the underlying chain.
+You should wait until the deadline is passed and then check whether the agent has paid the redemption payment in the underlying chain.
+The two values work together as a dual safety mechanism: `lastUnderlyingBlock` ensures payment happens within a reasonable number of blocks, while `lastUnderlyingTimestamp` ensures payment occurs within a reasonable amount of time.
+Both constraints must be satisfied for the payment to be considered valid, providing robust protection against timing-based attacks.
+
 The [`RedemptionPerformed`](/fassets/reference/IAssetManagerEvents#redemptionperformed) event is emitted by the Asset Manager contract when the redemption payment is completed.
+
+:::info
+The simplest way to observe if a redemption payment has been made is to use the [xrpl](https://www.npmjs.com/package/xrpl) Node.js package to monitor the redeemer's account balance.
+Wait until the `underlyingSecondsForPayment` and `underlyingBlocksForPayment` deadlines pass, then check if the account balance has increased by the expected redemption amount.
+To verify the payment is for the correct redemption, compare the memo data in the XRP transaction to the `paymentReference` from the `RedemptionRequested` event.
+:::
 
 ## Handling Non-Payment
 
-If the agent fails to pay the redemption payment in the underlying chain, the redeemer or the executor can start the redemption default process.
+If the agent fails to pay the redemption payment in the XRP Ledger, the redeemer or the executor can start the redemption default process.
 
 ### Generate the Proof of Payment Non-Existence
 
@@ -68,7 +80,11 @@ Use the following parameters:
 - `checkSourceAddresses`: Not used in case of XRP Ledger, always set to false.
 - `sourceAddressesRoot`: Not used in case of XRP Ledger, always set to zero address.
 
-With this information, create the attestation request with the Flare Data Connector and wait for the attestation request to be confirmed.
+Create the attestation request with the Flare Data Connector and wait for the attestation request to be confirmed.
+
+:::info
+Check the [ReferencedPaymentNonexistence](/fdc/attestation-types/referenced-payment-nonexistence) attestation type for more details, and the [FDC by hand](/fdc/guides/fdc-by-hand) guide for more information on how to create the attestation request.
+:::
 
 ### Execute the Redemption Default
 
@@ -78,13 +94,13 @@ The redeemer or executor can execute the redemption default process by calling t
 
 This function requires two parameters:
 
-- `_proof`: The proof of payment non-existence of the redemption payment on the XRP Ledger.
-- `_redemptionRequestId`: The request ID of the redemption request.
+- `_proof`: The proof of payment non-existence from the FDC of the redemption payment on the XRP Ledger.
+- `_redemptionRequestId`: The request ID of the redemption request from the `RedemptionRequested` event.
 
 It does the following:
 
 - Checks if the proof of payment non-existence is valid.
-- Enough time has passed since the redemption request was created.
+- Verifies that both the `underlyingSecondsForPayment` and `underlyingBlocksForPayment` deadlines have passed.
 - Executes the compensation payment to the redeemer or the executor from the agent's collateral.
 - Releases the agent's locked collateral.
 - Emits [`RedemptionDefaulted`](/fassets/reference/IAssetManagerEvents#redemptiondefault) event.
@@ -102,7 +118,7 @@ This process ensures redeemers can recover their funds when agents fail to fulfi
 :::tip Next Steps
 To continue your FAssets development journey, you can:
 
-- Understand how to [redeem FXRP](/fassets/developer-guides/fassets-redeem)
 - Learn how to [mint FXRP](/fassets/developer-guides/fassets-mint)
+- Understand how to [redeem FXRP](/fassets/developer-guides/fassets-redeem)
 - Explore [FAssets system settings](/fassets/operational-parameters)
   :::
