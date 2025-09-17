@@ -86,6 +86,20 @@ To produce the custom instructions calldata, we first ABI encode the array of th
 We then take the `keccak256` hash of that value, and drop the last byte.
 That is the call hash that is provided as the payment reference for the custom action, and the ID under which the custom instructions are stored in the `MasterAccountController` contract.
 
+```Solidity
+uint256(keccak256(abi.encode(_customInstruction))) >> 8;
+```
+
+The call hash can also be obtained through the `encodeCustomInstruction` helper function of the `MasterAccountController` contract.
+
+```Solidity
+function encodeCustomInstruction(
+        CustomInstruction[] memory _customInstruction
+    ) public pure returns (uint256) {
+        return uint256(keccak256(abi.encode(_customInstruction))) >> 8;
+    }
+```
+
 ## 0. Register custom instructions
 
 We register a custom instruction by calling the `registerCustomInstruction` function on the `MasterAccountController` contract.
