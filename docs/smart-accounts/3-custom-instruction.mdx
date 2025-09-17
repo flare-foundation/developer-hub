@@ -20,12 +20,12 @@ unlisted: false
 import ThemedImage from "@theme/ThemedImage";
 import useBaseUrl from "@docusaurus/useBaseUrl";
 
-Flare Smart Accounts allow users to execute custom function calls on the Flare chain, through instructions on XRPL.
+Flare Smart Accounts allow users to execute custom function calls on the Flare chain through instructions on XRPL.
 The process expands on the workflow for other actions by including an additional step at the beginning.
 
 In order for the `MasterAccountController` contract to be able to give a custom instruction to a personal account, the custom action must first be registered with the said contract.
-The custom instruction is stored in a mapper, with its 31 byte hash as a key.
-That hash is then sent as payment reference, along with the byte representation of the number 99 in the first byte.
+The custom instruction is stored in a mapper, with its 31-byte hash as a key.
+That hash is then sent as the payment reference, along with the byte representation of the number 99 in the first byte.
 
 <div
   style={{
@@ -74,7 +74,7 @@ In Solidity, we can obtain the calldata by doing the following:
 abi.encodeWithSignature("<functionName>(<type1>,<type2>,...,<typeN>)", [<value1>, <value2>, ..., <valueN>]);
 ```
 
-where `<functionName>` is the name of the function that we want to call, `<type1>`,`<type2>`, . . . ,`<typeN>` are its argument types, and `<value1>`, `<value2>`, . . . , `<valueN>` their values.
+where `<functionName>` is the name of the function that we want to call, `<type1>`, `<type2>`, . . . , `<typeN>` are its argument types, and `<value1>`, `<value2>`, . . . , `<valueN>` their values.
 
 Only function calls with specific parameter values included can be registered.
 That means that a new custom instruction needs to be registered for each unique action (though this can be done just seconds in advance).
@@ -84,10 +84,10 @@ It is also the reason why special FAsset actions have their own IDs, instead of 
 
 To produce the custom instructions calldata, we first ABI encode the array of the `IMasterAccountController.CustomInstruction` struct.
 We then take the `keccak256` hash of that value, and drop the last byte.
-That is the call hash that that is provided as the payment reference for the custom action, and the ID under which the custom instructions are stored in the `MasterAccountController` contract.
+That is the call hash that is provided as the payment reference for the custom action, and the ID under which the custom instructions are stored in the `MasterAccountController` contract.
 
 ## 0. Register custom instructions
 
 We register a custom instruction by calling the `registerCustomInstruction` function on the `MasterAccountController` contract.
 The `IMasterAccountController.CustomInstruction` array is provided as an argument.
-It is encoded as described above, and stored to a `CustomInstructions` mapping.
+It is encoded as described above and stored in a `CustomInstructions` mapping.
