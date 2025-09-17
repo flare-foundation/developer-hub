@@ -258,6 +258,7 @@ const sidebars: SidebarsConfig = {
       link: { type: "doc", id: "smart-accounts/overview" },
       items: [
         "smart-accounts/fasset-instructions",
+        "smart-accounts/custom-instruction",
         // {
         //   type: "category",
         //   label: "Developer Guides",
