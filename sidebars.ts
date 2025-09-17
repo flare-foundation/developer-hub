@@ -257,6 +257,7 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       link: { type: "doc", id: "smart-accounts/overview" },
       items: [
+        "smart-accounts/fasset-instructions",
         // {
         //   type: "category",
         //   label: "Developer Guides",

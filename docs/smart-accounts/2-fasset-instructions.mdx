@@ -1,0 +1,219 @@
+---
+sidebar_position: 1
+slug: fasset-instructions
+title: FAsset Instructions
+authors: [nikerzetic, filipkoprivec]
+description: Using Flare Smart Accounts in the FAssets workflow.
+tags: [intermediate, ethereum, flare-smart-accounts]
+keywords:
+  [
+    flare-fdc,
+    ethereum,
+    flare-smart-accounts,
+    evm,
+    flare-network,
+    account-abstraction,
+  ]
+unlisted: false
+---
+
+import ThemedImage from "@theme/ThemedImage";
+import useBaseUrl from "@docusaurus/useBaseUrl";
+import YoutubeEmbed from "@site/src/components/youtube";
+
+In this guide we will take a closer look at the Flare Smart Accounts instructions related to FAssets.
+FAsset is a trustless, over-collateralized bridge between XRPL and the Flare chain.
+The FXRP is a token representation of XRP on the Flare chain.
+FAssets allow XRPL users to partake in Flare's DeFi ecosystem using their XRP assets, without exchanging them for the FLR token.
+
+Several steps of the FAsset process are performed as transactions on the Flare chain, which requires users to hold FLR token for paying gas fees.
+The Flare Smart Accounts sidestep this by allowing XRPL users to trigger these actions through `Payment` transactions on XRPL.
+Thus, they eradicate completely the need for XRPL users to hold any non-XRPL assets.
+
+You can learn more about the FAssets in the [dedicated section](/fassets/overview/).
+
+## `01` Deposit
+
+Deposit an `amount` of FXRP from you account into the Firelight vault `depositVault`.
+The address `depositVault` is designated by the `MasterAccountController` contract, and the `amount` is read from the last 31 bytes of the payment reference.
+
+A deposit payment reference is the 32 byte value:
+
+- byte representation of `02` on the first byte,
+- byte representation of the `amount` number on the other 31 bytes.
+
+<div
+  style={{
+    width: "90%",
+    margin: "0 auto",
+    display: "flex",
+    justifyContent: "center",
+  }}
+>
+  <ThemedImage
+    alt="Breakdown of bytes in payment reference for the deposit action"
+    style={{ width: "100%" }}
+    sources={{
+      light: useBaseUrl("img/smart-accounts/deposit_light.svg"),
+      dark: useBaseUrl("img/smart-accounts/deposit_dark.svg"),
+    }}
+  />
+</div>
+
+## `02` Withdraw
+
+The first part of the withdrawal process from a Firelight vault.
+
+Initiate a withdrawal request of an `amount` of FXRP from the Firelight vault `depositVault`.
+The address `depositVault` is designated by the `MasterAccountController` contract, and the `amount` is read from the last 31 bytes of the payment reference.
+
+A withdraw payment reference is the 32 byte value:
+
+- byte representation of `02` on the first byte,
+- byte representation of the `amount` number on the other 31 bytes.
+
+<div
+  style={{
+    width: "90%",
+    margin: "0 auto",
+    display: "flex",
+    justifyContent: "center",
+  }}
+>
+  <ThemedImage
+    alt="Breakdown of bytes in payment reference for the withdraw action"
+    style={{ width: "100%" }}
+    sources={{
+      light: useBaseUrl("img/smart-accounts/withdraw_light.svg"),
+      dark: useBaseUrl("img/smart-accounts/withdraw_dark.svg"),
+    }}
+  />
+</div>
+
+## `03` Approve (deprecated)
+
+_Approval has been made part of the deposit actions and is now deprecated._
+
+Approve the `depositVault` address to withdraw an `amount` of FXRP from your smart account.
+The address `depositVault` is designated by the `MasterAccountController` contract, and the `amount` is read from the last 31 bytes of the payment reference.
+
+A withdraw payment reference is the 32 byte value:
+
+- byte representation of `03` on the first byte,
+- byte representation of the `amount` number on the other 31 bytes.
+
+<div
+  style={{
+    width: "90%",
+    margin: "0 auto",
+    display: "flex",
+    justifyContent: "center",
+  }}
+>
+  <ThemedImage
+    alt="Breakdown of bytes in payment reference for the approve action"
+    style={{ width: "100%" }}
+    sources={{
+      light: useBaseUrl("img/smart-accounts/approve_light.svg"),
+      dark: useBaseUrl("img/smart-accounts/approve_dark.svg"),
+    }}
+  />
+</div>
+
+## `04` Redeem
+
+Redemption is the process of converting FXRP back to XRP.
+A number of `lots` of FXRP are burned, and the same number of `lots` of XRP in returned to the user's XRPL account.
+
+The process is performed by an `executor` with `executorFee` (explained in the [minting guide](/fassets/minting#executor-role));
+both of these are defined by the `MasterAccountController` contract.
+The `lots` and `agentVault` values are both read from the payment reference.
+
+A redeem payment reference is the 32 byte value:
+
+- byte representation of `04` on the first byte,
+- 19 empty bytes,
+- byte representation of the `lots` number on the last 11 bytes.
+
+<div
+  style={{
+    width: "90%",
+    margin: "0 auto",
+    display: "flex",
+    justifyContent: "center",
+  }}
+>
+  <ThemedImage
+    alt="Breakdown of bytes in payment reference for the redeem action"
+    style={{ width: "100%" }}
+    sources={{
+      light: useBaseUrl("img/smart-accounts/redeem_light.svg"),
+      dark: useBaseUrl("img/smart-accounts/redeem_dark.svg"),
+    }}
+  />
+</div>
+
+## `05` Reserve collateral
+
+Collateral reservation is the first step in the FAssets minting process.
+In anticipation of transfer of XRP to the agent's underlying address on XRPL a portion of its collateral is locked to prevent accidental under-collateralization.
+Since this action happens on the Flare chain, the gas fees need to be paid in the native FLR token.
+
+The reserveCollateral action reserves a number of `lots` of collateral of the `agentVault`.
+The process is performed by an `executor` with `executorFee` (explained in the [minting guide](/fassets/minting#executor-role));
+both of these are defined by the `MasterAccountController` contract.
+The `lots` and `agentVault` values are both read from the payment reference.
+
+A reserveCollateral payment reference is a 32 byte value:
+
+- byte representation of `05` on the first byte,
+- `agentVault` address on the next 20 bytes,
+- byte representation of the `lots` number on the last 11 bytes.
+
+<div
+  style={{
+    width: "90%",
+    margin: "0 auto",
+    display: "flex",
+    justifyContent: "center",
+  }}
+>
+  <ThemedImage
+    alt="Breakdown of bytes in payment reference for the reserve collateral action"
+    style={{ width: "100%" }}
+    sources={{
+      light: useBaseUrl("img/smart-accounts/reserve_collateral_light.svg"),
+      dark: useBaseUrl("img/smart-accounts/reserve_collateral_dark.svg"),
+    }}
+  />
+</div>
+
+## `06` Claim withdraw
+
+The second part of the withdrawal process from the Firelight vault.
+Claim the pending withdrawal from the Firelight `depositVault`, specified by the `MasterAccountController` contract.
+The assets are transferred to the user's smart account.
+The action can only be performed after one full period has passed.
+
+A reserveCollateral payment reference is a 32 byte value:
+
+- byte representation of `06` on the first byte,
+- 31 empty bytes.
+
+<div
+  style={{
+    width: "90%",
+    margin: "0 auto",
+    display: "flex",
+    justifyContent: "center",
+  }}
+>
+  <ThemedImage
+    alt="Breakdown of bytes in payment reference for the claim withdraw action"
+    style={{ width: "100%" }}
+    sources={{
+      light: useBaseUrl("img/smart-accounts/claim_withdraw_light.svg"),
+      dark: useBaseUrl("img/smart-accounts/claim_withdraw_dark.svg"),
+    }}
+  />
+</div>
