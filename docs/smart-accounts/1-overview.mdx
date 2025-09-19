@@ -1,0 +1,143 @@
+---
+sidebar_position: 1
+slug: overview
+title: Flare Smart Accounts
+authors: [nikerzetic, filipkoprivec]
+description: The Flare Smart Accounts is an account abstraction that performs actions on behalf of XRPL users.
+tags: [quickstart, ethereum, flare-smart-accounts]
+keywords:
+  [
+    flare-fdc,
+    ethereum,
+    flare-smart-accounts,
+    evm,
+    flare-network,
+    account-abstraction,
+  ]
+unlisted: false
+---
+
+import ThemedImage from "@theme/ThemedImage";
+import useBaseUrl from "@docusaurus/useBaseUrl";
+
+The Flare Smart Accounts is an account abstraction that allows XRPL users to perform actions on the Flare chain without owning any FLR token.
+Each XRPL address is assigned a unique **smart account** on the Flare chain, which only it can control.
+They do so through `Payment` transactions on the XRPL.
+The Flare Smart Accounts are especially useful as a way of interacting with the FAssets workflow.
+
+## Workflow
+
+The workflow for Flare Smart Accounts is comprised of the following steps.
+
+1. The XRPL user sends instructions as a `Payment` transaction to a specific XRPL address, with instructions encoded as the payment reference in the memo field.
+2. The operator interacts with the [Flare Data Connector](/fdc/overview) to procure a `Payment` proof.
+   It then calls the `executeTransaction` function on the `MasterAccountController` contract, with the `Payment` proof and the XRPL address that made the transaction.
+3. The XRPL user's smart account performs the actions given in the instructions.
+
+## 1. Instructions on XRPL
+
+The Flare Smart Accounts allow XRPL users to perform actions on the Flare chain through instructions on the XRPL.
+This is done through a `Payment` to an XRPL address, designated by the operator - a backend monitoring incoming transactions and interacting with the Flare chain.
+The payment must transfer sufficient funds, as specified by the operator, and must include the proper payment receipt in the memo field.
+
+The payment receipt is a `bytes32` value.
+The first byte is reserved for the instruction code, a byte representation of a two-digit number.
+The remaining 31 bytes are the parameters for the chosen instruction.
+
+In practice, the payment receipt should be prepared by a backend, through a web form.
+
+<details>
+  <summary>Table of instruction IDs and corresponding actions.</summary>
+  <table>
+    <thead>
+      <tr>
+        <td>&nbsp;**Instruction ID**</td>
+        <td>**Action**&nbsp;</td>
+        <td>**Description**&nbsp;</td>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>&nbsp;01</td>
+        <td>&nbsp;deposit</td>
+        <td>
+          &nbsp;Deposit an `amount` of FXRP into the Firelight vault, designated
+          by the `MasterAccountController` contract.
+        </td>
+      </tr>
+      <tr>
+        <td>&nbsp;02</td>
+        <td>&nbsp;withdraw</td>
+        <td>
+          &nbsp;Withdraw an `amount` of FXRP from the Firelight vault,
+          designated by the `MasterAccountController` contract.
+        </td>
+      </tr>
+      <tr>
+        <td>&nbsp;03</td>
+        <td>&nbsp;approve</td>
+        <td>
+          &nbsp;**Deprecated.** Approve the Firelight vault, designated by the
+          `MasterAccountController` contract, to spend an `amount` of FXRP from
+          your account.
+        </td>
+      </tr>
+      <tr>
+        <td>&nbsp;04</td>
+        <td>&nbsp;redeem</td>
+        <td>
+          &nbsp;Redeem `lots` of FXRP. The redemption will be handled by the
+          `executor`, specified by the `MasterAccountController` contract.
+        </td>
+      </tr>
+      <tr>
+        <td>&nbsp;05</td>
+        <td>&nbsp;reserveCollateral</td>
+        <td>
+          &nbsp;Reserve `lots` of collateral in the `agentVault`, specified by
+          the `MasterAccountController` contract. The collateral reservation
+          will be handled by the `executor`, also specified by the
+          `MasterAccountController` contract.
+        </td>
+      </tr>
+      <tr>
+        <td>&nbsp;06</td>
+        <td>&nbsp;claimWithdraw</td>
+        <td>&nbsp;Claim the withdrawal from the Firelight vault.</td>
+      </tr>
+      <tr>
+        <td>&nbsp;99</td>
+        <td>&nbsp;custom</td>
+        <td>
+          &nbsp;Execute a list of custom function calls. The custom instructions
+          need to be registered in advance, with the `MasterAccountController`
+          (`registerCustomInstruction` function).
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <p>&nbsp;</p>
+</details>
+
+## 2. Payment proof on Flare
+
+The operator monitors incoming transactions to the specified XRPL address.
+Upon receiving a payment, it makes a [`Payment` attestation request](/fdc/attestation-types/payment) to the FDC.
+The `Payment` proof and the user's XRPL address are passed to the `executeTransaction` function on the `MasterAccountController` smart contract on the Flare chain.
+
+The `MasterAccountController` contract first verifies the proof.
+It then performs several checks on the proof:
+
+- receiving address matches the one specified by the operator,
+- the source address matches the XRPL address given to the function,
+- that the proof has not yet been used for the same actions.
+
+Then, the `MasterAccountController` contract retrieves the XRPL user's smart account from a mapping.
+If the account does not yet exist, it is created at this point.
+
+The payment reference is decoded.
+Depending on the value of the leading byte, a different function on the smart account is called.
+
+## 3. Actions on Flare
+
+The XRPL user's smart account performs the actions in the instructions.
