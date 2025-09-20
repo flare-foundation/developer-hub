@@ -89,7 +89,7 @@ That number of lots of FXRP are burned from the user's smart account, and the sa
 ### `mint`
 
 Mints a number of `lots` of FXRP to the user's smart account.
-The script first reserves collateral with the agent with the `address`, by sending a `reserveCollateral` instruction.
+The script first reserves collateral with the agent with the `address` (if you are unsure what agent to choose on coston2, use `0x55c815260cBE6c45Fe5bFe5FF32E3C7D746f14dC`), by sending a `reserveCollateral` instruction.
 It then sends a `lots` amount of XRP to the agent's underlying address.
 An executor, determined by the `MasterAccountController`, will complete the minting process, and `lots` of FXRP will be minted to the user's smart account.
 
@@ -114,7 +114,7 @@ Make a transaction to the `address`, paying the `value`, and attaching the `call
 The `calldata` is the encoding of a function and its argument values, on the smart contract at the `address.
 
 ```sh
-./smart_accounts.py bridge deposit -a <address> -v <value> -d <calldata>
+./smart_accounts.py bridge custom -a <address> -v <value> -d <calldata>
 ```
 
 Before making a transaction on XRPL with the necessary instructions, this command performs an additional step.
@@ -122,6 +122,13 @@ It first packs the three provided values (`address`, `value`, and `calldata`) in
 Then, it calls the `registerCustomInstruction` function of the `MasterAccountController` contract, with the former as an argument.
 
 Thus, it both registers a custom instruction with the `MasterAccountController` contract and retrieves the required `callHash`, which it can then send to the operator's XRPL address as instructions.
+
+You can also use the command with json file containing an array of custom instructions.
+Two provided json files in `json_examples/` directory demonstrate the expected format.
+
+```sh
+./smart_accounts.py bridge custom json_example/sendFXRPCoston.json
+```
 
 ## `debug` command
 
@@ -139,6 +146,12 @@ The `seed` is a string representing an XRPL account.
 
 ```sh
 ./smart_accounts.py debug mock-custom -s <seed> -a <address> -v <value> -d <calldata>
+```
+
+As with the `custom` command, you can also use a json file containing an array of custom instructions.
+
+```sh
+./smart_accounts.py debug mock-custom -s <seed> json_example/sendFXRPCoston.json
 ```
 
 ### `check-status`

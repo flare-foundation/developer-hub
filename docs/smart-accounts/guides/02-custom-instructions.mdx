@@ -80,6 +80,11 @@ We want to send `1 FLR` to the contract, and save it under number `42`.
 The address of the `Foo` contract is `0x296432C15504Ed465fAce11E54Ce4aac50cCd8A3`.
 Using an online ABI-encoding tool, we get that the following hash for the `bar` function, with `42` as input: `0x0423a132000000000000000000000000000000000000000000000000000000000000002a`.
 
+:::warning
+Encoding calldata by hand is error prone.
+It is recommended to use established libraries, or an [online tool](https://abi.hashex.org/) (if you want to quickly check something).
+:::
+
 There are two ways we can go about developing the custom instructions.
 We will start with an approach, which is what the production code would take.
 Afterwards, we will use the the mock functions to speed up the development.
@@ -97,14 +102,14 @@ It is necessary to send some instructions, because that is what creates an accou
 We then need to retrieve the smart account address.
 
 ```sh
-./smart_accounts personal-account --from-env print
+./smart_accounts.py personal-account --from-env print
 ```
 
 With the address, we can go to the [Flare faucet](https://faucet.flare.network/coston2) and request C2FLR for the smart account address.
 We can also do this through the CLI.
 
 ```sh
-./smart_accounts personal-account --from-env faucet
+./smart_accounts.py personal-account --from-env faucet
 ```
 
 Afterwards, we can run the following command again.
@@ -121,7 +126,7 @@ First, we need to create a mock account, which we do with the command.
 This will only work if our Flare address has sufficient funds.
 
 ```sh
-./smart_accounts mock-create-fund --seed "mockAccount" --value 1
+./smart_accounts.py debug mock-create-fund --seed "mockAccount" --value 1
 ```
 
 Here we arbitrarily chose the name `mockAccount` as the account address.
