@@ -17,15 +17,15 @@ keywords:
 unlisted: false
 ---
 
-{/* NOTE:(Nik) This article has been placed right after the introduction into Flare Smart Accounts instead of at the end, so that readers don't get bored of reading before they reach it. */}
+{/* NOTE:(Nik) This article has been placed right after the introduction into Flare Smart Accounts instead of at the end, so that readers don't get bored with reading before they reach it. */}
 
 import ThemedImage from "@theme/ThemedImage";
 import useBaseUrl from "@docusaurus/useBaseUrl";
 
 The Flare Smart Accounts allow XRPL users to make custom function calls on Flare through instructions sent on XRPL.
-In this guide we will look at how the custom instructions can be developed using a mock version of the `MasterAccountController` contract.
+In this guide, we will look at how the custom instructions can be developed using a mock version of the `MasterAccountController` contract.
 
-In a typical workflow the users sends instructions as memo data on XRPL.
+In a typical workflow, the user sends instructions as memo data on XRPL.
 Those then have to be verified by the FDC on the Flare chain.
 That process requires waiting, which is less than ideal in a development environment.
 
@@ -36,22 +36,22 @@ It implements two additional functions:
 - `executeCustomInstructionDevelopment`
 
 The `createFundPersonalAccount` function creates a new `PersonalAccount` for the user.
-It accepts as its argument a string `_xrplAddress`, which represents and address on XRPL.
+It accepts as its argument a string `_xrplAddress`, which represents an address on XRPL.
 The string is then concatenated with the `msg.sender` value;
 the `PersonalAccount` is created for this address.
 
 Thus, a developer can create multiple XRPL "addresses".
 This allows them to more easily test the interactions between different personal accounts.
-The "address" is combined with their Flare address, so that they can give meaningful names to their "addresses" without a danger of multiple developers' addresses crashing.
+The "address" is combined with their Flare address, so that they can give meaningful names to their "addresses" without the danger of multiple developers' addresses crashing.
 
 The `createFundPersonalAccount` function is a payable function.
-And funds sent with the transaction are deposited to the newly created personal account.
+And funds sent with the transaction are deposited into the newly created personal account.
 That way, the personal account can interact with payable functions from the get-go.
 
 The `executeCustomInstructionDevelopment` function sidesteps the XRP transaction and the FDC `Payment` verification process.
 It allows developers to send an array of custom instructions to the `MasterAccountController` contract directly.
 
-The two parameters this function takes are the `_xrplAddress` string, and an array of `IMasterAccountController.CustomInstruction` structs.
+The two parameters this function takes are the `_xrplAddress` string and an array of `IMasterAccountController.CustomInstruction` structs.
 It first concatenates the input string with the `msg.sender` value, the same way the `createFundPersonalAccount` function does.
 Then, it retrieves the `PersonalAccount` representing that address, and calls its `custom` function with the array of custom instructions it received as input.
 
@@ -61,37 +61,37 @@ Then, it retrieves the `PersonalAccount` representing that address, and calls it
 
 We will now use the Flare Smart Accounts CLI to interact with a simple contract.
 The contract `Foo` has a single payable function `bar`.
-The `bar` function accepts a `uint256` value as input, and add the fee paid with the transaction to a mapping.
+The `bar` function accepts a `uint256` value as input, and adds the fee paid with the transaction to a mapping.
 
 ```Solidity
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
 contract Foo {
-    mapping(uint256 => uint256) public map;
+ mapping(uint256 => uint256) public map;
 
-    function bar(uint256 a) public payable {
-        map[a] = map[a] + msg.value;
-    }
+ function bar(uint256 a) public payable {
+ map[a] = map[a] + msg.value;
+ }
 }
 ```
 
-We want to send `1 FLR` to the contract, and save it under number `42`.
+We want to send `1 FLR` to the contract, and save it under the number `42`.
 The address of the `Foo` contract is `0x296432C15504Ed465fAce11E54Ce4aac50cCd8A3`.
-Using an online ABI-encoding tool, we get that the following hash for the `bar` function, with `42` as input: `0x0423a132000000000000000000000000000000000000000000000000000000000000002a`.
+Using an online ABI-encoding tool, we get the following hash for the `bar` function, with `42` as input: `0x0423a132000000000000000000000000000000000000000000000000000000000000002a`.
 
 :::warning
-Encoding calldata by hand is error prone.
+Encoding calldata by hand is error-prone.
 It is recommended to use established libraries, or an [online tool](https://abi.hashex.org/) (if you want to quickly check something).
 :::
 
 There are two ways we can go about developing the custom instructions.
-We will start with an approach, which is what the production code would take.
-Afterwards, we will use the the mock functions to speed up the development.
+We will start with an approach that is what the production code would take.
+Afterwards, we will use the mock functions to speed up the development.
 
 ### Normal approach
 
-Before we can execute the above instructions we need to top up the smart account that will perform the function call.
+Before we can execute the above instructions, we need to top up the smart account that will perform the function call.
 We run the following command, which fails because our account lacks funds on Flare.
 It is necessary to send some instructions, because that is what creates an account for us in the first place.
 
@@ -129,7 +129,7 @@ This will only work if our Flare address has sufficient funds.
 ./smart_accounts.py debug mock-create-fund --seed "mockAccount" --value 1
 ```
 
-Here we arbitrarily chose the name `mockAccount` as the account address.
+Here, we arbitrarily chose the name `mockAccount` as the account address.
 Behind the scenes, the string `mockAccount` will be concatenated with our Flare address.
 
 You can check the associated account with the command:
