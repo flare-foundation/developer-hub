@@ -15,12 +15,12 @@ keywords:
     insurance,
     oracle,
   ]
-sidebar_position: 14
+sidebar_position: 1
 ---
 
 import AvailableTestnet from "../_available_testnet.mdx";
 
-In this guide, we will examine an example of a simple insurance dApp that uses the FDC's [Web2Json](/fdc/guides/hardhat/web-2-json) attestation type.
+In this guide, we will examine an example of a simple insurance dApp that uses the FDC's [Web2Json](/fdc/guides/hardhat/web2-json) attestation type.
 The dApp will allow users to create insurance policies for temperatures at specific coordinates falling below a specified threshold.
 Other users will be able to claim those policies, and the policies will be settled automatically by the contract.
 
@@ -63,7 +63,7 @@ With that we can now focus on the technical aspects of the procedure described a
 
 The contract that we will define will be called `MinTempAgency`.
 This name coincides with the field name in the response on a call to the [OpenWeatherMap API](https://openweathermap.org/api), which we will be using to acquire weather data.
-We will use the [Flare Data Connector](/fdc/overview) to collect the weather data so, in keeping with the [Web2Json guide](/fdc/guides/hardhat/web-2-json), we start by defining a `DataTransportObject` which will determine how the FDC should encode the data.
+We will use the [Flare Data Connector](/fdc/overview) to collect the weather data so, in keeping with the [Web2Json guide](/fdc/guides/hardhat/web2-json), we start by defining a `DataTransportObject` which will determine how the FDC should encode the data.
 
 ```solidity title="src/weatherInsurance/MinTempAgency.sol"
 struct DataTransportObject {
@@ -281,7 +281,7 @@ function resolvePolicy(uint256 id, IWeb2Json.Proof calldata proof) public {
 }
 ```
 
-The `IWeb2Json.Proof` is validated as demonstrated in the [Web2Json guide](/fdc/guides/hardhat/web-2-json).
+The `IWeb2Json.Proof` is validated as demonstrated in the [Web2Json guide](/fdc/guides/hardhat/web2-json).
 
 ```solidity title="src/weatherInsurance/MinTempAgency.sol"
 function isWeb2JsonProofValid(IWeb2Json.Proof calldata _proof) private view returns (bool) {
@@ -454,7 +454,7 @@ contract ClaimPolicy is Script {
 forge script script/MinTemp.s.sol:ClaimPolicy --rpc-url $COSTON2_RPC_URL --broadcast --sig "run(uint256)" <POLICY_ID>
 ```
 
-The script for resolving a policy is slightly more complicated. It involves making a Web2Json attestation request to the FDC and providing the returned proof to the `MinTempAgency` contract. To learn more about the Web2Json attestation request look at the [related guide](/fdc/guides/hardhat/web-2-json), or its [spec](/fdc/attestation-types/web-2-json).
+The script for resolving a policy is slightly more complicated. It involves making a Web2Json attestation request to the FDC and providing the returned proof to the `MinTempAgency` contract. To learn more about the Web2Json attestation request look at the [related guide](/fdc/guides/hardhat/web2-json), or its [spec](/fdc/attestation-types/web2-json).
 
 The URL we will be submitting to the FDC is the one already mentioned above. We prepare the URL using a helper function in our script, dividing the coordinates by 10<sup>6</sup> to return them to their original value.
 

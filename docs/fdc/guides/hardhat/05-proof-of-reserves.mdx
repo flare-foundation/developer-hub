@@ -1,10 +1,11 @@
 ---
 title: Proof of Reserves
+slug: proof-of-reserves
 authors: [nikerzetic, filipkoprivec]
 description: Verifying stablecoin reserves with FDC.
 tags: [advanced, ethereum, fdc, hardhat]
 keywords: [ethereum, flare-data-connector, evm, flare-network]
-sidebar_position: 10
+sidebar_position: 1
 unlisted: false
 ---
 
@@ -12,7 +13,7 @@ import CodeBlock from "@theme/CodeBlock";
 import VerifyReservesScript from "!!raw-loader!/examples/developer-hub-javascript/fdc_verify_proof_of_reserves.ts";
 
 This is a guide on how to build a simple dApp using the [Flare Data Connector](/fdc/overview).
-It demonstrates how multiple attestation types, namely the [EVMTransaction](/fdc/attestation-types/evm-transaction) and [Web2Json](/fdc/attestation-types/web-2-json), can be combined within the same app.
+It demonstrates how multiple attestation types, namely the [EVMTransaction](/fdc/attestation-types/evm-transaction) and [Web2Json](/fdc/attestation-types/web2-json), can be combined within the same app.
 
 The app that we will be building is called `proofOfReserves`, which enables onchain verification that a stablecoin's circulating supply is backed by sufficient offchain reserves.
 We will first describe what issue the app is addressing, and then provide a detailed walkthrough through its source code.
@@ -32,7 +33,7 @@ Implementing this verification system presents three technical challenges:
 2. **Reading onchain state**: We need to access the total token supply data from various blockchain networks.
 3. **Cross-chain data collection**: We need to aggregate token supply information across multiple chains.
 
-The [Flare Data Connector (FDC)](/fdc/overview) provides solutions for both accessing Web2 APIs through the [Web2Json](/fdc/attestation-types/web-2-json) attestation type and collecting cross-chain data via the [EVMTransaction](/fdc/attestation-types/evm-transaction) attestation type.
+The [Flare Data Connector (FDC)](/fdc/overview) provides solutions for both accessing Web2 APIs through the [Web2Json](/fdc/attestation-types/web2-json) attestation type and collecting cross-chain data via the [EVMTransaction](/fdc/attestation-types/evm-transaction) attestation type.
 For reading onchain state, we deploy a dedicated contract that reads the token supply and emits this data as an event.
 
 This guide will walk through all the components needed to build the complete `proofOfReserves` verification system.
@@ -171,8 +172,8 @@ The contract defines several important components:
 
 - **Access Control**: The `updateAddress` function, protected by the `onlyOwner` modifier, provides a secure mechanism to update the registry mapping.
 
-To properly decode data from the [Web2Json](/fdc/attestation-types/web-2-json) attestation, we need to define a data structure that matches our expected format.
-Following patterns from the [Web2Json attestation type guide](/fdc/guides/hardhat/web-2-json), we create a simple `DataTransportObject` struct:
+To properly decode data from the [Web2Json](/fdc/attestation-types/web2-json) attestation, we need to define a data structure that matches our expected format.
+Following patterns from the [Web2Json attestation type guide](/fdc/guides/hardhat/web2-json), we create a simple `DataTransportObject` struct:
 
 ```solidity title="contracts/proofOfReserves/ProofOfReserves.sol"
 struct DataTransportObject {
@@ -552,7 +553,7 @@ Next, we define an `AttestationRequest` type.
 This will allow us to present the request data in a better organized format.
 Then, we prepare a list of requests, each populated with the data specified by its corresponding attestation type.
 The only two attestation types we need for this example are `IEVMTransaction` and `Web2Json`.
-For a more detailed explanation of the included fields, look at the appropriate type specification ([IEVMTransaction](/fdc/attestation-types/evm-transaction) and [Web2Json](/fdc/attestation-types/web-2-json)).
+For a more detailed explanation of the included fields, look at the appropriate type specification ([IEVMTransaction](/fdc/attestation-types/evm-transaction) and [Web2Json](/fdc/attestation-types/web2-json)).
 
 In this guide, we will be comparing the total supplies of previously deployed tokens (with an arbitrary initial supply of `666`), to the claimed reserves of a real stablecoin.
 We will obtain the dollar reserves from the API at the address: `https://api.htdigitalassets.com/alm-stablecoin-db/metrics/current_reserves_amount`.
