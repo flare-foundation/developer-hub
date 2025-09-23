@@ -1,0 +1,90 @@
+---
+sidebar_position: 1
+slug: fassets-cycle
+title: FAssets Cycle
+authors: [nikerzetic, filipkoprivec]
+description: An overview of the FAssets cycle with the use of Flare Smart Accounts.
+tags: [intermediate, ethereum, flare-smart-accounts]
+keywords:
+  [
+    flare-fdc,
+    ethereum,
+    flare-smart-accounts,
+    evm,
+    flare-network,
+    account-abstraction,
+  ]
+unlisted: false
+---
+
+import ThemedImage from "@theme/ThemedImage";
+import useBaseUrl from "@docusaurus/useBaseUrl";
+
+In this guide, we will walk you through all aspects of the [FAssets](/fassets/overview) process.
+We will start with an account on XRPL, we will send its assets to Flare, and then return them to XRPL.
+The steps we will take will be as follows:
+
+1. `mint`: convert XRP to FXRP
+2. `deposit`: deposit FXRP to the Firelight vault
+3. `withdraw`: withdraw FXRP from the Firelight vault
+4. `redeem`: convert FXRP back to XRP
+
+We will do all of that through the [Flare Smart Accounts CLI](/smart-accounts/guides/fsa-cli).
+The CLI allows us to make XRPL transactions through terminal commands.
+
+:::note
+The idea behind the Flare Smart Accounts is that we perform actions on the Flare chain through instructions sent on XRPL.
+:::
+
+## Mint
+
+First, we mint FXRP by reserving the necessary collateral and then sending XRP to the agent's underlying address.
+We will mint `1` lot of FXRP, with the agent at the address `0x55c815260cBE6c45Fe5bFe5FF32E3C7D746f14dC`.
+The CLI command that does this is:
+
+```sh
+ ./smart_accounts.py bridge mint -a 0x55c815260cBE6c45Fe5bFe5FF32E3C7D746f14dC -l 1
+```
+
+The CLI sends both the `reserveCollateral` instruction and the `Payment` transaction to the agent's underlying address.
+
+## Deposit
+
+Next, we deposit `1` FXRP into the Firelight vault, specified by the `MasterAccountController` contract.
+Here, the CLI sends the `deposit` instruction.
+The command is:
+
+```sh
+./smart_accounts.py bridge deposit -a 1
+```
+
+## Withdraw
+
+We withdraw the same number of tokens that we have just deposited from the Firelight vault.
+The process involves two steps.
+The CLI first sends the `withdraw` instruction, and afterwards, the `claimWithdraw`.
+The first instruction starts the withdrawal process, and the second claims the FXRP once it is released.
+
+We use the command:
+
+```sh
+./smart_accounts.py bridge withdraw -a 1
+```
+
+## Redeem
+
+The last step is to convert FXRP back to XRP.
+We will redeem the `1` lot of FXRP we minted in the first step back to XRP.
+We will invoke the CLI with the following command.
+
+```sh
+./smart_accounts.py bridge redeem -a 1
+```
+
+## Simulation
+
+The above cycle can be simulated with a single CLI command:
+
+```sh
+ ./smart_accounts.py debug simulation -a 0x55c815260cBE6c45Fe5bFe5FF32E3C7D746f14dC -m 1 -d 1
+```
