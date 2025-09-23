@@ -52,4 +52,4 @@ function getFeedId(
 
 #### Returns
 
-- ``: Feed id.
+- `_feedId`: Feed id.

@@ -15,7 +15,7 @@ contract FtsoV2AnchorFeedConsumer {
 
     function savePrice(
         TestFtsoV2Interface.FeedDataWithProof calldata data
-    ) external view {
+    ) external {
         /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
         TestFtsoV2Interface ftsoV2 = ContractRegistry.getTestFtsoV2();
         // Step 1: Verify the proof
