@@ -1,37 +1,56 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.9.0;
+pragma solidity ^0.8.25;
 
 import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
 import {RandomNumberV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/RandomNumberV2Interface.sol";
 
 /**
- * THIS IS AN EXAMPLE CONTRACT.
- * DO NOT USE THIS CODE IN PRODUCTION.
+ * @title SecureRandomConsumer
+ * @notice Example consumer that reads secure random values from Flare's RandomNumberV2.
+ * @dev THIS IS AN EXAMPLE CONTRACT. DO NOT USE THIS EXACT CODE IN PRODUCTION.
  */
 contract SecureRandomConsumer {
-    RandomNumberV2Interface internal randomV2;
+    /// @notice Random number provider (fetched from ContractRegistry at construction).
+    RandomNumberV2Interface public immutable randomV2;
 
     /**
-     * Initializing an instance with RandomNumberV2Interface.
-     * The contract registry is used to fetch the contract address.
+     * @notice Initialize and grab the RandomNumberV2 instance from the ContractRegistry.
      */
     constructor() {
         randomV2 = ContractRegistry.getRandomNumberV2();
     }
 
     /**
-     * Fetch the latest secure random number.
-     * The random number is generated every 90 seconds.
+     * @notice Returns the latest secure random number.
+     * @dev The underlying provider returns `(uint256 random, bool isSecure, uint256 timestamp)`.
+     *      Only returns `random` when `isSecure == true`. This function is `view`.
+     * @return randomNumber Latest secure random value.
      */
     function getSecureRandomNumber()
         external
         view
-        returns (uint256 randomNumber)
+        returns (uint256 randomNumber, bool isSecure, uint256 timestamp)
+    {
+        (uint256 _randomNumber, bool _isSecure, uint256 _timestamp) = randomV2
+            .getRandomNumber();
+
+        // DO NOT USE returned value if isSecure==false. Wait until the next secure round.
+        require(isSecure, "Random number is not secure yet");
+
+        return (_randomNumber, _isSecure, _timestamp);
+    }
+
+    /**
+     * @notice Convenience read: returns raw tuple from the random provider.
+     * @return randomNumber Latest random value (may be insecure).
+     * @return isSecure Whether the value is considered secure by provider.
+     * @return timestamp Provider timestamp for the random value.
+     */
+    function peekRandomNumber()
+        external
+        view
+        returns (uint256 randomNumber, bool isSecure, uint256 timestamp)
     {
         (randomNumber, isSecure, timestamp) = randomV2.getRandomNumber();
-        /* DO NOT USE if isSecure=false. Wait till the next voting round (90s). */
-        require(isSecure, "Random number is not secure");
-        /* Your custom RNG consumption logic. Here the random value is just returned. */
-        return randomNumber;
     }
 }
