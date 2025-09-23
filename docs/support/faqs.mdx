@@ -48,6 +48,11 @@ Alternatively, you can add them manually using the details on the [Network Confi
 
 Read more on the [Network Overview](/network/overview) page.
 
+### What's the difference between Coston and Coston2?
+
+- **Coston2 (C2FLR):** The testnet for the Flare mainnet.
+- **Coston (CFLR):** The testnet for the Songbird canary network.
+
 ### Which RPC endpoint should I use?
 
 - **For Development/Testing:** The [Public RPCs](/network/overview#configuration) are convenient for getting started. However, they have rate limits and shared resources.
@@ -69,14 +74,15 @@ Learn more on the [Consensus](/network/consensus) page.
 
 The addresses for contracts like `WNat`, `FtsoV2`, `FdcHub`, etc., vary by network.
 
-1.  **Use the `FlareContractRegistry`:** This contract acts as a directory. It has the **same address** (`0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019`) on **all** Flare networks (Flare, Coston2, Songbird, Coston). You can query its [`getContractAddressByName`](/network/solidity-reference/IFlareContractRegistry#getcontractaddressbyname) or [`getAllContracts`](/network/solidity-reference/IFlareContractRegistry#getallcontracts) methods to find the addresses of other contracts on the specific network you are connected to.
-2.  **Check the Solidity Reference:** Deployed contract addresses for each network are listed on the relevant reference pages for convenience:
-    - [Network Reference](/network/solidity-reference)
-    - [FSP Reference](/network/fsp/solidity-reference)
-    - [FTSOv2 Reference](/ftso/solidity-reference)
-    - [Scaling Reference](/ftso/scaling/solidity-reference)
-    - [FDC Reference](/fdc/reference)
-    - [FAssets Reference](/fassets/reference)
+1. When developing in Solidity **use the `ContractRegistry` library:** The `ContractRegistry` is a Solidity library, available in the Flare periphery packages ([npm](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts), [Soldeer](https://soldeer.xyz/project/flare-periphery)). It contains getter functions for the official Flare contracts. If you acquire the addresses programmatically, through the `ContractRegistry`, the addresses will alway stay up to date.
+2. **Use the `FlareContractRegistry`:** This contract acts as a directory. It has the **same address** (`0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019`) on **all** Flare networks (Flare, Coston2, Songbird, Coston). You can query its [`getContractAddressByName`](/network/solidity-reference/IFlareContractRegistry#getcontractaddressbyname) or [`getAllContracts`](/network/solidity-reference/IFlareContractRegistry#getallcontracts) methods to find the addresses of other contracts on the specific network you are connected to.
+3. **Check the Solidity Reference:** Deployed contract addresses for each network are listed on the relevant reference pages for convenience:
+   - [Network Reference](/network/solidity-reference)
+   - [FSP Reference](/network/fsp/solidity-reference)
+   - [FTSOv2 Reference](/ftso/solidity-reference)
+   - [Scaling Reference](/ftso/scaling/solidity-reference)
+   - [FDC Reference](/fdc/reference)
+   - [FAssets Reference](/fassets/reference)
 
 ### Are there official developer tools or SDKs?
 
