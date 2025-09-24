@@ -21,7 +21,7 @@ export default function OperationalParameters({
     hideBtc = false,
     hideDoge = false,
   }: {
-    network: "songbird" | "coston" | "coston2";
+    network: "songbird" | "coston" | "coston2" | "flare";
     parameters: (typeof operationalParameters)[number]["parameters"];
     hideXrp?: boolean;
     hideBtc?: boolean;
@@ -99,13 +99,22 @@ export default function OperationalParameters({
 
   return (
     <Tabs
-      defaultValue="songbird"
+      defaultValue="flare"
       values={[
+        { label: "Flare Mainnet", value: "flare" },
         { label: "Flare Testnet Coston2", value: "coston2" },
         { label: "Songbird Canary-Network", value: "songbird" },
         { label: "Songbird Testnet Coston", value: "coston" },
       ]}
     >
+      <TabItem value="flare">
+        <ParameterTable
+          network="flare"
+          parameters={operationalParametersSection.parameters}
+          hideBtc
+          hideDoge
+        />
+      </TabItem>
       <TabItem value="coston2">
         <ParameterTable
           network="coston2"

@@ -1,3 +1,5 @@
+import { flushSync } from "react-dom";
+
 export const operationalParameters = [
   {
     title: "Minting and Redeeming",
@@ -8,6 +10,9 @@ export const operationalParameters = [
         description:
           "Total amount of allowed FAssets in circulation. Once reached, no more FAssets can be minted until some are redeemed. This is intended as a security measure. In the final deployment, this cap will be gradually increased and finally removed.",
         values: {
+          flare: {
+            xrp: "2M XRP",
+          },
           coston2: {
             xrp: "none",
           },
@@ -27,6 +32,9 @@ export const operationalParameters = [
         description: "Minimum quantity required for minting FAssets.",
         link: "/fassets/minting#lots",
         values: {
+          flare: {
+            xrp: "10 XRP",
+          },
           coston2: {
             xrp: "10 XRP",
           },
@@ -46,6 +54,9 @@ export const operationalParameters = [
         description: "Fee applied when reserving collateral for minting..",
         link: "/fassets/minting#collateral-reservation-fee",
         values: {
+          flare: {
+            xrp: "0.01%",
+          },
           coston2: {
             xrp: "0.1%",
           },
@@ -65,6 +76,9 @@ export const operationalParameters = [
         description: "Fee charged during redemption of FAssets.",
         link: "/fassets/redemption#redemption-fee",
         values: {
+          flare: {
+            xrp: "0.2%",
+          },
           coston2: {
             xrp: "0.5%",
           },
@@ -85,8 +99,11 @@ export const operationalParameters = [
           "Premium paid if an agent fails to meet redemption obligations.",
         link: "/fassets/redemption#redemption-payment-failure",
         values: {
+          flare: {
+            xrp: "5%",
+          },
           coston2: {
-            xrp: "0.5%",
+            xrp: "5%",
           },
           songbird: {
             xrp: "5%",
@@ -103,6 +120,9 @@ export const operationalParameters = [
         description:
           "Where does the premium come from when an agent fails to pay the redeemer on time? If the vault CR > 1.1, from the agent's vault. Otherwise, from the agent's vault and the collateral pool.",
         values: {
+          flare: {
+            xrp: "✅",
+          },
           coston2: {
             xrp: "✅",
           },
@@ -121,6 +141,9 @@ export const operationalParameters = [
         settingName: "maxRedeemedTickets",
         description: "Maximum number of tickets redeemed in a single request.",
         values: {
+          flare: {
+            xrp: "20",
+          },
           coston2: {
             xrp: "20",
           },
@@ -145,6 +168,9 @@ export const operationalParameters = [
         description:
           "The number of underlying blocks during which the minter or agent can pay the underlying value.",
         values: {
+          flare: {
+            xrp: "225",
+          },
           coston2: {
             xrp: "500",
           },
@@ -164,6 +190,9 @@ export const operationalParameters = [
         description:
           "The minimum time allowed for an agent to pay for a redemption or a minter to pay for minting.",
         values: {
+          flare: {
+            xrp: "15 minutes",
+          },
           coston2: {
             xrp: "15 minutes",
           },
@@ -183,8 +212,11 @@ export const operationalParameters = [
         description:
           "The average time between two successive blocks on the underlying chain.",
         values: {
+          flare: {
+            xrp: "4 seconds",
+          },
           coston2: {
-            xrp: "2 seconds",
+            xrp: "4 seconds",
           },
           songbird: {
             xrp: "4 seconds",
@@ -202,6 +234,9 @@ export const operationalParameters = [
         description:
           "The amount of time that proofs of payment or nonpayment must be available on the Data Connector.",
         values: {
+          flare: {
+            xrp: "1 day",
+          },
           coston2: {
             xrp: "1 day",
           },
@@ -221,6 +256,9 @@ export const operationalParameters = [
         description:
           "The extra amount of time per redemption granted to an agent when many redemption requests occur in a short period of time.",
         values: {
+          flare: {
+            xrp: "45 seconds",
+          },
           coston2: {
             xrp: "30 seconds",
           },
@@ -243,6 +281,9 @@ export const operationalParameters = [
         name: "Vault Collateral Supported Types",
         description: "Types of collateral required in the agent's vault.",
         values: {
+          flare: {
+            xrp: "<code>USDT</code>",
+          },
           coston2: {
             xrp: "<code>USDX</code>",
           },
@@ -264,6 +305,9 @@ export const operationalParameters = [
           "The minimum collateral ratio required to avoid liquidation.",
         link: "/fassets/collateral#minimal-cr",
         values: {
+          flare: {
+            xrp: "1.2",
+          },
           coston2: {
             xrp: "1.2",
           },
@@ -284,6 +328,9 @@ export const operationalParameters = [
         description: "The collateral ratio required to exit liquidation mode.",
         link: "/fassets/collateral#safety-cr",
         values: {
+          flare: {
+            xrp: "1.3",
+          },
           coston2: {
             xrp: "1.2",
           },
@@ -301,6 +348,9 @@ export const operationalParameters = [
         name: "Pool Collateral Supported Types",
         description: "Types of collateral required in the collateral pool.",
         values: {
+          flare: {
+            xrp: "FLR",
+          },
           coston2: {
             xrp: "C2FLR",
           },
@@ -322,6 +372,9 @@ export const operationalParameters = [
           "The minimum collateral ratio required to avoid liquidation.",
         link: "/fassets/collateral#minimal-cr",
         values: {
+          flare: {
+            xrp: "1.5",
+          },
           coston2: {
             xrp: "1.5",
           },
@@ -342,6 +395,9 @@ export const operationalParameters = [
         description: "The collateral ratio required to exit liquidation mode.",
         link: "/fassets/collateral#safety-cr",
         values: {
+          flare: {
+            xrp: "1.6",
+          },
           coston2: {
             xrp: "1.6",
           },
@@ -361,6 +417,9 @@ export const operationalParameters = [
         description:
           "The minimum amount of pool tokens an agent must hold to be able to mint, as a percentage of the FAssets the agent is currently backing.",
         values: {
+          flare: {
+            xrp: "50%",
+          },
           coston2: {
             xrp: "50%",
           },
@@ -384,8 +443,11 @@ export const operationalParameters = [
         settingName: "liquidationPremium",
         description: "Increases in steps, as time passes.",
         values: {
+          flare: {
+            xrp: "<strong>Step 1</strong>: 4%<br /><strong>Step 2</strong>: 8%<br /><strong>Step 3</strong>: 12%",
+          },
           coston2: {
-            xrp: "<strong>Step 1</strong>: 5%<br /><strong>Step 2</strong>: 10%<br /><strong>Step 3</strong>: 15%",
+            xrp: "<strong>Step 1</strong>: 4%<br /><strong>Step 2</strong>: 8%<br /><strong>Step 3</strong>: 12%",
           },
           songbird: {
             xrp: "<strong>Step 1</strong>: 5%<br /><strong>Step 2</strong>: 8%<br /><strong>Step 3</strong>: 12%",
@@ -403,6 +465,9 @@ export const operationalParameters = [
         description:
           "Elapsed time before the liquidation premium advances to the next step.",
         values: {
+          flare: {
+            xrp: "300 seconds",
+          },
           coston2: {
             xrp: "180 seconds",
           },
@@ -420,6 +485,9 @@ export const operationalParameters = [
         name: "Liquidation source - Liquidated value",
         description: "Where do the funds come from to pay for liquidations?",
         values: {
+          flare: {
+            xrp: "The agent's vault",
+          },
           coston2: {
             xrp: "The agent's vault",
           },
@@ -437,6 +505,9 @@ export const operationalParameters = [
         name: "Liquidation source - Premium",
         description: "Where do the funds come from to pay for liquidations?",
         values: {
+          flare: {
+            xrp: "The collateral's vault",
+          },
           coston2: {
             xrp: "The collateral pool",
           },
@@ -462,6 +533,9 @@ export const operationalParameters = [
           "After a successful challenge for an illegal operation, the agent goes into full liquidation and the challenger is paid this reward from the agent's vault.",
         link: "/fassets/overview#challengers",
         values: {
+          flare: {
+            xrp: "250 USD converted to vault collateral",
+          },
           coston2: {
             xrp: "300 USD converted to vault collateral",
           },
@@ -482,6 +556,9 @@ export const operationalParameters = [
           "If an agent or redeemer becomes unresponsive, anybody can confirm payments and non-payments some time after the request was made, and get a reward from the agent's vault.",
         link: "/fassets/redemption#edge-cases",
         values: {
+          flare: {
+            xrp: "",
+          },
           coston2: {
             xrp: "",
           },
@@ -499,6 +576,9 @@ export const operationalParameters = [
         name: "Minimum time",
         settingName: "confirmationByOthersAfter",
         values: {
+          flare: {
+            xrp: "6 hours",
+          },
           coston2: {
             xrp: "2 hours",
           },
@@ -516,6 +596,9 @@ export const operationalParameters = [
         name: "Reward",
         settingName: "confirmationByOthersReward",
         values: {
+          flare: {
+            xrp: "5 USD (converted to vault collateral)",
+          },
           coston2: {
             xrp: "100 USD (converted to vault collateral)",
           },
@@ -540,6 +623,9 @@ export const operationalParameters = [
         description:
           "Agent has to announce any collateral withdrawal or vault destruction and then wait this time before executing it.",
         values: {
+          flare: {
+            xrp: "1 hour",
+          },
           coston2: {
             xrp: "60 seconds",
           },
@@ -559,6 +645,9 @@ export const operationalParameters = [
         description:
           "Minimum amount of time between updates of any governance setting.",
         values: {
+          flare: {
+            xrp: "1 day",
+          },
           coston2: {
             xrp: "60 seconds",
           },
@@ -578,6 +667,9 @@ export const operationalParameters = [
         description:
           "Time between the moment a token is deprecated by governance and it becomes invalid. Agents still using it as vault collateral get liquidated after this time.",
         values: {
+          flare: {
+            xrp: "1 day",
+          },
           coston2: {
             xrp: "1 day",
           },
@@ -597,6 +689,9 @@ export const operationalParameters = [
         description:
           "The time the agent has to wait after announcing exit from the list of publicly available agents and executing the exit.",
         values: {
+          flare: {
+            xrp: "3 hours",
+          },
           coston2: {
             xrp: "60 seconds",
           },
@@ -616,6 +711,9 @@ export const operationalParameters = [
         description:
           "The time the agent has to wait between announcing and changing the agent fee or the pool share.",
         values: {
+          flare: {
+            xrp: "1 hour",
+          },
           coston2: {
             xrp: "120 seconds",
           },
@@ -635,6 +733,9 @@ export const operationalParameters = [
         description:
           "The time the agent has to wait between announcing and changing the minting CR (vault or pool).",
         values: {
+          flare: {
+            xrp: "5 minutes",
+          },
           coston2: {
             xrp: "120 seconds",
           },
@@ -654,6 +755,9 @@ export const operationalParameters = [
         description:
           "The time the agent has to wait between announcing and changing any pool exit and top-up settings.",
         values: {
+          flare: {
+            xrp: "1 day",
+          },
           coston2: {
             xrp: "120 seconds",
           },
@@ -673,6 +777,9 @@ export const operationalParameters = [
         description:
           "Once the above time locks expire, agents have this amount of time to execute the requested operation.",
         values: {
+          flare: {
+            xrp: "2 hours",
+          },
           coston2: {
             xrp: "1 hour",
           },
@@ -692,6 +799,9 @@ export const operationalParameters = [
         description:
           "Amount of seconds that a user entering the collateral pool must wait before spending (exit or transfer) the obtained pool tokens.",
         values: {
+          flare: {
+            xrp: "60 seconds",
+          },
           coston2: {
             xrp: "60 seconds",
           },
@@ -711,6 +821,9 @@ export const operationalParameters = [
         description:
           "Amount of time that must elapse before the system performs a <a href='https://eips.ethereum.org/EIPS/eip-2535' target='_blank'>diamond cut</a>.",
         values: {
+          flare: {
+            xrp: "1 hour",
+          },
           coston2: {
             xrp: "2 hours",
           },
@@ -735,6 +848,9 @@ export const operationalParameters = [
         description:
           "The maximum time for a pause triggered by governance or some other entity.",
         values: {
+          flare: {
+            xrp: "3 days",
+          },
           coston2: {
             xrp: "1 day",
           },
@@ -754,6 +870,9 @@ export const operationalParameters = [
         description:
           "The amount of time since the last emergency pause. After it has elapsed, the pause duration counter automatically resets.",
         values: {
+          flare: {
+            xrp: "1 week",
+          },
           coston2: {
             xrp: "1 week",
           },
@@ -778,6 +897,9 @@ export const operationalParameters = [
         description:
           "The fee on FAsset token transfer. Each transfer has this value times the transferred amount deducted from its value. The fees get deposited into epochs that are claimable by agents depending on their minting history.",
         values: {
+          flare: {
+            xrp: "0",
+          },
           coston2: {
             xrp: "0",
           },
@@ -797,6 +919,9 @@ export const operationalParameters = [
         description:
           "The number of epochs to pass before the fees get transferred to new epochs.",
         values: {
+          flare: {
+            xrp: "-",
+          },
           coston2: {
             xrp: "16",
           },
@@ -815,6 +940,9 @@ export const operationalParameters = [
         settingName: "transferFeeClaimEpochDurationSeconds",
         description: "Duration of each reward epoch.",
         values: {
+          flare: {
+            xrp: "-",
+          },
           coston2: {
             xrp: "7 days",
           },
@@ -833,6 +961,9 @@ export const operationalParameters = [
         settingName: "transferFeeClaimFirstEpochStartTs",
         description: "The first reward epoch timestamp.",
         values: {
+          flare: {
+            xrp: "-",
+          },
           coston2: {
             xrp: "Tue Oct 01 2024 12:00:00 GMT",
           },
@@ -1003,6 +1134,9 @@ export const operationalParameters = [
         description:
           "The amount of XRP to escrow (setting to 0 disables escrowing).",
         values: {
+          flare: {
+            xrp: "250k XRP",
+          },
           coston2: {
             xrp: "10k XRP",
           },
@@ -1022,6 +1156,9 @@ export const operationalParameters = [
         description:
           "The minimal amount that will be left on the multisig after escrowing.",
         values: {
+          flare: {
+            xrp: "500k XRP",
+          },
           coston2: {
             xrp: "10k XRP",
           },
@@ -1041,6 +1178,9 @@ export const operationalParameters = [
         description:
           "The time of day (UTC) when the escrows expire. Exactly one escrow per day will expire.",
         values: {
+          flare: {
+            xrp: "57600 (16:00 UTC)",
+          },
           coston2: {
             xrp: "43200 (12:00 UTC)",
           },
@@ -1059,6 +1199,9 @@ export const operationalParameters = [
         interfaceLink: "/fassets/reference/IAssetManager#getsettings",
         description: "Maximum expected fee charged by the chain for a payment",
         values: {
+          flare: {
+            xrp: "0.0004 XRP (400 drops)",
+          },
           coston2: {
             xrp: "0.0001 XRP (100 drops)",
           },
@@ -1083,6 +1226,9 @@ export const operationalParameters = [
         description:
           "Minimum amount of minting left on agent's address after transfer to core vault. Expressed as percentage of agent's minting capacity (calculated from agent's vault and pool collateral).",
         values: {
+          flare: {
+            xrp: "15%",
+          },
           coston2: {
             xrp: "20%",
           },
@@ -1102,6 +1248,9 @@ export const operationalParameters = [
         description:
           "The extra time for an agent's transfer to the core vault, compared to ordinary redemption payment.",
         values: {
+          flare: {
+            xrp: "2 hours",
+          },
           coston2: {
             xrp: "2 hours",
           },
@@ -1121,6 +1270,9 @@ export const operationalParameters = [
         description:
           "Fee (in percentage of transfer amount) paid by agent for transfer to the core vault.",
         values: {
+          flare: {
+            xrp: "0",
+          },
           coston2: {
             xrp: "0",
           },
@@ -1140,6 +1292,9 @@ export const operationalParameters = [
         description:
           "The minimum number of lots that a direct redemption from core vault can take",
         values: {
+          flare: {
+            xrp: "1000",
+          },
           coston2: {
             xrp: "10",
           },
@@ -1159,6 +1314,9 @@ export const operationalParameters = [
         description:
           "Fee (in percentage of redemption amount) paid by the redeemer for direct redemptions from the core vault.",
         values: {
+          flare: {
+            xrp: "0",
+          },
           coston2: {
             xrp: "0",
           },
