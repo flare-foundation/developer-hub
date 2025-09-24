@@ -1,5 +1,3 @@
-import { flushSync } from "react-dom";
-
 export const operationalParameters = [
   {
     title: "Minting and Redeeming",
