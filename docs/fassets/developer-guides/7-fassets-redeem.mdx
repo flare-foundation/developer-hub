@@ -331,8 +331,16 @@ You can read the full event description [here](/fassets/reference/IAssetManagerE
 
 The FAssets agent should perform the redemption, and the user must retrieve the redeemed assets from the agent.
 
-If the agent is unable to redeem the assets on the underlying chain in the specified time.
-In that case, the user can execute the [`redemptionPaymentDefault`](/fassets/reference/IAssetManager#redemptionpaymentdefault) function to receive compensation from the agent's collateral.
+These [operational parameters](/fassets/operational-parameters) define the timeframe within which the agent must complete the redemption payment:
+
+- `underlyingBlocksForPayment`: The number of underlying blocks during which the agent can pay the underlying value.
+- `underlyingSecondsForPayment`: The minimum time allowed for an agent to pay for a redemption.
+
+If the agent is unable to pay the redemption payment in the specified time, the redeemer can:
+
+1. Make a proof of [payment non-existence](/fdc/attestation-types/referenced-payment-nonexistence) using the [Flare Data Connector](/fdc/overview).
+2. Execute the [`redemptionPaymentDefault`](/fassets/reference/IAssetManager#redemptionpaymentdefault) function and present the proof of payment non-existence to the FAssets system, which triggers a redemption failure.
+3. The redeemer receives collateral plus a premium.
 
 ## Summary
 
