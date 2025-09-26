@@ -1,0 +1,387 @@
+---
+title: ICollateralPool
+description: FAssets ICollateralPool interface reference.
+keywords: [fassets, xrp, bitcoin, dogecoin, flare-network]
+sidebar_position: 6
+---
+
+Command line reference for interacting with FAssets `ICollateralPool` contract.
+
+Sourced from `ICollateralPool.sol` on [GitHub](https://github.com/flare-foundation/fassets/blob/main/contracts/userInterfaces/ICollateralPool.sol).
+
+---
+
+## Overview
+
+This interface is used by pool participants and the agent vault owner to manage collateral, fees, and reward delegation.
+
+## Functions
+
+### `enter`
+
+Enters an agent's collateral pool by depositing NAT, where tokens are timelocked and may carry [fee debt](/fassets/collateral#minting-fees-and-debt) if FAsset fees already exist in the pool.
+This debt must be cleared before tokens can be transferred.
+
+Parameters:
+
+- `_executor`: The account that is allowed to execute the entry (besides the user and agent).
+
+Returns:
+
+- `_receivedTokens`: The amount of pool tokens received.
+- `_timelockExpiresAt`: The timestamp when the timelock expires.
+
+```solidity
+function enter()
+    external payable
+    returns (uint256 _receivedTokens, uint256 _timelockExpiresAt);
+```
+
+### `exit`
+
+Exits the pool by redeeming pool tokens for a share of NAT and FAsset fees.  
+Reverts if exiting would drop the collateral ratio below the exit [CR](/fassets/collateral#collateral-ratio).
+
+Parameters:
+
+- `_tokenShare`: Amount of pool tokens to redeem.
+
+Returns:
+
+- `_natShare`: Amount of NAT received.
+
+```solidity
+function exit(uint256 _tokenShare)
+    external
+    returns (uint256 _natShare);
+```
+
+### `selfCloseExit`
+
+Exits the pool by redeeming pool tokens and burning FAssets while preserving the pool's collateral ratio.
+FAssets are redeemed into collateral if their value does not exceed one [lot](/fassets/minting#lots).
+
+Parameters:
+
+- `_tokenShare`: The amount of pool tokens to be liquidated.
+- `_redeemToCollateral`: Specifies if redeemed FAssets should be exchanged to vault collateral by the agent.
+- `_redeemerUnderlyingAddress`: Redeemer's address on the underlying chain.
+- `_executor`: The account that is allowed to execute redemption.
+
+```solidity
+function selfCloseExit(
+    uint256 _tokenShare,
+    bool _redeemToCollateral,
+    string memory _redeemerUnderlyingAddress,
+    address payable _executor
+) external payable;
+```
+
+### `withdrawFees`
+
+Collects FAsset fees by locking an appropriate ratio of transferable tokens.
+
+Parameters:
+
+- `_amount`: The amount of FAsset fees to withdraw (must be positive and smaller than or equal to the sender's FAsset fees).
+
+```solidity
+function withdrawFees(uint256 _amount) external;
+```
+
+### `exitTo`
+
+Exits the pool by redeeming pool tokens for a share of NAT and FAsset fees and transferring them to a recipient.
+Reverts if exiting would drop the collateral ratio below the exit [CR](/fassets/collateral#collateral-ratio).
+
+Parameters:
+
+- `_tokenShare`: The amount of pool tokens to be redeemed.
+- `_recipient`: Recipient address for NATs and FAsset fees.
+
+Returns:
+
+- `_natShare`: The amount of NAT received.
+
+```solidity
+function exitTo(uint256 _tokenShare, address payable _recipient)
+    external
+    returns (uint256 _natShare);
+```
+
+### `selfCloseExitTo`
+
+Exits the pool by redeeming pool tokens and burning FAssets, while preserving the pool's collateral ratio and allowing a recipient to be specified.
+FAssets are redeemed into collateral if their value does not exceed one [lot](/fassets/minting#lots).
+
+Parameters:
+
+- `_tokenShare`: The amount of pool tokens to be liquidated.
+- `_redeemToCollateral`: Specifies if redeemed FAssets should be exchanged to vault collateral by the agent.
+- `_recipient`: Recipient address for NATs and FAsset fees.
+- `_redeemerUnderlyingAddress`: Redeemer's address on the underlying chain.
+- `_executor`: The account that is allowed to execute redemption default.
+
+```solidity
+function selfCloseExitTo(
+    uint256 _tokenShare,
+    bool _redeemToCollateral,
+    address payable _recipient,
+    string memory _redeemerUnderlyingAddress,
+    address payable _executor
+) external payable;
+```
+
+### `withdrawFeesTo`
+
+Collect FAsset fees by locking an appropriate ratio of transferable tokens and transferring them to a recipient.
+
+Parameters:
+
+- `_amount`: The amount of FAsset fees to withdraw (must be positive and smaller than or equal to the sender's FAsset fees).
+- `_recipient`: The address to which FAsset fees will be transferred.
+
+```solidity
+function withdrawFeesTo(uint256 _amount, address _recipient) external;
+```
+
+### `payFAssetFeeDebt`
+
+Unlocks pool tokens by paying the FAsset fee debt.
+
+Parameters:
+
+- `_fassets`: The amount of debt FAsset fees to pay for.
+
+```solidity
+function payFAssetFeeDebt(uint256 _fassets) external;
+```
+
+### `claimAirdropDistribution`
+
+Claim airdrops earned by holding wrapped native tokens in the pool.
+Only the owner of the pool's corresponding agent vault may call this method.
+
+Parameters:
+
+- `_distribution`: The distribution contract to claim from.
+- `_month`: The month for which to claim the airdrop.
+
+Returns:
+
+- `_claimedAmount`: The amount of claimed airdrop.
+
+```solidity
+function claimAirdropDistribution(
+    IDistributionToDelegators _distribution,
+    uint256 _month
+) external
+    returns(uint256 _claimedAmount);
+```
+
+### `optOutOfAirdrop`
+
+Opt out of airdrops for wrapped native tokens in the pool.
+Only the owner of the pool's corresponding agent vault may call this method.
+
+Parameters:
+
+- `_distribution`: The distribution contract to opt out of.
+
+```solidity
+function optOutOfAirdrop(
+    IDistributionToDelegators _distribution
+) external;
+```
+
+### `delegate`
+
+Delegate WNat vote power for the wrapped native tokens held in this vault.
+Only the owner of the pool's corresponding agent vault may call this method.
+
+Parameters:
+
+- `_to`: The address to delegate to.
+- `_bips`: The delegation percentage in basis points (10000 = 100%).
+
+```solidity
+function delegate(address _to, uint256 _bips) external;
+```
+
+### `undelegateAll`
+
+Clear WNat delegation for the wrapped native tokens held in this vault.
+
+```solidity
+function undelegateAll() external;
+```
+
+### `claimDelegationRewards`
+
+Claim the rewards earned by delegating the voting power for the pool.
+Only the owner of the pool's corresponding agent vault may call this method.
+
+Parameters:
+
+- `_rewardManager`: The reward manager contract.
+- `_lastRewardEpoch`: The last reward epoch that was claimed.
+- `_proofs`: Array of reward claims with proofs.
+
+Returns:
+
+- `_claimedAmount`: The amount of claimed rewards.
+
+```solidity
+function claimDelegationRewards(
+    IRewardManager _rewardManager,
+    uint24 _lastRewardEpoch,
+    IRewardManager.RewardClaimWithProof[] calldata _proofs
+) external
+    returns(uint256 _claimedAmount);
+```
+
+## View Functions
+
+### `poolToken`
+
+Get the ERC20 pool token used by this collateral pool.
+
+Returns:
+
+- `ICollateralPoolToken`: The pool token contract.
+
+```solidity
+function poolToken()
+    external view
+    returns (ICollateralPoolToken);
+```
+
+### `agentVault`
+
+Get the vault of the agent that owns this collateral pool.
+
+Returns:
+
+- `address`: The agent vault address.
+
+```solidity
+function agentVault()
+    external view
+    returns (address);
+```
+
+### `exitCollateralRatioBIPS`
+
+Get the exit collateral ratio in BIPS.
+This is the collateral ratio below which exiting the pool is not allowed.
+
+Returns:
+
+- `uint32`: The exit collateral ratio in BIPS.
+
+```solidity
+function exitCollateralRatioBIPS()
+    external view
+    returns (uint32);
+```
+
+### `totalCollateral`
+
+Returns the total amount of collateral in the pool.
+This can differ from [`WNat.balanceOf(poolAddress)`](/network/solidity-reference/IWNat#balanceof) because the collateral must be tracked to prevent unexpected deposit type attacks on the pool.
+
+Returns:
+
+- `uint256`: Total collateral amount.
+
+```solidity
+function totalCollateral()
+    external view
+    returns (uint256);
+```
+
+### `fAssetFeesOf`
+
+Returns the FAsset fees belonging to a specific user.
+It is the amount of FAssets the user can withdraw by burning transferable pool tokens.
+
+Parameters:
+
+- `_account`: User address.
+
+Returns:
+
+- `uint256`: Amount of FAsset fees belonging to the user.
+
+```solidity
+function fAssetFeesOf(address _account)
+    external view
+    returns (uint256);
+```
+
+### `totalFAssetFees`
+
+Returns the total FAsset fees in the pool.
+It may differ from `FAsset.balanceOf(poolAddress)` because the collateral must be tracked to prevent unexpected deposit type attacks on the pool.
+
+Returns:
+
+- `uint256`: Total FAsset fees in the pool.
+
+```solidity
+function totalFAssetFees()
+    external view
+    returns (uint256);
+```
+
+### `fAssetFeeDebtOf`
+
+Returns the user's FAsset fee debt.
+This is the amount of FAssets the user has to pay to make all pool tokens transferable.
+The debt is created on entering the pool if the user does not provide the FAssets corresponding to the share of the FAsset fees already in the pool.
+
+Parameters:
+
+- `_account`: User address.
+
+Returns:
+
+- `int256`: User's FAsset fee debt (can be negative).
+
+```solidity
+function fAssetFeeDebtOf(address _account)
+    external view
+    returns (int256);
+```
+
+### `totalFAssetFeeDebt`
+
+Returns the total FAsset fee debt for all users.
+
+Returns:
+
+- `int256`: Total FAsset fee debt for all users (can be negative).
+
+```solidity
+function totalFAssetFeeDebt()
+    external view
+    returns (int256);
+```
+
+### `fAssetRequiredForSelfCloseExit`
+
+Get the amount of FAssets that need to be burned to perform [`selfCloseExit`](/fassets/reference/ICollateralPool#selfcloseexit) or [`selfCloseExitTo`](/fassets/reference/ICollateralPool#selfcloseexitto).
+
+Parameters:
+
+- `_tokenAmountWei`: The amount of pool tokens to exit.
+
+Returns:
+
+- `uint256`: Amount of FAssets required for self close exit.
+
+```solidity
+function fAssetRequiredForSelfCloseExit(uint256 _tokenAmountWei)
+    external view
+    returns (uint256);
+```
