@@ -16,11 +16,30 @@ type FeedRow = {
 
 const getRiskIcon = (value: FeedRow["risk"]) => {
   const riskMap: Record<FeedRow["risk"], { icon: string; tooltip: string }> = {
-    0: { icon: "🟢", tooltip: "Low risk: Feeds demonstrating low volatility and generally stable price trends." },
-    1: { icon: "🟢", tooltip: "Low risk: Feeds demonstrating low volatility and generally stable price trends." },
-    2: { icon: "🟡", tooltip: "Medium risk: Feeds demonstrating moderate price fluctuations." },
-    3: { icon: "🔴", tooltip: "High risk: Feeds demonstrating high volatility with frequent price swings." },
-    4: { icon: "⚫", tooltip: "New Feed: Recently launched feeds with high volatility risk. Users must verify reliability." },
+    0: {
+      icon: "🟢",
+      tooltip:
+        "Low risk: Feeds demonstrating low volatility and generally stable price trends.",
+    },
+    1: {
+      icon: "🟢",
+      tooltip:
+        "Low risk: Feeds demonstrating low volatility and generally stable price trends.",
+    },
+    2: {
+      icon: "🟡",
+      tooltip: "Medium risk: Feeds demonstrating moderate price fluctuations.",
+    },
+    3: {
+      icon: "🔴",
+      tooltip:
+        "High risk: Feeds demonstrating high volatility with frequent price swings.",
+    },
+    4: {
+      icon: "⚫",
+      tooltip:
+        "New Feed: Recently launched feeds with high volatility risk. Users must verify reliability.",
+    },
   };
   return riskMap[value];
 };
@@ -32,7 +51,10 @@ export type FeedsProps = {
   showIndex?: boolean;
 };
 
-const FtsoFeeds: React.FC<FeedsProps> = ({ data = tableData as FeedRow[], showIndex = false }) => (
+const FtsoFeeds: React.FC<FeedsProps> = ({
+  data = tableData as FeedRow[],
+  showIndex = false,
+}) => (
   <table className="data-table">
     <thead>
       <tr className="table-header">
@@ -69,7 +91,14 @@ const FtsoFeeds: React.FC<FeedsProps> = ({ data = tableData as FeedRow[], showIn
             </td>
 
             <td className="regular-font">
-              <Tippy content={tooltip} theme="custom" arrow animation="fade" maxWidth={250} interactive>
+              <Tippy
+                content={tooltip}
+                theme="custom"
+                arrow
+                animation="fade"
+                maxWidth={250}
+                interactive
+              >
                 <span className="pointer">{icon}</span>
               </Tippy>
             </td>
