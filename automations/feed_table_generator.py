@@ -53,10 +53,8 @@ NetworkConfig.by_name = {net.name: net for net in NETWORKS}
 
 
 # Configuration
-BLOCK_LATENCY_RISK_PATH: Final[Path] = Path("block_latency_risk.json")
-BLOCK_LATENCY_FEEDS_PATH: Final[Path] = Path("block_latency_feeds.json")
-ANCHOR_RISK_PATH: Final[Path] = Path("anchor_risk.json")
-ANCHOR_FEEDS_PATH: Final[Path] = Path("anchor_feeds.json")
+FTSO_RISK_PATH: Final[Path] = Path("ftso_risk.json")
+FTSO_FEEDS_PATH: Final[Path] = Path("ftso_feeds.json")
 HARD_CODED_FEEDS: Final[dict[str, dict[str, str]]] = {
     "FTM/USD": {
         "name": "Fantom",
@@ -158,7 +156,7 @@ def generate_feed_data(
     data: list[dict[str, Any]] = []
     for idx, name in enumerate(feed_names):
         try:
-            risk = feed_risk[idx].get("volatility", -1)
+            risk = feed_risk[idx].get("risk", -1)
         except IndexError as e:
             msg = f"Unable to find risk for {name}"
             raise FeedRiskNotFoundError(msg) from e
@@ -206,16 +204,10 @@ def main() -> None:
 
         coins = get_coins_list(pages=8)
 
-        for risk_path, out_path, idx_flag in [
-            (BLOCK_LATENCY_RISK_PATH, BLOCK_LATENCY_FEEDS_PATH, True),
-            (ANCHOR_RISK_PATH, ANCHOR_FEEDS_PATH, False),
-        ]:
-            risks = read_json(risk_path)
-            enriched = generate_feed_data(
-                feed_names, risks, coins, include_index=idx_flag
-            )
-            write_json(out_path, enriched)
-            logger.info("Saved %d records to %s", len(enriched), out_path)
+        risks = read_json(FTSO_RISK_PATH)
+        enriched = generate_feed_data(feed_names, risks, coins, include_index=True)
+        write_json(FTSO_FEEDS_PATH, enriched)
+        logger.info("Saved %d records to %s", len(enriched), FTSO_FEEDS_PATH)
 
     except Exception:
         logger.exception("Feed Table automation failed")
