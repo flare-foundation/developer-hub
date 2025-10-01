@@ -35,7 +35,15 @@ export default function Reference() {
                   "-"
                 )}
               </td>
-              <td>{item.description}</td>
+              <td>
+                {item.description}
+                {item.guide && (
+                  <>
+                    <br />
+                    <Link to={item.guide.link}>{item.guide.title}</Link>
+                  </>
+                )}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -45,7 +53,7 @@ export default function Reference() {
 
   return (
     <Tabs
-      defaultValue="songbird"
+      defaultValue="flare"
       values={[
         { label: "Flare Mainnet", value: "flare" },
         { label: "Flare Testnet Coston2", value: "coston2" },
