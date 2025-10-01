@@ -27,8 +27,8 @@ const config: Config = {
   markdown: {
     hooks: {
       onBrokenMarkdownImages: "throw",
-      onBrokenMarkdownLinks: "throw"
-    }
+      onBrokenMarkdownLinks: "throw",
+    },
   },
 
   // Even if you don't use internationalization, you can use this field to set
