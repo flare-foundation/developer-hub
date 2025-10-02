@@ -4,6 +4,10 @@ sidebar_position: 2
 description: Primary interface for interacting with FDC.
 ---
 
+import CodeBlock from "@theme/CodeBlock";
+import AddressSolidity from "!!raw-loader!/examples/developer-hub-solidity/AddressSolidity.sol";
+import Remix from "@site/src/components/remix";
+
 Primary interface for interacting with the Flare Data Connector (FDC).
 
 Sourced from `IFdcHub.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/IFdcHub.sol).
@@ -127,36 +131,7 @@ event RequestsOffsetSet(
 
 ## Usage Example
 
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
-
-import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/IFdcHub.sol";
-import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/fdc/IAddressValidity.sol";
-
-contract AddressValidator {
-    IFdcHub private fdcHub;
-
-    constructor(address _fdcHubAddress) {
-        fdcHub = IFdcHub(_fdcHubAddress);
-    }
-
-    function validateAddress(string memory addressStr, bytes32 sourceId) external payable {
-        // Create address validity request
-        IAddressValidity.RequestBody memory requestBody = IAddressValidity.RequestBody({
-            addressStr: addressStr
-        });
-
-        // Encode the full request
-        bytes memory encodedRequest = abi.encode(
-            bytes32(0x05), // attestationType for AddressValidity
-            sourceId,
-            bytes32(0), // messageIntegrityCode - should be calculated properly
-            requestBody
-        );
-
-        // Submit the request with appropriate fee
-        fdcHub.requestAttestation{value: msg.value}(encodedRequest);
-    }
-}
-```
+<CodeBlock language="solidity" title="AddressSolidity.sol">
+  {AddressSolidity}
+</CodeBlock>
+<Remix fileName="AddressSolidity.sol">Open example in Remix</Remix>

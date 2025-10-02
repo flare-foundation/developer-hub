@@ -4,6 +4,10 @@ sidebar_position: 11
 description: Assert whether an agreed-upon payment has not been made.
 ---
 
+import CodeBlock from "@theme/CodeBlock";
+import PaymentDeadlineEnforcer from "!!raw-loader!/examples/developer-hub-solidity/PaymentDeadlineEnforcer.sol";
+import Remix from "@site/src/components/remix";
+
 An interface to verify that a specific payment, agreed to be completed by a certain deadline, has **not been made** on an external blockchain.
 
 Sourced from `IReferencedPaymentNonexistence.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/fdc/IReferencedPaymentNonexistence.sol).
@@ -283,136 +287,7 @@ The standardPaymentReference is critical for this attestation type as it uniquel
 
 ## Usage Example
 
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
-
-import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/IFdcHub.sol";
-import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/IFdcVerification.sol";
-import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/fdc/IReferencedPaymentNonexistence.sol";
-
-contract PaymentDeadlineEnforcer {
-    IFdcHub private fdcHub;
-    IFdcVerification private fdcVerification;
-
-    bytes32 private constant ATTESTATION_TYPE_PAYMENT_NONEXISTENCE = 0x0400000000000000000000000000000000000000000000000000000000000000;
-    bytes32 private constant SOURCE_ID_BTC = 0x4254430000000000000000000000000000000000000000000000000000000000;
-
-    struct Agreement {
-        bytes32 destinationAddressHash;
-        uint256 amount;
-        bytes32 paymentReference;
-        uint64 startBlockNumber;
-        uint64 deadlineBlockNumber;
-        uint64 deadlineTimestamp;
-        bool checkSourceAddresses;
-        bytes32 sourceAddressesRoot;
-        bool liquidated;
-    }
-
-    mapping(uint256 => Agreement) public agreements;
-    uint256 public nextAgreementId;
-
-    constructor(address _fdcHubAddress, address _fdcVerificationAddress) {
-        fdcHub = IFdcHub(_fdcHubAddress);
-        fdcVerification = IFdcVerification(_fdcVerificationAddress);
-    }
-
-    // Create a new payment agreement
-    function createAgreement(
-        bytes32 destinationAddressHash,
-        uint256 amount,
-        bytes32 paymentReference,
-        uint64 startBlockNumber,
-        uint64 deadlineBlockNumber,
-        uint64 deadlineTimestamp,
-        bool checkSourceAddresses,
-        bytes32 sourceAddressesRoot
-    ) external returns (uint256 agreementId) {
-        require(paymentReference != bytes32(0), "Payment reference cannot be zero");
-
-        agreementId = nextAgreementId++;
-
-        agreements[agreementId] = Agreement({
-            destinationAddressHash: destinationAddressHash,
-            amount: amount,
-            paymentReference: paymentReference,
-            startBlockNumber: startBlockNumber,
-            deadlineBlockNumber: deadlineBlockNumber,
-            deadlineTimestamp: deadlineTimestamp,
-            checkSourceAddresses: checkSourceAddresses,
-            sourceAddressesRoot: sourceAddressesRoot,
-            liquidated: false
-        });
-
-        return agreementId;
-    }
-
-    // Request verification of payment nonexistence for an agreement
-    function checkPaymentMissed(uint256 agreementId) external payable {
-        Agreement storage agreement = agreements[agreementId];
-        require(!agreement.liquidated, "Agreement already liquidated");
-
-        // Create request body
-        IReferencedPaymentNonexistence.RequestBody memory requestBody = IReferencedPaymentNonexistence.RequestBody({
-            minimalBlockNumber: agreement.startBlockNumber,
-            deadlineBlockNumber: agreement.deadlineBlockNumber,
-            deadlineTimestamp: agreement.deadlineTimestamp,
-            destinationAddressHash: agreement.destinationAddressHash,
-            amount: agreement.amount,
-            standardPaymentReference: agreement.paymentReference,
-            checkSourceAddresses: agreement.checkSourceAddresses,
-            sourceAddressesRoot: agreement.sourceAddressesRoot
-        });
-
-        // Encode the full request
-        bytes memory encodedRequest = abi.encode(
-            ATTESTATION_TYPE_PAYMENT_NONEXISTENCE,
-            SOURCE_ID_BTC,
-            bytes32(0), // messageIntegrityCode (would need to be calculated properly)
-            requestBody
-        );
-
-        // Submit the request with payment
-        fdcHub.requestAttestation{value: msg.value}(encodedRequest);
-    }
-
-    // Verify a provided proof of payment nonexistence and trigger liquidation
-    function verifyMissedPayment(uint256 agreementId, IReferencedPaymentNonexistence.Proof calldata _proof)
-        external
-        returns (bool liquidated)
-    {
-        Agreement storage agreement = agreements[agreementId];
-        require(!agreement.liquidated, "Agreement already liquidated");
-
-        // Verify the proof using FdcVerification
-        bool proofVerified = fdcVerification.verifyReferencedPaymentNonexistence(_proof);
-
-        if (proofVerified) {
-            // Extract request details and validate they match our agreement
-            IReferencedPaymentNonexistence.RequestBody memory request = _proof.data.requestBody;
-
-            // Verify this proof is for the correct agreement
-            require(
-                request.minimalBlockNumber == agreement.startBlockNumber &&
-                request.deadlineBlockNumber == agreement.deadlineBlockNumber &&
-                request.deadlineTimestamp == agreement.deadlineTimestamp &&
-                request.destinationAddressHash == agreement.destinationAddressHash &&
-                request.amount == agreement.amount &&
-                request.standardPaymentReference == agreement.paymentReference,
-                "Proof does not match agreement"
-            );
-
-            // Mark the agreement as liquidated
-            agreement.liquidated = true;
-
-            // Trigger liquidation logic here
-            // ...
-
-            return true;
-        }
-
-        return false;
-    }
-}
-```
+<CodeBlock language="solidity" title="PaymentDeadlineEnforcer.sol">
+  {PaymentDeadlineEnforcer}
+</CodeBlock>
+<Remix fileName="PaymentDeadlineEnforcer.sol">Open example in Remix</Remix>

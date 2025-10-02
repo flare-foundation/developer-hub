@@ -4,6 +4,10 @@ sidebar_position: 7
 description: Detect a transaction that decreases an address balance.
 ---
 
+import CodeBlock from "@theme/CodeBlock";
+import LockMonitor from "!!raw-loader!/examples/developer-hub-solidity/LockMonitor.sol";
+import Remix from "@site/src/components/remix";
+
 An interface to detect transactions that decrease the balance of a specific address or are signed by that address on external blockchains.
 
 Sourced from `IBalanceDecreasingTransaction.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/fdc/IBalanceDecreasingTransaction.sol).
@@ -239,75 +243,7 @@ Response body containing details about the balance decreasing transaction.
 
 ## Usage Example
 
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
-
-import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/IFdcHub.sol";
-import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/IFdcVerification.sol";
-import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/fdc/IBalanceDecreasingTransaction.sol";
-
-contract LockMonitor {
-    IFdcHub private fdcHub;
-    IFdcVerification private fdcVerification;
-
-    bytes32 private constant ATTESTATION_TYPE_BALANCE_DECREASING = 0x0200000000000000000000000000000000000000000000000000000000000000;
-    bytes32 private constant SOURCE_ID_BTC = 0x4254430000000000000000000000000000000000000000000000000000000000;
-
-    mapping(bytes32 => bool) public lockedAddresses; // sourceAddressHash => isLocked
-
-    constructor(address _fdcHubAddress, address _fdcVerificationAddress) {
-        fdcHub = IFdcHub(_fdcHubAddress);
-        fdcVerification = IFdcVerification(_fdcVerificationAddress);
-    }
-
-    // Register an address as locked (should not spend funds)
-    function registerLockedAddress(bytes32 sourceAddressHash) external {
-        lockedAddresses[sourceAddressHash] = true;
-    }
-
-    // Request verification of a transaction that might violate lock agreement
-    function checkViolation(bytes32 transactionId, bytes32 sourceAddressIndicator) external payable {
-        // Create request body
-        IBalanceDecreasingTransaction.RequestBody memory requestBody = IBalanceDecreasingTransaction.RequestBody({
-            transactionId: transactionId,
-            sourceAddressIndicator: sourceAddressIndicator
-        });
-
-        // Encode the full request
-        bytes memory encodedRequest = abi.encode(
-            ATTESTATION_TYPE_BALANCE_DECREASING,
-            SOURCE_ID_BTC,
-            bytes32(0), // messageIntegrityCode (would need to be calculated properly)
-            requestBody
-        );
-
-        // Submit the request with payment
-        fdcHub.requestAttestation{value: msg.value}(encodedRequest);
-    }
-
-    // Verify a provided proof and take action if a locked address has spent funds
-    function verifyViolation(IBalanceDecreasingTransaction.Proof calldata _proof)
-        external
-        returns (bool isViolation)
-    {
-        // Verify the proof using FdcVerification
-        bool proofVerified = fdcVerification.verifyBalanceDecreasingTransaction(_proof);
-
-        if (proofVerified) {
-            // Extract the sourceAddressHash
-            bytes32 sourceAddressHash = _proof.data.responseBody.sourceAddressHash;
-            int256 spentAmount = _proof.data.responseBody.spentAmount;
-
-            // Check if this is a locked address and the amount spent is positive
-            if (lockedAddresses[sourceAddressHash] && spentAmount > 0) {
-                // Take action - e.g., liquidate collateral, notify stakeholders, etc.
-                lockedAddresses[sourceAddressHash] = false; // Remove from locked addresses
-                return true;
-            }
-        }
-
-        return false;
-    }
-}
-```
+<CodeBlock language="solidity" title="LockMonitor.sol">
+  {LockMonitor}
+</CodeBlock>
+<Remix fileName="LockMonitor.sol">Open example in Remix</Remix>
