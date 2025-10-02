@@ -1,0 +1,118 @@
+---
+title: Get Redemption Queue
+tags: [intermediate, fassets]
+slug: fassets-redemption-queue
+description: Learn how to get the redemption queue
+keywords: [fassets, flare-network]
+sidebar_position: 11
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import FAssetsGetRedemptionQueue from "!!raw-loader!/examples/developer-hub-javascript/fassets_get_redemption_queue.ts";
+import GetFXRPAssetManager from "./_get_fxrp_asset_manager.mdx";
+
+## Overview
+
+In this guide, you will learn about the redemption queue and how it functions.
+You will also learn how to get redemption tickets using the [IAssetManager](/fassets/reference/IAssetManager) smart contract.
+Finally, you will learn how to calculate the total value and the number of lots to redeem.
+
+## Prerequisites
+
+- Basic understanding of the [FAssets system](/fassets/overview).
+- [Flare Network Periphery Contracts](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts) package.
+
+## Redemption Queue
+
+When a user mints FAssets, a [redemption ticket](/fassets/reference/IAssetManagerEvents#redemptionticketcreated) is created and added to the **redemption queue**.
+This queue determines the order in which redemptions are fulfilled and assigns the corresponding agents to return the underlying asset (e.g., XRP) to the redeemers.
+
+The redemption queue is a **FIFO (First-In-First-Out)** queue that is shared globally across all agents.
+It consists of ticket entries, where each ticket represents lots minted with a particular agent.
+
+## `maxRedeemedTickets` System Setting
+
+The `maxRedeemedTickets` system setting defines the maximum number of tickets that can be redeemed in a single request.
+This setting is used to prevent high gas consumption and ensure the fairness of the redemption process.
+
+To get the `maxRedeemedTickets` setting, you can use the [getSettings](/fassets/reference/IAssetManager#getsettings) function from the [IAssetManager](/fassets/reference/IAssetManager) smart contract.
+
+## Fetch Redemption Queue Data
+
+### Global Redemption Queue
+
+The [`redemptionQueue`](/fassets/reference/IAssetManager#redemptionqueue) function returns the redemption queue in the form of an array of [`RedemptionTicketInfo`](https://github.com/flare-foundation/fassets/blob/main/contracts/userInterfaces/data/RedemptionTicketInfo.sol) structs.
+
+Each `RedemptionTicketInfo` includes:
+
+- `agentVault`: address of the backing agent.
+- `valueUBA`: value in underlying base amount.
+- `lots`: number of lots.
+- `createdAt`: creation timestamp.
+
+### Agent's Redemption Queue
+
+The [`agentRedemptionQueue`](/fassets/reference/IAssetManager#agentredemptionqueue) function returns the redemption queue for a specific agent in the form of an array of [`RedemptionTicketInfo`](https://github.com/flare-foundation/fassets/blob/main/contracts/userInterfaces/data/RedemptionTicketInfo.sol) structs.
+
+## How It Ties Together
+
+The `redemptionQueue` function provides the **global** ticket order, where each ticket is linked to a **specific agent**. The agent associated with each ticket must fulfill their part of the redemption.
+Once a ticket is consumed, it is removed from the queue, and the queue is updated accordingly.
+
+## Example
+
+The following example demonstrates how to get `maxRedeemedTickets`, the global redemption queue, and calculate the number of lots to redeem.
+
+<CodeBlock language="typescript" title="scripts/fassets/getRedemptionQueue.ts">
+  {FAssetsGetRedemptionQueue}
+</CodeBlock>
+
+### Code Explanation
+
+The script:
+
+1. Import the function that gets the AssetManager XRP contract.
+2. Get the `AssetManager` contract instance by calling the `getAssetManagerFXRP` function.
+3. Get the settings from the AssetManager contract.
+4. Get the `maxRedeemedTickets` value from the system settings (maximum number of tickets that can be redeemed in a single request).
+   The actual number of tickets returned may be less than `maxRedeemedTickets` if the queue is shorter.
+5. Get the lot size value from the settings (minimum quantity required for minting FAssets).
+6. Get the redemption queue by calling the contract method `redemptionQueue` starting from `0` and up to `maxRedeemedTickets`.
+   You can paginate over the queue.
+7. Sum all ticket values in the redemption queue to calculate the total value in UBA (Underlying Asset Base Amount)
+8. Calculate the total lots in the redemption queue by dividing the total value by the lot size.
+
+<GetFXRPAssetManager />
+
+### Run the Script
+
+To run the script, use the following command:
+
+```bash
+yarn hardhat run scripts/fassets/getRedemptionQueue.ts --network coston2
+```
+
+The script will output the redemption queue data for the FAssets system on the [Coston2](/network/overview) network:
+
+```bash
+Total value in redemption queue (UBA): 4190000000
+
+Total lots in redemption queue: 419
+```
+
+## Summary
+
+The guide covers:
+
+- **Redemption Queue Mechanics**: How the queue works as a shared global system tracking redemption tickets.
+- `maxRedeemedTickets` **Setting**: Maximum number of tickets that can be redeemed in a single request.
+- **Queue Access Methods**: How to retrieve global and agent-specific queues using contract functions.
+- **Practical Implementation**: A TypeScript example showing how to get settings, retrieve the queue, and calculate total value and lots to redeem.
+
+:::tip Next Steps
+To continue your FAssets development journey, you can:
+
+- Learn how to [mint FXRP](/fassets/developer-guides/fassets-mint)
+- Understand how to [redeem FXRP](/fassets/developer-guides/fassets-redeem)
+- Explore [FAssets system settings](/fassets/operational-parameters)
+  :::
