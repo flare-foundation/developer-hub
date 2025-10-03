@@ -27,40 +27,46 @@ import bandExample from "!!raw-loader!/examples/developer-hub-javascript/bandExa
 import ChronicleExample from "!!raw-loader!/examples/developer-hub-solidity/ChronicleExample.sol";
 import chronicleExample from "!!raw-loader!/examples/developer-hub-javascript/chronicleExample.ts";
 
-FTSO Adapters, provided by the `@flarenetwork/ftso-adapters` library, allow decentralized applications (dApps) built for other popular oracle interfaces to integrate with Flare's FTSO with minimal code changes. The library provides adapters for Pyth, Chainlink, API3, Band Protocol, and Chronicle. These adapters act as a compatibility layer, translating the FTSO's data structure into the format expected by each respective oracle's interface.
+FTSO Adapters, provided by the `@flarenetwork/ftso-adapters` library, allow decentralized applications (dApps) built for other popular oracle interfaces to integrate with Flare's FTSO with minimal code changes.
+The library provides adapters for Pyth, Chainlink, API3, Band Protocol, and Chronicle.
+These adapters act as a compatibility layer, translating the FTSO's data structure into the format expected by each respective oracle's interface.
 
-This enables a seamless migration path for projects looking to leverage the speed, decentralization, and cost-effectiveness of Flare's native oracle. This guide focuses on the specific code modifications required to migrate your existing dApp.
+This enables a seamless migration path for projects looking to leverage the speed, decentralization, and cost-effectiveness of Flare's native oracle.
+This guide focuses on the specific code modifications required to migrate your existing dApp.
 
 All code examples can be found in our [hardhat-starter-kit](https://github.com/flare-network/hardhat-starter-kit/tree/main/contracts/adapters).
 
 ## Migrating Your dApp: Key Code Changes
 
-Migrating from an external oracle to Flare's FTSO adapter involves a paradigm shift: instead of your contract calling an external oracle for data, your contract becomes its own oracle by integrating an adapter library. This process involves two key areas of change: on-chain contract modifications and a new off-chain keeper process.
+Migrating to a Flare FTSO adapter requires a different approach to handling oracle data. Instead of your contract calling an external oracle, it will now manage price data internally by using an adapter library.
+This process involves two main changes: modifying your smart contract and setting up a new off-chain keeper process.
 
 ### 1. On-Chain: Integrate the Adapter Library
 
-The core of the migration happens within your smart contract. You will modify it to store, update, and serve the FTSO price data itself.
+The main changes happen within your smart contract. You will modify it to store, update, and serve the FTSO price data itself.
 
-- **State Variables**: Instead of storing an address to an external oracle proxy, you add state variables to your contract to manage the FTSO feed and cache the price data.
+- **State Variables**: Instead of storing an address to an external oracle, you add state variables to your contract to manage the FTSO feed and cache the price data.
   - **Before**: `AggregatorV3Interface internal dataFeed;`
   - **After**: `bytes21 public immutable ftsoFeedId; FtsoChainlinkAdapterLibrary.Round private _latestPriceData;`
 
-- **Constructor**: Your constructor no longer needs a proxy address. Instead, it takes FTSO-specific configuration, such as the `ftsoFeedId` and any adapter-specific parameters (like `chainlinkDecimals`).
+- **Constructor**: Your constructor no longer needs an oracle's address. Instead, it takes FTSO-specific information, such as the `ftsoFeedId` and any other parameters the adapter needs (like `chainlinkDecimals`).
   - **Before**: `constructor(address _dataFeedAddress) { dataFeed = AggregatorV3Interface(_dataFeedAddress); }`
   - **After**: `constructor(bytes21 _ftsoFeedId, uint8 _chainlinkDecimals) { ftsoFeedId = _ftsoFeedId; chainlinkDecimals = _chainlinkDecimals; }`
 
-- **Implement `refresh()`**: You must add a public `refresh()` function. This function's only job is to call the adapter library's `refresh` logic, passing in your contract's state variables to be updated with the latest FTSO price.
+- **Implement `refresh()`**: You must add a public `refresh()` function. This function's only job is to call the adapter library's `refresh` logic, which updates your contract's state variables with the latest FTSO price.
 
-- **Implement the Oracle Interface**: You then implement the standard `view` function for the oracle you are migrating from (e.g., `latestRoundData()` for Chainlink, `getPriceNoOlderThan()` for Pyth). This function calls the corresponding logic from the adapter library, reading directly from your contract's cached state.
+- **Implement the Oracle Interface**: You then add the standard `view` function for the oracle you are migrating from (e.g., `latestRoundData()` for Chainlink).
+  This function calls the corresponding logic from the adapter library, reading directly from your contract's cached state.
 
-- **No Change to Core Logic**: Crucially, your dApp's internal business logic, which consumes the price data, remains unchanged. It continues to call the same standard oracle functions as before (e.g., `latestRoundData()`), but now it's calling a function implemented directly on your own contract.
+- **No Change to Core Logic**: Your dApp's internal logic that uses the price data remains unchanged.
+  It continues to call the same standard oracle functions as before (e.g., `latestRoundData()`), but now it's calling a function implemented directly within your own contract.
 
 ### 2. Off-Chain: Set Up a Keeper Bot
 
-Since your contract now controls its own price updates, you need an external process to trigger them.
+Since your contract now manages its own price updates, you need an external process to trigger them.
 
 - **Create a Keeper Script**: This is a simple script that connects to the network and periodically calls the public `refresh()` function on your deployed contract.
-- **Run the Keeper**: This script ensures the cached price in your contract remains fresh and doesn't become stale. It replaces the need to rely on the oracle provider's keeper network, giving you direct control over the frequency—and therefore the cost—of your price updates.
+- **Run the Keeper**: This script ensures the price cached in your contract stays fresh. It replaces the need to rely on the oracle provider's keepers, giving you direct control over how often your prices are updated and how much you spend on gas.
 
 <Tabs block>
 <TabItem value="chainlink" label="Chainlink">
