@@ -1,0 +1,161 @@
+---
+slug: adapters
+title: Oracle Adapters
+description: Easily migrate existing dApps to Flare's FTSO using adapters that replicate popular oracle interfaces like Pyth, Chainlink, and API3.
+keywords:
+  [
+    solidity,
+    reference,
+    ftso,
+    flare-time-series-oracle,
+    flare-network,
+    smart-contracts,
+  ]
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import CodeBlock from "@theme/CodeBlock";
+import ChainlinkExample from "!!raw-loader!/examples/developer-hub-solidity/ChainlinkExample.sol";
+import chainlinkExample from "!!raw-loader!/examples/developer-hub-javascript/chainlinkExample.ts";
+import PythExample from "!!raw-loader!/examples/developer-hub-solidity/PythExample.sol";
+import pythExample from "!!raw-loader!/examples/developer-hub-javascript/pythExample.ts";
+import Api3Example from "!!raw-loader!/examples/developer-hub-solidity/Api3Example.sol";
+import api3Example from "!!raw-loader!/examples/developer-hub-javascript/api3Example.ts";
+import BandExample from "!!raw-loader!/examples/developer-hub-solidity/BandExample.sol";
+import bandExample from "!!raw-loader!/examples/developer-hub-javascript/bandExample.ts";
+import ChronicleExample from "!!raw-loader!/examples/developer-hub-solidity/ChronicleExample.sol";
+import chronicleExample from "!!raw-loader!/examples/developer-hub-javascript/chronicleExample.ts";
+
+FTSO Adapters, provided by the `@flarenetwork/ftso-adapters` library, allow decentralized applications (dApps) built for other popular oracle interfaces to integrate with Flare's FTSO with minimal code changes. The library provides adapters for Pyth, Chainlink, API3, Band Protocol, and Chronicle. These adapters act as a compatibility layer, translating the FTSO's data structure into the format expected by each respective oracle's interface.
+
+This enables a seamless migration path for projects looking to leverage the speed, decentralization, and cost-effectiveness of Flare's native oracle. This guide focuses on the specific code modifications required to migrate your existing dApp.
+
+All code examples can be found in our [hardhat-starter-kit](https://github.com/flare-network/hardhat-starter-kit/tree/main/contracts/adapters).
+
+## Migrating Your dApp: Key Code Changes
+
+Migrating from an external oracle to Flare's FTSO adapter involves a paradigm shift: instead of your contract calling an external oracle for data, your contract becomes its own oracle by integrating an adapter library. This process involves two key areas of change: on-chain contract modifications and a new off-chain keeper process.
+
+### 1. On-Chain: Integrate the Adapter Library
+
+The core of the migration happens within your smart contract. You will modify it to store, update, and serve the FTSO price data itself.
+
+- **State Variables**: Instead of storing an address to an external oracle proxy, you add state variables to your contract to manage the FTSO feed and cache the price data.
+  - **Before**: `AggregatorV3Interface internal dataFeed;`
+  - **After**: `bytes21 public immutable ftsoFeedId; FtsoChainlinkAdapterLibrary.Round private _latestPriceData;`
+
+- **Constructor**: Your constructor no longer needs a proxy address. Instead, it takes FTSO-specific configuration, such as the `ftsoFeedId` and any adapter-specific parameters (like `chainlinkDecimals`).
+  - **Before**: `constructor(address _dataFeedAddress) { dataFeed = AggregatorV3Interface(_dataFeedAddress); }`
+  - **After**: `constructor(bytes21 _ftsoFeedId, uint8 _chainlinkDecimals) { ftsoFeedId = _ftsoFeedId; chainlinkDecimals = _chainlinkDecimals; }`
+
+- **Implement `refresh()`**: You must add a public `refresh()` function. This function's only job is to call the adapter library's `refresh` logic, passing in your contract's state variables to be updated with the latest FTSO price.
+
+- **Implement the Oracle Interface**: You then implement the standard `view` function for the oracle you are migrating from (e.g., `latestRoundData()` for Chainlink, `getPriceNoOlderThan()` for Pyth). This function calls the corresponding logic from the adapter library, reading directly from your contract's cached state.
+
+- **No Change to Core Logic**: Crucially, your dApp's internal business logic, which consumes the price data, remains unchanged. It continues to call the same standard oracle functions as before (e.g., `latestRoundData()`), but now it's calling a function implemented directly on your own contract.
+
+### 2. Off-Chain: Set Up a Keeper Bot
+
+Since your contract now controls its own price updates, you need an external process to trigger them.
+
+- **Create a Keeper Script**: This is a simple script that connects to the network and periodically calls the public `refresh()` function on your deployed contract.
+- **Run the Keeper**: This script ensures the cached price in your contract remains fresh and doesn't become stale. It replaces the need to rely on the oracle provider's keeper network, giving you direct control over the frequency—and therefore the cost—of your price updates.
+
+<Tabs block>
+<TabItem value="chainlink" label="Chainlink">
+
+### FtsoChainlinkAdapter
+
+The `FtsoChainlinkAdapter` implements Chainlink's `AggregatorV3Interface`. The example is an `AssetVault` contract that uses the FTSO price to value collateral for borrowing and lending.
+
+#### Smart Contract: `ChainlinkExample.sol`
+
+<CodeBlock language="solidity" title="/contracts/adapters/ChainlinkExample.sol">
+  {ChainlinkExample}
+</CodeBlock>
+
+#### Off-Chain Script: `chainlinkExample.ts`
+
+<CodeBlock language="typescript" title="/scripts/adapters/chainlinkExample.ts">
+  {chainlinkExample}
+</CodeBlock>
+
+</TabItem>
+<TabItem value="pyth" label="Pyth">
+
+### FtsoPythAdapter
+
+The `FtsoPythAdapter` implements Pyth's `IPyth` interface. The example is a `PythNftMinter` contract that dynamically calculates a $1 minting fee based on the live FTSO price.
+
+#### Smart Contract: `PythExample.sol`
+
+<CodeBlock language="solidity" title="/contracts/adapters/PythExample.sol">
+  {PythExample}
+</CodeBlock>
+
+#### Off-Chain Script: `pythExample.ts`
+
+<CodeBlock language="typescript" title="/scripts/adapters/pythExample.ts">
+  {pythExample}
+</CodeBlock>
+
+</TabItem>
+<TabItem value="api3" label="API3">
+
+### FtsoApi3Adapter
+
+The `FtsoApi3Adapter` implements the `IApi3ReaderProxy` interface. The example is a `PriceGuesser` prediction market that uses the FTSO price to settle bets.
+
+#### Smart Contract: `Api3Example.sol`
+
+<CodeBlock language="solidity" title="/contracts/adapters/Api3Example.sol">
+  {Api3Example}
+</CodeBlock>
+
+#### Off-Chain Script: `api3Example.ts`
+
+<CodeBlock language="typescript" title="/scripts/adapters/api3Example.ts">
+  {api3Example}
+</CodeBlock>
+
+</TabItem>
+<TabItem value="band" label="Band">
+
+### FtsoBandAdapter
+
+The `FtsoBandAdapter` implements Band Protocol's `IStdReference` interface. The example is a `PriceTriggeredSafe` that locks withdrawals during high market volatility, detected by checking a basket of FTSO prices.
+
+#### Smart Contract: `BandExample.sol`
+
+<CodeBlock language="solidity" title="/contracts/adapters/BandExample.sol">
+  {BandExample}
+</CodeBlock>
+
+#### Off-Chain Script: `bandExample.ts`
+
+<CodeBlock language="typescript" title="/scripts/adapters/bandExample.ts">
+  {bandExample}
+</CodeBlock>
+
+</TabItem>
+<TabItem value="chronicle" label="Chronicle">
+
+### FtsoChronicleAdapter
+
+The `FtsoChronicleAdapter` implements the `IChronicle` interface. The example is a `DynamicNftMinter` that mints NFTs of different tiers based on the live FTSO asset price.
+
+#### Smart Contract: `ChronicleExample.sol`
+
+<CodeBlock language="solidity" title="/contracts/adapters/ChronicleExample.sol">
+  {ChronicleExample}
+</CodeBlock>
+
+#### Off-Chain Script: `chronicleExample.ts`
+
+<CodeBlock language="typescript" title="/scripts/adapters/chronicleExample.ts">
+  {chronicleExample}
+</CodeBlock>
+
+</TabItem>
+</Tabs>
