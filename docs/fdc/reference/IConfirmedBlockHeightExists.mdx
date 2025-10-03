@@ -4,6 +4,10 @@ sidebar_position: 8
 description: Assert that a block number is confirmed.
 ---
 
+import CodeBlock from "@theme/CodeBlock";
+import BlockchainMonitor from "!!raw-loader!/examples/developer-hub-solidity/BlockchainMonitor.sol";
+import Remix from "@site/src/components/remix";
+
 An interface to verify that a specified block has been confirmed on an external blockchain and to calculate block production rates.
 
 Sourced from `IConfirmedBlockHeightExists.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/fdc/IConfirmedBlockHeightExists.sol).
@@ -207,79 +211,10 @@ average_block_time = time_elapsed / blocks_produced
 
 ## Usage Example
 
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
-
-import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/IFdcHub.sol";
-import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/IFdcVerification.sol";
-import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/fdc/IConfirmedBlockHeightExists.sol";
-
-contract BlockchainMonitor {
-    IFdcHub private fdcHub;
-    IFdcVerification private fdcVerification;
-
-    bytes32 private constant ATTESTATION_TYPE_CONFIRMED_BLOCK = 0x0200000000000000000000000000000000000000000000000000000000000000;
-    bytes32 private constant SOURCE_ID_BTC = 0x4254430000000000000000000000000000000000000000000000000000000000;
-
-    constructor(address _fdcHubAddress, address _fdcVerificationAddress) {
-        fdcHub = IFdcHub(_fdcHubAddress);
-        fdcVerification = IFdcVerification(_fdcVerificationAddress);
-    }
-
-    // Request confirmation of a block
-    function requestBlockConfirmation(uint64 blockNumber, uint64 queryWindow) external payable {
-        // Create request body
-        IConfirmedBlockHeightExists.RequestBody memory requestBody = IConfirmedBlockHeightExists.RequestBody({
-            blockNumber: blockNumber,
-            queryWindow: queryWindow
-        });
-
-        // Encode the full request
-        bytes memory encodedRequest = abi.encode(
-            ATTESTATION_TYPE_CONFIRMED_BLOCK,
-            SOURCE_ID_BTC,
-            bytes32(0), // messageIntegrityCode (would need to be calculated properly)
-            requestBody
-        );
-
-        // Submit the request with payment
-        fdcHub.requestAttestation{value: msg.value}(encodedRequest);
-    }
-
-    // Verify a provided proof and calculate block rate
-    function verifyBlockAndCalculateRate(IConfirmedBlockHeightExists.Proof calldata _proof)
-        external view
-        returns (
-            bool blockConfirmed,
-            uint64 avgBlockTimeSeconds
-        )
-    {
-        // Verify the proof using FdcVerification
-        bool proofVerified = fdcVerification.verifyConfirmedBlockHeightExists(_proof);
-
-        if (proofVerified) {
-            // Extract data for calculation
-            uint64 blockNumber = _proof.data.requestBody.blockNumber;
-            uint64 blockTimestamp = _proof.data.responseBody.blockTimestamp;
-            uint64 lowestNumber = _proof.data.responseBody.lowestQueryWindowBlockNumber;
-            uint64 lowestTimestamp = _proof.data.responseBody.lowestQueryWindowBlockTimestamp;
-
-            // Calculate average block time
-            uint64 blocksProduced = blockNumber - lowestNumber;
-            uint64 timeElapsed = blockTimestamp - lowestTimestamp;
-
-            if (blocksProduced > 0) {
-                avgBlockTimeSeconds = timeElapsed / blocksProduced;
-            }
-
-            return (true, avgBlockTimeSeconds);
-        }
-
-        return (false, 0);
-    }
-}
-```
+<CodeBlock language="solidity" title="BlockchainMonitor.sol">
+  {BlockchainMonitor}
+</CodeBlock>
+<Remix fileName="BlockchainMonitor.sol">Open example in Remix</Remix>
 
 ## Related Interfaces
 

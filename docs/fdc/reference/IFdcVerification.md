@@ -4,6 +4,10 @@ sidebar_position: 3
 description: Interface for verifying FDC requests.
 ---
 
+import CodeBlock from "@theme/CodeBlock";
+import AddressSolidity from "!!raw-loader!/examples/developer-hub-solidity/AddressSolidity.sol";
+import Remix from "@site/src/components/remix";
+
 Interface for verifying Flare Data Connector (FDC) attestation requests.
 
 Sourced from `IFdcVerification.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/IFdcVerification.sol).
@@ -138,33 +142,7 @@ function verifyReferencedPaymentNonexistence(
 
 ## Usage Example
 
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
-
-import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/IFdcVerification.sol";
-import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/fdc/IAddressValidity.sol";
-
-contract AddressValidator {
-    IFdcVerification private fdcVerification;
-
-    constructor(address _fdcVerificationAddress) {
-        fdcVerification = IFdcVerification(_fdcVerificationAddress);
-    }
-
-    // Function to verify if an address is valid using a provided proof
-    function isAddressValid(IAddressValidity.Proof memory proof) external view returns (bool isValid, string memory standardAddress) {
-        bool proofVerified = fdcVerification.verifyAddressValidity(proof);
-
-        if (proofVerified) {
-            // If proof is valid, extract the response data
-            isValid = proof.data.responseBody.isValid;
-            standardAddress = proof.data.responseBody.standardAddress;
-            return (isValid, standardAddress);
-        }
-
-        // If proof verification failed
-        return (false, "");
-    }
-}
-```
+<CodeBlock language="solidity" title="AddressSolidity.sol">
+  {AddressSolidity}
+</CodeBlock>
+<Remix fileName="AddressSolidity.sol">Open example in Remix</Remix>

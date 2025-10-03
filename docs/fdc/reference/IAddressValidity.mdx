@@ -4,6 +4,10 @@ sidebar_position: 6
 description: Assert whether a string represents a valid address.
 ---
 
+import CodeBlock from "@theme/CodeBlock";
+import AddressVerifier from "!!raw-loader!/examples/developer-hub-solidity/AddressVerifier.sol";
+import Remix from "@site/src/components/remix";
+
 Assert whether a string represents a valid address on an external blockchain.
 
 Sourced from `IAddressValidity.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/fdc/IAddressValidity.sol).
@@ -142,62 +146,7 @@ struct ResponseBody {
 
 ## Usage Example
 
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
-
-import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/IFdcHub.sol";
-import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/IFdcVerification.sol";
-import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/fdc/IAddressValidity.sol";
-
-contract AddressVerifier {
-    IFdcHub private fdcHub;
-    IFdcVerification private fdcVerification;
-
-    bytes32 private constant ATTESTATION_TYPE_ADDRESS_VALIDITY = 0x0500000000000000000000000000000000000000000000000000000000000000;
-    bytes32 private constant SOURCE_ID_BTC = 0x4254430000000000000000000000000000000000000000000000000000000000;
-
-    constructor(address _fdcHubAddress, address _fdcVerificationAddress) {
-        fdcHub = IFdcHub(_fdcHubAddress);
-        fdcVerification = IFdcVerification(_fdcVerificationAddress);
-    }
-
-    // Request address validation
-    function requestAddressValidation(string calldata _address) external payable {
-        // Create request body
-        IAddressValidity.RequestBody memory requestBody = IAddressValidity.RequestBody({
-            addressStr: _address
-        });
-
-        // Encode the full request
-        bytes memory encodedRequest = abi.encode(
-            ATTESTATION_TYPE_ADDRESS_VALIDITY,
-            SOURCE_ID_BTC,
-            bytes32(0), // messageIntegrityCode (would need to be calculated properly)
-            requestBody
-        );
-
-        // Submit the request with payment
-        fdcHub.requestAttestation{value: msg.value}(encodedRequest);
-    }
-
-    // Verify a provided proof
-    function verifyAddressProof(IAddressValidity.Proof calldata _proof) external view returns (
-        bool isValid,
-        string memory standardAddress,
-        bytes32 standardAddressHash
-    ) {
-        // Verify the proof using FdcVerification
-        bool proofVerified = fdcVerification.verifyAddressValidity(_proof);
-
-        if (proofVerified) {
-            // Extract data from the verified proof
-            isValid = _proof.data.responseBody.isValid;
-            standardAddress = _proof.data.responseBody.standardAddress;
-            standardAddressHash = _proof.data.responseBody.standardAddressHash;
-        }
-
-        return (isValid, standardAddress, standardAddressHash);
-    }
-}
-```
+<CodeBlock language="solidity" title="AddressVerifier.sol">
+  {AddressVerifier}
+</CodeBlock>
+<Remix fileName="AddressVerifier.sol">Open example in Remix</Remix>

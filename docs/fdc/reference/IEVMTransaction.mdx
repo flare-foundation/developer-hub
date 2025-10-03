@@ -4,6 +4,10 @@ sidebar_position: 9
 description: Relay a transaction from an EVM chain.
 ---
 
+import CodeBlock from "@theme/CodeBlock";
+import EVMTransactionVerifier from "!!raw-loader!/examples/developer-hub-solidity/EVMTransactionVerifier.sol";
+import Remix from "@site/src/components/remix";
+
 An interface to relay and verify transactions from EVM-compatible blockchains.
 
 Sourced from `IEVMTransaction.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/fdc/IEVMTransaction.sol).
@@ -251,99 +255,7 @@ When working with events, it's important to remember:
 
 ## Usage Example
 
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
-
-import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/IFdcHub.sol";
-import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/IFdcVerification.sol";
-import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/fdc/IEVMTransaction.sol";
-
-contract EVMTransactionVerifier {
-    IFdcHub private fdcHub;
-    IFdcVerification private fdcVerification;
-
-    bytes32 private constant ATTESTATION_TYPE_EVM_TX = 0x0600000000000000000000000000000000000000000000000000000000000000;
-    bytes32 private constant SOURCE_ID_ETH = 0x4554480000000000000000000000000000000000000000000000000000000000;
-
-    // Event signatures we're interested in
-    bytes32 private constant EVENT_TRANSFER = 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef;
-
-    constructor(address _fdcHubAddress, address _fdcVerificationAddress) {
-        fdcHub = IFdcHub(_fdcHubAddress);
-        fdcVerification = IFdcVerification(_fdcVerificationAddress);
-    }
-
-    // Request verification of an EVM transaction with specific events
-    function requestTransactionVerification(
-        bytes32 transactionHash,
-        uint16 requiredConfirmations,
-        bool includeInput,
-        uint32[] calldata eventIndices
-    ) external payable {
-        // Create request body
-        IEVMTransaction.RequestBody memory requestBody = IEVMTransaction.RequestBody({
-            transactionHash: transactionHash,
-            requiredConfirmations: requiredConfirmations,
-            provideInput: includeInput,
-            listEvents: eventIndices.length > 0,
-            logIndices: eventIndices
-        });
-
-        // Encode the full request
-        bytes memory encodedRequest = abi.encode(
-            ATTESTATION_TYPE_EVM_TX,
-            SOURCE_ID_ETH,
-            bytes32(0), // messageIntegrityCode (would need to be calculated properly)
-            requestBody
-        );
-
-        // Submit the request with payment
-        fdcHub.requestAttestation{value: msg.value}(encodedRequest);
-    }
-
-    // Verify a provided proof and extract ERC-20 transfer information
-    function verifyERC20Transfer(IEVMTransaction.Proof calldata _proof)
-        external view
-        returns (
-            bool success,
-            address tokenContract,
-            address from,
-            address to,
-            uint256 amount
-        )
-    {
-        // Verify the proof using FdcVerification
-        bool proofVerified = fdcVerification.verifyEVMTransaction(_proof);
-
-        if (proofVerified && _proof.data.responseBody.status == 1) {
-            // Look for Transfer events in the transaction
-            IEVMTransaction.Event[] memory events = _proof.data.responseBody.events;
-
-            for (uint i = 0; i < events.length; i++) {
-                IEVMTransaction.Event memory evt = events[i];
-
-                // Check if this is a Transfer event (topic[0] is the event signature)
-                if (evt.topics.length >= 3 && evt.topics[0] == EVENT_TRANSFER) {
-                    tokenContract = evt.emitterAddress;
-
-                    // ERC-20 Transfer(address indexed from, address indexed to, uint256 amount)
-                    // topics[1] is the first indexed parameter (from address)
-                    // topics[2] is the second indexed parameter (to address)
-                    // The addresses are padded to 32 bytes, so we need to extract them
-                    from = address(uint160(uint256(evt.topics[1])));
-                    to = address(uint160(uint256(evt.topics[2])));
-
-                    // The amount is in the data field for non-indexed parameters
-                    // It's a single uint256 value (32 bytes)
-                    amount = abi.decode(evt.data, (uint256));
-
-                    return (true, tokenContract, from, to, amount);
-                }
-            }
-        }
-
-        return (false, address(0), address(0), address(0), 0);
-    }
-}
-```
+<CodeBlock language="solidity" title="EVMTransactionVerifier.sol">
+  {EVMTransactionVerifier.toString()}
+</CodeBlock>
+<Remix fileName="EVMTransactionVerifier.sol">Open example in Remix</Remix>
