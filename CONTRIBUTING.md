@@ -14,7 +14,7 @@ We welcome:
 
     ```bash
     git checkout -b feature/your-feature-name
-    ```
+    ```paypal.acesy68@gmail.com
 
 2.  **Make changes:** Edit or add:
     - Documentation (`docs/`)
