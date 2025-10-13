@@ -1,0 +1,107 @@
+---
+title: List FAssets Agents
+tags: [intermediate, fassets]
+slug: fassets-list-agents
+description: Learn how to get a list of FAssets agents
+keywords: [fassets, flare-network]
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import FAssetsListAgents from "!!raw-loader!/examples/developer-hub-javascript/fassets_list_agents.ts";
+
+## Overview
+
+In this guide, you will learn how to list FAssets agents using the [AssetManager](/fassets/reference/IAssetManager) smart contract.
+
+## Prerequisites
+
+- Basic understanding of the [FAssets system](/fassets/overview).
+- [Flare Network Periphery Contracts](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts) package.
+
+## List FAssets Agents
+
+The [AssetManager](/fassets/reference/IAssetManager) smart contract provides these functions to list FAssets agents:
+
+- [`getAllAgents`](/fassets/reference/IAssetManager#getallagents): Returns all agents in the system, including both available and unavailable agents, with basic information.
+- [`getAvailableAgentsList`](/fassets/reference/IAssetManager#getavailableagentslist): Returns only available agents (agents accepting new minting requests) with basic information.
+- [`getAvailableAgentsDetailedList`](/fassets/reference/IAssetManager#getavailableagentsdetailedlist): Returns only available agents with comprehensive details, including collateral ratios, fees, and vault status.
+
+### Function Parameters
+
+All of these functions take two parameters:
+
+- `_start`: First index to return from the agents list.
+- `_end`: End index to return from the agents list (exclusive).
+
+And return two values:
+
+- `_agents`: Array of agent information structures.
+- `_totalLength`: Total number of agents in the system (used for pagination).
+
+:::tip Index Parameters
+All of these functions use array-like slicing:
+- `start`: Inclusive start index (0-based).
+- `end`: Exclusive end index.
+
+For example, `getAllAgents(0, 3)` returns agents at indices 0, 1, and 2.
+:::
+
+## Example
+
+This example demonstrates how to use the [`getAvailableAgentsList`](/fassets/reference/IAssetManager#getavailableagentslist) function to list available agents in chunks.
+The chunking approach prevents RPC timeouts when dealing with many agents by fetching data in smaller, manageable batches.
+
+<CodeBlock language="typescript" title="scripts/fassets/listAgents.ts">
+  {FAssetsListAgents}
+</CodeBlock>
+
+### How the Code Works
+
+The script follows these steps:
+
+1. **Get Asset Manager Contract**: Retrieve the FAssets FXRP Asset Manager contract instance using the helper function `getAssetManagerFXRP()` from the Flare periphery contracts package.
+
+2. **Define Chunk Size**: Set `chunkSize` to `3`, determining how many agents to fetch per request.
+Using smaller chunks helps avoid RPC timeout issues when dealing with many agents.
+You can adjust this value based on your network conditions and RPC provider limits.
+
+3. **Fetch First Chunk**: Call `getAvailableAgentsList(0, chunkSize)` which:
+   - Returns the first three agents (indices 0, 1, 2).
+   - Provides the `_totalLength` property showing the total number of agents in the system.
+
+4. **Iterate Through Remaining Agents**: Loop through the remaining agents in chunks:
+   - Start from `offset = chunkSize` (3) and increment by `chunkSize` each iteration.
+   - Calculate `endIndex = Math.min(offset + chunkSize, totalLength)` to ensure we do not exceed the total length.
+   - Fetch each chunk using `getAvailableAgentsList(offset, endIndex)`.
+   - Display the agents in each chunk for processing or analysis.
+
+:::info
+A similar approach can be used to list all agents using the [`getAllAgents`](/fassets/reference/IAssetManager#getallagents) and [`getAvailableAgentsDetailedList`](/fassets/reference/IAssetManager#getavailableagentsdetailedlist) functions.
+:::
+
+### Run the Script
+
+To run the script, use the following command:
+
+```bash
+yarn hardhat run scripts/fassets/listAgents.ts --network coston2
+```
+
+To use the script, replace `coston2` with the network you are using.
+The script will output information about the available agents on the [Coston2](/network/overview) network.
+
+## Summary
+
+This guide covered:
+
+- **Agent List Functions**: Three different methods to retrieve agent information with varying levels of detail.
+- **Pagination Strategy**: How to use chunking to retrieve large agent lists without overwhelming RPC endpoints efficiently.
+- **Practical Implementation**: A complete TypeScript example demonstrating agent list retrieval with proper pagination and error handling considerations.
+
+:::tip Next Steps
+To continue your FAssets development journey, you can:
+
+- Learn how to [mint FXRP](/fassets/developer-guides/fassets-mint)
+- Understand how to [redeem FXRP](/fassets/developer-guides/fassets-redeem)
+- Explore [FAssets system settings](/fassets/operational-parameters)
+ :::

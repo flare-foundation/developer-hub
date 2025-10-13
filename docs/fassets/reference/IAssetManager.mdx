@@ -57,11 +57,11 @@ Returns the collateral reservation fee amount.
 
 Parameters:
 
-- `_lots`: The number of lots for which to reserve collateral
+- `_lots`: The number of lots for which to reserve collateral.
 
 Returns:
 
-- `_reservationFeeNATWei`: The amount of reservation fee in NAT wei
+- `_reservationFeeNATWei`: The amount of reservation fee in NAT wei.
 
 ```solidity
 function collateralReservationFee(
@@ -76,7 +76,7 @@ Note: once the minting is executed or defaulted, the collateral reservation is d
 
 Parameters:
 
-- `_collateralReservationId`: The collateral reservation ID, as used for executing or defaulting the minting
+- `_collateralReservationId`: The collateral reservation ID, as used for executing or defaulting the minting.
 
 ```solidity
 function collateralReservationInfo(uint256 _collateralReservationId)
@@ -90,7 +90,7 @@ Returns the FAsset token contract (ERC-20) that is managed by this asset manager
 
 Returns:
 
-- `IERC20`: The address of the FAsset token contract
+- `IERC20`: The address of the FAsset token contract.
 
 ```solidity
 function fAsset()
@@ -100,19 +100,39 @@ function fAsset()
 
 ## Agents
 
+## `getAllAgents`
+
+Returns the list of all agents.
+
+Parameters:
+
+- `_start`: First index to return from the available agent's list.
+- `_end`: End index (one above last) to return from the available agent's list.
+
+Returns:
+
+- `_agents`: The list of all agents.
+- `_totalLength`: The total length of the all agents list.
+
+```solidity
+function getAllAgents(uint256 _start, uint256 _end)
+    external view
+    returns (address[] memory _agents, uint256 _totalLength);
+```
+
 ### `getAvailableAgentsList`
 
 Returns the list of available agents.
 
 Parameters:
 
-- `_start`: First index to return from the available agent's list
-- `_end`: End index (one above last) to return from the available agent's list
+- `_start`: First index to return from the available agent's list.
+- `_end`: End index (one above last) to return from the available agent's list.
 
 Returns:
 
-- `_agents`: The list of available agents
-- `_totalLength`: The total length of the available agents list
+- `_agents`: The list of available agents.
+- `_totalLength`: The total length of the available agents list.
 
 ```solidity
 function getAvailableAgentsList(uint256 _start, uint256 _end)
@@ -126,13 +146,13 @@ Returns the list of available agents with extra information about agents like fe
 
 Parameters:
 
-- `_start`: First index to return from the available agent's list
-- `_end`: End index (one above last) to return from the available agent's list
+- `_start`: First index to return from the available agent's list.
+- `_end`: End index (one above last) to return from the available agent's list.
 
 Returns:
 
-- `_agents`: The list of available agents with extra information
-- `_totalLength`: The total length of the available agents list
+- `_agents`: The list of available agents with extra information.
+- `_totalLength`: The total length of the available agents list.
 
 ```solidity
 function getAvailableAgentsDetailedList(uint256 _start, uint256 _end)
@@ -148,13 +168,13 @@ Returns the redemption queue in the form of an array of [`RedemptionTicketInfo`]
 
 Parameters:
 
-- `_firstRedemptionTicketId`: the ticket id to start listing from; if `0`, starts from the beginning
-- `_pageSize`: the maximum number of redemption tickets to return
+- `_firstRedemptionTicketId`: the ticket id to start listing from; if `0`, starts from the beginning.
+- `_pageSize`: the maximum number of redemption tickets to return.
 
 Returns:
 
-- `_queue`: the (part of) the redemption queue; maximum length is \_pageSize
-- `_nextRedemptionTicketId`: works as a cursor - if the `_pageSize` is reached and there are more tickets, it is the first ticket id not returned; if the end is reached, it is 0
+- `_queue`: the (part of) the redemption queue; maximum length is \_pageSize.
+- `_nextRedemptionTicketId`: works as a cursor - if the `_pageSize` is reached and there are more tickets, it is the first ticket id not returned; if the end is reached, it is 0.
 
 ```solidity
 function redemptionQueue(
@@ -170,14 +190,14 @@ Returns the redemption queue for specific agent in the form of an array of [`Red
 
 Parameters:
 
-- `_agentVault`: the agent vault address of the queried agent
-- `_firstRedemptionTicketId`: the ticket id to start listing from; if `0`, starts from the beginning
-- `_pageSize`: the maximum number of redemption tickets to return
+- `_agentVault`: the agent vault address of the queried agent.
+- `_firstRedemptionTicketId`: the ticket id to start listing from; if `0`, starts from the beginning.
+- `_pageSize`: the maximum number of redemption tickets to return.
 
 Returns:
 
-- `_queue`: the (part of) the redemption queue; maximum length is \_pageSize
-- `_nextRedemptionTicketId`: works as a cursor - if the` _pageSize` is reached and there are more tickets, it is the first ticket id not returned; if the end is reached, it is 0
+- `_queue`: the (part of) the redemption queue; maximum length is \_pageSize.
+- `_nextRedemptionTicketId`: works as a cursor - if the` _pageSize` is reached and there are more tickets, it is the first ticket id not returned; if the end is reached, it is 0.
 
 ```solidity
 function agentRedemptionQueue(
@@ -197,10 +217,10 @@ Before paying underlying assets for minting, the minter must reserve collateral 
 
 Parameters:
 
-- `_agentVault`: Agent vault address
-- `_lots`: Number of lots for which to reserve collateral
-- `_maxMintingFeeBIPS`: Maximum minting fee (BIPS) that can be charged by the agent - best practice is to copy the current agent's published fee; used to prevent agent from front-running reservation request and increasing fee
-- `_executor`: Account that is allowed to execute minting (besides minter and agent)
+- `_agentVault`: Agent vault address.
+- `_lots`: Number of lots for which to reserve collateral.
+- `_maxMintingFeeBIPS`: Maximum minting fee (BIPS) that can be charged by the agent - best practice is to copy the current agent's published fee; used to prevent agent from front-running reservation request and increasing fee.
+- `_executor`: Account that is allowed to execute minting (besides minter and agent).
 
 ```solidity
 function reserveCollateral(
@@ -219,14 +239,14 @@ After obtaining proof of underlying payment, the minter calls this method to fin
 
 Note: May only be called by:
 
-- The minter (creator of the collateral reservation request)
-- The executor appointed by the minter
-- The agent owner (owner of the agent vault in the collateral reservation)
+- The minter (creator of the collateral reservation request).
+- The executor appointed by the minter.
+- The agent owner (owner of the agent vault in the collateral reservation).
 
 Parameters:
 
-- `_payment`: Proof of the underlying payment (must contain exact `value + fee` amount and correct payment reference)
-- `_collateralReservationId`: Collateral reservation ID
+- `_payment`: Proof of the underlying payment (must contain exact `value + fee` amount and correct payment reference).
+- `_collateralReservationId`: Collateral reservation ID.
 
 ```solidity
 function executeMinting(
