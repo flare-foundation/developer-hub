@@ -18,8 +18,6 @@ keywords:
   ]
 ---
 
-import Tabs from "@theme/Tabs";
-import TabItem from "@theme/TabItem";
 import CodeBlock from "@theme/CodeBlock";
 import ChainlinkExample from "!!raw-loader!/examples/developer-hub-solidity/ChainlinkExample.sol";
 import chainlinkExample from "!!raw-loader!/examples/developer-hub-javascript/chainlinkExample.ts";
@@ -73,100 +71,82 @@ Since your contract now manages its own price updates, you need an external proc
 - **Create a Keeper Script**: This is a simple script that connects to the network and periodically calls the public `refresh()` function on your deployed contract.
 - **Run the Keeper**: This script ensures the price cached in your contract stays fresh. It replaces the need to rely on the oracle provider's keepers, giving you direct control over how often your prices are updated and how much you spend on gas.
 
-<Tabs>
-<TabItem value="chainlink" label="Chainlink">
-
-### FtsoChainlinkAdapter
+## FtsoChainlinkAdapter
 
 The `FtsoChainlinkAdapter` implements Chainlink's `AggregatorV3Interface`. The example is an `AssetVault` contract that uses the FTSO price to value collateral for borrowing and lending.
 
-#### Smart Contract: `ChainlinkExample.sol`
+### Smart Contract: `ChainlinkExample.sol`
 
 <CodeBlock language="solidity" title="/contracts/adapters/ChainlinkExample.sol">
   {ChainlinkExample}
 </CodeBlock>
 
-#### Off-Chain Script: `chainlinkExample.ts`
+### Off-Chain Script: `chainlinkExample.ts`
 
 <CodeBlock language="typescript" title="/scripts/adapters/chainlinkExample.ts">
   {chainlinkExample}
 </CodeBlock>
 
-</TabItem>
-<TabItem value="pyth" label="Pyth">
-
-### FtsoPythAdapter
+## FtsoPythAdapter
 
 The `FtsoPythAdapter` implements Pyth's `IPyth` interface. The example is a `PythNftMinter` contract that dynamically calculates a $1 minting fee based on the live FTSO price.
 
-#### Smart Contract: `PythExample.sol`
+### Smart Contract: `PythExample.sol`
 
 <CodeBlock language="solidity" title="/contracts/adapters/PythExample.sol">
   {PythExample}
 </CodeBlock>
 
-#### Off-Chain Script: `pythExample.ts`
+### Off-Chain Script: `pythExample.ts`
 
 <CodeBlock language="typescript" title="/scripts/adapters/pythExample.ts">
   {pythExample}
 </CodeBlock>
 
-</TabItem>
-<TabItem value="api3" label="API3">
-
-### FtsoApi3Adapter
+## FtsoApi3Adapter
 
 The `FtsoApi3Adapter` implements the `IApi3ReaderProxy` interface. The example is a `PriceGuesser` prediction market that uses the FTSO price to settle bets.
 
-#### Smart Contract: `Api3Example.sol`
+### Smart Contract: `Api3Example.sol`
 
 <CodeBlock language="solidity" title="/contracts/adapters/Api3Example.sol">
   {Api3Example}
 </CodeBlock>
 
-#### Off-Chain Script: `api3Example.ts`
+### Off-Chain Script: `api3Example.ts`
 
 <CodeBlock language="typescript" title="/scripts/adapters/api3Example.ts">
   {api3Example}
 </CodeBlock>
 
-</TabItem>
-<TabItem value="band" label="Band">
-
-### FtsoBandAdapter
+## FtsoBandAdapter
 
 The `FtsoBandAdapter` implements Band Protocol's `IStdReference` interface. The example is a `PriceTriggeredSafe` that locks withdrawals during high market volatility, detected by checking a basket of FTSO prices.
 
-#### Smart Contract: `BandExample.sol`
+### Smart Contract: `BandExample.sol`
 
 <CodeBlock language="solidity" title="/contracts/adapters/BandExample.sol">
   {BandExample}
 </CodeBlock>
 
-#### Off-Chain Script: `bandExample.ts`
+### Off-Chain Script: `bandExample.ts`
 
 <CodeBlock language="typescript" title="/scripts/adapters/bandExample.ts">
   {bandExample}
 </CodeBlock>
 
-</TabItem>
-<TabItem value="chronicle" label="Chronicle">
-
-### FtsoChronicleAdapter
+## FtsoChronicleAdapter
 
 The `FtsoChronicleAdapter` implements the `IChronicle` interface. The example is a `DynamicNftMinter` that mints NFTs of different tiers based on the live FTSO asset price.
 
-#### Smart Contract: `ChronicleExample.sol`
+### Smart Contract: `ChronicleExample.sol`
 
 <CodeBlock language="solidity" title="/contracts/adapters/ChronicleExample.sol">
   {ChronicleExample}
 </CodeBlock>
 
-#### Off-Chain Script: `chronicleExample.ts`
+### Off-Chain Script: `chronicleExample.ts`
 
 <CodeBlock language="typescript" title="/scripts/adapters/chronicleExample.ts">
   {chronicleExample}
 </CodeBlock>
-
-</TabItem>
-</Tabs>
