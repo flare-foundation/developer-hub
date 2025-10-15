@@ -39,12 +39,12 @@ This guide focuses on the specific code modifications required to migrate your e
 
 All code examples can be found in our [hardhat-starter-kit](https://github.com/flare-foundation/flare-hardhat-starter/tree/master/contracts/adapters).
 
-## Migrating Your dApp: Key Code Changes
+## Key code changes
 
 Migrating to a Flare FTSO adapter requires a different approach to handling oracle data. Instead of your contract calling an external oracle, it will now manage price data internally by using an adapter library.
 This process involves two main changes: modifying your smart contract and setting up a new off-chain keeper process.
 
-### 1. On-Chain: Integrate the Adapter Library
+### 1. Onchain: Use the adapter library
 
 The main changes happen within your smart contract. You will modify it to store, update, and serve the FTSO price data itself.
 
@@ -64,7 +64,7 @@ The main changes happen within your smart contract. You will modify it to store,
 - **No Change to Core Logic**: Your dApp's internal logic that uses the price data remains unchanged.
   It continues to call the same standard oracle functions as before (e.g., `latestRoundData()`), but now it's calling a function implemented directly within your own contract.
 
-### 2. Off-Chain: Set Up a Keeper Bot
+### 2. Offchain: Set up a keeper bot
 
 Since your contract now manages its own price updates, you need an external process to trigger them.
 
@@ -75,13 +75,13 @@ Since your contract now manages its own price updates, you need an external proc
 
 The `FtsoChainlinkAdapter` implements Chainlink's `AggregatorV3Interface`. The example is an `AssetVault` contract that uses the FTSO price to value collateral for borrowing and lending.
 
-### Smart Contract: `ChainlinkExample.sol`
+### `ChainlinkExample.sol`
 
 <CodeBlock language="solidity" title="/contracts/adapters/ChainlinkExample.sol">
   {ChainlinkExample}
 </CodeBlock>
 
-### Off-Chain Script: `chainlinkExample.ts`
+### `chainlinkExample.ts`
 
 <CodeBlock language="typescript" title="/scripts/adapters/chainlinkExample.ts">
   {chainlinkExample}
@@ -91,13 +91,13 @@ The `FtsoChainlinkAdapter` implements Chainlink's `AggregatorV3Interface`. The e
 
 The `FtsoPythAdapter` implements Pyth's `IPyth` interface. The example is a `PythNftMinter` contract that dynamically calculates a $1 minting fee based on the live FTSO price.
 
-### Smart Contract: `PythExample.sol`
+### `PythExample.sol`
 
 <CodeBlock language="solidity" title="/contracts/adapters/PythExample.sol">
   {PythExample}
 </CodeBlock>
 
-### Off-Chain Script: `pythExample.ts`
+### `pythExample.ts`
 
 <CodeBlock language="typescript" title="/scripts/adapters/pythExample.ts">
   {pythExample}
@@ -107,13 +107,13 @@ The `FtsoPythAdapter` implements Pyth's `IPyth` interface. The example is a `Pyt
 
 The `FtsoApi3Adapter` implements the `IApi3ReaderProxy` interface. The example is a `PriceGuesser` prediction market that uses the FTSO price to settle bets.
 
-### Smart Contract: `Api3Example.sol`
+### `Api3Example.sol`
 
 <CodeBlock language="solidity" title="/contracts/adapters/Api3Example.sol">
   {Api3Example}
 </CodeBlock>
 
-### Off-Chain Script: `api3Example.ts`
+### `api3Example.ts`
 
 <CodeBlock language="typescript" title="/scripts/adapters/api3Example.ts">
   {api3Example}
@@ -123,13 +123,13 @@ The `FtsoApi3Adapter` implements the `IApi3ReaderProxy` interface. The example i
 
 The `FtsoBandAdapter` implements Band Protocol's `IStdReference` interface. The example is a `PriceTriggeredSafe` that locks withdrawals during high market volatility, detected by checking a basket of FTSO prices.
 
-### Smart Contract: `BandExample.sol`
+### `BandExample.sol`
 
 <CodeBlock language="solidity" title="/contracts/adapters/BandExample.sol">
   {BandExample}
 </CodeBlock>
 
-### Off-Chain Script: `bandExample.ts`
+### `bandExample.ts`
 
 <CodeBlock language="typescript" title="/scripts/adapters/bandExample.ts">
   {bandExample}
@@ -139,13 +139,13 @@ The `FtsoBandAdapter` implements Band Protocol's `IStdReference` interface. The 
 
 The `FtsoChronicleAdapter` implements the `IChronicle` interface. The example is a `DynamicNftMinter` that mints NFTs of different tiers based on the live FTSO asset price.
 
-### Smart Contract: `ChronicleExample.sol`
+### `ChronicleExample.sol`
 
 <CodeBlock language="solidity" title="/contracts/adapters/ChronicleExample.sol">
   {ChronicleExample}
 </CodeBlock>
 
-### Off-Chain Script: `chronicleExample.ts`
+### `chronicleExample.ts`
 
 <CodeBlock language="typescript" title="/scripts/adapters/chronicleExample.ts">
   {chronicleExample}
