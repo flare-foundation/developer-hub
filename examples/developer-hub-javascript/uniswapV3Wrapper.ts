@@ -8,7 +8,6 @@ import { ERC20Instance } from "../../typechain-types/@openzeppelin/contracts/tok
 // yarn hardhat run scripts/fassets/uniswapV3Wrapper.ts --network flare
 
 // 1. Contract artifacts
-const IAssetManager = artifacts.require("IAssetManager");
 const UniswapV3Wrapper = artifacts.require("UniswapV3Wrapper");
 const ERC20 = artifacts.require("ERC20");
 
@@ -41,7 +40,7 @@ async function deployAndVerifyContract() {
       address: uniswapV3WrapperAddress,
       constructorArguments: args,
     });
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.log(e);
   }
 
@@ -156,7 +155,7 @@ async function main() {
 
   console.log("Transaction submitted:", swapTx);
 
-  const swapReceipt = await swapTx.receipt;
+  await swapTx.receipt;
   console.log("✅ SparkDEX swap executed successfully!");
 
   // 17. Extract amount out from events or calculate from balance change
