@@ -40,7 +40,7 @@ async function deployAndVerifyContract() {
       address: uniswapV3WrapperAddress,
       constructorArguments: args,
     });
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.log(e);
   }
 
