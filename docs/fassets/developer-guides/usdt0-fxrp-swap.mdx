@@ -2,7 +2,7 @@
 title: Swap USDT0 to FXRP
 tags: [intermediate, fassets]
 slug: usdt0-fxrp-swap
-description: Swap USDT0 to FXRP tokens using Uniswap V3 router
+description: Swap USDT0 to FXRP using Uniswap V3 router
 keywords: [fassets, flare-network]
 ---
 
@@ -13,7 +13,7 @@ import Remix from "@site/src/components/remix";
 
 ## Overview
 
-In this guide, you will learn how to swap USDT0 to FXRP tokens using the Uniswap V3 router (SparkDEX).
+In this guide, you will learn how to swap USDT0 to FXRP using the Uniswap V3 router (SparkDEX).
 FXRP is the ERC-20 representation of XRP used by [FAssets](/fassets/overview).
 
 ## Prerequisites
@@ -21,12 +21,14 @@ FXRP is the ERC-20 representation of XRP used by [FAssets](/fassets/overview).
 Before starting, make sure you have:
 
 - Basic understanding of the [FAssets system](/fassets/overview).
-- [Flare Network Periphery Contracts](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts) package.
+- [Flare Network Periphery Contracts](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts) package installed.
 - Familiarity with [Uniswap V3 swaps](https://docs.uniswap.org/contracts/v3/guides/swaps/single-swaps).
-- Addresses on Flare Mainnet:
-  - V3 SwapRouter (SparkDEX): [0x8a1E35F5c98C4E85B36B7B253222eE17773b2781](https://flarescan.com/address/0x8a1E35F5c98C4E85B36B7B253222eE17773b2781/contract/14/code).
-  - USDT0: [0xe7cd86e13AC4309349F30B3435a9d337750fC82D](https://flarescan.com/address/0xe7cd86e13AC4309349F30B3435a9d337750fC82D).
-  - FXRP: [resolved dynamically from the Asset Manager](/fassets/developer-guides/fassets-fxrp-address).
+
+## Required Addresses on Flare Mainnet
+
+- V3 SwapRouter (SparkDEX): [0x8a1E35F5c98C4E85B36B7B253222eE17773b2781](https://flarescan.com/address/0x8a1E35F5c98C4E85B36B7B253222eE17773b2781/contract/14/code).
+- USDT0: [0xe7cd86e13AC4309349F30B3435a9d337750fC82D](https://flarescan.com/address/0xe7cd86e13AC4309349F30B3435a9d337750fC82D).
+- FXRP: [resolved dynamically from the Asset Manager](/fassets/developer-guides/fassets-fxrp-address).
 
 ## Solidity Uniswap V3 Wrapper Contract
 
@@ -42,45 +44,42 @@ This Solidity contract wraps the Uniswap V3 router, providing safe token transfe
 
 ### Code Explanation
 
-1. Defines the Uniswap V3 router function for swaps, which allows interaction with the Uniswap V3 protocol.
+1. Define the Uniswap V3 router function for swaps, which allows interaction with the Uniswap V3 protocol.
+   It comes from the [Uniswap V3 periphery](https://github.com/Uniswap/v3-periphery).
 
-2. `exactInputSingle` function used for direct swaps between two tokens in a single pool.
+2. Use the Uniswap V3 factory interface to locate a specific pool for a token pair and the fee tier.
 
-3. Uniswap V3 factory interface that returns the factory address responsible for creating pools.
+3. Define the Uniswap V3 pool interface that provides liquidity and token details for a given pool.
 
-4. Uniswap V3 factory interface, used to locate a specific pool for a given token pair and fee tier.
+4. Create the `UniswapV3Wrapper` contract, which acts as a wrapper around Uniswap V3 to simplify swaps and add safety checks.
 
-5. The Uniswap V3 pool interface provides liquidity and token details for a given pool.
+5. Use the existing Uniswap V3 SwapRouter on Flare (SparkDEX) as the main entry point for executing swaps.
 
-6. `UniswapV3Wrapper` contract, which acts as a wrapper around Uniswap V3 to simplify swaps and add safety checks.
+6. Store the Uniswap V3 factory in the contract for looking up pools.
 
-7. Existing Uniswap V3 SwapRouter on Flare (SparkDEX), used as the main entry point for executing swaps.
+7. Define events that log important actions such as swaps executed, pools checked, and tokens approved.
 
-8. The Uniswap V3 factory is stored in the contract for looking up pools.
+8. Create a constructor that initializes the swap router and factory.
 
-9. Events, which log important actions such as swaps executed, pools checked, and tokens approved.
+9. Check if the pool exists and has liquidity, preventing the swaps execution in empty or non-existent pools.
 
-10. Constructor that initializes the swap router and factory, ensuring both references are immutable.
+10. Create a swap exact input single function that executes a single-hop swap through the Uniswap V3 router protocol.
 
-11. Check if the pool exists and has liquidity, preventing execution of swaps in empty or non-existent pools.
+    10.1. Check if pool exists, ensuring a valid pool address is returned.
 
-12. Swap exact input single function, which executes a single-hop swap through the Uniswap V3 router protocol.
+    10.2. Check if the pool has liquidity, requiring the available liquidity is greater than zero.
 
-    12.1. Check if pool exists, ensuring a valid pool address is returned.
+    10.3. Transfer tokens from the user to this contract, using SafeERC20 for secure transfers.
 
-    12.2. Check if the pool has liquidity, requiring that the available liquidity is greater than zero.
+    10.4. Approve the router to spend tokens using the `SafeERC20` library, allowing the router to perform the swap.
 
-    12.3. Transfer tokens from user to this contract, using SafeERC20 for secure transfers.
+    10.5. Prepare swap parameters, filling the `ExactInputSingleParams` struct with all necessary details.
 
-    12.4. Approve router to spend tokens using the `SafeERC20` library, allowing the router to perform the swap.
+    10.6. Execute the swap, calling the `swapRouter.exactInputSingle` function to perform the transaction.
 
-    12.5. Prepare swap parameters, filling the `ExactInputSingleParams` struct with all necessary details.
+    10.7. Emit the swap executed event, logging details about the user, tokens, and amounts.
 
-    12.6. Execute swap, calling `swapRouter.exactInputSingle` function to perform the transaction.
-
-    12.7. Emit swap executed event, logging details about the user, tokens, and amounts.
-
-## Execute the Swap
+## Execute the Swap with Hardhat
 
 To execute a swap, you need to deploy the wrapper contract and call `swapExactInputSingle` with the swap parameters.
 
@@ -93,41 +92,29 @@ To execute a swap, you need to deploy the wrapper contract and call `swapExactIn
 
 ### Code Breakdown
 
-1. Contract artifacts are imported, including `IAssetManager`, `UniswapV3Wrapper`, and `ERC20`, which provide access to the deployed contracts.
+1. Import contract artifacts, including `IAssetManager`, `UniswapV3Wrapper`, and `ERC20`, which provide access to the deployed contracts.
 
-2. Flare Uniswap V3 addresses (SparkDEX) are defined, specifying the SwapRouter address used for executing swaps.
+2. Define Flare Uniswap V3 addresses (SparkDEX), specifying the SwapRouter address used for executing swaps.
 
-3. USDT0 token address on Flare Mainnet, which represents the stablecoin used as the input asset for the swap.
+3. Set the USDT0 token address on Flare Mainnet, which represents the stablecoin used as the input asset for the swap.
 
-4. Pool fee tier is set to 500 (0.05%), which defines the fee level of the pool to use on the Uniswap V3 router (SparkDEX).
+4. Set the pool fee tier to 500 (0.05%), which defines the fee level of the pool to use on the Uniswap V3 router (SparkDEX).
 
-5. Swap parameters are defined.
+5. Define swap parameters.
 
 6. Define the function `deployAndVerifyContract()` that deploys the UniswapV3Wrapper contract and verifies it on the blockchain explorer.
 
-7. The `main()` function is the entry point to execute the complete swap logic.
+7. Create the `setupAndInitializeTokens()` function that prepares accounts and ERC20 contracts.
 
-8. Deploy and verify the `UniswapV3Wrapper` smart contract, retrieving its deployed address for later use.
+8. Define the `verifyPoolAndLiquidity()` function which ensures the USDT0/FXRP pool exists and is usable.
 
-9. Get the deployer account using `web3.eth.getAccounts()`.
+9. Create the `approveUsdt0ForSwap()` function that approves the wrapper contract to spend USDT0 on behalf of the deployer.
 
-10. Retrieve the FXRP token address dynamically from the Asset Manager contract.
+10. Create the `executeSparkDexSwap()` function that executes the swap on SparkDEX using the Uniswap V3 wrapper.
 
-11. Define USDT0 and FXRP contract instances.
+11. Create the `checkFinalBalances()` function that verifies the swap results.
 
-12. Check the deployer account's initial balances of USDT0 and FXRP.
-
-13. Verify that there is enough USDT0 to perform the swap.
-
-14. Check the Uniswap V3 pool using the wrapper contract to ensure that the USDT0/FXRP pool exists and has liquidity.
-
-15. Approve the USDT0 token to the wrapper contract, allowing it to spend the tokens on behalf of the deployer.
-
-16. Execute the swap using the UniswapV3Wrapper contract's `swapExactInputSingle` method.
-
-17. Extract the swap result by checking the new FXRP balance and calculating the difference from the initial balance.
-
-18. Check final balances after the swap to verify execution.
+12. Create the `main()` function that orchestrates the entire flow of the swap.
 
 ### Run the Script
 
@@ -145,11 +132,12 @@ This script is included in the [Flare Hardhat Starter Kit](/network/guides/hardh
 
 In this guide, you learned how to swap USDT0 to FXRP using the Uniswap V3 router (SparkDEX).
 
-:::tip[What's next]
+:::tip
 
 To continue your FAssets development journey, you can:
 
-- Learn how to [mint FAssets using the executor](/fassets/developer-guides/fassets-mint-executor).
+- Learn how to [mint FXRP](/fassets/developer-guides/fassets-mint).
 - Understand how to [redeem FXRP](/fassets/developer-guides/fassets-redeem).
+- Explore [FAssets system settings](/fassets/operational-parameters).
 
 :::

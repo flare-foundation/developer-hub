@@ -40,7 +40,7 @@ async function deployAndVerifyContract() {
       address: uniswapV3WrapperAddress,
       constructorArguments: args,
     });
-  } catch (e: unknown) {
+  } catch (e: any) {
     console.log(e);
   }
 
@@ -49,21 +49,15 @@ async function deployAndVerifyContract() {
   return uniswapV3Wrapper;
 }
 
-// 7. The main function to execute the swap
-async function main() {
-  // 8. Deploy and verify the UniswapV3 wrapper smart contract and get its address
-  const uniswapV3Wrapper: UniswapV3WrapperInstance =
-    await deployAndVerifyContract();
-  const uniswapV3WrapperAddress = await uniswapV3Wrapper.address;
-
-  // 9. Get the deployer account
+// 7. Function to setup and initialize tokens
+async function setupAndInitializeTokens() {
   const accounts = await web3.eth.getAccounts();
   const deployer = accounts[0];
 
   console.log("Deployer:", deployer);
   console.log("Total accounts available:", accounts.length);
 
-  // 10. Get the FXRP address on Flare (from the Asset Manager)
+  // FXRP address on Flare (from asset manager)
   const assetManager = await getAssetManagerFXRP();
   const FXRP = await assetManager.fAsset();
 
@@ -74,11 +68,10 @@ async function main() {
   console.log("Amount Out Min:", AMOUNT_OUT_MIN.toString());
   console.log("");
 
-  // 11. Define the USDT0 and FXRP token addresses
   const usdt0: ERC20Instance = await ERC20.at(USDT0);
   const fxrp: ERC20Instance = await ERC20.at(FXRP);
 
-  // 12. Check initial balances
+  // Check initial balances
   const initialUsdt0Balance = BigInt(
     (await usdt0.balanceOf(deployer)).toString(),
   );
@@ -89,7 +82,7 @@ async function main() {
   console.log("Initial USDT0 balance:", initialUsdt0Balance.toString());
   console.log("Initial FXRP balance:", initialFxrpBalance.toString());
 
-  // 13. Check if there is enough USDT0 to perform the swap
+  // Check if there are enough USDT0
   const amountInBN = AMOUNT_IN;
   if (initialUsdt0Balance < amountInBN) {
     console.log(
@@ -101,11 +94,20 @@ async function main() {
     console.log(
       "Please ensure you have sufficient USDT0 tokens to perform the swap.",
     );
-    return;
+    throw new Error("Insufficient USDT0 balance");
   }
 
-  // 14 Check Uniswap V3 pool using wrapper if it exists and has liquidity
-  console.log("\n=== Step 1: Pool Verification ===");
+  return { deployer, usdt0, fxrp, initialUsdt0Balance, initialFxrpBalance };
+}
+
+// 8. Function to verify the pool and liquidity
+async function verifyPoolAndLiquidity(
+  uniswapV3Wrapper: UniswapV3WrapperInstance,
+) {
+  console.log("\n=== Pool Verification ===");
+  const assetManager = await getAssetManagerFXRP();
+  const FXRP = await assetManager.fAsset();
+
   const poolInfo = await uniswapV3Wrapper.checkPool(USDT0, FXRP, FEE);
   console.log("Pool info:", poolInfo);
   const poolAddress = poolInfo.poolAddress;
@@ -119,26 +121,38 @@ async function main() {
   if (poolAddress === "0x0000000000000000000000000000000000000000") {
     console.log("❌ Pool does not exist for this token pair and fee tier");
     console.log("Please check if the USDT0/FXRP pool exists on SparkDEX");
-    return;
+    throw new Error("Pool does not exist");
   }
 
   if (!hasLiquidity) {
     console.log("❌ Pool exists but has no liquidity");
-    return;
+    throw new Error("Pool has no liquidity");
   }
 
   console.log("✅ Pool verification successful!");
+  return { poolAddress, hasLiquidity, liquidity };
+}
 
-  // 15. Approve USDT0 to wrapper contract to spend the tokens
-  console.log("\n=== Step 2: Token Approval ===");
+// 9. Function to approve USDT0 for the swap
+async function approveUsdt0ForSwap(
+  usdt0: ERC20Instance,
+  uniswapV3WrapperAddress: string,
+) {
+  console.log("\n=== Token Approval ===");
   const approveTx = await usdt0.approve(
     uniswapV3WrapperAddress,
     AMOUNT_IN.toString(),
   );
   console.log("✅ USDT0 approved to wrapper contract", approveTx);
+  return approveTx;
+}
 
-  // 16. Execute swap using the Uniswap V3 wrapper contract
-  console.log("\n=== Step 3: Execute SparkDEX Swap ===");
+// 10. Function to execute the SparkDEX swap
+async function executeSparkDexSwap(uniswapV3Wrapper: UniswapV3WrapperInstance) {
+  console.log("\n=== Execute SparkDEX Swap ===");
+  const assetManager = await getAssetManagerFXRP();
+  const FXRP = await assetManager.fAsset();
+
   const deadline = Math.floor(Date.now() / 1000) + 20 * 60; // 20 minutes
   console.log("Deadline:", deadline);
 
@@ -150,21 +164,27 @@ async function main() {
     AMOUNT_IN.toString(),
     AMOUNT_OUT_MIN.toString(),
     deadline,
-    0, // sqrtPriceLimitX96 = 0 (no limit)
+    0, // sqrtPriceLimitX96 = 0 (no limit for the price)
+    // https://docs.uniswap.org/contracts/v3/guides/swaps/single-swaps#swap-input-parameters
   );
 
   console.log("Transaction submitted:", swapTx);
 
-  await swapTx.receipt;
+  const swapReceipt = await swapTx.receipt;
   console.log("✅ SparkDEX swap executed successfully!");
 
-  // 17. Extract amount out from events or calculate from balance change
-  const finalFxrpBalance = BigInt((await fxrp.balanceOf(deployer)).toString());
-  const amountOut = finalFxrpBalance - initialFxrpBalance;
-  console.log("Amount out:", amountOut.toString());
+  return { swapTx, swapReceipt };
+}
 
-  // 18. Check final balances to verify the swap
-  console.log("\n=== Step 4: Final Balances ===");
+// 11. Function to check the final balances
+async function checkFinalBalances(
+  usdt0: ERC20Instance,
+  fxrp: ERC20Instance,
+  deployer: string,
+  initialUsdt0Balance: bigint,
+  initialFxrpBalance: bigint,
+) {
+  console.log("\n=== Final Balances ===");
   const finalUsdt0Balance = BigInt(
     (await usdt0.balanceOf(deployer)).toString(),
   );
@@ -181,6 +201,31 @@ async function main() {
   console.log(
     "FXRP received:",
     (finalFxrpBalanceAfter - initialFxrpBalance).toString(),
+  );
+
+  return { finalUsdt0Balance, finalFxrpBalanceAfter };
+}
+
+// 12. The main function to execute the complete swap logic and verify the results
+async function main() {
+  const uniswapV3Wrapper: UniswapV3WrapperInstance =
+    await deployAndVerifyContract();
+
+  const { deployer, usdt0, fxrp, initialUsdt0Balance, initialFxrpBalance } =
+    await setupAndInitializeTokens();
+
+  await verifyPoolAndLiquidity(uniswapV3Wrapper);
+
+  await approveUsdt0ForSwap(usdt0, uniswapV3Wrapper.address);
+
+  await executeSparkDexSwap(uniswapV3Wrapper);
+
+  await checkFinalBalances(
+    usdt0,
+    fxrp,
+    deployer,
+    initialUsdt0Balance,
+    initialFxrpBalance,
   );
 }
 
