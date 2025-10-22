@@ -14,7 +14,9 @@ import { GetAddressApp } from "@site/src/components/Frontend/GetAddressCard";
 import { AllOfficialContractsTableApp } from "@site/src/components/Frontend/AllOfficialContractsTable";
 import GetAddressCardCode from "!!raw-loader!/src/components/Frontend/GetAddressCard";
 import FlareContractRegistryAbi from "!!raw-loader!/src/abis/FlareContractRegistry.ts";
+import ContractsListCode from "!!raw-loader!/src/components/Frontend/AllOfficialContractsTable";
 import CodeBlock from "@theme/CodeBlock";
+import BrowserOnly from "@docusaurus/BrowserOnly";
 
 In this guide we will use the `useReadContract` hook from the Wagmi framework to get addresses of official Flare contracts.
 The addresses could be hardcoded into the frontend, but that approach is error prone and requires manual updates.
@@ -59,9 +61,7 @@ Then, it invokes the `useReadContract` Wagmi hook, and returns the result.
 We can demonstrate how the `useFlareContractRegistry` hook can be used on a simple input card.
 The full code for this example as well as a list of all registered contract are available bellow.
 
-{/* WARN:(Nik) This code is functional, but the development server throws a long and scary error. */}
-
-<GetAddressApp />
+<BrowserOnly>{() => <GetAddressApp />}</BrowserOnly>
 
 The card accepts a contract name as input.
 When the `Get contract address` button is pressed, the input data is saved to the state, which triggers a rerender of the `result` component.
@@ -76,10 +76,16 @@ To enable the `useReadContract` hook, the card is wrapped in a `QueryClientProvi
 In a real project, those would be placed at the root level of the app.
 To learn more about these, look at the [Tanstack Query](https://tanstack.com/query/latest/docs/framework/react/reference/QueryClientProvider) and [Wagmi](https://wagmi.sh/react/api/WagmiProvider) documentation for the corresponding components.
 
-{/* WARN:(Nik) This code is functional, but the development server throws a long and scary error. */}
-
 <details >
 
 <summary>List of available official contracts</summary>
-<AllOfficialContractsTableApp />
+
+<BrowserOnly>{() => <AllOfficialContractsTableApp />}</BrowserOnly>
+
+This list is also prepared dynamically.
+The contract names are fetched from the `FlareContractRegistry`, by calling its `getAllContracts` function.
+
+<CodeBlock language="tsx">
+{ContractsListCode}
+</CodeBlock>
 </details>
