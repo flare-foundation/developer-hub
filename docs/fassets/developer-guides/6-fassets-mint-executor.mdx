@@ -12,6 +12,8 @@ import Remix from "@site/src/components/remix";
 import FAssetsReserveCollateralWithExecutor from "!!raw-loader!/examples/developer-hub-javascript/fassetsReserveCollateralWithExecutor.ts";
 import FAssetsCreateXrpPayment from "!!raw-loader!/examples/developer-hub-javascript/fassetsCreateXrpPayment.ts";
 import FAssetsExecuteMinting from "!!raw-loader!/examples/developer-hub-javascript/fassetsExecuteMinting.ts";
+import MintingFees from "./_minting_fees.mdx";
+import PaymentTimeframes from "./_payment_timeframes.mdx";
 
 ## Overview
 
@@ -47,13 +49,19 @@ The minting process involves the following steps:
 
 ## Reserve Collateral
 
+Reserving collateral is the first step in the minting process.
+
+<MintingFees />
+
+### Reserve Collateral Script
+
 The following code demonstrates how to reserve collateral by calling the [`reserveCollateral`](/fassets/reference/IAssetManager#reservecollateral) function on the AssetManager contract.
 
 <CodeBlock language="typescript" title="scripts/fassets/reserveCollateral.ts">
   {FAssetsReserveCollateralWithExecutor}
 </CodeBlock>
 
-### Collateral Reservation Script Breakdown
+#### Collateral Reservation Script Breakdown
 
 1. Define constants
 
@@ -78,13 +86,19 @@ The following code demonstrates how to reserve collateral by calling the [`reser
 
 ## Send Payment on XRP Ledger
 
-The next step is to send the XRP Ledger payment to the agent, and you can use this script to do that.
+The next step is to send the XRP Ledger payment to the agent. Before making the payment, it is important to understand the payment timeframes and constraints.
+
+<PaymentTimeframes />
+
+### Payment Script
+
+After understanding the underlying payment timeframes, you can use the provided script to execute the payment.
 
 <CodeBlock language="typescript" title="scripts/fassets/xrpPayment.ts">
   {FAssetsCreateXrpPayment}
 </CodeBlock>
 
-### XRP Payment Script Breakdown
+#### XRP Payment Script Breakdown
 
 1. Install the `xrpl` package — it's not included in the Flare Hardhat Starter Kit by default.
 2. Specify the correct constants from the reserve collateral script:

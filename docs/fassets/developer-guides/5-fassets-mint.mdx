@@ -12,6 +12,8 @@ import Remix from "@site/src/components/remix";
 import FAssetsReserveCollateral from "!!raw-loader!/examples/developer-hub-javascript/fassetsReserveCollateral.ts";
 import FAssetsCreateXrpPayment from "!!raw-loader!/examples/developer-hub-javascript/fassetsCreateXrpPayment.ts";
 import FAssetsExecuteMinting from "!!raw-loader!/examples/developer-hub-javascript/fassetsExecuteMinting.ts";
+import MintingFees from "./_minting_fees.mdx";
+import PaymentTimeframes from "./_payment_timeframes.mdx";
 
 ## Overview
 
@@ -39,20 +41,7 @@ The minting process involves the following steps:
 
 Reserving collateral is the first step in the minting process.
 
-### Minting Fees
-
-When reserving collateral, there are several fees that are paid.
-
-| Fee Type                             | Paid In                                  | Details                                                                                                                                                                               |
-| ------------------------------------ | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Collateral Reservation Fee (CRF)** | Native tokens (FLR/SGB)                  | Compensates the agent and the collateral pool token (CPT) holders for locking their collateral during the minting process. Defined by governance as a percentage of the minted value. |
-| **Minting Fee**                      | Underlying currency (e.g., XRP for FXRP) | Main source of revenue for the agents and the CPT holders. Percentage of the minted amount (varies by agent).                                                                         |
-| **Executor Fee (Optional)**          | Native tokens (FLR/SGB)                  | Incentivizes the executor to process minting requests. Configurable fee denominated in FLR.                                                                                           |
-
-:::info[Collateral Reservation Fee (CRF)]
-If minting fails, the Collateral Reservation Fee is not returned to the minter.
-It is distributed to the agent and the pool in the same manner as the minting fee.
-:::
+<MintingFees />
 
 ### Reserve Collateral Script
 
@@ -86,35 +75,7 @@ The following code demonstrates how to reserve collateral by calling the [`reser
 
 The next step is to send the XRP Ledger payment to the agent. Before making the payment, it is important to understand the payment timeframes and constraints.
 
-### Payment Timeframes
-
-The minting process has specific timeframes for underlying payments, controlled by [operational parameters](/fassets/operational-parameters):
-
-| Parameter                     | Unit    | Purpose                                                                      |
-| ----------------------------- | ------- | ---------------------------------------------------------------------------- |
-| `underlyingSecondsForPayment` | seconds | The minimum time allowed for a minter to pay on the underlying chain         |
-| `underlyingBlocksForPayment`  | blocks  | The number of underlying blocks during which the minter can make the payment |
-
-These parameters work together as a dual safety mechanism that ensures payment happens within a reasonable number of blocks and guarantees payment occurs within a reasonable amount of time.
-Both constraints must be satisfied for the payment to be considered valid.
-
-#### Payment Deadline Calculation
-
-When you reserve collateral, the system provides in the [`CollateralReserved`](/fassets/reference/IAssetManagerEvents#collateralreserved) event:
-
-- `lastUnderlyingBlock`: The final block number for a valid payment.
-- `lastUnderlyingTimestamp`: The deadline timestamp for payment.
-
-Valid payments must occur **before both the last block AND the last timestamp**.
-
-#### Payment Failure Handling
-
-If the minter [fails to pay on the underlying chain](/fassets/minting#payment-failure) within the required timeframe:
-
-- The agent must prove [nonpayment](/fdc/attestation-types/referenced-payment-nonexistence) using the [Flare Data Connector](/fdc/overview).
-- After nonpayment is proved, the agent's collateral that was reserved is released.
-- The agent receives the [Collateral Reservation Fee](/fassets/minting#collateral-reservation-fee), which is not returned to the minter.
-- The minter loses the opportunity to mint and must restart the process.
+<PaymentTimeframes />
 
 ### Payment Script
 

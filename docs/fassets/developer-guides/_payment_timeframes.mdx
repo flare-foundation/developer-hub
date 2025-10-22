@@ -1,0 +1,30 @@
+### Payment Timeframes
+
+The minting process has specific timeframes for underlying payments, controlled by [operational parameters](/fassets/operational-parameters):
+
+| Parameter                     | Unit    | Purpose                                                                      |
+| ----------------------------- | ------- | ---------------------------------------------------------------------------- |
+| `underlyingSecondsForPayment` | seconds | The minimum time allowed for a minter to pay on the underlying chain         |
+| `underlyingBlocksForPayment`  | blocks  | The number of underlying blocks during which the minter can make the payment |
+
+These parameters work together as a dual safety mechanism that ensures payment happens within a reasonable number of blocks and guarantees payment occurs within a reasonable amount of time.
+
+Both constraints must be satisfied for the payment to be considered valid.
+
+#### Payment Deadline Calculation
+
+When you reserve collateral, the system provides in the [`CollateralReserved`](/fassets/reference/IAssetManagerEvents#collateralreserved) event:
+
+- `lastUnderlyingBlock`: The final block number for a valid payment.
+- `lastUnderlyingTimestamp`: The deadline timestamp for payment.
+
+Valid payments must occur **before both the last block AND the last timestamp**.
+
+#### Payment Failure Handling
+
+If the minter [fails to pay on the underlying chain](/fassets/minting#payment-failure) within the required timeframe:
+
+- The agent must prove [nonpayment](/fdc/attestation-types/referenced-payment-nonexistence) using the [Flare Data Connector](/fdc/overview).
+- After nonpayment is proved, the agent's collateral that was reserved is released.
+- The agent receives the [Collateral Reservation Fee](/fassets/minting#collateral-reservation-fee), which is not returned to the minter.
+- The minter loses the opportunity to mint and must restart the process.
