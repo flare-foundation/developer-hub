@@ -17,7 +17,7 @@ import FAssetsExecuteMinting from "!!raw-loader!/examples/developer-hub-javascri
 
 This guide walks you through the complete process of minting FAssets (e.g., FXRP) on the Flare network.
 
-Minting FAssets is the process of wrapping, for instance, XRP from the XRP Ledger into an FAsset, enabling it to be used within the Flare blockchain ecosystem.
+Minting FAssets is the process of wrapping underlying tokens (e.g., XRP from the XRP Ledger) into FAssets, enabling them to be used within the Flare blockchain ecosystem.
 
 See the [Minting](/fassets/minting) overview for more details.
 
@@ -28,7 +28,7 @@ See the [Minting](/fassets/minting) overview for more details.
 
 ## Minting Process Steps
 
-The minting process is a multi-step process that involves the following steps:
+The minting process involves the following steps:
 
 1. Reserve collateral from a suitable agent.
 2. Send the underlying asset (e.g., XRP) to the agent.
@@ -37,13 +37,32 @@ The minting process is a multi-step process that involves the following steps:
 
 ## Reserve Collateral
 
+Reserving collateral is the first step in the minting process.
+
+### Minting Fees
+
+When reserving collateral, there are several fees that are paid.
+
+| Fee Type                             | Paid In                                  | Details                                                                                                                                                                               |
+| ------------------------------------ | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Collateral Reservation Fee (CRF)** | Native tokens (FLR/SGB)                  | Compensates the agent and the collateral pool token (CPT) holders for locking their collateral during the minting process. Defined by governance as a percentage of the minted value. |
+| **Minting Fee**                      | Underlying currency (e.g., XRP for FXRP) | Main source of revenue for the agents and the CPT holders. Percentage of the minted amount (varies by agent).                                                                         |
+| **Executor Fee (Optional)**          | Native tokens (FLR/SGB)                  | Incentivizes the executor to process minting requests. Configurable fee denominated in FLR.                                                                                           |
+
+:::info[Collateral Reservation Fee (CRF)]
+If minting fails, the Collateral Reservation Fee is not returned to the minter.
+It is distributed to the agent and the pool in the same manner as the minting fee.
+:::
+
+### Reserve Collateral Script
+
 The following code demonstrates how to reserve collateral by calling the [`reserveCollateral`](/fassets/reference/IAssetManager#reservecollateral) function on the AssetManager contract.
 
 <CodeBlock language="typescript" title="scripts/fassets/reserveCollateral.ts">
   {FAssetsReserveCollateral}
 </CodeBlock>
 
-### Collateral Reservation Script Breakdown
+#### Collateral Reservation Script Breakdown
 
 1. Define constants
 
@@ -65,19 +84,53 @@ The following code demonstrates how to reserve collateral by calling the [`reser
 
 ## Send Payment on XRP Ledger
 
-The next step is to send the XRP Ledger payment to the agent, and you can use this script to do that.
+The next step is to send the XRP Ledger payment to the agent. Before making the payment, it is important to understand the payment timeframes and constraints.
+
+### Payment Timeframes
+
+The minting process has specific timeframes for underlying payments, controlled by [operational parameters](/fassets/operational-parameters):
+
+| Parameter                     | Unit    | Purpose                                                                      |
+| ----------------------------- | ------- | ---------------------------------------------------------------------------- |
+| `underlyingSecondsForPayment` | seconds | The minimum time allowed for a minter to pay on the underlying chain         |
+| `underlyingBlocksForPayment`  | blocks  | The number of underlying blocks during which the minter can make the payment |
+
+These parameters work together as a dual safety mechanism that ensures payment happens within a reasonable number of blocks and guarantees payment occurs within a reasonable amount of time.
+Both constraints must be satisfied for the payment to be considered valid.
+
+#### Payment Deadline Calculation
+
+When you reserve collateral, the system provides in the [`CollateralReserved`](/fassets/reference/IAssetManagerEvents#collateralreserved) event:
+
+- `lastUnderlyingBlock`: The final block number for a valid payment.
+- `lastUnderlyingTimestamp`: The deadline timestamp for payment.
+
+Valid payments must occur **before both the last block AND the last timestamp**.
+
+#### Payment Failure Handling
+
+If the minter [fails to pay on the underlying chain](/fassets/minting#payment-failure) within the required timeframe:
+
+- The agent must prove [nonpayment](/fdc/attestation-types/referenced-payment-nonexistence) using the [Flare Data Connector](/fdc/overview).
+- After nonpayment is proved, the agent's collateral that was reserved is released.
+- The agent receives the [Collateral Reservation Fee](/fassets/minting#collateral-reservation-fee), which is not returned to the minter.
+- The minter loses the opportunity to mint and must restart the process.
+
+### Payment Script
+
+After understanding the underlying payment timeframes, you can use the provided script to execute the payment.
 
 <CodeBlock language="typescript" title="scripts/fassets/xrpPayment.ts">
   {FAssetsCreateXrpPayment}
 </CodeBlock>
 
-### XRP Payment Script Breakdown
+#### XRP Payment Script Breakdown
 
-1. Install the `xrpl` package — it's not included in the Flare Hardhat Starter Kit by default.
+1. Install the `xrpl` package — it is not included in the Flare Hardhat Starter Kit by default.
 2. Specify the correct constants from the reserve collateral script:
    - `AGENT_ADDRESS` - Agent's XRP Ledger address.
    - `AMOUNT_XRP` - XRP amount to send.
-   - `PAYMENT_REFERENCE` - Payment reference from the the reserve collateral script.
+   - `PAYMENT_REFERENCE` - Payment reference from the reserve collateral script.
 3. Create a client to connect to the XRP Ledger Testnet.
 4. Load the sender wallet.
 5. Construct the payment transaction.
@@ -103,14 +156,14 @@ This script demonstrates how to retrieve the FDC proof and execute minting.
 2. Set the collateral reservation ID to the previously reserved minting request.
 3. Set the FDC round ID to retrieve the proof.
 4. Provide the FDC request data.
-5. Import the Asset manager contract artifact.
+5. Import the Asset Manager contract artifact.
 6. Define the function to prepare the FDC request.
 7. Create a function to get the proof from the FDC.
    It sends a POST request to the [Flare Data Availability Layer](/fdc/overview#data-availability-layer) and returns a Merkle proof and attestation response from FDC.
 8. Define the function to parse the events.
 9. Retrieve the FDC proof from the Data Availability Layer.
 10. Call the [`executeMinting`](/fassets/reference/IAssetManager#executeminting) function on the AssetManager contract and send a transaction to the Flare network to convert the attested XRP payment into FXRP (minting).
-11. On a successful transaction call `parseExecutemintingEvents` to extract and log events [`RedemptionTicketCreated`](/fassets/reference/IAssetManagerEvents#redemptionticketcreated) and [`MintingExecuted`](/fassets/reference/IAssetManagerEvents#mintingexecuted).
+11. On a successful transaction call the `parseExecutemintingEvents` function to extract and log events [`RedemptionTicketCreated`](/fassets/reference/IAssetManagerEvents#redemptionticketcreated) and [`MintingExecuted`](/fassets/reference/IAssetManagerEvents#mintingexecuted).
 
 ## Summary
 
