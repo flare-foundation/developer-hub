@@ -1,0 +1,38 @@
+---
+sidebar_position: 1
+slug: prepare-request
+title: Prepare request
+authors: [nikerzetic]
+description: Prepare an FDC request through a Verifier server using Tanstack Query.
+tags: [quickstart, ethereum, flare-smart-accounts]
+keywords:
+  [
+    flare-fdc,
+    ethereum,
+    flare-smart-accounts,
+    evm,
+    flare-network,
+    account-abstraction,
+  ]
+unlisted: false
+---
+
+import { PrepareWeb2JsonRequestApp } from "@site/src/components/Frontend/PrepareWeb2JsonRequestCard";
+import CodeBlock from "@theme/CodeBlock";
+import BrowserOnly from "@docusaurus/BrowserOnly";
+
+In the following series of guides we will prepare different ABI encoded requests that can be submitted to the FDC.
+The guides will showcase code for making a request of each [attestation type](/fdc/attestation-types/).
+They will also include an interactive widget for testing the code.
+While we could pack all of these into a single component with selectable tabs, we believe it would make for a less understandable code.
+For that reason, each guide will cover only one attestation type.
+
+Preparing the request is a core step of the [FDC process](/fdc/overview).
+In order to be able to submit request data to the protocol, we need to encode it in a specific way.
+While this process can be done manually, it is recommended that the data is encoded through a special verifier server.
+Besides encoding the data, the server also checks its validity.
+Thus, it is a useful tool for catching user error.
+
+We will make the request to the verifier server with the [Tanstack Query](https://tanstack.com/query/latest/docs/framework/react/overview) library.
+Because we want the request to be sent only when the user presses a button, we will not employ its `useQuery` hook.
+Instead, we will utilize [`useMutation`](https://tanstack.com/query/latest/docs/framework/react/guides/mutations).

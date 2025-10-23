@@ -6,8 +6,9 @@ module.exports = function () {
         // Add webpack configuration to handle React Native modules
         config.resolve = config.resolve || {};
         config.resolve.alias = config.resolve.alias || {};
-        config.resolve.alias['@react-native-async-storage/async-storage'] = false;
-        config.resolve.alias['react-native'] = false;
+        config.resolve.alias["@react-native-async-storage/async-storage"] =
+          false;
+        config.resolve.alias["react-native"] = false;
 
         return {
           devServer: {
