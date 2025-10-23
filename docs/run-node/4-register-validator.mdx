@@ -108,6 +108,42 @@ Only provide values which differ from the defaults to avoid issues with future u
 }
 ```
 
+## Backup and restore
+
+:::danger[Backup your staking keys]
+It's imperative that prior to staking your node, you backup all three files that identify your node.
+These files will be generated when the node is started for the first time.
+
+* `staker.key` and `staker.crt` - Make up your NodeID
+* `signer.key` - Defines your node's proof of possession (NodePOP). It generates the BLS key and BLS signature required for staking.
+
+If these staking keys are lost due to host migrations or disaster scenarios, you will no longer be able to run the node as it's previous identity.
+This poses a risk of staked funds being locked against the unrecoverable NodeID until expiry of that stake, resulting in a loss of rewards and negatively impacting the network.
+
+:::
+
+   <Tabs groupId="network" block>
+
+   <TabItem value="source" label="From Source" default>
+
+    To backup the staking keys ensure you complete [Step 3](/run-node/from-source#run-the-node) of copying your staking keys to a persistent directory outside the default location.
+
+   </TabItem>
+
+   <TabItem value="docker-compose" label="Using Docker Compose">
+
+    To backup the staking keys ensure you complete [Step 5](/run-node/using-docker#using-docker-compose) of copying your staking keys to a persistent directory outside the default location.
+
+   </TabItem>
+
+   <TabItem value="docker-cli" label="Using Docker CLI">
+
+    To backup the staking keys ensure you complete [Step 4](/run-node/using-docker#using-docker-cli) of copying your staking keys to a persistent directory outside the default location.
+
+   </TabItem>
+
+   </Tabs>
+
 ## Run the node
 
 Now, start your node using command-line flags or environment variables that point to your `staker.key`, `staker.crt` and `signer.key` files.
@@ -115,9 +151,7 @@ This ensures your node always starts with the correct `Node-ID`.
 
 ### From source
 
-1. Ensure you completed the optional [Step 3](/run-node/from-source#run-the-node) of copying your staking keys to a persistent directory outside the default location.
-
-2. Add the following flags to your [startup command](/run-node/from-source#run-the-node).
+1. Add the following flags to your [startup command](/run-node/from-source#run-the-node).
    For example, if you copied your keys to `/opt/flare/staking/`, your command would look like:
 
    ```bash
@@ -136,9 +170,7 @@ This ensures your node always starts with the correct `Node-ID`.
 
 ### Using Docker CLI
 
-1. Ensure you completed the optional [Step 4](/run-node/using-docker#using-docker-cli) of copying your staking keys to a persistent directory outside the default location.
-
-2. Modify your [`docker run`](/run-node/using-docker#using-docker-cli) command to mount the directory containing your keys into the container and set the environment variables to point to the mounted files.
+1. Modify your [`docker run`](/run-node/using-docker#using-docker-cli) command to mount the directory containing your keys into the container and set the environment variables to point to the mounted files.
    For example, if you copied your keys to `/opt/flare/staking/`, your command would look like:
 
    ```bash
@@ -165,9 +197,7 @@ This ensures your node always starts with the correct `Node-ID`.
 
 ### Using Docker Compose
 
-1. Ensure you completed the optional [Step 5](/run-node/using-docker#using-docker-compose) of copying your staking keys to a persistent directory outside the default location.
-
-2. Modify your [`docker-compose.yaml`](/run-node/using-docker#using-docker-compose) file to include the staking key volume and environment variables.
+1. Modify your [`docker-compose.yaml`](/run-node/using-docker#using-docker-compose) file to include the staking key volume and environment variables.
    For example, if you copied your keys to `/opt/flare/staking/`, your `docker-compose.yaml` would look like:
 
    ```yaml title="/opt/node/docker-compose.yaml"
