@@ -4,6 +4,10 @@ sidebar_position: 4
 description: Interface for managing FDC request fee configuration.
 ---
 
+import CodeBlock from "@theme/CodeBlock";
+import FeeChecker from "!!raw-loader!/examples/developer-hub-solidity/FeeChecker.sol";
+import Remix from "@site/src/components/remix";
+
 Interface for managing FDC request fee configuration.
 
 Sourced from `IFdcRequestFeeConfigurations.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/IFdcRequestFeeConfigurations.sol).
@@ -72,34 +76,7 @@ event TypeAndSourceFeeSet(
 
 ## Usage Example
 
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
-
-import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/IFdcHub.sol";
-import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/IFdcRequestFeeConfigurations.sol";
-
-contract FeeChecker {
-    IFdcHub private fdcHub;
-    IFdcRequestFeeConfigurations private feeConfigs;
-
-    constructor(address _fdcHubAddress) {
-        fdcHub = IFdcHub(_fdcHubAddress);
-        feeConfigs = fdcHub.fdcRequestFeeConfigurations();
-    }
-
-    function checkRequestFee(bytes memory attestationData) external view returns (uint256) {
-        // Get the fee required for this attestation request
-        return feeConfigs.getRequestFee(attestationData);
-    }
-
-    function submitRequestWithFee(bytes memory attestationData) external payable {
-        // Check if enough fee is provided
-        uint256 requiredFee = feeConfigs.getRequestFee(attestationData);
-        require(msg.value >= requiredFee, "Insufficient fee");
-
-        // Submit the attestation request
-        fdcHub.requestAttestation{value: msg.value}(attestationData);
-    }
-}
-```
+<CodeBlock language="solidity" title="FeeChecker.sol">
+  {FeeChecker}
+</CodeBlock>
+<Remix fileName="FeeChecker.sol">Open example in Remix</Remix>

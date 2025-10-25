@@ -4,6 +4,10 @@ sidebar_position: 10
 description: Relay a transaction in native currency.
 ---
 
+import CodeBlock from "@theme/CodeBlock";
+import PaymentVerifier from "!!raw-loader!/examples/developer-hub-solidity/PaymentVerifier.sol";
+import Remix from "@site/src/components/remix";
+
 An interface to relay and verify payment transactions in native currencies across multiple external blockchains.
 
 Sourced from `IPayment.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/fdc/IPayment.sol).
@@ -257,89 +261,7 @@ Payment references allow for correlation of payments across chains and facilitat
 
 ## Usage Example
 
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
-
-import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/IFdcHub.sol";
-import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/IFdcVerification.sol";
-import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/fdc/IPayment.sol";
-
-contract PaymentVerifier {
-    IFdcHub private fdcHub;
-    IFdcVerification private fdcVerification;
-
-    bytes32 private constant ATTESTATION_TYPE_PAYMENT = 0x0100000000000000000000000000000000000000000000000000000000000000;
-    bytes32 private constant SOURCE_ID_BTC = 0x4254430000000000000000000000000000000000000000000000000000000000;
-
-    // Store verified payments
-    mapping(bytes32 => bool) public verifiedPayments; // transactionId => verified
-
-    constructor(address _fdcHubAddress, address _fdcVerificationAddress) {
-        fdcHub = IFdcHub(_fdcHubAddress);
-        fdcVerification = IFdcVerification(_fdcVerificationAddress);
-    }
-
-    // Request verification of a payment transaction
-    function requestPaymentVerification(
-        bytes32 transactionId,
-        uint256 inUtxo,
-        uint256 utxo
-    ) external payable {
-        // Create request body
-        IPayment.RequestBody memory requestBody = IPayment.RequestBody({
-            transactionId: transactionId,
-            inUtxo: inUtxo,
-            utxo: utxo
-        });
-
-        // Encode the full request
-        bytes memory encodedRequest = abi.encode(
-            ATTESTATION_TYPE_PAYMENT,
-            SOURCE_ID_BTC,
-            bytes32(0), // messageIntegrityCode (would need to be calculated properly)
-            requestBody
-        );
-
-        // Submit the request with payment
-        fdcHub.requestAttestation{value: msg.value}(encodedRequest);
-    }
-
-    // Verify a provided payment proof
-    function verifyPayment(IPayment.Proof calldata _proof)
-        external
-        returns (
-            bool success,
-            bytes32 sourceAddressHash,
-            bytes32 receivingAddressHash,
-            int256 amount,
-            bytes32 paymentReference
-        )
-    {
-        // Verify the proof using FdcVerification
-        bool proofVerified = fdcVerification.verifyPayment(_proof);
-
-        if (proofVerified) {
-            // Extract the payment details from the proof
-            bytes32 transactionId = _proof.data.requestBody.transactionId;
-            IPayment.ResponseBody memory response = _proof.data.responseBody;
-
-            // Check if this is a successful payment
-            if (response.status == 0) {
-                // Store that this transaction has been verified
-                verifiedPayments[transactionId] = true;
-
-                return (
-                    true,
-                    response.sourceAddressHash,
-                    response.receivingAddressHash,
-                    response.receivedAmount,
-                    response.standardPaymentReference
-                );
-            }
-        }
-
-        return (false, bytes32(0), bytes32(0), 0, bytes32(0));
-    }
-}
-```
+<CodeBlock language="solidity" title="PaymentVerifier.sol">
+  {PaymentVerifier}
+</CodeBlock>
+<Remix fileName="PaymentVerifier.sol">Open example in Remix</Remix>

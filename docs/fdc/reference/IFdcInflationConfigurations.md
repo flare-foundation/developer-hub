@@ -4,6 +4,10 @@ sidebar_position: 5
 description: Interface for managing FDC inflation configuration.
 ---
 
+import CodeBlock from "@theme/CodeBlock";
+import InflationMonitor from "!!raw-loader!/examples/developer-hub-solidity/InflationMonitor.sol";
+import Remix from "@site/src/components/remix";
+
 Interface for managing Flare Data Connector (FDC) inflation configuration.
 
 Sourced from `IFdcInflationConfigurations.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/IFdcInflationConfigurations.sol).
@@ -75,32 +79,7 @@ struct FdcConfiguration {
 
 ## Usage Example
 
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
-
-import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/IFdcHub.sol";
-import "@flare-foundation/flare-smart-contracts-v2/contracts/userInterfaces/IFdcInflationConfigurations.sol";
-
-contract InflationMonitor {
-    IFdcHub private fdcHub;
-
-    constructor(address _fdcHubAddress) {
-        fdcHub = IFdcHub(_fdcHubAddress);
-    }
-
-    // Get inflation share for a specific attestation type and source
-    function getInflationShare(bytes32 attestationType, bytes32 source) external view returns (uint24) {
-        IFdcInflationConfigurations inflationConfigs = fdcHub.fdcInflationConfigurations();
-        IFdcInflationConfigurations.FdcConfiguration[] memory configs = inflationConfigs.getFdcConfigurations();
-
-        for (uint i = 0; i < configs.length; i++) {
-            if (configs[i].attestationType == attestationType && configs[i].source == source) {
-                return configs[i].inflationShare;
-            }
-        }
-
-        return 0; // Not found or no inflation share allocated
-    }
-}
-```
+<CodeBlock language="solidity" title="InflationMonitor.sol">
+  {InflationMonitor}
+</CodeBlock>
+<Remix fileName="InflationMonitor.sol">Open example in Remix</Remix>
