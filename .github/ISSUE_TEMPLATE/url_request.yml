@@ -1,0 +1,89 @@
+name: New URL Request
+description: Request a new Web2Json URL to be added to FDC
+title: "[req]: <METHOD>: <Hostname>"
+labels: ["enhancement", "fdc"]
+assignees:
+  - emysore-flare
+body:
+  - type: input
+    id: hostname
+    attributes:
+      label: Hostname
+      placeholder: "https://flare.network"
+    validations:
+      required: true
+
+  - type: single_select
+    id: http_method
+    attributes:
+      label: HTTP method
+      options:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+    validations:
+      required: true
+
+  - type: input
+    id: docs_url
+    attributes:
+      label: Documentation URL
+      description: Link to the API docs for this endpoint (if available).
+      placeholder: "https://example.com/docs#endpoint"
+    validations:
+      required: false
+
+  - type: textarea
+    id: justification
+    attributes:
+      label: Justification
+      description: Clear and concise explanation of why you are requesting this URL
+      placeholder: "Explain how this data will be used and why it's needed."
+    validations:
+      required: true
+
+  - type: textarea
+    id: example_endpoint_response
+    attributes:
+      label: Example Endpoint Response
+      description: Provide a representative sample of the JSON response.
+      render: json
+      placeholder: |
+        {
+          "status": "ok",
+          "timestamp": 1720000000,
+          "data": { "price": 1.23 }
+        }
+    validations:
+      required: true
+
+  - type: textarea
+    id: example_web2json_request
+    attributes:
+      label: Example Web2Json Request
+      description: >
+        Provide the exact JSON payload that FDC will receive. All fields are strings.
+        See https://dev.flare.network/fdc/attestation-types/web2-json for more details.
+      render: json
+      placeholder: |
+        {
+          "url": "https://api.example.com/v1/price",
+          "httpMethod": "GET",
+          "headers": "{}",
+          "queryParams": "{\"symbol\":\"BTC\",\"convert\":\"USD\"}",
+          "body": "{}",
+          "postProcessJq": ".data | {price: .price, timestamp: .ts}",
+          "abiSignature": "(uint256 price,uint256 timestamp)"
+        }
+    validations:
+      required: true
+
+  - type: input
+    id: contact
+    attributes:
+      label: Contact (Email or Telegram)
+      placeholder: "name@company.com or @handle"
+    validations:
+      required: true
