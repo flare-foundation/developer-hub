@@ -291,7 +291,7 @@ const sidebars: SidebarsConfig = {
       items: [
         {
           type: "category",
-          label: "Tanstack Query",
+          label: "TanStack Query",
           collapsed: true,
           link: {
             slug: "/frontend/tanstack-query",
