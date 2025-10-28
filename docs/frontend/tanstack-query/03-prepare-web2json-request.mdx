@@ -1,0 +1,182 @@
+---
+sidebar_position: 1
+slug: prepare-web2json-request
+title: Prepare Web2Json request
+authors: [nikerzetic]
+description: Prepare an FDC request through a Verifier server using TanStack Query.
+tags: [quickstart, ethereum, flare-smart-accounts]
+keywords:
+  [
+    flare-fdc,
+    ethereum,
+    flare-smart-accounts,
+    evm,
+    flare-network,
+    account-abstraction,
+  ]
+unlisted: false
+---
+
+import { PrepareWeb2JsonRequestApp } from "@site/src/components/Frontend/PrepareWeb2JsonRequestCard";
+import CodeBlock from "@theme/CodeBlock";
+import BrowserOnly from "@docusaurus/BrowserOnly";
+import PrepareWeb2JsonRequestCode from "!!raw-loader!/src/components/Frontend/PrepareWeb2JsonRequestCard";
+
+In this guide, we will prepare a [Web2Json](/fdc/attestation-types/web2-json) attestation type request.
+Shown below is a card component that accepts user input and makes the request with those parameters.
+
+{/* TODO:(Nik) why did this stop working */}
+
+<BrowserOnly>{() => <PrepareWeb2JsonRequestApp />}</BrowserOnly>
+
+We will focus only on the part of the component that defines and calls the TanStack Query mutation.
+The remainder of the code is mostly HTML boilerplate, though the full source code is available at the end of the guide.
+
+Let us take a look at how we invoke the `useMutation` hook.
+We provide two parameters, the `mutationFn` and `onSuccess` functions.
+In a production application, we should at least also define the `onError` side effect.
+You can see the full list of parameters in the [TanStack Query documentation](https://tanstack.com/query/latest/docs/framework/react/guides/mutations).
+
+The `useMutation` hook is called within the main body of the component.
+We take the `mutate` return value and call it when the `Prepare ABI-encoded request` button is clicked.
+It is an async function that will run in the background.
+When it succeeds, the `onSuccess` side effect is triggered.
+
+```tsx
+  const { mutate } = useMutation({
+    mutationFn: async () => {
+      ...
+ },
+    onSuccess: (result) => {
+      ...
+ },
+ });
+```
+
+The mutation function constructs a request body from the parameters input in the form.
+Their values are stored as React states (`useState` hook), and updated when the field values change.
+
+```tsx
+const requestBody = {
+  url: url,
+  httpMethod: httpMethod,
+  headers: headers,
+  queryParams: queryParams,
+  body: body,
+  postProcessJq: postProcessJq,
+  abiSignature: abiSignature,
+};
+```
+
+Two additional values are necessary for the request: the attestation type and source ID.
+They are UTF8 hex encoded strings, padded to 32 bytes, of `Web2Json` and `PublicWeb2` respectively.
+
+```tsx
+const attestationType = toUtf8HexString(attestationTypeBase);
+const sourceId = toUtf8HexString(sourceIdBase);
+```
+
+The encoding function is as follows.
+
+```tsx
+export function toHex(data: string) {
+  let result = "";
+  for (let i = 0; i < data.length; i++) {
+    result += data.charCodeAt(i).toString(16);
+  }
+  return result.padEnd(64, "0");
+}
+
+export function toUtf8HexString(data: string) {
+  return "0x" + toHex(data);
+}
+```
+
+Out of these three values - the attestation type, source ID, and request body - the mutation function constructs the request.
+
+```tsx
+const request = {
+  attestationType: attestationType,
+  sourceId: sourceId,
+  requestBody: requestBody,
+};
+```
+
+The request is sent to the `/Web2Json/prepareRequest` endpoint at the verifier URL `https://web2json-verifier-test.flare.rocks`.
+An API key needs to be provided as a header.
+Though custom keys are available, the public key `00000000-0000-0000-0000-000000000000` can provide a rate-limited access.
+
+```tsx
+const response = await fetch(`${verifierUrlBase}/Web2Json/prepareRequest`, {
+  method: "POST",
+  headers: {
+    "X-API-KEY": apiKey,
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": "*",
+  },
+  body: JSON.stringify(request),
+});
+```
+
+Finally, the response is returned as a JSON.
+The entire `mutationFn` parameter is as follows.
+
+```tsx
+ mutationFn: async () => {
+      const requestBody = {
+ url: url,
+ httpMethod: httpMethod,
+ headers: headers,
+ queryParams: queryParams,
+ body: body,
+ postProcessJq: postProcessJq,
+ abiSignature: abiSignature,
+ };
+      const attestationType = toUtf8HexString(attestationTypeBase);
+      const sourceId = toUtf8HexString(sourceIdBase);
+
+      const request = {
+ attestationType: attestationType,
+ sourceId: sourceId,
+ requestBody: requestBody,
+ };
+      const response = await fetch(
+        `${verifierUrlBase}/Web2Json/prepareRequest`,
+ {
+ method: "POST",
+ headers: {
+            "X-API-KEY": apiKey,
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+ },
+ body: JSON.stringify(request),
+ }
+ );
+      return response.json();
+ },
+```
+
+The `onSuccess` side effect is much simpler.
+It only sets the `abiEncodedRequest` React state to whatever the value of the `abiEncodedRequest` field of the result is.
+
+```tsx
+ onSuccess: (result) => {
+      setAbiEncodedRequest(result.abiEncodedRequest);
+ },
+```
+
+The `abiEncodedRequest` state is then read and displayed within the component.
+
+:::warning
+In order for the `useMutation` hook to work, the app needs to be wrapped in a [`QueryClientProvider`](https://tanstack.com/query/latest/docs/framework/react/reference/QueryClientProvider) component.
+Ideally, that is done at the root level of the app.
+:::
+
+The full code for the component is included here.
+
+<CodeBlock
+  language="tsx"
+  title="Code for the PrepareWeb2JsonRequestApp component"
+>
+  {PrepareWeb2JsonRequestCode}
+</CodeBlock>
