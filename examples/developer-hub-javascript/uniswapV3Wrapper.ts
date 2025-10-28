@@ -50,7 +50,7 @@ async function deployAndVerifyContract() {
 }
 
 // 7. Function to setup and initialize tokens
-async function setupAndInitializeTokens() {
+async function setUpAndInitializeTokens() {
   const accounts = await web3.eth.getAccounts();
   const deployer = accounts[0];
 
@@ -212,7 +212,7 @@ async function main() {
     await deployAndVerifyContract();
 
   const { deployer, usdt0, fxrp, initialUsdt0Balance, initialFxrpBalance } =
-    await setupAndInitializeTokens();
+    await setUpAndInitializeTokens();
 
   await verifyPoolAndLiquidity(uniswapV3Wrapper);
 
