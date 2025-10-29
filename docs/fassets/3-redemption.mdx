@@ -51,6 +51,34 @@ This is the summary of the redemption process:
 
    After the collateral is released, it can either back the minting of more FAssets or be withdrawn.
 
+## Fees
+
+These fees are charged when a user redeems FAssets for the underlying asset:
+
+| Fee Name           | Charged In                            | Status     | Purpose                                                                                                                       |
+| :----------------- | :------------------------------------ | :--------- | :---------------------------------------------------------------------------------------------------------------------------- |
+| **Redemption Fee** | Underlying Asset (e.g., XRP for FXRP) | Obligatory | Covers the Agent's gas costs for the payment transaction.                                                                     |
+| **Executor Fee**   | FLR                                   | Optional   | Compensates an optional executor who triggers redemption defaults when agents fail to pay, saving redeemers extra operations. |
+
+### Redemption Fee
+
+The redemption fee is the amount of the underlying asset that the agent retains upon redemption.
+This fee is intended solely to cover the agent's transaction fee on the underlying chain, and therefore, it is not shared with the collateral pool.
+The fee percentage is defined by governance, is the same for all agents, and is typically smaller than the minting fee.
+
+Governance calculates the percentage so that the fee to redeem one lot pays for a typical transaction fee on the underlying chain.
+Therefore, when larger amounts are redeemed at a single address, the agent accrues additional fees because the underlying fee for both small and large transactions is the same.
+However, when underlying fees are very high, the agent might still lose funds when a redemption for a small amount, such as one lot, is made.
+If this situation occurs frequently, governance will increase the redemption-fee percentage.
+
+### Executor Fee
+
+An optional executor fee can be paid to compensate an executor who triggers a redemption default if the agent fails to pay on the underlying chain.
+This spares the redeemer from having to perform extra operations to complete the redemption process.
+
+The executor fee is paid in FLR, and the amount is agreed upon off-chain between the redeemer and the executor.
+This fee is only applicable when an executor is involved in the redemption process.
+
 ## Redemption-Payment Failure
 
 Agents have a limited time to pay the redeemer on the underlying chain.
@@ -111,17 +139,6 @@ Proofs provided by the [Flare Data Connector](/fdc/overview) can be created for 
 If neither the redeemer, the agent, nor the executor presents proof of payment or evidence of non-payment within the 14-day window, the regular redemption process cannot continue, and the agent's collateral could be locked indefinitely.
 
 The procedure to recover this collateral is the same as the procedure in the minting case.
-
-## Redemption Fee
-
-The redemption fee is the amount of the underlying asset that the agent retains upon redemption.
-This fee is intended solely to cover the agent's transaction fee on the underlying chain, and therefore, it is not shared with the collateral pool.
-The fee percentage is defined by governance, is the same for all agents, and is typically smaller than the minting fee.
-
-Governance calculates the percentage so that the fee to redeem one lot pays for a typical transaction fee on the underlying chain.
-Therefore, when larger amounts are redeemed at a single address, the agent accrues additional fees because the underlying fee for both small and large transactions is the same.
-However, when underlying fees are very high, the agent might still lose funds when a redemption for a small amount, such as one lot, is made.
-If this situation occurs frequently, governance will increase the redemption-fee percentage.
 
 ## Self-redemption
 
