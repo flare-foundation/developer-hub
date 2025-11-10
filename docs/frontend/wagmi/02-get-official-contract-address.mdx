@@ -1,0 +1,91 @@
+---
+sidebar_position: 1
+slug: get-official-contract-address
+title: Get official Flare contract addresses
+authors: [nikerzetic]
+description: Get the addresses of official Flare smart contracts using Wagmi and the FlareContractRegistry.
+tags: [intermediate, frontend, react, wagmi]
+keywords: [ethereum, evm, flare-network, wagmi, tanstack-query, frontend, react]
+unlisted: false
+---
+
+import useFlareContractRegistryCode from "!!raw-loader!/src/hooks/useFlareContractRegistry";
+import { GetAddressApp } from "@site/src/components/Frontend/GetAddressCard";
+import { AllOfficialContractsTableApp } from "@site/src/components/Frontend/AllOfficialContractsTable";
+import GetAddressCardCode from "!!raw-loader!/src/components/Frontend/GetAddressCard";
+import FlareContractRegistryAbi from "!!raw-loader!/src/abis/FlareContractRegistry.ts";
+import ContractsListCode from "!!raw-loader!/src/components/Frontend/AllOfficialContractsTable";
+import CodeBlock from "@theme/CodeBlock";
+import BrowserOnly from "@docusaurus/BrowserOnly";
+
+In this guide we will use the `useReadContract` hook from the Wagmi framework to get addresses of official Flare contracts.
+The addresses could be hardcoded into the frontend, but that approach is error prone and requires manual updates.
+Instead, it is recommended that the `FlareContractRegistry` contract is queried for the addresses of the official contracts.
+
+The `FlareContractRegistry` is an official Flare contract, storing a list of contracts and their addresses.
+It is deployed on the same address on each of the four Flare chains.
+Its `getContractAddressByName` function maps a contract name to the corresponding contract's address.
+This allows for official contracts to be easily updated in the future.
+
+We will use the [`useReadContract`](https://wagmi.sh/react/api/hooks/useReadContract) hook from the Wagmi framework to call the `getContractAddressByName` function.
+The hook takes in the following required parameters:
+
+- `abi`: the abi of the contract being calling
+- `address`: the address of the contract being called
+- `functionName`: the name of the function on the called contract
+- `args`: an array of parameters that the above function accepts
+
+For additional parameters and return values, look at the [Wagmi documentation](https://wagmi.sh/react/api/hooks/useReadContract).
+
+The values we will be passing to the hook are:
+
+- `address`: the `FlareContractRegistry` address `0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019` (the same on all Flare chain)
+- `functionName`: `getContractAddressByName`
+- `args`: the name of the contract the address of which we want to retrieve; we will input these dynamically
+- `abi`:
+
+<details>
+  <summary>FlareContractRegistry ABI</summary>
+  <CodeBlock language="ts">{FlareContractRegistryAbi}</CodeBlock>
+</details>
+
+With that, we can define a simple hook for retrieving a contract address using the `FlareContractRegistry` contract.
+
+<CodeBlock language="tsx" title="useFlareContractRegistry.tsx">
+  {useFlareContractRegistryCode}
+</CodeBlock>
+
+It takes the `contractName` string parameter.
+Then, it invokes the `useReadContract` Wagmi hook, and returns the result.
+
+We can demonstrate how the `useFlareContractRegistry` hook can be used on a simple input card.
+The full code for this example as well as a list of all registered contract are available bellow.
+
+<BrowserOnly>{() => <GetAddressApp />}</BrowserOnly>
+
+The card accepts a contract name as input.
+When the `Get contract address` button is pressed, the input data is saved to the state, which triggers a rerender of the `result` component.
+The `useFlareContractRegistry` hook is called and a new address fetched.
+It is saved to the `contractAddress` state, and displayed at the bottom of the card.
+
+<CodeBlock language="tsx" title="GetAddressCard.tsx">
+  {GetAddressCardCode}
+</CodeBlock>
+
+To enable the `useReadContract` hook, the card is wrapped in a `QueryClientProvider` and a `WagmiProvider` component.
+In a real project, those would be placed at the root level of the app.
+To learn more about these, look at the [TanStack Query](https://tanstack.com/query/latest/docs/framework/react/reference/QueryClientProvider) and [Wagmi](https://wagmi.sh/react/api/WagmiProvider) documentation for the corresponding components.
+
+<details >
+
+<summary>List of available official contracts</summary>
+
+<BrowserOnly>{() => <AllOfficialContractsTableApp />}</BrowserOnly>
+
+This list is also prepared dynamically.
+The contract names are fetched from the `FlareContractRegistry`, by calling its `getAllContracts` function.
+
+<CodeBlock language="tsx">
+{ContractsListCode}
+</CodeBlock>
+</details>
