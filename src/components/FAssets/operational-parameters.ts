@@ -9,7 +9,7 @@ export const operationalParameters = [
           "Total amount of allowed FAssets in circulation. Once reached, no more FAssets can be minted until some are redeemed. This is intended as a security measure. In the final deployment, this cap will be gradually increased and finally removed.",
         values: {
           flare: {
-            xrp: "50M XRP",
+            xrp: "70M XRP",
           },
           coston2: {
             xrp: "none",
