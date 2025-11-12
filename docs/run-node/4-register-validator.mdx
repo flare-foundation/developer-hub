@@ -146,6 +146,16 @@ This poses a risk of staked funds being locked against the unrecoverable NodeID 
 
 ## Run the node
 
+Create `staker.key` and `staker.crt` files using
+
+```bash
+openssl req -x509 -newkey rsa:4096 -keyout staker.key -out staker.crt -days 36500 -nodes -subj '/CN=localhost'
+```
+
+You will also need the `signer.key` file which is auto-generated and, by default, found in '~/.avalanchego/staking/' folder.
+Note that `staker.key` and `staker.crt` are also auto-generated and stored in the same folder, but you must
+**not** use them for successful validator registration!
+
 Now, start your node using command-line flags or environment variables that point to your `staker.key`, `staker.crt` and `signer.key` files.
 This ensures your node always starts with the correct `Node-ID`.
 
