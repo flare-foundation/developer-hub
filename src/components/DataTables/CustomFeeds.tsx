@@ -39,7 +39,7 @@ const CustomFeeds = () => {
                   <>
                     Contract:{" "}
                     <Link
-                      to={`https://flarescan.com/address/${row.contract}`}
+                      to={`https://flare-explorer.flare.network/address/${row.contract}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >

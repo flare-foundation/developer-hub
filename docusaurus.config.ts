@@ -185,8 +185,8 @@ const config: Config = {
           title: "Explore",
           items: [
             {
-              label: "Flarescan",
-              href: "https://flarescan.com/",
+              label: "Flare Explorer",
+              href: "https://flare-explorer.flare.network",
             },
             {
               label: "Systems Explorer",
