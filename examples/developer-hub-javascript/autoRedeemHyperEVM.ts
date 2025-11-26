@@ -11,7 +11,13 @@
  */
 
 import { ethers } from "hardhat";
-import { formatUnits, parseUnits, zeroPadValue, AbiCoder } from "ethers";
+import {
+  formatUnits,
+  parseUnits,
+  zeroPadValue,
+  AbiCoder,
+  Contract,
+} from "ethers";
 import { Options } from "@layerzerolabs/lz-v2-utilities";
 import { EndpointId } from "@layerzerolabs/lz-definitions";
 
@@ -155,7 +161,7 @@ function buildSendParams(
  * Checks if user has sufficient FXRP balance
  */
 async function checkBalance(
-  oft: any,
+  oft: Contract,
   signerAddress: string,
   amountToSend: bigint,
 ): Promise<void> {
@@ -179,7 +185,7 @@ async function checkBalance(
  * Quotes the LayerZero fee for the send transaction
  */
 async function quoteFee(
-  oft: any,
+  oft: Contract,
   sendParam: SendParams,
 ): Promise<{ nativeFee: bigint; lzTokenFee: bigint }> {
   const result = await oft.quoteSend(sendParam, false);
@@ -195,7 +201,7 @@ async function quoteFee(
  * Executes the send with auto-redeem
  */
 async function executeSendAndRedeem(
-  oft: any,
+  oft: Contract,
   sendParam: SendParams,
   nativeFee: bigint,
   lzTokenFee: bigint,
