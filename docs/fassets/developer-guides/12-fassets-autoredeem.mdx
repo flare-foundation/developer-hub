@@ -1,0 +1,565 @@
+---
+title: FAsset Auto-Redemption
+tags: [intermediate, fassets]
+slug: fassets-autoredeem
+description: Learn how to bridge FAssets between Flare and Hyperliquid EVM Testnet
+keywords: [fassets, flare-network]
+sidebar_position: 12
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import FassetRedeemComposer from "!!raw-loader!/examples/developer-hub-solidity/FAssetRedeemComposer.sol";
+import bridgeToHyperEVM from "!!raw-loader!/examples/developer-hub-javascript/bridgeToHyperEVM.ts";
+import autoRedeemHyperEVM from "!!raw-loader!/examples/developer-hub-javascript/autoRedeemHyperEVM.ts";
+
+# FAsset Auto-Redemption
+
+## Introduction
+
+This documentation covers a cross-chain bridge system that allows you to move FAssets (tokenized versions of non-smart contract tokens like XRP) between Flare Network's Coston2 testnet and Hyperliquid EVM Testnet.
+The system goes beyond simple token bridging by enabling **automatic redemption** - you can send wrapped XRP (FXRP) from Hyperliquid and have it automatically converted back to native XRP on the XRP Ledger, all in a single transaction.
+
+**What you can do:**
+
+- Bridge FXRP tokens from Coston2 to Hyperliquid EVM to prepare for auto-redemption
+- Send FXRP from Hyperliquid back to Coston2 and auto-redeem to native XRP
+- Execute the entire bridge-and-redeem flow with just one transaction
+
+**Key technologies:**
+
+- LayerZero OFT (Omnichain Fungible Token) for cross-chain messaging
+- Flare's FAsset system for tokenizing non-smart contract assets
+- Composer pattern for automatic execution on the destination chain
+
+This guide includes three main components: a Solidity smart contract (`FAssetRedeemComposer.sol`) and two TypeScript scripts (`bridgeToHyperEVM.ts` and `autoRedeemHyperEVM.ts`) that demonstrate the complete workflow.
+
+Clone our hardhat starter [here](https://github.com/flare-foundation/flare-hardhat-starter) to follow along.
+
+---
+
+## Getting Started: The Two-Step Process
+
+**IMPORTANT:** To successfully test the auto-redemption feature, you must run the scripts in the correct order:
+
+### Step 1: Bridge FXRP to Hyperliquid EVM (Required First)
+
+Run `bridgeToHyperEVM.ts` on **Coston2** network to transfer your FXRP tokens from Coston2 to Hyperliquid EVM Testnet.
+This script does NOT involve auto-redemption - it simply moves your tokens to Hyperliquid where you can use them to prepare for the auto-redemption process.
+
+**Why this is required:** You need FXRP tokens on Hyperliquid EVM before you can test the auto-redeem functionality.
+The auto-redeem script will fail if you don't have tokens there.
+
+```bash
+# Step 1: Bridge tokens TO Hyperliquid
+yarn hardhat run scripts/fassets/bridgeToHyperEVM.ts --network coston2
+```
+
+### Step 2: Auto-Redeem to Native XRP (Requires Step 1)
+
+Once you have FXRP tokens on Hyperliquid (from Step 1), run `autoRedeemHyperEVM.ts` on **Hyperliquid Testnet** network to send them back to Coston2 with automatic redemption to native XRP.
+This is the auto-redemption feature that converts FXRP back to native XRP in a single transaction.
+
+```bash
+# Step 2: Auto-redeem back to native XRP
+yarn hardhat run scripts/fassets/autoRedeemHyperEVM.ts --network hyperliquidTestnet
+```
+
+---
+
+## Overview
+
+This system enables developers to bridge FAssets (specifically FXRP) between Flare's Coston2 testnet and Hyperliquid EVM Testnet using LayerZero's cross-chain messaging protocol.
+It supports two key functionalities:
+
+1. **Bridging FXRP from Coston2 to Hyperliquid EVM** (`bridgeToHyperEVM.ts`) - Transfer wrapped XRP tokens to Hyperliquid for trading or DeFi use
+2. **Auto-Redeem from Hyperliquid to Underlying Asset** (`autoRedeemHyperEVM.ts`) - Send FXRP from Hyperliquid back to Coston2 and automatically redeem it for native XRP
+
+**These are sequential operations:** You must complete Step 1 (bridging TO Hyperliquid) before you can execute Step 2 (auto-redeeming FROM Hyperliquid).
+
+---
+
+## FAssetRedeemComposer Contract
+
+### What It Is
+
+`FAssetRedeemComposer.sol` is a LayerZero Composer contract that automatically redeems FAssets to their underlying assets when tokens arrive on Coston2 via LayerZero's compose message feature.
+
+### How It Works
+
+The composer implements the `IOAppComposer` interface and processes LayerZero compose messages:
+
+1. **Receives Compose Message**: LayerZero endpoint calls `lzCompose()` with the incoming OFT transfer and compose data
+2. **Extracts Parameters**: Decodes the compose message to get:
+   - Amount to redeem (in lots)
+   - Underlying address (XRP address)
+   - Redeemer address (EVM address)
+3. **Gets Asset Manager**: Retrieves the FAsset AssetManager from Flare's ContractRegistry
+4. **Calculates Lots**: Determines how many lots can be redeemed based on received balance
+5. **Approves Tokens**: Grants AssetManager permission to spend the FAsset tokens
+6. **Executes Redemption**: Calls `assetManager.redeem()` to burn FAssets and release underlying XRP
+
+### Key Features
+
+- **Automatic Execution**: No manual redemption step required
+- **Reentrancy Protected**: Uses OpenZeppelin's `ReentrancyGuard`
+- **Owner Controls**: Allows owner to recover stuck tokens or native currency
+- **Event Emission**: Emits `RedemptionTriggered` event for tracking
+
+### Error Handling
+
+- `OnlyEndpoint()`: Reverts if caller is not the LayerZero endpoint
+- `InsufficientBalance()`: Reverts if no tokens were received
+- `AmountTooSmall()`: Reverts if received amount is less than 1 lot
+
+<details>
+<summary>View `FAssetRedeemComposer.sol` source code</summary>
+
+<CodeBlock language="solidity" title="contracts/FAssetRedeemComposer.sol">
+  {FassetRedeemComposer}
+</CodeBlock>
+
+</details>
+
+### Deployment
+
+Deploy the composer contract to Coston2:
+
+```bash
+# Set deployment configuration
+export DEPLOYER_PRIVATE_KEY=your_private_key
+
+# Deploy via Hardhat deploy scripts
+npx hardhat deploy --network coston2 --tags FAssetRedeemComposer
+
+# Save the deployed address to your .env
+export COSTON2_COMPOSER=0x...
+```
+
+---
+
+## Bridge FXRP to Hyperliquid EVM (Step 1)
+
+### Script: `bridgeToHyperEVM.ts`
+
+### What It Is
+
+**This is Step 1 of the two-step process** and is a **prerequisite** for testing the auto-redemption feature.
+
+This script bridges FXRP tokens from Coston2 to Hyperliquid EVM Testnet using LayerZero's OFT Adapter pattern.
+It wraps existing ERC20 FAsset tokens into LayerZero OFT format for cross-chain transfer.
+
+**Important:** This script does NOT perform auto-redemption. Its purpose is to get your FXRP tokens onto Hyperliquid EVM Testnet so that:
+
+- You can use them for trading or DeFi on Hyperliquid, OR
+- You can run the auto-redeem script (Step 2) to convert them back to native XRP
+
+You must successfully complete this step before running `autoRedeemHyperEVM.ts`.
+
+### How It Works
+
+#### Step-by-Step Process
+
+1. **Account Setup**: Retrieves the signer account from Web3
+2. **Balance Check**: Verifies user has sufficient FTestXRP tokens
+3. **Token Approval**:
+   - Approves OFT Adapter to spend FTestXRP (2x amount for safety)
+   - Approves Composer (if needed for future operations)
+4. **Build Send Parameters**:
+   - Destination: Hyperliquid EVM Testnet (EID: `40294`)
+   - Recipient: Same address on destination chain
+   - Amount: Configured bridge amount (default 11 FXRP)
+   - LayerZero options: Executor gas limit set to 200,000
+5. **Quote Fee**: Calculates the LayerZero cross-chain messaging fee
+6. **Execute Bridge**: Sends tokens via `oftAdapter.send()`
+7. **Confirmation**: Waits for transaction confirmation and provides tracking link
+
+### Prerequisites
+
+- **Network**: Must run on Coston2
+- **Balance Requirements**:
+  - FTestXRP tokens (amount you want to bridge)
+  - C2FLR tokens (for gas fees + LayerZero fees)
+- **Environment Setup**:
+  - Private key configured in Hardhat
+
+### Configuration
+
+Edit the `CONFIG` object in the script:
+
+```typescript
+const CONFIG = {
+  COSTON2_FTESTXRP: "0x8b4abA9C4BD7DD961659b02129beE20c6286e17F",
+  COSTON2_OFT_ADAPTER: "0xCd3d2127935Ae82Af54Fc31cCD9D3440dbF46639",
+  COSTON2_COMPOSER: process.env.COSTON2_COMPOSER || "",
+  HYPERLIQUID_EID: EndpointId.HYPERLIQUID_V2_TESTNET,
+  EXECUTOR_GAS: 200_000,
+  BRIDGE_AMOUNT: "11", // Change this to your desired amount
+};
+```
+
+### How to Run
+
+**Run this script FIRST before attempting auto-redemption.** This gets your FXRP tokens onto Hyperliquid EVM.
+
+1. **Install Dependencies**:
+
+   ```bash
+   yarn install
+   ```
+
+2. **Configure Environment**:
+
+   ```bash
+   # .env file
+   COSTON2_RPC_URL=https://coston2-api.flare.network/ext/C/rpc
+   DEPLOYER_PRIVATE_KEY=your_private_key_here
+   COSTON2_COMPOSER=0x... # Optional for this step, required for Step 2
+   ```
+
+3. **Run the Script on Coston2**:
+
+   ```bash
+   yarn hardhat run scripts/fassets/bridgeToHyperEVM.ts --network coston2
+   ```
+
+4. **Wait for Completion**:
+   - Monitor the transaction on LayerZero Scan (link provided in output)
+   - Allow 2-5 minutes for cross-chain delivery
+   - Verify FXRP balance increased on Hyperliquid EVM before proceeding to Step 2
+
+### Expected Output
+
+```
+Using account: 0x742d35Cc6634C0532925a3b844Bc454e4438f44e
+
+📋 Bridge Details:
+From: Coston2
+To: Hyperliquid EVM Testnet
+Amount: 11.0 FXRP
+Recipient: 0x742d35Cc6634C0532925a3b844Bc454e4438f44e
+
+Your FTestXRP balance: 100.0
+
+1️⃣ Checking OFT Adapter token address...
+   OFT Adapter's inner token: 0x8b4abA9C4BD7DD961659b02129beE20c6286e17F
+   Expected token: 0x8b4abA9C4BD7DD961659b02129beE20c6286e17F
+   Match: true
+
+   Approving FTestXRP for OFT Adapter...
+   OFT Adapter address: 0xCd3d2127935Ae82Af54Fc31cCD9D3440dbF46639
+   Amount: 11.0 FXRP
+✅ OFT Adapter approved
+   Verified allowance: 22.0 FXRP
+
+3️⃣ LayerZero Fee: 0.001234 C2FLR
+
+4️⃣ Sending FXRP to Hyperliquid EVM Testnet...
+Transaction sent: 0xabc123...
+✅ Confirmed in block: 12345678
+
+🎉 Success! Your FXRP is on the way to Hyperliquid EVM Testnet!
+
+Track your transaction:
+https://testnet.layerzeroscan.com/tx/0xabc123...
+
+It may take a few minutes to arrive on Hyperliquid EVM Testnet.
+```
+
+<details>
+<summary>View `bridgeToHyperEVM.ts` source code</summary>
+
+<CodeBlock language="typescript" title="scripts/fassets/bridgeToHyperEVM.ts">
+  {bridgeToHyperEVM}
+</CodeBlock>
+
+</details>
+
+### Troubleshooting
+
+**Error: Insufficient FTestXRP balance**
+
+- Solution: Acquire FTestXRP tokens on Coston2 first
+- Token address: `0x8b4abA9C4BD7DD961659b02129beE20c6286e17F`
+
+**Error: Insufficient C2FLR for gas**
+
+- Solution: Get C2FLR from Coston2 faucet: https://faucet.flare.network/coston2
+
+**Error: Transaction reverted**
+
+- Check that the OFT Adapter address matches the FTestXRP token
+- Verify LayerZero endpoint is operational
+- Ensure gas limits are sufficient
+
+---
+
+## Auto-Redeem from Hyperliquid EVM (Step 2)
+
+### Script: `autoRedeemHyperEVM.ts`
+
+### What It Is
+
+**This is Step 2 of the two-step process** and **requires you to have FXRP tokens on Hyperliquid EVM first** (from Step 1).
+
+This script sends FXRP from Hyperliquid EVM Testnet back to Coston2 with **automatic redemption** to native XRP.
+It uses LayerZero's compose feature to trigger the `FAssetRedeemComposer` contract upon arrival.
+
+**Prerequisites:**
+
+- You must have FXRP OFT tokens on Hyperliquid EVM Testnet
+- If you don't have FXRP on Hyperliquid, run `bridgeToHyperEVM.ts` first (Step 1)
+- The FAssetRedeemComposer contract must be deployed on Coston2
+
+### How It Works
+
+#### Flow Diagram
+
+```
+┌──────────────────┐
+│   Developer      │
+│ (Hyperliquid EVM)│
+└────────┬─────────┘
+         │
+         │ 1. Has FXRP OFT
+         ▼
+┌─────────────────────────┐
+│  FXRP OFT (Hyperliquid) │
+│  Balance: 10 FXRP       │
+└────────┬────────────────┘
+         │
+         │ 2. Send with Compose Message
+         │    - Destination: Coston2 Composer
+         │    - Compose Data: (amount, xrpAddress, redeemer)
+         ▼
+┌─────────────────────────┐
+│  LayerZero Endpoint     │
+│  - lzSend()             │
+│  - Compose enabled      │
+└────────┬────────────────┘
+         │
+         │ 3. Cross-chain message
+         ▼
+┌─────────────────────────┐
+│  Coston2 Endpoint       │
+│  - lzReceive()          │
+│  - lzCompose()          │
+└────────┬────────────────┘
+         │
+         │ 4. Calls Composer
+         ▼
+┌─────────────────────────┐
+│ FAssetRedeemComposer    │
+│  - Receives FXRP        │
+│  - Calculates lots      │
+│  - Calls AssetManager   │
+└────────┬────────────────┘
+         │
+         │ 5. Redemption
+         ▼
+┌─────────────────────────┐
+│  FAsset AssetManager    │
+│  - Burns FXRP           │
+│  - Releases XRP         │
+└────────┬────────────────┘
+         │
+         │ 6. XRP sent to address
+         ▼
+┌─────────────────────────┐
+│  XRP Ledger Address     │
+│  rpHuw4b...             │
+└─────────────────────────┘
+```
+
+#### Step-by-Step Process
+
+1. **Validate Setup**:
+   - Checks that `COSTON2_COMPOSER` is configured
+   - Gets the signer account
+2. **Prepare Redemption Parameters**:
+   - Amount to send (default: 10 FXRP = 1 lot)
+   - XRP address to receive native XRP
+   - Redeemer address (EVM address)
+3. **Connect to FXRP OFT**: Gets the OFT contract on Hyperliquid
+4. **Encode Compose Message**:
+   - Encodes `(uint256 amount, string xrpAddress, address redeemer)`
+   - This tells the composer what to do when tokens arrive
+5. **Build LayerZero Options**:
+   - Executor gas for `lzReceive()`: 400,000
+   - Compose gas for `lzCompose()`: 700,000
+6. **Build Send Parameters**:
+   - Destination: Coston2 (EID: `40296`)
+   - Recipient: FAssetRedeemComposer contract
+   - Amount: 10 FXRP
+   - Compose message included
+7. **Check Balance**: Verifies user has sufficient FXRP OFT
+8. **Quote Fee**: Calculates LayerZero messaging fee
+9. **Execute Send**: Sends FXRP with compose message
+10. **Auto-Redemption**: On arrival, composer automatically redeems to XRP
+
+### Prerequisites
+
+- **Network**: Must run on Hyperliquid EVM Testnet
+- **Balance Requirements**:
+  - FXRP OFT tokens on Hyperliquid (amount you want to redeem)
+  - HYPE tokens (for gas fees + LayerZero fees)
+- **Deployed Contracts**:
+  - FAssetRedeemComposer must be deployed on Coston2
+  - Composer address must be set in `.env`
+
+### Configuration
+
+Edit the `CONFIG` object in the script:
+
+```typescript
+const CONFIG = {
+  HYPERLIQUID_FXRP_OFT:
+    process.env.HYPERLIQUID_FXRP_OFT ||
+    "0x14bfb521e318fc3d5e92A8462C65079BC7d4284c",
+  COSTON2_COMPOSER: process.env.COSTON2_COMPOSER || "",
+  COSTON2_EID: EndpointId.FLARE_V2_TESTNET,
+  EXECUTOR_GAS: 400_000, // Gas for receiving on Coston2
+  COMPOSE_GAS: 700_000, // Gas for compose execution
+  SEND_AMOUNT: "10", // 10 FXRP = 1 lot
+  XRP_ADDRESS: "rpHuw4bKSjonKRrKKVYUZYYVedg1jyPrmp", // Your XRP address
+};
+```
+
+### How to Run
+
+**PREREQUISITE: You must have FXRP tokens on Hyperliquid EVM Testnet before running this script.**
+
+If you don't have FXRP on Hyperliquid yet:
+
+- Run `bridgeToHyperEVM.ts` first (Step 1 - see above section)
+- Wait for the bridge transaction to complete (2-5 minutes)
+- Verify your FXRP balance on Hyperliquid EVM before proceeding
+
+Once you have FXRP on Hyperliquid:
+
+1. **Deploy FAssetRedeemComposer** (first time only):
+
+   ```bash
+   npx hardhat deploy --network coston2 --tags FAssetRedeemComposer
+   ```
+
+2. **Configure Environment**:
+
+   ```bash
+   # .env file
+   HYPERLIQUID_TESTNET_RPC_URL=https://api.hyperliquid-testnet.xyz/evm
+   DEPLOYER_PRIVATE_KEY=your_private_key_here
+   COSTON2_COMPOSER=0x... # Required! Set this after deploying the composer
+   HYPERLIQUID_FXRP_OFT=0x14bfb521e318fc3d5e92A8462C65079BC7d4284c
+   ```
+
+3. **Update XRP Address**:
+   - Edit `CONFIG.XRP_ADDRESS` in the script to your XRP ledger address
+   - This is where you'll receive the native XRP
+   - Must be a valid XRP address format (starts with 'r')
+
+4. **Run the Script on Hyperliquid Testnet**:
+   ```bash
+   yarn hardhat run scripts/fassets/autoRedeemHyperEVM.ts --network hyperliquidTestnet
+   ```
+
+### Expected Output
+
+```
+Using account: 0x742d35Cc6634C0532925a3b844Bc454e4438f44e
+✓ Composer configured: 0x123...
+
+📋 Redemption Parameters:
+Amount: 10.0 FXRP
+XRP Address: rpHuw4bKSjonKRrKKVYUZYYVedg1jyPrmp
+Redeemer: 0x742d35Cc6634C0532925a3b844Bc454e4438f44e
+
+Connecting to FXRP OFT on Hyperliquid EVM: 0x14bfb521e318fc3d5e92A8462C65079BC7d4284c
+
+✓ Connected to FXRP OFT: 0x14bfb521e318fc3d5e92A8462C65079BC7d4284c
+OFT address: 0x14bfb521e318fc3d5e92A8462C65079BC7d4284c
+
+Compose message encoded
+
+💰 Current FXRP balance: 25.0
+Sufficient balance
+
+💵 LayerZero Fee: 0.002456 HYPE
+
+🚀 Sending 10.0 FXRP to Coston2 with auto-redeem...
+Target composer: 0x123...
+Underlying address: rpHuw4bKSjonKRrKKVYUZYYVedg1jyPrmp
+
+✓ Transaction sent: 0xdef456...
+Waiting for confirmation...
+✅ Confirmed in block: 9876543
+
+🎉 Success! Your FXRP is on the way to Coston2!
+
+📊 Track your cross-chain transaction:
+https://testnet.layerzeroscan.com/tx/0xdef456...
+
+⏳ The auto-redeem will execute once the message arrives on Coston2.
+XRP will be sent to: rpHuw4bKSjonKRrKKVYUZYYVedg1jyPrmp
+```
+
+### Monitoring the Redemption
+
+1. **Track on LayerZero Scan**:
+   - Visit the provided URL
+   - Monitor message status: Inflight → Delivered → Executed
+
+2. **Check Composer Logs** on Coston2:
+
+   ```bash
+   # View RedemptionTriggered events
+   npx hardhat run scripts/checkComposerEvents.ts --network coston2
+   ```
+
+3. **Verify XRP Receipt**:
+   - Check your XRP ledger address on https://testnet.xrpl.org/
+   - Should see incoming XRP transaction
+
+<details>
+<summary>View `autoRedeemHyperEVM.ts` source code</summary>
+
+<CodeBlock language="typescript" title="scripts/fassets/autoRedeemHyperEVM.ts">
+  {autoRedeemHyperEVM}
+</CodeBlock>
+
+</details>
+
+---
+
+## FAQ
+
+**Q: How long does bridging take?**
+A: Typically 2-5 minutes for LayerZero message delivery + execution time.
+
+**Q: What's the minimum amount I can bridge?**
+A: Any amount for bridging to Hyperliquid. For auto-redeem, minimum is 1 lot (10 FXRP for XRP).
+
+**Q: Can I bridge to a different address?**
+A: Yes, edit the `recipientAddress` parameter in the scripts.
+
+**Q: What happens if compose execution fails?**
+A: Tokens will be stuck in the composer. Owner can recover using `recoverTokens()`.
+
+**Q: Can I use this on mainnet?**
+A: This is designed for testnet. For mainnet, update contract addresses, thoroughly test, and audit all code.
+
+**Q: How do I get FTestXRP on Coston2?**
+A: Use Flare's FAsset minting process via the AssetManager contract.
+
+**Q: What if I don't have HYPE tokens?**
+A: Get them from Hyperliquid testnet faucet or DEX.
+
+---
+
+## Support & Resources
+
+- **LayerZero Docs**: https://docs.layerzero.network/
+- **Flare Docs**: https://docs.flare.network/
+- **LayerZero Scan**: https://testnet.layerzeroscan.com/
+- **Hyperliquid Docs**: https://hyperliquid.gitbook.io/
+
+---
