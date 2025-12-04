@@ -40,6 +40,7 @@ const config: Config = {
   },
 
   // Experimental features in preparation for Docusaurus v4 upgrade
+  // rspack is disabled currently due to bundling performance issues
   future: {
     v4: true,
     experimental_faster: {
