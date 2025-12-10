@@ -78,12 +78,14 @@ async function main() {
           `✅ ${endpoint.name} (EID: ${endpoint.eid}): ${peerAddress}`,
         );
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Some endpoints might not exist or the contract might revert
+      const errorMessage =
+        error instanceof Error ? error.message.slice(0, 50) : "Unknown error";
       errors.push({
         name: endpoint.name,
         eid: endpoint.eid,
-        error: error.message?.slice(0, 50) || "Unknown error",
+        error: errorMessage,
       });
     }
   }
