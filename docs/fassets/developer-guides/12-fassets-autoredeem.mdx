@@ -11,6 +11,7 @@ import CodeBlock from "@theme/CodeBlock";
 import FassetRedeemComposer from "!!raw-loader!/examples/developer-hub-solidity/FAssetRedeemComposer.sol";
 import bridgeToHyperEVM from "!!raw-loader!/examples/developer-hub-javascript/bridgeToHyperEVM.ts";
 import autoRedeemHyperEVM from "!!raw-loader!/examples/developer-hub-javascript/autoRedeemHyperEVM.ts";
+import getOftPeers from "!!raw-loader!/examples/developer-hub-javascript/getOftPeers.ts";
 
 # FAsset Auto-Redemption
 
@@ -552,6 +553,89 @@ A: Use Flare's FAsset minting process via the AssetManager contract.
 
 **Q: What if I don't have HYPE tokens?**
 A: Get them from Hyperliquid testnet faucet or DEX.
+
+---
+
+## Discovering Available Bridge Routes
+
+### Script: `getOftPeers.ts`
+
+### What It Is
+
+This utility script discovers all configured LayerZero peers for the FXRP OFT Adapter on Coston2. It scans all LayerZero V2 testnet endpoints to find which EVM chains have been configured as valid bridge destinations.
+
+### Why Use It
+
+Before bridging FXRP to another chain, you need to know which chains are supported. This script:
+
+- Automatically discovers all configured peer addresses
+- Shows which EVM chains you can bridge FXRP to/from
+- Provides the peer contract addresses for each chain
+- Outputs results in both human-readable and JSON formats
+
+### How It Works
+
+1. **Loads V2 Testnet Endpoints**: Dynamically retrieves all LayerZero V2 testnet endpoint IDs from the `@layerzerolabs/lz-definitions` package
+2. **Queries Peers**: For each endpoint, calls the `peers()` function on the OFT Adapter contract
+3. **Filters Results**: Only shows endpoints that have a non-zero peer address configured
+4. **Formats Output**: Displays results in a table format and as JSON for programmatic use
+
+### How to Run
+
+```bash
+yarn hardhat run scripts/layerzero/getOFTPeers.ts --network coston2
+```
+
+### Expected Output
+
+```
+=== FXRP OFT Adapter Peers Discovery ===
+
+OFT Adapter: 0xCd3d2127935Ae82Af54Fc31cCD9D3440dbF46639
+Network: Coston2 (Flare Testnet)
+
+Scanning 221 LayerZero V2 Testnet endpoints...
+
+✅ Bsc (EID: 40102): 0xac7c4a07670589cf83b134a843bfe86c45a4bf4e
+✅ Sepolia (EID: 40161): 0x81672c5d42f3573ad95a0bdfbe824faac547d4e6
+✅ Hyperliquid (EID: 40362): 0x14bfb521e318fc3d5e92a8462c65079bc7d4284c
+
+============================================================
+SUMMARY: Configured Peers
+============================================================
+
+Found 3 configured peer(s):
+
+| Chain | EID | Peer Address |
+|-------|-----|--------------|
+| Bsc | 40102 | 0xac7c4a07670589cf83b134a843bfe86c45a4bf4e |
+| Sepolia | 40161 | 0x81672c5d42f3573ad95a0bdfbe824faac547d4e6 |
+| Hyperliquid | 40362 | 0x14bfb521e318fc3d5e92a8462c65079bc7d4284c |
+
+--- Available Routes ---
+You can bridge FXRP to/from the following chains:
+
+  • Bsc
+  • Sepolia
+  • Hyperliquid
+```
+
+### Using the Results
+
+Once you've identified available peers, you can:
+
+1. **Bridge to any discovered chain**: Update the destination EID in `bridgeToHyperEVM.ts` to target a different chain
+2. **Verify peer addresses**: Use the peer addresses to interact with OFT contracts on other chains
+3. **Build integrations**: Use the JSON output to programmatically determine available routes
+
+<details>
+<summary>View `getOftPeers.ts` source code</summary>
+
+<CodeBlock language="typescript" title="scripts/layerzero/getOFTPeers.ts">
+  {getOftPeers}
+</CodeBlock>
+
+</details>
 
 ---
 
