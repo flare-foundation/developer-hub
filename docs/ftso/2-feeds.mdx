@@ -16,24 +16,12 @@ import CustomFeeds from "@site/src/components/DataTables/CustomFeeds";
 
 FTSOv2's block-latency feeds update incrementally with each new block on Flare, approximately every 1.8 seconds. Every feed leverages Flare's network of 100 independent data providers. These feeds primarily support cryptocurrency price data and are free to query on Flare, enabling decentralized applications to access up-to-date information without incurring additional costs.
 
-Each block-latency feed is uniquely identified by an ID composed of three components in a structured encoding process:
-
-1. **Category:** Indicates the type of asset - Crypto: `01`, Forex: `02`, Commodity: `03`, Stock: `04`, Custom Feeds: `05`
-
-2. **Hex-Encoded Feed Name:** The name of the feed is converted to a hexadecimal format.
-
-3. **Zero Padding:** The combined category and hex-encoded feed name are padded with zeros to a length of 21 bytes.
-
-The resulting string is then prefixed with `0x`.
-
 <FeedExplanation />
 
 :::warning
 
 - Feed IDs are **not** addresses. They are `bytes21` structured encodings that combine the category and feed name to ensure each feed has a unique identifier.
-- **Do not** hardcode the number of decimals for a feed in your smart contract, as these can change as the feed value changes. You can use either of the following solutions:
-  - Check the number of decimal places every query using [`getFeedById`](/ftso/solidity-reference/FtsoV2Interface#getfeedbyid).
-  - Use the feed value in Wei using [`getFeedByIdInWei`](/ftso/solidity-reference/FtsoV2Interface#getfeedbyidinwei).
+- **Do not** hardcode the number of decimals for a feed, as these can change. You can either check the number of decimal places every query using [`getFeedById`](/ftso/solidity-reference/FtsoV2Interface#getfeedbyid), or use the feed value in Wei using [`getFeedByIdInWei`](/ftso/solidity-reference/FtsoV2Interface#getfeedbyidinwei).
 
 :::
 
