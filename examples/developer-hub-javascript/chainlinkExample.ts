@@ -1,5 +1,5 @@
 import { artifacts, run, web3 } from "hardhat";
-import { AssetVaultInstance } from "../../typechain-types";
+import type { AssetVaultInstance } from "../../typechain-types";
 
 // --- Configuration ---
 const AssetVault: AssetVaultInstance = artifacts.require("AssetVault");

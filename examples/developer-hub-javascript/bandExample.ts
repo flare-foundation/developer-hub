@@ -1,5 +1,5 @@
 import { artifacts, network, run, web3 } from "hardhat";
-import { PriceTriggeredSafeInstance } from "../../typechain-types";
+import type { PriceTriggeredSafeInstance } from "../../typechain-types";
 
 // --- Configuration ---
 const PriceTriggeredSafe: PriceTriggeredSafeInstance =

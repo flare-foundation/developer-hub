@@ -1,5 +1,5 @@
 import { ethers, run } from "hardhat";
-import { FtsoV2ConsumerContract } from "../typechain-types";
+import type { FtsoV2ConsumerContract } from "../typechain-types";
 
 const FtsoV2Consumer = artifacts.require("FtsoV2Consumer");
 

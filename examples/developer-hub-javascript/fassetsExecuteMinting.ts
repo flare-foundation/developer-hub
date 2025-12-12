@@ -1,6 +1,6 @@
 import { getAssetManagerFXRP } from "../utils/fassets";
 import { prepareAttestationRequestBase } from "../utils/fdc";
-import { IAssetManagerInstance } from "../../typechain-types";
+import type { IAssetManagerInstance } from "../../typechain-types";
 import { logEvents } from "../../scripts/utils/core";
 
 // yarn hardhat run scripts/fassets/executeMinting.ts --network coston2

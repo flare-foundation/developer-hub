@@ -1,5 +1,5 @@
 import { artifacts, run, web3 } from "hardhat";
-import { DynamicNftMinterInstance } from "../../typechain-types";
+import type { DynamicNftMinterInstance } from "../../typechain-types";
 
 // --- Configuration ---
 const DynamicNftMinter: DynamicNftMinterInstance =

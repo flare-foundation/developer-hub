@@ -1,16 +1,20 @@
 module.exports = function () {
   return {
-    name: "disable-webpack-overlay",
-    configureWebpack(config, isServer) {
-      if (!isServer) {
-        return {
-          devServer: {
-            client: {
-              overlay: false,
+    name: "devserver-overlay-config",
+    configureWebpack(_config, isServer) {
+      if (isServer) return;
+
+      return {
+        devServer: {
+          client: {
+            overlay: {
+              errors: true,
+              warnings: false,
+              runtimeErrors: false,
             },
           },
-        };
-      }
+        },
+      };
     },
   };
 };

@@ -1,6 +1,7 @@
 // 1. install xrpl package
 // https://www.npmjs.com/package/xrpl
-import { Client, Wallet, xrpToDrops, Payment, TxResponse } from "xrpl";
+import type { Payment, TxResponse } from "xrpl";
+import { Client, Wallet, xrpToDrops } from "xrpl";
 
 // 2. Define the constants
 const AGENT_ADDRESS = "r4KgCNzn9ZuNjpf17DEHZnyyiqpuj599Wm"; // Agent underlying chain address

@@ -1,9 +1,9 @@
 import { ethers, run } from "hardhat";
 import { web3 } from "hardhat";
 
-import { UniswapV3WrapperInstance } from "../../typechain-types";
+import type { UniswapV3WrapperInstance } from "../../typechain-types";
 import { getAssetManagerFXRP } from "../utils/getters";
-import { ERC20Instance } from "../../typechain-types/@openzeppelin/contracts/token/ERC20/ERC20";
+import type { ERC20Instance } from "../../typechain-types/@openzeppelin/contracts/token/ERC20/ERC20";
 
 // yarn hardhat run scripts/fassets/uniswapV3Wrapper.ts --network flare
 

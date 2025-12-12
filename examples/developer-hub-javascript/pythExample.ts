@@ -1,5 +1,5 @@
 import { artifacts, run } from "hardhat";
-import { PythNftMinterInstance } from "../../typechain-types";
+import type { PythNftMinterInstance } from "../../typechain-types";
 
 // --- Configuration ---
 const PythNftMinter: PythNftMinterInstance = artifacts.require("PythNftMinter");

@@ -1,5 +1,5 @@
 import { ethers } from "hardhat";
-import { IWNatInstance } from "../../typechain-types/@flarenetwork/flare-periphery-contracts/coston/IWNat";
+import type { IWNatInstance } from "../../typechain-types/@flarenetwork/flare-periphery-contracts/coston/IWNat";
 
 const WNAT_ADDRESS = "0x767b25A658E8FC8ab6eBbd52043495dB61b4ea91";
 

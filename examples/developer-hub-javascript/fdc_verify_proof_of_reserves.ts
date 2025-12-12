@@ -1,5 +1,8 @@
 import hre from "hardhat";
-import { ProofOfReservesInstance, IRelayInstance } from "../../typechain-types";
+import type {
+  ProofOfReservesInstance,
+  IRelayInstance,
+} from "../../typechain-types";
 import {
   prepareAttestationRequestBase,
   getFdcHub,
