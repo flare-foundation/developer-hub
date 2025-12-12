@@ -132,9 +132,7 @@ const DeveloperTools: React.FC = () => {
             <div className="tools-cards">
               {/* Check if tools array exists and is empty */}
               {tools?.length === 0 ? (
-                <div className="empty-category">
-                  No tools in this category
-                </div>
+                <div className="empty-category">No tools in this category</div>
               ) : (
                 /* Map over tools if array has items */
                 tools?.map((tool) => (
