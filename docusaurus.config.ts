@@ -40,9 +40,19 @@ const config: Config = {
   },
 
   // Experimental features in preparation for Docusaurus v4 upgrade
+  // rspack is disabled currently due to bundling performance issues
   future: {
     v4: true,
-    experimental_faster: true,
+    experimental_faster: {
+      swcJsLoader: true,
+      swcJsMinimizer: true,
+      swcHtmlMinimizer: true,
+      lightningCssMinimizer: true,
+      rspackBundler: false,
+      rspackPersistentCache: false,
+      ssgWorkerThreads: true,
+      mdxCrossCompilerCache: true,
+    },
   },
 
   presets: [
@@ -185,8 +195,8 @@ const config: Config = {
           title: "Explore",
           items: [
             {
-              label: "Flarescan",
-              href: "https://flarescan.com/",
+              label: "Flare Explorer",
+              href: "https://flare-explorer.flare.network",
             },
             {
               label: "Systems Explorer",

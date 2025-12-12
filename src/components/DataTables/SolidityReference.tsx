@@ -1,55 +1,36 @@
 import React, { useMemo } from "react";
 import Link from "@docusaurus/Link";
-import tableData from "../../../automations/solidity_reference.json";
+import tableDataRaw from "../../../automations/solidity_reference.json";
 
 interface ContractData {
   name: string;
   address: string;
 }
 
-interface DisplayedDataItem {
-  name: string;
-  address: string;
-  abiLink: string;
-}
+const tableData = tableDataRaw as Record<string, ContractData[]>;
 
-interface NetworkLinks {
-  addressLinkPrefix: string;
-  abiLinkPrefix: string;
-}
+const networkLinks = {
+  FlareMainnet: {
+    prefix: "https://flare-explorer.flare.network/address/",
+  },
+  FlareTestnetCoston2: {
+    prefix: "https://coston2-explorer.flare.network/address/",
+  },
+  SongbirdCanaryNetwork: {
+    prefix: "https://songbird-explorer.flare.network/address/",
+  },
+  SongbirdTestnetCoston: {
+    prefix: "https://coston-explorer.flare.network/address/",
+  },
+} as const;
 
-interface NetworkLinksMap {
-  [network: string]: NetworkLinks;
-}
+type NetworkKey = keyof typeof networkLinks;
 
 interface SolidityReferenceProps {
-  network: string;
+  network: NetworkKey;
   contractNames: string[];
   renderAbi?: boolean;
 }
-
-const networkLinks: NetworkLinksMap = {
-  FlareMainnet: {
-    addressLinkPrefix: "https://flarescan.com/address/",
-    abiLinkPrefix:
-      "https://api.routescan.io/v2/network/mainnet/evm/14/etherscan/api?module=contract&action=getabi&address=",
-  },
-  FlareTestnetCoston2: {
-    addressLinkPrefix: "https://coston2.testnet.flarescan.com/address/",
-    abiLinkPrefix:
-      "https://api.routescan.io/v2/network/testnet/evm/114/etherscan/api?module=contract&action=getabi&address=",
-  },
-  SongbirdCanaryNetwork: {
-    addressLinkPrefix: "https://songbird.flarescan.com/address/",
-    abiLinkPrefix:
-      "https://api.routescan.io/v2/network/mainnet/evm/19/etherscan/api?module=contract&action=getabi&address=",
-  },
-  SongbirdTestnetCoston: {
-    addressLinkPrefix: "https://coston.testnet.flarescan.com/address/",
-    abiLinkPrefix:
-      "https://api.routescan.io/v2/network/testnet/evm/16/etherscan/api?module=contract&action=getabi&address=",
-  },
-};
 
 const SolidityReference: React.FC<SolidityReferenceProps> = ({
   network,
@@ -57,9 +38,8 @@ const SolidityReference: React.FC<SolidityReferenceProps> = ({
   renderAbi = true,
 }) => {
   const links = networkLinks[network];
-  const networkData: ContractData[] = tableData[network] || [];
+  const rawNetworkData = tableData[network] || [];
 
-  // Handle unsupported networks
   if (!links) {
     return (
       <div className="unsupported-network">
@@ -68,47 +48,22 @@ const SolidityReference: React.FC<SolidityReferenceProps> = ({
     );
   }
 
-  // Memoize the displayed data to avoid unnecessary recomputations
-  const displayedData: DisplayedDataItem[] = useMemo(() => {
+  const dataMap = useMemo(() => {
+    return new Map(rawNetworkData.map((c) => [c.name, c.address]));
+  }, [rawNetworkData]);
+
+  const rows = useMemo(() => {
     return contractNames.map((name) => {
-      const contract = networkData.find((contract) => contract.name === name);
-      return contract
-        ? {
-            name: contract.name,
-            address: contract.address,
-            abiLink: `${links.abiLinkPrefix}${contract.address}&format=raw`,
-          }
-        : { name, address: "-", abiLink: "-" };
+      const address = dataMap.get(name);
+      return {
+        name,
+        address: address || "-",
+        abiLink: address ? `${links.prefix}${address}?tab=contract_abi` : "-",
+      };
     });
-  }, [links, contractNames, networkData]);
+  }, [contractNames, dataMap, links]);
 
-  const renderAddress = (address: string) =>
-    address !== "-" ? (
-      <Link
-        href={`${links.addressLinkPrefix}${address}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="feed-address-link"
-      >
-        <code>{address}</code>
-      </Link>
-    ) : (
-      <span className="no-address">-</span>
-    );
-
-  const renderAbiLink = (abiLink: string) =>
-    abiLink !== "-" ? (
-      <Link
-        href={abiLink}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="abi-link"
-      >
-        ABI
-      </Link>
-    ) : (
-      <span className="no-abi">-</span>
-    );
+  const colSpan = 2 + (renderAbi ? 1 : 0);
 
   return (
     <table className="data-table">
@@ -120,19 +75,38 @@ const SolidityReference: React.FC<SolidityReferenceProps> = ({
         </tr>
       </thead>
       <tbody>
-        {displayedData.length > 0 ? (
-          displayedData.map((row, index) => (
-            <tr key={index} className="table-row">
+        {rows.length > 0 ? (
+          rows.map((row) => (
+            <tr key={row.name} className="table-row">
               <td className="contract-name">{row.name}</td>
-              <td className="contract-address">{renderAddress(row.address)}</td>
+              <td className="contract-address">
+                {row.address !== "-" ? (
+                  <Link
+                    href={`${links.prefix}${row.address}`}
+                    className="feed-address-link"
+                  >
+                    <code>{row.address}</code>
+                  </Link>
+                ) : (
+                  <span className="no-address">-</span>
+                )}
+              </td>
               {renderAbi && (
-                <td className="contract-abi">{renderAbiLink(row.abiLink)}</td>
+                <td className="contract-abi">
+                  {row.abiLink !== "-" ? (
+                    <Link href={row.abiLink} className="abi-link">
+                      ABI
+                    </Link>
+                  ) : (
+                    <span className="no-abi">-</span>
+                  )}
+                </td>
               )}
             </tr>
           ))
         ) : (
           <tr>
-            <td className="no-data" colSpan={3}>
+            <td className="no-data" colSpan={colSpan}>
               No data available for the specified contracts in this network.
             </td>
           </tr>

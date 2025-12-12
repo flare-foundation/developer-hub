@@ -8,9 +8,19 @@ import GetFeedIdRs from "!!raw-loader!/examples/developer-hub-rust/src/bin/get_f
 import GetFeedIdGo from "!!raw-loader!/examples/developer-hub-go/get_feed_id.go";
 
 <details>
-    <summary>Example of the structured encoding process.</summary>
+    <summary>How Feed IDs are derived.</summary>
 
-    Taking the feed name `FLR/USD`:
+    Each block-latency feed is uniquely identified by an ID composed of three components in a structured encoding process:
+
+    1. **Category:** Indicates the type of asset - Crypto: `01`, Forex: `02`, Commodity: `03`, Stock: `04`, Custom Feeds: `21`
+
+    2. **Hex-Encoded Feed Name:** The name of the feed is converted to a hexadecimal format.
+
+    3. **Zero Padding:** The combined category and hex-encoded feed name are padded with zeros to a length of 21 bytes.
+
+    4. **0x-prefix:** The resulting string is then prefixed with `0x`.
+
+    As an example, take the feed name `FLR/USD`:
 
     - **Category**: `01` (Crypto)
     - **Hex-Encoded Feed Name**: `464c522f555344` (hexadecimal representation of `FLR/USD`)

@@ -55,7 +55,7 @@ Learn how to check if your Flare Entity meets minimal conditions and the rewards
 - A registered [validator node](/run-node/register-validator).
 - [Docker Engine](https://docs.docker.com/engine/install/), ensure the Docker data root directory has sufficient disk space.
   If necessary, configure Docker to use a specific storage location or mount point (refer to Docker's [storage documentation](https://docs.docker.com/engine/storage/)).
-- [jq](https://jqlang.github.io/jq/)
+- [jq](https://jqlang.org)
 - [envsubst](https://www.gnu.org/software/gettext/manual/html_node/envsubst-Invocation.html)
 - [yarn](https://yarnpkg.com) (optional, for performing [automated registration](#register-and-fund-fsp-addresses) on testnets)
 
@@ -321,16 +321,16 @@ Ensure your system meets these combined requirements (see main [System Requireme
 
 ### Required components
 
-The [fdc-suite-deployment](https://github.com/flare-foundation/fdc-suite-deployment.git) repository provides configurations for deploying the following components:
+The [fdc-suite-deployment](https://github.com/flare-foundation/fdc-suite-deployment) repository provides configurations for deploying the following components:
 
 #### Blockchain node images
 
-| Network  | Blockchain node image                                                                                                                      |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| Bitcoin  | [flarefoundation/bitcoin](https://hub.docker.com/r/flarefoundation/bitcoin)                                                                |
-| Dogecoin | [flarefoundation/dogecoin](https://hub.docker.com/r/flarefoundation/dogecoin)                                                              |
-| Ripple   | [flarefoundation/rippled](https://hub.docker.com/r/flarefoundation/rippled)                                                                |
-| Ethereum | [ethereum/client-go](https://hub.docker.com/r/ethereum/client-go) & [prysm](https://docs.prylabs.network/docs/install/install-with-docker) |
+| Network  | Blockchain node image                                                                                                                               |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Bitcoin  | [flarefoundation/bitcoin](https://hub.docker.com/r/flarefoundation/bitcoin)                                                                         |
+| Dogecoin | [flarefoundation/dogecoin](https://hub.docker.com/r/flarefoundation/dogecoin)                                                                       |
+| Ripple   | [flarefoundation/rippled](https://hub.docker.com/r/flarefoundation/rippled)                                                                         |
+| Ethereum | [ethereum/client-go](https://hub.docker.com/r/ethereum/client-go) & [prysm](https://prysm.offchainlabs.com/docs/install-prysm/install-with-docker/) |
 
 #### Indexers and verifiers
 
@@ -355,7 +355,7 @@ The [fdc-suite-deployment](https://github.com/flare-foundation/fdc-suite-deploym
 
 ### Configure blockchain nodes
 
-1. Start by cloning the [flare-foundation/fdc-suite-deployment](https://github.com/flare-foundation/fdc-suite-deployment.git) repo:
+1. Start by cloning the [flare-foundation/fdc-suite-deployment](https://github.com/flare-foundation/fdc-suite-deployment) repo:
 
    ```bash
    git clone https://github.com/flare-foundation/fdc-suite-deployment.git
@@ -733,7 +733,8 @@ Keep your Flare Entity software up-to-date with the latest official releases pro
 
 :::tip[Get listed on explorers]
 
-To get your validator logo and name listed on the explorers, open a PR on [TowoLabs/ftso-signal-providers](https://github.com/TowoLabs/ftso-signal-providers).
+Submit a PR to [TowoLabs/ftso-signal-providers](https://github.com/TowoLabs/ftso-signal-providers) adding your validator name, description, delegation address, and logo (per repo guidelines).
+Once merged, explorers should update on their next sync.
 
 :::
 
@@ -774,7 +775,8 @@ You need to fund [all Fast Updates accounts](#create-fast-updates-accounts) acco
 <details>
 <summary>T5. Icon and logo don't show up on Flare explorers</summary>
 
-To get your validator logo and name listed on the explorers, open a PR on [TowoLabs/ftso-signal-providers](https://github.com/TowoLabs/ftso-signal-providers).
+Submit a PR to [TowoLabs/ftso-signal-providers](https://github.com/TowoLabs/ftso-signal-providers) adding your validator name, description, delegation address, and logo (per repo guidelines).
+Once merged, explorers should update on their next sync.
 
 </details>
 
@@ -927,7 +929,7 @@ Consistent monitoring is key to maintaining performance and reward eligibility. 
 **1. Validator node health:**
 
 - Monitor the `/ext/health` endpoint for validator status
-- Check validator connectivity using this [API endpoint](https://build.avax.network/docs/api-reference/p-chain/api#platformgetcurrentvalidators) to verify uptime/connected values
+- Check validator connectivity using this [API endpoint](https://build.avax.network/docs/rpcs/p-chain#platformgetcurrentvalidators) to verify uptime/connected values
 - For advanced monitoring, use Avalanche's [Grafana dashboards](https://support.avax.network/en/articles/6159074-grafana-dashboards) which are compatible with Flare
 
 **2. FDC health monitoring:**
@@ -978,10 +980,38 @@ To opt-out of receiving all future FlareDrops, you need to call the [`optOutOfAi
 </details>
 
 <details>
-<summary>F6. How do I get real-time Slack/Discord/Telegram alerts for my Flare Entity?</summary>
+<summary>F6. How do I get real-time Slack/Discord/Telegram alerts for issues with my Flare Entity?</summary>
 
-Try out the alpha version of the [flare-foundation/fsp-observer](https://github.com/flare-foundation/fsp-observer) to receive instant notifications about critical misbehaviors - like FTSO or FDC reveal offenses, registration failures, and more - that could cost rewards.
+To receive instant notifications about critical validator or data provider issues - such as FTSO or FDC reveal offenses, registration failures, and more - use the [flare-foundation/fsp-observer](https://github.com/flare-foundation/fsp-observer) monitoring service.
 
-We would appreciate feature requests to direct development of the tool, please raise them on the [issues page](https://github.com/flare-foundation/fsp-observer/issues).
+1. Create a env file (e.g., `.env.fsp-observer`) with your configuration:
+
+   ```plaintext title=".env.fsp-observer"
+   # Required
+   RPC_BASE_URL="https://flare-api.flare.network"                # Flare RPC endpoint
+   IDENTITY_ADDRESS="0x0000000000000000000000000000000000000000" # your identity address
+
+   # Optional notification channels
+   NOTIFICATION_DISCORD_WEBHOOK="https://discord.com/api/webhooks/..."
+   NOTIFICATION_TELEGRAM_BOT_TOKEN="your-telegram-bot-token"
+   NOTIFICATION_TELEGRAM_CHAT_ID="your-telegram-chat-id"
+   NOTIFICATION_SLACK_WEBHOOK="https://hooks.slack.com/services/..."
+   NOTIFICATION_GENERIC_WEBHOOK="http://host:port/path"          # generic POST webhook
+   ```
+
+   :::warning
+
+   Make sure this env file is **not committed** to version control (add it to `.gitignore` if needed).
+
+   :::
+
+2. Run the observer using Docker:
+
+   ```bash
+   docker run --env-file .env.fsp-observer ghcr.io/flare-foundation/fsp-observer:main
+   ```
+
+The container will watch your identity and send notifications to any configured channels when issues are detected.
+If you encounter problems or have feature requests, open an issue on the [GitHub issues page](https://github.com/flare-foundation/fsp-observer/issues).
 
 </details>

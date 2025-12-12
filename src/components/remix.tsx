@@ -1,4 +1,4 @@
-import React from "react";
+import React, { type JSX } from "react";
 import Link from "@docusaurus/Link";
 
 export default function Remix({ children, fileName }): JSX.Element {
@@ -7,7 +7,7 @@ export default function Remix({ children, fileName }): JSX.Element {
     "#url=https://github.com/flare-foundation/developer-hub/blob/main/examples/developer-hub-solidity/" +
     fileName;
   const parameters =
-    "&version=builtin&evmVersion=shanghai&optimize=true&runs=200";
+    "&version=builtin&evmVersion=cancun&optimize=true&runs=200";
   return (
     <div>
       <Link
