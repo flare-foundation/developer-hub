@@ -91,8 +91,8 @@ const DeveloperTools: React.FC = () => {
       {/* Header Section */}
       <div className="developer-tools-header">
         <p>
-          Developer tools for Flare including RPCs, bridges, indexers, account
-          abstraction, wallet SDKs, and more.
+          Developer tools for Flare including RPCs, bridges, wallet SDKs, and
+          more.
         </p>
         {/* Network Selector */}
         <div className="network-selector-container">
@@ -133,7 +133,7 @@ const DeveloperTools: React.FC = () => {
               {/* Check if tools array exists and is empty */}
               {tools?.length === 0 ? (
                 <div className="empty-category">
-                  No tools listed in this category
+                  No tools in this category
                 </div>
               ) : (
                 /* Map over tools if array has items */
