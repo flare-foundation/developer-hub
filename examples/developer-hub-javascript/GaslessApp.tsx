@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ethers, Eip1193Provider } from "ethers";
+import { ethers, type Eip1193Provider } from "ethers";
 import USD0Abi from "./USD0.json";
 import Heading from "@theme/Heading";
 

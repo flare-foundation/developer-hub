@@ -1,5 +1,5 @@
 import { artifacts, web3, run } from "hardhat";
-import {
+import type {
   PriceVerifierCustomFeedInstance,
   IRelayInstance,
 } from "../../typechain-types";

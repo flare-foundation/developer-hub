@@ -1,5 +1,5 @@
 import { getAssetManagerFXRP } from "../utils/fassets";
-import { IAssetManagerInstance } from "../../typechain-types";
+import type { IAssetManagerInstance } from "../../typechain-types";
 import { logEvents } from "../../scripts/utils/core";
 
 // 1. Define constants

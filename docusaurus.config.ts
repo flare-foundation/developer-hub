@@ -242,6 +242,7 @@ const config: Config = {
         indexDocs: true,
         indexPages: true,
         indexBlog: false,
+        hashed: true,
         docsRouteBasePath: "/",
       },
     ],

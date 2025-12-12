@@ -24,16 +24,16 @@ jobs:
       - name: Link Checker
         id: lychee
         uses: lycheeverse/lychee-action@v2
+        continue-on-error: true
         with:
           lycheeVersion: "latest"
           args: |
             --config lychee.toml
-            .
-          fail: true
+            docs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Comment on PR if broken links found
-        if: steps.lychee.outputs.exit_code != 0
+        if: ${{ always() && steps.lychee.outputs.exit_code != 0 }}
         uses: thollander/actions-comment-pull-request@v3
         with:
           message: |
@@ -47,3 +47,6 @@ jobs:
             </details>
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Fail if broken links found
+        if: ${{ steps.lychee.outputs.exit_code != 0 }}
+        run: exit 1

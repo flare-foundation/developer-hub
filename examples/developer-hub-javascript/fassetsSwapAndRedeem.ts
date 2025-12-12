@@ -1,8 +1,8 @@
 // 1. Dependencies and constants
 import { run } from "hardhat";
 
-import { SwapAndRedeemInstance } from "../../typechain-types";
-import { ERC20Instance } from "../../typechain-types/@openzeppelin/contracts/token/ERC20/ERC20";
+import type { SwapAndRedeemInstance } from "../../typechain-types";
+import type { ERC20Instance } from "../../typechain-types/@openzeppelin/contracts/token/ERC20/ERC20";
 
 import { getAssetManagerFXRP } from "../utils/getters";
 
