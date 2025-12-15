@@ -4,6 +4,7 @@ import Tippy from "@tippyjs/react";
 import "tippy.js/dist/tippy.css";
 import CopyButton from "../CopyButton";
 import tableData from "../../../automations/ftso_feeds.json";
+import Link from "@docusaurus/Link";
 
 type FeedRow = {
   feed_name: string;
@@ -68,9 +69,23 @@ const FtsoFeeds: React.FC<FeedsProps> = ({
     <tbody>
       {data.map((row, i) => {
         const { icon, tooltip } = getRiskIcon(row.risk);
+        const feedUrl = `https://flare-systems-explorer.flare.network/price-feeds/ftso?feed=${encodeURIComponent(
+          row.feed_id,
+        )}`;
+
         return (
           <tr key={`${row.feed_id}-${i}`} className="table-row">
-            <td className="regular-font">{row.feed_name}</td>
+            <td className="regular-font">
+              <Link
+                to={feedUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:underline"
+                title={`Open ${row.feed_name} in Flare Systems Explorer`}
+              >
+                {row.feed_name}
+              </Link>
+            </td>
 
             {showIndex && (
               <td className="mono-font feed-index">
