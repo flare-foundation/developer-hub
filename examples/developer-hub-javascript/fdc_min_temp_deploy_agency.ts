@@ -1,5 +1,5 @@
 import hre, { run } from "hardhat";
-import { MinTempAgencyInstance } from "../../../typechain-types";
+import type { MinTempAgencyInstance } from "../../../typechain-types";
 
 const MinTempAgency = artifacts.require("MinTempAgency");
 

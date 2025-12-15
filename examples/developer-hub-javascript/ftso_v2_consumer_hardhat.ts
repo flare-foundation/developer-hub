@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { FtsoV2Consumer } from "../typechain-types"; // Adjust the path based on your typechain output directory
+import type { FtsoV2Consumer } from "../typechain-types"; // Adjust the path based on your typechain output directory
 
 describe("FtsoV2Consumer", function () {
   let ftsoV2Consumer: FtsoV2Consumer;

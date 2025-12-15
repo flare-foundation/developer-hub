@@ -1,5 +1,5 @@
 import { artifacts, run, web3 } from "hardhat";
-import { PriceGuesserInstance } from "../../typechain-types";
+import type { PriceGuesserInstance } from "../../typechain-types";
 
 // --- Configuration ---
 const PriceGuesser: PriceGuesserInstance = artifacts.require("PriceGuesser");

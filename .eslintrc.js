@@ -8,7 +8,7 @@ module.exports = {
   extends: [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
-    "prettier",
+    "plugin:prettier/recommended",
     "plugin:@docusaurus/recommended",
   ],
   parser: "@typescript-eslint/parser",
@@ -16,8 +16,25 @@ module.exports = {
     ecmaVersion: "latest",
     sourceType: "module",
   },
-  plugins: ["@typescript-eslint", "prettier"],
+  plugins: ["@typescript-eslint"],
   rules: {
-    "prettier/prettier": [2],
+    "prettier/prettier": "error",
+    "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
+    "@typescript-eslint/consistent-type-imports": [
+      "warn",
+      { prefer: "type-imports" },
+    ],
   },
+  overrides: [
+    {
+      files: [
+        "*.config.js",
+        "*.config.ts",
+        "docusaurus.config.*",
+        "sidebars.*",
+      ],
+      env: { node: true },
+      rules: { "@typescript-eslint/no-var-requires": "off" },
+    },
+  ],
 };

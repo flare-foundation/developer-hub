@@ -1,8 +1,8 @@
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 import classes from "./customFooter.module.css";
 import Link from "@docusaurus/Link";
 import SocialLinks from "../SocialLinks/SocialLinks";
-import { Props } from "@theme/Footer/LinkItem";
+import { type Props } from "@theme/Footer/LinkItem";
 import clsx from "clsx";
 
 type CustomFooterProps = {
