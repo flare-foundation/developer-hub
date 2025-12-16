@@ -1,3 +1,6 @@
+import React from "react";
+import Link from "@docusaurus/Link";
+
 import GitHub from "@site/static/img/social-icons/github.svg";
 import YouTube from "@site/static/img/social-icons/youtube.svg";
 import LinkedIn from "@site/static/img/social-icons/linkedin.svg";
@@ -6,69 +9,67 @@ import X from "@site/static/img/social-icons/X.svg";
 import Telegram from "@site/static/img/social-icons/Telegram.svg";
 import Discourse from "@site/static/img/social-icons/discourse.svg";
 
-import Link from "@docusaurus/Link";
-import classes from "./socialLinks.module.css";
+import styles from "./styles.module.css";
 
-type SocialLinkProps = {
+type SocialLink = {
   href: string;
-  icon: React.ComponentType<React.ComponentProps<"svg">>;
+  Icon: React.ComponentType<React.ComponentProps<"svg">>;
   label: string;
 };
 
-const socialLinks: Array<SocialLinkProps> = [
+const SOCIAL_LINKS: SocialLink[] = [
   {
     href: "https://github.com/flare-foundation",
-    icon: GitHub,
+    Icon: GitHub,
     label: "GitHub",
   },
   {
     href: "https://www.youtube.com/c/Flare_Networks",
-    icon: YouTube,
+    Icon: YouTube,
     label: "YouTube",
   },
   {
     href: "https://www.linkedin.com/company/flarenetwork/",
-    icon: LinkedIn,
+    Icon: LinkedIn,
     label: "LinkedIn",
   },
   {
     href: "https://discord.com/invite/flarenetwork",
-    icon: Discord,
+    Icon: Discord,
     label: "Discord",
   },
   {
     href: "https://x.com/FlareNetworks",
-    icon: X,
-    label: "X (formerly Twitter)",
+    Icon: X,
+    label: "X",
   },
   {
     href: "https://t.me/FlareNetwork",
-    icon: Telegram,
+    Icon: Telegram,
     label: "Telegram",
   },
   {
     href: "https://forum.flare.network",
-    icon: Discourse,
+    Icon: Discourse,
     label: "Discourse Forum",
   },
 ];
 
 export default function SocialLinks() {
   return (
-    <div className={classes.socialLinksList}>
-      {socialLinks.map((social) => (
+    <div className={styles.list}>
+      {SOCIAL_LINKS.map(({ href, Icon, label }) => (
         <Link
-          to={social.href}
-          className={classes.link}
+          to={href}
+          className={styles.link}
           target="_blank"
-          key={social.href}
-          aria-label={social.label}
+          rel="noopener noreferrer"
+          aria-label={label}
+          title={label}
         >
-          <social.icon
-            role="img"
-            aria-label={social.label}
-            className={classes.socialSvg}
-          />
+          <span className={styles.iconWrap} aria-hidden="true">
+            <Icon className={styles.icon} focusable="false" />
+          </span>
         </Link>
       ))}
     </div>
