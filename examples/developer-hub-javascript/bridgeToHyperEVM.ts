@@ -141,13 +141,13 @@ async function approveTokens(
   console.log("✅ OFT Adapter approved");
 
   // Verify the allowance
-  const allowance1 = await fTestXRP.allowance(
+  const oftAdapterAllowance = await fTestXRP.allowance(
     signerAddress,
     oftAdapter.address,
   );
   console.log(
     "   Verified allowance:",
-    formatUnits(allowance1.toString(), 6),
+    formatUnits(oftAdapterAllowance.toString(), 6),
     "FXRP",
   );
 
@@ -157,13 +157,13 @@ async function approveTokens(
   console.log("✅ Composer approved");
 
   // Verify the allowance
-  const allowance2 = await fTestXRP.allowance(
+  const composerAllowance = await fTestXRP.allowance(
     signerAddress,
     CONFIG.COSTON2_COMPOSER,
   );
   console.log(
     "   Verified allowance:",
-    formatUnits(allowance2.toString(), 6),
+    formatUnits(composerAllowance.toString(), 6),
     "FXRP",
   );
 
@@ -174,11 +174,12 @@ async function approveTokens(
  * Builds LayerZero send parameters
  */
 function buildSendParams(params: BridgeParams): SendParams {
+  // See https://docs.layerzero.network/v2/tools/sdks/options#generating-options
   const options = Options.newOptions().addExecutorLzReceiveOption(
     CONFIG.EXECUTOR_GAS,
     0,
   );
-
+  // Review send parameters here: https://docs.layerzero.network/v2/developers/evm/oft/oft-patterns-extensions#:~:text=Sending%20Token%E2%80%8B,composeMsg%20in%20bytes.
   return {
     dstEid: CONFIG.HYPERLIQUID_EID as EndpointId,
     to: web3.utils.padLeft(params.recipientAddress, 64), // 32 bytes = 64 hex chars
