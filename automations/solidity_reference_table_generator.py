@@ -111,7 +111,7 @@ def main() -> None:
     """Run the automation: fetch and save the solidity registry reference."""
     try:
         ref = build_solidity_reference(REGISTRY_ADDRESS, REGISTRY_ABI)
-        OUTPUT_PATH.write_text(json.dumps(ref, indent=2))
+        OUTPUT_PATH.write_text(json.dumps(ref, indent=2) + "\n")
         logger.info("Data successfully saved to %s", OUTPUT_PATH)
     except Exception:
         logger.exception("Solidity reference automation failed")
