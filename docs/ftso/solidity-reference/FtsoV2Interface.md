@@ -4,7 +4,7 @@ sidebar_position: 1
 description: Primary interface for interacting with FTSOv2.
 ---
 
-import Remix from "@site/src/components/remix";
+import RemixEmbed from "@site/src/components/RemixEmbed";
 import CodeBlock from "@theme/CodeBlock";
 import FTSOV2FeedById from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedById.sol";
 import FTSOV2FeedByIdWei from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedByIdWei.sol";
@@ -52,7 +52,7 @@ function getFeedById(
 
 </details>
 
-<Remix fileName="FTSOV2FeedById.sol">Open sample in Remix</Remix>
+<RemixEmbed fileName="FTSOV2FeedById.sol">Open sample in Remix</RemixEmbed>
 
 ### getFeedByIdInWei
 
@@ -86,7 +86,7 @@ function getFeedByIdInWei(
 
 </details>
 
-<Remix fileName="FTSOV2FeedByIdWei.sol">Open sample in Remix</Remix>
+<RemixEmbed fileName="FTSOV2FeedByIdWei.sol">Open sample in Remix</RemixEmbed>
 
 ### getFeedsById
 
@@ -122,7 +122,7 @@ function getFeedsById(
 
 </details>
 
-<Remix fileName="FTSOV2FeedsById.sol">Open sample in Remix</Remix>
+<RemixEmbed fileName="FTSOV2FeedsById.sol">Open sample in Remix</RemixEmbed>
 
 ### getFeedsByIdInWei
 
@@ -156,7 +156,7 @@ function getFeedsByIdInWei(
 
 </details>
 
-<Remix fileName="FTSOV2FeedsByIdWei.sol">Open sample in Remix</Remix>
+<RemixEmbed fileName="FTSOV2FeedsByIdWei.sol">Open sample in Remix</RemixEmbed>
 
 ### verifyFeedData
 
@@ -187,7 +187,7 @@ function verifyFeedData(
 
 </details>
 
-<Remix fileName="FTSOV2AnchorConsumer.sol">Open sample in Remix</Remix>
+<RemixEmbed fileName="FTSOV2AnchorConsumer.sol">Open sample in Remix</RemixEmbed>
 
 ## Structures
 
