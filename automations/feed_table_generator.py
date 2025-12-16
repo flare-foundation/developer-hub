@@ -122,7 +122,7 @@ def read_json(path: Path) -> list[dict[str, Any]]:
 def write_json(path: Path, data: list[dict[str, Any]]) -> None:
     """Write data as pretty JSON to a file."""
     try:
-        path.write_text(json.dumps(data, indent=4))
+        path.write_text(json.dumps(data, indent=2))
         logger.debug(
             "Wrote %d items to %s", len(data) if hasattr(data, "__len__") else 1, path
         )
