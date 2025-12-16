@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import Link from "@docusaurus/Link";
-import tableDataRaw from "../../../automations/solidity_reference.json";
+import tableDataRaw from "./solidity_reference.json";
+import styles from "../tableStyles.module.css";
 
 type ContractData = Readonly<{
   name: string;
@@ -18,17 +19,17 @@ const networkLinks = {
     abiSuffix: "?tab=contract_abi",
   },
   FlareTestnetCoston2: {
-    label: "Flare Coston2",
+    label: "Flare Testnet Coston2",
     addressPrefix: "https://coston2-explorer.flare.network/address/",
     abiSuffix: "?tab=contract_abi",
   },
   SongbirdCanaryNetwork: {
-    label: "Songbird",
+    label: "Songbird Canary-Network",
     addressPrefix: "https://songbird-explorer.flare.network/address/",
     abiSuffix: "?tab=contract_abi",
   },
   SongbirdTestnetCoston: {
-    label: "Songbird Coston",
+    label: "Songbird Testnet Coston",
     addressPrefix: "https://coston-explorer.flare.network/address/",
     abiSuffix: "?tab=contract_abi",
   },
@@ -54,14 +55,12 @@ const SolidityReference: React.FC<SolidityReferenceProps> = ({
 }) => {
   const links = networkLinks[network];
 
-  // JSON may be malformed per-network.
   const rawNetworkData = useMemo(() => {
     const rows = tableData?.[network];
     return Array.isArray(rows) ? rows : [];
   }, [network]);
 
   const dataMap = useMemo(() => {
-    // If JSON contains duplicate names, the last one wins.
     const map = new Map<string, string>();
     for (const c of rawNetworkData) {
       if (!c?.name || !c?.address) continue;
@@ -71,7 +70,6 @@ const SolidityReference: React.FC<SolidityReferenceProps> = ({
   }, [rawNetworkData]);
 
   const rows = useMemo(() => {
-    // Preserve input order; de-dupe exact repeats after trim.
     const seen = new Set<string>();
     const orderedUniqueNames: string[] = [];
 
@@ -102,11 +100,11 @@ const SolidityReference: React.FC<SolidityReferenceProps> = ({
 
   return (
     <table
-      className="data-table"
+      className={styles.table}
       aria-label={`Solidity reference (${links.label})`}
     >
       <thead>
-        <tr className="table-header">
+        <tr className={styles.header}>
           <th scope="col">Contract</th>
           <th scope="col">Address</th>
           {renderAbi && <th scope="col">ABI</th>}
@@ -116,38 +114,33 @@ const SolidityReference: React.FC<SolidityReferenceProps> = ({
       <tbody>
         {rows.length > 0 ? (
           rows.map((row) => (
-            <tr key={row.name} className="table-row">
-              <td className="contract-name">
+            <tr key={row.name} className={styles.row}>
+              <td className={styles.monoFont}>
                 <code>{row.name}</code>
               </td>
 
-              <td className="contract-address">
+              <td className={styles.monoFont}>
                 {row.addressHref ? (
                   <Link
                     href={row.addressHref}
-                    className="contract-address-link"
                     target="_blank"
                     rel="noopener noreferrer"
-                    title={`Open in explorer (${links.label})`}
+                    title={`Open in explorer`}
                   >
                     <code>{row.address}</code>
                   </Link>
                 ) : (
-                  <span
-                    className="no-address"
-                    title="No valid address found for this contract"
-                  >
+                  <span title="No valid address found for this contract">
                     —
                   </span>
                 )}
               </td>
 
               {renderAbi && (
-                <td className="contract-abi">
+                <td className={styles.regularFont}>
                   {row.abiHref ? (
                     <Link
                       href={row.abiHref}
-                      className="abi-link"
                       target="_blank"
                       rel="noopener noreferrer"
                       title="View contract ABI in explorer"
@@ -155,10 +148,7 @@ const SolidityReference: React.FC<SolidityReferenceProps> = ({
                       ABI
                     </Link>
                   ) : (
-                    <span
-                      className="no-abi"
-                      title="ABI link unavailable without a valid address"
-                    >
+                    <span title="ABI link unavailable without a valid address">
                       —
                     </span>
                   )}
@@ -167,8 +157,8 @@ const SolidityReference: React.FC<SolidityReferenceProps> = ({
             </tr>
           ))
         ) : (
-          <tr>
-            <td className="no-data" colSpan={colSpan}>
+          <tr className={styles.row}>
+            <td colSpan={colSpan} className={styles.regularFont}>
               No data available for the specified contracts in this network.
             </td>
           </tr>

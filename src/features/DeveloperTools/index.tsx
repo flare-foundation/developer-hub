@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Heading from "@theme/Heading";
 import { useHistory, useLocation } from "@docusaurus/router";
-import toolsDataRaw from "@site/src/data/developerTools.json";
-import CustomCard from "./CustomCard";
+import toolsDataRaw from "./developer-tools.json";
+import CustomCard from "@site/src/components/CustomCard";
+import styles from "./styles.module.css";
 
 type ToolItem = {
   name: string;
@@ -11,12 +12,7 @@ type ToolItem = {
 };
 
 type ToolCategories = Record<string, ToolItem[]>;
-
-type NetworkData = {
-  name: string;
-  categories: ToolCategories;
-};
-
+type NetworkData = { name: string; categories: ToolCategories };
 type NetworkTools = Record<string, NetworkData>;
 
 type ToolsData = {
@@ -27,7 +23,6 @@ type ToolsData = {
 const DEFAULT_NETWORK = "flare";
 const DEFAULT_TOOL_DESCRIPTION = "A tool for Flare ecosystem development.";
 
-// Anchor IDs
 const CATEGORY_IDS: Record<string, string> = {
   Bridges: "bridges",
   RPCs: "rpcs",
@@ -93,7 +88,6 @@ const DeveloperTools: React.FC = () => {
 
   const [activeNetwork, setActiveNetwork] = useState<string>(getInitialNetwork);
 
-  // Keep state aligned with browser nav
   useEffect(() => {
     const next = getInitialNetwork();
     setActiveNetwork(next);
@@ -103,7 +97,6 @@ const DeveloperTools: React.FC = () => {
 
   const orderedCategories = useMemo(() => {
     const cats = networkData?.categories ?? {};
-    // Render known categories in a fixed order
     const known = CATEGORY_ORDER.filter((name) =>
       Object.prototype.hasOwnProperty.call(cats, name),
     ).map((name) => [name, cats[name]] as const);
@@ -132,14 +125,12 @@ const DeveloperTools: React.FC = () => {
     [history, location.hash, location.pathname, location.search],
   );
 
-  // Scroll on hash changes
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!location.hash) return;
     scrollToHash(location.hash);
   }, [location.hash, activeNetwork]);
 
-  // warn if toolDescriptions is missing keys
   useEffect(() => {
     if (process.env.NODE_ENV === "production") return;
     if (!networkData) return;
@@ -158,7 +149,7 @@ const DeveloperTools: React.FC = () => {
 
   if (!networkData) {
     return (
-      <div className="developer-tools-container">
+      <div className={styles.container}>
         <p>
           Tools data unavailable. Ensure <code>networkTools</code> contains at
           least one network.
@@ -168,21 +159,21 @@ const DeveloperTools: React.FC = () => {
   }
 
   return (
-    <div className="developer-tools-container">
-      <div className="developer-tools-header">
+    <div className={styles.container}>
+      <div className={styles.header}>
         <p>
           Developer tools for Flare including RPCs, bridges, wallet SDKs, and
           more.
         </p>
 
-        <div className="network-selector-container">
-          <div className="network-selector">
+        <div className={styles.networkSelectorContainer}>
+          <div className={styles.networkSelector}>
             <label htmlFor="network-select">Network</label>
             <select
               id="network-select"
               value={activeNetwork}
               onChange={(e) => setNetworkAndUrl(e.target.value)}
-              className="network-select"
+              className={styles.networkSelect}
             >
               {networkKeys.map((networkKey) => (
                 <option key={networkKey} value={networkKey}>
@@ -194,47 +185,45 @@ const DeveloperTools: React.FC = () => {
         </div>
       </div>
 
-      <div className="tools-grid">
-        {orderedCategories.map(([category, tools]) => {
-          const categoryId = CATEGORY_IDS[category] ?? category;
+      {orderedCategories.map(([category, tools]) => {
+        const categoryId = CATEGORY_IDS[category] ?? category;
 
-          return (
-            <div key={category} className="category-section">
-              <Heading as="h2" className="category-title" id={categoryId}>
-                {category}
-              </Heading>
+        return (
+          <div key={category} className={styles.categorySection}>
+            <Heading as="h2" className={styles.categoryTitle} id={categoryId}>
+              {category}
+            </Heading>
 
-              <div className="tools-cards">
-                {!tools?.length ? (
-                  <div className="empty-category">
-                    No tools in this category
-                  </div>
-                ) : (
-                  tools.map((tool) => {
-                    const baseDescription =
-                      toolDescriptions?.[tool.name] ?? DEFAULT_TOOL_DESCRIPTION;
+            <div className={styles.toolsCards}>
+              {!tools?.length ? (
+                <div className={styles.emptyCategory}>
+                  No tools in this category
+                </div>
+              ) : (
+                tools.map((tool) => {
+                  const baseDescription =
+                    toolDescriptions?.[tool.name] ?? DEFAULT_TOOL_DESCRIPTION;
 
-                    const description = tool.subtext
-                      ? `${baseDescription} — ${tool.subtext}`
-                      : baseDescription;
+                  const description = tool.subtext
+                    ? `${baseDescription} — ${tool.subtext}`
+                    : baseDescription;
 
-                    return (
-                      <CustomCard
-                        key={`${tool.name}-${tool.link}`}
-                        title={tool.name}
-                        href={tool.link}
-                        description={description}
-                        newTab
-                        date=""
-                      />
-                    );
-                  })
-                )}
-              </div>
+                  return (
+                    <CustomCard
+                      key={`${tool.name}-${tool.link}`}
+                      title={tool.name}
+                      href={tool.link}
+                      description={description}
+                      newTab
+                      date=""
+                    />
+                  );
+                })
+              )}
             </div>
-          );
-        })}
-      </div>
+          </div>
+        );
+      })}
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "@docusaurus/Link";
 import clsx from "clsx";
+import styles from "./styles.module.css";
 
 type CustomCardProps = {
   title: string;
@@ -35,21 +36,21 @@ export default function CustomCard({
   return (
     <Link
       href={href}
-      className={clsx("custom-card", className)}
+      className={clsx(styles.card, className)}
       aria-label={ariaLabel}
       {...(newTab ? { target: "_blank", rel: "noopener noreferrer" } : {})}
     >
-      <div className="custom-card-content">
-        <span className="custom-card-title">{title}</span>
+      <div className={styles.content}>
+        <span className={styles.title}>{title}</span>
 
         {description ? (
-          <p className="custom-card-description">{description}</p>
+          <p className={styles.description}>{description}</p>
         ) : null}
 
-        {date ? <p className="custom-card-date">{date}</p> : null}
+        {date ? <p className={styles.date}>{date}</p> : null}
       </div>
 
-      <span className="custom-card-arrow" aria-hidden="true">
+      <span className={styles.arrow} aria-hidden="true">
         →
       </span>
     </Link>

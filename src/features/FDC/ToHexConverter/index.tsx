@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import "@site/src/css/custom.css";
-import classes from "./inputCard.module.css";
+import styles from "../cardStyles.module.css";
 import Heading from "@theme/Heading";
 
 export default function ToHexConverter() {
@@ -21,8 +20,8 @@ export default function ToHexConverter() {
   }
 
   return (
-    <div className={`${classes.card} input-card`}>
-      <Heading as="h3" className="input-card-title">
+    <div className={styles.card}>
+      <Heading as="h3" className={styles.title}>
         To Hex Converter
       </Heading>
       <input
@@ -30,18 +29,19 @@ export default function ToHexConverter() {
         placeholder="Enter string to convert to hex"
         value={data}
         onChange={(e) => setData(e.target.value)}
-        className="input-card-input"
+        className={styles.input}
       />
       <button
         onClick={handleClick}
-        className="input-card-button"
+        className={styles.button}
         aria-label="Encode to hex"
         title="Encode to hex"
       >
         Encode
       </button>
-      <p className="input-card-result">
-        Encoded string: <b>{encodedData}</b>
+      <p className={styles.result}>
+        Encoded string:
+        {encodedData ? <b>{encodedData}</b> : <b style={{ opacity: 0.6 }}>—</b>}
       </p>
     </div>
   );

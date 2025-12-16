@@ -1,4 +1,6 @@
 import React from "react";
+import clsx from "clsx";
+import styles from "./styles.module.css";
 
 interface YoutubeEmbedProps {
   /** The unique YouTube Video ID (e.g., "dQw4w9WgXcQ") */
@@ -27,9 +29,9 @@ const YoutubeEmbed: React.FC<YoutubeEmbedProps> = ({
   const embedUrl = `${baseUrl}${videoId}`;
 
   return (
-    <div className={`youtube-embed-container ${className}`}>
+    <div className={clsx(styles.container, className)}>
       <iframe
-        className="youtube-embed-iframe"
+        className={styles.iframe}
         src={embedUrl}
         title={title}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"

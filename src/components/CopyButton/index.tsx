@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
-import styles from "./CopyButton.module.css";
+import styles from "./styles.module.css";
 
 interface CopyButtonProps {
   textToCopy: string;

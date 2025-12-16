@@ -1,10 +1,10 @@
-// Feeds.tsx
 import React from "react";
 import Tippy from "@tippyjs/react";
 import "tippy.js/dist/tippy.css";
-import CopyButton from "../CopyButton";
-import tableData from "../../../automations/ftso_feeds.json";
+import CopyButton from "@site/src/components/CopyButton";
+import tableData from "./ftso_feeds.json";
 import Link from "@docusaurus/Link";
+import styles from "../tableStyles.module.css";
 
 type FeedRow = {
   feed_name: string;
@@ -56,9 +56,9 @@ const FtsoFeeds: React.FC<FeedsProps> = ({
   data = tableData as FeedRow[],
   showIndex = false,
 }) => (
-  <table className="data-table">
+  <table className={styles.table}>
     <thead>
-      <tr className="table-header">
+      <tr className={styles.header}>
         <th>Name</th>
         {showIndex && <th>Index</th>}
         <th>Feed ID</th>
@@ -66,16 +66,17 @@ const FtsoFeeds: React.FC<FeedsProps> = ({
         <th>Risk</th>
       </tr>
     </thead>
+
     <tbody>
-      {data.map((row, _) => {
+      {data.map((row) => {
         const { icon, tooltip } = getRiskIcon(row.risk);
         const feedUrl = `https://flare-systems-explorer.flare.network/price-feeds/ftso?feed=${encodeURIComponent(
           row.feed_id,
         )}`;
 
         return (
-          <tr key={row.feed_id} className="table-row">
-            <td className="regular-font">
+          <tr key={row.feed_id} className={styles.row}>
+            <td className={styles.regularFont}>
               <Link
                 href={feedUrl}
                 target="_blank"
@@ -87,24 +88,26 @@ const FtsoFeeds: React.FC<FeedsProps> = ({
             </td>
 
             {showIndex && (
-              <td className="mono-font feed-index">
-                <span className="feed-index-text">{row.feed_index ?? ""}</span>
+              <td className={styles.monoFont}>
+                <span className={styles.feedIndexText}>
+                  {row.feed_index ?? ""}
+                </span>
               </td>
             )}
 
-            <td className="feed-id mono-font">
-              <div className="feed-id-container">
-                <span className="feed-id-text">{row.feed_id}</span>
+            <td className={styles.monoFont}>
+              <div className={styles.feedIdContainer}>
+                <span className={styles.feedIdText}>{row.feed_id}</span>
                 <CopyButton textToCopy={row.feed_id} />
               </div>
             </td>
 
-            <td className="regular-font">
+            <td className={styles.regularFont}>
               Base Asset: {row.base_asset} <br />
               Category: {row.category}
             </td>
 
-            <td className="regular-font">
+            <td className={styles.regularFont}>
               <Tippy
                 content={tooltip}
                 theme="custom"
@@ -113,7 +116,7 @@ const FtsoFeeds: React.FC<FeedsProps> = ({
                 maxWidth={250}
                 interactive
               >
-                <span className="pointer">{icon}</span>
+                <span className={styles.pointer}>{icon}</span>
               </Tippy>
             </td>
           </tr>

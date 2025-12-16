@@ -1,7 +1,7 @@
 import React, { type JSX } from "react";
 import Link from "@docusaurus/Link";
 
-export default function Remix({ children, fileName }): JSX.Element {
+export default function RemixEmbed({ children, fileName }): JSX.Element {
   const baseUrl = "https://remix.ethereum.org/";
   const githubUrl =
     "#url=https://github.com/flare-foundation/developer-hub/blob/main/examples/developer-hub-solidity/" +
