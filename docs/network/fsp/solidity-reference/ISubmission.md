@@ -12,7 +12,8 @@ Sourced from `ISubmission.sol` on [GitHub](https://github.com/flare-foundation/f
 
 ### getCurrentRandom
 
-Returns current random number. Method reverts if random number was not generated securely.
+Returns current random number.
+Method reverts if random number was not generated securely.
 
 ```solidity
 function getCurrentRandom(
@@ -65,7 +66,8 @@ function getCurrentRandomWithQualityAndTimestamp(
 
 ### submit1
 
-Submit1 method. Used in multiple protocols (i.e. as FTSO commit method).
+Submit1 method.
+Used in multiple protocols (i.e. as FTSO commit method).
 
 ```solidity
 function submit1(
@@ -76,7 +78,8 @@ function submit1(
 
 ### submit2
 
-Submit2 method. Used in multiple protocols (i.e. as FTSO reveal method).
+Submit2 method.
+Used in multiple protocols (i.e. as FTSO reveal method).
 
 ```solidity
 function submit2(
@@ -87,7 +90,8 @@ function submit2(
 
 ### submit3
 
-Submit3 method. Future usage.
+Submit3 method.
+Future usage.
 
 ```solidity
 function submit3(
@@ -98,7 +102,8 @@ function submit3(
 
 ### submitAndPass
 
-SubmitAndPass method. Future usage.
+SubmitAndPass method.
+Future usage.
 
 ```solidity
 function submitAndPass(
@@ -114,7 +119,8 @@ function submitAndPass(
 
 ### submitSignatures
 
-SubmitSignatures method. Used in multiple protocols (i.e. as FTSO submit signature method).
+SubmitSignatures method.
+Used in multiple protocols (i.e. as FTSO submit signature method).
 
 ```solidity
 function submitSignatures(

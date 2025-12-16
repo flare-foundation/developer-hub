@@ -22,9 +22,8 @@ We welcome:
     - Examples (`examples/`)
     - automation and docgen scripts (`automations/`, `docgen/`)
 
-3.  **Follow Style Guides:**
-    - **Code/Docs:** Run [Pre-PR checks](#pre-pr-checks). Match existing code style.
-    - **Diagrams:** Adhere to the [Diagram Style Guide](#diagrams-style-guide) for consistency.
+3.  **Follow Style Guides:** - **Code/Docs:** Run [Pre-PR checks](#pre-pr-checks).
+    Match existing code style. - **Diagrams:** Adhere to the [Diagram Style Guide](#diagrams-style-guide) for consistency.
 
 4.  **Commit Your Changes:** We require [Conventional Commits](https://www.conventionalcommits.org/) format for clear history and automated changelogs.
 

@@ -23,7 +23,8 @@ function getFeedConfigurations(
 
 ### getFeedId
 
-Returns the feed id at a given index. Removed (unused) feed index will return bytes21(0).
+Returns the feed id at a given index.
+Removed (unused) feed index will return bytes21(0).
 
 ```solidity
 function getFeedId(
@@ -43,7 +44,8 @@ function getFeedId(
 
 ### getFeedIds
 
-Returns all feed ids. For removed (unused) feed indices, the feed id will be bytes21(0).
+Returns all feed ids.
+For removed (unused) feed indices, the feed id will be bytes21(0).
 
 ```solidity
 function getFeedIds(

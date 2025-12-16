@@ -8,7 +8,8 @@ Interface for managing FlareDrop claims.
 
 Sourced from `IDistributionToDelegators.sol` on [GitLab](https://gitlab.com/flarenetwork/flare-smart-contracts/-/blob/master/contracts/userInterfaces/IDistributionToDelegators.sol).
 
-Manages the ongoing distribution of tokens from the Delegation Incentive Pool (the "FlareDrop"). The approval of [FIP.01](https://proposals.flare.network/FIP/FIP_1) created this pool, that releases its tokens every 30 days, over a period of 36 months, to all accounts holding Wrapped FLR.
+Manages the ongoing distribution of tokens from the Delegation Incentive Pool (the "FlareDrop").
+The approval of [FIP.01](https://proposals.flare.network/FIP/FIP_1) created this pool, that releases its tokens every 30 days, over a period of 36 months, to all accounts holding Wrapped FLR.
 
 ## Functions
 
@@ -49,7 +50,8 @@ Allows batch claiming for the list of '\_rewardOwners' up to given '\_month'.
 If reward owner has enabled delegation account, rewards are also claimed for that delegation account and
 total claimed amount is sent to that delegation account, otherwise claimed amount is sent to owner's account.
 Claimed amount is automatically wrapped.
-Method can be used by reward owner or executor. If executor is registered with fee > 0,
+Method can be used by reward owner or executor.
+If executor is registered with fee > 0,
 then fee is paid to executor for each claimed address from the list.
 
 ```solidity
