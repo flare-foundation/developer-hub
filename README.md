@@ -96,7 +96,7 @@ Each subdirectory includes its own `README.md` with setup and run instructions.
 ### Run automations
 
 Automations update generated content used by tables/components (for example, contract addresses and feed metadata).
-This will update `automations/ftso_feeds.json` and `automations/solidity_reference.json`.
+This will update `ftso_feeds.json` and `solidity_reference.json` in `src/features/DataTables/*`.
 
 ```bash
 npm run automations

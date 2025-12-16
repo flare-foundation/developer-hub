@@ -54,7 +54,11 @@ NetworkConfig.by_name = {net.name: net for net in NETWORKS}
 
 # Configuration
 FTSO_RISK_PATH: Final[Path] = Path("ftso_risk.json")
-FTSO_FEEDS_PATH: Final[Path] = Path("ftso_feeds.json")
+REPO_ROOT: Final[Path] = Path(__file__).resolve().parents[1]
+FTSO_FEEDS_PATH: Final[Path] = (
+    REPO_ROOT / "src" / "features" / "DataTables" / "FtsoFeeds" / "ftso_feeds.json"
+)
+
 HARD_CODED_FEEDS: Final[dict[str, dict[str, str]]] = {
     "FTM/USD": {
         "name": "Fantom",
