@@ -24,7 +24,8 @@ This guide covers two key functionalities:
 
 **Key technologies:**
 
-- [LayerZero OFT](https://docs.layerzero.network/v2/developers/evm/oft/quickstart) (Omnichain Fungible Token) for cross-chain token transfers. OFT works by burning tokens on the source chain and minting equivalent tokens on the destination chain, enabling seamless movement of assets across different blockchains.
+- [LayerZero OFT](https://docs.layerzero.network/v2/developers/evm/oft/quickstart) (Omnichain Fungible Token) for cross-chain token transfers.
+  OFT works by burning tokens on the source chain and minting equivalent tokens on the destination chain, enabling seamless movement of assets across different blockchains.
 - Flare's [FAsset](/fassets/overview) system for tokenizing non-smart contract assets.
 - [LayerZero Composer](https://docs.layerzero.network/v2/developers/evm/oft/composing) pattern for executing custom logic (like FAsset redemption) automatically when tokens arrive on the destination chain.
 
@@ -37,7 +38,7 @@ Clone the [Flare Hardhat Starter](https://github.com/flare-foundation/flare-hard
 :::warning
 
 To successfully test the auto-redemption feature, you must run the scripts in the correct order.
-You must complete Step 1 (bridging TO Hyperliquid) before you can execute Step 2 (auto-redeeming FROM Hyperliquid).
+You must complete [Step 1](#step-1-bridge-fxrp-to-hyperliquid-evm-required-first) (bridging TO Hyperliquid) before you can execute [Step 2](#step-2-auto-redeem-to-native-xrp-requires-step-1) (auto-redeeming FROM Hyperliquid).
 
 :::
 
@@ -48,7 +49,8 @@ This script does NOT involve auto-redemption - it simply moves your tokens to Hy
 
 :::info
 
-You need FXRP tokens on Hyperliquid EVM before you can test the auto-redeem functionality. The auto-redeem script will fail if you don't have tokens there.
+You need FXRP tokens on Hyperliquid EVM before you can test the auto-redeem functionality.
+The auto-redeem script will fail if you don't have tokens there.
 
 :::
 
@@ -126,26 +128,26 @@ You must successfully complete this step before running `autoRedeemHyperEVM.ts`.
 
 #### Step-by-Step Process
 
-1. **Balance Check**: Verifies user has sufficient FTestXRP tokens
+1. **Balance Check**: Verifies user has sufficient FTestXRP tokens.
 2. **Token Approval**:
-   - Approves OFT Adapter to spend FTestXRP (2x amount for safety)
-   - Approves Composer (if needed for future operations)
+   - Approves OFT Adapter to spend FTestXRP (2x amount for safety).
+   - Approves Composer (if needed for future operations).
 3. **Build Send Parameters**:
-   - Destination: Hyperliquid EVM Testnet (EndpointID for Hyperliquid Testnet: `40294`)
-   - Recipient: Same address on destination chain
-   - Amount: Configured bridge amount (default 11 FXRP)
-   - LayerZero options: Executor gas limit set to 200,000
-4. **Quote Fee**: Calculates the LayerZero cross-chain messaging fee
-5. **Execute Bridge**: Sends tokens via `oftAdapter.send()`
+   - Destination: Hyperliquid EVM Testnet (EndpointID for Hyperliquid Testnet: `40294`).
+   - Recipient: Same address on destination chain.
+   - Amount: Configured bridge amount (default 11 FXRP).
+   - LayerZero options: Executor gas limit set to 200,000.
+4. **Quote Fee**: Calculates the LayerZero cross-chain messaging fee.
+5. **Execute Bridge**: Sends tokens via `oftAdapter.send()`.
 6. **Confirmation**: Waits for transaction confirmation and provides tracking link to the LayerZero Explorer page.
 
 ### Prerequisites
 
 - **Balance Requirements**:
-  - FTestXRP tokens (amount you want to bridge)
+  - FTestXRP tokens (amount you want to bridge).
   - C2FLR tokens (for gas fees + LayerZero fees). You can get some from the Flare Testnet faucet [here](https://faucet.flare.network/).
 - **Environment Setup**:
-  - Private key configured in Hardhat for Flare Testnet Coston2 and Hyperliquid Testnet
+  - Private key configured in Hardhat for Flare Testnet Coston2 and Hyperliquid Testnet.
 
 ### Configuration
 
@@ -252,9 +254,9 @@ It may take a few minutes to arrive on Hyperliquid EVM Testnet.
 
 **Error: Transaction reverted**
 
-- Check that the OFT Adapter address matches the FTestXRP token
-- Verify LayerZero endpoint is operational
-- Ensure gas limits are sufficient
+- Check that the OFT Adapter address matches the FTestXRP token.
+- Verify LayerZero endpoint is operational.
+- Ensure gas limits are sufficient.
 
 ## Auto-Redeem from Hyperliquid EVM (Step 2)
 
@@ -267,8 +269,8 @@ It uses LayerZero's compose feature to trigger the `FAssetRedeemComposer` contra
 
 **Prerequisites:**
 
-- You must have FXRP OFT tokens on Hyperliquid EVM Testnet
-- If you don't have FXRP on Hyperliquid, run `bridgeToHyperEVM.ts` first (Step 1)
+- You must have FXRP OFT tokens on Hyperliquid EVM Testnet.
+- If you don't have FXRP on Hyperliquid, run `bridgeToHyperEVM.ts` first (Step 1).
 - The FAssetRedeemComposer contract must be deployed on Flare Testnet Coston2.
 
 ### How It Works
@@ -334,38 +336,38 @@ It uses LayerZero's compose feature to trigger the `FAssetRedeemComposer` contra
 #### Step-by-Step Process
 
 1. **Validate Setup**:
-   - Checks that `COSTON2_COMPOSER` is configured
-   - Gets the signer account
+   - Checks that `COSTON2_COMPOSER` is configured.
+   - Gets the signer account.
 2. **Prepare Redemption Parameters**:
-   - Amount to send (default: 10 FXRP = 1 lot)
-   - XRP address to receive native XRP
-   - Redeemer address (EVM address)
-3. **Connect to FXRP OFT**: Gets the OFT contract on Hyperliquid
+   - Amount to send (default: 10 FXRP = 1 lot).
+   - XRP address to receive native XRP.
+   - Redeemer address (EVM address).
+3. **Connect to FXRP OFT**: Gets the OFT contract on Hyperliquid.
 4. **Encode Compose Message**:
-   - Encodes `(uint256 amount, string xrpAddress, address redeemer)`
-   - This tells the composer what to do when tokens arrive
+   - Encodes `(uint256 amount, string xrpAddress, address redeemer)`.
+   - This tells the composer what to do when tokens arrive.
 5. **Build LayerZero Options**:
    - Executor gas for `lzReceive()`: 400,000
    - Compose gas for `lzCompose()`: 700,000
 6. **Build Send Parameters**:
-   - Destination: Coston2 (Endpoint ID: `40296`)
-   - Recipient: FAssetRedeemComposer contract
-   - Amount: 10 FXRP
+   - Destination: Coston2 (Endpoint ID: `40296`).
+   - Recipient: FAssetRedeemComposer contract.
+   - Amount: 10 FXRP.
    - Compose message included
-7. **Check Balance**: Verifies user has sufficient FXRP OFT
-8. **Quote Fee**: Calculates LayerZero messaging fee
-9. **Execute Send**: Sends FXRP with compose message
-10. **Auto-Redemption**: On arrival, composer automatically redeems to XRP
+7. **Check Balance**: Verifies user has sufficient FXRP OFT.
+8. **Quote Fee**: Calculates LayerZero messaging fee.
+9. **Execute Send**: Sends FXRP with compose message.
+10. **Auto-Redemption**: On arrival, composer automatically redeems to XRP.
 
 ### Prerequisites
 
-- **Network**: Must run on Hyperliquid EVM Testnet
+- **Network**: Must run on Hyperliquid EVM Testnet.
 - **Balance Requirements**:
-  - FXRP OFT tokens on Hyperliquid (amount you want to redeem)
-  - HYPE tokens (for gas fees + LayerZero fees)
+  - FXRP OFT tokens on Hyperliquid (amount you want to redeem).
+  - HYPE tokens (for gas fees + LayerZero fees).
 - **Deployed Contracts**:
   - FAssetRedeemComposer must be deployed on Flare Testnet Coston2.
-  - Composer address must be set in `.env`
+  - Composer address must be set in `.env`.
 
 ### Configuration
 
@@ -510,10 +512,10 @@ This script:
 
 #### How It Works
 
-1. **Loads V2 Testnet Endpoints**: Dynamically retrieves all LayerZero V2 testnet endpoint IDs from the [`@layerzerolabs/lz-definitions`](https://docs.layerzero.network/plugins#:~:text=Core%20definitions%20and%20configurations%20for%20the%20LayerZero%20protocol.%20Provides%20helpful%20constants%20like%20Endpoint%20IDs%20on%20mainnet%20and%20testnets%20for%20both%20V1%20and%20V2%20protocols%2C%20message%20lib%20versions%2C%20etc.%20and%20some%20helpful%20functions%20like%20chain%20type%2C%20chain%20to%20name%20and%20chain%20to%20endpoint%20id%20conversions%2C%20etc.) package
-2. **Queries Peers**: For each endpoint, calls the `peers()` [function](https://coston2-explorer.flare.network/address/0xCd3d2127935Ae82Af54Fc31cCD9D3440dbF46639?tab=read_write_proxy&source_address=0x82BC5e114D0843160be1cEaB8196Ba91f87473FE#0xbb0b6a53) on the OFT Adapter contract
-3. **Filters Results**: Only shows endpoints that have a non-zero peer address configured
-4. **Formats Output**: Displays results in a table format and as JSON for programmatic use
+1. **Loads V2 Testnet Endpoints**: Dynamically retrieves all LayerZero V2 testnet endpoint IDs from the [`@layerzerolabs/lz-definitions`](https://docs.layerzero.network/plugins#layerzerolabslz-definitions) package.
+2. **Queries Peers**: For each endpoint, calls the `peers()` [function](https://coston2-explorer.flare.network/address/0xCd3d2127935Ae82Af54Fc31cCD9D3440dbF46639?tab=read_write_proxy&source_address=0x82BC5e114D0843160be1cEaB8196Ba91f87473FE#0xbb0b6a53) on the OFT Adapter contract.
+3. **Filters Results**: Only shows endpoints that have a non-zero peer address configured.
+4. **Formats Output**: Displays results in a table format and as JSON for programmatic use.
 
 #### How to Run
 

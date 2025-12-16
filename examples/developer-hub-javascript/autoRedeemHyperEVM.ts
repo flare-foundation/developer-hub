@@ -26,7 +26,7 @@ const CONFIG = {
   COSTON2_EID: EndpointId.FLARE_V2_TESTNET, // Coston2 EID (destination)
   EXECUTOR_GAS: 400_000,
   COMPOSE_GAS: 700_000,
-  SEND_LOTS: "10",
+  SEND_LOTS: "1",
   XRP_ADDRESS: "rpHuw4bKSjonKRrKKVYUZYYVedg1jyPrmp", // Change this to the XRP address you are auto-redeeming to
 } as const;
 

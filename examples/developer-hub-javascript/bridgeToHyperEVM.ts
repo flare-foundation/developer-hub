@@ -31,8 +31,7 @@ const CONFIG = {
   COSTON2_COMPOSER: process.env.COSTON2_COMPOSER || "",
   HYPERLIQUID_EID: EndpointId.HYPERLIQUID_V2_TESTNET, // Hyperliquid testnet EID
   EXECUTOR_GAS: 200_000,
-  // BRIDGE_AMOUNT: "11",
-  BRIDGE_LOTS: "10",
+  BRIDGE_LOTS: "1",
 } as const;
 
 type BridgeParams = {
