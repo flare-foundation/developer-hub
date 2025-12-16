@@ -104,7 +104,7 @@ function batchDelegate(
 
 - `_delegatees`: The addresses of the new recipients.
 - `_bips`: The percentages of voting power to be delegated expressed in basis points (1/100 of one percent).
-The sum of all `_bips` values must be at most 10000 (100%).
+  The sum of all `_bips` values must be at most 10000 (100%).
 
 ### cleanupBlockNumber
 
@@ -160,7 +160,7 @@ function delegate(
 
 - `_to`: The address of the recipient.
 - `_bips`: The percentage of voting power to be delegated expressed in basis points (1/100 of one percent).
-Not cumulative: every call resets the delegation value (and a value of 0 revokes all previous delegations).
+  Not cumulative: every call resets the delegation value (and a value of 0 revokes all previous delegations).
 
 ### delegateExplicit
 
@@ -178,7 +178,7 @@ function delegateExplicit(
 
 - `_to`: The address of the recipient.
 - `_amount`: An explicit vote power amount to be delegated.
-Not cumulative: every call resets the delegation value (and a value of 0 revokes all previous delegations).
+  Not cumulative: every call resets the delegation value (and a value of 0 revokes all previous delegations).
 
 ### delegatesOf
 
@@ -203,7 +203,7 @@ function delegatesOf(
 
 - `_delegateAddresses`: Positional array of addresses being delegated to.
 - `_bips`: Positional array of delegation percents specified in basis points (1/100 of 1 percent).
-Each one matches the address in the same position in the `_delegateAddresses` array.
+  Each one matches the address in the same position in the `_delegateAddresses` array.
 - `_count`: The number of delegates.
 - `_delegationMode`: Delegation mode: 0 = NOT SET, 1 = PERCENTAGE, 2 = AMOUNT (i.e. explicit).
 
@@ -232,7 +232,7 @@ function delegatesOfAt(
 
 - `_delegateAddresses`: Positional array of addresses being delegated to.
 - `_bips`: Positional array of delegation percents specified in basis points (1/100 of 1 percent).
-Each one matches the address in the same position in the `_delegateAddresses` array.
+  Each one matches the address in the same position in the `_delegateAddresses` array.
 - `_count`: The number of delegates.
 - `_delegationMode`: Delegation mode: 0 = NOT SET, 1 = PERCENTAGE, 2 = AMOUNT (i.e. explicit).
 
@@ -363,7 +363,7 @@ function setCleanerContract(
 #### Parameters
 
 - `_cleanerContract`: Address of the cleanup contract.
-Usually this will be an instance of `CleanupBlockNumberManager`.
+  Usually this will be an instance of `CleanupBlockNumberManager`.
 
 ### setCleanupBlockNumber
 
@@ -684,7 +684,7 @@ function votePowerOfAtIgnoringRevocation(
 #### Returns
 
 - ``: Vote power of `\_owner`at block number`\_blockNumber`.
-Result doesn't change if vote power is revoked.
+  Result doesn't change if vote power is revoked.
 
 ### withdraw
 
@@ -715,7 +715,7 @@ function withdrawFrom(
 
 - `owner`: An address spending the Native tokens.
 - `amount`: The amount to spend.
-Requirements: - `owner` must have a balance of at least `amount`.
+  Requirements: - `owner` must have a balance of at least `amount`.
 - the caller must have allowance for `owners`'s tokens of at least `amount`.
 
 ### writeVotePowerContract

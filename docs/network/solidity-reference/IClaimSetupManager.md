@@ -25,7 +25,7 @@ function setAutoClaiming(
 #### Parameters
 
 - `_executors`: The new executors.
-All old executors will be deleted and replaced by these.
+  All old executors will be deleted and replaced by these.
 - `_enableDelegationAccount`:
 
 ### setClaimExecutors
@@ -42,7 +42,7 @@ function setClaimExecutors(
 #### Parameters
 
 - `_executors`: The new executors.
-All old executors will be deleted and replaced by these.
+  All old executors will be deleted and replaced by these.
 
 ### setAllowedClaimRecipients
 
@@ -58,7 +58,7 @@ function setAllowedClaimRecipients(
 #### Parameters
 
 - `_recipients`: The new allowed recipients.
-All old recipients will be deleted and replaced by these.
+  All old recipients will be deleted and replaced by these.
 
 ### enableDelegationAccount
 
@@ -155,7 +155,7 @@ function delegate(
 
 - `_to`: The address of the recipient
 - `_bips`: The percentage of voting power to be delegated expressed in basis points (1/100 of one percent).
-Not cumulative - every call resets the delegation value (and value of 0 revokes delegation).
+  Not cumulative - every call resets the delegation value (and value of 0 revokes delegation).
 
 ### batchDelegate
 
@@ -173,7 +173,7 @@ function batchDelegate(
 
 - `_delegatees`: The addresses of the new recipients.
 - `_bips`: The percentages of voting power to be delegated expressed in basis points (1/100 of one percent).
-Total of all `_bips` values must be at most 10000.
+  Total of all `_bips` values must be at most 10000.
 
 ### undelegateAll
 

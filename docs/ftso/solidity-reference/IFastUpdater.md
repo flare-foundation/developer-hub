@@ -29,7 +29,7 @@ function blockScoreCutoff(
 #### Returns
 
 - `_cutoff`: The upper endpoint of the acceptable range of "scores" that providers generate for sortition.
-A score below the cutoff indicates eligibility to submit updates in the present sortition round.
+  A score below the cutoff indicates eligibility to submit updates in the present sortition round.
 
 ### currentRewardEpochId
 
@@ -56,7 +56,7 @@ function currentScoreCutoff(
 #### Returns
 
 - `_cutoff`: The upper endpoint of the acceptable range of "scores" that providers generate for sortition.
-A score below the cutoff indicates eligibility to submit updates in the present sortition round.
+  A score below the cutoff indicates eligibility to submit updates in the present sortition round.
 
 ### currentSortitionWeight
 
@@ -73,12 +73,12 @@ function currentSortitionWeight(
 #### Parameters
 
 - `_signingPolicyAddress`: The signing policy address of the specified provider.
-This is different from the sender of an update transaction, due to the signature included in the `FastUpdates` type.
+  This is different from the sender of an update transaction, due to the signature included in the `FastUpdates` type.
 
 #### Returns
 
 - `_weight`: The specified provider's weight for sortition purposes.
-This is derived from the provider's delegation weight for the FTSO, but rescaled against a fixed number of "virtual providers", indicating how many potential updates a single provider may make in a sortition round.
+  This is derived from the provider's delegation weight for the FTSO, but rescaled against a fixed number of "virtual providers", indicating how many potential updates a single provider may make in a sortition round.
 
 ### fetchAllCurrentFeeds
 
@@ -145,7 +145,7 @@ function numberOfUpdates(
 #### Returns
 
 - `_noOfUpdates`: The number of updates submitted in each block for the last `_historySize` blocks.
-The array is ordered from the current block to the oldest block.
+  The array is ordered from the current block to the oldest block.
 
 ### numberOfUpdatesInBlock
 

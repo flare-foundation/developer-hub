@@ -389,7 +389,7 @@ function setClaimExecutors(
 #### Parameters
 
 - `_executors`: The new executors.
-All old executors will be deleted and replaced by these.
+  All old executors will be deleted and replaced by these.
 
 ### symbol
 
@@ -500,7 +500,7 @@ function withdraw(
 
 - `_amount`: Amount of tokens to transfer (in wei).
 - `_wrap`: If `true`, the tokens will be sent wrapped in `WNat`.
-If `false`, they will be sent as `Nat`.
+  If `false`, they will be sent as `Nat`.
 
 ### withdrawAll
 
@@ -518,7 +518,7 @@ function withdrawAll(
 #### Parameters
 
 - `_wrap`: If `true`, the tokens will be sent wrapped in `WNat`.
-If `false`, they will be sent as `Nat`.
+  If `false`, they will be sent as `Nat`.
 
 ## Events
 
