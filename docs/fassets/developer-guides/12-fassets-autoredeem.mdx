@@ -36,7 +36,8 @@ Clone the [Flare Hardhat Starter](https://github.com/flare-foundation/flare-hard
 
 :::warning
 
-To successfully test the auto-redemption feature, you must run the scripts in the correct order. You must complete Step 1 (bridging TO Hyperliquid) before you can execute Step 2 (auto-redeeming FROM Hyperliquid).
+To successfully test the auto-redemption feature, you must run the scripts in the correct order.
+You must complete Step 1 (bridging TO Hyperliquid) before you can execute Step 2 (auto-redeeming FROM Hyperliquid).
 
 :::
 
@@ -106,8 +107,6 @@ The contract also includes `recoverTokens()` and `recoverNative()` helper functi
 
 ## Bridge FXRP to Hyperliquid EVM (Step 1)
 
-### Script: `bridgeToHyperEVM.ts`
-
 ### What It Is
 
 **This is Step 1 of the two-step process** and is a **prerequisite** for testing the auto-redemption feature.
@@ -115,7 +114,8 @@ The contract also includes `recoverTokens()` and `recoverNative()` helper functi
 This script bridges FXRP tokens from Flare Testnet Coston2 to Hyperliquid EVM Testnet using LayerZero's OFT Adapter pattern.
 It wraps existing ERC20 FAsset tokens into LayerZero OFT format for cross-chain transfer.
 
-**Important:** This script does NOT perform auto-redemption. Its purpose is to get your FXRP tokens onto Hyperliquid EVM Testnet so that:
+**Important:** This script does NOT perform auto-redemption.
+Its purpose is to get your FXRP tokens onto Hyperliquid EVM Testnet so that:
 
 - You can use them for trading or DeFi on Hyperliquid, OR
 - You can run the auto-redeem script (Step 2) to convert them back to native XRP
@@ -257,8 +257,6 @@ It may take a few minutes to arrive on Hyperliquid EVM Testnet.
 - Ensure gas limits are sufficient
 
 ## Auto-Redeem from Hyperliquid EVM (Step 2)
-
-### Script: `autoRedeemHyperEVM.ts`
 
 ### What It Is
 
@@ -465,23 +463,6 @@ https://testnet.layerzeroscan.com/tx/0xdef456...
 XRP will be sent to: rpHuw4bKSjonKRrKKVYUZYYVedg1jyPrmp
 ```
 
-### Monitoring the Redemption
-
-1. **Track on LayerZero Scan**:
-   - Visit the provided URL
-   - Monitor message status: Inflight → Delivered → Executed
-
-2. **Check Composer Logs** on Coston2:
-
-   ```bash
-   # View RedemptionTriggered events
-   npx hardhat run scripts/checkComposerEvents.ts --network coston2
-   ```
-
-3. **Verify XRP Receipt**:
-   - Check your XRP ledger address on https://testnet.xrpl.org/
-   - Should see incoming XRP transaction
-
 <details>
 <summary>View `autoRedeemHyperEVM.ts` source code</summary>
 
@@ -516,9 +497,11 @@ A: Get them from Hyperliquid testnet [faucet](https://hyperliquid.gitbook.io/hyp
 
 ## Discovering Available Bridge Routes
 
-The `getOftPeers.ts` utility script discovers all configured LayerZero peers for the FXRP OFT Adapter on Flare Testnet Coston2. It scans all LayerZero V2 testnet endpoints to find which EVM chains have been configured as valid bridge destinations.
+The `getOftPeers.ts` utility script discovers all configured LayerZero peers for the FXRP OFT Adapter on Flare Testnet Coston2.
+It scans all LayerZero V2 testnet endpoints to find which EVM chains have been configured as valid bridge destinations.
 
-Before bridging FXRP to another chain, you need to know which chains are supported. This script:
+Before bridging FXRP to another chain, you need to know which chains are supported.
+This script:
 
 - Automatically discovers all configured peer addresses
 - Shows which EVM chains you can bridge FXRP to/from
@@ -527,7 +510,7 @@ Before bridging FXRP to another chain, you need to know which chains are support
 
 #### How It Works
 
-1. **Loads V2 Testnet Endpoints**: Dynamically retrieves all LayerZero V2 testnet endpoint IDs from the `@layerzerolabs/lz-definitions` package
+1. **Loads V2 Testnet Endpoints**: Dynamically retrieves all LayerZero V2 testnet endpoint IDs from the [`@layerzerolabs/lz-definitions`](https://docs.layerzero.network/plugins#:~:text=Core%20definitions%20and%20configurations%20for%20the%20LayerZero%20protocol.%20Provides%20helpful%20constants%20like%20Endpoint%20IDs%20on%20mainnet%20and%20testnets%20for%20both%20V1%20and%20V2%20protocols%2C%20message%20lib%20versions%2C%20etc.%20and%20some%20helpful%20functions%20like%20chain%20type%2C%20chain%20to%20name%20and%20chain%20to%20endpoint%20id%20conversions%2C%20etc.) package
 2. **Queries Peers**: For each endpoint, calls the `peers()` function on the OFT Adapter contract
 3. **Filters Results**: Only shows endpoints that have a non-zero peer address configured
 4. **Formats Output**: Displays results in a table format and as JSON for programmatic use
@@ -572,8 +555,6 @@ You can bridge FXRP to/from the following chains:
   • Hyperliquid
 ```
 
-#### Using the Results
-
 Once you've identified available peers, you can:
 
 1. **Bridge to any discovered chain**: Update the destination EID in `bridgeToHyperEVM.ts` to target a different chain
@@ -589,9 +570,10 @@ Once you've identified available peers, you can:
 
 </details>
 
-## Support & Resources
+:::tip Next Steps
+To continue your FAssets development journey, you can:
 
-- **LayerZero Docs**: https://docs.layerzero.network/
-- **Flare Docs**: dev.flare.network
-- **LayerZero Scan**: https://testnet.layerzeroscan.com/
-- **Hyperliquid Docs**: https://hyperliquid.gitbook.io/
+- Learn how to [mint FXRP](/fassets/developer-guides/fassets-mint)
+- Understand how to [redeem FXRP](/fassets/developer-guides/fassets-redeem)
+- Explore [FAssets system settings](/fassets/operational-parameters)
+  :::
