@@ -1,32 +1,33 @@
-import React from "react";
+import React, { type ReactNode, useMemo } from "react";
 import Link from "@docusaurus/Link";
+import clsx from "clsx";
 
-// Define the possible issue types explicitly
 type IssueType =
   | "development_issue"
   | "feature_request"
   | "feed_request"
   | "default";
 
-// Define the structure for issue type configuration
 interface IssueConfig {
-  labels: string[]; // Use array for potentially multiple labels
-  template: string;
-  titlePrefix: string;
+  labels: string[];
+  template?: string;
+  titlePrefix?: string;
 }
 
-// Define the props for the component
 interface NewGithubIssueProps {
-  children: React.ReactNode; // Content of the button/link
-  issueType?: IssueType | string; // Allow known types or any string (with fallback)
+  children: ReactNode;
+  issueType?: string;
+  title?: string;
+  owner?: string;
+  repo?: string;
+
+  className?: string;
+  newTab?: boolean;
 }
 
-// --- Configuration ---
-const GITHUB_REPO_OWNER = "flare-foundation";
-const GITHUB_REPO_NAME = "developer-hub";
-const GITHUB_NEW_ISSUE_BASE_URL = `https://github.com/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/issues/new`;
+const DEFAULT_OWNER = "flare-foundation";
+const DEFAULT_REPO = "developer-hub";
 
-// Map issue types to their specific parameters
 const issueTypeConfig: Record<IssueType, IssueConfig> = {
   development_issue: {
     labels: ["bug"],
@@ -39,65 +40,89 @@ const issueTypeConfig: Record<IssueType, IssueConfig> = {
     titlePrefix: "[feat]: ",
   },
   feed_request: {
-    labels: ["enhancement"], // Or maybe a specific 'feed request' label?
+    labels: ["enhancement"],
     template: "feed_request.yml",
     titlePrefix: "[req]: ",
   },
-  // Default/fallback configuration if type is unknown or not specified
   default: {
     labels: [],
-    template: "", // No specific template
-    titlePrefix: "",
   },
 };
-// --- Component ---
+
+function isKnownIssueType(
+  value: string,
+): value is Exclude<IssueType, "default"> {
+  return (
+    Object.prototype.hasOwnProperty.call(issueTypeConfig, value) &&
+    value !== "default"
+  );
+}
+
+function buildNewIssueUrl(
+  owner: string,
+  repo: string,
+  config: IssueConfig,
+  title?: string,
+) {
+  const base = `https://github.com/${owner}/${repo}/issues/new`;
+  const params = new URLSearchParams();
+
+  if (config.labels?.length) params.set("labels", config.labels.join(","));
+  if (config.template) params.set("template", config.template);
+
+  const prefixedTitle = `${config.titlePrefix ?? ""}${title ?? ""}`.trim();
+  if (prefixedTitle) params.set("title", prefixedTitle);
+
+  const qs = params.toString();
+  return qs ? `${base}?${qs}` : base;
+}
 
 const NewGithubIssue: React.FC<NewGithubIssueProps> = ({
   children,
   issueType,
+  title,
+  owner = DEFAULT_OWNER,
+  repo = DEFAULT_REPO,
+  className,
+  newTab = true,
 }) => {
-  // Determine the configuration to use, falling back to default
-  const config =
-    issueType && issueType in issueTypeConfig
-      ? issueTypeConfig[issueType as IssueType] // Type assertion safe due to check
-      : issueTypeConfig.default;
+  const { config, resolvedIssueType } = useMemo(() => {
+    if (issueType && isKnownIssueType(issueType)) {
+      return {
+        config: issueTypeConfig[issueType],
+        resolvedIssueType: issueType,
+      };
+    }
+    return {
+      config: issueTypeConfig.default,
+      resolvedIssueType: "default" as const,
+    };
+  }, [issueType]);
 
-  // Use URLSearchParams for robust query parameter handling & encoding
-  const params = new URLSearchParams();
+  const finalUrl = useMemo(
+    () => buildNewIssueUrl(owner, repo, config, title),
+    [owner, repo, config, title],
+  );
 
-  // Add parameters based on the selected config
-  if (config.labels.length > 0) {
-    params.set("labels", config.labels.join(",")); // Join labels with comma
-  }
-  if (config.template) {
-    params.set("template", config.template);
-  }
-  if (config.titlePrefix) {
-    params.set("title", config.titlePrefix);
-  }
-
-  // Add other potential default parameters if needed (assignees, projects are often better left blank)
-  // params.set('assignees', '');
-  // params.set('projects', '');
-
-  // Construct the final URL
-  const finalUrl = `${GITHUB_NEW_ISSUE_BASE_URL}?${params.toString()}`;
-
-  // Optional: Log a warning in development if an unknown type was used
   if (
-    process.env.NODE_ENV === "development" &&
+    process.env.NODE_ENV !== "production" &&
     issueType &&
-    !(issueType in issueTypeConfig)
+    resolvedIssueType === "default"
   ) {
+    // eslint-disable-next-line no-console
     console.warn(
-      `Unknown issueType "${issueType}" passed to NewGithubIssue. Falling back to default link.`,
+      `Unknown issueType "${issueType}" passed to NewGithubIssue. Falling back to default new-issue link.`,
     );
   }
 
   return (
     <div>
-      {/* Using Docusaurus Link component */}
-      <Link className="button button--primary" href={finalUrl}>
+      <Link
+        className={clsx("button button--primary", className)}
+        href={finalUrl}
+        {...(newTab ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+        aria-label="Open a new GitHub issue"
+      >
         {children}
       </Link>
     </div>

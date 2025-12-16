@@ -1,18 +1,30 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import clsx from "clsx";
+import styles from "./CopyButton.module.css";
 
-// Define props type
 interface CopyButtonProps {
   textToCopy: string;
-  /** Tooltip/aria-label for the default state */
   defaultLabel?: string;
-  /** Tooltip/aria-label when successfully copied */
   copiedLabel?: string;
-  /** Message announced to screen readers on success */
   successMessage?: string;
-  /** Message announced to screen readers on failure */
   failureMessage?: string;
-  /** Duration in ms to show the copied state */
   copiedDuration?: number;
+
+  className?: string;
+  disabled?: boolean;
+  size?: "sm" | "md";
+}
+
+async function copyToClipboard(text: string) {
+  if (typeof navigator === "undefined") {
+    throw new Error("Clipboard unavailable in this environment.");
+  }
+
+  if (!navigator.clipboard?.writeText) {
+    throw new Error("Clipboard API unavailable in this browser/context.");
+  }
+
+  await navigator.clipboard.writeText(text);
 }
 
 const CopyButton: React.FC<CopyButtonProps> = ({
@@ -21,111 +33,90 @@ const CopyButton: React.FC<CopyButtonProps> = ({
   copiedLabel = "Copied!",
   successMessage = "Copied.",
   failureMessage = "Failed to copy.",
-  copiedDuration = 2000,
+  copiedDuration = 1000,
+  className,
+  disabled = false,
+  size = "sm",
 }) => {
   const [isCopied, setIsCopied] = useState(false);
-  const [statusMessage, setStatusMessage] = useState(""); // For ARIA live region
-  const timeoutIdRef = useRef<NodeJS.Timeout | null>(null); // Ref to store timeout ID
+  const [statusMessage, setStatusMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
-  // Cleanup timeout on unmount or if copying again before timeout finishes
+  const timeoutIdRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isMountedRef = useRef(true);
+
   useEffect(() => {
-    // Return cleanup function
     return () => {
-      if (timeoutIdRef.current) {
-        clearTimeout(timeoutIdRef.current);
-      }
+      isMountedRef.current = false;
+      if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
     };
-  }, []); // Empty dependency array ensures this runs only once for cleanup setup
+  }, []);
 
-  const handleCopy = async () => {
-    // Clear any existing timeout if user clicks again quickly
+  const handleCopy = useCallback(async () => {
+    if (disabled) return;
+
     if (timeoutIdRef.current) {
       clearTimeout(timeoutIdRef.current);
       timeoutIdRef.current = null;
     }
 
-    try {
-      await navigator.clipboard.writeText(textToCopy);
-      setIsCopied(true);
-      setStatusMessage(successMessage); // Announce success
+    // Force re-announce on repeated clicks (some SRs ignore identical messages).
+    setStatusMessage("");
+    setErrorMessage("");
 
-      // Set timeout to reset state
+    try {
+      await copyToClipboard(textToCopy);
+      if (!isMountedRef.current) return;
+
+      setIsCopied(true);
+      setStatusMessage(successMessage);
+
       timeoutIdRef.current = setTimeout(() => {
+        if (!isMountedRef.current) return;
         setIsCopied(false);
-        setStatusMessage(""); // Clear message after duration
+        setStatusMessage("");
         timeoutIdRef.current = null;
       }, copiedDuration);
-    } catch (err) {
-      console.error("Failed to copy:", err);
-      setStatusMessage(failureMessage); // Announce failure
-      setIsCopied(false); // Ensure state is not "copied" on error
-
-      // Optional: Clear error message after a delay
-      // setTimeout(() => setStatusMessage(''), copiedDuration);
+    } catch {
+      if (!isMountedRef.current) return;
+      setIsCopied(false);
+      setErrorMessage(failureMessage);
     }
-  };
+  }, [copiedDuration, disabled, failureMessage, successMessage, textToCopy]);
 
   const currentLabel = isCopied ? copiedLabel : defaultLabel;
 
   return (
     <>
       <button
-        type="button" // Prevent form submission issues
+        type="button"
         onClick={handleCopy}
-        style={{
-          cursor: "pointer",
-          background: "none",
-          border: "none",
-          padding: 0,
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
+        className={clsx(styles.copyButton, styles[size], className)}
+        disabled={disabled}
         aria-label={currentLabel}
-        title={currentLabel} // Basic tooltip
+        title={currentLabel}
+        aria-pressed={isCopied}
       >
         {isCopied ? (
-          // Tick mark icon when copied
           <svg
-            xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
-            width="22px"
-            height="22px"
-            style={{ fill: "#00d600" }}
-            aria-hidden="true" // Icon is decorative, label provides info
+            aria-hidden="true"
+            className={styles.iconSuccess}
           >
             <path d="M9 16.17L4.83 12l-1.42 1.41L9 19l12-12-1.41-1.41z" />
           </svg>
         ) : (
-          // Copy icon when not copied
-          <svg
-            viewBox="0 0 24 24"
-            width="22px"
-            height="22px"
-            style={{ fill: "currentColor" }} // Inherits text color
-            aria-hidden="true" // Icon is decorative, label provides info
-          >
+          <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.icon}>
             <path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" />
           </svg>
         )}
       </button>
-      {/* ARIA Live Region for Screen Reader Announcements */}
-      {/* Using 'assertive' might be better for errors, but 'polite' is generally preferred */}
-      <div
-        aria-live="polite"
-        style={{
-          position: "absolute",
-          width: "1px",
-          height: "1px",
-          padding: 0,
-          margin: "-1px",
-          overflow: "hidden",
-          clip: "rect(0, 0, 0, 0)",
-          whiteSpace: "nowrap",
-          border: 0,
-        }}
-      >
+
+      <div className={styles.srOnly} role="status" aria-live="polite">
         {statusMessage}
+      </div>
+      <div className={styles.srOnly} role="alert" aria-live="assertive">
+        {errorMessage}
       </div>
     </>
   );

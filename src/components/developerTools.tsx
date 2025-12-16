@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Heading from "@theme/Heading";
+import { useHistory, useLocation } from "@docusaurus/router";
 import toolsDataRaw from "@site/src/data/developerTools.json";
 import CustomCard from "./CustomCard";
 
@@ -9,106 +10,183 @@ type ToolItem = {
   subtext?: string;
 };
 
-type ToolCategories = {
-  [category: string]: ToolItem[]; // A dictionary mapping category names to tool lists
-};
+type ToolCategories = Record<string, ToolItem[]>;
 
 type NetworkData = {
-  name: string; // Display name for the network (e.g., "Flare")
+  name: string;
   categories: ToolCategories;
 };
 
-type NetworkTools = {
-  [networkKey: string]: NetworkData; // Key is the network identifier (e.g., "flare")
-};
+type NetworkTools = Record<string, NetworkData>;
 
 type ToolsData = {
-  toolDescriptions: { [key: string]: string }; // Descriptions keyed by tool name
+  toolDescriptions: Record<string, string>;
   networkTools: NetworkTools;
 };
 
 const DEFAULT_NETWORK = "flare";
 const DEFAULT_TOOL_DESCRIPTION = "A tool for Flare ecosystem development.";
-const SCROLL_DELAY_MS = 100; // Delay for scrolling to anchor
+
+// Anchor IDs
+const CATEGORY_IDS: Record<string, string> = {
+  Bridges: "bridges",
+  RPCs: "rpcs",
+  OFTs: "ofts",
+  Indexers: "indexers",
+  "Wallet SDKs": "wallet-sdks",
+  "Full-stack infra": "full-stack-infra",
+  Analytics: "analytics",
+  Explorers: "explorers",
+};
+
+const CATEGORY_ORDER = [
+  "Bridges",
+  "RPCs",
+  "OFTs",
+  "Indexers",
+  "Wallet SDKs",
+  "Full-stack infra",
+  "Analytics",
+  "Explorers",
+] as const;
+
+function scrollToHash(hash: string) {
+  const id = hash.replace(/^#/, "");
+  if (!id) return;
+
+  let attempts = 0;
+  const maxAttempts = 12;
+
+  const tick = () => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    attempts += 1;
+    if (attempts < maxAttempts) requestAnimationFrame(tick);
+  };
+
+  requestAnimationFrame(tick);
+}
 
 const DeveloperTools: React.FC = () => {
-  const [activeNetwork, setActiveNetwork] = useState<string>(DEFAULT_NETWORK);
-  const [isClient, setIsClient] = useState<boolean>(false);
-
-  const toolsData = toolsDataRaw as ToolsData;
+  const toolsData = toolsDataRaw as unknown as ToolsData;
   const { toolDescriptions, networkTools } = toolsData;
 
-  // Memoize network keys to avoid recalculating on every render if networkTools doesn't change
-  const networkKeys = useMemo(() => Object.keys(networkTools), [networkTools]);
+  const location = useLocation();
+  const history = useHistory();
 
-  // Memoize the currently selected network's data
-  const networkData = useMemo(
-    () => networkTools[activeNetwork],
-    [networkTools, activeNetwork],
+  const networkKeys = useMemo(
+    () => Object.keys(networkTools ?? {}),
+    [networkTools],
   );
 
-  // --- Effects ---
+  const getInitialNetwork = useCallback(() => {
+    const params = new URLSearchParams(location.search);
+    const fromQuery = params.get("network");
+    if (fromQuery && networkTools?.[fromQuery]) return fromQuery;
+
+    if (networkTools?.[DEFAULT_NETWORK]) return DEFAULT_NETWORK;
+    return networkKeys[0] ?? DEFAULT_NETWORK;
+  }, [location.search, networkKeys, networkTools]);
+
+  const [activeNetwork, setActiveNetwork] = useState<string>(getInitialNetwork);
+
+  // Keep state aligned with browser nav
   useEffect(() => {
-    // Component has mounted, safe to access window/document
-    setIsClient(true);
+    const next = getInitialNetwork();
+    setActiveNetwork(next);
+  }, [getInitialNetwork]);
 
-    // Handle scrolling to anchor link if present on initial load
-    if (window.location.hash) {
-      const id = window.location.hash.substring(1);
-      // Use timeout to allow the DOM to potentially settle after initial render
-      const timerId = setTimeout(() => {
-        const element = document.getElementById(id);
-        if (element) {
-          element.scrollIntoView({ behavior: "smooth" });
+  const networkData = networkTools?.[activeNetwork];
+
+  const orderedCategories = useMemo(() => {
+    const cats = networkData?.categories ?? {};
+    // Render known categories in a fixed order
+    const known = CATEGORY_ORDER.filter((name) =>
+      Object.prototype.hasOwnProperty.call(cats, name),
+    ).map((name) => [name, cats[name]] as const);
+
+    const unknown = Object.entries(cats).filter(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ([name]) => !CATEGORY_ORDER.includes(name as any),
+    );
+
+    return [...known, ...unknown];
+  }, [networkData]);
+
+  const setNetworkAndUrl = useCallback(
+    (next: string) => {
+      setActiveNetwork(next);
+
+      const params = new URLSearchParams(location.search);
+      params.set("network", next);
+
+      history.replace({
+        pathname: location.pathname,
+        search: params.toString(),
+        hash: location.hash,
+      });
+    },
+    [history, location.hash, location.pathname, location.search],
+  );
+
+  // Scroll on hash changes
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!location.hash) return;
+    scrollToHash(location.hash);
+  }, [location.hash, activeNetwork]);
+
+  // warn if toolDescriptions is missing keys
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production") return;
+    if (!networkData) return;
+
+    for (const [, tools] of Object.entries(networkData.categories ?? {})) {
+      for (const tool of tools ?? []) {
+        if (!toolDescriptions?.[tool.name]) {
+          // eslint-disable-next-line no-console
+          console.warn(
+            `[DeveloperTools] Missing toolDescriptions entry for "${tool.name}".`,
+          );
         }
-      }, SCROLL_DELAY_MS);
-
-      // Cleanup timeout if component unmounts before it fires
-      return () => clearTimeout(timerId);
+      }
     }
-    // No cleanup needed if there's no hash
-    return undefined;
-  }, []); // Empty dependency array: runs only once after initial mount
+  }, [networkData, toolDescriptions]);
 
-  // --- Render Logic ---
-
-  // Don't render on the server or until client is ready, or if network data is missing
-  if (!isClient || !networkData) {
-    // Render nothing or a placeholder/spinner if preferred
-    return null;
+  if (!networkData) {
+    return (
+      <div className="developer-tools-container">
+        <p>
+          Tools data unavailable. Ensure <code>networkTools</code> contains at
+          least one network.
+        </p>
+      </div>
+    );
   }
-
-  // Generate category IDs safely
-  const generateCategoryId = (category: string): string => {
-    return category
-      .toLowerCase()
-      .replace(/\s+/g, "-")
-      .replace(/[^a-z0-9-]/g, "");
-  };
 
   return (
     <div className="developer-tools-container">
-      {/* Header Section */}
       <div className="developer-tools-header">
         <p>
           Developer tools for Flare including RPCs, bridges, wallet SDKs, and
           more.
         </p>
-        {/* Network Selector */}
+
         <div className="network-selector-container">
           <div className="network-selector">
             <label htmlFor="network-select">Network</label>
             <select
               id="network-select"
               value={activeNetwork}
-              onChange={(e) => setActiveNetwork(e.target.value)}
+              onChange={(e) => setNetworkAndUrl(e.target.value)}
               className="network-select"
-              aria-label="Select a network"
             >
               {networkKeys.map((networkKey) => (
                 <option key={networkKey} value={networkKey}>
-                  {networkTools[networkKey]?.name || networkKey}{" "}
-                  {/* Fallback to key if name missing */}
+                  {networkTools[networkKey]?.name ?? networkKey}
                 </option>
               ))}
             </select>
@@ -116,41 +194,46 @@ const DeveloperTools: React.FC = () => {
         </div>
       </div>
 
-      {/* Tools Grid Section */}
       <div className="tools-grid">
-        {Object.entries(networkData.categories).map(([category, tools]) => (
-          <div key={category} className="category-section">
-            {/* Category Heading */}
-            <Heading
-              as="h2"
-              className="category-title"
-              id={generateCategoryId(category)} // Generate ID for anchor links
-            >
-              {category}
-            </Heading>
-            {/* Tool Cards within Category */}
-            <div className="tools-cards">
-              {/* Check if tools array exists and is empty */}
-              {tools?.length === 0 ? (
-                <div className="empty-category">No tools in this category</div>
-              ) : (
-                /* Map over tools if array has items */
-                tools?.map((tool) => (
-                  <CustomCard
-                    key={tool.name}
-                    title={tool.name}
-                    href={tool.link}
-                    description={
-                      toolDescriptions[tool.name] || DEFAULT_TOOL_DESCRIPTION
-                    }
-                    newTab={true}
-                    date=""
-                  />
-                ))
-              )}
+        {orderedCategories.map(([category, tools]) => {
+          const categoryId = CATEGORY_IDS[category] ?? category;
+
+          return (
+            <div key={category} className="category-section">
+              <Heading as="h2" className="category-title" id={categoryId}>
+                {category}
+              </Heading>
+
+              <div className="tools-cards">
+                {!tools?.length ? (
+                  <div className="empty-category">
+                    No tools in this category
+                  </div>
+                ) : (
+                  tools.map((tool) => {
+                    const baseDescription =
+                      toolDescriptions?.[tool.name] ?? DEFAULT_TOOL_DESCRIPTION;
+
+                    const description = tool.subtext
+                      ? `${baseDescription} — ${tool.subtext}`
+                      : baseDescription;
+
+                    return (
+                      <CustomCard
+                        key={`${tool.name}-${tool.link}`}
+                        title={tool.name}
+                        href={tool.link}
+                        description={description}
+                        newTab
+                        date=""
+                      />
+                    );
+                  })
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

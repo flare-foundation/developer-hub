@@ -1,36 +1,46 @@
 # Contributing Guidelines
 
-Thank you for helping improve **Flare Developer Hub**!
-Your contributions make our documentation, tooling, and examples better for everyone.
+Thank you for contributing to **Flare Developer Hub**.
+Contributions improve the documentation, tooling, and examples for the entire Flare developer community.
 
 We welcome:
 
-- **[GitHub Issues](https://github.com/flare-foundation/developer-hub/issues):** Report bugs, suggest features, or ask questions.
-- **[Pull Requests](https://github.com/flare-foundation/developer-hub/pulls):** Submit fixes, improvements, or new content (documentation, examples, site features).
+- [Issues](https://github.com/flare-foundation/developer-hub/issues): Report bugs, propose enhancements, or ask questions.
+- [Pull Requests](https://github.com/flare-foundation/developer-hub/pulls): Fixes, improvements, and new content.
 
-## 🛠 Development Workflow
+## Development workflow
 
-1.  **Fork and branch:** Fork the repo on GitHub and create a branch for your work:
+1.  **Fork and branch:** Create a branch that describes the change:
 
     ```bash
-    git checkout -b feature/your-feature-name
+    git checkout -b feat/your-feature-name
     ```
 
+    Suggested prefixes:
+    - `docs/…` for documentation-only work
+    - `feat/…` for new functionality
+    - `fix/…` for bug fixes
+    - `chore/…` for maintenance (deps, refactors, tooling)
+
 2.  **Make changes:** Edit or add:
-    - Documentation (`docs/`)
-    - Source code (`src/`)
-    - Examples (`examples/`)
-    - automation and docgen scripts (`automations/`, `docgen/`)
+    - Documentation: `docs/`
+    - Source code: `src/`
+    - Examples: `examples/`
+    - Automation scripts: `automations/`
+    - Solidity doc generation: `docgen/`
 
-3.  **Follow Style Guides:**
-    - **Code/Docs:** Run [Pre-PR checks](#pre-pr-checks). Match existing code style.
-    - **Diagrams:** Adhere to the [Diagram Style Guide](#diagrams-style-guide) for consistency.
+    When editing docs, prefer small, reviewable diffs and reuse existing patterns (MDX components, admonitions, callouts, etc.).
 
-4.  **Commit Your Changes:** We require [Conventional Commits](https://www.conventionalcommits.org/) format for clear history and automated changelogs.
+3.  **Follow project style:**
+    - Match existing TypeScript/React and MDX style conventions.
+    - Run the checks in [Pre-PR checks](#pre-pr-checks).
+    - For diagrams, follow the [Diagram Style Guide](#diagrams-style-guide) below.
 
-    **Format:** `<type>(<scope>): <description>`
+4.  **Commit using Conventional Commits:** We require [Conventional Commits](https://www.conventionalcommits.org/) format for a clear history and automation-friendly changelogs.
 
-    **Common Types:**
+    Format: `<type>(<scope>): <description>`
+
+    Common types:
 
     | Type       | Description                               |
     | :--------- | :---------------------------------------- |
@@ -43,67 +53,75 @@ We welcome:
     | `style`    | Formatting changes (whitespace, etc.)     |
     | `ci`       | CI pipeline changes                       |
 
-    **Examples:**
+    Examples:
 
     ```bash
     git commit -m "fix(ftso): correct feed ID example in getting started guide"
-    git commit -m "feat(src): add copy button to code blocks"
+    git commit -m "feat(ui): add copy button to code blocks"
     git commit -m "docs(fassets): clarify liquidation process diagram"
     ```
 
 5.  **Push and open a PR:**
 
     ```bash
-    git push origin feature/your-feature-name
+    git push origin feat/your-feature-name
     ```
 
     Then open a PR against `main` in [flare-foundation/developer-hub](https://github.com/flare-foundation/developer-hub)
 
-## 📋 Pull Request Guidelines
+## <a id="pull-request-guidelines"></a> Pull request guidelines
 
-- ✅ **Small & Focused:** One logical change per PR.
-- ✅ **Discuss Large Changes First:** Open an issue before starting.
-- ✅ **Provide Context:** Describe the problem, solution, and link related issues.
-- ✅ **Pass CI:** Fix any GitHub Actions failures before requesting review.
-- ✅ **Update Docs:** If behavior or usage changes.
-- ✅ **Confirm Licensing:** All PRs are submitted under this repo’s [license](LICENSE).
+- [ ] **Keep PRs focused:** one logical change per PR.
+- [ ] **Discuss large changes first:** especially for docs structure and shared components.
+- [ ] **Ensure CI passes:** address any GitHub Actions failures before requesting review.
+- [ ] **Update docs:** if behavior, configuration, or user-facing flows change.
+- [ ] **License:** by submitting a PR, you agree your contribution is provided under this repo’s [license](LICENSE).
 
-## <a id="pre-pr-checks"></a>🔍 Pre-PR Checks
+## <a id="pre-pr-checks"></a> Pre-PR checks
 
-Run these before submitting a PR:
+Run these locally before submitting a PR.
 
-1. **Build & check internal links:**
+### Site checks
+
+1. **Build (includes internal link validation)**
 
    ```bash
    npm run build
    ```
 
-2. **Format, lint, and type-check:**
+2. **Format, lint, and type-check**
 
    ```bash
-   npm run format && npm run lint && npm run typecheck
+   npm run format
+   npm run lint
+   npm run typecheck
    ```
 
-3. **Check external links** (requires [lychee](https://github.com/lycheeverse/lychee)):
+3. **External link checking (optional but recommended)**
+
+   If you have [lychee](https://github.com/lycheeverse/lychee) installed:
 
    ```bash
    lychee --config lychee.toml .
    ```
 
-4. **If you modified examples**, run their formatters and tests, see `examples/developer-hub-*/README.md` for more instructions.
-   Example for Rust:
+4. **Examples (only if modified)**
+
+   Each example project is self-contained; follow the instructions in the relevant `examples/developer-hub-*/README.md`.
+
+   Rust example (illustrative):
 
    ```bash
    cd examples/developer-hub-rust/
-   cargo fmt -- --check # Format
-   cargo clippy --bins -- -D warnings # Lint
-   cargo build --bins --locked # Build
-   chmod +x test.sh && ./test.sh # Test
+   cargo fmt -- --check
+   cargo clippy --bins -- -D warnings
+   cargo build --bins --locked
+   chmod +x test.sh && ./test.sh
    ```
 
-## <a id="diagrams-style-guide"></a>🖼 Diagrams Style Guide
+## <a id="diagrams-style-guide"></a> Diagrams style guide
 
-Follow these styles for consistency:
+Use these defaults to keep diagrams consistent in light/dark mode.
 
 | Element                  | Light Mode | Dark Mode | Notes                                            |
 | :----------------------- | :--------- | :-------- | :----------------------------------------------- |
@@ -117,8 +135,6 @@ Follow these styles for consistency:
 
 See the [homepage architecture diagram](https://dev.flare.network/#understand-the-architecture) for an example.
 
-## 💬 Need Help?
+## Need Help?
 
-If you get stuck or have questions, feel free to ask in a [GitHub Issue](https://github.com/flare-foundation/developer-hub/issues).
-
-**Thank you for contributing\!**
+If you get stuck or want feedback on an approach, open a [GitHub Issue](https://github.com/flare-foundation/developer-hub/issues).

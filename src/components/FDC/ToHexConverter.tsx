@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import "@site/src/css/custom.css";
-import classes from "../HomepageFeatures/featureCard.module.css";
+import classes from "./inputCard.module.css";
 import Heading from "@theme/Heading";
 
 export default function ToHexConverter() {

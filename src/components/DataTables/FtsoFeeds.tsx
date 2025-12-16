@@ -67,20 +67,19 @@ const FtsoFeeds: React.FC<FeedsProps> = ({
       </tr>
     </thead>
     <tbody>
-      {data.map((row, i) => {
+      {data.map((row, _) => {
         const { icon, tooltip } = getRiskIcon(row.risk);
         const feedUrl = `https://flare-systems-explorer.flare.network/price-feeds/ftso?feed=${encodeURIComponent(
           row.feed_id,
         )}`;
 
         return (
-          <tr key={`${row.feed_id}-${i}`} className="table-row">
+          <tr key={row.feed_id} className="table-row">
             <td className="regular-font">
               <Link
-                to={feedUrl}
+                href={feedUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:underline"
                 title={`Open ${row.feed_name} in Flare Systems Explorer`}
               >
                 {row.feed_name}
