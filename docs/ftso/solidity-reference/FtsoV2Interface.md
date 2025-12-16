@@ -12,7 +12,8 @@ import FTSOV2FeedsById from "!!raw-loader!/examples/developer-hub-solidity/FTSOV
 import FTSOV2FeedsByIdWei from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedsByIdWei.sol";
 import FTSOV2AnchorConsumer from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2AnchorConsumer.sol";
 
-Primary interface for interacting with FTSOv2. This is a long-term support (LTS) interface, designed to ensure continuity even as underlying contracts evolve or protocols migrate to new versions.
+Primary interface for interacting with FTSOv2.
+This is a long-term support (LTS) interface, designed to ensure continuity even as underlying contracts evolve or protocols migrate to new versions.
 
 Sourced from `FtsoV2Interface.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/LTS/FtsoV2Interface.sol).
 

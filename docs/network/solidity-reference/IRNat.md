@@ -13,7 +13,8 @@ Sourced from `IRNat.sol` on [GitHub](https://github.com/flare-foundation/flare-s
 ### allowance
 
 Returns the remaining number of tokens that `spender` will be
-allowed to spend on behalf of `owner` through transferFrom. This is
+allowed to spend on behalf of `owner` through transferFrom.
+This is
 zero by default.
 
 This value changes when approve or transferFrom are called.
@@ -36,7 +37,8 @@ Returns a boolean value indicating whether the operation succeeded.
 
 IMPORTANT: Beware that changing an allowance with this method brings the risk
 that someone may use both the old and the new allowance by unfortunate
-transaction ordering. One possible solution to mitigate this race
+transaction ordering.
+One possible solution to mitigate this race
 condition is to first reduce the spender's allowance to 0 and set the
 desired value afterwards:
 https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
@@ -319,7 +321,8 @@ function getProjectsCount(
 
 ### getRNatAccount
 
-Gets owner's RNat account. If it doesn't exist it reverts.
+Gets owner's RNat account.
+If it doesn't exist it reverts.
 
 ```solidity
 function getRNatAccount(
@@ -385,7 +388,8 @@ function setClaimExecutors(
 
 #### Parameters
 
-- `_executors`: The new executors. All old executors will be deleted and replaced by these.
+- `_executors`: The new executors.
+All old executors will be deleted and replaced by these.
 
 ### symbol
 
@@ -450,7 +454,8 @@ function transferExternalToken(
 ### transferFrom
 
 Moves a `value` amount of tokens from `from` to `to` using the
-allowance mechanism. `value` is then deducted from the caller's
+allowance mechanism.
+`value` is then deducted from the caller's
 allowance.
 
 Returns a boolean value indicating whether the operation succeeded.
@@ -494,7 +499,8 @@ function withdraw(
 #### Parameters
 
 - `_amount`: Amount of tokens to transfer (in wei).
-- `_wrap`: If `true`, the tokens will be sent wrapped in `WNat`. If `false`, they will be sent as `Nat`.
+- `_wrap`: If `true`, the tokens will be sent wrapped in `WNat`.
+If `false`, they will be sent as `Nat`.
 
 ### withdrawAll
 
@@ -511,14 +517,16 @@ function withdrawAll(
 
 #### Parameters
 
-- `_wrap`: If `true`, the tokens will be sent wrapped in `WNat`. If `false`, they will be sent as `Nat`.
+- `_wrap`: If `true`, the tokens will be sent wrapped in `WNat`.
+If `false`, they will be sent as `Nat`.
 
 ## Events
 
 ### Approval
 
 Emitted when the allowance of a `spender` for an `owner` is set by
-a call to approve. `value` is the new allowance.
+a call to approve.
+`value` is the new allowance.
 
 ```solidity
 event Approval(
