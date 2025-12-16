@@ -2,7 +2,7 @@
 sidebar_position: 1
 slug: fasset-instructions
 title: FAsset Instructions
-authors: [nikerzetic, filipkoprivec]
+authors: [nikerzetic]
 description: Using Flare Smart Accounts in the FAssets workflow.
 tags: [intermediate, ethereum, flare-smart-accounts]
 keywords:
@@ -31,112 +31,113 @@ Thus, they eradicate completely the need for XRPL users to hold any non-XRPL ass
 
 You can learn more about the FAssets in the [dedicated section](/fassets/overview/).
 
-## `01` Deposit
+The instructions fall under three types: `FXRP`, `Firelight` and `Upshift`.
+Each type supports different instruction commands.
+The `FXRP` commands allow the interaction with the base FAssets system, whereas `Firelight` and `Upshift` give access to actions pertaining to the corresponding vault architectures.
 
-Deposit an `amount` of FXRP from your account into the Firelight vault `depositVault`.
-The address `depositVault` is designated by the `MasterAccountController` contract, and the `amount` is read from the last 31 bytes of the payment reference.
+{/* TODO:(Nik) explain walletId */}
 
-A deposit payment reference is the 32-byte value:
+## `00` FXRP
 
-- byte representation of `02` on the first byte,
-- byte representation of the `amount` number on the other 31 bytes.
+The commands of the `FXRP` type give access to base FAsset actions.
+
+### `01` Collateral reservation
+
+Collateral reservation is the first step in the FAssets minting process.
+In anticipation of the transfer of XRP to the agent's underlying address on XRPL, a portion of its collateral is locked to prevent accidental under-collateralization.
+Since this action happens on the Flare chain, the gas fees need to be paid in the native FLR token.
+
+The collateral reservation action reserves a `value` of lots of collateral in the agent vault with the `agentVaultId`.
+The `MasterAccountController` keeps a registry of agent vault addresses, and the `agentVaultId` corresponds to one of the keys of that registry.
+
+The process is performed by an `executor` with `executorFee` (explained in the [minting guide](/fassets/minting#executor-role));
+it is defined by the `MasterAccountController` contract.
+
+A collateral reservation payment reference is a 32-byte value:
+
+- byte representation of the instruction ID in the first byte:
+  - type ID `00` in the first nibble,
+  - command ID `01` in the second nibble,
+- byte representation of `walletId` in the second byte
+- byte representation of `value` in the next 10 bytes
+- byte representation of `agentVaultId` in the next two bytes
+- the remaining 18 bytes are ignored and can have an arbitrary value
 
 <div
   style={{
-    width: "90%",
+    width: "100%",
     margin: "0 auto",
     display: "flex",
     justifyContent: "center",
   }}
 >
   <ThemedImage
-    alt="Breakdown of bytes in payment reference for the deposit action"
+    alt="Breakdown of bytes in payment reference for the collateral reservation action"
     style={{ width: "100%" }}
     sources={{
-      light: useBaseUrl("img/smart-accounts/deposit_light.svg"),
-      dark: useBaseUrl("img/smart-accounts/deposit_dark.svg"),
+      light: useBaseUrl(
+        "img/smart-accounts/bytes-fxrp-collateral-reservation-light.png",
+      ),
+      dark: useBaseUrl(
+        "img/smart-accounts/bytes-fxrp-collateral-reservation-dark.png",
+      ),
     }}
   />
 </div>
 
-## `02` Withdraw
+### `02` Transfer
 
-The first part of the withdrawal process from a Firelight vault.
+Transfer `value` of drops of FXRP to the `recipientAddress`.
+The FXRP is sent from the personal account that belongs to the XRPL address that sent the instruction, if the FXRP balance is sufficient.
 
-Initiate a withdrawal request of an `amount` of FXRP from the Firelight vault `depositVault`.
-The address `depositVault` is designated by the `MasterAccountController` contract, and the `amount` is read from the last 31 bytes of the payment reference.
+A transfer payment reference is 32-byte value:
 
-A withdraw payment reference is the 32-byte value:
-
-- byte representation of `02` on the first byte,
-- byte representation of the `amount` number on the other 31 bytes.
+- byte representation of the instruction ID in the first byte:
+  - type ID `00` in the first nibble,
+  - command ID `01` in the second nibble,
+- byte representation of `walletId` in the second byte
+- byte representation of `value` in the next 10 bytes
+- `recipientAddress` in the remaining 20 bytes
 
 <div
   style={{
-    width: "90%",
+    width: "100%",
     margin: "0 auto",
     display: "flex",
     justifyContent: "center",
   }}
 >
   <ThemedImage
-    alt="Breakdown of bytes in payment reference for the withdraw action"
+    alt="Breakdown of bytes in payment reference for the transfer action"
     style={{ width: "100%" }}
     sources={{
-      light: useBaseUrl("img/smart-accounts/withdraw_light.svg"),
-      dark: useBaseUrl("img/smart-accounts/withdraw_dark.svg"),
+      light: useBaseUrl("img/smart-accounts/bytes-fxrp-transfer-light.png"),
+      dark: useBaseUrl("img/smart-accounts/bytes-fxrp-transfer-dark.png"),
     }}
   />
 </div>
 
-## `03` Approve (deprecated)
-
-_Approval has been integrated into the deposit action and is now deprecated._
-
-Approve the `depositVault` address to withdraw an `amount` of FXRP from your smart account.
-The address `depositVault` is designated by the `MasterAccountController` contract, and the `amount` is read from the last 31 bytes of the payment reference.
-
-A withdraw payment reference is the 32-byte value:
-
-- byte representation of `03` on the first byte,
-- byte representation of the `amount` number on the other 31 bytes.
-
-<div
-  style={{
-    width: "90%",
-    margin: "0 auto",
-    display: "flex",
-    justifyContent: "center",
-  }}
->
-  <ThemedImage
-    alt="Breakdown of bytes in payment reference for the approve action"
-    style={{ width: "100%" }}
-    sources={{
-      light: useBaseUrl("img/smart-accounts/approve_light.svg"),
-      dark: useBaseUrl("img/smart-accounts/approve_dark.svg"),
-    }}
-  />
-</div>
-
-## `04` Redeem
+### `03` Redeem
 
 Redemption is the process of converting FXRP back to XRP.
-A number of `lots` of FXRP are burned, and the same number of `lots` of XRP is returned to the user's XRPL account.
+A `value` of lots of FXRP are burned from the personal account belonging to the XRPL address that sent the instruction;
+and the same `value` of lots of XRP is returned to the user's XRPL account.
 
 The process is performed by an `executor` with `executorFee` (explained in the [minting guide](/fassets/minting#executor-role));
 both of these are defined by the `MasterAccountController` contract.
-The `lots` and `agentVault` values are both read from the payment reference.
 
 A redeem payment reference is the 32-byte value:
 
-- byte representation of `04` on the first byte,
-- 19 empty bytes,
-- byte representation of the `lots` number on the last 11 bytes.
+- byte representation of the instruction ID in the first byte:
+  - type ID `00` in the first nibble,
+  - command ID `02` in the second nibble,
+- byte representation of `walletId` in the second byte
+- byte representation of `value` in the next 10 bytes
+- the remaining 20 bytes are ignored and can have an arbitrary value
 
 <div
   style={{
-    width: "90%",
+    width: "100%",
     margin: "0 auto",
     display: "flex",
     justifyContent: "center",
@@ -146,62 +147,146 @@ A redeem payment reference is the 32-byte value:
     alt="Breakdown of bytes in payment reference for the redeem action"
     style={{ width: "100%" }}
     sources={{
-      light: useBaseUrl("img/smart-accounts/redeem_light.svg"),
-      dark: useBaseUrl("img/smart-accounts/redeem_dark.svg"),
+      light: useBaseUrl("img/smart-accounts/bytes-fxrp-redeem-light.png"),
+      dark: useBaseUrl("img/smart-accounts/bytes-fxrp-redeem-dark.png"),
     }}
   />
 </div>
 
-## `05` Reserve collateral
+## `01` Firelight
 
-Collateral reservation is the first step in the FAssets minting process.
-In anticipation of the transfer of XRP to the agent's underlying address on XRPL, a portion of its collateral is locked to prevent accidental under-collateralization.
-Since this action happens on the Flare chain, the gas fees need to be paid in the native FLR token.
+### `01` Collateral reservation and deposit
 
-The reserveCollateral action reserves a number of `lots` of collateral of the `agentVault`.
-The process is performed by an `executor` with `executorFee` (explained in the [minting guide](/fassets/minting#executor-role));
-both of these are defined by the `MasterAccountController` contract.
-The `lots` and `agentVault` values are both read from the payment reference.
+Reserve the collateral for `value` lots of FXRP with the agent's vault, registered under the `agentVaultId` with the `MasterAccountController` contract.
+When minting is completed, deposit `value` lots of FXRP into a Firelight type vault at the address, registered with the `MasterAccountController` contract under the `vaultId`.
+Essentially, this allows an XRPL user to signal intent for two actions at once;
+it is equivalent to sending a collateral reservation instruction first, and afterwards a deposit instruction.
+This cuts the total waiting time in half, and reduces the total number of transactions by one.
 
-A reserveCollateral payment reference is a 32-byte value:
+A collateral reservation and deposit instruction payment reference is the 32-byte value:
 
-- byte representation of `05` on the first byte,
-- `agentVault` address on the next 20 bytes,
-- byte representation of the `lots` number on the last 11 bytes.
+- byte representation of the instruction ID in the first byte:
+  - type ID `01` in the first nibble,
+  - command ID `01` in the second nibble,
+- byte representation of `walletId` in the second byte
+- byte representation of `value` in the next 10 bytes
+- byte representation of `agentVaultId` in the next 2 bytes
+- byte representation of `vaultId` in the next 2 bytes
+- the remaining 16 bytes are ignored and can have an arbitrary value
 
 <div
   style={{
-    width: "90%",
+    width: "100%",
     margin: "0 auto",
     display: "flex",
     justifyContent: "center",
   }}
 >
   <ThemedImage
-    alt="Breakdown of bytes in payment reference for the reserve collateral action"
+    alt="Breakdown of bytes in payment reference for the collateral reservation and deposit action"
     style={{ width: "100%" }}
     sources={{
-      light: useBaseUrl("img/smart-accounts/reserve_collateral_light.svg"),
-      dark: useBaseUrl("img/smart-accounts/reserve_collateral_dark.svg"),
+      light: useBaseUrl(
+        "img/smart-accounts/bytes-firelight-collateral-reservation-and-deposit-light.png",
+      ),
+      dark: useBaseUrl(
+        "img/smart-accounts/bytes-firelight-collateral-reservation-and-deposit-dark.png",
+      ),
     }}
   />
 </div>
 
-## `06` Claim withdraw
+### `02` Deposit
 
-The second part of the withdrawal process from the Firelight vault.
-Claim the pending withdrawal from the Firelight `depositVault`, specified by the `MasterAccountController` contract.
-The assets are transferred to the user's smart account.
-The action can only be performed after one full period has passed.
+Deposit `value` lots of FXRP into a Firelight type vault at the address, registered with the `MasterAccountController` contract under the `vaultId`.
 
-A reserveCollateral payment reference is a 32-byte value:
+A deposit instruction payment reference is the 32-byte value:
 
-- byte representation of `06` on the first byte,
-- 31 empty bytes.
+- byte representation of the instruction ID in the first byte:
+  - type ID `01` in the first nibble,
+  - command ID `02` in the second nibble,
+- byte representation of `walletId` in the second byte
+- byte representation of `value` in the next 10 bytes
+- the next two bytes are ignored and can have an arbitrary value
+- byte representation of `vaultId` in the next 2 bytes
+- the remaining 16 bytes are ignored and can have an arbitrary value
 
 <div
   style={{
-    width: "90%",
+    width: "100%",
+    margin: "0 auto",
+    display: "flex",
+    justifyContent: "center",
+  }}
+>
+  <ThemedImage
+    alt="Breakdown of bytes in payment reference for the deposit action"
+    style={{ width: "100%" }}
+    sources={{
+      light: useBaseUrl("img/smart-accounts/bytes-firelight-deposit-light.png"),
+      dark: useBaseUrl("img/smart-accounts/bytes-firelight-deposit-dark.png"),
+    }}
+  />
+</div>
+
+### `03` Redeem
+
+The first part of the withdrawal process from a Firelight vault.
+
+Initiate a withdrawal request of `value` of FXRP from the Firelight vault at the address, registered with the `MasterAccountController` contract under the `vaultId`.
+
+A redeem instruction payment reference is the 32-byte value:
+
+- byte representation of the instruction ID in the first byte:
+  - type ID `01` in the first nibble,
+  - command ID `03` in the second nibble,
+- byte representation of `walletId` in the second byte
+- byte representation of `value` in the next 10 bytes
+- the next two bytes are ignored and can have an arbitrary value
+- byte representation of `vaultId` in the next 2 bytes
+- the remaining 16 bytes are ignored and can have an arbitrary value
+
+<div
+  style={{
+    width: "100%",
+    margin: "0 auto",
+    display: "flex",
+    justifyContent: "center",
+  }}
+>
+  <ThemedImage
+    alt="Breakdown of bytes in payment reference for the redeem action"
+    style={{ width: "100%" }}
+    sources={{
+      light: useBaseUrl("img/smart-accounts/bytes-firelight-redeem-light.png"),
+      dark: useBaseUrl("img/smart-accounts/bytes-firelight-redeem-dark.png"),
+    }}
+  />
+</div>
+
+### `04` Claim withdraw
+
+The second part of the withdrawal process from a Firelight vault.
+Claim the pending withdrawal from the `value` period, from the Firelight vault at the address, registered with the `MasterAccountController` contract under the `vaultId`.
+The assets are transferred to the user's smart account.
+The action can only be performed after one full period has passed.
+
+The `value` is a parameter, emitted by the Firelight vault upon a redemption request.
+
+A claim withdrawal payment reference is a 32-byte value:
+
+- byte representation of the instruction ID in the first byte:
+  - type ID `01` in the first nibble,
+  - command ID `03` in the second nibble,
+- byte representation of `walletId` in the second byte
+- byte representation of `value` in the next 10 bytes
+- the next two bytes are ignored and can have an arbitrary value
+- byte representation of `vaultId` in the next 2 bytes
+- the remaining 16 bytes are ignored and can have an arbitrary value
+
+<div
+  style={{
+    width: "100%",
     margin: "0 auto",
     display: "flex",
     justifyContent: "center",
@@ -211,8 +296,166 @@ A reserveCollateral payment reference is a 32-byte value:
     alt="Breakdown of bytes in payment reference for the claim withdraw action"
     style={{ width: "100%" }}
     sources={{
-      light: useBaseUrl("img/smart-accounts/claim_withdraw_light.svg"),
-      dark: useBaseUrl("img/smart-accounts/claim_withdraw_dark.svg"),
+      light: useBaseUrl(
+        "img/smart-accounts/bytes-firelight-claim-withdraw-light.png",
+      ),
+      dark: useBaseUrl(
+        "img/smart-accounts/bytes-firelight-claim-withdraw-dark.png",
+      ),
+    }}
+  />
+</div>
+
+## `02` Upshift
+
+### `01` Collateral reservation and deposit
+
+Reserve the collateral for `value` lots of FXRP with the agent's vault, registered under the `agentVaultId` with the `MasterAccountController` contract.
+When minting is completed, deposit `value` lots of FXRP into an Upshift type vault at the address, registered with the `MasterAccountController` contract under the `vaultId`.
+Essentially, this allows an XRPL user to signal intent for two actions at once;
+it is equivalent to sending a collateral reservation instruction first, and afterwards a deposit instruction.
+This cuts the total waiting time in half, and reduces the total number of transactions by one.
+
+A collateral reservation and deposit instruction payment reference is the 32-byte value:
+
+- byte representation of the instruction ID in the first byte:
+  - type ID `01` in the first nibble,
+  - command ID `01` in the second nibble,
+- byte representation of `walletId` in the second byte
+- byte representation of `value` in the next 10 bytes
+- byte representation of `agentVaultId` in the next 2 bytes
+- byte representation of `vaultId` in the next 2 bytes
+- the remaining 16 bytes are ignored and can have an arbitrary value
+
+<div
+  style={{
+    width: "100%",
+    margin: "0 auto",
+    display: "flex",
+    justifyContent: "center",
+  }}
+>
+  <ThemedImage
+    alt="Breakdown of bytes in payment reference for the collateral reservation and deposit action"
+    style={{ width: "100%" }}
+    sources={{
+      light: useBaseUrl(
+        "img/smart-accounts/bytes-firelight-collateral-reservation-and-deposit-light.png",
+      ),
+      dark: useBaseUrl(
+        "img/smart-accounts/bytes-firelight-collateral-reservation-and-deposit-dark.png",
+      ),
+    }}
+  />
+</div>
+
+### `02` Deposit
+
+Deposit `value` lots of FXRP into an Upshift type vault at the address, registered with the `MasterAccountController` contract under the `vaultId`.
+
+A deposit instruction payment reference is the 32-byte value:
+
+- byte representation of the instruction ID in the first byte:
+  - type ID `01` in the first nibble,
+  - command ID `02` in the second nibble,
+- byte representation of `walletId` in the second byte
+- byte representation of `value` in the next 10 bytes
+- the next two bytes are ignored and can have an arbitrary value
+- byte representation of `vaultId` in the next 2 bytes
+- the remaining 16 bytes are ignored and can have an arbitrary value
+
+<div
+  style={{
+    width: "100%",
+    margin: "0 auto",
+    display: "flex",
+    justifyContent: "center",
+  }}
+>
+  <ThemedImage
+    alt="Breakdown of bytes in payment reference for the deposit action"
+    style={{ width: "100%" }}
+    sources={{
+      light: useBaseUrl("img/smart-accounts/bytes-firelight-deposit-light.png"),
+      dark: useBaseUrl("img/smart-accounts/bytes-firelight-deposit-dark.png"),
+    }}
+  />
+</div>
+
+### `03` Request redeem
+
+The first part of the withdrawal process from an Upshift vault.
+
+Initiate a withdrawal request of `value` of FXRP from the Upshift vault at the address, registered with the `MasterAccountController` contract under the `vaultId`.
+
+A request redeem instruction payment reference is the 32-byte value:
+
+- byte representation of the instruction ID in the first byte:
+  - type ID `01` in the first nibble,
+  - command ID `03` in the second nibble,
+- byte representation of `walletId` in the second byte
+- byte representation of `value` in the next 10 bytes
+- the next two bytes are ignored and can have an arbitrary value
+- byte representation of `vaultId` in the next 2 bytes
+- the remaining 16 bytes are ignored and can have an arbitrary value
+
+<div
+  style={{
+    width: "100%",
+    margin: "0 auto",
+    display: "flex",
+    justifyContent: "center",
+  }}
+>
+  <ThemedImage
+    alt="Breakdown of bytes in payment reference for the request redeem action"
+    style={{ width: "100%" }}
+    sources={{
+      light: useBaseUrl(
+        "img/smart-accounts/bytes-firelight-request-redeem-light.png",
+      ),
+      dark: useBaseUrl(
+        "img/smart-accounts/bytes-firelight-request-redeem-dark.png",
+      ),
+    }}
+  />
+</div>
+
+### `04` Claim
+
+The second part of the withdrawal process from an Upshift vault.
+Claim the pending withdrawal from the `value` period, from the Upshift vault at the address, registered with the `MasterAccountController` contract under the `vaultId`.
+The assets are transferred to the user's smart account.
+The action can only be performed after one full period has passed.
+
+The `value` represents the date, when the redemption was requested.
+It is is an 8-digit number `YYYYMMDD`, where `YYYY` is the year, `MM` the month (from `01` to `12`) and `DD` the day (from `01` to `31`, with additional monthly constraints) of the request.
+
+A claim payment reference is a 32-byte value:
+
+- byte representation of the instruction ID in the first byte:
+  - type ID `01` in the first nibble,
+  - command ID `03` in the second nibble,
+- byte representation of `walletId` in the second byte
+- byte representation of `value` in the next 10 bytes
+- the next two bytes are ignored and can have an arbitrary value
+- byte representation of `vaultId` in the next 2 bytes
+- the remaining 16 bytes are ignored and can have an arbitrary value
+
+<div
+  style={{
+    width: "100%",
+    margin: "0 auto",
+    display: "flex",
+    justifyContent: "center",
+  }}
+>
+  <ThemedImage
+    alt="Breakdown of bytes in payment reference for the claim action"
+    style={{ width: "100%" }}
+    sources={{
+      light: useBaseUrl("img/smart-accounts/bytes-upshift-claim-light.png"),
+      dark: useBaseUrl("img/smart-accounts/bytes-upshift-claim-dark.png"),
     }}
   />
 </div>
