@@ -11,14 +11,6 @@ type CustomCardProps = {
   className?: string;
 };
 
-/**
- * Treats absolute URLs (http/https) as external.
- * Everything else is assumed to be internal (relative path).
- */
-function isExternalUrl(url: string): boolean {
-  return /^https?:\/\//i.test(url);
-}
-
 export default function CustomCard({
   title,
   href,
@@ -38,21 +30,14 @@ export default function CustomCard({
     return null;
   }
 
-  const external = isExternalUrl(href);
-  const openInNewTab = Boolean(newTab && external);
-
-  const linkProps = external ? { href } : { to: href }; // internal navigation
-
-  const ariaLabel = openInNewTab ? `${title} (opens in a new tab)` : title;
+  const ariaLabel = newTab ? `${title} (opens in a new tab)` : title;
 
   return (
     <Link
-      {...linkProps}
+      href={href}
       className={clsx("custom-card", className)}
       aria-label={ariaLabel}
-      {...(openInNewTab
-        ? { target: "_blank", rel: "noopener noreferrer" }
-        : {})}
+      {...(newTab ? { target: "_blank", rel: "noopener noreferrer" } : {})}
     >
       <div className="custom-card-content">
         <span className="custom-card-title">{title}</span>
