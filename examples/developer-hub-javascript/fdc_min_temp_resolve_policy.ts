@@ -1,5 +1,5 @@
 import { agencyAddress } from "./config";
-import { MinTempAgencyInstance } from "../../../typechain-types";
+import type { MinTempAgencyInstance } from "../../../typechain-types";
 import {
   prepareAttestationRequestBase,
   submitAttestationRequest,

@@ -2,7 +2,7 @@
 sidebar_position: 1
 slug: overview
 title: Flare Smart Accounts
-authors: [nikerzetic, filipkoprivec]
+authors: [nikerzetic]
 description: The Flare Smart Accounts is an account abstraction that performs actions on behalf of XRPL users.
 tags: [quickstart, ethereum, flare-smart-accounts]
 keywords:
@@ -41,82 +41,176 @@ This is done through a `Payment` to an XRPL address, designated by the operator 
 The payment must transfer sufficient funds, as specified by the operator, and must include the proper payment receipt in the memo field.
 
 The payment receipt is a `bytes32` value.
-The first byte is reserved for the instruction code, a byte representation of a two-digit number.
+The first byte is reserved for the instruction code.
+The second byte is a wallet identifier;
+this is a number assigned to wallet providers by the Flare Foundation, and should otherwise be `0`.
 The remaining 31 bytes are the parameters for the chosen instruction.
 
 In practice, the payment receipt should be prepared by a backend, through a web form.
 
+The first, instruction code, byte is further subdivided into two half-bytes.
+The first nibble is the instruction type;
+this is either `FXRP`, `Firelight` or `Upshift` (with corresponding type IDS `0`, `1` and `2`).
+The second nibble is the instruction command; the available commands are different for each instruction type.
+
 <details>
   <summary>Table of instruction IDs and corresponding actions.</summary>
-  <table>
-    <thead>
-      <tr>
-        <td>&nbsp;**Instruction ID**</td>
-        <td>**Action**&nbsp;</td>
-        <td>**Description**&nbsp;</td>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>&nbsp;01</td>
-        <td>&nbsp;deposit</td>
-        <td>
-          &nbsp;Deposit an `amount` of FXRP into the Firelight vault, designated
-          by the `MasterAccountController` contract.
-        </td>
-      </tr>
-      <tr>
-        <td>&nbsp;02</td>
-        <td>&nbsp;withdraw</td>
-        <td>
-          &nbsp;Withdraw an `amount` of FXRP from the Firelight vault,
-          designated by the `MasterAccountController` contract.
-        </td>
-      </tr>
-      <tr>
-        <td>&nbsp;03</td>
-        <td>&nbsp;approve</td>
-        <td>
-          &nbsp;**Deprecated.** Approve the Firelight vault, designated by the
-          `MasterAccountController` contract, to spend an `amount` of FXRP from
-          your account.
-        </td>
-      </tr>
-      <tr>
-        <td>&nbsp;04</td>
-        <td>&nbsp;redeem</td>
-        <td>
-          &nbsp;Redeem `lots` of FXRP. The redemption will be handled by the
-          `executor`, specified by the `MasterAccountController` contract.
-        </td>
-      </tr>
-      <tr>
-        <td>&nbsp;05</td>
-        <td>&nbsp;reserveCollateral</td>
-        <td>
-          &nbsp;Reserve `lots` of collateral in the `agentVault`, specified by
-          the `MasterAccountController` contract. The collateral reservation
-          will be handled by the `executor`, also specified by the
-          `MasterAccountController` contract.
-        </td>
-      </tr>
-      <tr>
-        <td>&nbsp;06</td>
-        <td>&nbsp;claimWithdraw</td>
-        <td>&nbsp;Claim the withdrawal from the Firelight vault.</td>
-      </tr>
-      <tr>
-        <td>&nbsp;99</td>
-        <td>&nbsp;custom</td>
-        <td>
-          &nbsp;Execute a list of custom function calls. The custom instructions
-          need to be registered in advance, with the `MasterAccountController`
-          (`registerCustomInstruction` function).
-        </td>
-      </tr>
-    </tbody>
-  </table>
-  <p>&nbsp;</p>
+
+### FXRP
+
+Instructions for interacting with the `FXRP` token.
+
+**Type ID:** `00`.
+
+<table>
+  <thead>
+    <tr>
+      <td>&nbsp;**Command ID**</td>
+      <td>**Action**&nbsp;</td>
+      <td>**Description**&nbsp;</td>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>&nbsp;00</td>
+      <td>&nbsp;collateralReservation</td>
+      <td>
+        &nbsp;Reserve a `value` of lots of collateral in the agent vault,
+        registered under the `agentVaultId` with the `MasterAccountController`
+        contract.
+      </td>
+    </tr>
+    <tr>
+      <td>&nbsp;01</td>
+      <td>&nbsp;transfer</td>
+      <td>
+        &nbsp;Transfer a `value` (in drops) of FXRP to the `recipientAddress`.
+      </td>
+    </tr>
+    <tr>
+      <td>&nbsp;02</td>
+      <td>&nbsp;redeem</td>
+      <td>&nbsp;Redeem a `value` of lots of FXRP.</td>
+    </tr>
+  </tbody>
+</table>
+<p>&nbsp;</p>
+
+### Firelight
+
+Instructions for interacting with a Firelight type vault.
+
+**Type ID:** `01`.
+
+<table>
+  <thead>
+    <tr>
+      <td>&nbsp;**Command ID**</td>
+      <td>**Action**&nbsp;</td>
+      <td>**Description**&nbsp;</td>
+    </tr>
+  </thead>
+  <tr>
+    <td>&nbsp;00</td>
+    <td>&nbsp;collateralReservationAndDeposit</td>
+    <td>
+      &nbsp;Reserve a `value` of lots of collateral in the agent vault,
+      registered under the `agentVaultId` with the `MasterAccountController`
+      contract. After successful minting, deposit the FXRP into the Firelight
+      type vault, registered under the `vaultId` with the
+      `MasterAccountController` contract. Equivalent to sending a
+      `collateralReservation` instruction and a Firelight `deposit` instruction.
+    </td>
+  </tr>
+  <tbody>
+    <tr>
+      <td>&nbsp;01</td>
+      <td>&nbsp;deposit</td>
+      <td>
+        &nbsp;Deposit a `value` of FXRP into the Firelight type vault,
+        registered under the `vaultId` with the `MasterAccountController`
+        contract.
+      </td>
+    </tr>
+    <tr>
+      <td>&nbsp;02</td>
+      <td>&nbsp;redeem</td>
+      <td>
+        &nbsp;Start the withdrawal process for a `value` of FXRP from the
+        Firelight type vault, registered under the `vaultId` with the
+        `MasterAccountController` contract.
+      </td>
+    </tr>
+    <tr>
+      <td>&nbsp;03</td>
+      <td>&nbsp;claimWithdraw</td>
+      <td>
+        &nbsp;Withdraw the `FXRP`, requested in the `value` period, from
+        Firelight type vault, registered under the `vaultId` with the
+        `MasterAccountController` contract.
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p>&nbsp;</p>
+
+### Upshift
+
+Instructions for interacting with an upshift type vault.
+
+**Type ID:** `02`.
+
+ <table>
+  <thead>
+    <tr>
+      <td>&nbsp;**Command ID**</td>
+      <td>**Action**&nbsp;</td>
+      <td>**Description**&nbsp;</td>
+    </tr>
+  </thead>
+  <tr>
+    <td>&nbsp;00</td>
+    <td>&nbsp;collateralReservationAndDeposit</td>
+    <td>
+      &nbsp;Reserve a `value` of lots of collateral in the agent vault,
+      registered under the `agentVaultId` with the `MasterAccountController`
+      contract. After successful minting, deposit the FXRP into the Upshift
+      type vault, registered under the `vaultId` with the
+      `MasterAccountController` contract. Equivalent to sending a
+      `collateralReservation` instruction and a Upshift `deposit` instruction.
+    </td>
+  </tr>
+  <tbody>
+    <tr>
+      <td>&nbsp;01</td>
+      <td>&nbsp;deposit</td>
+      <td>
+        &nbsp;Deposit a `value` of FXRP into the Upshift type vault,
+        registered under the `vaultId` with the `MasterAccountController`
+        contract.
+      </td>
+    </tr>
+    <tr>
+      <td>&nbsp;02</td>
+      <td>&nbsp;requestRedeem</td>
+      <td>
+        &nbsp;Start the withdrawal process for a `value` of FXRP from the
+        Upshift type vault, registered under the `vaultId` with the
+        `MasterAccountController` contract.
+      </td>
+    </tr>
+    <tr>
+      <td>&nbsp;03</td>
+      <td>&nbsp;claim</td>
+      <td>
+        &nbsp;Withdraw the `FXRP`, requested in the `value` period, from
+        Upshift type vault, registered under the `vaultId` with the
+        `MasterAccountController` contract.
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p>&nbsp;</p>
 </details>
 
 ## 2. Payment proof on Flare

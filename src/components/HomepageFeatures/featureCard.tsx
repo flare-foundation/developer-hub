@@ -1,4 +1,4 @@
-import { FeatureItem } from "./featuresSection";
+import type { FeatureItem } from "./featuresSection";
 import classes from "./featureCard.module.css";
 import Link from "@docusaurus/Link";
 import Heading from "@theme/Heading";

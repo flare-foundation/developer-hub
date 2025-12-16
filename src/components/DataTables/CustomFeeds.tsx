@@ -16,9 +16,23 @@ const CustomFeeds = () => {
       </thead>
       <tbody>
         {tableData.map((row, index) => {
+          const feedUrl = `https://flare-systems-explorer.flare.network/price-feeds/custom?feed=${encodeURIComponent(
+            row.feed_id,
+          )}`;
+
           return (
             <tr key={index} className="table-row">
-              <td className="regular-font">{row.feed_name}</td>
+              <td className="regular-font">
+                <Link
+                  to={feedUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:underline"
+                  title={`Open ${row.feed_name} in Flare Systems Explorer`}
+                >
+                  {row.feed_name}
+                </Link>
+              </td>
               <td className="feed-id mono-font">
                 <div className="feed-id-container">
                   <span className="feed-id-text">{row.feed_id}</span>
