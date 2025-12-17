@@ -6,7 +6,7 @@ description: Interface for managing FDC inflation configuration.
 
 import CodeBlock from "@theme/CodeBlock";
 import InflationMonitor from "!!raw-loader!/examples/developer-hub-solidity/InflationMonitor.sol";
-import Remix from "@site/src/components/remix";
+import RemixEmbed from "@site/src/components/RemixEmbed";
 
 Interface for managing Flare Data Connector (FDC) inflation configuration.
 
@@ -82,4 +82,4 @@ struct FdcConfiguration {
 <CodeBlock language="solidity" title="InflationMonitor.sol">
   {InflationMonitor}
 </CodeBlock>
-<Remix fileName="InflationMonitor.sol">Open example in Remix</Remix>
+<RemixEmbed fileName="InflationMonitor.sol">Open example in Remix</RemixEmbed>

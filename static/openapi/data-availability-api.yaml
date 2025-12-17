@@ -18,6 +18,7 @@ paths:
       tags:
         - api
       security:
+        - ApiKeyAuth: []
         - {}
       responses:
         "200":
@@ -26,102 +27,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/Health"
           description: ""
-  /api/v0/fdc:
-    get:
-      operationId: fdc_list
-      description:
-        Retrieves the attestation minimal proofs based on voting round
-        id
-      parameters:
-        - in: query
-          name: voting_round_id
-          schema:
-            type: integer
-          description: Voting round. Defaults to latest.
-      tags:
-        - fdc
-      security:
-        - {}
-      deprecated: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/AttestationResultV0"
-          description: ""
-  /api/v0/fdc/get-proof-round-bytes:
-    post:
-      operationId: fdc_get_proof_round_bytes_create
-      description: Retrieves the last attestation minimal proof based on request bytes
-      tags:
-        - fdc
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/AttestationTypeGetByRoundBytesV0RequestRequest"
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: "#/components/schemas/AttestationTypeGetByRoundBytesV0RequestRequest"
-          multipart/form-data:
-            schema:
-              $ref: "#/components/schemas/AttestationTypeGetByRoundBytesV0RequestRequest"
-        required: true
-      security:
-        - {}
-      deprecated: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AttestationResultV0"
-          description: ""
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AttestationTypeGetByRoundBytesError"
-          description: ""
-  /api/v0/fdc/get-proof-round-id-bytes:
-    post:
-      operationId: fdc_get_proof_round_id_bytes_create
-      description:
-        Retrieves the attestation minimal proof based on request bytes
-        and voting round id
-      tags:
-        - fdc
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/AttestationTypeGetByRoundIdBytesv0RequestRequest"
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: "#/components/schemas/AttestationTypeGetByRoundIdBytesv0RequestRequest"
-          multipart/form-data:
-            schema:
-              $ref: "#/components/schemas/AttestationTypeGetByRoundIdBytesv0RequestRequest"
-        required: true
-      security:
-        - {}
-      deprecated: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AttestationResultV0"
-          description: ""
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AttestationTypeGetByRoundIdBytesError"
-          description: ""
   /api/v0/fsp/latest-voting-round:
     get:
       operationId: fsp_latest_voting_round_retrieve
@@ -129,6 +34,7 @@ paths:
       tags:
         - fsp
       security:
+        - ApiKeyAuth: []
         - {}
       responses:
         "200":
@@ -146,6 +52,7 @@ paths:
       tags:
         - fsp
       security:
+        - ApiKeyAuth: []
         - {}
       responses:
         "200":
@@ -167,6 +74,7 @@ paths:
       tags:
         - ftso
       security:
+        - ApiKeyAuth: []
         - {}
       responses:
         "200":
@@ -204,6 +112,7 @@ paths:
               $ref: "#/components/schemas/FeedResultFeedsWithProofsRequestRequest"
         required: true
       security:
+        - ApiKeyAuth: []
         - {}
       responses:
         "200":
@@ -236,6 +145,7 @@ paths:
       tags:
         - fdc
       security:
+        - ApiKeyAuth: []
         - {}
       responses:
         "200":
@@ -267,6 +177,7 @@ paths:
               $ref: "#/components/schemas/AttestationResponseProofByRequestRoundV1RequestRequest"
         required: true
       security:
+        - ApiKeyAuth: []
         - {}
       responses:
         "200":
@@ -302,6 +213,7 @@ paths:
               $ref: "#/components/schemas/AttestationResponseProofByRequestRoundV1RequestRequest"
         required: true
       security:
+        - ApiKeyAuth: []
         - {}
       responses:
         "200":
@@ -332,6 +244,7 @@ paths:
       tags:
         - fdc
       security:
+        - ApiKeyAuth: []
         - {}
       responses:
         "200":
@@ -343,6 +256,14 @@ paths:
                   $ref: "#/components/schemas/AttestationResultRawV1"
           description: ""
 components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: |
+        API key for higher rate limits. Provide via the `X-API-Key` header.
+
   schemas:
     AttestationResponseProofByRequestRoundV1RequestRequest:
       type: object

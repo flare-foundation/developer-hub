@@ -6,7 +6,7 @@ description: Interface for managing FDC request fee configuration.
 
 import CodeBlock from "@theme/CodeBlock";
 import FeeChecker from "!!raw-loader!/examples/developer-hub-solidity/FeeChecker.sol";
-import Remix from "@site/src/components/remix";
+import RemixEmbed from "@site/src/components/RemixEmbed";
 
 Interface for managing FDC request fee configuration.
 
@@ -79,4 +79,4 @@ event TypeAndSourceFeeSet(
 <CodeBlock language="solidity" title="FeeChecker.sol">
   {FeeChecker}
 </CodeBlock>
-<Remix fileName="FeeChecker.sol">Open example in Remix</Remix>
+<RemixEmbed fileName="FeeChecker.sol">Open example in Remix</RemixEmbed>
