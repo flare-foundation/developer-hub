@@ -2,7 +2,7 @@ import React from "react";
 import clsx from "clsx";
 import styles from "./styles.module.css";
 
-interface YoutubeEmbedProps {
+interface YouTubeEmbedProps {
   /** The unique YouTube Video ID (e.g., "dQw4w9WgXcQ") */
   videoId: string;
   title?: string;
@@ -10,14 +10,14 @@ interface YoutubeEmbedProps {
   className?: string;
 }
 
-const YoutubeEmbed: React.FC<YoutubeEmbedProps> = ({
+const YouTubeEmbed: React.FC<YouTubeEmbedProps> = ({
   videoId,
   title = "YouTube video player",
   privacyMode = true,
   className = "",
 }) => {
   if (!videoId) {
-    console.error("YoutubeEmbed: videoId prop is required.");
+    console.error("YouTubeEmbed: videoId prop is required.");
     return <div className={className}>Error: Missing YouTube Video ID.</div>;
   }
 
@@ -43,4 +43,4 @@ const YoutubeEmbed: React.FC<YoutubeEmbedProps> = ({
   );
 };
 
-export default YoutubeEmbed;
+export default YouTubeEmbed;
