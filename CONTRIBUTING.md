@@ -121,7 +121,7 @@ Run these locally before submitting a PR.
 
 ## <a id="diagrams-style-guide"></a> Diagrams style guide
 
-Use these defaults to keep diagrams consistent in light/dark mode.
+Use these defaults to keep diagrams consistent across light and dark mode.
 
 | Element                  | Light Mode | Dark Mode | Notes                                            |
 | :----------------------- | :--------- | :-------- | :----------------------------------------------- |
@@ -134,6 +134,43 @@ Use these defaults to keep diagrams consistent in light/dark mode.
 | Offchain Border Style    | `Dashed`   | `Dashed`  | Use only if mixing onchain and offchain elements |
 
 See the [homepage architecture diagram](https://dev.flare.network/#understand-the-architecture) for an example.
+
+### Diagram location
+
+- Store all static assets under `static/img/`.
+- **Documentation assets** that belong to a specific docs area (for example `network`, `ftso`, `fdc`) must live under `static/img/docs/<area>/`.
+- **Shared site assets** (used across the UI such as menu icons, logos, and general UI graphics) must live under `static/img/ui/`.
+- **Social icons** must live under `static/img/social-icons/`.
+
+Directory layout:
+
+```plaintext
+static/img
+├── docs
+│   ├── fassets
+│   ├── fdc
+│   ├── ftso
+│   ├── network
+│   ├── run-node
+│   ├── smart-accounts
+│   └── support
+├── social-icons
+└── ui
+```
+
+### Diagram naming convention
+
+- Use kebab-case for new files and folders.
+- Theme variants must use dot suffixes:
+  - Light: `*.light.svg`
+  - Dark: `*.dark.svg`
+
+Example:
+
+```plaintext
+ftso-architecture.light.svg
+ftso-architecture.dark.svg
+```
 
 ## Need Help?
 

@@ -88,7 +88,7 @@ const config: Config = {
   ],
 
   themeConfig: {
-    image: "img/landing/dev_hub_ani_noblur.png",
+    image: "img/flare-developer-hub.png",
     colorMode: {
       defaultMode: "light",
       respectPrefersColorScheme: true,
@@ -122,8 +122,8 @@ const config: Config = {
       hideOnScroll: false,
       logo: {
         alt: "Flare Icon",
-        src: "img/flare_icon.svg",
-        srcDark: "img/flare_icon_dark.svg",
+        src: "img/ui/flare-icon.light.svg",
+        srcDark: "img/ui/flare-icon.dark.svg",
         width: 32,
         height: 32,
       },
@@ -140,8 +140,8 @@ const config: Config = {
       style: "light",
       logo: {
         alt: "Flare Logo",
-        src: "img/logo/FooterLogoLight.svg",
-        srcDark: "img/logo/FooterLogoDark.svg",
+        src: "img/ui/footer-logo.light.svg",
+        srcDark: "img/ui/footer-logo.dark.svg",
         href: "https://flare.network/",
         width: 405,
         height: 35.25,
