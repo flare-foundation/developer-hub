@@ -124,7 +124,7 @@ async function main() {
     agentVaultAddress,
     LOTS_TO_MINT,
     agentInfo.feeBIPS,
-    // Not using the executor
+    // Using the executor by passing the executor address
     EXECUTOR_ADDRESS,
     // Sending the collateral reservation fee as native tokens
     { value: totalFee },
