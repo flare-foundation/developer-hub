@@ -69,14 +69,14 @@ Here is a list of available commands and their positional arguments:
 - `decode`
 - `bridge`
   - `instruction`: send imputed instruction as a transaction on XRPL
-  - `mint-tx`: make a deposit do an agent's vault
+  - `mint-tx`: make a deposit to an agent's vault
 
 The positional arguments of the `encode` command correspond to type-command instruction pairs, described in the [FAsset instructions guide](/smart-accounts/fasset-instructions).
 The `bridge` command either makes an XRPL Payment transaction with the imputed instruction as payment reference, or transfers funds to an agent's XRPL vault as part of the minting process.
 
 ## Using the CLI
 
-The bellow-described CLi commands are intended to work in tandem with one another.
+The below-described CLI commands are intended to work in tandem with one another.
 The output of the `encode` command can be sent to the `bridge` command via stdin.
 Commands can be piped in the following way.
 
@@ -98,7 +98,7 @@ Encode and instruction with given parameters.
 The parameters are unique to each command.
 
 There is one parameter that all the commands have in common, `walletId`.
-The `walletId` is a Flare-designated parameter, intended wallet identification by the operator.
+The `walletId` is a Flare-designated parameter, intended for wallet identification by the operator.
 It has no impact on the result of the action performed.
 If no number has been provided to you, set the `walletId` to `0`.
 
@@ -145,7 +145,7 @@ The above command produces the following output:
 #### Transfer
 
 Transfer `value` FXRP from your personal account to the `recipientAddress` on Flare.
-The `walletId` is a Flare-designated parameter, intended wallet identification by the operator.
+The `walletId` is a Flare-designated parameter, intended for wallet identification by the operator.
 It has no impact on the result of the action performed.
 If no number has been provided to you, set the `walletId` to `0`.
 
@@ -178,7 +178,7 @@ The above command produces the following output:
 
 Redeem `value` lots of FXRP back to XRP.
 That number of lots of FXRP are burned from the user's smart account, and the same amount of XRP is sent to the user's address on XRPL.
-The `walletId` is a Flare-designated parameter, intended wallet identification by the operator.
+The `walletId` is a Flare-designated parameter, intended for wallet identification by the operator.
 It has no impact on the result of the action performed.
 If no number has been provided to you, set the `walletId` to `0`.
 
@@ -203,21 +203,21 @@ The above command produces the following output:
 
 ### Firelight
 
-Smart account instructions for interacting with a Firelight type vault.
+Smart account instructions for interacting with a Firelight-type vault.
 Each of these commands starts with the `firelight` keyword.
 
 #### Collateral reservation and deposit
 
 The collateral reservation and deposit instruction signals two intents at once.
 First, to reserve collateral in an agent's vault, registered with the `MasterAccountController` contract with the `agentVaultId`, the necessary collateral to mint `value` lots of FXRP.
-And second, to deposit the newly minted FXRP into a Firelight type vault, registered with the `MasterAccountController` contract with the `vaultId`.
+And second, to deposit the newly minted FXRP into a Firelight-type vault, registered with the `MasterAccountController` contract with the `vaultId`.
 
 The purpose of this instruction is to streamline the minting and deposit process by cutting out an instruction XRPL transaction and the wait that that incurs.
 In essence, it combines the FXRP collateral reservation instruction and the Firelight deposit instruction.
 
 {/* TODO:(Nik) prepare as separate in-depth guide for cr-and-deposit, that goes through all the steps. Link to that guide here. */}
 
-The `walletId` is a Flare-designated parameter, intended wallet identification by the operator.
+The `walletId` is a Flare-designated parameter, intended for wallet identification by the operator.
 It has no impact on the result of the action performed.
 If no number has been provided to you, set the `walletId` to `0`.
 
@@ -246,15 +246,15 @@ The above command produces the following output:
 
 #### Deposit
 
-Deposit `vault` drops of FXRP into the Firelight vault, registered with the `MasterAccountController` contract with the `vaultId`.
+Deposit `vault` drops of FXRP into the Firelight-type vault, registered with the `MasterAccountController` contract with the `vaultId`.
 The complete list of the registered vaults can be obtained from the `MasterAccountController` contract.
 {/* TODO:(Nik) Write a separate guide in which you explain how to do this, and link to it here. */}
 
 :::warning
-The registered vaults can be of either the Firelight or the Upshift type, so make sure that you choose the right one for the instruction you are sending.
+The registered vaults can be of either the Firelight- or Upshift-type, so make sure that you choose the right one for the instruction you are sending.
 :::
 
-The `walletId` is a Flare-designated parameter, intended wallet identification by the operator.
+The `walletId` is a Flare-designated parameter, intended for wallet identification by the operator.
 It has no impact on the result of the action performed.
 If no number has been provided to you, set the `walletId` to `0`.
 
@@ -279,14 +279,14 @@ The above command produces the following output:
 
 #### Redeem
 
-Begin the withdrawal process from the Firelight vault.
-A `value` of drops FXRP is marked to be withdrawn from the Firelight vault, registered with the `MasterAccountController` contract with the `vaultId`, to the user's personal account.
+Begin the withdrawal process from the Firelight-type vault.
+A `value` of drops FXRP is marked to be withdrawn from the Firelight-type vault, registered with the `MasterAccountController` contract with the `vaultId`, to the user's personal account.
 
 {/* TODO:(Nik) name of the event */}
 In the process, the vault emits an event with the `period` parameter.
 This value is required in the second part of the withdrawal process.
 
-The `walletId` is a Flare-designated parameter, intended wallet identification by the operator.
+The `walletId` is a Flare-designated parameter, intended for wallet identification by the operator.
 It has no impact on the result of the action performed.
 If no number has been provided to you, set the `walletId` to `0`.
 
@@ -311,15 +311,15 @@ The above command produces the following output:
 
 #### Claim withdraw
 
-Complete the withdrawal process from the Firelight type vault, registered with the `MasterAccountController` contract with the `vaultId`.
+Complete the withdrawal process from the Firelight-type vault, registered with the `MasterAccountController` contract with the `vaultId`.
 After the withdrawal process has been started, the funds are locked for a certain amount of time.
 Once that period has passed, they can be transferred back to the user's personal account.
 
 {/* TODO */}
-When the withdrawal is requested, a period value exposed in the event that is emitted.
+When the withdrawal is requested, a period value is exposed in the event that is emitted.
 The period must be included in the claim withdrawal instruction as the `value` parameter.
 
-The `walletId` is a Flare-designated parameter, intended wallet identification by the operator.
+The `walletId` is a Flare-designated parameter, intended for wallet identification by the operator.
 It has no impact on the result of the action performed.
 If no number has been provided to you, set the `walletId` to `0`.
 
@@ -347,21 +347,21 @@ The above command produces the following output:
 
 ### Upshift
 
-Smart account instructions for interacting with an Upshift type vault.
+Smart account instructions for interacting with an Upshift-type vault.
 Each of these commands starts with the `upshift` keyword.
 
 #### Collateral reservation and deposit
 
 The collateral reservation and deposit instruction signals two intents at once.
 First, to reserve collateral in an agent's vault, registered with the `MasterAccountController` contract with the `agentVaultId`, the necessary collateral to mint `value` lots of FXRP.
-And second, to deposit the newly minted FXRP into a Upshift type vault, registered with the `MasterAccountController` contract with the `vaultId`.
+And second, to deposit the newly minted FXRP into an Upshift-type vault, registered with the `MasterAccountController` contract with the `vaultId`.
 
 The purpose of this instruction is to streamline the minting and deposit process by cutting out an instruction XRPL transaction and the wait that that incurs.
 In essence, it combines the FXRP collateral reservation instruction and the Upshift deposit instruction.
 
 {/* TODO:(Nik) prepare as separate in-depth guide for cr-and-deposit, that goes through all the steps. Link to that guide here. */}
 
-The `walletId` is a Flare-designated parameter, intended wallet identification by the operator.
+The `walletId` is a Flare-designated parameter, intended for wallet identification by the operator.
 It has no impact on the result of the action performed.
 If no number has been provided to you, set the `walletId` to `0`.
 
@@ -390,15 +390,15 @@ The above command produces the following output:
 
 #### Deposit
 
-Deposit `vault` drops of FXRP into the Upshift vault, registered with the `MasterAccountController` contract with the `vaultId`.
+Deposit `vault` drops of FXRP into the Upshift-type vault, registered with the `MasterAccountController` contract with the `vaultId`.
 The complete list of the registered vaults can be obtained from the `MasterAccountController` contract.
 {/* TODO:(Nik) Write a separate guide in which you explain how to do this, and link to it here. */}
 
 :::warning
-The registered vaults can be of either the Upshift or the Upshift type, so make sure that you choose the right one for the instruction you are sending.
+The registered vaults can be of either the Firelight- or Upshift-type, so make sure that you choose the right one for the instruction you are sending.
 :::
 
-The `walletId` is a Flare-designated parameter, intended wallet identification by the operator.
+The `walletId` is a Flare-designated parameter, intended for wallet identification by the operator.
 It has no impact on the result of the action performed.
 If no number has been provided to you, set the `walletId` to `0`.
 
@@ -423,14 +423,14 @@ The above command produces the following output:
 
 #### Request redeem
 
-Begin the withdrawal process from an Upshift vault.
-A `value` of drops FXRP is marked to be withdrawn from the Upshift vault, registered with the `MasterAccountController` contract with the `vaultId`, to the user's personal account.
+Begin the withdrawal process from an Upshift-type vault.
+A `value` of drops FXRP is marked to be withdrawn from the Upshift-type vault, registered with the `MasterAccountController` contract with the `vaultId`, to the user's personal account.
 
 {/* TODO:(Nik) name of the event */}
 In the process, the vault emits an event with the `period` parameter.
 This value is required in the second part of the withdrawal process.
 
-The `walletId` is a Flare-designated parameter, intended wallet identification by the operator.
+The `walletId` is a Flare-designated parameter, intended for wallet identification by the operator.
 It has no impact on the result of the action performed.
 If no number has been provided to you, set the `walletId` to `0`.
 
@@ -458,14 +458,14 @@ The above command produces the following output:
 
 #### Claim
 
-Complete the withdrawal process from the Upshift type vault, registered with the `MasterAccountController` contract with the `vaultId`.
+Complete the withdrawal process from the Upshift-type vault, registered with the `MasterAccountController` contract with the `vaultId`.
 After the withdrawal process has been started, the funds are locked for a certain amount of time.
 Once that period has passed, they can be transferred back to the user's personal account.
 
-The `value` parameter is the date of when the redemption was requested.
-It should given as an 8-digit number `YYYYMMDD`, where `YYYY` is the year, `MM` the month (from `1` to `12`) and `DD` (from `1` to `31`) the day of the redemption request.
+The `value` parameter is the date when the redemption was requested.
+It should be given as an 8-digit number `YYYYMMDD`, where `YYYY` is the year, `MM` the month (from `1` to `12`) and `DD` (from `1` to `31`) the day of the redemption request.
 
-The `walletId` is a Flare-designated parameter, intended wallet identification by the operator.
+The `walletId` is a Flare-designated parameter, intended for wallet identification by the operator.
 It has no impact on the result of the action performed.
 If no number has been provided to you, set the `walletId` to `0`.
 
@@ -543,7 +543,7 @@ A payment reference is read from the `CollateralReserved` event, and a mint tran
 
 The transaction must contain a collateral reservation (and deposit) instruction, otherwise the process fails, since no such event is emitted for other instructions.
 
-The `transactionHash` can be obtain by calling the `bridge` command with the `instruction` positional argument.
+The `transactionHash` can be obtained by calling the `bridge` command with the `instruction` positional argument.
 
 ```markup
 ./smart_accounts.py bridge mint-tx <transactionHash>
@@ -583,7 +583,7 @@ The instruction only works if the user's personal account has sufficient FXRP ba
 
 ## Decode
 
-The `decode` command is an inverse of the `encode` command.
+The `decode` command is the inverse of the `encode` command.
 It takes an `encodedInstruction` as input, and decodes it to a Python class that corresponds to the instruction.
 The `encodedInstruction` can be obtained from the output of the `encode` command.
 
