@@ -51,7 +51,12 @@ NetworkConfig.by_name = {net.name: net for net in NETWORKS}
 # Configuration
 REPO_ROOT: Final[Path] = Path(__file__).resolve().parents[1]
 OUTPUT_PATH: Final[Path] = (
-    REPO_ROOT / "src" / "features" / "DataTables" / "SolidityReference" / "solidity_reference.json"
+    REPO_ROOT
+    / "src"
+    / "features"
+    / "DataTables"
+    / "SolidityReference"
+    / "solidity_reference.generated.json"
 )
 
 REGISTRY_ABI: Final[list[dict[str, Any]]] = [

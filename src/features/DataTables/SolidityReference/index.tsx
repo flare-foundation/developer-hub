@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import Link from "@docusaurus/Link";
-import tableDataRaw from "./solidity_reference.json";
+import tableDataRaw from "./solidity_reference.generated.json";
 import styles from "../tableStyles.module.css";
 
 type ContractData = Readonly<{
