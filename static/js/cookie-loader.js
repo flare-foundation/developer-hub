@@ -1,26 +1,58 @@
-// Wait for the page to be fully loaded and interactive
-document.addEventListener("DOMContentLoaded", function () {
-  // Check if we already have consent to avoid showing the banner unnecessarily
-  if (document.cookie.indexOf("cookieyes-consent") !== -1) {
-    // If we already have consent, load the CookieYes script immediately
-    loadCookieScript();
-    return;
+(function () {
+  const COOKIEYES_ID = "cookieyes";
+  const COOKIEYES_SRC =
+    "https://cdn-cookieyes.com/client_data/dedcd40fe7e8316d7512b294/script.js";
+  const FALLBACK_DELAY_MS = 2000;
+
+  function hasCookie(name) {
+    const cookies = document.cookie ? document.cookie.split(";") : [];
+    const prefix = `${encodeURIComponent(name)}=`;
+
+    for (const c of cookies) {
+      const trimmed = c.trim();
+      if (trimmed.startsWith(prefix)) return true;
+    }
+    return false;
   }
 
-  // If we don't have consent yet, delay loading the cookie banner
-  // This ensures it doesn't compete with critical content
-  setTimeout(function () {
-    loadCookieScript();
-  }, 2000); // 2-second delay to improve LCP
-});
+  function alreadyInjected() {
+    return (
+      document.getElementById(COOKIEYES_ID) != null ||
+      Array.from(document.scripts).some((s) => s.src === COOKIEYES_SRC)
+    );
+  }
 
-// Function to load the CookieYes script
-function loadCookieScript() {
-  const script = document.createElement("script");
-  script.defer = true;
-  script.id = "cookieyes";
-  script.src =
-    "https://cdn-cookieyes.com/client_data/dedcd40fe7e8316d7512b294/script.js";
+  function loadCookieScript() {
+    if (alreadyInjected()) return;
 
-  document.body.appendChild(script);
-}
+    const script = document.createElement("script");
+    script.id = COOKIEYES_ID;
+    script.src = COOKIEYES_SRC;
+    script.async = true;
+
+    (document.head || document.documentElement).appendChild(script);
+  }
+
+  function scheduleLoad() {
+    if (hasCookie("cookieyes-consent")) {
+      loadCookieScript();
+      return;
+    }
+
+    // Minimize impact on LCP/INP
+    if (typeof window.requestIdleCallback === "function") {
+      window.requestIdleCallback(() => loadCookieScript(), {
+        timeout: FALLBACK_DELAY_MS,
+      });
+    } else {
+      window.setTimeout(loadCookieScript, FALLBACK_DELAY_MS);
+    }
+  }
+
+  // Handle all states safely
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", scheduleLoad, { once: true });
+  } else {
+    scheduleLoad();
+  }
+})();
