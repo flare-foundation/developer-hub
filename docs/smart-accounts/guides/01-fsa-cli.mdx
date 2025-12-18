@@ -2,7 +2,7 @@
 sidebar_position: 1
 slug: fsa-cli
 title: Flare Smart Accounts CLI
-authors: [nikerzetic, filipkoprivec]
+authors: [nikerzetic]
 description: Introduction to the Flare Smart Accounts CLI.
 tags: [intermediate, ethereum, flare-smart-accounts]
 keywords:
@@ -46,204 +46,572 @@ cp .env.example .env
 The missing values are an XRPL testnet account secret value, a Flare address private key, and the RPC URLs for both Flare's Coston2 and XRPL testnet.
 You can create a new secret string through the [XRP faucets](https://xrpl.org/resources/dev-tools/xrp-faucets).
 
-You can then run the script with the command:
+The script is run in the terminal with a command of the following shape.
 
 ```sh
-smart_accounts [-h] [--version] {bridge,debug} ...
+./smart-accounts.py <command> <positional-argument> ...
 ```
 
-## `encode` command
+Here is a list of available commands and their positional arguments:
 
-The `encode` command prints encoded memo fields that can be used in XRPL transactions to instruct the operator to perform certain actions on Flare.
-It allows for the following positional arguments: `deposit`, `withdraw`, `redeem`, `mint`, `claim-withdraw`, and `custom`.
-The command produces a payment reference corresponding to each instruction type.
+- `encode`
+  - `fxrp-cr`: encode FXRP collateral reservation instruction
+  - `fxrp-transfer`: encode FXRP transfer instruction
+  - `fxrp-redeem`: encode FXRP redeem instruction
+  - `firelight-cr-deposit`: encode Firelight collateral reservation and deposit instruction
+  - `firelight-deposit`: encode Firelight deposit instruction
+  - `firelight-redeem`: encode Firelight redeem instruction
+  - `firelight-claim-withdraw`: encode Firelight claim withdraw instruction
+  - `upshift-cr-deposit`: encode Upshift collateral reservation and deposit instruction
+  - `upshift-deposit`: encode Upshift deposit instruction
+  - `upshift-request-redeem`: encode Upshift request redeem instruction
+  - `upshift-claim`: encode Upshift claim instruction
+- `decode`
+- `bridge`
+  - `instruction`: send imputed instruction as a transaction on XRPL
+  - `mint-tx`: make a deposit do an agent's vault
 
-For example, the following command
+The positional arguments of the `encode` command correspond to type-command instruction pairs, described in the [FAsset instructions guide](/smart-accounts/fasset-instructions).
+The `bridge` command either makes an XRPL Payment transaction with the imputed instruction as payment reference, or transfers funds to an agent's XRPL vault as part of the minting process.
+
+## Using the CLI
+
+The bellow-described CLi commands are intended to work in tandem with one another.
+The output of the `encode` command can be sent to the `bridge` command via stdin.
+Commands can be piped in the following way.
 
 ```sh
-./smart_accounts.py encode deposit -a 1
+<encode_command> | ./smart_accounts.py bridge instruction -
 ```
 
-would result in the payment reference `0100000000000000000000000000000000000000000000000000000000000001`.
-The first `01` here signals that it is a `deposit` instruction, while the remaining bytes give the amount - in this case `1`.
-
-## `bridge` command
-
-The `bridge` command executes an XRPL transaction with instructions for one of the actions, determined by the positional argument provided.
-A payment transaction with the appropriate memo field value is sent to the operator's XRPL address from the XRPL address specified in the `.env` file.
-
-What follows is a list of possible positional arguments, what they do, and the additional parameters of each.
-
-### `deposit`
-
-Deposit an `amount` of FXRP from the smart account belonging to the XRPL address to the Firelight vault, designated by the `MasterAccountController` contract.
+If the instruction includes a minting step (`fxrp-cr`, `firelight-cr-deposit` and `upshift-cr-deposit`), we can also order the script to make a mint transaction that matches the output of the `bridge instruction`.
 
 ```sh
-./smart_accounts.py bridge deposit -a <amount>
+<encode_command> | ./smart_accounts.py bridge instruction - | ./smart_accounts.py bridge mint-tx --wait -
 ```
 
-### `withdraw`
+This is described in more detail in the [Bridge section](/smart-accounts/guides/fsa-cli#bridge) of this guide.
 
-Begin the withdrawal process from the Firelight vault.
-An `amount` of FXRP is marked to be withdrawn from the Firelight vault to the user's smart account.
+## Encode
 
-```sh
-./smart_accounts.py bridge withdraw -a <amount>
+Encode and instruction with given parameters.
+The parameters are unique to each command.
+
+There is one parameter that all the commands have in common, `walletId`.
+The `walletId` is a Flare-designated parameter, intended wallet identification by the operator.
+It has no impact on the result of the action performed.
+If no number has been provided to you, set the `walletId` to `0`.
+
+```markup
+./smart_accounts.py encode <command> --wallet-id <walletId> ...
 ```
 
-### `redeem`
+### FXRP
 
-Redeem a `lots` amount of FXRP.
-That number of lots of FXRP are burned from the user's smart account, and the same amount of XRP is sent to the user's address on XRPL.
+Smart account instructions for interacting with the base FAsset system.
+Each of these commands starts with the `fxrp` keyword.
 
-```sh
-./smart_accounts.py bridge redeem -l <lots>
-```
+#### Collateral reservation
 
-### `mint`
+Reserve `value` lots of collateral with the
 
-Mints a number of `lots` of FXRP to the user's smart account.
+Reserve `value` lots of FXRP to the user's smart account.
 The script first reserves collateral with the agent with the `address`, by sending a `reserveCollateral` instruction.
 It then sends a `lots` amount of XRP to the agent's underlying address.
 An executor, determined by the `MasterAccountController`, will complete the minting process, and `lots` of FXRP will be minted to the user's smart account.
 
-```sh
-./smart_accounts.py bridge mint -a <address> -l <lots>
+The list of all the available agents and their IDs can be obtained from the `MasterAccountController` contract.
+{/* TODO:(Nik) Write a separate guide in which you explain how to do this, and link to it here. */}
+
+```markup
+./smart_accounts.py encode fxrp-cr --wallet-id <walletId> --value <value> --agent-vault-id <agentVaultId>
 ```
 
-:::info
-On Coston2, you can use `0x55c815260cBE6c45Fe5bFe5FF32E3C7D746f14dC` as the agent address.
+<details>
+<summary>Example values and expected output</summary>
+
+```sh
+./smart_accounts.py encode fxrp-cr --wallet-id 0 --value 1 --agent-vault-id 1
+```
+
+The above command produces the following output:
+
+```sh
+0x0000000000000000000000010001000000000000000000000000000000000000
+```
+
+</details>
+
+#### Transfer
+
+Transfer `value` FXRP from your personal account to the `recipientAddress` on Flare.
+The `walletId` is a Flare-designated parameter, intended wallet identification by the operator.
+It has no impact on the result of the action performed.
+If no number has been provided to you, set the `walletId` to `0`.
+
+```markup
+./smart_accounts.py encode fxrp-transfer \
+  --wallet-id <walletId> \
+  --value <value> \
+  --recipient-address <recipientAddress>
+```
+
+<details>
+<summary>Example values and expected output</summary>
+
+```sh
+./smart_accounts.py encode fxrp-transfer \
+  --wallet-id 0 \
+   --value 1 \
+  --recipient-address "0xf5488132432118596fa13800b68df4c0ff25131d"
+```
+
+The above command produces the following output:
+
+```sh
+0x010000000000000000000001f5488132432118596fa13800b68df4c0ff25131d
+```
+
+</details>
+
+#### Redeem
+
+Redeem `value` lots of FXRP back to XRP.
+That number of lots of FXRP are burned from the user's smart account, and the same amount of XRP is sent to the user's address on XRPL.
+The `walletId` is a Flare-designated parameter, intended wallet identification by the operator.
+It has no impact on the result of the action performed.
+If no number has been provided to you, set the `walletId` to `0`.
+
+```markup
+./smart_accounts.py encode fxrp-cr --wallet-id <walletId> --value <value>
+```
+
+<details>
+<summary>Example values and expected output</summary>
+
+```sh
+./smart_accounts.py encode fxrp-redeem --wallet-id 0 --value 1
+```
+
+The above command produces the following output:
+
+```sh
+0x0200000000000000000000010000000000000000000000000000000000000000
+```
+
+</details>
+
+### Firelight
+
+Smart account instructions for interacting with a Firelight type vault.
+Each of these commands starts with the `firelight` keyword.
+
+#### Collateral reservation and deposit
+
+The collateral reservation and deposit instruction signals two intents at once.
+First, to reserve collateral in an agent's vault, registered with the `MasterAccountController` contract with the `agentVaultId`, the necessary collateral to mint `value` lots of FXRP.
+And second, to deposit the newly minted FXRP into a Firelight type vault, registered with the `MasterAccountController` contract with the `vaultId`.
+
+The purpose of this instruction is to streamline the minting and deposit process by cutting out an instruction XRPL transaction and the wait that that incurs.
+In essence, it combines the FXRP collateral reservation instruction and the Firelight deposit instruction.
+
+{/* TODO:(Nik) prepare as separate in-depth guide for cr-and-deposit, that goes through all the steps. Link to that guide here. */}
+
+The `walletId` is a Flare-designated parameter, intended wallet identification by the operator.
+It has no impact on the result of the action performed.
+If no number has been provided to you, set the `walletId` to `0`.
+
+```markdown
+./smart_accounts.py encode firelight-cr-deposit \
+ --wallet-id <walletId> \
+ --value <value> \
+ --agent-vault-id <agentVaultId> \
+ --vault-id <vaultId>
+```
+
+<details>
+<summary>Example values and expected output</summary>
+
+```sh
+./smart_accounts.py encode firelight-cr-deposit --wallet-id 0 --value 1 --agent-vault-id 1 --vault-id 1
+```
+
+The above command produces the following output:
+
+```sh
+0x1000000000000000000000010001000100000000000000000000000000000000
+```
+
+</details>
+
+#### Deposit
+
+Deposit `vault` drops of FXRP into the Firelight vault, registered with the `MasterAccountController` contract with the `vaultId`.
+The complete list of the registered vaults can be obtained from the `MasterAccountController` contract.
+{/* TODO:(Nik) Write a separate guide in which you explain how to do this, and link to it here. */}
+
+:::warning
+The registered vaults can be of either the Firelight or the Upshift type, so make sure that you choose the right one for the instruction you are sending.
 :::
 
-### `claim-withdraw`
+The `walletId` is a Flare-designated parameter, intended wallet identification by the operator.
+It has no impact on the result of the action performed.
+If no number has been provided to you, set the `walletId` to `0`.
 
-Complete the withdrawal process from the Firelight vault by claiming the funds.
+```markup
+./smart_accounts.py encode firelight-deposit --wallet-id <walletId> --value <value> --vault-id <vaultId>
+```
+
+<details>
+<summary>Example values and expected output</summary>
+
+```sh
+./smart_accounts.py encode firelight-deposit --wallet-id 0 --value 1 --vault-id 1
+```
+
+The above command produces the following output:
+
+```sh
+0x1100000000000000000000010000000100000000000000000000000000000000
+```
+
+</details>
+
+#### Redeem
+
+Begin the withdrawal process from the Firelight vault.
+A `value` of drops FXRP is marked to be withdrawn from the Firelight vault, registered with the `MasterAccountController` contract with the `vaultId`, to the user's personal account.
+
+{/* TODO:(Nik) name of the event */}
+In the process, the vault emits an event with the `period` parameter.
+This value is required in the second part of the withdrawal process.
+
+The `walletId` is a Flare-designated parameter, intended wallet identification by the operator.
+It has no impact on the result of the action performed.
+If no number has been provided to you, set the `walletId` to `0`.
+
+```markup
+./smart_accounts.py encode firelight-redeem --wallet-id <walletId> --value <value> --vault-id <vaultId>
+```
+
+<details>
+<summary>Example values and expected output</summary>
+
+```sh
+./smart_accounts.py encode firelight-redeem --wallet-id 0 --value 1 --vault-id 1
+```
+
+The above command produces the following output:
+
+```sh
+0x1200000000000000000000010000000100000000000000000000000000000000
+```
+
+</details>
+
+#### Claim withdraw
+
+Complete the withdrawal process from the Firelight type vault, registered with the `MasterAccountController` contract with the `vaultId`.
 After the withdrawal process has been started, the funds are locked for a certain amount of time.
-Once that period has passed, they can be transferred back to the user's smart account.
+Once that period has passed, they can be transferred back to the user's personal account.
 
-```sh
-./smart_accounts.py bridge claim-withdraw
+{/* TODO */}
+When the withdrawal is requested, a period value exposed in the event that is emitted.
+The period must be included in the claim withdrawal instruction as the `value` parameter.
+
+The `walletId` is a Flare-designated parameter, intended wallet identification by the operator.
+It has no impact on the result of the action performed.
+If no number has been provided to you, set the `walletId` to `0`.
+
+```markup
+./smart_accounts.py encode firelight-claim-withdraw \
+  --wallet-id <walletId> \
+  --value <value> \
+  --vault-id <vaultId>
 ```
 
-### `custom`
-
-Execute a custom action on the Flare chain.
-Make a transaction to the `address`, paying the `value`, and attaching the `calldata`.
-The `calldata` is the encoding of a function and its argument values, on the smart contract at the `address.
+<details>
+<summary>Example values and expected output</summary>
 
 ```sh
-./smart_accounts.py bridge custom -a <address> -v <value> -d <calldata>
+./smart_accounts.py encode firelight-claim-withdraw --wallet-id 0 --value 123456789 --vault-id 1
 ```
 
-Before making a transaction on XRPL with the necessary instructions, this command performs an additional step.
-It first packs the three provided values (`address`, `value`, and `calldata`) into a `IMasterAccountController.CustomInstruction` struct.
-Then, it calls the `registerCustomInstruction` function of the `MasterAccountController` contract, with the former as an argument.
-
-Thus, it both registers a custom instruction with the `MasterAccountController` contract and retrieves the required `callHash`, which it can then send to the operator's XRPL address as instructions.
-
-Instead of the `address`, `value` and `calldata` parameters, a JSON file with an array of custom instructions can be used.
-The command then reads as follows:
+The above command produces the following output:
 
 ```sh
-./smart_accounts.py bridge custom <json_file>
+0x1300000000000000075bcd150000000100000000000000000000000000000000
 ```
 
-## `personal-account` command
+</details>
 
-The `personal-account` command gives insight into personal accounts of XRPL addresses.
-{/* TODO:(Nik) is it equivalent to calling getPersonalAccount */}
+### Upshift
 
-It allows for the following positional arguments: `print` and `faucet`.
+Smart account instructions for interacting with an Upshift type vault.
+Each of these commands starts with the `upshift` keyword.
 
-### `print`
+#### Collateral reservation and deposit
 
-Prints the Flare address of the personal account belonging to the `xrpl_address`.
+The collateral reservation and deposit instruction signals two intents at once.
+First, to reserve collateral in an agent's vault, registered with the `MasterAccountController` contract with the `agentVaultId`, the necessary collateral to mint `value` lots of FXRP.
+And second, to deposit the newly minted FXRP into a Upshift type vault, registered with the `MasterAccountController` contract with the `vaultId`.
+
+The purpose of this instruction is to streamline the minting and deposit process by cutting out an instruction XRPL transaction and the wait that that incurs.
+In essence, it combines the FXRP collateral reservation instruction and the Upshift deposit instruction.
+
+{/* TODO:(Nik) prepare as separate in-depth guide for cr-and-deposit, that goes through all the steps. Link to that guide here. */}
+
+The `walletId` is a Flare-designated parameter, intended wallet identification by the operator.
+It has no impact on the result of the action performed.
+If no number has been provided to you, set the `walletId` to `0`.
+
+```markdown
+./smart_accounts.py encode upshift-cr-deposit \
+ --wallet-id <walletId> \
+ --value <value> \
+ --agent-vault-id <agentVaultId> \
+ --vault-id <vaultId>
+```
+
+<details>
+<summary>Example values and expected output</summary>
 
 ```sh
-./smart_accounts.py personal-account print <xrpl_address>
+./smart_accounts.py encode upshift-cr-deposit --wallet-id 0 --value 1 --agent-vault-id 1 --vault-id 2
 ```
 
-### `faucet`
-
-{/* TODO:(Nik) fix the bellow text once it can faucet */}
-Prints the Flare address of the personal account belonging to the `xrpl_address` and the faucet instructions.
-In the future, it will faucet funds to the address instead.
+The above command produces the following output:
 
 ```sh
-./smart_accounts.py personal-account faucet <xrpl_address>
+0x2000000000000000000000010001000200000000000000000000000000000000
 ```
 
-## `debug` command
+</details>
 
-The `debug` command offers some utility options for running the CLI.
-It allows three positional arguments: `mock-custom`, `check-status`, and `simulation`.
+#### Deposit
 
-### `mock-print`
+Deposit `vault` drops of FXRP into the Upshift vault, registered with the `MasterAccountController` contract with the `vaultId`.
+The complete list of the registered vaults can be obtained from the `MasterAccountController` contract.
+{/* TODO:(Nik) Write a separate guide in which you explain how to do this, and link to it here. */}
 
-Prints the Flare address of the personal account created by the mock `MasterAccountController` contract from the `seed` string.
-The personal account is created by the `createFundPersonalAccount` developer function.
-It represents the XRPL "address" of the concatenated string of `msg.sender` and `seed`.
-This allows for easier creation of multiple personal accounts with invocative names, for easier development.
+:::warning
+The registered vaults can be of either the Upshift or the Upshift type, so make sure that you choose the right one for the instruction you are sending.
+:::
+
+The `walletId` is a Flare-designated parameter, intended wallet identification by the operator.
+It has no impact on the result of the action performed.
+If no number has been provided to you, set the `walletId` to `0`.
+
+```markup
+./smart_accounts.py encode upshift-deposit --wallet-id <walletId> --value <value> --vault-id <vaultId>
+```
+
+<details>
+<summary>Example values and expected output</summary>
 
 ```sh
-./smart_accounts.py debug mock-print -s <seed>
+./smart_accounts.py encode upshift-deposit --wallet-id 0 --value 1 --vault-id 2
 ```
 
-### `mock-create-fund`
-
-Creates a personal account for the `seed` address string through the `MasterAccountController` contract, and sends to it the `value` amount.
-The personal account is created by the `createFundPersonalAccount` developer function.
-It represents the XRPL "address" of the concatenated string of `msg.sender` and `seed`.
-This allows for easier creation of multiple personal accounts with invocative names, for easier development.
+The above command produces the following output:
 
 ```sh
-./smart_accounts.py debug mock-create-fund -s <seed> -v <value>
+0x2100000000000000000000010000000200000000000000000000000000000000
 ```
 
-The `value` can be expressed as as `flr` (ex. `42flr`).
+</details>
 
-### `mock-custom`
+#### Request redeem
 
-Simulate a custom instruction with the mock `MasterAccountController` contract.
-Instead of sending the instructions as a transaction on XRPL and bridging them to Flare, the custom instructions are sent to the `MasterAccountController` contract directly.
-This is explained in more detail in the [Custom instructions guide](/smart-accounts/guides/custom-instruction).
+Begin the withdrawal process from an Upshift vault.
+A `value` of drops FXRP is marked to be withdrawn from the Upshift vault, registered with the `MasterAccountController` contract with the `vaultId`, to the user's personal account.
 
-The `address`, `value`, and `data` parameters are the same as for the [custom](/smart-accounts/guides/fsa-cli#custom) positional argument.
-The `seed` is a string representing an XRPL account.
+{/* TODO:(Nik) name of the event */}
+In the process, the vault emits an event with the `period` parameter.
+This value is required in the second part of the withdrawal process.
+
+The `walletId` is a Flare-designated parameter, intended wallet identification by the operator.
+It has no impact on the result of the action performed.
+If no number has been provided to you, set the `walletId` to `0`.
+
+```markup
+./smart_accounts.py encode upshift-request-redeem \
+  --wallet-id <walletId> \
+  --value <value> \
+  --vault-id <vaultId>
+```
+
+<details>
+<summary>Example values and expected output</summary>
 
 ```sh
-./smart_accounts.py debug mock-custom -s <seed> -a <address> -v <value> -d <calldata>
+./smart_accounts.py encode upshift-request-redeem --wallet-id 0 --value 1 --vault-id 2
 ```
 
-As with the `custom` command, a JSON file containing an array of custom instructions can be used.
+The above command produces the following output:
 
 ```sh
-./smart_accounts.py debug mock-custom -s <seed> <json_file>
+0x2200000000000000000000010000000200000000000000000000000000000000
 ```
 
-### `check-status`
+</details>
 
-Check the status of the XRPL transaction with the `xrpl_hash`.
+#### Claim
+
+Complete the withdrawal process from the Upshift type vault, registered with the `MasterAccountController` contract with the `vaultId`.
+After the withdrawal process has been started, the funds are locked for a certain amount of time.
+Once that period has passed, they can be transferred back to the user's personal account.
+
+The `value` parameter is the date of when the redemption was requested.
+It should given as an 8-digit number `YYYYMMDD`, where `YYYY` is the year, `MM` the month (from `1` to `12`) and `DD` (from `1` to `31`) the day of the redemption request.
+
+The `walletId` is a Flare-designated parameter, intended wallet identification by the operator.
+It has no impact on the result of the action performed.
+If no number has been provided to you, set the `walletId` to `0`.
+
+```markup
+./smart_accounts.py encode upshift-redeem --wallet-id <walletId> --value <value> --vault-id <vaultId>
+```
+
+<details>
+<summary>Example values and expected output</summary>
 
 ```sh
-./smart_accounts.py debug check-status <xrpl_hash>
+./smart_accounts.py encode upshift-claim --wallet-id 0 --value 20260124 --vault-id 2
 ```
 
-### `simulation`
-
-Run the simulation of the [FAsset cycle](/smart-accounts/guides/fassets-cycle).
-It converts `mint` lots of XRP to FXRP, deposits `deposit` FXRP into the Firelight vault, withdraws `deposit` FXRP back to the smart account, and finally redeems `mint` FXRP back to XRP.
+The above command produces the following output:
 
 ```sh
-./smart_accounts.py debug simulations -a <address> -m <mint> -d <deposit>
+0x23000000000000000135251c0000000200000000000000000000000000000000
 ```
 
-This is equivalent to running the following commands:
+</details>
+
+## Bridge
+
+The bridge command makes an XRPL Payment transaction on behalf of the user, with the given input as the transaction memo field.
+There are two positional arguments, `instruction` and `mint-tx`.
+The `instruction` positional argument signals the user's intent by making an XRPL Payment transaction to the operator's XRPL address, with the instruction attached as the memo field.
+The `mint-tx` argument performs the second step of the minting process, sending the XRPL to the agent's vault address on XRPL (you can learn more about the minting process in [the minting guide](/fassets/minting)).
+
+### Instruction
+
+When the `bridge` command is used with the `instruction` positional argument, it accepts an `encodedInstruction` as input.
+It makes a Payment transaction to the operator's XRPL address, with the `encodedInstruction` as the memo field of the payment.
+Finally, it prints the hash of the transaction to the standard output stream.
+
+The `encodedInstruction` can be obtained with the `encode` command.
+
+```markup
+./smart_accounts.py bridge instruction <encodedInstruction>
+```
+
+Alternatively, the command can read the input directly from the standard input stream.
+Since the `encode` command prints the result to the standard output stream, the two commands can be chained together.
+To do this, the `-` character is used instead of the `transactionHash`.
 
 ```sh
-./smart_accounts.py bridge mint -a <address> -l <mint>
-./smart_accounts.py bridge deposit -a <deposit>
-./smart_accounts.py bridge withdraw -a <deposit>
-./smart_accounts.py bridge claim-withdraw
-./smart_accounts.py bridge redeem -l <mint>
+<encode_command> | ./smart_accounts.py bridge instruction -
 ```
+
+<details>
+<summary>Example values and expected output</summary>
+
+```sh
+./smart_accounts.py encode fxrp-redeem --wallet-id 0 --value 1 \
+  | ./smart_accounts.py bridge instruction -
+```
+
+The above command encodes an FXRP redeem instruction for `1` lot of FXRP, and sends that instruction as an XRPL Payment transaction.
+It produces the following output.
+
+```sh
+sent bridge instruction transaction: CD0879CD7398DE4B96A7A7D475EFD0F3585E05D100C84C9E3FE32B34FACF0E39
+CD0879CD7398DE4B96A7A7D475EFD0F3585E05D100C84C9E3FE32B34FACF0E39
+```
+
+The instruction only works if the user's personal account has sufficient FXRP balance.
+
+</details>
+
+### Mint tx
+
+When the `bridge` command is used with the `mint-tx` positional argument, it accepts an XRPL `transactionHash` as input.
+It then observes the `MasterAccountController` contract for a `CollateralReserved` event that belongs to the transaction with the `transactionHash`
+A payment reference is read from the `CollateralReserved` event, and a mint transaction to the agent vault's address is performed.
+
+The transaction must contain a collateral reservation (and deposit) instruction, otherwise the process fails, since no such event is emitted for other instructions.
+
+The `transactionHash` can be obtain by calling the `bridge` command with the `instruction` positional argument.
+
+```markup
+./smart_accounts.py bridge mint-tx <transactionHash>
+```
+
+Alternatively, the command can read the input directly from the standard input stream.
+Since the `encode` and `bridge` commands both print the result to the standard output stream, all three commands can be chained together.
+To do this, the `-` character is used instead of the `transactionHash`.
+Additionally, the `--wait` flag must be provided.
+
+```markup
+<encode_command> | ./smart_accounts.py bridge instruction - | ./smart_accounts.py bridge mint-tx --wait -
+```
+
+<details>
+<summary>Example values and expected output</summary>
+
+```sh
+./smart_accounts.py encode fxrp-cr --wallet-id 0 --value 1 --agent-vault-id 1 \
+  | ./smart_accounts.py bridge instruction - \
+  | ./smart_accounts.py bridge mint-tx --wait -
+```
+
+The above command encodes an FXRP collateral reservation instruction for `1` lot of FXRP, using the agent vault with ID `1`, and sends that instruction as an XRPL Payment transaction.
+It then waits
+It produces the following output.
+
+```sh
+sent bridge instruction transaction: 659364520199DED473635A9ABFB1C15B945B216A1208679979AB5C05F03E837C
+sent mint tx: 8401244DD1FA4C295ABC16A0B05CC12F7DBCE34756F12C2F5C3DC1840A5F3316
+8401244DD1FA4C295ABC16A0B05CC12F7DBCE34756F12C2F5C3DC1840A5F3316
+```
+
+The instruction only works if the user's personal account has sufficient FXRP balance.
+
+</details>
+
+## Decode
+
+The `decode` command is an inverse of the `encode` command.
+It takes an `encodedInstruction` as input, and decodes it to a Python class that corresponds to the instruction.
+The `encodedInstruction` can be obtained from the output of the `encode` command.
+
+```markdown
+./smart_accounts.py decode <encodedInstruction>
+```
+
+Alternatively, the command can read the input directly from the standard input stream.
+Since the `encode` command prints the result to the standard output stream, the two commands can be chained together.
+To do this, the `-` character is used instead of the `transactionHash`.
+
+```markdown
+<encode_command> | ./smart_accounts.py decode -
+```
+
+<details>
+<summary>Example values and expected output</summary>
+
+```sh
+./smart_accounts.py encode fxrp-redeem --wallet-id 0 --value 1 \
+  | ./smart_accounts.py decode -
+```
+
+The above command encodes an FXRP redeem instruction for `1` lot of FXRP, and then decodes it to an `FxrpRedeem` class.
+It produces the following output.
+
+```Python
+FxrpRedeem(wallet_id=0, value=1)
+```
+
+</details>
