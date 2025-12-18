@@ -49,7 +49,10 @@ NetworkConfig.by_name = {net.name: net for net in NETWORKS}
 
 
 # Configuration
-OUTPUT_PATH: Final[Path] = Path("solidity_reference.json")
+REPO_ROOT: Final[Path] = Path(__file__).resolve().parents[1]
+OUTPUT_PATH: Final[Path] = (
+    REPO_ROOT / "src" / "features" / "DataTables" / "SolidityReference" / "solidity_reference.json"
+)
 
 REGISTRY_ABI: Final[list[dict[str, Any]]] = [
     {
@@ -108,7 +111,7 @@ def main() -> None:
     """Run the automation: fetch and save the solidity registry reference."""
     try:
         ref = build_solidity_reference(REGISTRY_ADDRESS, REGISTRY_ABI)
-        OUTPUT_PATH.write_text(json.dumps(ref, indent=4))
+        OUTPUT_PATH.write_text(json.dumps(ref, indent=2) + "\n")
         logger.info("Data successfully saved to %s", OUTPUT_PATH)
     except Exception:
         logger.exception("Solidity reference automation failed")

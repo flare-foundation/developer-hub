@@ -6,7 +6,7 @@ description: Primary interface for interacting with FDC.
 
 import CodeBlock from "@theme/CodeBlock";
 import AddressSolidity from "!!raw-loader!/examples/developer-hub-solidity/AddressSolidity.sol";
-import Remix from "@site/src/components/remix";
+import RemixEmbed from "@site/src/components/RemixEmbed";
 
 Primary interface for interacting with the Flare Data Connector (FDC).
 
@@ -134,4 +134,4 @@ event RequestsOffsetSet(
 <CodeBlock language="solidity" title="AddressSolidity.sol">
   {AddressSolidity}
 </CodeBlock>
-<Remix fileName="AddressSolidity.sol">Open example in Remix</Remix>
+<RemixEmbed fileName="AddressSolidity.sol">Open example in Remix</RemixEmbed>
