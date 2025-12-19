@@ -2,7 +2,7 @@ import React from "react";
 import Tippy from "@tippyjs/react";
 import "tippy.js/dist/tippy.css";
 import CopyButton from "@site/src/components/CopyButton";
-import tableData from "./ftso_feeds.json";
+import tableData from "./ftso_feeds.generated.json";
 import Link from "@docusaurus/Link";
 import styles from "../tableStyles.module.css";
 
