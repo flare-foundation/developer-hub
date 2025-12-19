@@ -11,7 +11,8 @@
  */
 
 import { ethers } from "hardhat";
-import { formatUnits, zeroPadValue, AbiCoder, Contract } from "ethers";
+import type { Contract } from "ethers";
+import { formatUnits, zeroPadValue, AbiCoder } from "ethers";
 import { Options } from "@layerzerolabs/lz-v2-utilities";
 import { EndpointId } from "@layerzerolabs/lz-definitions";
 

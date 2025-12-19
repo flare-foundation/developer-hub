@@ -15,7 +15,7 @@ import { web3 } from "hardhat";
 import { formatUnits } from "ethers";
 import { EndpointId } from "@layerzerolabs/lz-definitions";
 import { Options } from "@layerzerolabs/lz-v2-utilities";
-import {
+import type {
   IERC20Instance,
   FAssetOFTAdapterInstance,
 } from "../../typechain-types";
