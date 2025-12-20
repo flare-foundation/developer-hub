@@ -60,6 +60,7 @@ export default function SocialLinks() {
     <div className={styles.list}>
       {SOCIAL_LINKS.map(({ href, Icon, label }) => (
         <Link
+          key={href}
           to={href}
           className={styles.link}
           target="_blank"
