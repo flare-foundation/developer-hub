@@ -9,17 +9,6 @@
   font-display: swap;
 }
 
-/* Fix iOS auto-sizing on mobile */
-html {
-  -webkit-text-size-adjust: 100%;
-  text-size-adjust: 100%;
-}
-pre,
-code {
-  -webkit-text-size-adjust: 100%;
-  text-size-adjust: 100%;
-}
-
 /* ============================================================
    Tokens (Light)
    ============================================================ */
@@ -38,7 +27,6 @@ code {
   --ifm-font-family-heading: "Satoshi";
   --ifm-heading-font-weight: 450;
   --ifm-font-weight-bold: 580;
-  --ifm-font-size-base: 16px;
   --ifm-code-font-size: 85%;
 
   /* Shape */
@@ -510,5 +498,24 @@ div[class^="searchBar_"] div[class*="hitFooter"] a:hover {
   .tippy-box[data-theme="custom"] {
     font-size: 12px;
     padding: 6px 10px;
+  }
+}
+
+/* Fix iOS auto-sizing code blocks on mobile */
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 600px) {
+    .theme-code-block pre.prism-code {
+      white-space: pre-wrap !important;
+      overflow-wrap: anywhere !important;
+      word-break: break-word !important;
+      overflow-x: auto !important;
+      font-size: 0.85em !important;
+      line-height: 1.45 !important;
+    }
+
+    .theme-code-block pre.prism-code > code,
+    .theme-code-block pre.prism-code .token-line {
+      white-space: inherit !important;
+    }
   }
 }
