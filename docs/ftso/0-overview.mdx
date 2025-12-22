@@ -20,7 +20,7 @@ import useBaseUrl from "@docusaurus/useBaseUrl";
 import YouTubeEmbed from "@site/src/components/YouTubeEmbed";
 
 The **F**lare **T**ime **S**eries **O**racle **(FTSO)** is an [enshrined oracle](/support/terminology#enshrined-oracle) that provides decentralized data feeds to the Flare network.
-Since the release of FTSOv1 two years ago, users and applications on Flare have enjoyed consistent and reliable pricing, with zero downtime or failures.
+Since the release of FTSOv1, users and applications on Flare have enjoyed consistent and reliable pricing.
 FTSOv2 builds on the robust foundation laid by its predecessor, offering several enhancements:
 
 - **Secure.** Enshrined into Flare's core protocol, every oracle feed in FTSOv2 inherits the economic security of the entire network.
@@ -31,7 +31,7 @@ FTSOv2 builds on the robust foundation laid by its predecessor, offering several
 
 - **Decentralized.** Each FTSOv2 feed is supported by around 100 independent data providers, who are selected by Flare users through their delegated stake, imposing a strict economic cost for misbehavior.
 
-- **Cost-effective.** Block-latency feeds in FTSOv2 are completely free to query. Feeds from Scaling are also free to query and verify locally, with minimal gas costs for onchain verification.
+- **Cost-effective.** Block-latency feeds in FTSOv2 are free to use onchain. Feeds from Scaling are also free to query and verify locally, with minimal gas costs for onchain verification.
 
 ## Architecture
 
@@ -74,7 +74,7 @@ For a detailed explanation of the FTSOv2 mechanism, read the [FTSOv2 whitepaper]
 
 Every block on Flare, generated approximately every 1.8 seconds, initiates the selection of a sample of data providers to deliver the next feed update.
 This selection process leverages a stake-weighted verifiable randomness function (VRF), where the likelihood of each data provider being chosen is proportional to their stake.
-The expected sample size is one, and data providers have no control over, nor knowledge of, when they will be selected.
+The expected sample size (average) is `1.5`, and data providers have no control over, nor knowledge of, when they will be selected.
 
 In detail, each block has a unique seed value, used by FTSOv2 data providers to generate a personal random score.
 This score, coupled with a cryptographic proof, ensures its authenticity and verifiability.
@@ -142,7 +142,7 @@ Importantly, only the expected sample size increases, not the actual sample size
 FTSOv2's block-latency feeds are designed to be statistically self-correcting.
 To further ensure their long-term accuracy, FTSOv2 uses the anchor feeds from [Scaling](/ftso/scaling/overview).
 Anchor feeds utilize a full commit-reveal process across all data providers with an inter-quartile range (IQR) band calculation, and update once every voting epoch (i.e. 90 seconds).
-Data providers are rewarded when the block-latency feeds remains within `±0.25%` of the anchor feeds every voting epoch.
+Data providers are rewarded when the block-latency feeds remain within `±0.25%` of the anchor feeds every voting epoch.
 
 ## Watch the video
 
