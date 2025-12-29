@@ -28,7 +28,6 @@ async function main() {
 
   const vault = await IFirelightVault.at(FIRELIGHT_VAULT_ADDRESS);
 
-  // 2. Get Asset Information
   // Get asset address from vault
   const assetAddress = await vault.asset();
   const assetToken = await IERC20.at(assetAddress);
@@ -36,7 +35,7 @@ async function main() {
   const symbol = await assetToken.symbol();
   const assetDecimals = await assetToken.decimals();
 
-  // 3. Calculate Deposit Amount
+  // 2. Calculate Deposit Amount
   const amount = DEPOSIT_AMOUNT * 10 ** assetDecimals;
 
   console.log("=== Deposit (ERC-4626) ===");
@@ -49,7 +48,7 @@ async function main() {
     `(= ${DEPOSIT_AMOUNT} ${symbol})`,
   );
 
-  // 4. Check Maximum Deposit Capacity
+  // 3. Check Maximum Deposit Capacity
   // Check max deposit capacity
   const maxDeposit = await vault.maxDeposit(account);
   console.log("Max deposit:", maxDeposit.toString());
@@ -60,14 +59,14 @@ async function main() {
     process.exit(1);
   }
 
-  // 5. Approve Token Transfer
+  // 4. Approve Token Transfer
   // Approve + deposit.
   const approveTx = await assetToken.approve(vault.address, amount, {
     from: account,
   });
   console.log("Approve tx:", approveTx.tx);
 
-  // 6. Deposit Assets
+  // 5. Deposit Assets
   const depositTx = await vault.deposit(amount, account, { from: account });
   console.log("Deposit tx:", depositTx.tx);
 }

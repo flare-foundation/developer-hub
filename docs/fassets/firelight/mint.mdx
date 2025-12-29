@@ -44,15 +44,7 @@ The script starts by defining constants and importing the required contract inte
   Taken from the Firelight GitHub [repository](https://github.com/firelight-protocol/firelight-core/blob/main/contracts/FirelightVault.sol).
 - `IERC20`: Standard [ERC-20](https://eips.ethereum.org/EIPS/eip-20) interface for token interactions.
 
-### 2. Get Asset Information
-
-The script retrieves the underlying asset information to format amounts and calculate the required asset amount for minting shares from the vault:
-
-- **Asset address**: The token address that the vault accepts (e.g., FXRP).
-- **Asset symbol**: The token symbol for display purposes.
-- **Asset decimals**: The number of decimals used by the token.
-
-### 3. Calculate Shares to Mint
+### 2. Calculate Shares to Mint
 
 The script converts the desired number of shares to mint into the correct units:
 
@@ -60,7 +52,7 @@ The script converts the desired number of shares to mint into the correct units:
 const sharesToMint = SHARES_TO_MINT * 10 ** assetDecimalsNum;
 ```
 
-### 4. Check Maximum Mint Capacity
+### 3. Check Maximum Mint Capacity
 
 Before minting, the script checks if the requested amount exceeds the maximum allowed:
 
@@ -72,7 +64,7 @@ The `maxMint` function returns the maximum number of shares that the specified a
 
 If the requested amount exceeds the maximum, the script exits with an error to prevent a failed transaction.
 
-### 5. Calculate Required Assets
+### 4. Calculate Required Assets
 
 The script uses the `previewMint` function to calculate how many assets are needed to mint the desired number of shares:
 
@@ -82,7 +74,7 @@ const assetsNeeded = await vault.previewMint(sharesToMint);
 
 The `previewMint` function is part of the [ERC-4626](https://eips.ethereum.org/EIPS/eip-4626) standard and returns the amount of assets required to mint a specific number of shares, accounting for the current exchange rate between assets and shares.
 
-### 6. Approve Token Transfer
+### 5. Approve Token Transfer
 
 Before minting, the script must approve the vault to spend the required amount of assets:
 
@@ -95,7 +87,7 @@ const approveTx = await assetToken.approve(vault.address, assetsNeeded, {
 This approval is required because the vault needs to transfer assets from the user's account.
 The approval amount should match or exceed the `assetsNeeded` value calculated in the previous step.
 
-### 7. Mint Vault Shares
+### 6. Mint Vault Shares
 
 Finally, the script mints the vault shares:
 

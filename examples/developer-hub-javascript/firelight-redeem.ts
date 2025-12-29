@@ -23,7 +23,6 @@ async function main() {
 
   const vault = await IFirelightVault.at(FIRELIGHT_VAULT_ADDRESS);
 
-  // 2. Get Asset Information
   // Get asset address from vault
   const assetAddress = await vault.asset();
 
@@ -37,7 +36,7 @@ async function main() {
   const assetDecimals = await assetToken.decimals();
   const assetDecimalsNum = Number(assetDecimals);
 
-  // 3. Calculate Shares to Redeem
+  // 2. Calculate Shares to Redeem
   const sharesToRedeem = SHARES_TO_REDEEM * 10 ** assetDecimalsNum;
 
   console.log("=== Redeem (ERC-4626) ===");
@@ -50,7 +49,7 @@ async function main() {
     `(= ${SHARES_TO_REDEEM} share${SHARES_TO_REDEEM > 1 ? "s" : ""})`,
   );
 
-  // 4. Check Maximum Redemption Capacity
+  // 3. Check Maximum Redemption Capacity
   // Check max redeem capacity
   const maxRedeem = await vault.maxRedeem(account);
   console.log("Max redeem:", maxRedeem.toString());
@@ -61,7 +60,7 @@ async function main() {
     process.exit(1);
   }
 
-  // 5. Check User Balance
+  // 4. Check User Balance
   // Check user balance
   const userBalance = await vault.balanceOf(account);
   const formattedUserBalance = (
@@ -79,7 +78,7 @@ async function main() {
     process.exit(1);
   }
 
-  // 6. Create Redemption Request
+  // 5. Create Redemption Request
   // Redeem creates a withdrawal request (no immediate asset transfer)
   const redeemTx = await vault.redeem(sharesToRedeem, account, account, {
     from: account,

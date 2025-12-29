@@ -44,15 +44,7 @@ The script starts by defining constants and importing the required contract inte
   Taken from the Firelight GitHub [repository](https://github.com/firelight-protocol/firelight-core/blob/main/contracts/FirelightVault.sol).
 - `IERC20`: Standard [ERC-20](https://eips.ethereum.org/EIPS/eip-20) interface for token interactions.
 
-### 2. Get Asset Information
-
-The script retrieves the underlying asset information to format amounts and calculate the deposit amount from the vault:
-
-- **Asset address**: The token address that the vault accepts (e.g., FXRP).
-- **Asset symbol**: The token symbol for display purposes.
-- **Asset decimals**: The number of decimals used by the token.
-
-### 3. Calculate Deposit Amount
+### 2. Calculate Deposit Amount
 
 The script converts the desired deposit amount into the correct units:
 
@@ -60,7 +52,7 @@ The script converts the desired deposit amount into the correct units:
 const amount = DEPOSIT_AMOUNT * 10 ** assetDecimals;
 ```
 
-### 4. Check Maximum Deposit Capacity
+### 3. Check Maximum Deposit Capacity
 
 Before depositing, the script checks if the requested amount exceeds the maximum allowed:
 
@@ -72,7 +64,7 @@ The `maxDeposit` function returns the maximum amount of assets that the specifie
 
 If the requested amount exceeds the maximum, the script exits with an error to prevent a failed transaction.
 
-### 5. Approve Token Transfer
+### 4. Approve Token Transfer
 
 Before depositing, the script must approve the vault to spend the deposit amount:
 
@@ -85,7 +77,7 @@ const approveTx = await assetToken.approve(vault.address, amount, {
 This approval is required because the vault needs to transfer assets from the user's account.
 The approval amount should match or exceed the `amount` value to be deposited.
 
-### 6. Deposit Assets
+### 5. Deposit Assets
 
 Finally, the script deposits the assets:
 

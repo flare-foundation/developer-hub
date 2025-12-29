@@ -45,15 +45,7 @@ The script starts by defining constants and importing the required contract inte
   Taken from the Firelight GitHub [repository](https://github.com/firelight-protocol/firelight-core/blob/main/contracts/FirelightVault.sol).
 - `IERC20`: Standard [ERC-20](https://eips.ethereum.org/EIPS/eip-20) interface for token interactions.
 
-### 2. Get Asset Information
-
-The script retrieves the underlying asset information to format amounts and calculate the redemption amount from the vault:
-
-- **Asset address**: The token address that the vault holds (e.g., FXRP).
-- **Asset symbol**: The token symbol for display purposes.
-- **Asset decimals**: The number of decimals used by the token.
-
-### 3. Calculate Shares to Redeem
+### 2. Calculate Shares to Redeem
 
 The script converts the desired number of shares to redeem into the correct units:
 
@@ -61,7 +53,7 @@ The script converts the desired number of shares to redeem into the correct unit
 const sharesToRedeem = SHARES_TO_REDEEM * 10 ** assetDecimalsNum;
 ```
 
-### 4. Check Maximum Redemption Capacity
+### 3. Check Maximum Redemption Capacity
 
 Before redeeming, the script checks if the requested amount exceeds the maximum allowed:
 
@@ -72,7 +64,7 @@ const maxRedeem = await vault.maxRedeem(account);
 The `maxRedeem` function returns the maximum number of shares that the specified account can redeem.
 If the requested amount exceeds the maximum, the script exits with an error to prevent a failed transaction.
 
-### 5. Check User Balance
+### 4. Check User Balance
 
 The script displays the user's current vault share balance and validates that they have sufficient shares:
 
@@ -83,7 +75,7 @@ const userBalance = await vault.balanceOf(account);
 The script then validates that the user has sufficient shares to cover the redemption request.
 This validation ensures the redemption will succeed before attempting the transaction.
 
-### 6. Create Redemption Request
+### 5. Create Redemption Request
 
 Finally, the script creates a redemption request:
 

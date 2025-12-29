@@ -28,7 +28,6 @@ async function main() {
 
   const vault = await FirelightVault.at(FIRELIGHT_VAULT_ADDRESS);
 
-  // 2. Get Asset Information
   // Get asset address from vault
   const assetAddress = await vault.asset();
   const assetToken = await IERC20.at(assetAddress);
@@ -37,7 +36,7 @@ async function main() {
   const assetDecimals = await assetToken.decimals();
   const assetDecimalsNum = Number(assetDecimals);
 
-  // 3. Calculate Shares to Mint
+  // 2. Calculate Shares to Mint
   const sharesToMint = SHARES_TO_MINT * 10 ** assetDecimalsNum;
 
   console.log("=== Mint vault shares (ERC-4626) ===");
@@ -50,7 +49,7 @@ async function main() {
     `(= ${SHARES_TO_MINT} share${SHARES_TO_MINT > 1 ? "s" : ""})`,
   );
 
-  // 4. Check Maximum Mint Capacity
+  // 3. Check Maximum Mint Capacity
   // Check max mint capacity
   const maxMint = await vault.maxMint(account);
   console.log("Max mint:", maxMint.toString());
@@ -61,19 +60,19 @@ async function main() {
     process.exit(1);
   }
 
-  // 5. Calculate Required Assets
+  // 4. Calculate Required Assets
   // Use previewMint to calculate how much assets we need to approve
   const assetsNeeded = await vault.previewMint(sharesToMint);
   console.log("Assets needed (from previewMint):", assetsNeeded.toString());
 
-  // 6. Approve Token Transfer
+  // 5. Approve Token Transfer
   // Approve + mint vault shares
   const approveTx = await assetToken.approve(vault.address, assetsNeeded, {
     from: account,
   });
   console.log("Approve tx:", approveTx.tx);
 
-  // 7. Mint Vault Shares
+  // 6. Mint Vault Shares
   const mintTx = await vault.mint(sharesToMint, account, { from: account });
   console.log("Mint tx:", mintTx.tx);
 }

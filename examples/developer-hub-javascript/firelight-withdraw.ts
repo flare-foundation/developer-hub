@@ -23,7 +23,6 @@ async function main() {
 
   const vault = await IFirelightVault.at(FIRELIGHT_VAULT_ADDRESS);
 
-  // 2. Get Asset Information
   // Get asset address from vault
   const assetAddress = await vault.asset();
 
@@ -37,7 +36,7 @@ async function main() {
   const assetDecimals = await assetToken.decimals();
   const assetDecimalsNum = Number(assetDecimals);
 
-  // 3. Calculate Withdrawal Amount
+  // 2. Calculate Withdrawal Amount
   const amount = WITHDRAW_AMOUNT * 10 ** assetDecimalsNum;
 
   console.log("=== Withdraw (ERC-4626) ===");
@@ -50,7 +49,7 @@ async function main() {
     `(= ${WITHDRAW_AMOUNT} ${symbol})`,
   );
 
-  // 4. Check Maximum Withdrawal Capacity
+  // 3. Check Maximum Withdrawal Capacity
   // Check max withdraw capacity
   const maxWithdraw = await vault.maxWithdraw(account);
   console.log("Max withdraw:", maxWithdraw.toString());
@@ -61,7 +60,7 @@ async function main() {
     process.exit(1);
   }
 
-  // 5. Check User Balance and Calculate Shares Needed
+  // 4. Check User Balance and Calculate Shares Needed
   // Check user balance
   const userBalance = await vault.balanceOf(account);
   const formattedUserBalance = (
@@ -82,7 +81,7 @@ async function main() {
     process.exit(1);
   }
 
-  // 6. Create Withdrawal Request
+  // 5. Create Withdrawal Request
   // Withdraw creates a withdrawal request (no immediate asset transfer)
   const withdrawTx = await vault.withdraw(amount, account, account, {
     from: account,
