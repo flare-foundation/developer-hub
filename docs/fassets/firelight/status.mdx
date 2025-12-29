@@ -1,0 +1,159 @@
+---
+title: Get Firelight Vault Status
+tags: [intermediate, fassets]
+slug: firelight-vault-status
+description: Learn how to get Firelight vault status
+keywords: [fassets, flare-network, fxrp, firelight, vault]
+sidebar_position: 1
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import FirelightStatus from "!!raw-loader!/examples/developer-hub-javascript/firelight-status.ts";
+
+## Overview
+
+This guide demonstrates how to retrieve and display information about a Firelight vault, including vault metrics, period configuration, user balances, and withdrawal information.
+
+The Firelight vault is a [ERC-4626](https://eips.ethereum.org/EIPS/eip-4626) vault architecture that works with [FAssets](/fassets/overview), allowing users to deposit FXRP tokens and earn rewards through a period-based system.
+
+## Prerequisites
+
+- [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit).
+- [Flare Network Periphery Contracts](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts).
+- Understanding of [FAssets](/fassets/overview).
+
+## Firelight Vault Status Script
+
+The following script retrieves and displays information about the Firelight vault:
+
+<CodeBlock language="typescript" title="scripts/firelight/status.ts">
+  {FirelightStatus}
+</CodeBlock>
+
+## Script Breakdown
+
+### 1. Script Setup
+
+The script starts by defining the Firelight vault address and importing the required contract interfaces:
+
+- `FIRELIGHT_VAULT_ADDRESS`: The address of the Firelight vault contract on the [Flare Testnet Coston2 network](/network/overview).
+- `IFirelightVault`: The interface for interacting with the Firelight vault contract.
+Taken from the Firelight GitHub [repository](https://github.com/firelight-protocol/firelight-core/blob/main/contracts/FirelightVault.sol).
+- `IERC20`: Standard [ERC-20](https://eips.ethereum.org/EIPS/eip-20) interface for token interactions.
+
+### 2. Asset Information
+
+The script retrieves basic asset information:
+
+- **Asset address**: The underlying token address (e.g., FXRP).
+- **Asset symbol**: The token symbol (e.g., "FXRP").
+- **Asset decimals**: The number of decimals used by the token.
+
+### 3. Vault Balances
+
+The script displays key vault metrics:
+
+- **Total assets**: The total amount of assets in the vault.
+- **Total supply**: The total number of shares minted by the vault.
+- **Exchange rate**: The current exchange rate between assets and shares, calculated as `totalAssets / totalSupply`.
+
+### 4. Period Configuration
+
+Firelight vaults operate on a [period-based logic](https://docs.firelight.finance/technical-documents#period-based-logic).
+
+The script retrieves:
+
+- **Period configurations count**: Total number of period configurations.
+- **Current period**: The active period number.
+- **Current period start**: Timestamp when the current period started.
+- **Current period end**: Timestamp when the current period ends.
+- **Next period end**: Timestamp when the next period will end. 
+- **Current period config**: Configuration details including:
+  - `epoch`: The epoch number.
+  - `duration`: Duration of the period in seconds.
+  - `startingPeriod`: The period when this configuration started.
+
+### 5. User Information
+
+For the connected account, the script displays:
+
+- **User balance (shares)**: The number of vault shares owned by the user.
+- **User balance (assets)**: The equivalent asset value of the user's shares.
+- **Max deposit**: Maximum amount the user can deposit.
+- **Max mint**: Maximum number of shares the user can mint.
+- **Max withdraw**: Maximum amount of assets the user can withdraw.
+- **Max redeem**: Maximum number of shares the user can redeem.
+
+### 6. User Withdrawals
+
+The script checks withdrawal information for:
+
+- **Current period**: Withdrawals requested in the current period.
+- **Previous period**: Withdrawals from the previous period.
+
+For each period with pending withdrawals, the script displays:
+- Period number.
+- Withdrawal amount in both raw units and formatted token units.
+
+## Running the Script
+
+To run the Firelight vault status script:
+
+1. Ensure you have the [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit) set up.
+3. Update the `FIRELIGHT_VAULT_ADDRESS` constant with the correct vault address for your network.
+4. Run the script using Hardhat:
+
+```bash
+npx hardhat run scripts/firelight/status.ts --network coston2
+```
+
+## Output
+
+The script outputs the following information:
+
+```bash
+=== Asset ===
+Asset address: 0x0b6A3645c240605887a5532109323A3E12273dc7
+Asset symbol: FTestXRP
+Asset decimals: 6
+
+=== Vault Balances ===
+Total assets (excl. pending withdrawals): 7990061 (7.990061 FTestXRP)
+Total supply (shares): 7990061 (7.990061 shares)
+Exchange rate: 1.000000 FTestXRP/share
+
+=== Period Configuration ===
+Period configurations count: 1
+Current period: 108
+Current period start: 1766966751 (2025-12-29T00:05:51.000Z)
+Current period end: 1767053151 (2025-12-30T00:05:51.000Z)
+Next period end: 1767139551 (2025-12-31T00:05:51.000Z)
+Current period config: { epoch: '1757635551', duration: '86400', startingPeriod: '0' }
+
+=== User Info ===
+Account: 0x0d09ff7630588E05E2449aBD3dDD1D8d146bc5c2
+User balance (shares): 61 (0.000061 shares)
+User balance (assets): 61 (0.000061 FTestXRP)
+Max deposit: 115792089237316195423570985008687907853269984665640564039457584007913129639935
+Max mint: 115792089237316195423570985008687907853269984665640564039457584007913129639935
+Max withdraw: 61
+Max redeem: 61
+
+=== User Withdrawals ===
+```
+
+## Summary
+
+In this guide, you learned how to retrieve status information from a Firelight vault.
+
+This information is essential for building applications that interact with Firelight vaults and for monitoring vault health and user positions.
+
+:::tip[What's next]
+
+To continue your Firelight development journey, you can:
+
+- Learn how to [deposit assets into a Firelight vault](/smart-accounts/fasset-instructions#01-firelight) using Smart Accounts
+- Understand how to [redeem from a Firelight vault](/smart-accounts/fasset-instructions#01-firelight) using Smart Accounts
+- Explore the [FAssets system overview](/fassets/overview) to understand the broader ecosystem
+
+:::
