@@ -132,7 +132,7 @@ async function main() {
   console.log("Max withdraw:", userMaxWithdraw.toString());
   console.log("Max redeem:", userMaxRedeem.toString());
 
-  // 6. User Withdrawals
+  // 6. User Withdrawals and Redemptions
   // Check withdrawals for current and previous periods
   console.log("\n=== User Withdrawals ===");
   const currentPeriodBN = web3.utils.toBN(currentPeriod.toString());
