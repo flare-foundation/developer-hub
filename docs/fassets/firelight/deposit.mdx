@@ -1,7 +1,7 @@
 ---
 title: Deposit Assets into Firelight Vault
 tags: [intermediate, fassets]
-slug: firelight-vault-deposit
+slug: deposit
 description: Learn how to deposit assets into a Firelight vault
 keywords: [fassets, flare-network, fxrp, firelight, vault]
 sidebar_position: 2
@@ -41,7 +41,7 @@ The script starts by defining constants and importing the required contract inte
 - `FIRELIGHT_VAULT_ADDRESS`: The address of the Firelight vault contract on the [Flare Testnet Coston2 network](/network/overview).
 - `DEPOSIT_AMOUNT`: The number of tokens to deposit (default: 1 token).
 - `IFirelightVault`: The interface for interacting with the Firelight vault contract.
-Taken from the Firelight GitHub [repository](https://github.com/firelight-protocol/firelight-core/blob/main/contracts/FirelightVault.sol).
+  Taken from the Firelight GitHub [repository](https://github.com/firelight-protocol/firelight-core/blob/main/contracts/FirelightVault.sol).
 - `IERC20`: Standard [ERC-20](https://eips.ethereum.org/EIPS/eip-20) interface for token interactions.
 
 ### 2. Get Asset Information
@@ -57,7 +57,7 @@ The script retrieves the underlying asset information to format amounts and calc
 The script converts the desired deposit amount into the correct units:
 
 ```typescript
-const amount = DEPOSIT_AMOUNT * (10 ** assetDecimals);
+const amount = DEPOSIT_AMOUNT * 10 ** assetDecimals;
 ```
 
 ### 4. Check Maximum Deposit Capacity
@@ -77,7 +77,9 @@ If the requested amount exceeds the maximum, the script exits with an error to p
 Before depositing, the script must approve the vault to spend the deposit amount:
 
 ```typescript
-const approveTx = await assetToken.approve(vault.address, amount, { from: account });
+const approveTx = await assetToken.approve(vault.address, amount, {
+  from: account,
+});
 ```
 
 This approval is required because the vault needs to transfer assets from the user's account.
@@ -92,6 +94,7 @@ const depositTx = await vault.deposit(amount, account, { from: account });
 ```
 
 The `deposit` function:
+
 - Takes the amount of assets to deposit (`amount`).
 - Specifies the recipient address (`account`).
 - Transfers the assets from the user to the vault.

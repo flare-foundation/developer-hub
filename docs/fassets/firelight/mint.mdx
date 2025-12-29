@@ -1,7 +1,7 @@
 ---
 title: Mint Firelight Vault Shares
 tags: [intermediate, fassets]
-slug: firelight-vault-mint
+slug: mint
 description: Learn how to mint Firelight vault shares
 keywords: [fassets, flare-network, fxrp, firelight, vault]
 sidebar_position: 3
@@ -41,7 +41,7 @@ The script starts by defining constants and importing the required contract inte
 - `FIRELIGHT_VAULT_ADDRESS`: The address of the Firelight vault contract on the [Flare Testnet Coston2 network](/network/overview).
 - `SHARES_TO_MINT`: The number of shares to mint (default: 1 share).
 - `IFirelightVault`: The interface for interacting with the Firelight vault contract.
-Taken from the Firelight GitHub [repository](https://github.com/firelight-protocol/firelight-core/blob/main/contracts/FirelightVault.sol).
+  Taken from the Firelight GitHub [repository](https://github.com/firelight-protocol/firelight-core/blob/main/contracts/FirelightVault.sol).
 - `IERC20`: Standard [ERC-20](https://eips.ethereum.org/EIPS/eip-20) interface for token interactions.
 
 ### 2. Get Asset Information
@@ -57,7 +57,7 @@ The script retrieves the underlying asset information to format amounts and calc
 The script converts the desired number of shares to mint into the correct units:
 
 ```typescript
-const sharesToMint = SHARES_TO_MINT * (10 ** assetDecimalsNum);
+const sharesToMint = SHARES_TO_MINT * 10 ** assetDecimalsNum;
 ```
 
 ### 4. Check Maximum Mint Capacity
@@ -87,7 +87,9 @@ The `previewMint` function is part of the [ERC-4626](https://eips.ethereum.org/E
 Before minting, the script must approve the vault to spend the required amount of assets:
 
 ```typescript
-const approveTx = await assetToken.approve(vault.address, assetsNeeded, { from: account });
+const approveTx = await assetToken.approve(vault.address, assetsNeeded, {
+  from: account,
+});
 ```
 
 This approval is required because the vault needs to transfer assets from the user's account.
@@ -102,6 +104,7 @@ const mintTx = await vault.mint(sharesToMint, account, { from: account });
 ```
 
 The `mint` function:
+
 - Takes the number of shares to mint (`sharesToMint`).
 - Specifies the recipient address (`account`).
 - Transfers the required assets from the user to the vault.
