@@ -12,7 +12,10 @@ import type { Payment } from "xrpl";
 import { FXRPCollateralReservationInstruction } from "@flarenetwork/smart-accounts-encoder";
 import { getAssetManagerFXRP } from "../utils/getters";
 import { sleep } from "../utils/core";
-import type { IAssetManagerInstance, IERC20Instance } from "../../typechain-types";
+import type {
+  IAssetManagerInstance,
+  IERC20Instance,
+} from "../../typechain-types";
 import * as fs from "fs";
 import * as path from "path";
 
