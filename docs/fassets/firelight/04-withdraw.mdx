@@ -35,67 +35,16 @@ The following script demonstrates how to create a withdrawal request from the Fi
 
 ## Script Breakdown
 
-### 1. Script Setup
+The `main()` function executes the following steps:
 
-The script starts by defining constants and importing the required contract interfaces:
-
-- `FIRELIGHT_VAULT_ADDRESS`: The address of the Firelight vault contract on the [Flare Testnet Coston2 network](/network/overview).
-- `WITHDRAW_AMOUNT`: The number of tokens to withdraw (default: 1 token).
-- `IFirelightVault`: The interface for interacting with the Firelight vault contract.
-  Taken from the Firelight GitHub [repository](https://github.com/firelight-protocol/firelight-core/blob/main/contracts/FirelightVault.sol).
-- `IERC20`: Standard [ERC-20](https://eips.ethereum.org/EIPS/eip-20) interface for token interactions.
-
-### 2. Calculate Withdrawal Amount
-
-The script converts the desired withdrawal amount into the correct units:
-
-```typescript
-const amount = WITHDRAW_AMOUNT * 10 ** assetDecimalsNum;
-```
-
-### 3. Check Maximum Withdrawal Capacity
-
-Before withdrawing, the script checks if the requested amount exceeds the maximum allowed:
-
-```typescript
-const maxWithdraw = await vault.maxWithdraw(account);
-```
-
-The `maxWithdraw` function returns the maximum amount of assets that the specified account can withdraw.
-
-If the requested amount exceeds the maximum, the script exits with an error to prevent a failed transaction.
-
-### 4. Check User Balance and Calculate Shares Needed
-
-The script displays the user's current vault share balance and calculates how many shares are needed for the withdrawal:
-
-```typescript
-const userBalance = await vault.balanceOf(account);
-const sharesNeeded = await vault.previewWithdraw(amount);
-```
-
-The `previewWithdraw` function is part of the [ERC-4626](https://eips.ethereum.org/EIPS/eip-4626) standard and returns the number of shares required to withdraw a specific amount of assets, accounting for the current exchange rate between assets and shares.
-
-The script then validates that the user has sufficient shares.
-This validation ensures the withdrawal will succeed before attempting the transaction.
-
-### 5. Create Withdrawal Request
-
-Finally, the script creates a withdrawal request:
-
-```typescript
-const withdrawTx = await vault.withdraw(amount, account, account, {
-  from: account,
-});
-```
-
-The `withdraw` function:
-
-- Takes the amount of assets to withdraw (`amount`).
-- Specifies the owner address (first `account` parameter).
-- Specifies the recipient address (second `account` parameter).
-- Creates a withdrawal request for the current period.
-- Does not immediately transfer assets; the withdrawal must be claimed after the period ends.
+1. **Get the account**: Retrieves the signer account from the Hardhat environment.
+2. **Get the vault and asset token**: Connects to the Firelight vault contract and retrieves the underlying asset token.
+3. **Get asset info**: Fetches the asset token's symbol and decimals.
+4. **Calculate the withdrawal amount**: Converts the desired withdrawal amount into the correct units based on token decimals.
+5. **Log withdraw info**: Displays the withdrawal details, including sender, vault, asset, and amount.
+6. **Validate the withdrawal**: Checks if the requested amount exceeds the maximum allowed using `maxWithdraw()`.
+7. **Check user balance and shares needed**: Verifies the user has sufficient shares using `balanceOf()` and `previewWithdraw()`.
+8. **Execute the withdrawal**: Calls the vault's `withdraw()` function to create a withdrawal request for the current period.
 
 ## Understanding Withdrawal Process
 

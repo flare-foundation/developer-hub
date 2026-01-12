@@ -34,73 +34,17 @@ The following script demonstrates how to mint vault shares by depositing assets 
 
 ## Script Breakdown
 
-### 1. Script Setup
+The `main()` function executes the following steps:
 
-The script starts by defining constants and importing the required contract interfaces:
-
-- `FIRELIGHT_VAULT_ADDRESS`: The address of the Firelight vault contract on the [Flare Testnet Coston2 network](/network/overview).
-- `SHARES_TO_MINT`: The number of shares to mint (default: 1 share).
-- `IFirelightVault`: The interface for interacting with the Firelight vault contract.
-  Taken from the Firelight GitHub [repository](https://github.com/firelight-protocol/firelight-core/blob/main/contracts/FirelightVault.sol).
-- `IERC20`: Standard [ERC-20](https://eips.ethereum.org/EIPS/eip-20) interface for token interactions.
-
-### 2. Calculate Shares to Mint
-
-The script converts the desired number of shares to mint into the correct units:
-
-```typescript
-const sharesToMint = SHARES_TO_MINT * 10 ** assetDecimalsNum;
-```
-
-### 3. Check Maximum Mint Capacity
-
-Before minting, the script checks if the requested amount exceeds the maximum allowed:
-
-```typescript
-const maxMint = await vault.maxMint(account);
-```
-
-The `maxMint` function returns the maximum number of shares that the specified account can mint.
-
-If the requested amount exceeds the maximum, the script exits with an error to prevent a failed transaction.
-
-### 4. Calculate Required Assets
-
-The script uses the `previewMint` function to calculate how many assets are needed to mint the desired number of shares:
-
-```typescript
-const assetsNeeded = await vault.previewMint(sharesToMint);
-```
-
-The `previewMint` function is part of the [ERC-4626](https://eips.ethereum.org/EIPS/eip-4626) standard and returns the amount of assets required to mint a specific number of shares, accounting for the current exchange rate between assets and shares.
-
-### 5. Approve Token Transfer
-
-Before minting, the script must approve the vault to spend the required amount of assets:
-
-```typescript
-const approveTx = await assetToken.approve(vault.address, assetsNeeded, {
-  from: account,
-});
-```
-
-This approval is required because the vault needs to transfer assets from the user's account.
-The approval amount should match or exceed the `assetsNeeded` value calculated in the previous step.
-
-### 6. Mint Vault Shares
-
-Finally, the script mints the vault shares:
-
-```typescript
-const mintTx = await vault.mint(sharesToMint, account, { from: account });
-```
-
-The `mint` function:
-
-- Takes the number of shares to mint (`sharesToMint`).
-- Specifies the recipient address (`account`).
-- Transfers the required assets from the user to the vault.
-- Mints the corresponding number of shares to the recipient.
+1. **Get the account**: Retrieves the signer account from the Hardhat environment.
+2. **Get the vault and asset token**: Connects to the Firelight vault contract and retrieves the underlying asset token.
+3. **Get asset info**: Fetches the asset token's symbol and decimals.
+4. **Calculate the shares amount to mint**: Converts the desired number of shares into the correct units based on token decimals.
+5. **Log mint info**: Displays the mint details, including sender, vault, asset, and shares amount.
+6. **Validate the mint**: Checks if the requested amount exceeds the maximum allowed using `maxMint()`.
+7. **Calculate assets needed**: Uses `previewMint()` to determine how many assets are required for the desired shares.
+8. **Approve tokens for transfer**: Approves the vault to spend the required assets using the ERC-20 `approve()` function.
+9. **Execute the mint**: Calls the vault's `mint()` function, which transfers assets and mints shares to the recipient.
 
 ## Running the Script
 

@@ -1,95 +1,108 @@
 /**
  * FirelightVault Withdraw Script
- *
+ * 
  * This script creates a withdrawal request from the FirelightVault (ERC-4626).
  * Withdrawals are delayed and must be claimed after the period ends.
- *
+ * 
  * Usage:
  *   yarn hardhat run scripts/firelight/withdraw.ts --network coston2
  */
 
-// 1. Script Setup
-export const FIRELIGHT_VAULT_ADDRESS =
-  "0x91Bfe6A68aB035DFebb6A770FFfB748C03C0E40B";
+import { ethers } from "hardhat";
+import { bnToBigInt } from "../utils/core";
+import { IFirelightVaultInstance } from "../../typechain-types/contracts/firelight/IFirelightVault";
+
+export const FIRELIGHT_VAULT_ADDRESS = "0x91Bfe6A68aB035DFebb6A770FFfB748C03C0E40B";
 
 export const IFirelightVault = artifacts.require("IFirelightVault");
 
-const WITHDRAW_AMOUNT = 1; // Number of tokens to withdraw
+const tokensToWithdraw = 1; // Number of tokens to withdraw
+
+// @ts-expect-error - Type definitions issue, but works at runtime
+const IERC20 = artifacts.require("@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20");
+
+async function getAccount() {
+    const [signer] = await ethers.getSigners();
+    return { signer, account: signer.address };
+}
+
+async function getVaultAndAsset() {
+    const vault = await IFirelightVault.at(FIRELIGHT_VAULT_ADDRESS) as IFirelightVaultInstance;
+    const assetAddress = await vault.asset();
+    const assetToken = await IERC20.at(assetAddress);
+    return { vault, assetAddress, assetToken };
+}
+
+async function getAssetInfo(assetToken: any) {
+    const symbol = await assetToken.symbol();
+    const assetDecimals = await assetToken.decimals();
+    return { symbol, assetDecimals };
+}
+
+function logWithdrawInfo(account: string, assetAddress: string, symbol: string, assetDecimals: any, withdrawAmount: bigint) {
+    console.log("=== Withdraw (ERC-4626) ===");
+    console.log("Sender:", account);
+    console.log("Vault:", FIRELIGHT_VAULT_ADDRESS);
+    console.log("Asset:", assetAddress, `(${symbol}, decimals=${assetDecimals})`);
+    console.log("Withdraw amount:", withdrawAmount.toString(), `(= ${tokensToWithdraw} ${symbol})`);
+}
+
+async function validateWithdraw(vault: IFirelightVaultInstance, account: string, withdrawAmount: bigint) {
+    const maxWithdraw = bnToBigInt(await vault.maxWithdraw(account));
+    console.log("Max withdraw:", maxWithdraw);
+    if (withdrawAmount > maxWithdraw) {
+        console.error(`Cannot withdraw ${withdrawAmount.toString()} assets. Max allowed: ${maxWithdraw.toString()}`);
+        process.exit(1);
+    }
+}
+
+async function checkUserBalance(vault: IFirelightVaultInstance, account: string, withdrawAmount: bigint, assetDecimals: any) {
+    const userBalance = await vault.balanceOf(account);
+    const assetDecimalsNum = Number(assetDecimals);
+    const formattedUserBalance = (Number(userBalance.toString()) / Math.pow(10, assetDecimalsNum)).toFixed(assetDecimalsNum);
+    console.log("User balance (shares):", userBalance.toString(), `(= ${formattedUserBalance} shares)`);
+    
+    // Use previewWithdraw to calculate how many shares are needed for this withdrawal
+    const sharesNeeded = await vault.previewWithdraw(withdrawAmount.toString());
+    if (bnToBigInt(userBalance) < bnToBigInt(sharesNeeded)) {
+        console.error(`Insufficient balance. Need ${sharesNeeded.toString()} shares for withdrawal, have ${userBalance.toString()}`);
+        process.exit(1);
+    }
+}
+
+async function executeWithdraw(vault: IFirelightVaultInstance, withdrawAmount: bigint, account: string) {
+    const withdrawTx = await vault.withdraw(withdrawAmount.toString(), account, account, { from: account });
+    console.log("Withdraw tx:", withdrawTx.tx);
+}
 
 async function main() {
-  // Get the first account
-  const accounts = await web3.eth.getAccounts();
-  const account = accounts[0];
+    // 1. Get the account
+    const { account } = await getAccount();
 
-  const vault = await IFirelightVault.at(FIRELIGHT_VAULT_ADDRESS);
+    // 2. Get the vault and asset token
+    const { vault, assetAddress, assetToken } = await getVaultAndAsset();
 
-  // Get asset address from vault
-  const assetAddress = await vault.asset();
+    // 3. Get asset info (symbol, decimals)
+    const { symbol, assetDecimals } = await getAssetInfo(assetToken);
 
-  // @ts-expect-error - Type definitions issue, but works at runtime
-  const IERC20 = artifacts.require(
-    "@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20",
-  );
-  const assetToken = await IERC20.at(assetAddress);
+    // 4. Calculate the withdrawal amount
+    const withdrawAmount = BigInt(tokensToWithdraw * (10 ** Number(assetDecimals)));
 
-  const symbol = await assetToken.symbol();
-  const assetDecimals = await assetToken.decimals();
-  const assetDecimalsNum = Number(assetDecimals);
+    // 5. Log withdraw info
+    logWithdrawInfo(account, assetAddress, symbol, assetDecimals, withdrawAmount);
 
-  // 2. Calculate Withdrawal Amount
-  const amount = WITHDRAW_AMOUNT * 10 ** assetDecimalsNum;
+    // 6. Validate the withdrawal (check max withdraw)
+    await validateWithdraw(vault, account, withdrawAmount);
 
-  console.log("=== Withdraw (ERC-4626) ===");
-  console.log("Sender:", account);
-  console.log("Vault:", FIRELIGHT_VAULT_ADDRESS);
-  console.log("Asset:", assetAddress, `(${symbol}, decimals=${assetDecimals})`);
-  console.log(
-    "Withdraw amount:",
-    amount.toString(),
-    `(= ${WITHDRAW_AMOUNT} ${symbol})`,
-  );
+    // 7. Check user balance and shares needed
+    await checkUserBalance(vault, account, withdrawAmount, assetDecimals);
 
-  // 3. Check Maximum Withdrawal Capacity
-  // Check max withdraw capacity
-  const maxWithdraw = await vault.maxWithdraw(account);
-  console.log("Max withdraw:", maxWithdraw.toString());
-  if (BigInt(amount.toString()) > BigInt(maxWithdraw.toString())) {
-    console.error(
-      `Cannot withdraw ${amount.toString()} assets. Max allowed: ${maxWithdraw.toString()}`,
-    );
-    process.exit(1);
-  }
-
-  // 4. Check User Balance and Calculate Shares Needed
-  // Check user balance
-  const userBalance = await vault.balanceOf(account);
-  const formattedUserBalance = (
-    Number(userBalance.toString()) / Math.pow(10, assetDecimalsNum)
-  ).toFixed(assetDecimalsNum);
-  console.log(
-    "User balance (shares):",
-    userBalance.toString(),
-    `(= ${formattedUserBalance} shares)`,
-  );
-
-  // Use previewWithdraw to calculate how many shares are needed for this withdrawal
-  const sharesNeeded = await vault.previewWithdraw(amount);
-  if (BigInt(userBalance.toString()) < BigInt(sharesNeeded.toString())) {
-    console.error(
-      `Insufficient balance. Need ${sharesNeeded.toString()} shares for withdrawal, have ${userBalance.toString()}`,
-    );
-    process.exit(1);
-  }
-
-  // 5. Create Withdrawal Request
-  // Withdraw creates a withdrawal request (no immediate asset transfer)
-  const withdrawTx = await vault.withdraw(amount, account, account, {
-    from: account,
-  });
-  console.log("Withdraw tx:", withdrawTx.tx);
+    // 8. Execute the withdrawal
+    await executeWithdraw(vault, withdrawAmount, account);
 }
 
 main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
+    console.error(error);
+    process.exitCode = 1;
 });
+

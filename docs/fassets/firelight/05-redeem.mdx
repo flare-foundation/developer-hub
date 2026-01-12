@@ -35,63 +35,16 @@ The following script demonstrates how to create a redemption request from the Fi
 
 ## Script Breakdown
 
-### 1. Script Setup
+The `main()` function executes the following steps:
 
-The script starts by defining constants and importing the required contract interfaces:
-
-- `FIRELIGHT_VAULT_ADDRESS`: The address of the Firelight vault contract on the [Flare Testnet Coston2 network](/network/overview).
-- `SHARES_TO_REDEEM`: The number of shares to redeem (default: 1 share).
-- `IFirelightVault`: The interface for interacting with the Firelight vault contract.
-  Taken from the Firelight GitHub [repository](https://github.com/firelight-protocol/firelight-core/blob/main/contracts/FirelightVault.sol).
-- `IERC20`: Standard [ERC-20](https://eips.ethereum.org/EIPS/eip-20) interface for token interactions.
-
-### 2. Calculate Shares to Redeem
-
-The script converts the desired number of shares to redeem into the correct units:
-
-```typescript
-const sharesToRedeem = SHARES_TO_REDEEM * 10 ** assetDecimalsNum;
-```
-
-### 3. Check Maximum Redemption Capacity
-
-Before redeeming, the script checks if the requested amount exceeds the maximum allowed:
-
-```typescript
-const maxRedeem = await vault.maxRedeem(account);
-```
-
-The `maxRedeem` function returns the maximum number of shares that the specified account can redeem.
-If the requested amount exceeds the maximum, the script exits with an error to prevent a failed transaction.
-
-### 4. Check User Balance
-
-The script displays the user's current vault share balance and validates that they have sufficient shares:
-
-```typescript
-const userBalance = await vault.balanceOf(account);
-```
-
-The script then validates that the user has sufficient shares to cover the redemption request.
-This validation ensures the redemption will succeed before attempting the transaction.
-
-### 5. Create Redemption Request
-
-Finally, the script creates a redemption request:
-
-```typescript
-const redeemTx = await vault.redeem(sharesToRedeem, account, account, {
-  from: account,
-});
-```
-
-The `redeem` function:
-
-- Takes the number of shares to redeem (`sharesToRedeem`).
-- Specifies the owner address (first `account` parameter).
-- Specifies the recipient address (second `account` parameter).
-- Creates a redemption request for the current period.
-- Does not immediately transfer assets; the redemption must be claimed after the period ends.
+1. **Get the account**: Retrieves the signer account from the Hardhat environment.
+2. **Get the vault and asset token**: Connects to the Firelight vault contract and retrieves the underlying asset token.
+3. **Get asset info**: Fetches the asset token's symbol and decimals.
+4. **Calculate the shares amount to redeem**: Converts the desired number of shares into the correct units based on token decimals.
+5. **Log redeem info**: Displays the redemption details, including sender, vault, asset, and shares amount.
+6. **Validate the redeem**: Checks if the requested amount exceeds the maximum allowed using `maxRedeem()`.
+7. **Check user balance**: Verifies the user has sufficient shares using `balanceOf()`.
+8. **Execute the redemption**: Calls the vault's `redeem()` function to create a redemption request for the current period.
 
 ## Understanding Redemption Process
 

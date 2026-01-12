@@ -34,62 +34,16 @@ The following script demonstrates how to deposit assets into the Firelight vault
 
 ## Script Breakdown
 
-### 1. Script Setup
+The `main()` function executes the following steps:
 
-The script starts by defining constants and importing the required contract interfaces:
-
-- `FIRELIGHT_VAULT_ADDRESS`: The address of the Firelight vault contract on the [Flare Testnet Coston2 network](/network/overview).
-- `DEPOSIT_AMOUNT`: The number of tokens to deposit (default: 1 token).
-- `IFirelightVault`: The interface for interacting with the Firelight vault contract, taken from the Firelight GitHub [repository](https://github.com/firelight-protocol/firelight-core/blob/main/contracts/FirelightVault.sol).
-- `IERC20`: Standard [ERC-20](https://eips.ethereum.org/EIPS/eip-20) interface for token interactions.
-
-### 2. Calculate Deposit Amount
-
-The script converts the desired deposit amount into the correct units:
-
-```typescript
-const amount = DEPOSIT_AMOUNT * 10 ** assetDecimals;
-```
-
-### 3. Check Maximum Deposit Capacity
-
-Before depositing, the script checks if the requested amount exceeds the maximum allowed:
-
-```typescript
-const maxDeposit = await vault.maxDeposit(account);
-```
-
-The `maxDeposit` function returns the maximum amount of assets that the specified account can deposit.
-
-If the requested amount exceeds the maximum, the script exits with an error to prevent a failed transaction.
-
-### 4. Approve Token Transfer
-
-Before depositing, the script must approve the vault to spend the deposit amount:
-
-```typescript
-const approveTx = await assetToken.approve(vault.address, amount, {
-  from: account,
-});
-```
-
-This approval is required because the vault needs to transfer assets from the user's account.
-The approval amount should match or exceed the `amount` value to be deposited.
-
-### 5. Deposit Assets
-
-Finally, the script deposits the assets:
-
-```typescript
-const depositTx = await vault.deposit(amount, account, { from: account });
-```
-
-The `deposit` function:
-
-- Takes the amount of assets to deposit (`amount`).
-- Specifies the recipient address (`account`).
-- Transfers the assets from the user to the vault.
-- Mints the corresponding number of shares to the recipient based on the current exchange rate.
+1. **Get the account**: Retrieves the signer account from the Hardhat environment.
+2. **Get the vault and asset token**: Connects to the Firelight vault contract and retrieves the underlying asset token.
+3. **Get asset info**: Fetches the asset token's symbol and decimals.
+4. **Calculate the deposit amount**: Converts the desired deposit amount into the correct units based on token decimals.
+5. **Log deposit info**: Displays the deposit details, including sender, vault, asset, and amount.
+6. **Validate the deposit**: Checks if the requested amount exceeds the maximum allowed deposit using `maxDeposit()`.
+7. **Approve tokens for transfer**: Approves the vault to spend the deposit amount using the ERC-20 `approve()` function.
+8. **Execute the deposit**: Calls the vault's `deposit()` function, which transfers assets and mints shares to the recipient.
 
 ## Running the Script
 
