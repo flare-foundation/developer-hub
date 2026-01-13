@@ -7,7 +7,8 @@
 
 import { ethers } from "hardhat";
 import { bnToBigInt } from "../utils/core";
-import { IFirelightVaultInstance } from "../../typechain-types/contracts/firelight/IFirelightVault";
+import type { IFirelightVaultInstance } from "../../typechain-types/contracts/firelight/IFirelightVault";
+import type { ERC20Instance } from "../../typechain-types/@openzeppelin/contracts/token/ERC20/ERC20";
 
 export const FIRELIGHT_VAULT_ADDRESS = "0x91Bfe6A68aB035DFebb6A770FFfB748C03C0E40B";
 
@@ -26,17 +27,17 @@ async function getAccount() {
 async function getVaultAndAsset() {
     const vault = await FirelightVault.at(FIRELIGHT_VAULT_ADDRESS) as IFirelightVaultInstance;
     const assetAddress = await vault.asset();
-    const assetToken = await IERC20.at(assetAddress);
+    const assetToken = await IERC20.at(assetAddress) as ERC20Instance;
     return { vault, assetAddress, assetToken };
 }
 
-async function getAssetInfo(assetToken: any) {
+async function getAssetInfo(assetToken: ERC20Instance) {
     const symbol = await assetToken.symbol();
-    const assetDecimals = await assetToken.decimals();
+    const assetDecimals = (await assetToken.decimals()).toNumber();
     return { symbol, assetDecimals };
 }
 
-function logMintInfo(account: string, assetAddress: string, symbol: string, assetDecimals: any, sharesAmount: bigint) {
+function logMintInfo(account: string, assetAddress: string, symbol: string, assetDecimals: number, sharesAmount: bigint) {
     console.log("=== Mint vault shares (ERC-4626) ===");
     console.log("Sender:", account);
     console.log("Vault:", FIRELIGHT_VAULT_ADDRESS);
@@ -59,8 +60,8 @@ async function calculateAssetsNeeded(vault: IFirelightVaultInstance, sharesAmoun
     return assetsNeeded;
 }
 
-async function approveTokens(assetToken: any, vault: any, amount: bigint, account: string) {
-    const approveTx = await assetToken.approve(vault.address, amount, { from: account });
+async function approveTokens(assetToken: ERC20Instance, vault: IFirelightVaultInstance, amount: bigint, account: string) {
+    const approveTx = await assetToken.approve(vault.address, amount.toString(), { from: account });
     console.log("Approve tx:", approveTx.tx);
 }
 
@@ -80,7 +81,7 @@ async function main() {
     const { symbol, assetDecimals } = await getAssetInfo(assetToken);
 
     // 4. Calculate the shares amount to mint
-    const sharesAmount = BigInt(sharesToMint * (10 ** Number(assetDecimals)));
+    const sharesAmount = BigInt(sharesToMint * (10 ** assetDecimals));
 
     // 5. Log mint info
     logMintInfo(account, assetAddress, symbol, assetDecimals, sharesAmount);
