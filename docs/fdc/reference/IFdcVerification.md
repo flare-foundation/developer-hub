@@ -14,7 +14,7 @@ Sourced from `IFdcVerification.sol` on [GitHub](https://github.com/flare-foundat
 
 ## Overview
 
-The IFdcVerification interface provides methods to verify different types of attestations from the Flare Data Connector. Smart contracts can use these verification functions to validate proofs provided by the State Connector system, ensuring the authenticity and integrity of the external data being used.
+The IFdcVerification interface provides methods to verify different types of attestations from the Flare Data Connector. Smart contracts can use these verification functions to validate proofs provided by the FDC, ensuring the authenticity and integrity of the external data being used.
 
 ## Verification Functions
 
