@@ -1,0 +1,112 @@
+---
+title: Redeem Assets from Firelight Vault
+tags: [intermediate, fassets]
+slug: redeem
+description: Learn how to redeem assets from a Firelight vault
+keywords: [fassets, flare-network, fxrp, firelight, vault]
+sidebar_position: 5
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import FirelightRedeem from "!!raw-loader!/examples/developer-hub-javascript/firelight-redeem.ts";
+
+## Overview
+
+This guide demonstrates how to create a redemption request from a Firelight vault.
+The Firelight vault implements the [ERC-4626](https://eips.ethereum.org/EIPS/eip-4626) standard and uses a [period-based logic](https://docs.firelight.finance/technical-documents#period-based-logic) for redemptions.
+
+Redeeming shares burns vault shares and allows assets to be withdrawn. Redemptions create a withdrawal request that is processed after the current period ends.
+The assets are not immediately transferred; they must be claimed once the period has ended.
+
+## Prerequisites
+
+- [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit)
+- [Flare Network Periphery Contracts](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts)
+- Understanding of [FAssets](/fassets/overview)
+- Vault shares in the Firelight vault to redeem.
+
+## Firelight Vault Redeem Script
+
+The following script demonstrates how to create a redemption request from the Firelight vault:
+
+<CodeBlock language="typescript" title="scripts/firelight/redeem.ts">
+  {FirelightRedeem}
+</CodeBlock>
+
+## Script Breakdown
+
+The `main()` function executes the following steps:
+
+1. **Get the account:** Retrieves the signer account from the Hardhat environment.
+2. **Get the vault and asset token:** Connects to the vault contract and retrieves the underlying asset token.
+3. **Get asset info:** Fetches the asset token's symbol and decimals.
+4. **Calculate the shares amount to redeem:** Converts the desired shares into the correct units based on decimals.
+5. **Log redeem info:** Displays the redemption details, including sender, vault, and shares.
+6. **Validate the redeem:** Checks if the amount exceeds the maximum allowed.
+7. **Check user balance:** Verifies the user has sufficient shares.
+8. **Execute the redemption:** Calls `redeem()` to create a redemption request for the current period.
+
+## Understanding Redemption Process
+
+The Firelight vault uses a period-based redemption system:
+
+1. **Redemption Request**: When you call `redeem`, it creates a redemption request associated with the current period.
+2. **Period End**: The redemption is processed after the current period ends.
+3. **Claim Redemption**: Once the period has ended, you must claim the redemption to receive your assets.
+
+This delayed redemption mechanism is part of the vault's [period-based logic](https://docs.firelight.finance/technical-documents#period-based-logic) and helps manage liquidity and ensure fair distribution of rewards.
+
+## Running the Script
+
+To run the Firelight vault redeem script:
+
+1. Ensure you have the [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit) set up.
+2. Update the `FIRELIGHT_VAULT_ADDRESS` constant with the correct vault address for your network.
+3. Adjust the `SHARES_TO_REDEEM` constant to the desired number of shares.
+4. Ensure your account has sufficient vault shares to cover the redemption.
+5. Run the script using Hardhat:
+
+```bash
+npx hardhat run scripts/firelight/redeem.ts --network coston2
+```
+
+## Output
+
+The script outputs the following information:
+
+```bash
+=== Redeem (ERC-4626) ===
+Sender: 0x0d09ff7630588E05E2449aBD3dDD1D8d146bc5c2
+Vault: 0x91Bfe6A68aB035DFebb6A770FFfB748C03C0E40B
+Asset: 0x0b6A3645c240605887a5532109323A3E12273dc7 (FTestXRP, decimals=6)
+Shares to redeem: 1000000 (= 1 share)
+Max redeem: 1000061
+User balance (shares): 1000061 (= 1.000061 shares)
+Redeem tx: 0x3f1bd8c766852d3b835bcde79f6d8e20afeeb227d737e0ed28d057dc0e6b2ba9
+```
+
+## Difference Between Redeem and Withdraw
+
+The Firelight vault provides two ways to remove assets:
+
+- **`redeem`**: You specify the number of shares to redeem, and the vault calculates how many assets you'll receive.
+- **`withdraw`**: You specify the amount of assets to withdraw, and the vault calculates how many shares need to be burned based on the current exchange rate.
+
+Both functions follow the [ERC-4626](https://eips.ethereum.org/EIPS/eip-4626) standard and create withdrawal requests that must be claimed after the period ends.
+
+## Summary
+
+In this guide, you learned how to create a redemption request from a Firelight vault by specifying the number of shares to redeem.
+Remember that redemptions are delayed and must be claimed after the current period ends.
+
+:::tip[What's next]
+
+To continue your Firelight development journey, you can:
+
+- Learn how to [get Firelight vault status](/fassets/firelight/status) to monitor your redemption requests.
+- Learn how to [withdraw assets from a Firelight vault](/fassets/firelight/withdraw) by specifying the amount of assets.
+- Learn how to [deposit assets into a Firelight vault](/fassets/firelight/deposit).
+- Learn how to [mint Firelight vault shares](/fassets/firelight/mint) by specifying the number of shares.
+- Explore the [FAssets system overview](/fassets/overview) to understand the broader ecosystem.
+
+:::

@@ -1,0 +1,112 @@
+---
+title: Withdraw Assets from Firelight Vault
+tags: [intermediate, fassets]
+slug: withdraw
+description: Learn how to withdraw assets from a Firelight vault
+keywords: [fassets, flare-network, fxrp, firelight, vault]
+sidebar_position: 4
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import FirelightWithdraw from "!!raw-loader!/examples/developer-hub-javascript/firelight-withdraw.ts";
+
+## Overview
+
+This guide demonstrates how to create a withdrawal request from a Firelight vault.
+The Firelight vault implements the [ERC-4626](https://eips.ethereum.org/EIPS/eip-4626) standard and uses a [period-based logic](https://docs.firelight.finance/technical-documents#period-based-logic) for withdrawals.
+
+Withdrawing assets creates a withdrawal request that is processed after the current period ends.
+The assets are not immediately transferred; they must be claimed once the period has ended.
+
+## Prerequisites
+
+- [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit)
+- [Flare Network Periphery Contracts](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts)
+- Understanding of [FAssets](/fassets/overview)
+- Vault shares in the Firelight vault to withdraw.
+
+## Firelight Vault Withdraw Script
+
+The following script demonstrates how to create a withdrawal request from the Firelight vault:
+
+<CodeBlock language="typescript" title="scripts/firelight/withdraw.ts">
+  {FirelightWithdraw}
+</CodeBlock>
+
+## Script Breakdown
+
+The `main()` function executes the following steps:
+
+1. **Get the account:** Retrieves the signer account from the Hardhat environment.
+2. **Get the vault and asset token:** Connects to the vault contract and retrieves the underlying asset token.
+3. **Get asset info:** Fetches the asset token's symbol and decimals.
+4. **Calculate the withdrawal amount:** Converts the desired amount into the correct units based on decimals.
+5. **Log withdraw info:** Displays the withdrawal details, including sender, vault, and amount.
+6. **Validate the withdrawal:** Checks if the amount exceeds the maximum allowed.
+7. **Check user balance and shares needed:** Verifies the user has sufficient shares for the withdrawal.
+8. **Execute the withdrawal:** Calls `withdraw()` to create a withdrawal request for the current period.
+
+## Understanding Withdrawal Process
+
+The Firelight vault uses a period-based withdrawal system:
+
+1. **Withdrawal Request**: When you call `withdraw`, it creates a withdrawal request associated with the current period.
+2. **Period End**: The withdrawal is processed after the current period ends.
+3. **Claim Withdrawal**: Once the period has ended, you must claim the withdrawal to receive your assets.
+
+This delayed withdrawal mechanism is part of the vault's [period-based logic](https://docs.firelight.finance/technical-documents#period-based-logic) and helps manage liquidity and ensure fair distribution of rewards.
+
+## Running the Script
+
+To run the Firelight vault withdraw script:
+
+1. Ensure you have the [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit) set up.
+2. Update the `FIRELIGHT_VAULT_ADDRESS` constant with the correct vault address for your network.
+3. Adjust the `WITHDRAW_AMOUNT` constant to the desired number of tokens.
+4. Ensure your account has sufficient vault shares to cover the withdrawal.
+5. Run the script using Hardhat:
+
+```bash
+npx hardhat run scripts/firelight/withdraw.ts --network coston2
+```
+
+## Output
+
+The script outputs the following information:
+
+```bash
+=== Withdraw (ERC-4626) ===
+Sender: 0x0d09ff7630588E05E2449aBD3dDD1D8d146bc5c2
+Vault: 0x91Bfe6A68aB035DFebb6A770FFfB748C03C0E40B
+Asset: 0x0b6A3645c240605887a5532109323A3E12273dc7 (FTestXRP, decimals=6)
+Withdraw amount: 1000000 (= 1 FTestXRP)
+Max withdraw: 2000061
+User balance (shares): 2000061 (= 2.000061 shares)
+Withdraw tx: 0x23d8f34b582ef9935d3e3686a15e7fff34417ac01f68f7f928b14e2b4ef10ba9
+```
+
+## Difference Between Withdraw and Redeem
+
+The Firelight vault provides two ways to remove assets:
+
+- **`withdraw`**: You specify the amount of assets to withdraw, and the vault calculates how many shares need to be burned based on the current exchange rate.
+- **`redeem`**: You specify the number of shares to redeem, and the vault calculates how many assets you'll receive.
+
+Both functions follow the [ERC-4626](https://eips.ethereum.org/EIPS/eip-4626) standard and create withdrawal requests that must be claimed after the period ends.
+
+## Summary
+
+In this guide, you learned how to create a withdrawal request from a Firelight vault by specifying the amount of assets to withdraw.
+Remember that withdrawals are delayed and must be claimed after the current period ends.
+
+:::tip[What's next]
+
+To continue your Firelight development journey, you can:
+
+- Learn how to [get Firelight vault status](/fassets/firelight/status) to monitor your withdrawal requests.
+- Learn how to [redeem assets from a Firelight vault](/fassets/firelight/redeem) by specifying the number of shares.
+- Learn how to [deposit assets into a Firelight vault](/fassets/firelight/deposit).
+- Learn how to [mint Firelight vault shares](/fassets/firelight/mint) by specifying the number of shares.
+- Explore the [FAssets system overview](/fassets/overview) to understand the broader ecosystem.
+
+:::
