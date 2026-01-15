@@ -5,14 +5,14 @@ keywords: [flare-network, data-provider, fdc, web2, verifier, configuration]
 sidebar_position: 1
 ---
 
-This guide explains how data providers can set up the [Web2 FDC attestation type](/fdc/attestation-types/web2-json).
+This guide explains how data providers can set up support for the [Web2 FDC attestation type](/fdc/attestation-types/web2-json).
 The setup involves configuring a Web2 verifier server and updating the FDC Client.
 
 ## Prerequisites
 
 - Access to the [FDC Suite Deployment repository](https://github.com/flare-foundation/fdc-suite-deployment).
 - Access to the [FSP Deployment repository](https://github.com/flare-foundation/flare-systems-deployment).
-- An Ignite API key (see [Obtaining an Ignite API Key](#obtaining-an-ignite-api-key)).
+- API key for the Ignite Web2Json source (see [Obtaining an Ignite API Key](#obtaining-an-ignite-api-key))
 
 ## Set Up Web2 Verifier
 
@@ -48,11 +48,12 @@ The setup involves configuring a Web2 verifier server and updating the FDC Clien
 
 ## Update FDC Client
 
-1. Pull the [FSP Deployment](https://github.com/flare-foundation/flare-systems-deployment) repository version v1.2.0:
+1. Update your [Flare Systems Protocol Deployment](https://github.com/flare-foundation/flare-systems-deployment) to version v1.2.0:
 
    ```bash
-   git clone --branch v1.2.0 https://github.com/flare-foundation/flare-systems-deployment.git
    cd flare-systems-deployment
+   git fetch origin
+   git checkout v1.2.0
    ```
 
 2. Set the verifier address and API key in `.env` (see `.env.example` for reference):
@@ -80,49 +81,8 @@ The setup involves configuring a Web2 verifier server and updating the FDC Clien
 
 ## Obtaining an Ignite API Key
 
-API keys for the Ignite proxy are encrypted with each provider's signing policy public key and published at:
-
-- **Flare**: https://api.ignitemarket.xyz/proxy-api-keys
-- **Songbird**: https://api.ignitemarket.xyz/proxy-api-keys/songbird
-
-### Setup
-
-1. Clone the [verifier-indexer-api](https://github.com/flare-foundation/verifier-indexer-api) repository and install dependencies:
-
-   ```bash
-   git clone https://github.com/flare-foundation/verifier-indexer-api.git
-   cd verifier-indexer-api
-   yarn install
-   ```
-
-2. Create a `.env.decrypt` file in `scripts/web2/` with your provider's signing policy private key:
-
-   ```bash
-   PRIVATE_KEY=0x...
-   ```
-
-### Decrypt Your API Key
-
-1. Fetch the encrypted keys from the `scripts/web2/` directory:
-
-   ```bash
-   cd scripts/web2/
-   curl -s "https://api.ignitemarket.xyz/proxy-api-keys" -o ignite-api-keys.json
-   ```
-
-   For Songbird, use `https://api.ignitemarket.xyz/proxy-api-keys/songbird` instead.
-
-2. Run the decryption script:
-
-   ```bash
-   npx ts-node decrypt-ignite-key.ts
-   ```
-
-   This script will:
-   1. Load the private key from `.env.decrypt`
-   2. Read the keys JSON file
-   3. Find the entry matching your signing policy address
-   4. Decrypt and display your API key
+API keys for the Ignite proxy are encrypted with each provider's signing policy public key.
+For detailed instructions on how to obtain and decrypt your API key, see the [FDC Attestation Verifier repository](https://github.com/flare-foundation/verifier-indexer-api/tree/main/scripts/web2#readme).
 
 :::tip[What's Next]
 
