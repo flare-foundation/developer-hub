@@ -275,13 +275,13 @@ const sidebars: SidebarsConfig = {
           type: "category",
           label: "Token Interactions",
           link: {
-            slug: "/fxrp/interactions",
+            slug: "/fxrp/token-interactions",
             type: "generated-index",
             description: "Guides for interacting with FXRP token.",
           },
           items: [
-            "fassets/developer-guides/fassets-fxrp-address",
-            "fassets/developer-guides/usdt0-fxrp-swap",
+            "fxrp/token-interactions/fxrp-address",
+            "fxrp/token-interactions/usdt0-fxrp-swap",
           ],
         },
         {
