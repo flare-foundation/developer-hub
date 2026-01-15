@@ -1,21 +1,21 @@
 ---
-title: Mint Firelight Vault Shares
+title: Deposit Assets into Firelight Vaults
 tags: [intermediate, fassets]
-slug: mint
-description: Learn how to mint Firelight vault shares
+slug: deposit
+description: Learn how to deposit assets into a Firelight vault
 keywords: [fassets, flare-network, fxrp, firelight, vault]
-sidebar_position: 3
+sidebar_position: 2
 ---
 
 import CodeBlock from "@theme/CodeBlock";
-import FirelightMint from "!!raw-loader!/examples/developer-hub-javascript/firelight-mint.ts";
+import FirelightDeposit from "!!raw-loader!/examples/developer-hub-javascript/firelight-deposit.ts";
 
 ## Overview
 
-This guide demonstrates how to mint vault shares in a Firelight vault by depositing assets.
+This guide demonstrates how to deposit assets into a Firelight vault.
 The Firelight vault implements the [ERC-4626](https://eips.ethereum.org/EIPS/eip-4626) standard, which allows users to deposit assets (e.g., FXRP) and receive vault shares in return.
 
-Minting shares is the process of depositing assets into the vault and receiving vault shares, which represent your proportional ownership of the vault's assets.
+Depositing assets is the process of transferring assets to the vault and receiving vault shares, which represent your proportional ownership of the vault's assets.
 
 ## Prerequisites
 
@@ -24,12 +24,12 @@ Minting shares is the process of depositing assets into the vault and receiving 
 - Understanding of [FAssets](/fassets/overview)
 - Sufficient asset balance (e.g., FXRP) to deposit into the vault.
 
-## Firelight Vault Mint Script
+## Firelight Vaults Deposit Script
 
-The following script demonstrates how to mint vault shares by depositing assets into the Firelight vault:
+The following script demonstrates how to deposit assets into the Firelight vault:
 
-<CodeBlock language="typescript" title="scripts/firelight/mint.ts">
-  {FirelightMint}
+<CodeBlock language="typescript" title="scripts/firelight/deposit.ts">
+  {FirelightDeposit}
 </CodeBlock>
 
 ## Script Breakdown
@@ -39,25 +39,24 @@ The `main()` function executes the following steps:
 1. **Get the account:** Retrieves the signer account from the Hardhat environment.
 2. **Get the vault and asset token:** Connects to the vault contract and retrieves the underlying asset token.
 3. **Get asset info:** Fetches the asset token's symbol and decimals.
-4. **Calculate the shares amount to mint:** Converts the desired shares into the correct units based on decimals.
-5. **Log mint info:** Displays the mint details, including sender, vault, and shares.
-6. **Validate the mint:** Checks if the amount exceeds the maximum allowed.
-7. **Calculate assets needed:** Uses `previewMint()` to determine the required assets.
-8. **Approve tokens for transfer:** Approves the vault to spend the required assets.
-9. **Execute the mint:** Calls `mint()` to transfer assets and mint shares.
+4. **Calculate the deposit amount:** Converts the desired amount into the correct units based on decimals.
+5. **Log deposit info:** Displays the deposit details, including sender, vault, and amount.
+6. **Validate the deposit:** Checks if the amount exceeds the maximum allowed.
+7. **Approve tokens for transfer:** Approves the vault to spend the deposit amount.
+8. **Execute the deposit:** Calls `deposit()` to transfer assets and mint shares.
 
 ## Running the Script
 
-To run the Firelight vault mint script:
+To run the Firelight vault deposit script:
 
 1. Ensure you have the [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit) set up.
 2. Update the `FIRELIGHT_VAULT_ADDRESS` constant with the correct vault address for your network.
-3. Adjust the `SHARES_TO_MINT` constant to the desired number of shares.
-4. Ensure your account has sufficient asset balance (e.g., FXRP) to cover the minting cost.
+3. Adjust the `DEPOSIT_AMOUNT` constant to the desired number of tokens.
+4. Ensure your account has sufficient asset balance (e.g., FXRP) to cover the deposit.
 5. Run the script using Hardhat:
 
 ```bash
-npx hardhat run scripts/firelight/mint.ts --network coston2
+npx hardhat run scripts/firelight/deposit.ts --network coston2
 ```
 
 ## Output
@@ -65,36 +64,35 @@ npx hardhat run scripts/firelight/mint.ts --network coston2
 The script outputs the following information:
 
 ```bash
-=== Mint vault shares (ERC-4626) ===
+=== Deposit (ERC-4626) ===
 Sender: 0x0d09ff7630588E05E2449aBD3dDD1D8d146bc5c2
 Vault: 0x91Bfe6A68aB035DFebb6A770FFfB748C03C0E40B
 Asset: 0x0b6A3645c240605887a5532109323A3E12273dc7 (FTestXRP, decimals=6)
-Shares to mint: 1000000 (= 1 share)
-Max mint: 115792089237316195423570985008687907853269984665640564039457584007913129639935
-Assets needed (from previewMint): 1000000
-Approve tx: 0xfe5683b82a4997df7d7b7c22c8c4dc416cdec8d1380dceeb996279c64c525460
-Mint tx: 0x14d1c7ffe4f3b6a9fa04315eb8592ff9c64f2ae80c7e6e3a6e1b9cf9478106c3
+Deposit amount: 1000000 (= 1 FTestXRP)
+Max deposit: 115792089237316195423570985008687907853269984665640564039457584007913129639935
+Approve tx: 0x87a36c1009575719fd3adb9a1bb2e3062a601bf910fc7fac3248da71891c39a4
+Deposit tx: 0x446b7a171859d676677fc870cff81c7e8c0d618fc3588e60665792da86b94c50
 ```
 
-## Difference Between Mint and Deposit
+## Difference Between Deposit and Mint
 
 The Firelight vault provides two ways to add assets:
 
-- **`mint`**: You specify the number of shares you want, and the vault calculates how many assets you need to deposit.
 - **`deposit`**: You specify the amount of assets to deposit, and the vault calculates how many shares you'll receive based on the current exchange rate.
+- **`mint`**: You specify the number of shares you want, and the vault calculates how many assets you need to deposit.
 
 Both functions follow the [ERC-4626](https://eips.ethereum.org/EIPS/eip-4626) standard and result in the same outcome: you deposit assets and receive vault shares.
 
 ## Summary
 
-In this guide, you learned how to mint vault shares in a Firelight vault by specifying the number of shares you want.
+In this guide, you learned how to deposit assets into a Firelight vault by specifying the amount of assets to deposit.
 
 :::tip[What's next]
 
 To continue your Firelight development journey, you can:
 
 - Learn how to [get Firelight vault status](/fassets/firelight/status) to monitor your position.
-- Learn how to [deposit assets into a Firelight vault](/fassets/firelight/deposit) by specifying the amount of assets to deposit.
+- Learn how to [mint Firelight vault shares](/fassets/firelight/mint) by specifying the number of shares.
 - Learn how to [withdraw assets from a Firelight vault](/fassets/firelight/withdraw).
 - Learn how to [redeem assets from a Firelight vault](/fassets/firelight/redeem).
 - Explore the [FAssets system overview](/fassets/overview) to understand the broader ecosystem.
