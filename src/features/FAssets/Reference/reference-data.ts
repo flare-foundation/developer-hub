@@ -51,7 +51,7 @@ export const reference = [
     description: "The FAsset-wrapped XRP token.",
     guide: {
       title: "Learn how to get the FXRP address.",
-      link: "/fassets/developer-guides/fassets-fxrp-address",
+      link: "/fxrp/token-interactions/fxrp-address",
     },
   },
 ];
