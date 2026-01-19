@@ -32,7 +32,7 @@ interface ITypeTemplate {
      * @notice Toplevel response
      * @param attestationType Extracted from the request.
      * @param sourceId Extracted from the request.
-     * @param votingRound The ID of the State Connector round in which the request was considered.
+     * @param votingRound The ID of the FDC round in which the request was considered.
      * @param lowestUsedTimestamp The lowest timestamp used to generate the response.
      * @param requestBody Extracted from the request.
      * @param responseBody Data defining the response. The verification rules for the construction of the response body and the type are defined per specific `attestationType`.
