@@ -3,6 +3,9 @@
  *
  * This script claims pending withdrawals from the FirelightVault.
  * Withdrawals must be requested first using withdraw/redeem, then claimed after the period ends.
+ *
+ * Usage:
+ *   yarn hardhat run scripts/firelight/claim.ts --network coston2
  */
 
 import { ethers } from "hardhat";
@@ -74,6 +77,25 @@ async function getClaimableAssets(
   } catch {
     return null;
   }
+}
+
+/**
+ * Checks if a withdrawal for a specific period has been claimed.
+ *
+ * @param vault - The FirelightVault instance
+ * @param period - The period number to check
+ * @param account - The account address to check
+ * @returns true if the withdrawal has been claimed (no pending withdrawals), false if still pending
+ */
+export async function isWithdrawClaimed(
+  vault: IFirelightVaultInstance,
+  period: bigint,
+  account: string,
+): Promise<boolean> {
+  const withdrawals = bnToBigInt(
+    await vault.withdrawalsOf(period.toString(), account),
+  );
+  return withdrawals === 0n;
 }
 
 async function findClaimablePeriods(
