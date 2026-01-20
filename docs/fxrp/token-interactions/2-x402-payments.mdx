@@ -1,0 +1,417 @@
+---
+title: x402 Payment Protocol
+tags: [intermediate, fassets, x402]
+slug: x402-payments
+description: Implement HTTP-native payments using the x402 protocol with EIP-3009
+keywords: [fassets, flare-network, x402, eip-3009, payments]
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import x402Deploy from "!!raw-loader!/examples/developer-hub-javascript/x402Deploy.ts";
+import x402Server from "!!raw-loader!/examples/developer-hub-javascript/x402Server.ts";
+import x402Agent from "!!raw-loader!/examples/developer-hub-javascript/x402Agent.ts";
+
+:::warning[MockUSDT0 Token]
+This guide currently uses a **MockUSDT0** token for demonstration purposes.
+FXRP will be supported once it implements the required [EIP-3009](https://eips.ethereum.org/EIPS/eip-3009) standard (`transferWithAuthorization`).
+This guide will be updated when FXRP gains EIP-3009 support.
+:::
+
+## Overview
+
+The [x402 protocol](https://www.x402.org/) enables HTTP-native payments using the long-reserved HTTP 402 "Payment Required" status code.
+This guide demonstrates how to implement x402 payments on Flare using [EIP-3009](https://eips.ethereum.org/EIPS/eip-3009) for gasless payment settlements.
+
+Key benefits of the x402 protocol:
+
+- **HTTP-native**: Payments are integrated directly into HTTP request/response flow.
+- **Gasless for payers**: Users sign authorizations off-chain; servers settle on-chain.
+- **Front-running protection**: EIP-3009's `receiveWithAuthorization` prevents transaction front-running.
+- **Idempotent**: Unique nonces ensure each payment can only be processed once.
+
+## Architecture
+
+The x402 implementation consists of four components:
+
+1. **MockUSDT0**: ERC-20 token with EIP-3009 support (`transferWithAuthorization`).
+2. **X402Facilitator**: Contract that verifies and settles EIP-3009 authorizations.
+3. **Server**: Express backend implementing the x402 payment flow.
+4. **Agent**: CLI tool for making automated payments.
+
+## EIP-3009 Payment Flow
+
+```
+┌─────────┐     1. Request Resource      ┌─────────────┐
+│  Agent  │ ─────────────────────────────▶│   Server    │
+│         │ ◀───────────────────────────── │             │
+│         │     2. 402 + Payment Req      │             │
+│         │                                │             │
+│         │     3. Sign EIP-712 Auth       │             │
+│         │     (off-chain signature)      │             │
+│         │                                │             │
+│         │     4. Request + X-Payment     │             │
+│         │ ─────────────────────────────▶│             │
+│         │                    ┌───────────┴─────────────┤
+│         │               5. settlePayment()             │
+│         │                    │                         │
+│         │                    ▼                         │
+│         │              ┌─────────────┐                 │
+│         │              │ Facilitator │                 │
+│         │              └──────┬──────┘                 │
+│         │                     │                        │
+│         │         6. transferWithAuthorization         │
+│         │                     │                        │
+│         │                     ▼                        │
+│         │              ┌─────────────┐                 │
+│         │              │  MockUSDT0  │                 │
+│         │              └─────────────┘                 │
+│         │                                │             │
+│         │ ◀───────────────────────────── │             │
+└─────────┘     7. 200 OK + Resource      └─────────────┘
+```
+
+The flow works as follows:
+
+1. Client requests a protected resource.
+2. Server returns HTTP 402 with payment requirements.
+3. Client signs an EIP-712 authorization (off-chain, no gas required).
+4. Client resends request with `X-Payment` header containing the signed authorization.
+5. Server calls `settlePayment()` on the Facilitator contract.
+6. Facilitator executes `transferWithAuthorization` to transfer tokens.
+7. Server returns the requested resource with payment confirmation.
+
+## Prerequisites
+
+Before starting, ensure you have:
+
+- [Flare Hardhat Starter](https://github.com/flare-foundation/flare-hardhat-starter) cloned.
+- C2FLR tokens for gas on Coston2 testnet.
+- Private key configured in `.env`.
+
+## Step 1: Deploy Contracts
+
+Deploy the MockUSDT0 token and X402Facilitator contracts.
+
+```bash
+yarn hardhat run scripts/x402/deploy.ts --network coston2
+```
+
+The deployment script outputs contract addresses.
+Add them to your `.env` file:
+
+```env
+X402_TOKEN_ADDRESS=0x...
+X402_FACILITATOR_ADDRESS=0x...
+X402_PAYEE_ADDRESS=0x...
+```
+
+<details>
+<summary>View deployment script</summary>
+
+<CodeBlock language="typescript" title="scripts/x402/deploy.ts">
+  {x402Deploy}
+</CodeBlock>
+
+</details>
+
+### Deployment Output
+
+```
+═══════════════════════════════════════════════════════════
+x402 Demo Deployment
+═══════════════════════════════════════════════════════════
+Deployer: 0x742d35Cc6634C0532925a3b844Bc454e4438f44e
+Balance:  100.0 C2FLR
+──────────────────────────────────────────────────────────
+
+📦 Deploying MockUSDT0...
+   MockUSDT0 deployed to: 0x1234...
+   Name: Mock USDT0
+   Symbol: USDT0
+   Decimals: 6
+
+📦 Deploying X402Facilitator...
+   X402Facilitator deployed to: 0x5678...
+
+⚙️  Configuring facilitator...
+   Added MockUSDT0 as supported token
+
+═══════════════════════════════════════════════════════════
+Deployment Summary
+═══════════════════════════════════════════════════════════
+MockUSDT0:       0x1234...
+X402Facilitator: 0x5678...
+Payee Address:   0x742d35Cc6634C0532925a3b844Bc454e4438f44e
+```
+
+## Step 2: Test EIP-3009 Directly
+
+Before running the full x402 flow, verify EIP-3009 works correctly:
+
+```bash
+yarn hardhat run scripts/x402/testEip3009.ts --network coston2
+```
+
+This script:
+
+1. Mints test tokens if needed.
+2. Creates an EIP-712 signed authorization.
+3. Executes `transferWithAuthorization`.
+4. Verifies nonce replay protection.
+
+## Step 3: Start the Server
+
+The server implements the x402 payment middleware.
+
+```bash
+npx ts-node scripts/x402/server.ts
+```
+
+The server runs on `http://localhost:3402` and exposes:
+
+| Endpoint                | Price     | Description     |
+| ----------------------- | --------- | --------------- |
+| `GET /api/public`       | Free      | Public data     |
+| `GET /api/premium-data` | 0.1 USDT0 | Premium data    |
+| `GET /api/report`       | 0.5 USDT0 | Detailed report |
+| `GET /health`           | Free      | Health check    |
+
+<details>
+<summary>View server implementation</summary>
+
+<CodeBlock language="typescript" title="scripts/x402/server.ts">
+  {x402Server}
+</CodeBlock>
+
+</details>
+
+### Server Code Breakdown
+
+1. **Configuration**: Load environment variables for token, facilitator, and payee addresses.
+
+2. **Payment Requirements**: Define resources that require payment with their prices.
+
+3. **x402 Middleware**: Intercept requests to protected endpoints.
+   - If no `X-Payment` header, return 402 with payment requirements.
+   - If payment header present, verify and settle the payment.
+
+4. **Payment Verification**: Use the Facilitator contract to verify the EIP-3009 authorization.
+
+5. **Payment Settlement**: Call `settlePayment()` to execute the token transfer.
+
+6. **Response Headers**: Include `X-Payment-Response` with transaction details.
+
+## Step 4: Run the Agent
+
+The agent is an interactive CLI for making x402 payments.
+
+```bash
+npx ts-node scripts/x402/agent.ts
+```
+
+<details>
+<summary>View agent implementation</summary>
+
+<CodeBlock language="typescript" title="scripts/x402/agent.ts">
+  {x402Agent}
+</CodeBlock>
+
+</details>
+
+### Agent Commands
+
+```
+📋 Available Commands:
+  1. Fetch /api/public (free)
+  2. Fetch /api/premium-data (0.1 USDT0)
+  3. Fetch /api/report (0.5 USDT0)
+  4. Check balance
+  5. Mint test tokens
+  6. Exit
+```
+
+### Example Payment Flow
+
+```
+🔍 Checking payment requirements for /api/premium-data...
+
+💰 Payment Required:
+   Amount: 0.1 USDT0
+   Payee:  0x742d35Cc6634C0532925a3b844Bc454e4438f44e
+
+💳 Your Balance: 1000.0 USDT0
+
+Do you want to authorize payment of 0.1 USDT0? (y/n): y
+
+✍️  Creating EIP-3009 authorization...
+
+📝 EIP-712 Authorization Details:
+──────────────────────────────────────────────────
+From:         0xYourAddress...
+To:           0xPayeeAddress...
+Value:        0.1 USDT0
+Valid After:  2024-01-15T10:00:00.000Z
+Valid Before: 2024-01-15T10:05:00.000Z
+Nonce:        0x1234...
+──────────────────────────────────────────────────
+✅ Authorization signed
+
+🔐 Verifying authorization with facilitator...
+   Payment ID: 0xabcd...
+   Valid: true
+
+📤 Submitting payment and fetching resource...
+
+✅ Payment successful!
+──────────────────────────────────────────────────
+📦 Resource Data:
+{
+  "message": "Premium data accessed successfully!",
+  "data": {
+    "flarePrice": 0.0234,
+    "timestamp": 1705312800000,
+    "secret": "This is premium content only available after payment"
+  }
+}
+
+🧾 Payment Receipt:
+   Transaction: 0xdef456...
+   Payment ID:  0xabcd...
+```
+
+## x402 Protocol Details
+
+### 402 Response Format
+
+When a resource requires payment, the server returns:
+
+```json
+{
+  "error": "Payment Required",
+  "x402Version": "1",
+  "accepts": [
+    {
+      "scheme": "exact",
+      "network": "flare-coston2",
+      "maxAmountRequired": "100000",
+      "payTo": "0x...",
+      "asset": "USDT0",
+      "extra": {
+        "tokenAddress": "0x...",
+        "facilitatorAddress": "0x...",
+        "chainId": 114
+      }
+    }
+  ]
+}
+```
+
+### X-Payment Header
+
+The client sends payment authorization as a Base64-encoded JSON:
+
+```json
+{
+  "from": "0x...",
+  "to": "0x...",
+  "token": "0x...",
+  "value": "100000",
+  "validAfter": "1704067200",
+  "validBefore": "1704070800",
+  "nonce": "0x...",
+  "v": 28,
+  "r": "0x...",
+  "s": "0x..."
+}
+```
+
+### X-Payment-Response Header
+
+The server confirms settlement with:
+
+```json
+{
+  "paymentId": "0x...",
+  "transactionHash": "0x...",
+  "settled": true
+}
+```
+
+## EIP-712 Signature
+
+The agent signs authorizations using EIP-712 typed data:
+
+```typescript
+const domain = {
+  name: "Mock USDT0",
+  version: "1",
+  chainId: 114,
+  verifyingContract: tokenAddress,
+};
+
+const types = {
+  TransferWithAuthorization: [
+    { name: "from", type: "address" },
+    { name: "to", type: "address" },
+    { name: "value", type: "uint256" },
+    { name: "validAfter", type: "uint256" },
+    { name: "validBefore", type: "uint256" },
+    { name: "nonce", type: "bytes32" },
+  ],
+};
+
+const message = {
+  from: userAddress,
+  to: payeeAddress,
+  value: amount,
+  validAfter: Math.floor(Date.now() / 1000) - 60,
+  validBefore: Math.floor(Date.now() / 1000) + 300,
+  nonce: ethers.hexlify(ethers.randomBytes(32)),
+};
+
+const signature = await wallet.signTypedData(domain, types, message);
+```
+
+## Security Considerations
+
+1. **Front-running Protection**: Use `receiveWithAuthorization` when the payee is a contract to prevent front-running attacks.
+
+2. **Nonce Management**: Always use cryptographically random 32-byte nonces.
+   Never reuse nonces.
+
+3. **Time Bounds**: Set reasonable `validAfter` and `validBefore` windows.
+   The example uses a 5-minute window.
+
+4. **Domain Verification**: Always verify the contract address in the EIP-712 domain matches the expected token.
+
+## Troubleshooting
+
+**Error: X402_TOKEN_ADDRESS not set**
+
+- Solution: Deploy contracts first and add addresses to `.env`.
+
+**Error: Payment verification failed**
+
+- Solution: Ensure the authorization hasn't expired (`validBefore`).
+- Check that the nonce hasn't been used before.
+
+**Error: Insufficient balance**
+
+- Solution: Mint test tokens using the agent's option 5.
+
+## References
+
+- [x402 Protocol Specification](https://www.x402.org/)
+- [EIP-3009: Transfer With Authorization](https://eips.ethereum.org/EIPS/eip-3009)
+- [Coinbase x402 Implementation](https://github.com/coinbase/x402)
+- [EIP-712: Typed Structured Data Hashing](https://eips.ethereum.org/EIPS/eip-712)
+
+:::tip[Next Steps]
+To continue your development journey:
+
+- Learn about [FAssets minting](/fassets/developer-guides/fassets-mint).
+- Explore [swapping tokens to FXRP](/fxrp/token-interactions/usdt0-fxrp-swap).
+- Read about [Flare's data protocols](/network/overview).
+  :::
