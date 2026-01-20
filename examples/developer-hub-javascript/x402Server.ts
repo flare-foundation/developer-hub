@@ -16,9 +16,15 @@ import { ethers } from "ethers";
 import * as fs from "fs";
 import * as path from "path";
 import "dotenv/config";
+import rateLimit from "express-rate-limit";
 
 const app = express();
 app.use(cors());
+
+const rootRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+});
 app.use(express.json());
 
 // Configuration
@@ -298,7 +304,7 @@ app.get("/health", (req: Request, res: Response) => {
 });
 
 // Serve frontend - inject config into HTML
-app.get("/", (req: Request, res: Response) => {
+app.get("/", rootRateLimiter, (req: Request, res: Response) => {
   const frontendPath = path.join(__dirname, "frontend.html");
   let html = fs.readFileSync(frontendPath, "utf-8");
 
