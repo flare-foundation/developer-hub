@@ -240,8 +240,8 @@ async function x402Middleware(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-// Apply x402 middleware to all routes
-app.use((req, res, next) => {
+// Apply rate limiting and x402 middleware to all routes
+app.use(rootRateLimiter, (req, res, next) => {
   void x402Middleware(req, res, next);
 });
 
