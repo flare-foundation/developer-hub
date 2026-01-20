@@ -297,6 +297,7 @@ const sidebars: SidebarsConfig = {
             "fxrp/firelight/mint",
             "fxrp/firelight/withdraw",
             "fxrp/firelight/redeem",
+            "fxrp/firelight/claim",
           ],
         },
       ],

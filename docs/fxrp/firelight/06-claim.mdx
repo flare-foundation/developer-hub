@@ -1,0 +1,107 @@
+---
+title: Claim Withdrawals from Firelight Vault
+tags: [intermediate, firelight, fassets]
+slug: claim
+description: Learn how to claim pending withdrawals from a Firelight vault
+keywords: [fassets, flare-network, fxrp, firelight, vault]
+sidebar_position: 6
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import FirelightClaim from "!!raw-loader!/examples/developer-hub-javascript/firelight-claim.ts";
+
+This guide demonstrates how to claim pending withdrawals from a Firelight vault.
+The Firelight vault implements the [ERC-4626](https://eips.ethereum.org/EIPS/eip-4626) standard and uses a [period-based logic](https://docs.firelight.finance/technical-documents#period-based-logic) for withdrawals.
+
+Claiming is the final step in the withdrawal process.
+After you have created a withdrawal request using [`withdraw`](/fxrp/firelight/withdraw) or [`redeem`](/fxrp/firelight/redeem), you must wait for the period to end and then claim your assets.
+
+## Prerequisites
+
+- [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit)
+- [Flare Network Periphery Contracts](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts)
+- Understanding of [FAssets](/fassets/overview).
+- A pending withdrawal request from a previous [period](https://docs.firelight.finance/technical-documents#period-based-logic).
+
+## Understanding the Claim Process
+
+The Firelight vault uses a period-based withdrawal system with three steps:
+
+1. **Withdrawal Request**: When you call [`withdraw`](/fxrp/firelight/withdraw) or [`redeem`](/fxrp/firelight/redeem), it creates a withdrawal request associated with the current period. Your shares are burned at this point.
+2. **Period End**: The withdrawal is processed after the current period ends.
+3. **Claim Withdrawal**: Once the period has ended, you must call [`claimWithdraw`](https://docs.firelight.finance/technical-documents#claimwithdraw) function to transfer the assets to your wallet.
+
+## Firelight Vault Claim Script
+
+The following script demonstrates how to claim pending withdrawals from the Firelight vault:
+
+<CodeBlock language="typescript" title="scripts/firelight/claim.ts">
+  {FirelightClaim}
+</CodeBlock>
+
+## Script Breakdown
+
+The `main()` function executes the following steps:
+
+1. **Get the account:** Retrieves the signer account from the Hardhat environment.
+2. **Get the vault and asset token:** Connects to the vault contract and retrieves the underlying asset token.
+3. **Get asset info:** Fetches the asset token's symbol and decimals.
+4. **Log claim info:** Displays the claim details, including sender and vault addresses.
+5. **Get current period info:** Retrieves the current period number and when it ends.
+6. **Find claimable periods:** Scans all past periods to find any with claimable withdrawals.
+7. **Log claimable periods:** Displays all periods with pending withdrawals and the total claimable amount.
+8. **Execute claims:** Claims withdrawals for all claimable periods (or a specific period if configured).
+
+Only withdrawals from completed periods can be claimed. The script automatically detects all claimable periods and processes them.
+
+## Running the Script
+
+To run the Firelight vault claim script:
+
+1. Ensure you have the [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit) set up.
+2. Update the `FIRELIGHT_VAULT_ADDRESS` constant with the correct vault address for your network.
+3. Optionally set `periodToClaim` to claim a specific period (0 means auto-detect all claimable periods).
+4. Run the script using Hardhat:
+
+```bash
+npx hardhat run scripts/firelight/claim.ts --network coston2
+```
+
+## Output
+
+The script outputs the following information:
+
+```bash
+=== Claim Withdrawals (ERC-4626) ===
+Sender: 0x0d09ff7630588E05E2449aBD3dDD1D8d146bc5c2
+Vault: 0x91Bfe6A68aB035DFebb6A770FFfB748C03C0E40B
+Asset: 0x0b6A3645c240605887a5532109323A3E12273dc7 (FTestXRP, decimals=6)
+
+=== Period Info ===
+Current period: 5
+Current period ends: 2025-01-15 12:00:00 UTC
+
+=== Claimable Withdrawals ===
+Period 3: 1000000 (1.000000 FTestXRP)
+Period 4: 500000 (0.500000 FTestXRP)
+Total claimable: 1500000 (1.500000 FTestXRP)
+Claim tx (period 3): 0x23d8f34b582ef9935d3e3686a15e7fff34417ac01f68f7f928b14e2b4ef10ba9
+Claim tx (period 4): 0x3f1bd8c766852d3b835bcde79f6d8e20afeeb227d737e0ed28d057dc0e6b2ba9
+```
+
+## Summary
+
+In this guide, you learned how to claim pending withdrawals from a Firelight vault.
+Remember that claims can only be made after the withdrawal period has ended, and the script can automatically detect and claim all pending withdrawals across multiple periods.
+
+:::tip[What's next]
+
+To continue your Firelight development journey, you can:
+
+- Learn how to [get Firelight vault status](/fxrp/firelight/status) to monitor your withdrawal requests.
+- Learn how to [withdraw assets from a Firelight vault](/fxrp/firelight/withdraw) by specifying the amount of assets.
+- Learn how to [redeem assets from a Firelight vault](/fxrp/firelight/redeem) by specifying the number of shares.
+- Learn how to [deposit assets into a Firelight vault](/fxrp/firelight/deposit).
+- Explore the [FAssets system overview](/fassets/overview) to understand the broader ecosystem.
+
+:::
