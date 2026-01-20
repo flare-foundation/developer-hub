@@ -6,7 +6,11 @@
  * This implements the x402 HTTP payment protocol with EIP-3009 support.
  */
 
-import express, { type Request, type Response, type NextFunction } from "express";
+import express, {
+  type Request,
+  type Response,
+  type NextFunction,
+} from "express";
 import cors from "cors";
 import { ethers } from "ethers";
 import * as fs from "fs";
