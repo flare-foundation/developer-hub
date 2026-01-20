@@ -1,0 +1,464 @@
+---
+title: Auto Minting and Bridging FXRP
+tags: [intermediate, fassets, flare-smart-accounts]
+slug: fxrp-automint
+description: Mint and bridge FXRP using Flare Smart Accounts
+keywords: [fassets, flare-network, smart-accounts, layerzero, xrpl]
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import bridgeViaSmartAccount from "!!raw-loader!/examples/developer-hub-javascript/bridgeViaSmartAccount.ts";
+
+## Overview
+
+In this guide, you will learn how to mint FXRP and bridge it cross-chain from Flare Testnet Coston2 to Sepolia using [Flare Smart Accounts](/smart-accounts/overview) and [LayerZero's OFT](https://docs.layerzero.network/v2/developers/evm/oft/quickstart) (Omnichain Fungible Token) protocol.
+
+This guide demonstrates an end-to-end workflow that allows XRPL users to:
+
+1. **Mint FXRP** - Convert native XRP from the XRP Ledger into FXRP tokens on Flare, controlled entirely via XRPL transactions.
+2. **Bridge FXRP cross-chain** - Transfer the minted FXRP to another EVM chain (Sepolia) using LayerZero, triggered by a single XRPL payment.
+
+**Key technologies:**
+
+- [Flare Smart Accounts](/smart-accounts/overview) - Account abstraction enabling XRPL users to execute actions on Flare without holding FLR tokens.
+- **Custom Instructions** - Register arbitrary contract calls that can be triggered via XRPL payments.
+- [FAsset System](/fassets/overview) for tokenizing non-smart contract assets (XRP to FXRP).
+- [LayerZero OFT](https://docs.layerzero.network/v2/developers/evm/oft/quickstart) for cross-chain token transfers.
+- [@flarenetwork/smart-accounts-encoder](https://www.npmjs.com/package/@flarenetwork/smart-accounts-encoder) library for encoding FAsset instructions.
+
+Clone the [Flare Hardhat Starter](https://github.com/flare-foundation/flare-hardhat-starter) to follow along.
+
+## How Smart Accounts Enable This Workflow
+
+[Flare Smart Accounts](/smart-accounts/overview) allow XRPL users to perform actions on the Flare chain without owning any FLR tokens.
+Each XRPL address is assigned a unique **personal account** (smart contract wallet) on Flare, which only that XRPL address can control through `Payment` transactions on the XRP Ledger.
+
+This script leverages two types of Smart Account instructions:
+
+### 1. FAsset Collateral Reservation Instruction
+
+The [`FXRPCollateralReservationInstruction`](/smart-accounts/fasset-instructions#01-collateral-reservation) is a predefined instruction type that initiates the FAsset minting process.
+When sent via an XRPL payment memo:
+
+1. The operator monitors the XRPL payment and relays it to Flare.
+2. The `MasterAccountController` contract reserves collateral from the selected agent.
+3. After the user sends XRP to the agent's underlying address, FXRP is minted to their personal account.
+
+### 2. Custom Instruction for Atomic Bridging
+
+Custom instructions allow registering arbitrary contract calls that execute atomically.
+This script registers an **atomic batch** containing:
+
+1. **Approve**: Grant the OFT Adapter permission to spend FXRP tokens.
+2. **Send**: Execute the LayerZero cross-chain transfer.
+
+Both actions execute in a single transaction when triggered by the XRPL payment, ensuring the bridge cannot fail due to missing approval.
+
+## Flow Diagram
+
+```
+                          XRPL USER WORKFLOW
+------------------------------------------------------------------------
+                                    |
+        ----------------------------|----------------------------
+        |                           |                           |
+        v                           |                           |
++-------------------+               |                           |
+|   1. Register     |               |                           |
+|   Custom Bridge   |               |                           |
+|   Instruction     |               |                           |
+|   (Flare EOA)     |               |                           |
++--------+----------+               |                           |
+         |                          |                           |
+         | Returns instruction hash |                           |
+         v                          |                           |
++-------------------+               |                           |
+|  2. Check Smart   |               |                           |
+|     Account       |               |                           |
+|     Balance       |               |                           |
++--------+----------+               |                           |
+         |                          |                           |
+         | Needs FXRP?              |                           |
+         v                          v                           |
++-------------------+     +-------------------+                 |
+|  3a. Mint FXRP    |     |  3b. Skip Mint    |                 |
+|  (If needed)      |     |  (Has balance)    |                 |
++--------+----------+     +--------+----------+                 |
+         |                         |                            |
+         +-----------+-------------+                            |
+                     |                                          |
+                     v                                          |
+         +-------------------+                                  |
+         |  4. Execute       |<---------------------------------+
+         |     Bridge        |
+         |  (XRPL Payment)   |
+         +--------+----------+
+                  |
+                  v
+                         CROSS-CHAIN FLOW
+------------------------------------------------------------------------
+
++-------------------+          +-------------------+          +-------------------+
+|    XRP Ledger     |          |   Flare Coston2   |          |     Sepolia       |
+|                   |          |                   |          |                   |
+|  XRPL Payment     |--------->|  MasterAccount    |          |                   |
+|  with Memo        |  FDC     |  Controller       |          |                   |
+|                   |  Proof   |       |           |          |                   |
+|                   |          |       v           |          |                   |
+|                   |          |  Personal Account |          |                   |
+|                   |          |       |           |          |                   |
+|                   |          |       v           |          |                   |
+|                   |          |  Atomic Batch:    |          |                   |
+|                   |          |  +-------------+  |          |                   |
+|                   |          |  | 1. Approve  |  |          |                   |
+|                   |          |  | 2. LZ Send  |--|--------->|  FXRP OFT        |
+|                   |          |  +-------------+  |LayerZero |  Received        |
+|                   |          |                   |          |                   |
++-------------------+          +-------------------+          +-------------------+
+```
+
+## Prerequisites
+
+- **XRPL Testnet Account**: An XRP Ledger testnet wallet with XRP for payments.
+  Get testnet XRP from the [XRP Testnet Faucet](https://xrpl.org/resources/dev-tools/xrp-faucets).
+- **Flare Testnet Account**: An EVM wallet with C2FLR for gas fees.
+  Get C2FLR from the [Flare Testnet Faucet](https://faucet.flare.network/coston2).
+- **Environment Setup**: Private keys configured in Hardhat.
+
+## Configuration
+
+Edit the `CONFIG` object in the script to customize the bridge parameters:
+
+```typescript
+const CONFIG = {
+  MASTER_ACCOUNT_CONTROLLER: "0xa7bc2aC84DB618fde9fa4892D1166fFf75D36FA6",
+  COSTON2_OFT_ADAPTER: "0xCd3d2127935Ae82Af54Fc31cCD9D3440dbF46639",
+  XRPL_RPC: "wss://s.altnet.rippletest.net:51233",
+  SEPOLIA_EID: EndpointId.SEPOLIA_V2_TESTNET,
+  EXECUTOR_GAS: 400_000,
+  BRIDGE_LOTS: 1, // Number of lots to bridge
+  AUTO_MINT_IF_NEEDED: true, // Automatically mint if insufficient balance
+  MINT_LOTS: 1, // Number of lots to mint if needed
+};
+```
+
+| Parameter                   | Description                                                                         |
+| --------------------------- | ----------------------------------------------------------------------------------- |
+| `MASTER_ACCOUNT_CONTROLLER` | Address of the MasterAccountController contract on Coston2                          |
+| `COSTON2_OFT_ADAPTER`       | Address of the FXRP OFT Adapter for LayerZero bridging                              |
+| `XRPL_RPC`                  | WebSocket URL for XRPL Testnet                                                      |
+| `SEPOLIA_EID`               | LayerZero Endpoint ID for the destination chain                                     |
+| `EXECUTOR_GAS`              | Gas limit for the LayerZero executor on the destination chain                       |
+| `BRIDGE_LOTS`               | Number of FXRP lots to bridge (1 lot = 10 FXRP)                                     |
+| `AUTO_MINT_IF_NEEDED`       | Whether to automatically mint FXRP if the personal account has insufficient balance |
+| `MINT_LOTS`                 | Number of lots to mint if auto-minting is triggered                                 |
+
+## How to Run
+
+1. **Install Dependencies**:
+
+   ```bash
+   yarn install
+   ```
+
+2. **Configure Environment**:
+
+   ```bash
+   # .env file
+   COSTON2_RPC_URL=https://coston2-api.flare.network/ext/C/rpc
+   DEPLOYER_PRIVATE_KEY=your_flare_private_key_here
+   XRPL_SECRET=your_xrpl_wallet_secret_here
+   ```
+
+3. **Run the Script**:
+
+   ```bash
+   yarn hardhat run scripts/smartAccounts/bridgeViaSmartAccount.ts --network coston2
+   ```
+
+## Script Walkthrough
+
+### Step 1: Register the Bridge Instruction
+
+The script first registers a custom instruction with the `MasterAccountController`.
+This instruction bundles two contract calls into an atomic batch:
+
+```typescript
+// 1. Prepare APPROVE Call
+const instructionApprove: CustomInstruction = {
+  targetContract: fxrpAddress,
+  value: 0n,
+  data: approveCallData, // ERC20 approve(spender, amount)
+};
+
+// 2. Prepare SEND Call
+const instructionBridge: CustomInstruction = {
+  targetContract: CONFIG.COSTON2_OFT_ADAPTER,
+  value: nativeFee, // LayerZero fee in native tokens
+  data: sendCallData, // OFT send() with LayerZero options
+};
+
+// 3. Register the atomic batch
+const atomicInstruction = [instructionApprove, instructionBridge];
+await masterController.methods
+  .registerCustomInstruction(atomicInstruction)
+  .send({ from: accounts[0] });
+```
+
+The registration returns an **instruction hash** that will be used as the XRPL payment memo to trigger execution.
+The memo format for custom instructions is:
+
+- First byte: `99` (custom instruction identifier)
+- Remaining 31 bytes: instruction hash (padded)
+
+### Step 2: Check Smart Account Balance
+
+Before bridging, the script checks if the user's personal account has sufficient:
+
+1. **FXRP balance** - Enough tokens to bridge
+2. **Native balance (C2FLR)** - Enough gas to pay for the LayerZero fee
+
+```typescript
+const personalAccountAddr = await masterController.methods
+  .getPersonalAccount(xrplAddress)
+  .call();
+
+const fxrpBalance = await ftestxrp.balanceOf(personalAccountAddr);
+const nativeBalance = await web3.eth.getBalance(personalAccountAddr);
+```
+
+If the personal account doesn't exist yet, it will be created automatically when the first instruction is executed.
+
+### Step 3: Fund Gas (If Needed)
+
+If the personal account lacks sufficient native tokens for the LayerZero fee, the script funds it from the Flare EOA:
+
+```typescript
+if (status.needsGas && status.hasAccount) {
+  await web3.eth.sendTransaction({
+    from: accounts[0],
+    to: status.personalAccountAddr,
+    value: (requiredGas - status.currentNative + BigInt(1e17)).toString(),
+  });
+}
+```
+
+### Step 4: Mint FXRP (If Needed)
+
+If the personal account has insufficient FXRP, the script initiates the [FAsset minting process](/fassets/minting) using the Smart Accounts system:
+
+```typescript
+import { FXRPCollateralReservationInstruction } from "@flarenetwork/smart-accounts-encoder";
+
+// Encode the collateral reservation instruction
+const reservationInstruction = new FXRPCollateralReservationInstruction({
+  walletId: 0,
+  value: lots, // Number of lots to mint
+  agentVaultId: agentIndex, // Selected agent's index
+});
+
+// Send XRPL payment with the instruction memo
+const instructionMemo = reservationInstruction.encode().slice(2);
+await sendXrplMemoPayment(xrplWallet, operatorAddress, "1", instructionMemo);
+```
+
+The minting process involves:
+
+1. **Reservation Trigger**: Send an XRPL payment to the operator with the encoded instruction.
+2. **Wait for Reservation**: The operator processes the payment and reserves collateral on Flare.
+3. **Send Underlying Collateral**: Send XRP to the agent's underlying address with the payment reference.
+4. **Mint Execution**: The operator executes the mint, depositing FXRP to the personal account.
+
+### Step 5: Execute the Bridge
+
+Finally, trigger the bridge by sending an XRPL payment with the custom instruction memo:
+
+```typescript
+await sendXrplMemoPayment(xrplWallet, operatorAddress, "0.1", bridgeMemo);
+```
+
+When the operator relays this payment to Flare:
+
+1. The `MasterAccountController` looks up the registered instruction by its hash.
+2. The personal account executes the atomic batch:
+   - Approves the OFT Adapter to spend FXRP
+   - Calls the OFT Adapter's `send()` function
+3. LayerZero delivers the tokens to Sepolia.
+
+## Expected Output
+
+```
+Flare EOA: 0x742d35Cc6634C0532925a3b844Bc454e4438f44e
+XRPL Wallet: rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh
+
+Bridging 1 lot(s) = 10.0 FXRP
+
+=== Step 1: Registering Atomic Bridge Instruction ===
+LayerZero Fee: 0.001234 C2FLR required in personal account
+Submitting registration tx...
+Instruction Registered.
+Final XRPL Memo: 99000000...abc123
+
+=== Checking Smart Account Balance ===
+Personal Account: 0x123...
+FXRP Balance: 15.0
+C2FLR Balance: 0.5
+Sufficient FXRP balance found. Skipping mint.
+
+=== Bridging to Sepolia via Custom Instruction ===
+Sending Bridge Trigger on XRPL...
+Sending 0.1 XRP to rOperator... with Memo 99000000...abc123
+Tx Hash: ABC123...
+
+Bridge Request Sent! (Asynchronous execution on Flare will follow)
+```
+
+<details>
+<summary>View `bridgeViaSmartAccount.ts` source code</summary>
+
+<CodeBlock
+  language="typescript"
+  title="scripts/smartAccounts/bridgeViaSmartAccount.ts"
+>
+  {bridgeViaSmartAccount}
+</CodeBlock>
+
+</details>
+
+## Code Breakdown
+
+### Key Functions
+
+#### `getAssetManagerInfo(lots)`
+
+Retrieves the FXRP token address and calculates the exact amount to bridge based on the lot size:
+
+```typescript
+const assetManager = await getAssetManagerFXRP();
+const fxrpAddress = await assetManager.fAsset();
+const lotSize = BigInt(await assetManager.lotSize());
+const amountToBridge = lotSize * BigInt(lots);
+```
+
+#### `registerBridgeInstruction(recipientAddress, amountToBridge, fxrpAddress)`
+
+Creates and registers the atomic bridge instruction:
+
+1. Encodes the ERC20 `approve()` call for the OFT Adapter.
+2. Builds LayerZero send parameters with the destination chain and recipient.
+3. Quotes the LayerZero fee using `oftAdapter.quoteSend()`.
+4. Encodes the OFT `send()` call with the fee.
+5. Registers both calls as a single atomic instruction.
+
+#### `sendXrplMemoPayment(xrplWallet, destination, amountXrp, memoHex)`
+
+Sends an XRP Ledger payment with an encoded memo:
+
+```typescript
+const payment: Payment = {
+  TransactionType: "Payment",
+  Account: xrplWallet.address,
+  Destination: destination,
+  Amount: xrpToDrops(amountXrp),
+  Memos: [{ Memo: { MemoData: memoHex.toUpperCase() } }],
+};
+```
+
+#### `mintFXRP(xrplWallet, lots)`
+
+Executes the full FAsset minting flow:
+
+1. Selects an available agent with sufficient free collateral.
+2. Encodes and sends the collateral reservation instruction.
+3. Waits for the `CollateralReserved` event.
+4. Sends XRP collateral to the agent's underlying address.
+5. Waits for the mint to complete.
+
+## Understanding the Instruction Encoding
+
+### FAsset Instructions
+
+The `@flarenetwork/smart-accounts-encoder` library provides typed instruction builders.
+The collateral reservation instruction encodes to a 32-byte value:
+
+| Bytes | Content                                                              |
+| ----- | -------------------------------------------------------------------- |
+| 0     | Instruction ID (`00` for FXRP type, `00` for collateral reservation) |
+| 1     | Wallet ID (typically `0`)                                            |
+| 2-11  | Value (number of lots)                                               |
+| 12-13 | Agent Vault ID                                                       |
+| 14-31 | Reserved                                                             |
+
+### Custom Instructions
+
+Custom instructions are identified by the first byte being `99`.
+The remaining 31 bytes contain the keccak256 hash of the encoded instruction array (right-shifted by 8 bits):
+
+```typescript
+uint256(keccak256(abi.encode(_customInstruction))) >> 8;
+```
+
+## FAQ
+
+**Q: What's the minimum amount I can bridge?**
+A: Minimum is 1 [lot](/fassets/minting#lots) (10 FXRP for XRP).
+
+**Q: How long does the minting process take?**
+A: Minting typically takes 1-2 minutes for the reservation, plus time for the underlying XRP payment to be confirmed and processed by the operator.
+
+**Q: What if the bridge execution fails?**
+A: If the atomic instruction fails (e.g., insufficient balance), the entire transaction reverts.
+The FXRP remains in the personal account and can be retrieved or retried.
+
+**Q: Can I bridge to chains other than Sepolia?**
+A: Yes, update the `SEPOLIA_EID` configuration to any LayerZero-supported destination.
+Use the [getOftPeers script](/fxrp/token-interactions/fxrp-autoredeem#discovering-available-bridge-routes) to discover available routes.
+
+**Q: Do I need FLR tokens to use this?**
+A: You need C2FLR (testnet FLR) to:
+
+- Register custom instructions (one-time gas cost)
+- Fund the personal account with native tokens for LayerZero fees
+
+The actual bridging is triggered via XRPL payments and executed by the operator.
+
+**Q: What is the operator's role?**
+A: The operator monitors XRPL payments to a designated address, obtains FDC proofs, and relays transactions to the `MasterAccountController` on Flare.
+This service enables XRPL users to trigger Flare actions without holding FLR.
+
+**Q: Can I use this on mainnet?**
+A: This guide is for testnet.
+For mainnet deployment, update contract addresses, thoroughly test, and audit all code.
+
+## Troubleshooting
+
+**Error: XRPL_SECRET not set in .env**
+
+- Solution: Add your XRPL testnet wallet secret to the `.env` file.
+
+**Error: No agents available**
+
+- Solution: No FAsset agents have sufficient free collateral.
+  Try with fewer lots or wait for agents to free up capacity.
+
+**Error: Timeout waiting for reservation event**
+
+- Solution: The operator may be delayed.
+  Check that the XRPL payment was successful and retry.
+
+**Error: Insufficient balance for bridging**
+
+- Solution: Ensure `AUTO_MINT_IF_NEEDED` is `true`, or manually mint FXRP to the personal account first.
+
+**Error: LayerZero fee insufficient**
+
+- Solution: Fund the personal account with more C2FLR for the LayerZero cross-chain fee.
+
+:::tip[Next Steps]
+To continue your FAssets development journey, you can:
+
+- Learn how to [mint FXRP manually](/fassets/developer-guides/fassets-mint)
+- Understand how to [redeem FXRP](/fassets/developer-guides/fassets-redeem)
+- Explore [auto-redemption from Hyperliquid](/fxrp/token-interactions/fxrp-autoredeem)
+- Read more about [Flare Smart Accounts](/smart-accounts/overview)
+  :::
