@@ -35,13 +35,20 @@ The instructions fall under three types: `FXRP`, `Firelight`, and `Upshift`.
 Each type supports different instruction commands.
 The `FXRP` commands allow interaction with the base FAssets system, whereas `Firelight` and `Upshift` give access to actions pertaining to the corresponding vault architectures.
 
-{/* TODO:(Nik) explain walletId */}
+The first byte of each encoded instruction is the instruction ID.
+It is further subdivided into the instruction type (first half-byte), and instruction command (second half-byte).
+The values for the instruction type Id nad the command ID range from `0` to `f` (`15` in hexadecimal);
+thus the instruction IDs range from `00` to `ff`.
 
-## `00` FXRP
+The second byte is the `walletID`.
+This value is assigned individually by the Flare, and is intended for wallet identification by the operator.
+
+## FXRP
 
 The commands of the `FXRP` type give access to base FAsset actions.
+The ID of the `FXRP` type is `0`.
 
-### `01` Collateral reservation
+### `00` Collateral reservation
 
 Collateral reservation is the first step in the FAssets minting process.
 In anticipation of the transfer of XRP to the agent's underlying address on XRPL, a portion of its collateral is locked to prevent accidental under-collateralization.
@@ -57,7 +64,7 @@ A collateral reservation payment reference is a 32-byte value:
 
 - byte representation of the instruction ID in the first byte:
   - type ID `00` in the first nibble,
-  - command ID `01` in the second nibble,
+  - command ID `00` in the second nibble,
 - byte representation of `walletId` in the second byte
 - byte representation of `value` in the next 10 bytes
 - byte representation of `agentVaultId` in the next two bytes
@@ -85,7 +92,7 @@ A collateral reservation payment reference is a 32-byte value:
   />
 </div>
 
-### `02` Transfer
+### `01` Transfer
 
 Transfer `value` of drops of FXRP to the `recipientAddress`.
 The FXRP is sent from the personal account that belongs to the XRPL address that sent the instruction, if the FXRP balance is sufficient.
@@ -119,7 +126,7 @@ A transfer payment reference is a 32-byte value:
   />
 </div>
 
-### `03` Redeem
+### `02` Redeem
 
 Redemption is the process of converting FXRP back to XRP.
 A `value` of lots of FXRP are burned from the personal account belonging to the XRPL address that sent the instruction;
@@ -155,11 +162,12 @@ A redeem payment reference is the 32-byte value:
   />
 </div>
 
-## `01` Firelight
+## Firelight
 
 The commands of the `Firelight` type allow interaction with Firelight-type vaults.
+The ID of the `Firelight` type is `1`.
 
-### `01` Collateral reservation and deposit
+### `00` Collateral reservation and deposit
 
 Reserve the collateral for `value` lots of FXRP with the agent's vault, registered with the `agentVaultId` with the `MasterAccountController` contract.
 When minting is completed, deposit `value` lots of FXRP into a Firelight-type vault at the address registered with the `MasterAccountController` contract with the `vaultId`.
@@ -171,7 +179,7 @@ A collateral reservation and deposit instruction payment reference is the 32-byt
 
 - byte representation of the instruction ID in the first byte:
   - type ID `01` in the first nibble,
-  - command ID `01` in the second nibble,
+  - command ID `00` in the second nibble,
 - byte representation of `walletId` in the second byte
 - byte representation of `value` in the next 10 bytes
 - byte representation of `agentVaultId` in the next 2 bytes
@@ -200,7 +208,7 @@ A collateral reservation and deposit instruction payment reference is the 32-byt
   />
 </div>
 
-### `02` Deposit
+### `01` Deposit
 
 Deposit `value` lots of FXRP into a Firelight-type vault at the address registered with the `MasterAccountController` contract with the `vaultId`.
 
@@ -208,7 +216,7 @@ A deposit instruction payment reference is the 32-byte value:
 
 - byte representation of the instruction ID in the first byte:
   - type ID `01` in the first nibble,
-  - command ID `02` in the second nibble,
+  - command ID `01` in the second nibble,
 - byte representation of `walletId` in the second byte
 - byte representation of `value` in the next 10 bytes
 - the next two bytes are ignored and can have an arbitrary value
@@ -237,7 +245,7 @@ A deposit instruction payment reference is the 32-byte value:
   />
 </div>
 
-### `03` Redeem
+### `02` Redeem
 
 The first part of the withdrawal process from a Firelight vault.
 
@@ -247,7 +255,7 @@ A redeem instruction payment reference is the 32-byte value:
 
 - byte representation of the instruction ID in the first byte:
   - type ID `01` in the first nibble,
-  - command ID `03` in the second nibble,
+  - command ID `02` in the second nibble,
 - byte representation of `walletId` in the second byte
 - byte representation of `value` in the next 10 bytes
 - the next two bytes are ignored and can have an arbitrary value
@@ -276,7 +284,7 @@ A redeem instruction payment reference is the 32-byte value:
   />
 </div>
 
-### `04` Claim withdraw
+### `03` Claim withdraw
 
 The second part of the withdrawal process from a Firelight vault.
 Claim the pending withdrawal from the `value` period, from the Firelight vault at the address registered with the `MasterAccountController` contract with the `vaultId`.
@@ -318,11 +326,12 @@ A claim withdrawal payment reference is a 32-byte value:
   />
 </div>
 
-## `02` Upshift
+## Upshift
 
 The commands of the `Upshift` type allow interaction with Upshift-type vaults.
+The ID of the `Upshift` type is `2`.
 
-### `01` Collateral reservation and deposit
+### `00` Collateral reservation and deposit
 
 Reserve the collateral for `value` lots of FXRP with the agent's vault, registered with the `agentVaultId` with the `MasterAccountController` contract.
 When minting is completed, deposit `value` lots of FXRP into an Upshift-type vault at the address registered with the `MasterAccountController` contract with the `vaultId`.
@@ -333,8 +342,8 @@ This cuts the total waiting time in half and reduces the total number of transac
 A collateral reservation and deposit instruction payment reference is the 32-byte value:
 
 - byte representation of the instruction ID in the first byte:
-  - type ID `01` in the first nibble,
-  - command ID `01` in the second nibble,
+  - type ID `02` in the first nibble,
+  - command ID `00` in the second nibble,
 - byte representation of `walletId` in the second byte
 - byte representation of `value` in the next 10 bytes
 - byte representation of `agentVaultId` in the next 2 bytes
@@ -363,15 +372,15 @@ A collateral reservation and deposit instruction payment reference is the 32-byt
   />
 </div>
 
-### `02` Deposit
+### `01` Deposit
 
 Deposit `value` lots of FXRP into an Upshift type vault at the address registered with the `MasterAccountController` contract with the `vaultId`.
 
 A deposit instruction payment reference is the 32-byte value:
 
 - byte representation of the instruction ID in the first byte:
-  - type ID `01` in the first nibble,
-  - command ID `02` in the second nibble,
+  - type ID `02` in the first nibble,
+  - command ID `01` in the second nibble,
 - byte representation of `walletId` in the second byte
 - byte representation of `value` in the next 10 bytes
 - the next two bytes are ignored and can have an arbitrary value
@@ -400,7 +409,7 @@ A deposit instruction payment reference is the 32-byte value:
   />
 </div>
 
-### `03` Request redeem
+### `02` Request redeem
 
 The first part of the withdrawal process from an Upshift vault.
 
@@ -409,8 +418,8 @@ Initiate a withdrawal request of `value` of FXRP from the Upshift vault at the a
 A request redeem instruction payment reference is the 32-byte value:
 
 - byte representation of the instruction ID in the first byte:
-  - type ID `01` in the first nibble,
-  - command ID `03` in the second nibble,
+  - type ID `02` in the first nibble,
+  - command ID `02` in the second nibble,
 - byte representation of `walletId` in the second byte
 - byte representation of `value` in the next 10 bytes
 - the next two bytes are ignored and can have an arbitrary value
@@ -439,7 +448,7 @@ A request redeem instruction payment reference is the 32-byte value:
   />
 </div>
 
-### `04` Claim
+### `03` Claim
 
 The second part of the withdrawal process from an Upshift vault.
 Claim the pending withdrawal from the `value` period, from the Upshift vault at the address registered with the `MasterAccountController` contract with the `vaultId`.
@@ -452,7 +461,7 @@ It is an 8-digit number `YYYYMMDD`, where `YYYY` is the year, `MM` the month (fr
 A claim payment reference is a 32-byte value:
 
 - byte representation of the instruction ID in the first byte:
-  - type ID `01` in the first nibble,
+  - type ID `02` in the first nibble,
   - command ID `03` in the second nibble,
 - byte representation of `walletId` in the second byte
 - byte representation of `value` in the next 10 bytes
