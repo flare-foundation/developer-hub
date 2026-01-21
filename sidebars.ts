@@ -282,6 +282,7 @@ const sidebars: SidebarsConfig = {
           items: [
             "fxrp/token-interactions/fxrp-address",
             "fxrp/token-interactions/usdt0-fxrp-swap",
+            "fxrp/token-interactions/x402-payments",
           ],
         },
         {
