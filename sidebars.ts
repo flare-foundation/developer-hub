@@ -203,6 +203,7 @@ const sidebars: SidebarsConfig = {
               ],
             },
             "fdc/guides/fdc-by-hand",
+            "fdc/guides/url-parsing-security",
           ],
         },
         {
