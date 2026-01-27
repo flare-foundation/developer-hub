@@ -8,8 +8,8 @@
 import { web3 } from "hardhat";
 import { parseUnits, formatUnits } from "ethers";
 
-import { ITokenizedVaultInstance } from "../../typechain-types/contracts/upshift/ITokenizedVault";
-import { IERC20Instance } from "../../typechain-types/@openzeppelin/contracts/token/ERC20/IERC20";
+import type { ITokenizedVaultInstance } from "../../typechain-types/contracts/upshift/ITokenizedVault";
+import type { IERC20Instance } from "../../typechain-types/@openzeppelin/contracts/token/ERC20/IERC20";
 
 const VAULT_ADDRESS = "0x24c1a47cD5e8473b64EAB2a94515a196E10C7C81";
 const DEPOSIT_AMOUNT = "1";
@@ -30,7 +30,7 @@ async function getReferenceAssetInfo(vault: ITokenizedVaultInstance) {
 }
 
 async function checkBalance(
-  refAsset: any,
+  refAsset: IERC20Instance,
   userAddress: string,
   depositAmount: bigint,
   decimals: number,
@@ -49,7 +49,7 @@ async function checkBalance(
 }
 
 async function checkAndApproveAllowance(
-  refAsset: any,
+  refAsset: IERC20Instance,
   userAddress: string,
   depositAmount: bigint,
   decimals: number,
@@ -134,7 +134,7 @@ async function executeDeposit(
 async function verifyDeposit(
   lpToken: IERC20Instance,
   userAddress: string,
-  lpBalanceBefore: any,
+  lpBalanceBefore: { toString(): string },
   decimals: number,
 ) {
   console.log("\nVerifying deposit...");

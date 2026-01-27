@@ -9,8 +9,8 @@
 import { web3 } from "hardhat";
 import { parseUnits, formatUnits } from "ethers";
 
-import { ITokenizedVaultInstance } from "../../typechain-types/contracts/upshift/ITokenizedVault";
-import { IERC20Instance } from "../../typechain-types/@openzeppelin/contracts/token/ERC20/IERC20";
+import type { ITokenizedVaultInstance } from "../../typechain-types/contracts/upshift/ITokenizedVault";
+import type { IERC20Instance } from "../../typechain-types/@openzeppelin/contracts/token/ERC20/IERC20";
 
 const VAULT_ADDRESS = "0x24c1a47cD5e8473b64EAB2a94515a196E10C7C81";
 const SHARES_TO_REDEEM = "1";
@@ -44,7 +44,10 @@ async function getLPTokenInfo(
   return { lpToken, lpBalance };
 }
 
-function checkLPBalance(lpBalance: any, sharesToRedeem: bigint) {
+function checkLPBalance(
+  lpBalance: { toString(): string },
+  sharesToRedeem: bigint,
+) {
   if (BigInt(lpBalance.toString()) < sharesToRedeem) {
     console.log("Insufficient LP balance!");
     return false;
@@ -158,7 +161,7 @@ async function verifyRequest(
   vault: ITokenizedVaultInstance,
   lpToken: IERC20Instance,
   userAddress: string,
-  lpBalanceBefore: any,
+  lpBalanceBefore: { toString(): string },
   decimals: number,
 ) {
   const lpBalanceAfter = await lpToken.balanceOf(userAddress);

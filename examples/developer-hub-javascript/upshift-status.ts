@@ -8,8 +8,8 @@
 import { web3 } from "hardhat";
 import { formatUnits } from "ethers";
 
-import { ITokenizedVaultInstance } from "../../typechain-types/contracts/upshift/ITokenizedVault";
-import { IERC20Instance } from "../../typechain-types/@openzeppelin/contracts/token/ERC20/IERC20";
+import type { ITokenizedVaultInstance } from "../../typechain-types/contracts/upshift/ITokenizedVault";
+import type { IERC20Instance } from "../../typechain-types/@openzeppelin/contracts/token/ERC20/IERC20";
 
 const VAULT_ADDRESS = "0x24c1a47cD5e8473b64EAB2a94515a196E10C7C81";
 
@@ -77,7 +77,7 @@ async function printWithdrawalEpoch(vault: ITokenizedVaultInstance) {
 
 async function printUserBalances(
   userAddress: string,
-  refAsset: any,
+  refAsset: IERC20Instance,
   lpToken: IERC20Instance,
   decimals: number,
   symbol: string,
@@ -97,7 +97,7 @@ async function printUserBalances(
 
 async function printAllowances(
   userAddress: string,
-  refAsset: any,
+  refAsset: IERC20Instance,
   lpToken: IERC20Instance,
   decimals: number,
   symbol: string,
