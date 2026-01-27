@@ -310,6 +310,21 @@ const sidebars: SidebarsConfig = {
             "fxrp/firelight/claim",
           ],
         },
+        {
+          type: "category",
+          label: "Upshift Vaults",
+          link: {
+            type: "doc",
+            id: "fxrp/upshift/index",
+          },
+          items: [
+            "fxrp/upshift/status",
+            "fxrp/upshift/deposit",
+            "fxrp/upshift/instant-redeem",
+            "fxrp/upshift/request-redeem",
+            "fxrp/upshift/claim",
+          ],
+        },
       ],
     },
     {

@@ -1,0 +1,108 @@
+---
+title: Get Upshift Vault Status
+tags: [intermediate, upshift, fassets]
+slug: status
+description: Learn how to get Upshift vault status
+keywords: [fassets, flare-network, fxrp, upshift, vault]
+sidebar_position: 1
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import UpshiftStatus from "!!raw-loader!/examples/developer-hub-javascript/upshift-status.ts";
+
+This guide demonstrates how to retrieve information about an Upshift vault, including vault configuration, LP token info, user balances, and withdrawal epoch information.
+
+The Upshift vault is an [ERC-4626](https://eips.ethereum.org/EIPS/eip-4626) style tokenized vault compatible with [FAssets](/fassets/overview).
+
+## Prerequisites
+
+- [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit)
+- [Flare Network Periphery Contracts](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts)
+- Understanding of [FAssets](/fassets/overview)
+
+## Upshift Vault Status Script
+
+The following script retrieves and displays information about the Upshift vault:
+
+<CodeBlock language="typescript" title="scripts/upshift/status.ts">
+  {UpshiftStatus}
+</CodeBlock>
+
+## Script Breakdown
+
+The `main()` function executes the following steps:
+
+1. **Initialize:** Gets the user account and logs the vault and user addresses.
+2. **Connect to vault:** Creates an instance of the Upshift vault contract.
+3. **Get reference asset info:** Retrieves the vault's reference asset (FXRP) address, symbol, and decimals.
+4. **Get LP token info:** Retrieves the vault's LP token address, which represents user shares.
+5. **Get vault configuration:** Fetches key vault parameters.
+6. **Get withdrawal epoch info:** Retrieves the current withdrawal epoch (year, month, day) and claimable epoch.
+7. **Get user balances:** Shows the user's reference asset balance and LP token balance.
+8. **Check allowances:** Displays the user's token allowances to the vault for both the reference asset and LP token.
+
+## Running the Script
+
+To run the Upshift vault status script:
+
+1. Ensure you have the [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit) set up.
+2. Update the `VAULT_ADDRESS` constant with the correct vault address for your network.
+3. Run the script using Hardhat:
+
+```bash
+npx hardhat run scripts/upshift/status.ts --network coston2
+```
+
+## Output
+
+The script outputs the following information about the Upshift vault:
+
+```bash
+VAULT STATUS
+
+Vault Address: 0x24c1a47cD5e8473b64EAB2a94515a196E10C7C81
+User Address: 0x0d09ff7630588E05E2449aBD3dDD1D8d146bc5c2
+
+Reference Asset
+Address: 0x0b6A3645c240605887a5532109323A3E12273dc7
+Symbol: FTestXRP
+Decimals: 6
+
+LP Token
+Address: 0x1234567890abcdef1234567890abcdef12345678
+
+Vault Configuration
+Withdrawals Paused: false
+Lag Duration: 86400 seconds
+Withdrawal Fee: 0.5%
+Instant Redemption Fee: 1.0%
+Max Withdrawal Amount: 1000000.0 FTestXRP
+
+Withdrawal Epoch
+Year: 2025, Month: 1, Day: 15
+Claimable Epoch: 14
+
+User Balances
+FTestXRP Balance: 100.0
+LP Token Balance: 95.5
+
+Allowances
+FTestXRP Allowance to Vault: 0.0
+LP Token Allowance to Vault: 0.0
+```
+
+## Summary
+
+In this guide, you learned how to retrieve status information from an Upshift vault, including vault configuration, LP token details, user balances, and withdrawal epoch information.
+
+:::tip[What's next]
+
+To continue your Upshift development journey, you can:
+
+- Learn more about [FAssets](/fassets/overview) and how the system works.
+- Learn how to [deposit assets into an Upshift vault](/fxrp/upshift/deposit).
+- Learn how to [instantly redeem from an Upshift vault](/fxrp/upshift/instant-redeem) for immediate liquidity.
+- Learn how to [request a redemption from an Upshift vault](/fxrp/upshift/request-redeem) for delayed liquidity.
+- Learn how to [claim assets from an Upshift vault](/fxrp/upshift/claim) after your requested redemption is claimable.
+
+:::

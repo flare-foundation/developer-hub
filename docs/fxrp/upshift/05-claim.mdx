@@ -1,0 +1,129 @@
+---
+title: Claim Redemption from Upshift Vault
+tags: [intermediate, upshift, fassets]
+slug: claim
+description: Learn how to claim assets from a previously requested Upshift vault redemption
+keywords: [fassets, flare-network, fxrp, upshift, vault, claim, redemption]
+sidebar_position: 5
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import UpshiftClaim from "!!raw-loader!/examples/developer-hub-javascript/upshift-claim.ts";
+
+This guide demonstrates how to claim assets from a previously requested redemption in an Upshift vault.
+The Upshift vault implements an [ERC-4626](https://eips.ethereum.org/EIPS/eip-4626) style tokenized vault that supports requested redemptions with a lower fee than instant redemptions.
+
+Claiming is the final step after you have [requested a redemption](/fxrp/upshift/request-redeem).
+Once the lag duration has passed, you call [`claim()`](https://docs.upshift.finance/developer-docs/vault-contract-interface#id-3.-claim-uint256-year-uint256-month-uint256-day-address-receiveraddr) to receive your underlying assets (e.g., FXRP) in your wallet.
+
+## Prerequisites
+
+- [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit)
+- [Flare Network Periphery Contracts](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts)
+- Understanding of [FAssets](/fassets/overview)
+- A pending redemption request from a previous [request redeem](/fxrp/upshift/request-redeem) call.
+
+## Upshift Vault Claim Script
+
+The following script demonstrates how to claim assets from the Upshift vault:
+
+<CodeBlock language="typescript" title="scripts/upshift/claim.ts">
+  {UpshiftClaim}
+</CodeBlock>
+
+## Script Breakdown
+
+The `main()` function executes the following steps:
+
+1. **Initialize:** Gets the user account and logs the vault, user, receiver addresses, and redemption date.
+2. **Connect to vault:** Creates an instance of the Upshift vault contract.
+3. **Get reference asset info:** Retrieves the vault's reference asset (FXRP) address, symbol, and decimals.
+4. **Check pending redemption:** Verifies that there are shares to claim for the given date and receiver.
+5. **Get LP token info:** Retrieves the LP token address, decimals, and symbol.
+6. **Preview redemption:** Calls [`previewRedemption()`](https://docs.upshift.finance/developer-docs/vault-contract-interface#id-8.-previewredeem-uint256-shares) to see expected assets before and after the withdrawal fee.
+7. **Check if claimable:** Ensures the current block timestamp is past the claimable date (plus a small buffer) before proceeding.
+8. **Get balance before:** Records the receiver's asset balance before the claim.
+9. **Execute claim:** Calls [`claim()`](https://docs.upshift.finance/developer-docs/vault-contract-interface?q=getBurnableAmountByReceiver#id-3.-claim-uint256-year-uint256-month-uint256-day-address-receiveraddr) with the redemption date and receiver to transfer assets.
+10. **Verify claim:** Confirms the claim by comparing the receiver's new asset balance to the expected amount.
+
+## Understanding the Claim Process
+
+The claim step completes the requested redemption flow:
+
+1. **Request:** You previously called [`requestRedeem()`](/fxrp/upshift/request-redeem) to lock LP tokens and create a withdrawal request for a specific epoch.
+2. **Wait:** The lag duration must pass before assets can be claimed.
+3. **Claim:** Once the claimable date has been reached, call `claim(year, month, day, receiver)` to receive your assets.
+
+The script uses the **redemption date** (year, month, day) that was output when you ran the request redeem script.
+You must set `YEAR`, `MONTH`, and `DAY` in the script to match that date.
+
+## Running the Script
+
+To run the Upshift vault claim script:
+
+1. Ensure you have the [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit) set up.
+2. Update the `VAULT_ADDRESS` constant with the correct vault address for your network.
+3. Set `YEAR`, `MONTH`, and `DAY` to the claimable date from your [request redeem](/fxrp/upshift/request-redeem) output.
+4. Optionally set `RECEIVER_ADDRESS` to claim to a different address (leave empty to use the signer).
+5. Ensure the claimable date has passed (the script checks and exits with a message if not).
+6. Run the script using Hardhat:
+
+```bash
+npx hardhat run scripts/upshift/claim.ts --network coston2
+```
+
+## Output
+
+The script outputs the following information about the claim:
+
+```bash
+CLAIM REDEMPTION
+
+Vault Address: 0x24c1a47cD5e8473b64EAB2a94515a196E10C7C81
+User Address: 0x0d09ff7630588E05E2449aBD3dDD1D8d146bc5c2
+Receiver Address: 0x0d09ff7630588E05E2449aBD3dDD1D8d146bc5c2
+Redemption Date: 2026-01-23
+
+1. Checking pending redemption...
+
+2. Previewing redemption...
+Assets (before fee): 1.0 FTestXRP
+Assets (after fee): 0.995 FTestXRP
+Fee: 0.005 FTestXRP
+
+Shares to claim: 1.0
+LP Token Address: 0x...
+
+3. Checking if claimable...
+Current Timestamp: 1737648000
+Claimable Epoch: 1737586800
+Ready to claim!
+
+4. Checking receiver balance before...
+Balance: 50.0 FTestXRP
+
+5. Claiming...
+Claim: (tx: 0x3f1bd8c766852d3b835bcde79f6d8e20afeeb227d737e0ed28d057dc0e6b2ba9 , block: 12345678 )
+
+6. Verifying claim...
+Balance After: 50.995 FTestXRP
+Received: 0.995 FTestXRP
+Claim successful!
+```
+
+## Summary
+
+In this guide, you learned how to claim assets from an Upshift vault after a requested redemption.
+You use the redemption date (year, month, day) from your request redeem output, and once the lag period has passed, the claim script transfers the underlying assets to your wallet.
+
+:::tip[What's next]
+
+To continue your Upshift development journey, you can:
+
+- Learn how to [get Upshift vault status](/fxrp/upshift/status) to monitor your redemption requests.
+- Learn how to [request a redemption](/fxrp/upshift/request-redeem) from an Upshift vault.
+- Learn how to [instantly redeem](/fxrp/upshift/instant-redeem) from an Upshift vault for immediate liquidity.
+- Learn how to [deposit assets](/fxrp/upshift/deposit) into an Upshift vault.
+- Learn more about [FAssets](/fassets/overview) and how the system works.
+
+:::

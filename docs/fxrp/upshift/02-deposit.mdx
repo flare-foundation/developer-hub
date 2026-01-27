@@ -1,0 +1,106 @@
+---
+title: Deposit Assets into Upshift Vault
+tags: [intermediate, upshift, fassets]
+slug: deposit
+description: Learn how to deposit assets into an Upshift vault
+keywords: [fassets, flare-network, fxrp, upshift, vault]
+sidebar_position: 2
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import UpshiftDeposit from "!!raw-loader!/examples/developer-hub-javascript/upshift-deposit.ts";
+
+This guide demonstrates how to deposit assets into an Upshift vault.
+The Upshift vault implements an [ERC-4626](https://eips.ethereum.org/EIPS/eip-4626) style tokenized vault, allowing users to deposit assets (e.g., FXRP) and receive LP tokens (vault shares) in return.
+
+Depositing assets is the process of transferring them to the vault and receiving LP tokens that represent your proportional ownership of the vault's assets.
+
+## Prerequisites
+
+- [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit)
+- [Flare Network Periphery Contracts](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts)
+- Understanding of [FAssets](/fassets/overview)
+- Sufficient asset balance (e.g., FXRP) to deposit into the vault.
+
+## Upshift Vault Deposit Script
+
+The following script demonstrates how to deposit assets into the Upshift vault:
+
+<CodeBlock language="typescript" title="scripts/upshift/deposit.ts">
+  {UpshiftDeposit}
+</CodeBlock>
+
+## Script Breakdown
+
+The `main()` function executes the following steps:
+
+1. **Initialize:** Gets the user account and logs the vault and user addresses.
+2. **Connect to vault:** Creates an instance of the Upshift vault contract.
+3. **Get reference asset info:** Retrieves the vault's reference asset (FXRP) address, symbol, and decimals.
+4. **Calculate deposit amount:** Converts the desired amount into the correct units based on decimals.
+5. **Check balance:** Verifies the user has sufficient balance to cover the deposit.
+6. **Approve allowance:** Approves the vault to spend the deposit amount if needed.
+7. **Preview deposit:** Calls [`previewDeposit()`](https://docs.upshift.finance/developer-docs/vault-contract-interface#id-7.-previewdeposit-uint256-assets) to see the expected shares and amount in reference tokens.
+8. **Get LP token info:** Records the LP token balance before the deposit.
+9. **Execute deposit:** Calls [`deposit()`](https://docs.upshift.finance/developer-docs/vault-contract-interface#id-1.-deposit-uint256-assets-address-receiver) to transfer assets and mint LP tokens.
+10. **Verify deposit:** Confirms the deposit by checking the new LP token balance and shares received.
+
+## Running the Script
+
+To run the Upshift vault deposit script:
+
+1. Ensure you have the [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit) set up.
+2. Update the `VAULT_ADDRESS` constant with the correct vault address for your network.
+3. Adjust the `DEPOSIT_AMOUNT` constant to the desired number of tokens.
+4. Ensure your account has sufficient asset balance (e.g., FXRP) to cover the deposit.
+5. Run the script using Hardhat:
+
+```bash
+npx hardhat run scripts/upshift/deposit.ts --network coston2
+```
+
+## Output
+
+The script outputs the following information about the deposit:
+
+```bash
+DEPOSIT TO VAULT
+
+Vault Address: 0x24c1a47cD5e8473b64EAB2a94515a196E10C7C81
+User Address: 0x0d09ff7630588E05E2449aBD3dDD1D8d146bc5c2
+
+Reference Asset (asset depositing): 0x0b6A3645c240605887a5532109323A3E12273dc7
+
+Deposit Amount: 1 FTestXRP (1000000)
+Balance: 100.0 FTestXRP
+Current Allowance: 0.0 FTestXRP
+
+Approving vault to spend 1 FTestXRP tokens
+Approval Tx: 0x87a36c1009575719fd3adb9a1bb2e3062a601bf910fc7fac3248da71891c39a4
+
+Expected Shares: 0.99
+Amount in Reference Tokens: 1.0
+LP Balance Before: 0.0
+
+Deposit: (tx: 0x446b7a171859d676677fc870cff81c7e8c0d618fc3588e60665792da86b94c50 , block: 12345678 )
+
+Verifying deposit...
+LP Balance After: 0.99
+Shares Received: 0.99
+```
+
+## Summary
+
+In this guide, you learned how to deposit assets into an Upshift vault by specifying the amount of assets to deposit and receiving LP tokens in return.
+
+:::tip[What's next]
+
+To continue your Upshift development journey, you can:
+
+- Learn more about [FAssets](/fassets/overview) and how the system works.
+- Learn how to [get Upshift vault status](/fxrp/upshift/status) to monitor your position.
+- Learn how to [instantly redeem from an Upshift vault](/fxrp/upshift/instant-redeem) for immediate liquidity.
+- Learn how to [request a redemption from an Upshift vault](/fxrp/upshift/request-redeem) for delayed liquidity.
+- Learn how to [claim assets from an Upshift vault](/fxrp/upshift/claim) after your requested redemption is claimable.
+
+:::
