@@ -9,8 +9,8 @@
 import { web3 } from "hardhat";
 import { formatUnits } from "ethers";
 
-import { ITokenizedVaultInstance } from "../../typechain-types/contracts/upshift/ITokenizedVault";
-import { IERC20Instance } from "../../typechain-types/@openzeppelin/contracts/token/ERC20/IERC20";
+import type { ITokenizedVaultInstance } from "../../typechain-types/contracts/upshift/ITokenizedVault";
+import type { IERC20Instance } from "../../typechain-types/@openzeppelin/contracts/token/ERC20/IERC20";
 
 const VAULT_ADDRESS = "0x24c1a47cD5e8473b64EAB2a94515a196E10C7C81";
 const RECEIVER_ADDRESS = ""; // Leave empty to use sender's address
@@ -68,7 +68,7 @@ async function getLPTokenInfo(vault: ITokenizedVaultInstance) {
 
 async function previewRedemption(
   vault: ITokenizedVaultInstance,
-  shares: any,
+  shares: { toString(): string },
   refDecimals: number,
   refSymbol: string,
 ) {
@@ -156,8 +156,8 @@ async function executeClaim(
 async function verifyClaim(
   refToken: IERC20Instance,
   receiverAddr: string,
-  balanceBefore: any,
-  assetsAfterFee: any,
+  balanceBefore: { toString(): string },
+  assetsAfterFee: { toString(): string },
   refDecimals: number,
   refSymbol: string,
 ) {
