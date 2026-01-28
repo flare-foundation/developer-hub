@@ -1,0 +1,290 @@
+---
+sidebar_position: 1
+slug: state-lookup-ts
+title: State Lookup
+authors: [nikerzetic]
+description: Reading the smart-accounts-related states from the Flare chain using Viem.
+tags: [quickstart, ethereum, flare-smart-accounts]
+keywords:
+  [
+    flare-fdc,
+    ethereum,
+    flare-smart-accounts,
+    evm,
+    flare-network,
+    account-abstraction,
+  ]
+unlisted: false
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import StateLookupScript from "!!raw-loader!/examples/developer-hub-javascript/smart-accounts/state-lookup.ts";
+
+In this guide, you will learn how to get the following using the Viem TypeScript library:
+
+- the Flare address that corresponds to an XRPL account
+- the total value of FXRP that belongs to a personal account tied to an XRPL address
+- a list of all the registered vaults
+- the total value of FXRP of a personal account, in each of the registered vaults
+- a list of all the registered agent vaults
+
+The code example is available on the [Flare Foundation GitHub](https://github.com/flare-foundation/flare-smart-accounts-viem).
+
+<CodeBlock language="typescript" title="src/state-lookup.ts">
+  {StateLookupScript}
+</CodeBlock>
+
+<details>
+<summary>Expected output</summary>
+The following is an example of the expected output.
+The values will differ slightly, but the output should follow the same general format.
+The personal account address is tied to the XRPL address obtained from the XRPL secret value in the `.env` file.
+
+{/* TODO:(Nik) link to upshift and mint guides */}
+
+```bash
+Operator XRPL addresses: [ 'rLb3Qrz2wh4cbMUQYi4iTJBM5ggfbUYw27' ]
+
+Personal account address: 0xF06021C426E33606E8215E72D6b6Ea64Afa77A0F
+
+Personal account FXRP balance: 0n
+
+Vaults: [
+  {
+    id: 2n,
+    address: '0x2C5f203CAd22f3d351912e634dDd0f93C6D503d9',
+    type: 2
+  },
+  {
+    id: 1n,
+    address: '0x9BbE85a672Dd2fE2197516656FB2dC76c974954d',
+    type: 1
+  }
+]
+
+Vault 2 balance: 0n
+
+Vault 1 balance: 0n
+
+Agent vaults: [ { id: 1n, address: '0x55c815260cBE6c45Fe5bFe5FF32E3C7D746f14dC' } ]
+```
+
+</details>
+
+Let us examine each of the helper functions in more detail.
+First of all, we need to define a Viem public client.
+Since the two Flare mainnets and the two testnets are already registered with Viem, we simply need to import them.
+Then, we create a basic public client with the HTTP transporter.
+
+```typescript
+import { createPublicClient, http } from "viem";
+import { flareTestnet } from "viem/chains";
+
+export const publicClient = createPublicClient({
+  chain: flareTestnet,
+  transport: http(),
+});
+```
+
+With that, we can look at the actual functions.
+All of them rely primarily on the `readContract` function of the Viem `publicClient` to call read functions of contracts on the Flare chain.
+
+## Operator's XRPL addresses
+
+{/* TODO:(Nik) update the sentence about in development */}
+The `getOperatorXrplAddresses` calls the `getXrplProviderWallets` function of the `MasterAccountController` contract.
+The function returns an array of XRPL addresses; these are all the registered operator XRPL addresses.
+Because the Flare smart accounts are still in development, the `MasterAccountController` contract has not yet been added to the `FlareContractRegistry` contract.
+That is the reason why the address of the `MasterAccountController` has been hardcoded in the example repository.
+
+```typescript
+export async function getOperatorXrplAddresses() {
+  const result = await publicClient.readContract({
+    address: MASTER_ACCOUNT_CONTROLLER_ADDRESS,
+    abi: coston2.iMasterAccountControllerAbi,
+    functionName: "getXrplProviderWallets",
+    args: [],
+  });
+  return result as string[];
+}
+```
+
+## Personal account of an XRPL address
+
+There are many situations when it is important or even necessary to know the address of the `PersonalAccount` of an XRPL address;
+like monitoring different emitted events and retrieving user balances.
+The `getPersonalAccountAddress` function retrieves the address of the `PersonalAccount` contract, belonging to the given XRPL address.
+It calls the `getPersonalAccount` function of the `MasterAccountController` contract, with the XRPL address as the function argument.
+
+```typescript
+export async function getPersonalAccountAddress(xrplAddress: string) {
+  const personalAccountAddress = await publicClient.readContract({
+    address: MASTER_ACCOUNT_CONTROLLER_ADDRESS,
+    abi: coston2.iMasterAccountControllerAbi,
+    functionName: "getPersonalAccount",
+    args: [xrplAddress],
+  });
+
+  return personalAccountAddress;
+}
+```
+
+## Account's FXRP balance
+
+The `getFxrpBalance` function looks up the current FXRP balance of the given address.
+It calls the `balanceOf` function, which is a generic ERC-20 function of the FXRP token.
+
+```typescript
+export async function getFxrpBalance(address: Address) {
+  const fxrpAddress = await getFxrpAddress();
+  const fxrpBalance = await publicClient.readContract({
+    address: fxrpAddress,
+    abi: erc20Abi,
+    functionName: "balanceOf",
+    args: [address],
+  });
+  return fxrpBalance;
+}
+```
+
+The FXRP token address is obtained from the `AssetManagerFXRP` contract by calling its `fAsset` function.
+
+```typescript
+export async function getFxrpAddress(): Promise<Address> {
+  const assetManagerAddress = await getAssetManagerFXRPAddress();
+  const fxrpAddress = await publicClient.readContract({
+    address: assetManagerAddress,
+    abi: coston2.iAssetManagerAbi,
+    functionName: "fAsset",
+  });
+  return fxrpAddress;
+}
+```
+
+The `AssetManagerFXRP` contract is one of the contracts registered with the `FlareContractRegistry` contract.
+This allows us to read the `AssetManagerFXRP` contract's address from the latter.
+
+```typescript
+export async function getAssetManagerFXRPAddress(): Promise<Address> {
+  const assetManagerAddress =
+    await getContractAddressByName("AssetManagerFXRP");
+  return assetManagerAddress;
+}
+
+export async function getContractAddressByName(name: string) {
+  const contractAddress = await publicClient.readContract({
+    address: FLARE_CONTRACT_REGISTRY_ADDRESS,
+    abi: coston2.iFlareContractRegistryAbi,
+    functionName: "getContractAddressByName",
+    args: [name],
+  });
+
+  return contractAddress;
+}
+```
+
+## Vaults and vault balances
+
+Certain instructions require the user to specify a vault ID.
+The user should also be able to check their share of each vault to which they have committed their funds.
+That is why it is important that we know how to retrieve those values.
+
+To get the array of registered vaults, we define two helper types.
+The `getVaults` function of the `MasterAccountController` contract returns an array of three arrays;
+the first one represents the vault IDs, the second their addresses, and the third their types.
+The vaults are either of the Firelight (`1`) or the Upshift (`2`) type.
+The `GetVaultsReturnType` type allows us to properly interpret that data.
+
+The `getVaults` function calls the function of the `MasterAccountController` contract with the same name.
+It iterates over the three sub-arrays and constructs a new array of the `Vault` type.
+
+```typescript
+export type Vault = {
+  id: bigint;
+  address: Address;
+  type: number;
+};
+
+export type GetVaultsReturnType = [bigint[], string[], number[]];
+
+export async function getVaults(): Promise<Vault[]> {
+  const _vaults = (await publicClient.readContract({
+    address: MASTER_ACCOUNT_CONTROLLER_ADDRESS,
+    abi: coston2.iMasterAccountControllerAbi,
+    functionName: "getVaults",
+    args: [],
+  })) as GetVaultsReturnType;
+
+  const length = _vaults[0].length;
+  if (length === 0) {
+    return [];
+  }
+
+  const vaults = new Array(length) as Vault[];
+
+  _vaults[0].forEach((id, index) => {
+    vaults[index] = {
+      id,
+      address: _vaults[1][index]! as Address,
+      type: _vaults[2][index]!,
+    };
+  });
+
+  return vaults;
+}
+```
+
+On the testnet, the vaults are mocks.
+They are straightforward ERC-4626 implementations.
+To get the vault balance of a Flare address, we call the ERC-46426 `balanceOf` function on the selected vault, with the account address as the argument.
+
+```typescript
+async function getVaultBalance(vaultAddress: Address, accountAddress: Address) {
+  const vaultBalance = await publicClient.readContract({
+    address: vaultAddress,
+    abi: erc4626Abi,
+    functionName: "balanceOf",
+    args: [accountAddress],
+  });
+  return vaultBalance;
+}
+```
+
+## Agent vaults
+
+Smart account instructions, which include a minting step (`FXRPCollateralReservation`, `FirelightCollateralReservationAndDeposit`, and `UpshiftCollateralReservationAndDeposit`), require the user to specify the ID of the agent vault they wish to use.
+We obtain the list of all the registered agent vaults in a similar way to how we do for the deposit vaults.
+
+```typescript
+export type AgentVault = {
+  id: bigint;
+  address: Address;
+};
+
+export type GetAgentVaultsReturnType = [bigint[], string[]];
+
+export async function getAgentVaults(): Promise<AgentVault[]> {
+  const _vaults = await publicClient.readContract({
+    address: MASTER_ACCOUNT_CONTROLLER_ADDRESS,
+    abi: coston2.iMasterAccountControllerAbi,
+    functionName: "getAgentVaults",
+    args: [],
+  });
+
+  const length = _vaults[0].length;
+  if (length === 0) {
+    return [];
+  }
+
+  const vaults = new Array(length) as AgentVault[];
+
+  _vaults[0].forEach((id, index) => {
+    vaults[index] = {
+      id,
+      address: _vaults[1][index]!,
+    };
+  });
+
+  return vaults;
+}
+```
