@@ -1,0 +1,107 @@
+---
+slug: fast-updates-analytics
+title: Fast Updates Analytics
+description: Understand how FTSOv2 feed stability and accuracy metrics are calculated and monitored.
+keywords:
+  [
+    ftso,
+    oracle,
+    flare-time-series-oracle,
+    flare-network,
+    analytics,
+    feed-stability,
+    accuracy,
+    fast-updates,
+  ]
+sidebar_position: 3
+---
+
+import FeedStability from "@site/src/features/DataTables/FeedStability";
+import Tippy from "@tippyjs/react";
+
+FTSOv2 Fast Updates are continuously monitored for accuracy and stability.
+This page explains how feed stability metrics are calculated and provides the latest analytics data for all block-latency feeds.
+
+## Feed Stability
+
+Feed stability measures the percentage of time a feed's value remains within a specified deviation band from a reference feed.
+This metric helps users understand the reliability and accuracy of each feed over time.
+
+### Calculation Methodology
+
+For each feed, stability is calculated as follows:
+
+1. **Reference Comparison:** The FTSOv2 feed value is compared against an external reference feed (e.g., from centralized exchanges or other oracle providers).
+
+2. **Deviation Bands:** The deviation between the FTSOv2 feed and the reference is measured against predefined percentage bands: `[0.1%, 0.2%, 0.5%, 1.0%]`.
+
+3. **Time in Band:** The stability percentage represents the proportion of time the feed value stayed within the specified deviation band.
+   For the primary stability metric shown below, a **0.2% band** is used.
+
+4. **Data Collection:** Feed data is collected from the [FTSO Visualizers](https://flare-systems-explorer.flare.network/price-feeds/ftso) and exported weekly.
+
+### Interpreting Stability Values
+
+| Stability Range | Status       | Description                                                              |
+| --------------- | ------------ | ------------------------------------------------------------------------ |
+| ≥99%            | 🟢 Excellent | Feed maintains exceptional accuracy relative to reference.               |
+| 97-99%          | 🟢 Good      | Feed demonstrates strong accuracy with minimal deviation.                |
+| 94-97%          | 🟡 Moderate  | Feed shows acceptable accuracy but may experience occasional deviations. |
+| 80-94%          | 🔴 Low       | Feed experiences notable deviations; consider additional validation.     |
+| &lt;80%         | ⚫ Very Low  | Feed shows significant instability; exercise caution when using.         |
+
+## Depeg Events
+
+A **depeg event** occurs when an FTSOv2 feed deviates significantly from its reference feed for an extended period.
+These events are tracked to identify feeds that may require attention or adjustment.
+
+### Depeg Detection Parameters
+
+The following parameters define when a deviation qualifies as a depeg event:
+
+| Parameter                     | Value      | Description                                                             |
+| ----------------------------- | ---------- | ----------------------------------------------------------------------- |
+| `min_deviation_time`          | 20 seconds | Minimum continuous duration of deviation to qualify as a depeg.         |
+| `optimal_deviation_threshold` | 0.2%       | Deviation percentage that triggers event tracking.                      |
+| `high_deviation_threshold`    | 1.0%       | Peak deviation must exceed this value to filter out minor fluctuations. |
+
+A depeg event is recorded when:
+
+- The feed deviation exceeds `optimal_deviation_threshold` (0.2%) continuously.
+- The deviation persists for at least `min_deviation_time` (20 seconds).
+- The peak deviation reaches `high_deviation_threshold` (1.0%) at some point during the event.
+
+The **recovery time** is measured as the duration from when the deviation first exceeded the threshold until it returned below it.
+
+## Current Feed Stability
+
+The table below shows the latest stability metrics for all FTSOv2 block-latency feeds.
+Stability values represent the percentage of time each feed remained within **0.2%** of its reference feed.
+
+Hover over the status icons to see detailed tooltips.
+
+<FeedStability />
+
+## Risk Classification
+
+Feed risk levels are determined by analyzing historical volatility patterns, liquidity depth, and price stability.
+The risk classification shown in the table above is derived from the [FTSO risk assessment](https://github.com/flare-foundation/developer-hub/blob/main/automations/ftso_risk.json) and is updated periodically.
+
+| Risk Level | Icon | Description                                                                         |
+| ---------- | ---- | ----------------------------------------------------------------------------------- |
+| Low        | 🟢   | Feeds demonstrating low volatility and generally stable price trends.               |
+| Medium     | 🟡   | Feeds demonstrating moderate price fluctuations.                                    |
+| High       | 🔴   | Feeds demonstrating high volatility with frequent price swings.                     |
+| New Feed   | ⚫   | Recently launched feeds with uncertain risk profile. Users must verify reliability. |
+
+## Data Sources
+
+The analytics presented on this page are generated from the following sources:
+
+- **FTSO Visualizers:** Real-time feed data from [Flare Systems Explorer](https://flare-systems-explorer.flare.network/price-feeds/ftso).
+
+:::tip[Learn More]
+
+For detailed methodology and additional analytics, refer to the Flare Protocol Analytics documentation.
+
+:::
