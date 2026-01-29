@@ -1,0 +1,422 @@
+---
+sidebar_position: 1
+slug: custom-instruction-ts
+title: Custom Instruction
+authors: [nikerzetic]
+description: Sending custom smart account instructions using Viem.
+tags: [quickstart, ethereum, flare-smart-accounts]
+keywords:
+  [
+    flare-fdc,
+    ethereum,
+    flare-smart-accounts,
+    evm,
+    flare-network,
+    account-abstraction,
+  ]
+unlisted: false
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import CustomInstructionsScript from "!!raw-loader!/examples/developer-hub-javascript/smart-accounts/custom-instructions.ts";
+
+The [Custom Instruction guide](/smart-accounts/custom-instruction) provides a general overview of how Flare smart account Custom Instructions work.
+In this guide, we will showcase an example script, which uses the TypeScript Viem library to register a Custom Instruction, send it on XRPL, and look for the `CustomInstructionExecuted` event on the Flare network.
+
+The custom instruction we will be sending will execute three different calls on the Flare network.
+Each will interact with a different contract, and they will get progressively more complicated.
+
+:::info
+The code in this guide is set up for the Coston2 testnet.
+Despite that, we will refer to the network as Flare and its currency as FLR instead of Coston2 and C2FLR.
+:::
+
+A prerequisite for the custom instruction to work is that it is properly funded.
+As we will see, the custom instruction that we will be sending transfers a total of `2` FLR to other accounts.
+The [State Lookup guide](/smart-accounts/guides/typescript-viem/state-lookup-ts#personal-account-of-an-xrpl-address) explains how we can acquire its address.
+Then, we can use the [Flare faucet](https://faucet.flare.network/coston2) to fund our account.
+
+The full code showcased in this guide is available on [GitHub](https://github.com/flare-foundation/flare-smart-accounts-viem).
+
+## Contracts
+
+{/* TODO:(Nik) fix contract addresses and links */}
+
+The first contract is a `Checkpoint` that counts how many times each user has called its `passCheckpoint` function.
+It is useless as anything other than an example.
+The first call of our custom instruction will be to call the `passCheckpoint` function of this contract, deploy at the address [`0xEE6D54382aA623f4D16e856193f5f8384E487002`](https://coston2-explorer.flare.network/address/0xEE6D54382aA623f4D16e856193f5f8384E487002?tab=contract).
+
+```Solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.25;
+
+contract Checkpoint {
+    mapping(address => uint256) public numberOfPasses;
+
+    function passCheckpoint() public payable {
+        ++numberOfPasses[msg.sender];
+    }
+}
+```
+
+The second contract is a `PiggyBank`, and is a degree more useful.
+It allows a user to `deposit` FLR into it, and `withdraw` it all at once.
+Our second call will be to deposit `1` FLR into the `PiggyBank` contract at the address [`0x42Ccd4F0aB1C6Fa36BfA37C9e30c4DC4DD94dE42`](https://coston2-explorer.flare.network/address/0x42Ccd4F0aB1C6Fa36BfA37C9e30c4DC4DD94dE42?tab=contract).
+
+```Solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.25;
+
+contract PiggyBank {
+    mapping(address => uint256) public balances;
+
+    function deposit() public payable {
+        balances[msg.sender] += msg.value;
+    }
+
+    function withdraw() public {
+        uint256 amount = balances[msg.sender];
+        require(amount > 0);
+        delete balances[msg.sender];
+        (bool success, ) = payable(msg.sender).call{ value: amount }("");
+        require(success);
+    }
+}
+```
+
+The third and last contract is a `NoticeBoard`.
+It allows users to `pinNotice`.
+The value they send in this transaction will determine how long the notice stays up;
+as the contract is set up, `1` FLR gets you `30` days, with fractions allowed.
+The last call our personal account will perform is to pin a notice with the message `Hello World!` to the `NoticeBoard` at the address [`0x59D57652BF4F6d97a6e555800b3920Bd775661Dc`](https://coston2-explorer.flare.network/address/0x59D57652BF4F6d97a6e555800b3920Bd775661Dc?tab=contract) for `30` days (which means we need to attach a value of `1` FLR).
+
+```Solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.25;
+
+struct Notice {
+    uint256 expirationTimestamp;
+    string message;
+}
+
+contract NoticeBoard {
+    uint256 public constant THIRTY_DAYS = 2592000;
+
+    mapping(address => Notice) public notices;
+    mapping(address => bool) public existingClients;
+    address[] public clients;
+
+    function pinNotice(string memory message) public payable {
+        require(msg.value > 0);
+
+        // NOTE:(Nik) The subscription is 1 FLR per month.
+        uint256 duration = THIRTY_DAYS * (msg.value / 1 ether);
+        uint256 expirationTimestamp = block.timestamp + duration;
+
+        notices[msg.sender] = Notice(expirationTimestamp, message);
+        if (!existingClients[msg.sender]) {
+            clients.push(msg.sender);
+            existingClients[msg.sender] = true;
+        }
+    }
+
+    function getNotices() public view returns (Notice[] memory) {
+        Notice[] memory _notices = new Notice[](clients.length);
+        for (uint256 i = 0; i < clients.length; ++i) {
+            Notice memory notice = notices[clients[i]];
+            if (notice.expirationTimestamp > block.timestamp) {
+                _notices[i] = notice;
+            }
+        }
+        return _notices;
+    }
+}
+```
+
+The contract also performs additional checks to ensure that each client is only added to the array of all the clients once, and that it returns only the notices that have not yet expired.
+
+## Parameters
+
+Besides the contract addresses and their arguments, the only other parameter we need to specify is a `walletId`.
+This is a one-byte value, assigned by Flare on a case-by-case basis.
+It is intended for wallet identification by the operator.
+We will set it to `0`.
+
+```typescript
+const walletId = 0;
+
+const checkpointAddress = "0xEE6D54382aA623f4D16e856193f5f8384E487002";
+const piggyBankAddress = "0x42Ccd4F0aB1C6Fa36BfA37C9e30c4DC4DD94dE42";
+const noticeBoardAddress = "0x59D57652BF4F6d97a6e555800b3920Bd775661Dc";
+
+const depositAmount = 1 * 10 ** 18;
+const pinNoticeAmount = 1 * 10 ** 18;
+const pinNoticeMessage = "Hello World!";
+```
+
+As described in the general [Custom Instruction guide](/smart-accounts/custom-instruction), each custom instruction call is a Solidity struct containing the following fields:
+
+- `targetContract`: the address of the contract to call
+- `value`: the amount of FLR to send
+- `data`: the function calldata (function selector and parameter encoding)
+
+:::note
+Behind the scenes, each custom instruction call translates to sending a payment transaction to the `targetContract` address of `value` FLR with attached `data`.
+:::
+
+The `targetContract` and `value` do not need additional processing, but how can we generate the calldata?
+For that, we will use the `encodeFunctionData` function from the Viem library.
+It calculates the encoding for a function from its contract's ABI, the function name, and the arguments used.
+With that, we can prepare an array of calls, which is our custom instruction for this example.
+
+```typescript
+const customInstructions = [
+  {
+    targetContract: checkpointAddress,
+    value: BigInt(0),
+    data: encodeFunctionData({
+      abi: checkpointAbi,
+      functionName: "passCheckpoint",
+      args: [],
+    }),
+  },
+  {
+    targetContract: piggyBankAddress,
+    value: BigInt(depositAmount),
+    data: encodeFunctionData({
+      abi: piggyBankAbi,
+      functionName: "deposit",
+      args: [],
+    }),
+  },
+  {
+    targetContract: noticeBoardAddress,
+    value: BigInt(pinNoticeAmount),
+    data: encodeFunctionData({
+      abi: noticeBoardAbi,
+      functionName: "pinNotice",
+      args: [pinNoticeMessage],
+    }),
+  },
+] as CustomInstruction[];
+```
+
+## Registering an instruction
+
+{/* TODO:(Nik) fix the code for this when the contract gets fixed to not revert if the instruction has already been registered */}
+
+Next, we need to register the custom instruction with the `MasterAccountController` contract.
+In order to read from the Flare chain, we first need to create a [Viem public client](https://viem.sh/docs/clients/public).
+
+```typescript
+import { createPublicClient, http } from "viem";
+import { flareTestnet } from "viem/chains";
+
+export const publicClient = createPublicClient({
+  chain: flareTestnet,
+  transport: http(),
+});
+```
+
+{/* TODO:(Nik) Update once MasterAccountController gets added to the FlareContractRegistry */}
+
+We also need the address of the `MasterAccountController` contract.
+Since the Flare smart accounts are still in development, we cannot query the `FlareContractRegistry` for the `MasterAccountController` address.
+Instead, we need to hardcode it.
+
+```typescript
+export const MASTER_ACCOUNT_CONTROLLER_ADDRESS =
+  "0x32F662C63c1E24bB59B908249962F00B61C6638f";
+```
+
+{/* TODO:(Nik) Check that the following is still relevant - how the register function works */}
+To register a custom instruction, we call the `registerCustomInstruction` function on the `MasterAccountController` contract and provide the custom instruction array as the argument.
+As recommended by the [Viem documentation](https://viem.sh/docs/contract/writeContract#writecontract), we first use the `simulateContract` function to prepare the request.
+Then we call the `writeContract` Viem function, and actually register the instruction.
+
+If the instruction has already been registered, a `CustomInstructionAlreadyRegistered` event is emitted.
+Otherwise, the instruction is registered, and a `CustomInstructionRegistered` event is emitted instead.
+In either case, the 32-byte encoding of the custom instruction, called the `callHash`, is returned.
+
+```typescript
+export async function registerCustomInstruction(
+  instructions: CustomInstruction[],
+): Promise<`0x${string}`> {
+  const { request } = await publicClient.simulateContract({
+    account: account,
+    address: MASTER_ACCOUNT_CONTROLLER_ADDRESS,
+    abi: abi,
+    functionName: "registerCustomInstruction",
+    args: [instructions],
+  });
+  console.log("request:", request, "\n");
+
+  const registerCustomInstructionResult =
+    await walletClient.writeContract(request);
+  console.log(
+    "registerCustomInstructionResult:",
+    registerCustomInstructionResult,
+    "\n",
+  );
+
+  return registerCustomInstructionResult;
+}
+```
+
+## Encoding an instruction
+
+Before the custom instruction can be sent on the XRPL, it must be properly encoded.
+The 32-byte `callHash` that the `registerCustomInstruction` function returns is not yet a proper instruction encoding.
+We need to replace the first two bytes with the following values:
+
+- 1st byte: custom instruction command ID `0xff`
+- 2nd byte: wallet identifier `walletId` described above
+
+```typescript
+export function encodeCustomInstruction(
+  instructionHash: `0x${string}`,
+  walletId: number,
+) {
+  return ("0xff" +
+    toHex(walletId, { size: 1 }).slice(2) +
+    instructionHash.slice(6)) as `0x${string}`;
+}
+```
+
+## Sending an instruction
+
+With that, we can send our custom instruction.
+We make an XRPL Payment transaction to one of the operator's XRPL addresses (the [State Lookup guide](smart-accounts/guides/typescript-viem/state-lookup-ts#operators-xrpl-addresses) explains how we can obtain these).
+The encoded instruction is attached as a memo of the transaction, with the preceding `0x` removed.
+
+```typescript
+async function sendCustomInstruction({
+  encodedInstruction,
+  xrplClient,
+  xrplWallet,
+}: {
+  encodedInstruction: `0x${string}`;
+  xrplClient: Client;
+  xrplWallet: Wallet;
+}) {
+  const operatorXrplAddress = (await getOperatorXrplAddresses())[0] as string;
+
+  const instructionFee = await getInstructionFee(encodedInstruction);
+  console.log("Instruction fee:", instructionFee, "\n");
+
+  const customInstructionTransaction = await sendXrplPayment({
+    destination: operatorXrplAddress,
+    amount: instructionFee,
+    memos: [{ Memo: { MemoData: encodedInstruction.slice(2) } }],
+    wallet: xrplWallet,
+    client: xrplClient,
+  });
+
+  return customInstructionTransaction;
+}
+```
+
+The instruction fee is determined by the `MasterAccountController` contract from the decimal representation of the instruction ID.
+In this case, the decimal value of the instruction ID (`ff`) is `255`.
+But we define a more general function that accepts any encoded instruction as input and extracts the necessary data from it.
+
+```typescript
+export async function getInstructionFee(encodedInstruction: string) {
+  const instructionId = encodedInstruction.slice(0, 4);
+  const instructionIdDecimal = fromHex(
+    instructionId as `0x${string}`,
+    "bigint",
+  );
+
+  console.log("instructionIdDecimal:", instructionIdDecimal, "\n");
+
+  const requestFee = await publicClient.readContract({
+    address: MASTER_ACCOUNT_CONTROLLER_ADDRESS,
+    abi: coston2.iMasterAccountControllerAbi,
+    functionName: "getInstructionFee",
+    args: [instructionIdDecimal],
+  });
+  return dropsToXrp(Number(requestFee));
+}
+```
+
+The `sendCustomInstruction` function requires two additional parameters, the `xrplWallet` and `xrplClient`.
+These are the `Client` and the `Wallet` classes from the `xrpl` library.
+We initialise them with values from the `.env` file.
+
+```typescript
+const xrplClient = new Client(process.env.XRPL_TESTNET_RPC_URL!);
+const xrplWallet = Wallet.fromSeed(process.env.XRPL_SEED!);
+```
+
+## Wait for instruction execution
+
+{/* TODO:(Nik) update ABI */}
+
+Lastly, we need to wait for the operator to bridge the instruction from XRPL to Flare, and for the instruction to be executed.
+Once it does, our personal account executes the instruction, and the `CustomInstructionExecuted` event is emitted by the `MasterAccountController` contract.
+We watch for such events with the [`watchContractEvent`](https://viem.sh/docs/contract/watchContractEvent#watchcontractevent) Viem function.
+
+We check each observed event, ensuring that:
+
+- the call hash of the event matches the one sent in the encoded instruction (here, only the last 30 bytes must match)
+- the personal account that executed the instruction is our personal account (lowercase to remove checksum validation)
+
+When we find the correct event, we set the `customInstructionExecutedEventFound` value to `true`.
+If the value is `false`, we wait for `10` seconds, then check again.
+Once the value has been found, we stop observing the contract and return the event.
+
+```typescript
+async function waitForCustomInstructionExecutedEvent({
+  encodedInstruction,
+  personalAccountAddress,
+}: {
+  encodedInstruction: `0x${string}`;
+  personalAccountAddress: string;
+}) {
+  let customInstructionExecutedEvent:
+    | CustomInstructionExecutedEventType
+    | undefined;
+  let customInstructionExecutedEventFound = false;
+
+  const unwatchCustomInstructionExecuted = publicClient.watchContractEvent({
+    address: MASTER_ACCOUNT_CONTROLLER_ADDRESS,
+    abi: iInstructionsFacetAbi,
+    eventName: "CustomInstructionExecuted",
+    onLogs: (logs) => {
+      for (const log of logs) {
+        customInstructionExecutedEvent =
+          log as CustomInstructionExecutedEventType;
+        if (
+          customInstructionExecutedEvent.args.callHash.slice(6) !==
+            encodedInstruction.slice(6) ||
+          customInstructionExecutedEvent.args.personalAccount.toLowerCase() !==
+            personalAccountAddress.toLowerCase()
+        ) {
+          continue;
+        }
+        customInstructionExecutedEventFound = true;
+        break;
+      }
+    },
+  });
+
+  console.log("Waiting for CustomInstructionExecuted event...");
+  while (!customInstructionExecutedEventFound) {
+    await new Promise((resolve) => setTimeout(resolve, 10000));
+  }
+  unwatchCustomInstructionExecuted();
+
+  return customInstructionExecutedEvent;
+}
+```
+
+    The vehicle for bridging the instruction is FDC, which puts a maximum cap of 180 seconds on the process duration.
+
+## Full script
+
+The repository with the above example is available on [GitHub](https://github.com/flare-foundation/flare-smart-accounts-viem).
+
+<CodeBlock language="typescript" title="src/custom-instructions.ts">
+  {CustomInstructionsScript}
+</CodeBlock>
