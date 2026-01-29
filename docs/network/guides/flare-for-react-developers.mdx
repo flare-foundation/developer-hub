@@ -2,7 +2,7 @@
 slug: flare-for-react-developers
 title: Flare for React Devs
 authors: [fassko]
-description: Learn how to interact with Flare using React and wagmi.
+description: Learn how to interact with Flare using React and Wagmi.
 tags: [react, wagmi, javascript, quickstart]
 keywords:
   [
@@ -18,14 +18,14 @@ keywords:
 sidebar_position: 3
 ---
 
-This guide is for React developers who want to interact with Flare using [wagmi](https://wagmi.sh/) and the [`@flarenetwork/flare-wagmi-periphery-package`](https://www.npmjs.com/package/@flarenetwork/flare-wagmi-periphery-package).
+This guide is for React developers who want to interact with Flare using [Wagmi](https://wagmi.sh/) and the [`@flarenetwork/flare-wagmi-periphery-package`](https://www.npmjs.com/package/@flarenetwork/flare-wagmi-periphery-package).
 
 The package provides two ways to read and write Flare contracts:
 
-- **Generic hooks:** use wagmi's [`useReadContract`](https://wagmi.sh/react/hooks/useReadContract) with typed ABIs imported from the Flare Wagmi Periphery package.
+- **Generic hooks:** use Wagmi's [`useReadContract`](https://wagmi.sh/react/hooks/useReadContract) with typed ABIs imported from the Flare Wagmi Periphery package.
 - **Contract-specific hooks:** use auto-generated hooks like `useReadIFlareContractRegistry` that already know the ABI.
 
-In this guide, you will set up a React project, configure wagmi for Flare, and query the [`WNat`](/network/solidity-reference/IWNat) contract address from the [`FlareContractRegistry`](/network/solidity-reference/IFlareContractRegistry) using both approaches.
+In this guide, you will set up a React project, configure Wagmi for Flare, and query the [`WNat`](/network/solidity-reference/IWNat) contract address from the [`FlareContractRegistry`](/network/solidity-reference/IFlareContractRegistry) using both approaches.
 
 ## Prerequisites
 
@@ -41,15 +41,15 @@ npm create vite@latest my-flare-app -- --template react-ts
 cd my-flare-app
 ```
 
-Install the wagmi, viem, TanStack Query, and the [Flare wagmi periphery package](https://www.npmjs.com/package/@flarenetwork/flare-wagmi-periphery-package):
+Install the Wagmi, Viem, TanStack Query, and the [Flare Wagmi periphery package](https://www.npmjs.com/package/@flarenetwork/flare-wagmi-periphery-package):
 
 ```bash
 npm install wagmi viem @tanstack/react-query @flarenetwork/flare-wagmi-periphery-package
 ```
 
-## Configure wagmi for Flare
+## Configure Wagmi for Flare
 
-Create a `wagmi.config.ts` file in the `src` directory to define the wagmi configuration with Flare networks:
+Create a `wagmi.config.ts` file in the `src` directory to define the Wagmi configuration with Flare networks:
 
 ```typescript title="wagmi.config.ts"
 import { createConfig, http } from "wagmi";
@@ -95,7 +95,7 @@ The example below queries the [`FlareContractRegistry`](/network/solidity-refere
 
 It demonstrates both approaches to query the contract data:
 
-- **Generic hooks:** use wagmi's [`useReadContract`](https://wagmi.sh/react/hooks/useReadContract) with typed ABIs imported from the Flare Wagmi Periphery package.
+- **Generic hooks:** use Wagmi's [`useReadContract`](https://wagmi.sh/react/hooks/useReadContract) with typed ABIs imported from the Flare Wagmi Periphery package.
 - **Contract-specific hooks:** use auto-generated hooks like `useReadIFlareContractRegistry` that already know the ABI.
 
 ```typescript title="src/WNatQuery.tsx"
@@ -139,7 +139,7 @@ export function WNatQuery() {
 
       <h2>Generic Hook with ABI</h2>
       <p>
-        Uses wagmi's generic <code>useReadContract</code> hook with{" "}
+        Uses Wagmi's generic <code>useReadContract</code> hook with{" "}
         <code>iFlareContractRegistryAbi</code> imported from the package.
       </p>
       {isLoadingGeneric && <p>Loading...</p>}
@@ -190,7 +190,7 @@ The app will query the [`FlareContractRegistry`](/network/solidity-reference/IFl
 
 ### Generic hooks
 
-The generic approach uses the [`useReadContract`](https://wagmi.sh/react/hooks/useReadContract) hook from wagmi.
+The generic approach uses the [`useReadContract`](https://wagmi.sh/react/hooks/useReadContract) hook from Wagmi.
 You import the typed ABI (`iFlareContractRegistryAbi`) from the package and pass it as the `abi` prop.
 This gives you complete type safety for `functionName` and `args`.
 
@@ -226,7 +226,7 @@ const { data } = useReadIFlareContractRegistry({
 
 |                 | Generic hooks                                                    | Contract-specific hooks                           |
 | --------------- | ---------------------------------------------------------------- | ------------------------------------------------- |
-| **Import**      | `useReadContract` from wagmi + ABI from package                  | `useReadIFlareContractRegistry` etc. from package |
+| **Import**      | `useReadContract` from Wagmi + ABI from package                  | `useReadIFlareContractRegistry` etc. from package |
 | **ABI prop**    | Required — pass the imported ABI                                 | Not needed — baked into the hook                  |
 | **Type safety** | Full, via ABI generic                                            | Full, via generated hook signature                |
 | **Best for**    | Mixing contracts in one component, using ABIs with viem directly | Concise code when working with a single contract  |
