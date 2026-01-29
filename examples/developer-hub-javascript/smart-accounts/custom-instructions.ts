@@ -15,15 +15,22 @@ import { publicClient } from "./utils/client";
 import { sendXrplPayment } from "./utils/xrpl";
 import { Client, Wallet } from "xrpl";
 import type { CustomInstructionExecutedEventType } from "./utils/event-types";
+import { abi } from "./abis/CustomInstructionsFacet";
 
-export function encodeCustomInstruction(
-  instructionHash: `0x${string}`,
+async function encodeCustomInstruction(
+  instructions: CustomInstruction[],
   walletId: number,
 ) {
+  const encodedInstruction = (await publicClient.readContract({
+    address: MASTER_ACCOUNT_CONTROLLER_ADDRESS,
+    abi: abi,
+    functionName: "encodeCustomInstruction",
+    args: [instructions],
+  })) as `0x${string}`;
   // NOTE:(Nik) We cut off the `0x` prefix and the first 2 bytes to get the length down to 30 bytes
   return ("0xff" +
     toHex(walletId, { size: 1 }).slice(2) +
-    instructionHash.slice(6)) as `0x${string}`;
+    encodedInstruction.slice(6)) as `0x${string}`;
 }
 
 async function sendCustomInstruction({
@@ -145,10 +152,11 @@ async function main() {
   );
   console.log("Personal account address:", personalAccountAddress, "\n");
 
-  const customInstructionHash =
+  const customInstructionCallHash =
     await registerCustomInstruction(customInstructions);
-  const encodedInstruction = encodeCustomInstruction(
-    customInstructionHash,
+  console.log("Custom instruction call hash:", customInstructionCallHash, "\n");
+  const encodedInstruction = await encodeCustomInstruction(
+    customInstructions,
     walletId,
   );
   console.log("Encoded instructions:", encodedInstruction, "\n");
