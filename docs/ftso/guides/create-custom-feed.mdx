@@ -99,7 +99,7 @@ It then exposes this price through the `IICustomFeed` interface.
   It accepts a proof from the FDC and performs a series of checks before updating the `latestVerifiedPrice`.
   1. **Parses the API URL** from the proof to ensure the data is from the expected source.
 
-  2. **Verifies the proof's authenticity** by calling the FDC's onchain `verifyJsonApi` function.
+  2. **Verifies the proof's authenticity** by calling the FDC's onchain `verifyWeb2Json` function.
 
   3. **Decodes the price data** from the proof's response body.
 
@@ -109,7 +109,7 @@ It then exposes this price through the `IICustomFeed` interface.
 
   ```solidity
   function verifyPrice(IWeb2Json.Proof calldata _proof) external {
-      require(ContractRegistry.getFdcVerification().verifyJsonApi(_proof), "FDC: Invalid Web2Json proof");
+      require(ContractRegistry.getFdcVerification().verifyWeb2Json(_proof), "FDC: Invalid Web2Json proof");
 
       PriceData memory newPriceData = abi.decode(_proof.data.responseBody.abiEncodedData, (PriceData));
       latestVerifiedPrice = newPriceData.price;
