@@ -34,7 +34,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Comment on PR if broken links found
-        if: ${{ always() && steps.lychee.outputs.exit_code != 0 }}
+        if: ${{ steps.lychee.outputs.exit_code && steps.lychee.outputs.exit_code != '0' }}
         uses: thollander/actions-comment-pull-request@v3
         with:
           message: |
@@ -49,5 +49,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Fail if broken links found
-        if: ${{ steps.lychee.outputs.exit_code != 0 }}
+        if: ${{ failure() || (steps.lychee.outputs.exit_code && steps.lychee.outputs.exit_code != '0') }}
         run: exit 1
