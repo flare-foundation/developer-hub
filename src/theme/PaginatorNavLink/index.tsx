@@ -18,7 +18,7 @@ export default function PaginatorNavLink(props: Props): JSX.Element {
         <div
           className={clsx(
             styles.subLabel,
-            isNext ? styles.nextSubLabel : styles.prevSubLabe,
+            isNext ? styles.nextSubLabel : styles.prevSubLabel,
           )}
         >
           {!isNext && (

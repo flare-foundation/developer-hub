@@ -45,6 +45,13 @@ const CATEGORY_ORDER = [
   "Explorers",
 ] as const;
 
+const slugifyCategory = (value: string) =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "category";
+
 function scrollToHash(hash: string) {
   const id = hash.replace(/^#/, "");
   if (!id) return;
@@ -186,7 +193,7 @@ const DeveloperTools: React.FC = () => {
       </div>
 
       {orderedCategories.map(([category, tools]) => {
-        const categoryId = CATEGORY_IDS[category] ?? category;
+        const categoryId = CATEGORY_IDS[category] ?? slugifyCategory(category);
 
         return (
           <div key={category} className={styles.categorySection}>

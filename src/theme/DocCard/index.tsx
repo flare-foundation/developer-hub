@@ -6,7 +6,6 @@ import {
   findFirstSidebarItemLink,
 } from "@docusaurus/plugin-content-docs/client";
 import { usePluralForm } from "@docusaurus/theme-common";
-import isInternalUrl from "@docusaurus/isInternalUrl";
 import { translate } from "@docusaurus/Translate";
 
 import type { Props } from "@theme/DocCard";
@@ -54,12 +53,10 @@ function CardContainer({
 
 function CardLayout({
   href,
-  // icon,
   title,
   description,
 }: {
   href: string;
-  // icon?: ReactNode;
   title: string;
   description?: string;
 }): JSX.Element {
@@ -71,7 +68,6 @@ function CardLayout({
           className={clsx("text--truncate", styles.cardTitle)}
           title={title}
         >
-          {/* {icon}  */}
           {title}
         </Heading>
         <svg
@@ -115,8 +111,6 @@ function CardCategory({
   return (
     <CardLayout
       href={href}
-      // @ts-expect-error: To make linter happy not sure whats wrong since code is swizzled from docosaurus theme
-      icon="🗃️"
       title={item.label}
       description={item.description ?? categoryItemsPlural(item.items.length)}
     />
@@ -124,13 +118,10 @@ function CardCategory({
 }
 
 function CardLink({ item }: { item: PropSidebarItemLink }): JSX.Element {
-  const icon = isInternalUrl(item.href) ? "📄️" : "🔗";
   const doc = useDocById(item.docId ?? undefined);
   return (
     <CardLayout
       href={item.href}
-      // @ts-expect-error: To make linter happy not sure whats wrong since code is swizzled from docosaurus theme
-      icon={icon}
       title={item.label}
       description={item.description ?? doc?.description}
     />
