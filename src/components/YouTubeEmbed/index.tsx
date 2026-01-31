@@ -60,6 +60,10 @@ const YouTubeEmbed: React.FC<YouTubeEmbedProps> = ({
   useEffect(() => {
     if (isActivated) return;
     if (loadStrategy !== "onVisible") return;
+    if (typeof IntersectionObserver === "undefined") {
+      setIsActivated(true);
+      return;
+    }
 
     const el = containerRef.current;
     if (!el) return;
