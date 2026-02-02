@@ -1,14 +1,21 @@
 /**
- * Bridge FXRP from Coston2 to Hyperliquid EVM Testnet
+ * Bridge FXRP from Coston2 to Hyperliquid HyperCore
  *
- * This script helps you get FXRP on Hyperliquid EVM Testnet by bridging from Coston2
+ * This script bridges FXRP from Coston2 to HyperEVM with a compose message
+ * that triggers automatic transfer to HyperCore (the trading layer).
+ *
+ * Flow:
+ * 1. Send FXRP via LayerZero from Coston2 to HyperEVM
+ * 2. LayerZero delivers to HyperliquidComposer on HyperEVM
+ * 3. Composer transfers tokens to system address, crediting them on HyperCore
  *
  * Prerequisites:
  * - FTestXRP tokens on Coston2
  * - CFLR on Coston2 for gas
+ * - HyperliquidComposer deployed on HyperEVM
  *
  * Usage:
- * yarn hardhat run scripts/fassets/bridgeToHyperEVM.ts --network coston2
+ * yarn hardhat run scripts/fassets/bridgeToHyperCore.ts --network coston2
  */
 
 import { web3 } from "hardhat";
@@ -26,9 +33,10 @@ const FAssetOFTAdapter = artifacts.require("FAssetOFTAdapter");
 
 const CONFIG = {
   COSTON2_OFT_ADAPTER: "0xCd3d2127935Ae82Af54Fc31cCD9D3440dbF46639",
-  COSTON2_COMPOSER: process.env.COSTON2_COMPOSER || "",
+  HYPERLIQUID_COMPOSER: process.env.HYPERLIQUID_COMPOSER || "",
   HYPERLIQUID_EID: EndpointId.HYPERLIQUID_V2_TESTNET,
   EXECUTOR_GAS: 200_000,
+  COMPOSE_GAS: 300_000,
   BRIDGE_LOTS: "1",
 } as const;
 
@@ -49,6 +57,23 @@ type SendParams = {
   oftCmd: string;
 };
 
+/**
+ * Validates that required configuration is set
+ */
+function validateConfig() {
+  if (!CONFIG.HYPERLIQUID_COMPOSER) {
+    throw new Error(
+      "HYPERLIQUID_COMPOSER not set in .env!\n" +
+        "   Deploy HyperliquidComposer first on HyperEVM:\n" +
+        "   yarn hardhat run scripts/fassets/deployHyperliquidComposer.ts --network hyperliquidTestnet",
+    );
+  }
+  console.log("✓ HyperliquidComposer configured:", CONFIG.HYPERLIQUID_COMPOSER);
+}
+
+/**
+ * Gets fAsset address and calculates amount from AssetManager
+ */
 async function getAssetManagerInfo(lots: bigint) {
   const assetManager = await getAssetManagerFXRP();
   const fAssetAddress = await assetManager.fAsset();
@@ -88,13 +113,13 @@ function prepareBridgeParams(
 
   console.log("\n📋 Bridge Details:");
   console.log("From: Coston2");
-  console.log("To: Hyperliquid EVM Testnet");
+  console.log("To: Hyperliquid HyperCore (via HyperEVM)");
   console.log(
     "Amount:",
     formatUnits(amountToBridge.toString(), decimals),
     "FXRP",
   );
-  console.log("Recipient:", recipientAddress);
+  console.log("HyperCore Recipient:", recipientAddress);
 
   return { amountToBridge, recipientAddress, signerAddress, fAssetAddress };
 }
@@ -126,7 +151,7 @@ async function checkBalance(
 }
 
 /**
- * Approves OFT Adapter AND Composer to spend FTestXRP
+ * Approves OFT Adapter to spend FTestXRP
  */
 async function approveTokens(
   fAsset: IERC20MetadataInstance,
@@ -156,31 +181,14 @@ async function approveTokens(
     "FXRP",
   );
 
-  const amount = amountToBridge;
-  await fAsset.approve(oftAdapter.address, amount.toString());
+  await fAsset.approve(oftAdapter.address, amountToBridge.toString());
   console.log("✅ OFT Adapter approved");
 
   // Verify the allowance
-  const allowance1 = await fAsset.allowance(signerAddress, oftAdapter.address);
+  const allowance = await fAsset.allowance(signerAddress, oftAdapter.address);
   console.log(
     "   Verified allowance:",
-    formatUnits(allowance1.toString(), decimals),
-    "FXRP",
-  );
-
-  console.log("\n2️⃣ Approving FTestXRP for Composer...");
-  console.log("   Composer address:", CONFIG.COSTON2_COMPOSER);
-  await fAsset.approve(CONFIG.COSTON2_COMPOSER, amountToBridge.toString());
-  console.log("✅ Composer approved");
-
-  // Verify the allowance
-  const allowance2 = await fAsset.allowance(
-    signerAddress,
-    CONFIG.COSTON2_COMPOSER,
-  );
-  console.log(
-    "   Verified allowance:",
-    formatUnits(allowance2.toString(), decimals),
+    formatUnits(allowance.toString(), decimals),
     "FXRP",
   );
 
@@ -188,21 +196,47 @@ async function approveTokens(
 }
 
 /**
- * Builds LayerZero send parameters
+ * Encodes the compose message for HyperCore transfer
+ * Format: (amount, recipientAddress)
  */
-function buildSendParams(params: BridgeParams): SendParams {
-  const options = Options.newOptions().addExecutorLzReceiveOption(
-    CONFIG.EXECUTOR_GAS,
-    0,
+function encodeComposeMessage(params: BridgeParams): string {
+  // Encode: (amount, recipient) - recipient will receive tokens on HyperCore
+  const composeMsg = web3.eth.abi.encodeParameters(
+    ["uint256", "address"],
+    [params.amountToBridge.toString(), params.recipientAddress],
   );
 
+  console.log("\n2️⃣ Compose message encoded for HyperCore transfer");
+
+  return composeMsg;
+}
+
+/**
+ * Builds LayerZero options with compose support
+ */
+function buildComposeOptions(): string {
+  const options = Options.newOptions()
+    .addExecutorLzReceiveOption(CONFIG.EXECUTOR_GAS, 0)
+    .addExecutorComposeOption(0, CONFIG.COMPOSE_GAS, 0);
+
+  return options.toHex();
+}
+
+/**
+ * Builds LayerZero send parameters with compose message
+ */
+function buildSendParams(
+  params: BridgeParams,
+  composeMsg: string,
+  options: string,
+): SendParams {
   return {
     dstEid: CONFIG.HYPERLIQUID_EID as EndpointId,
-    to: web3.utils.padLeft(params.recipientAddress, 64), // 32 bytes = 64 hex chars
+    to: web3.utils.padLeft(CONFIG.HYPERLIQUID_COMPOSER, 64), // Send to composer, not recipient
     amountLD: params.amountToBridge.toString(),
     minAmountLD: params.amountToBridge.toString(),
-    extraOptions: options.toHex(),
-    composeMsg: "0x",
+    extraOptions: options,
+    composeMsg: composeMsg,
     oftCmd: "0x",
   };
 }
@@ -225,7 +259,7 @@ async function quoteFee(
 }
 
 /**
- * Executes the bridge transaction
+ * Executes the bridge transaction with compose
  */
 async function executeBridge(
   oftAdapter: FAssetOFTAdapterInstance,
@@ -233,7 +267,8 @@ async function executeBridge(
   nativeFee: bigint,
   signerAddress: string,
 ): Promise<void> {
-  console.log("\n4️⃣ Sending FXRP to Hyperliquid EVM Testnet...");
+  console.log("\n4️⃣ Sending FXRP to Hyperliquid HyperCore...");
+  console.log("   Via HyperliquidComposer:", CONFIG.HYPERLIQUID_COMPOSER);
 
   const tx = await oftAdapter.send(
     sendParam,
@@ -248,16 +283,20 @@ async function executeBridge(
   console.log("✅ Confirmed in block:", tx.receipt.blockNumber);
 
   console.log(
-    "\n🎉 Success! Your FXRP is on the way to Hyperliquid EVM Testnet!",
+    "\n🎉 Success! Your FXRP is on the way to Hyperliquid HyperCore!",
   );
   console.log("\nTrack your transaction:");
   console.log(`https://testnet.layerzeroscan.com/tx/${tx.tx}`);
   console.log(
-    "\nIt may take a few minutes to arrive on Hyperliquid EVM Testnet.",
+    "\n⏳ The tokens will be automatically transferred to HyperCore once they arrive on HyperEVM.",
   );
+  console.log("You can then trade them on the Hyperliquid DEX.");
 }
 
 async function main() {
+  // 0. Validate configuration
+  validateConfig();
+
   // 1. Get fAsset address and amount from AssetManager
   const { fAssetAddress, amountToBridge } = await getAssetManagerInfo(
     BigInt(CONFIG.BRIDGE_LOTS),
@@ -292,13 +331,19 @@ async function main() {
     decimals,
   );
 
-  // 7. Build send parameters
-  const sendParam = buildSendParams(params);
+  // 7. Encode compose message
+  const composeMsg = encodeComposeMessage(params);
 
-  // 8. Quote the fee
+  // 8. Build LayerZero options with compose
+  const options = buildComposeOptions();
+
+  // 9. Build send parameters
+  const sendParam = buildSendParams(params, composeMsg, options);
+
+  // 10. Quote the fee
   const nativeFee = await quoteFee(oftAdapter, sendParam);
 
-  // 9. Execute the bridge transaction
+  // 11. Execute the bridge transaction
   await executeBridge(oftAdapter, sendParam, nativeFee, signerAddress);
 }
 
