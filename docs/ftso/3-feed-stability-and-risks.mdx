@@ -1,0 +1,105 @@
+---
+slug: feed-stability-and-risks
+title: Feed Stability & Risks
+description: Understand how block-latency feed stability and accuracy metrics are calculated and monitored.
+keywords:
+  [
+    ftso,
+    oracle,
+    flare-time-series-oracle,
+    flare-network,
+    analytics,
+    feed-stability,
+    accuracy,
+    fast-updates,
+  ]
+sidebar_position: 3
+---
+
+import FeedStability from "@site/src/features/DataTables/FeedStability";
+import Tippy from "@tippyjs/react";
+
+:::tip Last Updated
+Stability and risk data is updated every ~2 weeks. The metrics below reflect the most recent reporting window.
+:::
+
+FTSOv2 block-latency feeds are continuously monitored for accuracy and stability.
+This page defines how the feed stability metrics are calculated and provides the latest analytics data for all block-latency feeds.
+
+## Feed Stability Metrics
+
+**Feed stability** is the percentage of observations where a block-latency feed stays within a specified deviation band of a reference price.
+This metric helps users understand the reliability and accuracy of each feed over time.
+
+### Metric definition
+
+Stability is calculated by comparing on-chain data against external reference sources (such as aggregated CEX prices) at specific observation times (`t`).
+
+- **Onchain Price (`P_onchain`)**: The price delivered by FTSOv2 Fast Updates.
+- **Reference Price (`P_ref`)**: The benchmark price from external sources.
+- **Deviation**: Calculated as the absolute percentage difference `deviation(t) = abs(P_onchain(t) - P_ref(t)) / P_ref(t)`
+
+Stability is tracked against a **0.2% deviation band**, which is the primary metric displayed in the analytics table below.
+
+### Calculation methodology
+
+For a specific feed and deviation band `B`:
+
+1. Collect time-aligned observations of `(P_onchain(t), P_ref(t))` over the reporting window.
+2. Mark each observation as “in band” if `deviation(t) <= B`.
+3. Compute stability as: `stability(B) = (in_band_observations / total_observations) * 100`
+
+:::info
+
+Stability measures _frequency_ (how often the price is accurate).
+It does not measure the _magnitude_ of the error when the price is inaccurate.
+
+:::
+
+### Interpreting stability scores
+
+| Stability Range | Status       | Description                                                              |
+| --------------- | ------------ | ------------------------------------------------------------------------ |
+| ≥99%            | 🟢 Excellent | Feed maintains exceptional accuracy relative to reference.               |
+| 97-99%          | 🟢 Good      | Feed demonstrates strong accuracy with minimal deviation.                |
+| 94-97%          | 🟡 Moderate  | Feed shows acceptable accuracy but may experience occasional deviations. |
+| 80-94%          | 🔴 Low       | Feed experiences notable deviations; consider additional validation.     |
+| &lt;80%         | ⚫ Very Low  | Feed shows significant instability; exercise caution when using.         |
+
+## Risk Classification
+
+Feeds are categorized into risk levels based on their underlying market integrity.
+
+**Assignment Logic**: This is a waterfall classification system. To qualify for a lower risk tier (e.g., Low Risk), a feed must meet **all** criteria in that column. If it fails even one criterion, it falls to the next risk level.
+
+| **Aspect**                  | 🟢 **Low Risk**                           | 🟡 **Medium Risk**                          | 🔴 **High Risk**                                       |
+| --------------------------- | ----------------------------------------- | ------------------------------------------- | ------------------------------------------------------ |
+| **Intrinsic Volatility**    | Low, stable price trends                  | Moderate price fluctuations                 | High, frequent price swings                            |
+| **Liquidity Variation**     | Abundant and consistent                   | Sufficient but variable                     | Limited and inconsistent                               |
+| **Liquidity Concentration** | Broad and well-distributed across venues  | Somewhat concentrated                       | Highly concentrated in a few sources                   |
+| **Asset Spread Risk**       | Tight spreads, minimal bid-ask gaps       | Moderate spreads, acceptable bid-ask gaps   | Wide spreads, significant bid-ask gaps                 |
+| **Cross Rate Risk**         | Low correlation, direct pricing available | Moderate correlation, indirect pricing used | High correlation, dependent on multiple intermediaries |
+
+**Other risk categories:**
+
+- ⚫ **New Feed**
+  New tokens lack historical data for proper risk assessment and stable price discovery.
+  Users must recognize these assets carry higher volatility risks and verify feed reliability independently.
+  After a monitoring period, feeds will be assigned risk levels or potentially discontinued.
+
+Each feed undergoes a rigorous assessment process prior to deployment. The evaluation criteria may vary depending on the specific type of feed being implemented and can evolve over time as our understanding of market integrity risks improves.
+
+:::note
+
+Risk assessments are conducted prior to deployment and may be updated as market conditions or liquidity profiles change.
+
+:::
+
+## Current Feed Stability
+
+The table below displays latest stability metrics for all FTSOv2 block-latency feeds.
+
+- **Stability**: Percentage of observations within **0.2%** of the reference price.
+- **Status**: Based on the stability interpretation table above.
+
+<FeedStability />
