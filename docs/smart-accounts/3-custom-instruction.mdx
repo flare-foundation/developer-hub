@@ -64,9 +64,9 @@ We expand the workflow described in the [Flare Smart Accounts overview](/smart-a
 Custom instructions are an array of the `CustomInstructions.CustomCall` Solidity struct.
 The struct contains three fields:
 
-- **targetContract**: the address of the smart contract that will execute the custom function
-- **value**: the amount of FLR paid to the contract
-- **data**: transaction calldata, which includes a function selector and values of the function's arguments
+- `targetContract`: the address of the smart contract that will execute the custom function
+- `value`: the amount of FLR paid to the contract
+- `data`: transaction calldata, which includes a function selector and values of the function's arguments
 
 Each of the custom instructions in the array will be performed in order.
 A call to the `targetContract` address is made, with the specified `value` and the calldata `data`.
@@ -108,7 +108,7 @@ function encodeCustomInstruction(
     }
 ```
 
-Behind the scenes, the `MasterAccountController` contract calls the `encodeCustomInstruction` function of the `CustomInstructions` library..
+Behind the scenes, the `MasterAccountController` contract calls the `encodeCustomInstruction` function of the `CustomInstructions` library.
 
 ```Solidity
 function encodeCustomInstruction(
@@ -128,6 +128,7 @@ We register a custom instruction by calling the `registerCustomInstruction` func
 The `CustomInstructions.CustomCall` array is provided as an argument.
 It is encoded as described above and stored in a `CustomInstructions` mapping.
 
-To obtain the instruction that can be sent as the memo of an XRPL Payment transaction, we do the following.
-We take the call hash, produced by the `encodeCustomInstruction` function, remove the first two bytes, and prepend to it the hexadecimal value `ff` and the `walletId`.
+To obtain the instruction that can be sent as the memo of an XRPL Payment transaction, we take the call hash produced by the `encodeCustomInstruction` function and modify it the following way.
+First, we remove the initial two bytes from this hash.
+Next, we prepend the hexadecimal value `ff` followed by the `walletId`.
 This is the encoded custom instruction.
