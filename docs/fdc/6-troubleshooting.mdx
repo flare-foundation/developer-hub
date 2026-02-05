@@ -1,0 +1,212 @@
+---
+sidebar_position: 6
+title: Troubleshooting
+description: Common issues and solutions when working with the Flare Data Connector.
+keywords:
+  [
+    fdc,
+    troubleshooting,
+    errors,
+    flare-data-connector,
+    flare-network,
+    smart-contracts,
+    web2json,
+    consensus,
+  ]
+---
+
+This page covers common issues developers encounter when working with the Flare Data Connector (FDC) and how to resolve them.
+
+## DA Layer Returns 400 Bad Request
+
+One of the most common issues developers face is receiving a `400 Bad Request` error from the Data Availability (DA) Layer when trying to retrieve a proof.
+
+### Symptoms
+
+- Your attestation request is prepared successfully by the verifier (status: `VALID`).
+- The request is submitted to the FDC Hub and a transaction hash is returned.
+- The voting round finalizes without errors.
+- When you query the DA Layer for the proof, you receive a `400 Bad Request` error.
+
+### Root Cause: Attestation Consensus Failure
+
+This error occurs when the attestation providers could not reach consensus on your request.
+For an attestation to be included in a voting round, a majority of providers must independently verify the same data and agree on the response.
+
+The most common cause is **non-deterministic API responses**—when the data source returns different values to different attestation providers.
+
+### Why This Happens with Web2Json
+
+When using the `Web2Json` attestation type, each attestation provider independently queries your specified API endpoint.
+If the API returns values that change between requests (even by small amounts), providers will compute different response hashes.
+Since the hashes don't match, consensus cannot be reached, and the attestation is not included in the Merkle tree.
+
+**Example scenario:**
+
+1. Provider A queries the API at timestamp T and receives: `{"value": "44,442,373.09"}`
+2. Provider B queries the API at timestamp T+2s and receives: `{"value": "44,442,375.12"}`
+3. Provider C queries the API at timestamp T+5s and receives: `{"value": "44,442,380.00"}`
+
+Each provider computes a different hash, consensus fails, and your proof is not available.
+
+### Solution: Stabilize Your API Response
+
+To ensure consensus, your API response must be deterministic—all providers must receive the exact same data.
+Here are several approaches:
+
+#### 1. Round Values in Your JQ Filter
+
+Use the `postProcessJq` filter to round values to a coarser granularity that won't change between provider queries.
+
+**Before (exact values, consensus-breaking):**
+
+```json
+{
+  "postProcessJq": "{amount: .value | gsub(\",\"; \"\") | tonumber}"
+}
+```
+
+**After (rounded to nearest $100k, consensus-safe):**
+
+```json
+{
+  "postProcessJq": "{amount: (.value | split(\",\") | join(\"\") | split(\".\") | .[0] | .[:-5] + \"00000\")}"
+}
+```
+
+This transforms `"44,442,373.09"` → `"44400000"`, which remains stable even if the exact value fluctuates.
+
+#### 2. Use Timestamp-Based API Endpoints
+
+If you control the API, provide an endpoint that returns data for a specific timestamp or block.
+This ensures all providers query the same historical state.
+
+**Example:**
+
+```
+https://api.example.com/reserves?timestamp=1700000000
+```
+
+#### 3. Use Snapshot Endpoints
+
+Design your API to return values that only update at specific intervals (e.g., hourly, daily).
+Include the snapshot timestamp in the response so providers know they're querying the same data point.
+
+**Example response:**
+
+```json
+{
+  "snapshot_time": "2024-02-05T00:00:00Z",
+  "value": "44,400,000.00"
+}
+```
+
+#### 4. Extract Only Stable Fields
+
+If the API returns multiple fields, use `postProcessJq` to extract only the fields that don't change frequently.
+
+**Example:**
+
+```json
+{
+  "postProcessJq": "{status: .status, lastUpdated: .metadata.lastUpdated}"
+}
+```
+
+### Debugging Checklist
+
+1. **Test your JQ filter locally:**
+
+   ```bash
+   curl -s "https://your-api.com/endpoint" | jq '{your: .filter}'
+   ```
+
+   Run this multiple times and verify you get identical output.
+
+2. **Check the voting round on the Systems Explorer:**
+   Visit `https://coston2-systems-explorer.flare.rocks/voting-round/{roundId}?tab=fdc` to see if any attestations were included.
+   If your round shows "0 attestation requests," your request wasn't included.
+
+3. **Verify the verifier accepts your request:**
+
+   ```bash
+   curl -X POST "https://fdc-verifiers-testnet.flare.network/verifier/web2/Web2Json/prepareRequest" \
+     -H "Content-Type: application/json" \
+     -d '{"attestationType": "0x...", "sourceId": "0x...", "requestBody": {...}}'
+   ```
+
+   A `VALID` status means the request format is correct, but doesn't guarantee consensus.
+
+4. **Check API accessibility:**
+   Ensure your API endpoint is publicly accessible and not rate-limited.
+   Attestation providers must be able to reach it from their infrastructure.
+
+## Attestation Request Rejected by Verifier
+
+If the verifier returns an error when preparing your request, check the following:
+
+### Invalid JQ Filter
+
+The FDC verifier uses a limited subset of JQ.
+Some operations like `tonumber` or arithmetic may not work as expected.
+
+**Workaround:**
+Return values as strings and parse them in your smart contract.
+
+### API Not Whitelisted
+
+For `Web2Json` attestations, the API domain must be whitelisted by the Flare Network.
+On testnets, common APIs like GitHub Pages and public REST APIs are typically allowed.
+
+Contact the Flare team if you need a specific domain whitelisted for production use.
+
+### Malformed ABI Signature
+
+Ensure your `abiSignature` field is valid JSON and matches the Solidity struct you'll use to decode the data.
+
+**Common mistakes:**
+
+- Missing quotes around field names
+- Using `int` instead of `int256`
+- Incorrect nesting for complex structs
+
+## Proof Verification Fails Onchain
+
+If your proof retrieves successfully but fails verification in your smart contract:
+
+### Merkle Proof Mismatch
+
+Ensure you're passing the proof to the correct verification function for your attestation type.
+
+```solidity
+// For Web2Json
+bool valid = fdcVerification.verifyWeb2Json(proof);
+```
+
+### Response Data Mismatch
+
+The response data you submit must exactly match what was attested.
+Don't modify or re-encode the data after retrieving it from the DA Layer.
+
+### Wrong Voting Round
+
+Ensure you're querying the correct voting round ID.
+The round ID is calculated from the block timestamp when you submitted the request.
+
+## Best Practices
+
+1. **Design for consensus from the start.**
+   When integrating external APIs, always consider how to ensure deterministic responses.
+
+2. **Use coarse granularity for frequently-changing values.**
+   Round to the nearest unit that makes sense for your use case (e.g., nearest $1000 for financial data).
+
+3. **Test on testnet first.**
+   The testnet FDC behaves identically to mainnet but allows for faster iteration.
+
+4. **Monitor your attestation requests.**
+   Use the Systems Explorer to track whether your requests are being included in voting rounds.
+
+5. **Cache proofs appropriately.**
+   Once a proof is generated, it remains valid indefinitely.
+   Cache successful proofs to avoid redundant queries.
