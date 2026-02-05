@@ -100,6 +100,7 @@ const sidebars: SidebarsConfig = {
       items: [
         "ftso/getting-started",
         "ftso/feeds",
+        "ftso/feed-stability-and-risks",
         {
           type: "category",
           label: "FTSOv2 Guides",
