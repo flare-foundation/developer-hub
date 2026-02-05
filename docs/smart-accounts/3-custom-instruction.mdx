@@ -1,8 +1,8 @@
 ---
 sidebar_position: 1
 slug: custom-instruction
-title: Custom instruction
-authors: [nikerzetic, filipkoprivec]
+title: Custom Instruction
+authors: [nikerzetic]
 description: Performing custom function calls in the Flare Smart Accounts.
 tags: [intermediate, ethereum, flare-smart-accounts]
 keywords:
@@ -14,7 +14,6 @@ keywords:
     flare-network,
     account-abstraction,
   ]
-unlisted: true
 ---
 
 import ThemedImage from "@theme/ThemedImage";
@@ -24,8 +23,9 @@ Flare Smart Accounts allow users to execute custom function calls on the Flare c
 The process expands on the workflow for other actions by including an additional step at the beginning.
 
 In order for the `MasterAccountController` contract to be able to give a custom instruction to a personal account, the custom action must first be registered with the said contract.
-The custom instruction is stored in a mapper, with its 31-byte hash as a key.
-That hash is then sent as the payment reference, along with the byte representation of the number 99 in the first byte.
+The custom instruction is stored in a mapper, with its 30-byte hash as a key.
+That hash is then sent as the payment reference, along with the byte representation of the hexadecimal number `ff` (decimal `255`) in the first byte and the `walletId` in the second byte.
+The `walletId` is a Flare-designated value, used by the operator for wallet identification.
 
 <div
   style={{
@@ -39,8 +39,12 @@ That hash is then sent as the payment reference, along with the byte representat
     alt="Breakdown of bytes in payment reference for the custom action"
     style={{ width: "100%" }}
     sources={{
-      light: useBaseUrl("/img/docs/smart-accounts/custom_light.svg"),
-      dark: useBaseUrl("/img/docs/smart-accounts/custom_dark.svg"),
+      light: useBaseUrl(
+        "/img/docs/smart-accounts/bytes-custom-instruction-light.png",
+      ),
+      dark: useBaseUrl(
+        "/img/docs/smart-accounts/bytes-custom-instruction-dark.png",
+      ),
     }}
   />
 </div>
@@ -57,17 +61,16 @@ We expand the workflow described in the [Flare Smart Accounts overview](/smart-a
 
 ## Custom Instructions
 
-Custom instructions are an array of the `IMasterAccountController.CustomInstruction` Solidity struct.
+Custom instructions are an array of the `CustomInstructions.CustomCall` Solidity struct.
 The struct contains three fields:
 
-- **targetContract**: the address of the smart contract that will execute the custom function
-- **value**: the amount of FLR paid to the contract
-- **data**: transaction calldata, which includes a function selector and values of the function's arguments
+- `targetContract`: the address of the smart contract that will execute the custom function
+- `value`: the amount of FLR paid to the contract
+- `data`: transaction calldata, which includes a function selector and values of the function's arguments
 
 Each of the custom instructions in the array will be performed in order.
 A call to the `targetContract` address is made, with the specified `value` and the calldata `data`.
 
-{/* TODO:(Nik) explain how calldata is produced */}
 In Solidity, we can obtain the calldata by doing the following:
 
 ```Solidity
@@ -87,26 +90,45 @@ It is recommended to use established libraries, or an [online tool](https://abi.
 
 ## Call hash
 
-To produce the custom instructions calldata, we first ABI encode the array of the `IMasterAccountController.CustomInstruction` struct.
-We then take the `keccak256` hash of that value, and drop the last byte.
+To produce the custom instructions calldata, we first ABI encode the array of the `CustomInstructions.CustomCall` struct.
+We then take the `keccak256` hash of that value, and drop the first two bytes (`(1 << 240) - 1` shifts the number binary number `1` left `30*8` times, and replaces it with `0` and all the `0`s that follow it with `1`; essentially, we create a mask of length `30*8` of only `1`s).
 That is the call hash that is provided as the payment reference for the custom action, and the ID under which the custom instructions are stored in the `MasterAccountController` contract.
 
 ```Solidity
-uint256(keccak256(abi.encode(_customInstruction))) >> 8;
+return bytes32(uint256(keccak256(abi.encode(_customInstruction))) & ((1 << 240) - 1));
 ```
 
 The call hash can also be obtained through the `encodeCustomInstruction` helper function of the `MasterAccountController` contract.
 
 ```Solidity
 function encodeCustomInstruction(
-        CustomInstruction[] memory _customInstruction
-    ) public pure returns (uint256) {
-        return uint256(keccak256(abi.encode(_customInstruction))) >> 8;
+        CustomInstructions.CustomCall[] calldata _customInstruction
+    ) public pure returns (bytes32) {
+        return CustomInstructions.encodeCustomInstruction(_customInstruction);
     }
+```
+
+Behind the scenes, the `MasterAccountController` contract calls the `encodeCustomInstruction` function of the `CustomInstructions` library.
+
+```Solidity
+function encodeCustomInstruction(
+        CustomCall[] calldata _customInstruction
+    )
+        internal pure
+        returns (bytes32)
+    {
+        return bytes32(uint256(keccak256(abi.encode(_customInstruction))) & ((1 << 240) - 1));
+    }
+
 ```
 
 ## 0. Register custom instructions
 
 We register a custom instruction by calling the `registerCustomInstruction` function on the `MasterAccountController` contract.
-The `IMasterAccountController.CustomInstruction` array is provided as an argument.
+The `CustomInstructions.CustomCall` array is provided as an argument.
 It is encoded as described above and stored in a `CustomInstructions` mapping.
+
+To obtain the instruction that can be sent as the memo of an XRPL Payment transaction, we take the call hash produced by the `encodeCustomInstruction` function and modify it the following way.
+First, we remove the initial two bytes from this hash.
+Next, we prepend the hexadecimal value `ff` followed by the `walletId`.
+This is the encoded custom instruction.
