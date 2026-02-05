@@ -47,7 +47,7 @@ RUST_SUCCESS=false
 if [ -d "examples/developer-hub-javascript" ]; then
   echo -e "\n${GREEN}Updating JavaScript dependencies...${NC}"
   if goto_dir "examples/developer-hub-javascript"; then
-    if npm update && npm install; then
+    if npm update --save && npm install; then
       JS_SUCCESS=true
       log_success "JavaScript dependencies updated"
     else
@@ -79,7 +79,7 @@ fi
 if [ -d "examples/developer-hub-python" ]; then
   echo -e "\n${GREEN}Updating Python dependencies...${NC}"
   if goto_dir "examples/developer-hub-python"; then
-    if uv lock --upgrade; then
+    if uv sync --upgrade; then
       PY_SUCCESS=true
       log_success "Python dependencies updated"
     else
