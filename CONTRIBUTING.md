@@ -8,6 +8,15 @@ We welcome:
 - [Issues](https://github.com/flare-foundation/developer-hub/issues): Report bugs, propose enhancements, or ask questions.
 - [Pull Requests](https://github.com/flare-foundation/developer-hub/pulls): Fixes, improvements, and new content.
 
+## Prerequisites
+
+- [Node.js v22](https://nodejs.org/en/) and npm
+- Recommended: [nvm](https://github.com/nvm-sh/nvm) to switch Node versions
+- Optional (if editing `examples/`):
+  - Python examples: [uv](https://docs.astral.sh/uv/)
+  - Rust examples: [Cargo](https://doc.rust-lang.org/cargo/)
+  - Go examples: [go](https://go.dev/doc/install)
+
 ## Development workflow
 
 1.  **Fork and branch:** Create a branch that describes the change:
@@ -81,8 +90,6 @@ We welcome:
 
 Run these locally before submitting a PR.
 
-### Site checks
-
 1. **Build (includes internal link validation)**
 
    ```bash
@@ -117,6 +124,27 @@ Run these locally before submitting a PR.
    cargo clippy --bins -- -D warnings
    cargo build --bins --locked
    chmod +x test.sh && ./test.sh
+   ```
+
+5. **Automations (only if related files changed)**
+
+   Run this if your change depends on refreshed generated datasets (for example, feeds or contract reference data):
+
+   ```bash
+   npm run automations
+   ```
+
+6. **Solidity docs regeneration (only if `docgen/` or Solidity refs changed)**
+
+   The Solidity docs pipeline currently uses Node 18:
+
+   ```bash
+   nvm use 18
+   cd docgen
+   chmod +x generate-solidity-docs.sh
+   ./generate-solidity-docs.sh
+   cd ..
+   nvm use 22
    ```
 
 ## <a id="diagrams-style-guide"></a> Diagrams style guide
