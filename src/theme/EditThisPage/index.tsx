@@ -3,6 +3,7 @@ import Translate from "@docusaurus/Translate";
 import { ThemeClassNames } from "@docusaurus/theme-common";
 import Link from "@docusaurus/Link";
 import type { Props } from "@theme/EditThisPage";
+import styles from "./styles.module.css";
 
 function ExternalIcon({ className }: { className?: string }) {
   return (
@@ -29,14 +30,17 @@ function ExternalIcon({ className }: { className?: string }) {
 
 export default function EditThisPage({ editUrl }: Props): ReactNode {
   return (
-    <Link to={editUrl} className={ThemeClassNames.common.editThisPage}>
+    <Link
+      to={editUrl}
+      className={`${ThemeClassNames.common.editThisPage} ${styles.editThisPageLink}`}
+    >
       <Translate
         id="theme.common.editThisPage"
         description="The link label to view the raw source for the current page"
       >
         View page as Markdown
       </Translate>
-      <ExternalIcon />
+      <ExternalIcon className={styles.externalIcon} />
     </Link>
   );
 }
