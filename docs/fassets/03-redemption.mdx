@@ -25,7 +25,7 @@ This is the summary of the redemption process:
    - Redeemer's underlying address.
 
      Agents can use the Flare Data Connector to ensure the validity of this address.
-     Otherwise, malicious redeemers could provide an address that systematically blocks payments and exploit the redeeming process to their advantage.
+     Otherwise, malicious redeemers could provide an address that systematically blocks payments and exploits the redeeming process to their advantage.
 
    - Amount to pay minus the fee that was already subtracted.
    - [A payment reference](/fassets/minting#minting-payment-reference).
@@ -57,19 +57,18 @@ These fees are charged when a user redeems FAssets for the underlying asset:
 
 | Fee Name           | Charged In                            | Status     | Purpose                                                                                                                       |
 | :----------------- | :------------------------------------ | :--------- | :---------------------------------------------------------------------------------------------------------------------------- |
-| **Redemption Fee** | Underlying Asset (e.g., XRP for FXRP) | Obligatory | Covers the Agent's gas costs for the payment transaction.                                                                     |
+| **Redemption Fee** | Underlying Asset (e.g., XRP for FXRP) | Obligatory | Compensates the agent and collateral pool for providing the redemption service.                                               |
 | **Executor Fee**   | FLR                                   | Optional   | Compensates an optional executor who triggers redemption defaults when agents fail to pay, saving redeemers extra operations. |
 
 ### Redemption Fee
 
-The redemption fee is the amount of the underlying asset that the agent retains upon redemption.
-This fee is intended solely to cover the agent's transaction fee on the underlying chain, and therefore, it is not shared with the collateral pool.
-The fee percentage is defined by governance, is the same for all agents, and is typically smaller than the minting fee.
+The redemption fee is deducted from the amount of the underlying asset sent to the redeemer.
+The fee is split between the agent and the collateral pool:
 
-Governance calculates the percentage so that the fee to redeem one lot pays for a typical transaction fee on the underlying chain.
-Therefore, when larger amounts are redeemed at a single address, the agent accrues additional fees because the underlying fee for both small and large transactions is the same.
-However, when underlying fees are very high, the agent might still lose funds when a redemption for a small amount, such as one lot, is made.
-If this situation occurs frequently, governance will increase the redemption-fee percentage.
+- **Agent**: Receives a portion of the fee as profit for providing the redemption service.
+- **Collateral Pool**: Receives the remaining portion of the fee, which is minted as new FAssets and deposited into the pool, increasing value for pool token holders.
+
+The fee percentage is defined in the operational parameters by governance and is the same for all agents, while the split ratio between the agent and the collateral pool is configured in each agent's settings.
 
 ### Executor Fee
 
