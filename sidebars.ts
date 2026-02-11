@@ -274,6 +274,7 @@ const sidebars: SidebarsConfig = {
         id: "fxrp/overview",
       },
       items: [
+        "fxrp/parameters",
         {
           type: "category",
           label: "Token Interactions",
