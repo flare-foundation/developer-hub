@@ -7,12 +7,28 @@ import { operationalParameters } from "./operational-parameters";
 
 export default function OperationalParameters({
   sectionTitle,
+  filterParameters,
 }: {
   sectionTitle: string;
+  filterParameters?: string[];
 }) {
   const operationalParametersSection = operationalParameters.find(
     (section) => section.title === sectionTitle,
   );
+
+  const allParameters = operationalParametersSection?.parameters || [];
+
+  const parameters = filterParameters?.length
+    ? allParameters.filter(
+        (param) =>
+          "settingName" in param &&
+          param.settingName &&
+          filterParameters.includes(param.settingName),
+      )
+    : allParameters;
+
+  type OperationalParameter =
+    (typeof operationalParameters)[number]["parameters"][number];
 
   function ParameterTable({
     network,
@@ -22,7 +38,7 @@ export default function OperationalParameters({
     hideDoge = false,
   }: {
     network: "songbird" | "coston" | "coston2" | "flare";
-    parameters: (typeof operationalParameters)[number]["parameters"];
+    parameters: OperationalParameter[];
     hideXrp?: boolean;
     hideBtc?: boolean;
     hideDoge?: boolean;
@@ -39,9 +55,17 @@ export default function OperationalParameters({
         </thead>
         <tbody>
           {parameters.map((parameter) => (
-            <tr key={parameter.settingName}>
+            <tr
+              key={
+                "settingName" in parameter && parameter.settingName
+                  ? parameter.settingName
+                  : "functionName" in parameter && parameter.functionName
+                    ? `${parameter.name}-${parameter.functionName}`
+                    : parameter.name
+              }
+            >
               <td>
-                {parameter.link ? (
+                {"link" in parameter && parameter.link ? (
                   <Link to={parameter.link}>
                     <b>{parameter.name}</b>
                   </Link>
@@ -49,23 +73,31 @@ export default function OperationalParameters({
                   <b>{parameter.name}</b>
                 )}
                 &nbsp; <br />
-                {parameter.settingName && parameter.interfaceLink && (
-                  <>
-                    <Link to={parameter.interfaceLink}>
-                      {parameter.settingName}
-                    </Link>
-                    &nbsp;
-                  </>
+                {"settingName" in parameter &&
+                  parameter.settingName &&
+                  "interfaceLink" in parameter &&
+                  parameter.interfaceLink && (
+                    <>
+                      <Link to={parameter.interfaceLink}>
+                        {parameter.settingName}
+                      </Link>
+                      &nbsp;
+                    </>
+                  )}
+                {"interfaceLink" in parameter &&
+                  parameter.interfaceLink &&
+                  "functionName" in parameter &&
+                  parameter.functionName && (
+                    <>
+                      <Link to={parameter.interfaceLink}>
+                        {parameter.functionName}
+                      </Link>
+                      &nbsp;
+                    </>
+                  )}
+                {"settingName" in parameter && parameter.settingName && (
+                  <code>{parameter.settingName}</code>
                 )}
-                {parameter.interfaceLink && parameter.functionName && (
-                  <>
-                    <Link to={parameter.interfaceLink}>
-                      {parameter.functionName}
-                    </Link>
-                    &nbsp;
-                  </>
-                )}
-                {parameter.settingName && <code>{parameter.settingName}</code>}
                 <br />
                 {parameter.description}
               </td>
@@ -110,7 +142,7 @@ export default function OperationalParameters({
       <TabItem value="flare">
         <ParameterTable
           network="flare"
-          parameters={operationalParametersSection.parameters}
+          parameters={parameters}
           hideBtc
           hideDoge
         />
@@ -118,7 +150,7 @@ export default function OperationalParameters({
       <TabItem value="coston2">
         <ParameterTable
           network="coston2"
-          parameters={operationalParametersSection.parameters}
+          parameters={parameters}
           hideBtc
           hideDoge
         />
@@ -126,16 +158,13 @@ export default function OperationalParameters({
       <TabItem value="songbird">
         <ParameterTable
           network="songbird"
-          parameters={operationalParametersSection.parameters}
+          parameters={parameters}
           hideBtc
           hideDoge
         />
       </TabItem>
       <TabItem value="coston">
-        <ParameterTable
-          network="coston"
-          parameters={operationalParametersSection.parameters}
-        />
+        <ParameterTable network="coston" parameters={parameters} />
       </TabItem>
     </Tabs>
   );
