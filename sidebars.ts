@@ -287,9 +287,16 @@ const sidebars: SidebarsConfig = {
             "fxrp/token-interactions/fxrp-address",
             "fxrp/token-interactions/usdt0-fxrp-swap",
             "fxrp/token-interactions/x402-payments",
-            "fxrp/token-interactions/fassets-autoredeem",
-            "fxrp/token-interactions/fassets-automint",
           ],
+        },
+        {
+          type: "category",
+          label: "Omnichain Fungible Token",
+          link: {
+            type: "doc",
+            id: "fxrp/oft/index",
+          },
+          items: ["fxrp/oft/fassets-autoredeem", "fxrp/oft/fassets-automint"],
         },
         {
           type: "category",
