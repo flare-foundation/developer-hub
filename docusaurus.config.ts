@@ -62,7 +62,7 @@ const config: Config = {
           remarkPlugins: [remarkMath],
           rehypePlugins: [rehypeKatex],
           editUrl:
-            "https://github.com/flare-foundation/developer-hub/edit/main",
+            "https://raw.githubusercontent.com/flare-foundation/developer-hub/main",
           onInlineTags: "throw",
         },
         blog: false,
@@ -255,6 +255,7 @@ const config: Config = {
   ],
   plugins: [
     require.resolve("./webpack.config.js"),
+    "docusaurus-plugin-copy-page-button",
     [
       "docusaurus-plugin-llms",
       {

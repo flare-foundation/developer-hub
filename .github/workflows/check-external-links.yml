@@ -33,6 +33,22 @@ jobs:
             docs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Prepare broken link report
+        id: lychee_report
+        if: ${{ steps.lychee.outputs.exit_code && steps.lychee.outputs.exit_code != '0' }}
+        shell: bash
+        run: |
+          report_file="lychee/out.md"
+          if [[ ! -s "$report_file" ]]; then
+            echo "report<<EOF" >> "$GITHUB_OUTPUT"
+            echo "Lychee detected broken links, but the report file (\`$report_file\`) was empty or missing." >> "$GITHUB_OUTPUT"
+            echo "EOF" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "report<<EOF" >> "$GITHUB_OUTPUT"
+          cat "$report_file" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
       - name: Comment on PR if broken links found
         if: ${{ steps.lychee.outputs.exit_code && steps.lychee.outputs.exit_code != '0' }}
         uses: thollander/actions-comment-pull-request@v3
@@ -42,9 +58,7 @@ jobs:
             <details>
             <summary>Click to expand</summary>
 
-            ```markdown
-            ${{ steps.lychee.outputs.report }}
-            ```
+            ${{ steps.lychee_report.outputs.report }}
             </details>
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
