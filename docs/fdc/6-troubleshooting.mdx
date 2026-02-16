@@ -141,6 +141,41 @@ If the API returns multiple fields, use `postProcessJq` to extract only the fiel
    Ensure your API endpoint is publicly accessible and not rate-limited.
    Attestation providers must be able to reach it from their infrastructure.
 
+## Query Parameters in URL Cause Consensus Failure
+
+### Symptoms
+
+- Your `Web2Json` attestation request passes verifier preparation (status: `VALID`).
+- The DA Layer returns a `400 Bad Request` when retrieving the proof, or consensus fails silently.
+
+### Root Cause: Query Parameters Embedded in the URL
+
+The [`Web2Json`](/fdc/attestation-types/web2-json) attestation type provides a dedicated `queryParams` field for query parameters. If you include query parameters directly in the `url` field (e.g., `https://api.example.com/data?key=value`), attestation providers may not process the request correctly, leading to consensus failure.
+
+### Solution: Use the `queryParams` Field
+
+Move all query parameters from the URL into the `queryParams` field as a stringified JSON object.
+
+**Before (query parameters in URL — incorrect):**
+
+```json
+{
+  "url": "https://api.example.com/reserves?timestamp=1700000000&format=json",
+  "queryParams": "{}"
+}
+```
+
+**After (query parameters in separate field — correct):**
+
+```json
+{
+  "url": "https://api.example.com/reserves",
+  "queryParams": "{\"timestamp\":\"1700000000\",\"format\":\"json\"}"
+}
+```
+
+This ensures all attestation providers construct the request identically, which is required for consensus.
+
 ## Attestation Request Rejected by Verifier
 
 If the verifier returns an error when preparing your request, check the following:
