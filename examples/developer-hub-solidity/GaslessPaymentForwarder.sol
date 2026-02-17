@@ -31,12 +31,10 @@ contract GaslessPaymentForwarder is EIP712, Ownable, ReentrancyGuard {
     mapping(address => uint256) public nonces; // replay protection per sender
     mapping(address => bool) public authorizedRelayers; // relayer allowlist
 
-    uint256 public relayerFee; // default fee (owner-configurable)
-
     // EIP-712 type hash for PaymentRequest
     bytes32 public constant PAYMENT_REQUEST_TYPEHASH =
         keccak256(
-            "PaymentRequest(address from,address to,uint256 amount,uint256 fee,uint256 nonce,uint256 deadline)"
+            "PaymentRequest(address from,address to,uint256 amount,uint256 nonce,uint256 deadline)"
         );
 
     // 2. Contract events
@@ -44,26 +42,20 @@ contract GaslessPaymentForwarder is EIP712, Ownable, ReentrancyGuard {
         address indexed from,
         address indexed to,
         uint256 amount,
-        uint256 fee,
         uint256 nonce
     );
     event RelayerAuthorized(address indexed relayer, bool authorized); // relayer allowlist changed
-    event RelayerFeeUpdated(uint256 newFee); // default fee changed
 
     // 3. Custom errors
     error InvalidSignature(); // signer != from
     error ExpiredRequest(); // block.timestamp > deadline
     error InvalidNonce(); // nonce mismatch (replay)
     error UnauthorizedRelayer(); // caller not in allowlist
-    error InsufficientAllowance(); // user approval < amount + fee
+    error InsufficientAllowance(); // user approval < amount
     error ZeroAddress(); // zero address passed
 
-    // 4. Constructor that initializes the relayer fee
-    constructor(
-        uint256 _relayerFee
-    ) EIP712("GaslessPaymentForwarder", "1") Ownable(msg.sender) {
-        relayerFee = _relayerFee; // set initial default fee
-    }
+    // 4. Constructor
+    constructor() EIP712("GaslessPaymentForwarder", "1") Ownable(msg.sender) {}
 
     // 5. Returns FXRP token from Flare Contract Registry
     function fxrp() public view returns (IFAsset) {
@@ -76,7 +68,6 @@ contract GaslessPaymentForwarder is EIP712, Ownable, ReentrancyGuard {
         address from,
         address to,
         uint256 amount,
-        uint256 fee,
         uint256 deadline,
         bytes calldata signature
     ) external nonReentrant {
@@ -91,7 +82,6 @@ contract GaslessPaymentForwarder is EIP712, Ownable, ReentrancyGuard {
                 from,
                 to,
                 amount,
-                fee,
                 currentNonce,
                 deadline
             )
@@ -109,38 +99,29 @@ contract GaslessPaymentForwarder is EIP712, Ownable, ReentrancyGuard {
         IFAsset _fxrp = fxrp();
 
         // 10. Check if the allowance is sufficient
-        uint256 totalAmount = amount + fee;
-        if (_fxrp.allowance(from, address(this)) < totalAmount) {
+        if (_fxrp.allowance(from, address(this)) < amount) {
             revert InsufficientAllowance();
         }
 
         // 11. Transfer the amount to the recipient
         _fxrp.safeTransferFrom(from, to, amount);
 
-        // 12. Transfer the fee to the relayer
-        if (fee > 0) {
-            _fxrp.safeTransferFrom(from, msg.sender, fee);
-        }
-
-        emit PaymentExecuted(from, to, amount, fee, currentNonce); // log success
+        emit PaymentExecuted(from, to, amount, currentNonce); // log success
     }
 
-    // 13. Views for off-chain signing / validation
+    // 12. Views for off-chain signing / validation
     function getNonce(address account) external view returns (uint256) {
         return nonces[account]; // current nonce for off-chain signing
     }
 
-    // Get the EIP-712 domain separator
     function getDomainSeparator() external view returns (bytes32) {
         return _domainSeparatorV4(); // EIP-712 domain separator
     }
 
-    // Compute the hash of a payment request for signing
     function getPaymentRequestHash(
         address from,
         address to,
         uint256 amount,
-        uint256 fee,
         uint256 nonce,
         uint256 deadline
     ) external view returns (bytes32) {
@@ -150,7 +131,6 @@ contract GaslessPaymentForwarder is EIP712, Ownable, ReentrancyGuard {
                 from,
                 to,
                 amount,
-                fee,
                 nonce,
                 deadline
             )
@@ -158,18 +138,12 @@ contract GaslessPaymentForwarder is EIP712, Ownable, ReentrancyGuard {
         return _hashTypedDataV4(structHash); // full EIP-712 typed-data hash
     }
 
-    // 15. Set relayer authorization status
+    // 13. Owner: relayer allowlist
     function setRelayerAuthorization(
         address relayer,
         bool authorized
     ) external onlyOwner {
         authorizedRelayers[relayer] = authorized; // update allowlist
         emit RelayerAuthorized(relayer, authorized);
-    }
-
-    // 15. Update the default relayer fee
-    function setRelayerFee(uint256 _relayerFee) external onlyOwner {
-        relayerFee = _relayerFee; // update default fee
-        emit RelayerFeeUpdated(_relayerFee);
     }
 }
