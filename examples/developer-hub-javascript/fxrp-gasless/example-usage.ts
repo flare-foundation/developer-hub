@@ -88,26 +88,22 @@ async function main(): Promise<void> {
     process.env.RECIPIENT_ADDRESS ||
     "0x0000000000000000000000000000000000000001";
   const amountFXRP = "0.1"; // 0.1 FXRP
-  const feeFXRP = "0.01"; // 0.01 FXRP relayer fee
 
   console.log(`\nStep 3: Creating payment request...`);
   console.log(`  To: ${recipientAddress}`);
   console.log(`  Amount: ${amountFXRP} FXRP`);
-  console.log(`  Fee: ${feeFXRP} FXRP`);
 
   const paymentRequest = await createPaymentRequest(
     wallet,
     FORWARDER_ADDRESS,
     recipientAddress,
     amountFXRP,
-    feeFXRP,
   );
 
   console.log(`\n  Signed request created:`);
   console.log(`    From: ${paymentRequest.from}`);
   console.log(`    To: ${paymentRequest.to}`);
   console.log(`    Amount: ${paymentRequest.meta.amountFormatted}`);
-  console.log(`    Fee: ${paymentRequest.meta.feeFormatted}`);
   console.log(
     `    Deadline: ${new Date(paymentRequest.deadline * 1000).toISOString()}`,
   );
