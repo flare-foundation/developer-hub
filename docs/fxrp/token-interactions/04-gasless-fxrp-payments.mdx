@@ -3,7 +3,8 @@ title: Gasless FXRP Payments
 tags: [intermediate, fassets, fxrp, meta-transactions]
 slug: gasless-fxrp-payments
 description: Transfer FXRP without gas using EIP-712 signed meta-transactions and a relayer.
-keywords: [fassets, fxrp, gasless, meta-transactions, eip-712, flare-network, relayer]
+keywords:
+  [fassets, fxrp, gasless, meta-transactions, eip-712, flare-network, relayer]
 sidebar_position: 4
 ---
 
@@ -14,13 +15,15 @@ import Relayer from "!!raw-loader!/examples/developer-hub-javascript/fxrp-gasles
 import DeployScript from "!!raw-loader!/examples/developer-hub-javascript/fxrp-gasless/deploy.ts";
 import ExampleUsage from "!!raw-loader!/examples/developer-hub-javascript/fxrp-gasless/example-usage.ts";
 
-This guide describes how to create a system for gasless FXRP (FAsset) transfers on Flare.
-Users sign payment requests off-chain with [EIP-712](https://eips.ethereum.org/EIPS/eip-712), and a relayer submits them on-chain and pays gas on their behalf.
+This guide explains how to set up gasless FXRP (FAsset) transfers on Flare.
+Users sign payment requests off-chain with [EIP-712](https://eips.ethereum.org/EIPS/eip-712) typed data, and a relayer submits them on-chain and pays gas on their behalf.
 
-### EIP-3009 and EIP-712
+### Standards explained
 
-[EIP-3009](https://eips.ethereum.org/EIPS/eip-3009) (Transfer with Authorization) extends [ERC-20](https://eips.ethereum.org/EIPS/eip-20) with meta-transactions. The token holder signs an authorization off-chain, and a relayer executes the transfer on-chain and pays gas.
-This guide uses a **custom [EIP-712](https://eips.ethereum.org/EIPS/eip-712) payment message** and a forwarder contract instead of EIP-3009 on the token itself.
+[EIP-3009](https://eips.ethereum.org/EIPS/eip-3009) (Transfer with Authorization) extends [ERC-20](https://eips.ethereum.org/EIPS/eip-20) with meta-transactions.
+The token holder signs an authorization off-chain, and a relayer executes the transfer on-chain and pays gas.
+
+This guide uses a custom [EIP-712](https://eips.ethereum.org/EIPS/eip-712) payment message and a forwarder contract instead of EIP-3009 on the token itself.
 The forwarder pulls FXRP from the user (after a one-time approval) and sends it to the recipient.
 The relayer pays gas and can charge a fee in FXRP.
 
@@ -39,33 +42,34 @@ Add the following files to your project:
 
 ### Gasless Payment Forwarder Contract
 
-Save as `contracts/GaslessPaymentForwarder.sol`:
+Save as `contracts/GaslessPaymentForwarder.sol` to create the forwarder smart contract that will be used to execute gasless payments.
 
 <details>
-<summary>View GaslessPaymentForwarder.sol</summary>
+<summary>View `contracts/GaslessPaymentForwarder.sol`</summary>
 
 <CodeBlock language="solidity" title="contracts/GaslessPaymentForwarder.sol">
   {GaslessPaymentForwarder}
 </CodeBlock>
 
-</details>
-
-#### How the contract works
+**How the contract works**
 
 1. Define libraries and state.
 2. Define events.
-3. Define errors.
-4. Implement the contract constructor that sets the EIP-712 domain, owner, and initial relayer fee.
-5. Implement the `fxrp` function that returns the FXRP token from the Flare registry.
-6. Define the `executePayment` function that executes a gasless payment.
-7. Hash the request (type hash + from, to, amount, fee, nonce, deadline) and get the [EIP-712](https://eips.ethereum.org/EIPS/eip-712) digest.
-8. Recover the signer from the signature with ECDSA.
-9. Require signer from the payment request.
-10. Require allowance is sufficient for the total amount (amount + fee).
-11. Transfer amount from sender to recipient.
-12. Transfer fee from sender to relayer (msg.sender); emit PaymentExecuted.
-13. Define the view functions to get the nonce, domain separator, and payment request hash.
-14. Define the functions to set the relayer authorization and fee.
+3. Defines errors.
+4. Implements the contract constructor that sets the EIP-712 domain, owner, and initial relayer fee.
+5. Implements the `fxrp` function that returns the FXRP token from the Flare registry.
+6. Defines the `executePayment` function that executes a gasless payment.
+7. Hashes the request (type hash + from, to, amount, fee, nonce, deadline) and gets the [EIP-712](https://eips.ethereum.org/EIPS/eip-712) digest.
+8. Recovers the signer from the signature with ECDSA.
+9. Requires the signer of the payment request.
+10. Requires a sufficient allowance for the total amount (amount + fee).
+11. Transfers the amount from the sender to the recipient.
+12. Transfers fee from sender to relayer (msg.sender); emits `PaymentExecuted`.
+13. Defines the view functions to get the nonce, domain separator, and payment request hash.
+14. Defines the function to set the relater authorization.
+15. Define the function to set the relayer fee.
+
+</details>
 
 Run the following command to compile the contract and generate the typechain-types:
 
@@ -75,37 +79,72 @@ npx hardhat compile
 
 ### Utilities
 
-Save as `utils/payment.ts`.
+Save as `utils/payment.ts` to create the utility functions that will be used to create and sign payment requests.
 
-It uses the `typechain-types` generated by the previous command.
+:::info
+
+This utility uses the `typechain-types` generated by the previous command.
+
+:::
 
 <details>
-<summary>View utils/payment.ts</summary>
+<summary>View `utils/payment.ts`</summary>
 
 <CodeBlock language="typescript" title="utils/payment.ts">
   {PaymentUtils}
 </CodeBlock>
 
+**Code Breakdown**
+
+1. Import the necessary libraries.
+2. Define the needed constants and EIP-712 types.
+3. Define types for sign params, payment request, approval result, and user status.
+4. Parse human-readable amount to raw bigint with decimals.
+5. Format the raw amount to a readable string with decimals.
+6. Get FXRP decimals from the forwarder and token contract.
+7. Get the current nonce for a user from the forwarder.
+8. Get the minimum relayer fee from the forwarder.
+9. Sign the payment message with EIP-712 and return the signature.
+10. Create a full payment request: fetch nonce and fee, set deadline, sign, and return payload for the relayer.
+11. Approve the forwarder to spend FXRP.
+12. Check user balance, allowance, nonce, and whether approval is needed.
+
 </details>
 
 ### Relayer Service
 
-This is a relayer service that will submit payment requests to the Flare blockchain and pay gas on behalf of the user.
+This is a relayer service that submits payment requests to the Flare blockchain and pays gas on behalf of the user.
 
-Save as `relayer/index.ts` to start the relayer service:
+Save as `relayer/index.ts` to start the relayer service.
 
 <details>
-<summary>View relayer/index.ts</summary>
+<summary>View `relayer/index.ts`</summary>
 
 <CodeBlock language="typescript" title="relayer/index.ts">
   {Relayer}
 </CodeBlock>
 
+**Code Breakdown**
+
+1. Import necessary libraries.
+2. Define EIP-712 domain, payment request types, and other network configurations.
+3. Define `RelayerConfig`, `PaymentRequest`, and `ExecuteResult` types.
+4. Implement the `GaslessRelayer` class to interact with the forwarder contract.
+5. Execute gasless payment: normalize and validate request, recover signer with EIP-712, validate request (balance, allowance, deadline), staticCall, then recheck nonce, estimate gas with buffer, call executePayment, wait for receipt, return result.
+6. Validate request: check deadline against chain time, check sender FXRP balance and allowance, check fee meets minimum.
+7. Get nonce for an address from the forwarder contract.
+8. Get the minimum relayer fee from the forwarder contract.
+9. Get FXRP token decimals from the forwarder and token contract.
+10. Get the relayer FLR balance for gas.
+11. Start Express server.
+12. Main function to read environment variables, create a relayer, log FLR balance, and start the server.
+13. Run the main function to start the relayer service.
+
 </details>
 
 ### Deploy Script
 
-Save as `scripts/deploy.ts` to deploy the [`GaslessPaymentForwarder`](/fxrp/token-interactions/gasless-fxrp-payments#gasless-payment-forwarder-contract) contract:
+Save as `scripts/deploy.ts` to deploy the [`GaslessPaymentForwarder`](/fxrp/token-interactions/gasless-fxrp-payments#gasless-payment-forwarder-contract) contract.
 
 <details>
 <summary>View scripts/deploy.ts</summary>
@@ -114,11 +153,23 @@ Save as `scripts/deploy.ts` to deploy the [`GaslessPaymentForwarder`](/fxrp/toke
   {DeployScript}
 </CodeBlock>
 
+**Code Breakdown**
+
+1. Import necessary libraries.
+2. Define default relayer fee constant in FXRP base units.
+3. Get deployer signer and balance; log address and FLR balance.
+4. Deploy `GaslessPaymentForwarder` contract with the relayer fee (FXRP comes from the Flare Contract Registry) and wait for deployment, and get the contract address.
+5. Get FXRP token address and decimals from the forwarder.
+   Format fee for display.
+   Log deployment summary (network, contract, FXRP, owner, fee).
+6. Verify contract on block explorer.
+7. Run main function.
+
 </details>
 
 ### Example Flow
 
-Use `scripts/example-usage.ts` to run the example flow:
+Use `scripts/example-usage.ts` to run the example flow.
 
 <details>
 <summary>View scripts/example-usage.ts</summary>
@@ -127,28 +178,32 @@ Use `scripts/example-usage.ts` to run the example flow:
   {ExampleUsage}
 </CodeBlock>
 
+**Code Breakdown**
+
+1. Import the necessary libraries.
+2. Read configuration from environment.
+3. Validate the configuration.
+4. Create a provider and a wallet.
+5. Check user FXRP balance and allowance.
+6. Approve the forwarder to spend FXRP.
+7. Create a payment request and sign it.
+8. Submit the payment request to the relayer.
+9. Call the main function to run the example flow.
+
 </details>
-
-The example flow tests the system and executes the following steps:
-
-1. Check the user's balance and allowance.
-2. Approve the forwarder to spend FXRP if needed.
-3. Create a payment request.
-4. Submit the payment request to the relayer.
-5. Check the payment status.
 
 ## Configuration
 
 Create a `.env` file in your project root with the following variables:
 
-| Variable | Description |
-|----------|-------------|
-| `PRIVATE_KEY` | Deployer private key (for deployment) |
-| `RELAYER_PRIVATE_KEY` | Relayer wallet (pays gas, receives FXRP fees) |
-| `USER_PRIVATE_KEY` | User wallet for testing |
-| `FORWARDER_ADDRESS` | Deployed contract address (set after deploy) |
-| `RPC_URL` | Flare network RPC (e.g. Coston2 testnet) |
-| `RELAYER_URL` | Relayer HTTP URL (e.g. `http://localhost:3000`) |
+| Variable              | Description                                     |
+| --------------------- | ----------------------------------------------- |
+| `PRIVATE_KEY`         | Deployer private key (for deployment)           |
+| `RELAYER_PRIVATE_KEY` | Relayer wallet (pays gas, receives FXRP fees)   |
+| `USER_PRIVATE_KEY`    | User wallet for testing                         |
+| `FORWARDER_ADDRESS`   | Deployed contract address (set after deploy)    |
+| `RPC_URL`             | Flare network RPC (e.g. Coston2 testnet)        |
+| `RELAYER_URL`         | Relayer HTTP URL (e.g. `http://localhost:3000`) |
 
 ## Deploy and run
 
@@ -182,11 +237,11 @@ npx ts-node relayer/index.ts
 
 **Main relayer backend endpoints:**
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/execute` | Execute single payment |
-| GET | `/nonce/:address` | Get nonce for address |
-| GET | `/fee` | Get the relayer fee |
+| Method | Path              | Description            |
+| ------ | ----------------- | ---------------------- |
+| POST   | `/execute`        | Execute single payment |
+| GET    | `/nonce/:address` | Get nonce for address  |
+| GET    | `/fee`            | Get the relayer fee    |
 
 ### Run the example Flow
 
@@ -198,11 +253,11 @@ npx ts-node scripts/example-usage.ts
 
 This script will execute the following steps:
 
-1. Check the user's balance and allowance.
-2. Approve the forwarder to spend FXRP if needed.
-3. Create a payment request.
-4. Submit the payment request to the relayer.
-5. Check the payment status.
+1. Checks the user's balance and allowance.
+2. Approves the forwarder to spend FXRP if needed.
+3. Creates a payment request.
+4. Submits the payment request to the relayer.
+5. Checks the payment status.
 
 You should see the following output:
 
@@ -248,8 +303,9 @@ Step 4: Submitting to relayer...
 </details>
 
 :::tip[Next steps]
+
 - [Get FXRP token address](/fxrp/token-interactions/fxrp-address) for use in your app.
 - [Swap USDT0 to FXRP](/fxrp/token-interactions/usdt0-fxrp-swap) to acquire FXRP.
 - Review [FXRP operational parameters](/fxrp/parameters).
 - [Gasless USD₮0 Transfers](/network/guides/gasless-usdt0-transfers) — Similar pattern for USDT0 on Flare.
-:::
+  :::
