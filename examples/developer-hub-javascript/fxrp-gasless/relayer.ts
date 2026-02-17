@@ -21,7 +21,7 @@ import {
   type TypedDataDomain,
   type TypedData,
 } from "viem";
-import express, { type Request, type Response } from "express";
+import express, { Request, Response } from "express";
 import cors from "cors";
 import "dotenv/config";
 import type { GaslessPaymentForwarder } from "../typechain-types/contracts/GaslessPaymentForwarder";
@@ -40,7 +40,6 @@ const PAYMENT_REQUEST_TYPES = {
     { name: "from", type: "address" as const },
     { name: "to", type: "address" as const },
     { name: "amount", type: "uint256" as const },
-    { name: "fee", type: "uint256" as const },
     { name: "nonce", type: "uint256" as const },
     { name: "deadline", type: "uint256" as const },
   ],
@@ -73,7 +72,6 @@ export interface PaymentRequest {
   from: string;
   to: string;
   amount: string;
-  fee: string;
   deadline: number;
   signature: string;
 }
@@ -117,7 +115,6 @@ export class GaslessRelayer {
     const from = ethers.getAddress(request.from);
     const to = ethers.getAddress(request.to);
     const amount = BigInt(request.amount);
-    const fee = BigInt(request.fee);
     const deadline = Number(request.deadline);
     const sig = request.signature;
     if (typeof sig !== "string" || sig.length < 130) {
@@ -129,7 +126,6 @@ export class GaslessRelayer {
       from,
       to,
       amount: amount.toString(),
-      fee: fee.toString(),
       deadline,
       signature,
     };
@@ -148,7 +144,6 @@ export class GaslessRelayer {
       from,
       to,
       amount,
-      fee,
       nonce,
       deadline,
     };
@@ -182,7 +177,6 @@ export class GaslessRelayer {
         from,
         to,
         amount,
-        fee,
         deadline,
         signature,
       );
@@ -209,7 +203,6 @@ export class GaslessRelayer {
         from,
         to,
         amount,
-        fee,
         deadline,
         signature,
       );
@@ -222,18 +215,27 @@ export class GaslessRelayer {
     }
 
     // Execute the payment
-    const tx = await this.forwarder.executePayment(
-      from,
-      to,
-      amount,
-      fee,
-      deadline,
-      signature,
-      { gasLimit },
-    );
+    let tx: ethers.ContractTransactionResponse;
+    try {
+      tx = await this.forwarder.executePayment(
+        from,
+        to,
+        amount,
+        deadline,
+        signature,
+        { gasLimit },
+      );
+    } catch (sendError) {
+      throw sendError;
+    }
 
     // Wait for confirmation
-    const receipt = await tx.wait();
+    let receipt: ethers.TransactionReceipt | null;
+    try {
+      receipt = await tx.wait();
+    } catch (waitError) {
+      throw waitError;
+    }
 
     return {
       success: true,
@@ -245,7 +247,7 @@ export class GaslessRelayer {
 
   // 6. Validate a payment request before submission
   async validateRequest(request: PaymentRequest): Promise<void> {
-    const { from, amount, fee, deadline } = request;
+    const { from, amount, deadline } = request;
 
     // Check deadline against chain time (not local clock - avoids skew)
     const block = await this.provider.getBlock("latest");
@@ -267,7 +269,7 @@ export class GaslessRelayer {
 
     // Check sender's FXRP balance
     const balance: bigint = await fxrp.balanceOf(from);
-    const totalRequired = BigInt(amount) + BigInt(fee);
+    const totalRequired = BigInt(amount);
     if (balance < totalRequired) {
       throw new Error(
         `Insufficient FXRP balance. Required: ${ethers.formatUnits(totalRequired, decimals)}, Available: ${ethers.formatUnits(balance, decimals)}`,
@@ -284,14 +286,6 @@ export class GaslessRelayer {
         `Insufficient FXRP allowance. Required: ${ethers.formatUnits(totalRequired, decimals)}, Approved: ${ethers.formatUnits(allowance, decimals)}`,
       );
     }
-
-    // Check minimum fee
-    const minFee: bigint = await this.forwarder.relayerFee();
-    if (BigInt(fee) < minFee) {
-      throw new Error(
-        `Fee too low. Minimum: ${ethers.formatUnits(minFee, decimals)} FXRP`,
-      );
-    }
   }
 
   // 7. Get the current nonce for an address
@@ -299,12 +293,7 @@ export class GaslessRelayer {
     return await this.forwarder.getNonce(address);
   }
 
-  // 8. Get the minimum relayer fee
-  async getRelayerFee(): Promise<bigint> {
-    return await this.forwarder.relayerFee();
-  }
-
-  // 9. Get the FXRP token decimals
+  // 8. Get the FXRP token decimals
   async getTokenDecimals(): Promise<number> {
     const fxrpAddress: string = await this.forwarder.fxrp();
     const fxrp = new Contract(
@@ -315,7 +304,7 @@ export class GaslessRelayer {
     return (await fxrp.decimals()) as number;
   }
 
-  // 10. Check relayer's FLR balance for gas
+  // 9. Check relayer's FLR balance for gas
   async getRelayerBalance(): Promise<string> {
     const balance = await this.provider.getBalance(this.wallet.address);
     return ethers.formatEther(balance);
@@ -345,23 +334,6 @@ async function startServer(
     },
   );
 
-  // Get relayer fee
-  app.get("/fee", async (_req: Request, res: Response) => {
-    try {
-      const [fee, decimals] = await Promise.all([
-        relayer.getRelayerFee(),
-        relayer.getTokenDecimals(),
-      ]);
-      res.json({
-        fee: fee.toString(),
-        feeFormatted: ethers.formatUnits(fee, decimals) + " FXRP",
-      });
-    } catch (error) {
-      const err = error as Error;
-      res.status(400).json({ error: err.message });
-    }
-  });
-
   // Execute payment
   app.post("/execute", async (req: Request, res: Response) => {
     try {
@@ -378,7 +350,6 @@ async function startServer(
     console.log(`\nRelayer server running on http://localhost:${port}`);
     console.log(`\nEndpoints:`);
     console.log(`  GET  /nonce/:addr   - Get nonce for address`);
-    console.log(`  GET  /fee           - Get relayer fee`);
     console.log(`  POST /execute       - Execute single payment`);
   });
 }
