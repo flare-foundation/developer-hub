@@ -21,7 +21,7 @@ import {
   type TypedDataDomain,
   type TypedData,
 } from "viem";
-import express, { Request, Response } from "express";
+import express, { type Request, type Response } from "express";
 import cors from "cors";
 import "dotenv/config";
 import type { GaslessPaymentForwarder } from "../typechain-types/contracts/GaslessPaymentForwarder";
@@ -222,28 +222,18 @@ export class GaslessRelayer {
     }
 
     // Execute the payment
-    let tx: ethers.ContractTransactionResponse;
-    try {
-      tx = await this.forwarder.executePayment(
-        from,
-        to,
-        amount,
-        fee,
-        deadline,
-        signature,
-        { gasLimit },
-      );
-    } catch (sendError) {
-      throw sendError;
-    }
+    const tx = await this.forwarder.executePayment(
+      from,
+      to,
+      amount,
+      fee,
+      deadline,
+      signature,
+      { gasLimit },
+    );
 
     // Wait for confirmation
-    let receipt: ethers.TransactionReceipt | null;
-    try {
-      receipt = await tx.wait();
-    } catch (waitError) {
-      throw waitError;
-    }
+    const receipt = await tx.wait();
 
     return {
       success: true,
