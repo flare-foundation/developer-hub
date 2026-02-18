@@ -231,6 +231,9 @@ const config: Config = {
       theme: prismThemes.oneDark,
       darkTheme: prismThemes.oneDark,
     },
+    mermaid: {
+      theme: { light: "neutral", dark: "dark" },
+    },
   } satisfies Preset.ThemeConfig,
   themes: [
     "@docusaurus/theme-mermaid",
