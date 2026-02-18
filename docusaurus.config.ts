@@ -20,6 +20,7 @@ const config: Config = {
   onBrokenLinks: "throw",
 
   markdown: {
+    mermaid: true,
     hooks: {
       onBrokenMarkdownImages: "throw",
       onBrokenMarkdownLinks: "throw",
@@ -230,8 +231,12 @@ const config: Config = {
       theme: prismThemes.oneDark,
       darkTheme: prismThemes.oneDark,
     },
+    mermaid: {
+      theme: { light: "neutral", dark: "dark" },
+    },
   } satisfies Preset.ThemeConfig,
   themes: [
+    "@docusaurus/theme-mermaid",
     [
       require.resolve("@easyops-cn/docusaurus-search-local"),
       {
