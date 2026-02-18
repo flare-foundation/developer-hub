@@ -7,7 +7,7 @@
  */
 
 // 1. Import the necessary libraries
-import { ethers, Contract, Wallet, Provider } from "ethers";
+import { ethers, Contract, type Wallet, type Provider } from "ethers";
 import { erc20Abi, type TypedDataDomain, type TypedData } from "viem";
 import { GaslessPaymentForwarder__factory } from "../typechain-types/factories/contracts/GaslessPaymentForwarder__factory";
 
