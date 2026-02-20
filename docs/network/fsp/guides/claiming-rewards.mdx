@@ -8,12 +8,14 @@ sidebar_position: 1
 import Tabs from "@theme/Tabs";
 import TabItem from "@theme/TabItem";
 
-Claiming rewards directly via smart contracts follows this flow:
+This guide shows how to claim Flare rewards directly via smart contracts, using the published per-epoch Merkle distributions.
 
-1. **Discover claimable reward epochs** (onchain reads via `RewardManager` + `FlareSystemsManager`).
-2. **Fetch the reward distribution data** for each claimable epoch (`reward-distribution-data-tuples.json`) from public repositories.
-3. **Extract your claim tuple + Merkle proof** for the correct `beneficiary` and `claimType`.
-4. **Submit a single onchain transaction** calling `RewardManager.claim(...)` with one or more claim structs.
+You will:
+
+- read the claimable reward epoch range onchain,
+- fetch the distribution tuples JSON offchain,
+- extract your Merkle proof + claim tuple,
+- submit `RewardManager.claim(...)`.
 
 :::warning[Reward claim period]
 
@@ -27,16 +29,18 @@ Learn more about how [signing](/network/fsp/weights-and-signing) and [rewards](/
 
 1. **Wallet + gas:** A wallet that can sign transactions on the target network, funded with enough native token to pay gas.
 2. **RPC access:** An RPC endpoint for the chosen network (you can use any RPC listed on the [Network](/network/overview) page).
-3. **Beneficiary address (depends on claim type):**
-   - **DIRECT:** `beneficiary` must be the **signing policy address**.
-   - **FEE:** `beneficiary` must be the **identity address**.
-4. **Contracts:** Addresses can be found in the [Flare Contract Registry](/network/guides/flare-contracts-registry):
+3. **Contracts:** Addresses can be found in the [Flare Contract Registry](/network/guides/flare-contracts-registry):
    - [`FlareSystemsManager`](/network/fsp/solidity-reference/IFlareSystemsManager)
    - [`RewardManager`](/network/fsp/solidity-reference/IRewardManager)
    - [`ClaimSetupManager`](/network/solidity-reference/IClaimSetupManager)
-5. **Recipient address:** The address that will receive the rewards (`recipient`).
-6. **Reward distribution data access:** You must be able to fetch per-epoch `reward-distribution-data-tuples.json` from the official distribution locations on GitHub or GitLab.
-7. **Wrap option:** `wrapRewards` is `true` unless explicitly set to `false`.
+4. **Recipient address:** The address that will receive the rewards (`recipient`).
+5. **Reward distribution data access:** You must be able to fetch per-epoch `reward-distribution-data-tuples.json` from the official distribution locations on GitHub or GitLab.
+6. **Wrap option:** `wrapRewards` is `true` unless explicitly set to `false`, i.e. on Flare Mainnet you will receive `WFLR`.
+7. **Beneficiary address (depends on claim type):**
+   | Claim type | `claimType` | `beneficiary` must be | Account that must authorize executors |
+   | ---------- | ----------: | ---------------------- | ------------------------------------- |
+   | `DIRECT` | `0` | signing policy address | signing policy address |
+   | `FEE` | `1` | identity address | identity address |
 
 ### Recommended: Configure a claim executor and claim recipient
 
@@ -143,7 +147,7 @@ for (let epochId = start; epochId <= end; epochId++) {
 
 :::tip[Calculating or verifying rewards data]
 
-All rewards scripts are publicly available, and you are encouraged to calculate verify the rewards data yourself.
+All rewards scripts are publicly available, and you are encouraged to calculate/verify the rewards data yourself.
 The data for the rewards is published on [flare-foundation/fsp-rewards](https://github.com/flare-foundation/fsp-rewards) and the instructions for how to calculate them are [here](https://github.com/flare-foundation/FTSO-Scaling/blob/main/scripts/rewards/README.md#public-reward-data).
 
 :::
