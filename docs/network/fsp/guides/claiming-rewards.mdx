@@ -1,0 +1,362 @@
+---
+title: Claiming rewards
+description: Instructions for data providers to claim rewards.
+keywords: [flare-network, reward, claim, data-provider, ftso, fdc, validator]
+sidebar_position: 1
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+Claiming rewards directly via smart contracts follows this flow:
+
+1. **Discover claimable reward epochs** (onchain reads via `RewardManager` + `FlareSystemsManager`).
+2. **Fetch the reward distribution data** for each claimable epoch (`reward-distribution-data-tuples.json`) from public repositories.
+3. **Extract your claim tuple + Merkle proof** for the correct `beneficiary` and `claimType`.
+4. **Submit a single onchain transaction** calling `RewardManager.claim(...)` with one or more claim structs.
+
+:::warning[Reward claim period]
+
+Delegation rewards expire after 25 reward epochs. Make sure to claim before then.
+
+Learn more about how [signing](/network/fsp/weights-and-signing) and [rewards](/network/fsp/rewarding) work in the FSP.
+
+:::
+
+## Prerequisites
+
+1. **Wallet + gas:** A wallet that can sign transactions on the target network, funded with enough native token to pay gas.
+2. **RPC access:** An RPC endpoint for the chosen network (you can use any RPC listed on the [Network](/network/overview) page).
+3. **Beneficiary address (depends on claim type):**
+   - **DIRECT:** `beneficiary` must be the **signing policy address**.
+   - **FEE:** `beneficiary` must be the **identity address**.
+4. **Contracts:** Addresses can be found in the [Flare Contract Registry](/network/guides/flare-contracts-registry):
+   - [`FlareSystemsManager`](/network/fsp/solidity-reference/IFlareSystemsManager)
+   - [`RewardManager`](/network/fsp/solidity-reference/IRewardManager)
+   - [`ClaimSetupManager`](/network/solidity-reference/IClaimSetupManager)
+5. **Recipient address:** The address that will receive the rewards (`recipient`).
+6. **Reward distribution data access:** You must be able to fetch per-epoch `reward-distribution-data-tuples.json` from the official distribution locations on GitHub or GitLab.
+7. **Wrap option:** `wrapRewards` is `true` unless explicitly set to `false`.
+
+### Recommended: Configure a claim executor and claim recipient
+
+For improved security, set up a **claim executor** (an account authorized to claim on your behalf) and an **allowed claim recipient** (an address permitted to receive rewards).
+
+1. Create and fund a new account with sufficient native tokens
+2. Authorize this account as a claim executor, which can be done using the [`setClaimExecutors`](/network/solidity-reference/IClaimSetupManager#setclaimexecutors) method.
+   - For **DIRECT (0)** claims: Use your signing policy account to authorize the executor.
+   - For **FEE (1)** claims: Use your identity account to authorize the executor.
+3. Setup a **Claim Recipient** account, this can be done through the [`setAllowedClaimRecipient`](/network/solidity-reference/IClaimSetupManager#setallowedclaimrecipients) method.
+
+```ts
+import { Contract } from "ethers";
+
+const claimSetupManager = new Contract(
+  process.env.CLAIM_SETUP_MANAGER_ADDRESS!, // from contract registry
+  CLAIM_SETUP_MANAGER_ABI,
+  beneficiarySigner, // IMPORTANT: signer must be the signing policy address (`DIRECT`) or identity address (`FEE`)
+);
+
+// 1) Authorize the executor that will submit RewardManager.claim(...)
+await (await claimSetupManager.setClaimExecutors([executorAddress])).wait();
+
+// 2) Allowlist a recipient address that is permitted to receive rewards
+await (
+  await claimSetupManager.setAllowedClaimRecipients([recipientAddress])
+).wait();
+```
+
+## Step-by-step
+
+### 1. Connect to the contracts
+
+Instantiate contract clients (ABI + address) for:
+
+- [`FlareSystemsManager`](/network/fsp/solidity-reference/IFlareSystemsManager)
+- [`RewardManager`](/network/fsp/solidity-reference/IRewardManager)
+
+Example using [ethers v6](https://docs.ethers.org/v6/):
+
+```ts
+import { JsonRpcProvider, Wallet, Contract } from "ethers";
+
+// 1) Provider + signer
+const provider = new JsonRpcProvider(process.env.RPC_URL);
+const signer = new Wallet(process.env.CLAIM_EXECUTOR_PRIVATE_KEY!, provider);
+
+// 2) Contract instances (ABI omitted here; use your generated ABI or interface)
+const flareSystemsManager = new Contract(
+  process.env.FLARE_SYSTEMS_MANAGER_ADDRESS!,
+  FLARE_SYSTEMS_MANAGER_ABI,
+  provider,
+);
+
+const rewardManager = new Contract(
+  process.env.REWARD_MANAGER_ADDRESS!,
+  REWARD_MANAGER_ABI,
+  provider,
+);
+```
+
+### 2. Read the claimable epoch range
+
+Call:
+
+1. `startRewardEpochId = RewardManager.getNextClaimableRewardEpochId(beneficiary)`
+2. `[_, endRewardEpochId] = RewardManager.getRewardEpochIdsWithClaimableRewards()`
+
+If `endRewardEpochId < startRewardEpochId`, there is nothing to claim.
+
+Example:
+
+```ts
+const start = await rewardManager.getNextClaimableRewardEpochId(beneficiary);
+const [, end] = await rewardManager.getRewardEpochIdsWithClaimableRewards();
+
+if (end < start) {
+  console.log("Nothing claimable for this beneficiary.");
+}
+```
+
+### 3. Keep only signed epochs
+
+For each `epochId` in `[startRewardEpochId … endRewardEpochId]`, call:
+
+- `rewardsHash = FlareSystemsManager.rewardsHash(epochId)`
+
+Only proceed if `rewardsHash` is **not** `0x000...000` (`bytes32(0)`).
+
+Example:
+
+```ts
+const ZERO_BYTES32 =
+  "0x0000000000000000000000000000000000000000000000000000000000000000";
+
+const signedEpochs: bigint[] = [];
+for (let epochId = start; epochId <= end; epochId++) {
+  const rewardsHash = await flareSystemsManager.rewardsHash(epochId);
+  if (rewardsHash && rewardsHash !== ZERO_BYTES32) signedEpochs.push(epochId);
+}
+```
+
+### 4. Fetch reward distribution tuples
+
+:::tip[Calculating or verifying rewards data]
+
+All rewards scripts are publicly available, and you are encouraged to calculate verify the rewards data yourself.
+The data for the rewards is published on [flare-foundation/fsp-rewards](https://github.com/flare-foundation/fsp-rewards) and the instructions for how to calculate them are [here](https://github.com/flare-foundation/FTSO-Scaling/blob/main/scripts/rewards/README.md#public-reward-data).
+
+:::
+
+For each signed epoch, fetch `reward-distribution-data-tuples.json`.
+You fetch **one JSON file per epoch**, using the epoch id in the path.
+If the JSON cannot be fetched or validated, you cannot build a valid Merkle proof for that epoch.
+
+<Tabs block groupId="network">
+  <TabItem value="flare" label="Flare Mainnet" default>
+    Fetch `reward-distribution-data-tuples.json` from [flare-foundation/fsp-rewards](https://github.com/flare-foundation/fsp-rewards) on GitHub.
+    
+    ```bash
+    EPOCH_ID=123
+    BENEFICIARY="0xYourBeneficiaryAddressHere"
+    CLAIM_TYPE=0
+
+    curl -fsSL \
+      "https://raw.githubusercontent.com/flare-foundation/fsp-rewards/refs/heads/main/flare/${EPOCH_ID}/reward-distribution-data-tuples.json" \
+      | jq --arg b "${BENEFICIARY}" --argjson ct "${CLAIM_TYPE}" -r '
+          .rewardClaims[]
+          | select(.[1][1] | ascii_downcase == ($b | ascii_downcase))
+          | select(.[1][3] == $ct)
+        '
+    ```
+
+  </TabItem>
+  <TabItem value="coston2" label="Flare Testnet Coston2">
+    Fetch `reward-distribution-data-tuples.json` from [timivesel/ftsov2-testnet-rewards](https://gitlab.com/timivesel/ftsov2-testnet-rewards) on GitLab.
+
+    ```bash
+    EPOCH_ID=123
+    BENEFICIARY="0xYourBeneficiaryAddressHere"
+    CLAIM_TYPE=0
+
+    curl -fsSL \
+      "https://gitlab.com/timivesel/ftsov2-testnet-rewards/-/raw/main/rewards-data/coston2/${EPOCH_ID}/reward-distribution-data-tuples.json" \
+      | jq --arg b "${BENEFICIARY}" --argjson ct "${CLAIM_TYPE}" -r '
+          .rewardClaims[]
+          | select(.[1][1] | ascii_downcase == ($b | ascii_downcase))
+          | select(.[1][3] == $ct)
+        '
+    ```
+
+  </TabItem>
+  <TabItem value="songbird" label="Songbird Canary-Network">
+    Fetch `reward-distribution-data-tuples.json` from [flare-foundation/fsp-rewards](https://github.com/flare-foundation/fsp-rewards) on GitHub.
+
+    ```bash
+    EPOCH_ID=123
+    BENEFICIARY="0xYourBeneficiaryAddressHere"
+    CLAIM_TYPE=0
+
+    curl -fsSL \
+      "https://raw.githubusercontent.com/flare-foundation/fsp-rewards/refs/heads/main/songbird/${EPOCH_ID}/reward-distribution-data-tuples.json" \
+      | jq --arg b "${BENEFICIARY}" --argjson ct "${CLAIM_TYPE}" -r '
+          .rewardClaims[]
+          | select(.[1][1] | ascii_downcase == ($b | ascii_downcase))
+          | select(.[1][3] == $ct)
+        '
+    ```
+
+  </TabItem>
+  <TabItem value="coston" label="Songbird Testnet Coston">
+    Fetch `reward-distribution-data-tuples.json` from [timivesel/ftsov2-testnet-rewards](https://gitlab.com/timivesel/ftsov2-testnet-rewards) on GitLab.
+
+    ```bash
+    EPOCH_ID=123
+    BENEFICIARY="0xYourBeneficiaryAddressHere"
+    CLAIM_TYPE=0
+
+    curl -fsSL \
+      "https://gitlab.com/timivesel/ftsov2-testnet-rewards/-/raw/main/rewards-data/coston/${EPOCH_ID}/reward-distribution-data-tuples.json" \
+      | jq --arg b "${BENEFICIARY}" --argjson ct "${CLAIM_TYPE}" -r '
+          .rewardClaims[]
+          | select(.[1][1] | ascii_downcase == ($b | ascii_downcase))
+          | select(.[1][3] == $ct)
+        '
+    ```
+
+  </TabItem>
+</Tabs>
+
+### 5. Extract your Merkle proof + claim tuple
+
+In the fetched JSON, locate an entry in `rewardClaims` where:
+
+- `address` matches your `beneficiary` (case-insensitive match offchain, exact value used onchain)
+- `claimType` equals your target `claimType` (`0` for DIRECT, `1` for FEE)
+
+Each matching entry provides:
+
+- `merkleProof`: array of hex strings
+- tuple `[id, address, sum, claimType]`
+
+:::info
+
+You do **not** submit the JSON onchain.
+You only extract your `merkleProof` and tuple from `rewardClaims` to build the `claims[]` argument passed to `RewardManager.claim(...)`.
+
+:::
+
+Build a [`RewardClaimWithProof`](/network/fsp/solidity-reference/IRewardManager#rewardclaimwithproof) struct from the JSON:
+
+```ts
+{
+  merkleProof: string[],
+  body: {
+    rewardEpochId: bigint, // BigInt(id)
+    beneficiary: string,   // address
+    amount: bigint,        // BigInt(sum)
+    claimType: bigint      // BigInt(claimType)
+  }
+}
+```
+
+**Important:** `rewardEpochId` is taken from the tuple's `id`.
+
+Example:
+
+```ts
+type ClaimType = 0 | 1; // DIRECT=0, FEE=1
+type RewardClaimTuple = [number, string, string, number]; // [id, address, sum, claimType]
+type RewardClaimEntry = [string[], RewardClaimTuple]; // [merkleProof[], tuple]
+
+function extractClaim(
+  rewardClaims: RewardClaimEntry[],
+  beneficiary: string,
+  claimType: ClaimType,
+) {
+  const entry = rewardClaims.find(([, tuple]) => {
+    const [, address, , ct] = tuple;
+    return (
+      address.toLowerCase() === beneficiary.toLowerCase() && ct === claimType
+    );
+  });
+
+  if (!entry) return null;
+
+  const [merkleProof, [id, address, sum, ct]] = entry;
+  return {
+    merkleProof,
+    body: {
+      rewardEpochId: BigInt(id),
+      beneficiary: address,
+      amount: BigInt(sum),
+      claimType: BigInt(ct),
+    },
+  };
+}
+```
+
+### 6. Submit the claim transaction
+
+Call:
+
+`RewardManager.claim(beneficiary, recipient, lastEpochIdToClaim, wrapRewards, claims)`
+
+Where:
+
+- `beneficiary`: signing policy address (DIRECT) **or** identity address (FEE)
+- `recipient`: the address that should receive rewards
+- `claims`: array of the structs from Step 5
+- `lastEpochIdToClaim`: set to the **maximum** `body.rewardEpochId` included in `claims`
+- `wrapRewards`: boolean (`true` unless explicitly set to `false`)
+
+Example:
+
+```ts
+if (claims.length === 0) throw new Error("No claims to submit.");
+
+const lastEpochIdToClaim = claims
+  .map((c) => c.body.rewardEpochId)
+  .reduce((max, v) => (v > max ? v : max));
+
+const tx = await rewardManager
+  .connect(signer)
+  .claim(beneficiary, recipient, lastEpochIdToClaim, wrapRewards, claims);
+
+console.log("Submitted:", tx.hash);
+await tx.wait();
+console.log("Confirmed:", tx.hash);
+```
+
+## Troubleshooting
+
+<details>
+<summary>T0. Authorization failure: executor not allowed or recipient not allowlisted</summary>
+
+- If the signer sending `RewardManager.claim(...)` is not the beneficiary, ensure it is configured as a **claim executor** via `setClaimExecutors(...)`.
+- If the transaction reverts when using a `recipient` address, ensure the recipient is allowlisted via `setAllowedClaimRecipients(...)`.
+- Ensure you set these using the correct controlling account:
+  - **DIRECT**: signing policy account
+  - **FEE**: identity account
+
+</details>
+
+<details>
+<summary>T1. No matching tuple found for my address</summary>
+
+- Double-check:
+  - Beneficiary address selection (DIRECT uses signing policy address; FEE uses identity address).
+  - `claimType` value (DIRECT=0, FEE=1).
+
+</details>
+
+<details>
+<summary>T2. Claim transaction reverts</summary>
+
+- Ensure the Merkle proof and tuple fields (`rewardEpochId`, `beneficiary`, `amount`, `claimType`) are copied exactly from the JSON.
+- Ensure `lastEpochIdToClaim` is `>=` the maximum `rewardEpochId` included in your `claims` array.
+- Ensure the epoch is signed (non-zero `rewardsHash`) and within the claimable range you read onchain.
+
+If a revert reason indicates additional authorization rules (e.g., the caller must be a specific executor), those rules are enforced by the contract and must be satisfied as written in the revert reason; they are not inferable from the claim flow alone.
+
+</details>
