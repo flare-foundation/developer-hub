@@ -11,7 +11,7 @@ import TabItem from "@theme/TabItem";
 Claiming rewards directly via smart contracts follows this flow:
 
 1. **Discover claimable reward epochs** (onchain reads via `RewardManager` + `FlareSystemsManager`).
-2. **Fetch the reward distribution data** for each claimable epoch (`reward-distribution-data-tuples.json`) from GitHub or GitLab.
+2. **Fetch the reward distribution data** for each claimable epoch (`reward-distribution-data-tuples.json`) from public repositories.
 3. **Extract your claim tuple + Merkle proof** for the correct `beneficiary` and `claimType`.
 4. **Submit a single onchain transaction** calling `RewardManager.claim(...)` with one or more claim structs.
 
@@ -33,9 +33,38 @@ Learn more about how [signing](/network/fsp/weights-and-signing) and [rewards](/
 4. **Contracts:** Addresses can be found in the [Flare Contract Registry](/network/guides/flare-contracts-registry):
    - [`FlareSystemsManager`](/network/fsp/solidity-reference/IFlareSystemsManager)
    - [`RewardManager`](/network/fsp/solidity-reference/IRewardManager)
+   - [`ClaimSetupManager`](/network/solidity-reference/IClaimSetupManager)
 5. **Recipient address:** The address that will receive the rewards (`recipient`).
 6. **Reward distribution data access:** You must be able to fetch per-epoch `reward-distribution-data-tuples.json` from the official distribution locations on GitHub or GitLab.
 7. **Wrap option:** `wrapRewards` is `true` unless explicitly set to `false`.
+
+### Recommended: Configure a claim executor and claim recipient
+
+For improved security, set up a **claim executor** (an account authorized to claim on your behalf) and an **allowed claim recipient** (an address permitted to receive rewards).
+
+1. Create and fund a new account with sufficient native tokens
+2. Authorize this account as a claim executor, which can be done using the [`setClaimExecutors`](/network/solidity-reference/IClaimSetupManager#setclaimexecutors) method.
+   - For **DIRECT (0)** claims: Use your signing policy account to authorize the executor.
+   - For **FEE (1)** claims: Use your identity account to authorize the executor.
+3. Setup a **Claim Recipient** account, this can be done through the [`setAllowedClaimRecipient`](/network/solidity-reference/IClaimSetupManager#setallowedclaimrecipients) method.
+
+```ts
+import { Contract } from "ethers";
+
+const claimSetupManager = new Contract(
+  process.env.CLAIM_SETUP_MANAGER_ADDRESS!, // from contract registry
+  CLAIM_SETUP_MANAGER_ABI,
+  beneficiarySigner, // IMPORTANT: signer must be the signing policy address (`DIRECT`) or identity address (`FEE`)
+);
+
+// 1) Authorize the executor that will submit RewardManager.claim(...)
+await (await claimSetupManager.setClaimExecutors([executorAddress])).wait();
+
+// 2) Allowlist a recipient address that is permitted to receive rewards
+await (
+  await claimSetupManager.setAllowedClaimRecipients([recipientAddress])
+).wait();
+```
 
 ## Step-by-step
 
@@ -111,6 +140,13 @@ for (let epochId = start; epochId <= end; epochId++) {
 ```
 
 ### 4. Fetch reward distribution tuples
+
+:::tip[Calculating or verifying rewards data]
+
+All rewards scripts are publicly available, and you are encouraged to calculate verify the rewards data yourself.
+The data for the rewards is published on [flare-foundation/fsp-rewards](https://github.com/flare-foundation/fsp-rewards) and the instructions for how to calculate them are [here](https://github.com/flare-foundation/FTSO-Scaling/blob/main/scripts/rewards/README.md#public-reward-data).
+
+:::
 
 For each signed epoch, fetch `reward-distribution-data-tuples.json`.
 You fetch **one JSON file per epoch**, using the epoch id in the path.
@@ -203,7 +239,7 @@ Each matching entry provides:
 - `merkleProof`: array of hex strings
 - tuple `[id, address, sum, claimType]`
 
-:::note
+:::info
 
 You do **not** submit the JSON onchain.
 You only extract your `merkleProof` and tuple from `rewardClaims` to build the `claims[]` argument passed to `RewardManager.claim(...)`.
@@ -293,6 +329,17 @@ console.log("Confirmed:", tx.hash);
 ```
 
 ## Troubleshooting
+
+<details>
+<summary>T0. Authorization failure: executor not allowed or recipient not allowlisted</summary>
+
+- If the signer sending `RewardManager.claim(...)` is not the beneficiary, ensure it is configured as a **claim executor** via `setClaimExecutors(...)`.
+- If the transaction reverts when using a `recipient` address, ensure the recipient is allowlisted via `setAllowedClaimRecipients(...)`.
+- Ensure you set these using the correct controlling account:
+  - **DIRECT**: signing policy account
+  - **FEE**: identity account
+
+</details>
 
 <details>
 <summary>T1. No matching tuple found for my address</summary>
