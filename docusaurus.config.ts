@@ -62,7 +62,7 @@ const config: Config = {
           remarkPlugins: [remarkMath],
           rehypePlugins: [rehypeKatex],
           editUrl:
-            "https://raw.githubusercontent.com/flare-foundation/developer-hub/main",
+            "https://github.com/flare-foundation/developer-hub/edit/main",
           onInlineTags: "throw",
         },
         blog: false,
