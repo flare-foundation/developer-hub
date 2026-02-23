@@ -15,11 +15,13 @@ You will:
 - read the claimable reward epoch range onchain,
 - fetch the distribution tuples JSON offchain,
 - extract your Merkle proof + claim tuple,
-- submit `RewardManager.claim(...)`.
+- submit `RewardManager.claim(...)`,
+- claim staking rewards `ValidatorRewardManager.claim(...)`.
 
 :::warning[Reward claim period]
 
-Delegation rewards expire after 25 reward epochs. Make sure to claim before then.
+Delegation rewards expire after 25 reward epochs, make sure to claim before then.
+Staking rewards do not expire.
 
 Learn more about how [signing](/network/fsp/weights-and-signing) and [rewards](/network/fsp/rewarding) work in the FSP.
 
@@ -33,6 +35,7 @@ Learn more about how [signing](/network/fsp/weights-and-signing) and [rewards](/
    - [`FlareSystemsManager`](/network/fsp/solidity-reference/IFlareSystemsManager)
    - [`RewardManager`](/network/fsp/solidity-reference/IRewardManager)
    - [`ClaimSetupManager`](/network/solidity-reference/IClaimSetupManager)
+   - [`ValidatorRewardManager`](/network/fsp/solidity-reference)
 4. **Recipient address:** The address that will receive the rewards (`recipient`).
 5. **Reward distribution data access:** You must be able to fetch per-epoch `reward-distribution-data-tuples.json` from the official distribution locations on GitHub or GitLab.
 6. **Wrap option:** `wrapRewards` is `true` unless explicitly set to `false`, i.e. on Flare Mainnet you will receive `WFLR`.
@@ -326,6 +329,60 @@ const lastEpochIdToClaim = claims
 const tx = await rewardManager
   .connect(signer)
   .claim(beneficiary, recipient, lastEpochIdToClaim, wrapRewards, claims);
+
+console.log("Submitted:", tx.hash);
+await tx.wait();
+console.log("Confirmed:", tx.hash);
+```
+
+### 7. Claim staking rewards
+
+:::tip
+
+You can also claim staking rewards via the [Flare Portal](https://portal.flare.network/) or using the [flare-tx-sdk](/network/flare-tx-sdk).
+
+:::
+
+Instantiate contract clients (ABI + address) for:
+
+- [`ValidatorRewardManager`](/network/fsp/solidity-reference)
+
+```ts
+import { JsonRpcProvider, Wallet, Contract } from "ethers";
+
+// 1) Provider + signer
+const provider = new JsonRpcProvider(process.env.RPC_URL);
+// Signer must be a self-bond address or an address used for delegating stake.
+const stakingSigner = new Wallet(process.env.STAKING_PRIVATE_KEY!, provider);
+
+// 2) Contract instances (ABI omitted here; use your generated ABI or interface)
+const validatorRewardManager = new Contract(
+  process.env.VALIDATOR_REWARD_MANAGER_ADDRESS!,
+  VALIDATOR_REWARD_MANAGER_ABI,
+  provider,
+);
+```
+
+Call:
+
+`ValidatorRewardManager.claim(rewardOwner, recipient, rewardAmount, wrapRewards)`
+
+Where:
+
+- `rewardOwner`: self-bond address or address used for delegating stake
+- `recipient`: the address that should receive rewards
+- `rewardAmount`: amount of rewards to be claimed
+- `wrapRewards`: boolean (`true` unless explicitly set to `false`)
+
+Example:
+
+```ts
+const state = await validatorRewardManager.getStateOfRewards(rewardOwner);
+let rewardAmount = state[0] - state[1];
+
+const tx = await validatorRewardManager
+  .connect(stakingSigner)
+  .claim(rewardOwner, recipient, rewardAmount, wrapRewards);
 
 console.log("Submitted:", tx.hash);
 await tx.wait();
