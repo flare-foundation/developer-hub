@@ -154,7 +154,7 @@ const config: Config = {
             },
             {
               label: "Brand Kit",
-              href: "https://drive.google.com/drive/u/1/folders/1mPrtIBb2k88E4f1fguEm3eAXLW74xOry",
+              href: "https://flare.network/media",
             },
             {
               label: "Terms & Conditions",
