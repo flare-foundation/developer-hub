@@ -24,9 +24,8 @@ This guide is a perfect first step for developers working with FAssets.
 - [Node.js](https://nodejs.org/en/download/)
 - [npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm/)
 - [TypeScript](https://www.typescriptlang.org/download/)
-- [Ethers.js](https://docs.ethers.org/v5/)
-- [TypeChain](https://www.npmjs.com/package/typechain)
-- [Flare Periphery Contract Artifacts](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contract-artifacts)
+- [Viem](https://viem.sh)
+- [Flare Wagmi Periphery Package](https://www.npmjs.com/package/@flarenetwork/flare-wagmi-periphery-package)
 
 ## Project Setup
 
@@ -47,140 +46,115 @@ Install the following dependencies:
 ```bash
 npm install --save-dev \
   typescript \
-  typechain \
-  ethers \
-  @typechain/ethers-v6 \
-  @flarenetwork/flare-periphery-contract-artifacts
+  viem \
+  @flarenetwork/flare-wagmi-periphery-package
 ```
 
 ### Configure TypeScript
 
-Create a config file `tsconfig.json to control TypeScript behavior:
+Create a `tsconfig.json` file:
 
 ```bash
 npx tsc --init
 ```
 
-Change the `tsconfig.json` file so it can find the Flare generated types:
+Update `tsconfig.json` as follows:
 
 ```json title="tsconfig.json"
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "ESNext",
+    "rootDir": "./scripts",
+    "outDir": "./dist",
+    "module": "esnext",
     "moduleResolution": "node",
+    "target": "esnext",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "types": ["node"],
     "esModuleInterop": true,
-    "strict": true,
-    "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "outDir": "./dist"
+    "strict": true,
+    "skipLibCheck": true
   },
-  "include": ["scripts/**/*.ts", "typechain/**/*.ts", "typechain/**/*.d.ts"],
+  "include": ["scripts/**/*.ts"],
   "exclude": ["node_modules"]
 }
 ```
 
 ### Update Package Configuration
 
-For convenience, add the Typescript build and type generation commands to the `scripts` section of the `package.json` file:
-
-```json
-"scripts": {
-  "build": "tsc",
-  "generate-types": "typechain --target ethers-v6 --out-dir typechain './node_modules/@flarenetwork/flare-periphery-contract-artifacts/coston2/artifacts/contracts/**/*.json'"
-}
-```
-
-The `build` script will compile the TypeScript code.
-
-Using the Coston2 network artifacts, the `typechain` generates TypeScript types from the Flare Periphery contracts, which are provided through a [package](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contract-artifacts) containing the necessary contract artifacts.
-
-Change the `package.json` file to use the `module` type to use ES modules and avoid issues with the `import` statement:
+Change `package.json` to use ES modules and add a build script:
 
 ```json
 "type": "module",
+"scripts": {
+  "build": "tsc"
+}
 ```
-
-### Generate TypeScript Types
-
-To generate the TypeScript types, run the following command:
-
-```bash
-npm run generate-types
-```
-
-It will generate the TypeScript types in the `typechain` directory.
 
 ## Implementation
 
 ### Create Script File
-
-First, you must create a file to write the TypeScript code for this guide.
 
 ```bash
 mkdir scripts
 touch scripts/fassets-settings.ts
 ```
 
-Open the `scripts/fassets-settings.ts` file in your favorite code editor.
+Open `scripts/fassets-settings.ts` in your favorite code editor.
 
 ### Import Dependencies
 
-Import the ethers library to interact with the blockchain:
+Import viem to interact with the blockchain and the `coston2` namespace from the [`@flarenetwork/flare-wagmi-periphery-package`](https://www.npmjs.com/package/@flarenetwork/flare-wagmi-periphery-package), which provides all typed contract ABIs for the Coston2 network:
 
 ```typescript
-import { ethers } from "ethers";
-```
-
-You need to import the [Flare Contracts Registry](/network/guides/flare-contracts-registry) and the [FAssets asset manager](/fassets/reference/IAssetManager) contract factory types:
-
-```typescript
-import { IAssetManager__factory } from "../typechain/factories/IAssetManager__factory.js";
-import { IFlareContractRegistry__factory } from "../typechain/factories/IFlareContractRegistry__factory.js";
+import { createPublicClient, http } from "viem";
+import { flareTestnet } from "viem/chains";
+import { coston2 } from "@flarenetwork/flare-wagmi-periphery-package";
 ```
 
 ### Define Constants
 
-Define two constants:
+```typescript
+const FLARE_CONTRACT_REGISTRY_ADDRESS =
+  "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019" as const;
+const XRP_USD_FEED_ID = "0x015852502f55534400000000000000000000000000" as const;
+```
 
-- `COSTON2_RPC_URL`: The RPC URL for the Coston2 network.
-- `FLARE_CONTRACT_REGISTRY_ADDRESS`: The address of the [Flare Contract Registry](/network/guides/flare-contracts-registry).
+### Create a Client
+
+Create a viem public client connected to Coston2:
 
 ```typescript
-const COSTON2_RPC = "https://coston-api.flare.network/ext/C/rpc";
-const FLARE_CONTRACT_REGISTRY_ADDRESS =
-  "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019";
+const client = createPublicClient({
+  chain: flareTestnet,
+  transport: http(),
+});
 ```
 
 ### Get the FAssets FXRP Asset Manager Address
 
-You can get the FAssets FXRP Asset Manager address by calling the `getAssetManagerFXRP` function of the Flare Contract Registry.
-After that, create a new ethers provider, connect to the Coston2 network, and connect to the FAssets asset manager contract.
+Resolve the FXRP Asset Manager address from the [Flare Contract Registry](/network/guides/flare-contracts-registry):
 
 ```typescript
-const provider = new ethers.JsonRpcProvider(COSTON2_RPC);
-
-const flareContractRegistry = IFlareContractRegistry__factory.connect(
-  FLARE_CONTRACT_REGISTRY_ADDRESS,
-  provider,
-);
-
-const assetManagerAddress =
-  await flareContractRegistry.getContractAddressByName("AssetManagerFXRP");
-const assetManager = IAssetManager__factory.connect(
-  assetManagerAddress,
-  provider,
-);
+const assetManagerAddress = await client.readContract({
+  address: FLARE_CONTRACT_REGISTRY_ADDRESS,
+  abi: coston2.iFlareContractRegistryAbi,
+  functionName: "getContractAddressByName",
+  args: ["AssetManagerFXRP"],
+});
 ```
 
 ### Implement Settings Retrieval
 
-Next, you must fetch the FAssets configuration settings using the [`getSettings`](/fassets/reference/IAssetManager#getsettings) function of the FAssets asset manager contract.
-
-The last step is to get the lot size of FXRP in XRP and print it to the console.
+Fetch the FAssets configuration settings using the [`getSettings`](/fassets/reference/IAssetManager#getsettings) function and calculate the FXRP lot size:
 
 ```typescript
-const settings = await assetManager.getSettings();
+const settings = await client.readContract({
+  address: assetManagerAddress,
+  abi: coston2.iAssetManagerAbi,
+  functionName: "getSettings",
+});
+
 const lotSizeFXRP =
   Number(settings.lotSizeAMG) / Math.pow(10, Number(settings.assetDecimals));
 console.log("Lot Size (FXRP):", lotSizeFXRP);
@@ -192,126 +166,109 @@ The [`getSettings`](/fassets/reference/IAssetManager#getsettings) function retur
 
 ## Convert Lot Size to USD
 
-To convert the lot size to USD you need to use the [FTSO](/ftso/overview) to get the [anchor price feed](/ftso/scaling/anchor-feeds/) of XRP/USD and convert the FXRP lot size to USD.
+To convert the lot size to USD, fetch the XRP/USD [anchor price feed](/ftso/scaling/anchor-feeds/) from the [FTSO](/ftso/overview).
 
-### Import Dependencies
-
-Import the `FtsoV2Interface__factory` type which is the factories for the [FTSO contracts](/ftso/solidity-reference/FtsoV2Interface).
+### Get the FtsoV2 Address
 
 ```typescript
-import { FtsoV2Interface__factory } from "../typechain/factories/FtsoV2Interface__factory.js";
+const ftsoAddress = await client.readContract({
+  address: FLARE_CONTRACT_REGISTRY_ADDRESS,
+  abi: coston2.iFlareContractRegistryAbi,
+  functionName: "getContractAddressByName",
+  args: ["FtsoV2"],
+});
 ```
 
-### Define Constants
+### Get the Price Feed
 
-Define the constants for the [XRP/USD feed ID](/ftso/scaling/anchor-feeds).
-
-```typescript
-const XRP_USD_FEED_ID = "0x015852502f55534400000000000000000000000000";
-```
-
-### Get the Price feed XRP/USD
-
-You can get the price feed XRP/USD by calling the [`getFeedById`](/ftso/solidity-reference/FtsoV2Interface#getfeedbyid) function of the `FtsoV2` contract.
+`getFeedById` is a `payable` function, so use `simulateContract` to call it without sending a transaction:
 
 ```typescript
-const registry = IFlareContractRegistry__factory.connect(
-  FLARE_CONTRACT_REGISTRY_ADDRESS,
-  provider,
-);
-const ftsoAddress =
-  await flareContractRegistry.getContractAddressByName("FtsoV2");
-const ftsoV2 = FtsoV2Interface__factory.connect(ftsoAddress, provider);
-const priceFeed = await ftsoV2.getFeedById.staticCall(XRP_USD_FEED_ID);
+const {
+  result: [_value, _decimals, _timestamp],
+} = await client.simulateContract({
+  address: ftsoAddress,
+  abi: coston2.ftsoV2InterfaceAbi,
+  functionName: "getFeedById",
+  args: [XRP_USD_FEED_ID],
+  value: 0n,
+});
 ```
 
 ### Convert Lot Size to USD
 
-Convert the lot size to USD by multiplying the lot size by the price of XRP in USD.
-
 ```typescript
-const xrpUsdPrice = Number(priceFeed[0]) / Math.pow(10, Number(priceFeed[1]));
+const xrpUsdPrice = Number(_value) / Math.pow(10, Number(_decimals));
 const lotValueUSD = lotSizeFXRP * xrpUsdPrice;
 
 console.log("XRP/USD Price:", xrpUsdPrice);
 console.log("Lot value in USD:", lotValueUSD);
-console.log("Timestamp:", priceFeed[2].toString());
+console.log("Timestamp:", _timestamp.toString());
 ```
 
 ## Putting All Together
 
-To put all together, you have the following code:
-
 ```typescript title="scripts/fassets-settings.ts"
-// Importing necessary modules and contract factories
-import { ethers } from "ethers";
-import { IAssetManager__factory } from "../typechain/factories/IAssetManager__factory.js";
-import { IFlareContractRegistry__factory } from "../typechain/factories/IFlareContractRegistry__factory.js";
-import { FtsoV2Interface__factory } from "../typechain/factories/FtsoV2Interface__factory.js";
+import { createPublicClient, http } from "viem";
+import { flareTestnet } from "viem/chains";
+import { coston2 } from "@flarenetwork/flare-wagmi-periphery-package";
 
-// Constants for RPC endpoint and contract addresses
-const COSTON2_RPC = "https://coston2-api.flare.network/ext/C/rpc"; // RPC URL for the Coston2 network
 const FLARE_CONTRACT_REGISTRY_ADDRESS =
-  "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019"; // Address of the Flare Contract Registry
-const XRP_USD_FEED_ID = "0x015852502f55534400000000000000000000000000"; // Feed ID for XRP/USD price https://dev.flare.network/ftso/scaling/anchor-feeds
+  "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019" as const;
+const XRP_USD_FEED_ID = "0x015852502f55534400000000000000000000000000" as const;
 
-async function getSettings() {
-  // Create a provider for interacting with the blockchain
-  const provider = new ethers.JsonRpcProvider(COSTON2_RPC);
+const client = createPublicClient({
+  chain: flareTestnet,
+  transport: http(),
+});
 
-  // Connect to the Flare Contract Registry
-  const flareContractRegistry = IFlareContractRegistry__factory.connect(
-    FLARE_CONTRACT_REGISTRY_ADDRESS,
-    provider,
-  );
+const assetManagerAddress = await client.readContract({
+  address: FLARE_CONTRACT_REGISTRY_ADDRESS,
+  abi: coston2.iFlareContractRegistryAbi,
+  functionName: "getContractAddressByName",
+  args: ["AssetManagerFXRP"],
+});
 
-  // Get the address of the FXRP Asset Manager
-  const assetManagerAddress =
-    await flareContractRegistry.getContractAddressByName("AssetManagerFXRP");
+const settings = await client.readContract({
+  address: assetManagerAddress,
+  abi: coston2.iAssetManagerAbi,
+  functionName: "getSettings",
+});
 
-  // Connect to the FXRP Asset Manager
-  const assetManager = IAssetManager__factory.connect(
-    assetManagerAddress,
-    provider,
-  );
+const lotSizeFXRP =
+  Number(settings.lotSizeAMG) / Math.pow(10, Number(settings.assetDecimals));
+console.log("Lot Size (FXRP):", lotSizeFXRP);
 
-  // Fetch settings from the Asset Manager contract
-  const settings = await assetManager.getSettings();
+const ftsoAddress = await client.readContract({
+  address: FLARE_CONTRACT_REGISTRY_ADDRESS,
+  abi: coston2.iFlareContractRegistryAbi,
+  functionName: "getContractAddressByName",
+  args: ["FtsoV2"],
+});
 
-  // Calculate the lot size in FXRP (Flare XRP)
-  const lotSizeFXRP =
-    Number(settings.lotSizeAMG) / Math.pow(10, Number(settings.assetDecimals));
-  console.log("Lot Size (FXRP):", lotSizeFXRP);
+const {
+  result: [_value, _decimals, _timestamp],
+} = await client.simulateContract({
+  address: ftsoAddress,
+  abi: coston2.ftsoV2InterfaceAbi,
+  functionName: "getFeedById",
+  args: [XRP_USD_FEED_ID],
+  value: 0n,
+});
 
-  // Fetch the address of the FtsoV2 contract from the registry
-  const ftsoAddress =
-    await flareContractRegistry.getContractAddressByName("FtsoV2");
+const xrpUsdPrice = Number(_value) / Math.pow(10, Number(_decimals));
+const lotValueUSD = lotSizeFXRP * xrpUsdPrice;
 
-  // Connect to the FtsoV2 contract
-  const ftsoV2 = FtsoV2Interface__factory.connect(ftsoAddress, provider);
-
-  // Fetch the XRP/USD price feed using the feed ID
-  const priceFeed = await ftsoV2.getFeedById.staticCall(XRP_USD_FEED_ID);
-
-  // Calculate the XRP/USD price and the lot value in USD
-  const xrpUsdPrice = Number(priceFeed[0]) / Math.pow(10, Number(priceFeed[1]));
-  const lotValueUSD = lotSizeFXRP * xrpUsdPrice;
-
-  console.log("XRP/USD Price:", xrpUsdPrice);
-  console.log("Lot value in USD:", lotValueUSD);
-  console.log("Timestamp:", priceFeed[2].toString());
-}
-
-getSettings();
+console.log("XRP/USD Price:", xrpUsdPrice);
+console.log("Lot value in USD:", lotValueUSD);
+console.log("Timestamp:", _timestamp.toString());
 ```
 
 ## Running the Script
 
-To execute the script, run the following commands to compile the TypeScript code and run the script from the `dist` directory:
-
 ```bash
 npm run build
-node dist/scripts/fassets-settings.js
+node dist/fassets-settings.js
 ```
 
 You should see the following output:
