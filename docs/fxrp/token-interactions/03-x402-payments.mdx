@@ -42,34 +42,20 @@ The x402 implementation consists of four components:
 
 ## EIP-3009 Payment Flow
 
-```
-┌─────────┐     1. Request Resource      ┌─────────────┐
-│  Agent  │ ─────────────────────────────▶│   Server    │
-│         │ ◀───────────────────────────── │             │
-│         │     2. 402 + Payment Req      │             │
-│         │                                │             │
-│         │     3. Sign EIP-712 Auth       │             │
-│         │     (off-chain signature)      │             │
-│         │                                │             │
-│         │     4. Request + X-Payment     │             │
-│         │ ─────────────────────────────▶│             │
-│         │                    ┌───────────┴─────────────┤
-│         │               5. settlePayment()             │
-│         │                    │                         │
-│         │                    ▼                         │
-│         │              ┌─────────────┐                 │
-│         │              │ Facilitator │                 │
-│         │              └──────┬──────┘                 │
-│         │                     │                        │
-│         │         6. transferWithAuthorization         │
-│         │                     │                        │
-│         │                     ▼                        │
-│         │              ┌─────────────┐                 │
-│         │              │  MockUSDT0  │                 │
-│         │              └─────────────┘                 │
-│         │                                │             │
-│         │ ◀───────────────────────────── │             │
-└─────────┘     7. 200 OK + Resource      └─────────────┘
+```mermaid
+sequenceDiagram
+    participant Agent
+    participant Server
+    participant Facilitator
+    participant MockUSDT0
+
+    Agent->>Server: 1. Request Resource
+    Server-->>Agent: 2. 402 + Payment Req
+    Agent->>Agent: 3. Sign EIP-712 Auth<br/>(off-chain signature)
+    Agent->>Server: 4. Request + X-Payment header
+    Server->>Facilitator: 5. settlePayment()
+    Facilitator->>MockUSDT0: 6. transferWithAuthorization()
+    Server-->>Agent: 7. 200 OK + Resource
 ```
 
 The flow works as follows:
