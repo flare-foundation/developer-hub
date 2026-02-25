@@ -37,10 +37,12 @@ const CONFIG = {
   FXRP_TOKEN_ID: "FXRP:0x2af78df5b575b45eea8a6a1175026dd6",
   COSTON2_COMPOSER:
     process.env.COSTON2_COMPOSER ||
-    "0x5051E8db650E9e0E2a3f03010Ee5c60e79CF583E",
+    "0x80c5ebBD65b4857CA2f917EAB1e9F83bcC947c52",
   COSTON2_EID: EndpointId.FLARE_V2_TESTNET,
   EXECUTOR_GAS: 1_000_000,
   COMPOSE_GAS: 1_000_000,
+  // Native value forwarded to FAssetRedeemerAccount to cover executor fee on Coston2
+  COMPOSE_VALUE: BigInt("1000000000000000"), // 0.001 HYPE
   SEND_LOTS: "1",
   XRP_ADDRESS: process.env.XRP_ADDRESS || "rpHuw4bKSjonKRrKKVYUZYYVedg1jyPrmp",
   HYPERLIQUID_CHAIN: "Testnet",
@@ -251,9 +253,10 @@ async function connectToOFT(): Promise<FXRPOFTInstance> {
  * Encodes the compose message for auto-redemption
  */
 function encodeComposeMessage(params: RedemptionParams): string {
+  // Matches the RedeemComposeData struct on the shared FAssetRedeemComposer
   const composeMsg = web3.eth.abi.encodeParameters(
-    ["uint256", "string", "address"],
-    [params.amountToSend.toString(), params.underlyingAddress, params.redeemer],
+    ["address", "string"],
+    [params.redeemer, params.underlyingAddress],
   );
 
   console.log("Compose message encoded for auto-redemption");
@@ -267,7 +270,11 @@ function encodeComposeMessage(params: RedemptionParams): string {
 function buildComposeOptions(): string {
   const options = Options.newOptions()
     .addExecutorLzReceiveOption(CONFIG.EXECUTOR_GAS, 0)
-    .addExecutorComposeOption(0, CONFIG.COMPOSE_GAS, 0);
+    .addExecutorComposeOption(
+      0,
+      CONFIG.COMPOSE_GAS,
+      CONFIG.COMPOSE_VALUE.toString(),
+    );
 
   return options.toHex();
 }
