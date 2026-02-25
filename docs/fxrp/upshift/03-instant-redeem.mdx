@@ -1,0 +1,113 @@
+---
+title: Instant Redeem from Upshift Vault
+tags: [intermediate, upshift, fassets]
+slug: instant-redeem
+description: Learn how to instantly redeem LP tokens from an Upshift vault
+keywords: [fassets, flare-network, fxrp, upshift, vault, redeem]
+sidebar_position: 3
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import UpshiftInstantRedeem from "!!raw-loader!/examples/developer-hub-javascript/upshift-instant-redeem.ts";
+
+This guide demonstrates how to perform an instant redemption from an Upshift vault.
+The Upshift vault implements an [ERC-4626](https://eips.ethereum.org/EIPS/eip-4626) style tokenized vault that supports instant redemptions for immediate liquidity when available.
+
+Instant redemption burns your LP tokens (vault shares) and immediately returns the underlying assets to your wallet, subject to an instant redemption fee.
+
+## Prerequisites
+
+- [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit)
+- [Flare Network Periphery Contracts](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts)
+- Understanding of [FAssets](/fassets/overview)
+- LP tokens (vault shares) in the Upshift vault to redeem.
+
+## Upshift Vault Instant Redeem Script
+
+The following script demonstrates how to perform an instant redemption from the Upshift vault:
+
+<CodeBlock language="typescript" title="scripts/upshift/instantRedeem.ts">
+  {UpshiftInstantRedeem}
+</CodeBlock>
+
+## Script Breakdown
+
+The `main()` function executes the following steps:
+
+1. **Initialize:** Gets the user account and logs the vault and user addresses.
+2. **Connect to vault:** Creates an instance of the Upshift vault contract.
+3. **Get reference asset info:** Retrieves the vault's reference asset (FXRP) address, symbol, and decimals.
+4. **Get LP token info:** Retrieves the LP token address and the user's current LP balance.
+5. **Validate balance:** Converts the shares amount and checks if the user has sufficient LP tokens.
+6. **Preview redemption:** Calls [`previewRedemption()`](https://docs.upshift.finance/developer-docs/vault-contract-interface#id-8.-previewredeem-uint256-shares) to see the expected assets before and after the instant redemption fee.
+7. **Get asset balance:** Records the user's asset balance before redemption.
+8. **Execute instant redemption:** Calls [`instantRedeem()`](https://docs.upshift.finance/developer-docs/vault-contract-interface#id-4.-instantredeem-uint256-shares-address-receiveraddr-address-holderaddr) to burn LP tokens and receive assets immediately.
+9. **Verify redemption:** Confirms the redemption by checking the updated LP and asset balances.
+
+## Understanding Instant Redemption
+
+The Upshift vault supports two types of redemptions:
+
+- **Instant Redemption**: Immediately burns LP tokens and returns assets, but incurs an instant redemption fee.
+- **Requested Redemption**: Creates a withdrawal request that is processed after a lag period, with a lower fee.
+
+The instant redemption fee compensates the vault for providing immediate liquidity.
+The [`previewRedemption()`](https://docs.upshift.finance/developer-docs/vault-contract-interface#id-8.-previewredeem-uint256-shares) function shows both the gross and net amounts you'll receive.
+
+## Running the Script
+
+To run the Upshift vault instant redeem script:
+
+1. Ensure you have the [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit) set up.
+2. Update the `VAULT_ADDRESS` constant with the correct vault address for your network.
+3. Adjust the `SHARES_TO_REDEEM` constant to the desired number of shares.
+4. Ensure your account has sufficient LP tokens (vault shares) to cover the redemption.
+5. Run the script using Hardhat:
+
+```bash
+npx hardhat run scripts/upshift/instantRedeem.ts --network coston2
+```
+
+## Output
+
+The script outputs the following information about the instant redemption:
+
+```bash
+INSTANT REDEEM FROM VAULT
+
+Vault Address: 0x24c1a47cD5e8473b64EAB2a94515a196E10C7C81
+User Address: 0x0d09ff7630588E05E2449aBD3dDD1D8d146bc5c2
+Reference Asset (asset receiving): 0x0b6A3645c240605887a5532109323A3E12273dc7
+
+LP Balance: 10.0
+Shares to Redeem: 1 (1000000)
+
+Instant Redemption Fee: 1.0%
+Expected Assets (before fee): 1.0 FTestXRP
+Expected Assets (after fee): 0.99 FTestXRP
+
+Asset Balance Before: 50.0 FTestXRP
+
+Instant Redeem: (tx: 0x3f1bd8c766852d3b835bcde79f6d8e20afeeb227d737e0ed28d057dc0e6b2ba9 , block: 12345678 )
+
+Verifying redemption...
+LP Balance After: 9.0
+Shares Redeemed: 1.0
+Assets Received: 0.99 FTestXRP
+```
+
+## Summary
+
+In this guide, you learned how to perform an instant redemption from an Upshift vault by specifying the number of LP tokens (shares) to redeem.
+The instant redemption provides immediate liquidity but incurs a fee.
+
+:::tip[What's next]
+
+To continue your Upshift development journey, you can:
+
+- Learn more about [FAssets](/fassets/overview) and how the system works.
+- Learn how to [deposit assets into an Upshift vault](/fxrp/upshift/deposit).
+- Learn how to [request a redemption from an Upshift vault](/fxrp/upshift/request-redeem) for delayed liquidity.
+- Learn how to [claim assets from an Upshift vault](/fxrp/upshift/claim) after your requested redemption is claimable.
+
+:::
