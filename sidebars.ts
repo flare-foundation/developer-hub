@@ -49,6 +49,7 @@ const sidebars: SidebarsConfig = {
             "network/fsp/rewarding",
             "network/fsp/system-protocols",
             "network/fsp/offchain-services",
+            "network/fsp/protocol-parameters",
             {
               type: "category",
               label: "FSP Guides",
