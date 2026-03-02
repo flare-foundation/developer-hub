@@ -266,6 +266,10 @@ const config: Config = {
       {
         // scope
         docsDir: "docs",
+        // URLs: we use routeBasePath "/" so docs are at root, not /docs
+        pathTransformation: {
+          ignorePaths: ["docs"],
+        },
         // outputs
         generateLLMsTxt: true,
         generateLLMsFullTxt: true,
