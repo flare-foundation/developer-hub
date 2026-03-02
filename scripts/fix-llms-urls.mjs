@@ -111,14 +111,17 @@ function buildReplacements() {
 function fixFile(filePath, replacements) {
   let content = fs.readFileSync(filePath, "utf8");
   let changed = false;
+  const rightUrlBase = `${SITE_BASE}/`;
   for (const [wrongPath, rightPath] of replacements) {
-    const wrongUrl = `${SITE_BASE}/${wrongPath}`;
-    const rightUrl = `${SITE_BASE}/${rightPath}`;
-    const re = new RegExp(escapeRe(wrongUrl) + "(?!/)", "g");
-    const next = content.replace(re, rightUrl);
-    if (next !== content) {
-      content = next;
-      changed = true;
+    const rightUrl = rightUrlBase + rightPath;
+    for (const prefix of ["", "docs/"]) {
+      const wrongUrl = rightUrlBase + prefix + wrongPath;
+      const re = new RegExp(escapeRe(wrongUrl) + "(?!/)", "g");
+      const next = content.replace(re, rightUrl);
+      if (next !== content) {
+        content = next;
+        changed = true;
+      }
     }
   }
   if (changed) {
