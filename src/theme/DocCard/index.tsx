@@ -55,13 +55,16 @@ function CardLayout({
   href,
   title,
   description,
+  tag,
 }: {
   href: string;
   title: string;
   description?: string;
+  tag?: string;
 }): JSX.Element {
   return (
     <CardContainer href={href}>
+      {tag && <span className={styles.cardTag}>{tag}</span>}
       <div className={styles.cardHeader}>
         <Heading
           as="h2"
@@ -117,21 +120,31 @@ function CardCategory({
   );
 }
 
-function CardLink({ item }: { item: PropSidebarItemLink }): JSX.Element {
+function CardLink({
+  item,
+  tag,
+}: {
+  item: PropSidebarItemLink;
+  tag?: string;
+}): JSX.Element {
   const doc = useDocById(item.docId ?? undefined);
   return (
     <CardLayout
       href={item.href}
       title={item.label}
       description={item.description ?? doc?.description}
+      tag={tag}
     />
   );
 }
 
-export default function DocCard({ item }: Props): JSX.Element {
+export default function DocCard({
+  item,
+  tag,
+}: Props & { tag?: string }): JSX.Element {
   switch (item.type) {
     case "link":
-      return <CardLink item={item} />;
+      return <CardLink item={item} tag={tag} />;
     case "category":
       return <CardCategory item={item} />;
     default:
