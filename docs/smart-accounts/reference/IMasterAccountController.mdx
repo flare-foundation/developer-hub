@@ -1,0 +1,387 @@
+---
+title: IMasterAccountController
+description: Flare Smart Accounts IMasterAccountController interface reference.
+keywords: [smart-accounts, xrpl, flare-network, solidity]
+sidebar_position: 1
+---
+
+Interface for the `MasterAccountController` contract, which manages personal accounts and executes XRPL instructions on Flare.
+Uses the [Diamond pattern](https://eips.ethereum.org/EIPS/eip-2535) to compose all functionality into a single deployed contract.
+
+Sourced from `IMasterAccountController.sol` and its facets on [GitHub](https://github.com/flare-foundation/flare-smart-accounts/tree/main/contracts/userInterfaces).
+
+## Personal Accounts
+
+### `getPersonalAccount`
+
+Returns the [`PersonalAccount`](/smart-accounts/reference/IPersonalAccount) contract address for a given XRPL owner.
+If the account has not been deployed yet, it returns the precomputed deterministic address.
+
+```solidity
+function getPersonalAccount(
+    string calldata _xrplOwner
+)
+    external view
+    returns (address);
+```
+
+Parameters:
+
+- `_xrplOwner`: The XRPL address of the owner.
+
+Returns:
+
+- The [`PersonalAccount`](/smart-accounts/reference/IPersonalAccount) contract address, or the computed address if not yet deployed.
+
+## Instructions
+
+### `executeInstruction`
+
+Executes an XRPL instruction for a given XRPL address using an [Flare Data Connector](/fdc/overview) payment proof.
+
+```solidity
+function executeInstruction(
+    IPayment.Proof calldata _proof,
+    string calldata _xrplAddress
+)
+    external payable;
+```
+
+Parameters:
+
+- `_proof`: Proof of the XRPL payment transaction that comes from the [Flare Data Connector](/fdc/overview).
+- `_xrplAddress`: The XRPL address that sent the payment.
+
+### `reserveCollateral`
+
+Reserves collateral for a minting operation.
+Called by the executor service after receiving a collateral reservation instruction from an XRPL payment.
+
+```solidity
+function reserveCollateral(
+    string calldata _xrplAddress,
+    bytes32 _paymentReference,
+    bytes32 _transactionId
+)
+    external payable
+    returns (uint256 _collateralReservationId);
+```
+
+Parameters:
+
+- `_xrplAddress`: The XRPL address requesting the collateral reservation.
+- `_paymentReference`: The payment reference from the XRPL transaction memo.
+- `_transactionId`: The unique XRPL transaction ID for tracking.
+
+Returns:
+
+- `_collateralReservationId`: The ID of the collateral reservation.
+
+### `executeDepositAfterMinting`
+
+Executes a vault deposit after minting is complete for a given collateral reservation.
+
+```solidity
+function executeDepositAfterMinting(
+    uint256 _collateralReservationId,
+    IPayment.Proof calldata _proof,
+    string calldata _xrplAddress
+)
+    external;
+```
+
+Parameters:
+
+- `_collateralReservationId`: The ID of the collateral reservation returned by `reserveCollateral`.
+- `_proof`: Proof of the XRPL payment transaction.
+- `_xrplAddress`: The XRPL address requesting execution.
+
+### `isTransactionIdUsed`
+
+Returns `true` if the given XRPL transaction ID has already been executed.
+
+```solidity
+function isTransactionIdUsed(
+    bytes32 _transactionId
+)
+    external view
+    returns (bool);
+```
+
+### `getTransactionIdForCollateralReservation`
+
+Returns the XRPL transaction ID associated with a collateral reservation.
+
+```solidity
+function getTransactionIdForCollateralReservation(
+    uint256 _collateralReservationId
+)
+    external view
+    returns (bytes32 _transactionId);
+```
+
+## Instruction Fees
+
+### `getDefaultInstructionFee`
+
+Returns the default fee applied to instructions without a specific per-instruction fee configured.
+Denominated in the underlying asset's smallest unit (e.g., XRP drops).
+
+```solidity
+function getDefaultInstructionFee()
+    external view
+    returns (uint256);
+```
+
+### `getInstructionFee`
+
+Returns the fee for a specific instruction ID.
+
+```solidity
+function getInstructionFee(
+    uint256 _instructionId
+)
+    external view
+    returns (uint256);
+```
+
+Parameters:
+
+- `_instructionId`: The ID of the instruction.
+
+## Agent Vaults
+
+### `getAgentVaults`
+
+Returns the list of registered FAssets agent vault IDs and their corresponding addresses.
+
+```solidity
+function getAgentVaults()
+    external view
+    returns (uint256[] memory _agentVaultIds, address[] memory _agentVaultAddresses);
+```
+
+Returns:
+
+- `_agentVaultIds`: The list of registered agent vault IDs.
+- `_agentVaultAddresses`: The list of registered agent vault addresses.
+
+## Vaults
+
+### `getVaults`
+
+Returns the list of registered vaults (e.g., Firelight, Upshift) with their IDs, addresses, and types.
+
+```solidity
+function getVaults()
+    external view
+    returns (
+        uint256[] memory _vaultIds,
+        address[] memory _vaultAddresses,
+        uint8[] memory _vaultTypes
+    );
+```
+
+Returns:
+
+- `_vaultIds`: The list of registered vault IDs.
+- `_vaultAddresses`: The list of vault addresses.
+- `_vaultTypes`: The list of vault types (e.g., `1` = Firelight, `2` = Upshift).
+
+## Executor
+
+### `getExecutorInfo`
+
+Returns the executor address and fee.
+The executor is the service that calls [`reserveCollateral`](/smart-accounts/reference/IMasterAccountController#reservecollateral) and [`executeDepositAfterMinting`](/smart-accounts/reference/IMasterAccountController#executedepositafterminting) on behalf of users.
+
+```solidity
+function getExecutorInfo()
+    external view
+    returns (address payable _executor, uint256 _executorFee);
+```
+
+Returns:
+
+- `_executor`: The executor address.
+- `_executorFee`: The executor fee in wei.
+
+## XRPL Provider Wallets
+
+### `getXrplProviderWallets`
+
+Returns a list of XRPL operator wallet addresses to which users send payment transactions.
+
+```solidity
+function getXrplProviderWallets()
+    external view
+    returns (string[] memory);
+```
+
+## Payment Proofs
+
+### `getSourceId`
+
+Returns the source ID used to identify the XRPL chain for payment proof verification.
+
+```solidity
+function getSourceId()
+    external view
+    returns (bytes32);
+```
+
+### `getPaymentProofValidityDurationSeconds`
+
+Returns the maximum age (in seconds) of an XRPL payment proof for it to be accepted.
+
+```solidity
+function getPaymentProofValidityDurationSeconds()
+    external view
+    returns (uint256);
+```
+
+## Events
+
+### Instructions
+
+#### `CollateralReserved`
+
+Emitted when collateral is reserved for minting.
+
+```solidity
+event CollateralReserved(
+    address indexed personalAccount,
+    bytes32 indexed transactionId,
+    bytes32 indexed paymentReference,
+    string xrplOwner,
+    uint256 collateralReservationId,
+    address agentVault,
+    uint256 lots,
+    address executor,
+    uint256 executorFee
+);
+```
+
+#### `InstructionExecuted`
+
+Emitted when an instruction is executed.
+
+```solidity
+event InstructionExecuted(
+    address indexed personalAccount,
+    bytes32 indexed transactionId,
+    bytes32 indexed paymentReference,
+    string xrplOwner,
+    uint256 instructionId
+);
+```
+
+#### `FXrpRedeemed`
+
+Emitted when an FXRP redemption is performed.
+
+```solidity
+event FXrpRedeemed(
+    address indexed personalAccount,
+    uint256 lots,
+    uint256 amount,
+    address executor,
+    uint256 executorFee
+);
+```
+
+#### `FXrpTransferred`
+
+Emitted when FXRP is transferred from a personal account.
+
+```solidity
+event FXrpTransferred(
+    address indexed personalAccount,
+    address to,
+    uint256 amount
+);
+```
+
+#### `Approved`
+
+Emitted when a token approval is made for a vault.
+
+```solidity
+event Approved(
+    address indexed personalAccount,
+    address fxrp,
+    address vault,
+    uint256 amount
+);
+```
+
+#### `Deposited`
+
+Emitted when a deposit is made to a vault.
+
+```solidity
+event Deposited(
+    address indexed personalAccount,
+    address indexed vault,
+    uint256 amount,
+    uint256 shares
+);
+```
+
+#### `Redeemed`
+
+Emitted when a redemption is made from a vault.
+
+```solidity
+event Redeemed(
+    address indexed personalAccount,
+    address indexed vault,
+    uint256 shares,
+    uint256 amount
+);
+```
+
+#### `WithdrawalClaimed`
+
+Emitted when a withdrawal claim is completed.
+
+```solidity
+event WithdrawalClaimed(
+    address indexed personalAccount,
+    address indexed vault,
+    uint256 period,
+    uint256 amount
+);
+```
+
+#### `RedeemRequested`
+
+Emitted when a redeem request is made from a vault.
+
+```solidity
+event RedeemRequested(
+    address indexed personalAccount,
+    address indexed vault,
+    uint256 shares,
+    uint256 claimableEpoch,
+    uint256 year,
+    uint256 month,
+    uint256 day
+);
+```
+
+#### `Claimed`
+
+Emitted when a claim is made for a specific date.
+
+```solidity
+event Claimed(
+    address indexed personalAccount,
+    address indexed vault,
+    uint256 year,
+    uint256 month,
+    uint256 day,
+    uint256 shares,
+    uint256 amount
+);
+```
