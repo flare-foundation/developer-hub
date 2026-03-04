@@ -98,7 +98,7 @@ The function returns an array of XRPL addresses; these are all the registered op
 ```typescript
 export async function getOperatorXrplAddresses() {
   const result = await publicClient.readContract({
-    address: MASTER_ACCOUNT_CONTROLLER_ADDRESS,
+    address: await getMasterAccountControllerAddress(),
     abi: coston2.iMasterAccountControllerAbi,
     functionName: "getXrplProviderWallets",
     args: [],
@@ -107,12 +107,28 @@ export async function getOperatorXrplAddresses() {
 }
 ```
 
-Because the Flare smart accounts are still in development, the `MasterAccountController` contract has not yet been added to the `FlareContractRegistry` contract.
-That is the reason why the address of the `MasterAccountController` has been hardcoded in the example repository.
+We define a helper function for retrieving the address of the `MasterAccountController` contract.
 
 ```typescript
-export const MASTER_ACCOUNT_CONTROLLER_ADDRESS =
-  "0x32F662C63c1E24bB59B908249962F00B61C6638f";
+export async function getMasterAccountControllerAddress(): Promise<Address> {
+  return getContractAddressByName("MasterAccountController");
+}
+```
+
+    With the mainnet launch of the Flare smart accounts, the `MasterAccountController` has been added to the list of official Flare contracts.
+    Its address can be obtained from the `FlareContractRegistry` contract by calling its `getContractAddressByName` function.
+
+```typescript
+export async function getContractAddressByName(name: string) {
+  const contractAddress = await publicClient.readContract({
+    address: FLARE_CONTRACT_REGISTRY_ADDRESS,
+    abi: coston2.iFlareContractRegistryAbi,
+    functionName: "getContractAddressByName",
+    args: [name],
+  });
+
+  return contractAddress;
+}
 ```
 
 ## Personal account of an XRPL address
@@ -125,7 +141,7 @@ It calls the `getPersonalAccount` function of the `MasterAccountController` cont
 ```typescript
 export async function getPersonalAccountAddress(xrplAddress: string) {
   const personalAccountAddress = await publicClient.readContract({
-    address: MASTER_ACCOUNT_CONTROLLER_ADDRESS,
+    address: await getMasterAccountControllerAddress(),
     abi: coston2.iMasterAccountControllerAbi,
     functionName: "getPersonalAccount",
     args: [xrplAddress],
@@ -176,17 +192,6 @@ export async function getAssetManagerFXRPAddress(): Promise<Address> {
     await getContractAddressByName("AssetManagerFXRP");
   return assetManagerAddress;
 }
-
-export async function getContractAddressByName(name: string) {
-  const contractAddress = await publicClient.readContract({
-    address: FLARE_CONTRACT_REGISTRY_ADDRESS,
-    abi: coston2.iFlareContractRegistryAbi,
-    functionName: "getContractAddressByName",
-    args: [name],
-  });
-
-  return contractAddress;
-}
 ```
 
 ## Vaults and vault balances
@@ -215,7 +220,7 @@ export type GetVaultsReturnType = [bigint[], string[], number[]];
 
 export async function getVaults(): Promise<Vault[]> {
   const _vaults = (await publicClient.readContract({
-    address: MASTER_ACCOUNT_CONTROLLER_ADDRESS,
+    address: await getMasterAccountControllerAddress(),
     abi: coston2.iMasterAccountControllerAbi,
     functionName: "getVaults",
     args: [],
@@ -271,7 +276,7 @@ export type GetAgentVaultsReturnType = [bigint[], string[]];
 
 export async function getAgentVaults(): Promise<AgentVault[]> {
   const _vaults = await publicClient.readContract({
-    address: MASTER_ACCOUNT_CONTROLLER_ADDRESS,
+    address: await getMasterAccountControllerAddress(),
     abi: coston2.iMasterAccountControllerAbi,
     functionName: "getAgentVaults",
     args: [],

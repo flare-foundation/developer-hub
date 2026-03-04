@@ -40,8 +40,6 @@ The full code showcased in this guide is available on [GitHub](https://github.co
 
 ## Contracts
 
-{/* TODO:(Nik) fix contract addresses and links */}
-
 The first contract is a `Checkpoint` that counts how many times each user has called its `passCheckpoint` function.
 It is useless as anything other than an example.
 The first call of our custom instruction will be to call the `passCheckpoint` function of this contract, deploy at the address [`0xEE6D54382aA623f4D16e856193f5f8384E487002`](https://coston2-explorer.flare.network/address/0xEE6D54382aA623f4D16e856193f5f8384E487002?tab=contract).
@@ -212,8 +210,6 @@ const customInstructions = [
 
 ## Registering an instruction
 
-{/* TODO:(Nik) fix the code for this when the contract gets fixed to not revert if the instruction has already been registered */}
-
 Next, we need to register the custom instruction with the `MasterAccountController` contract.
 In order to read from the Flare chain, we first need to create a [Viem public client](https://viem.sh/docs/clients/public).
 
@@ -227,18 +223,6 @@ export const publicClient = createPublicClient({
 });
 ```
 
-{/* TODO:(Nik) Update once MasterAccountController gets added to the FlareContractRegistry */}
-
-We also need the address of the `MasterAccountController` contract.
-Since the Flare smart accounts are still in development, we cannot query the `FlareContractRegistry` for the `MasterAccountController` address.
-Instead, we need to hardcode it.
-
-```typescript
-export const MASTER_ACCOUNT_CONTROLLER_ADDRESS =
-  "0x32F662C63c1E24bB59B908249962F00B61C6638f";
-```
-
-{/* TODO:(Nik) Check that the following is still relevant - how the register function works */}
 To register a custom instruction, we call the `registerCustomInstruction` function on the `MasterAccountController` contract and provide the custom instruction array as the argument.
 As recommended by the [Viem documentation](https://viem.sh/docs/contract/writeContract#writecontract), we first use the `simulateContract` function to prepare the request.
 Then we call the `writeContract` Viem function, and actually register the instruction.
@@ -246,14 +230,22 @@ Then we call the `writeContract` Viem function, and actually register the instru
 If the instruction has already been registered, a `CustomInstructionAlreadyRegistered` event is emitted.
 Otherwise, the instruction is registered, and a `CustomInstructionRegistered` event is emitted instead.
 
+We also need the address of the `MasterAccountController` contract, which we can look up by name using `getContractAddressByName` from the Flare Contract Registry.
+
 ```typescript
+export type CustomInstruction = {
+  targetContract: Address;
+  value: bigint;
+  data: `0x${string}`;
+};
+
 export async function registerCustomInstruction(
   instructions: CustomInstruction[],
 ): Promise<`0x${string}`> {
   const { request } = await publicClient.simulateContract({
     account: account,
-    address: MASTER_ACCOUNT_CONTROLLER_ADDRESS,
-    abi: abi,
+    address: await getMasterAccountControllerAddress(),
+    abi: iCustomInstructionsFacetAbi,
     functionName: "registerCustomInstruction",
     args: [instructions],
   });
@@ -282,13 +274,13 @@ We need to replace the first two bytes with the following values:
 - 2nd byte: wallet identifier `walletId` described above
 
 ```typescript
-async function encodeCustomInstruction(
+export async function encodeCustomInstruction(
   instructions: CustomInstruction[],
   walletId: number,
 ) {
   const encodedInstruction = (await publicClient.readContract({
-    address: MASTER_ACCOUNT_CONTROLLER_ADDRESS,
-    abi: abi,
+    address: await getMasterAccountControllerAddress(),
+    abi: iCustomInstructionsFacetAbi,
     functionName: "encodeCustomInstruction",
     args: [instructions],
   })) as `0x${string}`;
@@ -347,7 +339,7 @@ export async function getInstructionFee(encodedInstruction: string) {
   console.log("instructionIdDecimal:", instructionIdDecimal, "\n");
 
   const requestFee = await publicClient.readContract({
-    address: MASTER_ACCOUNT_CONTROLLER_ADDRESS,
+    address: await getMasterAccountControllerAddress(),
     abi: coston2.iMasterAccountControllerAbi,
     functionName: "getInstructionFee",
     args: [instructionIdDecimal],
@@ -367,8 +359,6 @@ const xrplWallet = Wallet.fromSeed(process.env.XRPL_SEED!);
 
 ## Wait for instruction execution
 
-{/* TODO:(Nik) update ABI */}
-
 Lastly, we need to wait for the operator to bridge the instruction from XRPL to Flare, and for the instruction to be executed.
 Once it does, our personal account executes the instruction, and the `CustomInstructionExecuted` event is emitted by the `MasterAccountController` contract.
 We watch for such events with the [`watchContractEvent`](https://viem.sh/docs/contract/watchContractEvent#watchcontractevent) Viem function.
@@ -383,7 +373,7 @@ If the value is `false`, we wait for `10` seconds, then check again.
 Once the value has been found, we stop observing the contract and return the event.
 
 ```typescript
-async function waitForCustomInstructionExecutedEvent({
+export async function waitForCustomInstructionExecutedEvent({
   encodedInstruction,
   personalAccountAddress,
 }: {
@@ -396,7 +386,7 @@ async function waitForCustomInstructionExecutedEvent({
   let customInstructionExecutedEventFound = false;
 
   const unwatchCustomInstructionExecuted = publicClient.watchContractEvent({
-    address: MASTER_ACCOUNT_CONTROLLER_ADDRESS,
+    address: await getMasterAccountControllerAddress(),
     abi: iInstructionsFacetAbi,
     eventName: "CustomInstructionExecuted",
     onLogs: (logs) => {
@@ -432,6 +422,7 @@ The vehicle for bridging the instruction is the [Flare Data Connector](/fdc/over
 ## Full script
 
 The repository with the above example is available on [GitHub](https://github.com/flare-foundation/flare-smart-accounts-viem).
+In the example repository, certain functions are isolated into separate files in the `src/utils` directory.
 
 <CodeBlock language="typescript" title="src/custom-instructions.ts">
   {CustomInstructionsScript}
@@ -470,7 +461,7 @@ request: {
       type: 'function'
     }
   ],
-  address: '0x434936d47503353f06750Db1A444DBDC5F0AD37c',
+  address: '0x32F662C63c1E24bB59B908249962F00B61C6638f',
   args: [ [ [Object], [Object], [Object] ] ],
   dataSuffix: undefined,
   functionName: 'registerCustomInstruction',
@@ -508,7 +499,7 @@ CustomInstructionExecuted event: {
     callHash: '0x0000e54bf1b4e93c5306e08d919864ec111211c4fb36960261e8018da9959791',
     customInstruction: [ [Object], [Object], [Object] ]
   },
-  address: '0x434936d47503353f06750db1a444dbdc5f0ad37c',
+  address: '0x32f662c63c1e24bb59b908249962f00b61c6638f',
   topics: [
     '0x1c09418c54894f576841186935c5f666b3bedd66c29f3a03bcab4051fe2509f3',
     '0x000000000000000000000000fd2f0eb6b9fa4fe5bb1f7b26fee3c647ed103d9f',
