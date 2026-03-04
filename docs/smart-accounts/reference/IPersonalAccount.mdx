@@ -1,0 +1,243 @@
+---
+title: IPersonalAccount
+description: Flare Smart Accounts IPersonalAccount interface reference.
+keywords: [smart-accounts, xrpl, flare-network, solidity]
+sidebar_position: 2
+---
+
+Interface for the `PersonalAccount` contract — Flare account abstraction for an XRPL address, controller entirely by that address.
+
+Sourced from `IPersonalAccount.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-accounts/blob/main/contracts/userInterfaces/IPersonalAccount.sol).
+
+---
+
+## View Functions
+
+### `xrplOwner`
+
+Returns the XRPL owner address associated with this personal account.
+
+```solidity
+function xrplOwner() external view returns (string memory);
+```
+
+### `controllerAddress`
+
+Returns the `MasterAccountController` address that manages this personal account.
+
+```solidity
+function controllerAddress() external view returns (address);
+```
+
+### `implementation`
+
+Returns the implementation contract address for this personal account (used by the beacon proxy pattern).
+
+```solidity
+function implementation() external view returns (address);
+```
+
+## Events
+
+### `CollateralReserved`
+
+Emitted when collateral is reserved for minting FXRP.
+
+```solidity
+event CollateralReserved(
+    address agentVault,
+    uint256 lots,
+    address executor,
+    uint256 executorFee,
+    uint256 collateralReservationId
+);
+```
+
+Parameters:
+
+- `agentVault`: The agent vault address.
+- `lots`: The number of lots that will be minted.
+- `executor`: The executor address.
+- `executorFee`: The fee paid to the executor.
+- `collateralReservationId`: The ID of the collateral reservation.
+
+:::info
+This event does not include the necessary information to complete the minting process.
+When performing minting, the [`CollateralReserved`](/fassets/reference/IAssetManagerEvents#collateralreserved) event emitted by the `IAssetManager` contract should be observed instead.
+:::
+
+### `FXrpTransferred`
+
+Emitted when a transfer of FXRP is made from the personal account.
+
+```solidity
+event FXrpTransferred(
+    address to,
+    uint256 amount
+);
+```
+
+Parameters:
+
+- `to`: The recipient address.
+- `amount`: The amount of FXRP transferred.
+
+### `FXrpRedeemed`
+
+Emitted when a FXRP redemption is performed.
+
+```solidity
+event FXrpRedeemed(
+    uint256 lots,
+    uint256 amount,
+    address executor,
+    uint256 executorFee
+);
+```
+
+Parameters:
+
+- `lots`: The number of lots redeemed.
+- `amount`: The amount redeemed.
+- `executor`: The executor address.
+- `executorFee`: The fee paid to the executor.
+
+### `Approved`
+
+Emitted when a token approval is made for a vault.
+
+```solidity
+event Approved(
+    address fxrp,
+    address vault,
+    uint256 amount
+);
+```
+
+Parameters:
+
+- `fxrp`: The FXRP token address.
+- `vault`: The vault address.
+- `amount`: The approved amount.
+
+### `Deposited`
+
+Emitted when a deposit is made to a vault.
+
+```solidity
+event Deposited(
+    address indexed vault,
+    uint256 amount,
+    uint256 shares
+);
+```
+
+Parameters:
+
+- `vault`: The vault address.
+- `amount`: The amount deposited.
+- `shares`: The number of shares received.
+
+### `Redeemed`
+
+Emitted when a redeem is made from a vault.
+
+```solidity
+event Redeemed(
+    address indexed vault,
+    uint256 amount,
+    uint256 shares
+);
+```
+
+Parameters:
+
+- `vault`: The vault address.
+- `amount`: The amount redeemed.
+- `shares`: The number of shares burned.
+
+### `WithdrawalClaimed`
+
+Emitted when a withdrawal claim is made from a vault.
+
+```solidity
+event WithdrawalClaimed(
+    address indexed vault,
+    uint256 period,
+    uint256 amount
+);
+```
+
+Parameters:
+
+- `vault`: The vault address.
+- `period`: The period for which the claim is made.
+- `amount`: The amount claimed.
+
+### `RedeemRequested`
+
+Emitted when a redeem request is made from a vault.
+
+```solidity
+event RedeemRequested(
+    address indexed vault,
+    uint256 shares,
+    uint256 claimableEpoch,
+    uint256 year,
+    uint256 month,
+    uint256 day
+);
+```
+
+Parameters:
+
+- `vault`: The vault address.
+- `shares`: The number of shares to redeem.
+- `claimableEpoch`: The epoch when the claim becomes available.
+- `year`: The year of the claimable date.
+- `month`: The month of the claimable date.
+- `day`: The day of the claimable date.
+
+### `Claimed`
+
+Emitted when a claim is made for a specific date.
+
+```solidity
+event Claimed(
+    address indexed vault,
+    uint256 year,
+    uint256 month,
+    uint256 day,
+    uint256 shares,
+    uint256 amount
+);
+```
+
+Parameters:
+
+- `vault`: The vault address.
+- `year`: The year of the claim.
+- `month`: The month of the claim.
+- `day`: The day of the claim.
+- `shares`: The number of shares claimed.
+- `amount`: The amount claimed.
+
+### `SwapExecuted`
+
+Emitted when a token swap is executed.
+
+```solidity
+event SwapExecuted(
+    address indexed tokenIn,
+    address indexed tokenOut,
+    uint256 amountIn,
+    uint256 amountOut
+);
+```
+
+Parameters:
+
+- `tokenIn`: The input token address.
+- `tokenOut`: The output token address.
+- `amountIn`: The amount of input tokens.
+- `amountOut`: The amount of output tokens received.
