@@ -6,7 +6,7 @@ sidebar_position: 1
 ---
 
 Interface for the `MasterAccountController` contract, which manages personal accounts and executes XRPL instructions on Flare.
-Uses the [Diamond pattern](https://eips.ethereum.org/EIPS/eip-2535) to compose all functionality into a single deployed contract.
+It uses the [Diamond pattern](https://eips.ethereum.org/EIPS/eip-2535) to compose all functionality into a single deployed contract.
 
 Sourced from `IMasterAccountController.sol` and its facets on [GitHub](https://github.com/flare-foundation/flare-smart-accounts/tree/main/contracts/userInterfaces).
 
@@ -15,7 +15,8 @@ Sourced from `IMasterAccountController.sol` and its facets on [GitHub](https://g
 ### `getPersonalAccount`
 
 Returns the [`PersonalAccount`](/smart-accounts/reference/IPersonalAccount) contract address for a given XRPL owner.
-If the account has not been deployed yet, it returns the precomputed deterministic address.
+A `PersonalAccount` is deployed only once the first instruction has been sent from its owner XRPL address.
+If the account has not yet been deployed, it returns the precomputed deterministic address.
 
 ```solidity
 function getPersonalAccount(
@@ -37,7 +38,7 @@ Returns:
 
 ### `executeInstruction`
 
-Executes an XRPL instruction for a given XRPL address using an [Flare Data Connector](/fdc/overview) payment proof.
+Executes an XRPL instruction for a given XRPL address using a [Flare Data Connector](/fdc/overview) payment proof.
 
 ```solidity
 function executeInstruction(
@@ -125,7 +126,7 @@ function getTransactionIdForCollateralReservation(
 ### `getDefaultInstructionFee`
 
 Returns the default fee applied to instructions without a specific per-instruction fee configured.
-Denominated in the underlying asset's smallest unit (e.g., XRP drops).
+Denominated in the underlying asset's smallest unit (i.e., XRP drops).
 
 ```solidity
 function getDefaultInstructionFee()
@@ -135,7 +136,7 @@ function getDefaultInstructionFee()
 
 ### `getInstructionFee`
 
-Returns the fee for a specific instruction ID.
+Returns the fee for a specific instruction ID (first byte on an encoded instruction).
 
 ```solidity
 function getInstructionFee(
@@ -170,7 +171,7 @@ Returns:
 
 ### `getVaults`
 
-Returns the list of registered vaults (e.g., Firelight, Upshift) with their IDs, addresses, and types.
+Returns the list of registered vaults as arrays of their IDs, addresses, and types (Firelight or Upshift).
 
 ```solidity
 function getVaults()
@@ -186,7 +187,7 @@ Returns:
 
 - `_vaultIds`: The list of registered vault IDs.
 - `_vaultAddresses`: The list of vault addresses.
-- `_vaultTypes`: The list of vault types (e.g., `1` = Firelight, `2` = Upshift).
+- `_vaultTypes`: The list of vault types (`1` = Firelight, `2` = Upshift).
 
 ## Executor
 
