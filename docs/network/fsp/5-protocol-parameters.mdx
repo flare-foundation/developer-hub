@@ -1,0 +1,33 @@
+---
+title: Protocol Parameters
+description: Parameters of the sub-protocols comprising the FSP.
+keywords: [flare-network, ftso, fdc, configuration, system, client]
+---
+
+Each FSP sub-protocol (e.g. FTSOv2, FDC) has several associated parameters, which are detailed here, alongside the contract method (if applicable) to query them onchain.
+The values provided here correspond to Flare Mainnet.
+
+## FTSOv2
+
+### Block-Latency Feeds (Fast Updates)
+
+| Metric                                  | Value                   | Associated functions                                                                                                              |
+| --------------------------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| **Update size**                         | ≈200k (1.33%)           | -                                                                                                                                 |
+| **Mean updates per block**              | 1.5                     | [`FastUpdatesIncentiveManager.getExpectedSampleSize`](/ftso/solidity-reference/IFastUpdateIncentiveManager#getexpectedsamplesize) |
+| **Precision (step size)**               | ≈0.0122%                | [`FastUpdatesIncentiveManager.getPrecision`](/ftso/solidity-reference/IFastUpdateIncentiveManager#getprecision)                   |
+| **Range**                               | 0.0183%                 | [`FastUpdatesIncentiveManager.getRange`](/ftso/solidity-reference/IFastUpdateIncentiveManager#getrange)                           |
+| **Max range (max increment per block)** | 0.091% (5x)             | [`FastUpdatesIncentiveManager.rangeIncreaseLimit`](/ftso/solidity-reference/IFastUpdateIncentiveManager#rangeincreaselimit)       |
+| **Max increment per second**            | 0.054%                  | -                                                                                                                                 |
+| **Incentive duration**                  | 17 blocks (≈29 seconds) | [`FastUpdatesIncentiveManager.getIncentiveDuration`](/ftso/solidity-reference/IFastUpdateIncentiveManager#getincentiveduration)   |
+| **Incentive fee (2x)**                  | ≈36.6 FLR               | -                                                                                                                                 |
+
+### Anchor Feeds (Scaling)
+
+| Metric                   | Value         | Associated functions                                                                                                                           |
+| ------------------------ | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Update size**          | ≈200k (1.33%) | -                                                                                                                                              |
+| **Update duration**      | 90s           | -                                                                                                                                              |
+| **FTSO protocol ID**     | 100           | [`FtsoFeedPublisher.ftsoProtocolId`](/ftso/scaling/solidity-reference/IFtsoFeedPublisher#ftsoprotocolid)                                       |
+| **Feeds history size**   | 1000          | [`FtsoFeedPublisher.feedsHistorySize`](/ftso/scaling/solidity-reference/IFtsoFeedPublisher#feedshistorysize)                                   |
+| **Minimal reward offer** | 100000 FLR    | [`FtsoRewardOffersManager.minimalRewardsOfferValueWei`](/ftso/scaling/solidity-reference/IFtsoRewardOffersManager#minimalrewardsoffervaluewei) |
