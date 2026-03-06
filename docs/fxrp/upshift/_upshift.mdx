@@ -15,6 +15,41 @@ It inherits the transparency model of the [FAssets](/fassets/overview) system: m
 - **Instruction flow is auditable:** XRPL-triggered actions are executed on Flare via [Smart Accounts](/smart-accounts/overview) with [Flare Data Connector](/fdc/overview) backed verification and onchain execution.
   You can verify all smart account activity on the [Flare Systems Explorer](https://flare-systems-explorer.flare.network/smart-accounts).
 
+## How Upshift Vaults Work
+
+This diagram shows the flow of operations for a user interacting with an Upshift vault.
+
+```mermaid
+flowchart TB
+  UserFXRP[("User's FXRP")]
+  Deposit[deposit]
+  LP[("LP Tokens (vault shares)")]
+  UserFXRP --> Deposit --> LP
+
+  LP --> InstantRedeem[instantRedeem]
+  InstantRedeem -->|"instant redemption fee applies"| InstantFXRP[("FXRP to user")]
+
+  LP --> RequestRedeem[requestRedeem]
+  RequestRedeem --> Epoch["Withdrawal request(epoch: year, month, day)"]
+  Epoch --> Wait["Wait lag duration"]
+  Wait --> Claim[claim]
+  Claim -->|"withdrawal fee applies"| RequestedFXRP[("FXRP to user")]
+```
+
+The flow of operations for a user interacting with an Upshift vault is as follows:
+
+- **Deposit:** Transfer FXRP to the vault and receive the corresponding LP tokens (shares).
+  Yield accrues as share value increases.
+
+- **Instant redeem:** Burn the corresponding LP tokens and receive FXRP immediately via the `instantRedeem()` function.
+  In this case you need to pay the instant redemption fee.
+  Use this option when you need liquidity right away.
+
+- **Requested redeem:** Lock the LP tokens with `requestRedeem()` and create a withdrawal request for the current epoch.
+  After the lag duration, call `claim(year, month, day, receiver)` to receive FXRP.
+  Lower fee than instant redeem.
+  Use this option when you can wait.
+
 <DocCardList
   items={[
     {
