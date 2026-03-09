@@ -1,91 +1,140 @@
 version: 2
 updates:
-  # Base npm
+
+  # Base npm (Developer Hub)
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "weekly"
+
+    open-pull-requests-limit: 3
+    versioning-strategy: increase-if-necessary
+
+    allow:
+      - dependency-type: "direct"
+
     groups:
       base-npm:
         patterns: ["*"]
+
     ignore:
       - dependency-name: "*"
         update-types:
           - "version-update:semver-minor"
           - "version-update:semver-patch"
+
+
   # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+
+    open-pull-requests-limit: 3
+
     groups:
       actions:
         patterns: ["*"]
+
     ignore:
       - dependency-name: "*"
         update-types:
           - "version-update:semver-minor"
           - "version-update:semver-patch"
+
+
   # Automations (uv)
   - package-ecosystem: "uv"
     directory: "/automations/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+
+    open-pull-requests-limit: 2
+
     groups:
       automations-uv:
         patterns: ["*"]
+
     ignore:
       - dependency-name: "*"
         update-types:
           - "version-update:semver-minor"
           - "version-update:semver-patch"
-  # Examples (python / uv)
+
+
+  # Examples (Python / uv)
   - package-ecosystem: "uv"
     directory: "/examples/developer-hub-python/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+
+    open-pull-requests-limit: 2
+
     groups:
       examples-uv:
         patterns: ["*"]
+
     ignore:
       - dependency-name: "*"
         update-types:
           - "version-update:semver-minor"
           - "version-update:semver-patch"
-  # Examples (js / npm)
+
+
+  # Examples (JavaScript / npm)
   - package-ecosystem: "npm"
     directory: "/examples/developer-hub-javascript/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+
+    open-pull-requests-limit: 2
+    versioning-strategy: increase-if-necessary
+
+    allow:
+      - dependency-type: "direct"
+
     groups:
       examples-js:
         patterns: ["*"]
+
     ignore:
       - dependency-name: "*"
         update-types:
           - "version-update:semver-minor"
           - "version-update:semver-patch"
-  # Examples (go / gomod)
+
+
+  # Examples (Go / gomod)
   - package-ecosystem: "gomod"
     directory: "/examples/developer-hub-go/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+
+    open-pull-requests-limit: 2
+
     groups:
       examples-go:
         patterns: ["*"]
+
     ignore:
       - dependency-name: "*"
         update-types:
           - "version-update:semver-minor"
           - "version-update:semver-patch"
-  # Examples (rust / cargo)
+
+
+  # Examples (Rust / cargo)
   - package-ecosystem: "cargo"
     directory: "/examples/developer-hub-rust/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+
+    open-pull-requests-limit: 2
+
     groups:
       examples-rust:
         patterns: ["*"]
+
     ignore:
       - dependency-name: "*"
         update-types:
