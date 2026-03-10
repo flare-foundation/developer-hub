@@ -1,0 +1,110 @@
+---
+sidebar_position: 6
+slug: flare-lending-ts
+title: Flare Lending
+authors: [nikerzetic]
+description: Depositing FXRP as collateral and borrowing against it using Flare smart accounts.
+tags: [quickstart, ethereum, flare-smart-accounts]
+keywords:
+  [
+    flare-fdc,
+    ethereum,
+    flare-smart-accounts,
+    evm,
+    flare-network,
+    account-abstraction,
+    lending,
+    fxrp,
+    mpt,
+  ]
+unlisted: false
+---
+
+import ThemedImage from "@theme/ThemedImage";
+import useBaseUrl from "@docusaurus/useBaseUrl";
+import CodeBlock from "@theme/CodeBlock";
+import FlareLendingScript from "!!raw-loader!/examples/developer-hub-javascript/smart-accounts/deposit-fxrp-borrow-mpt.ts";
+import IssueMintMptScript from "!!raw-loader!/examples/developer-hub-javascript/smart-accounts/issue-mint-mpt.ts";
+
+The diagram bellow showcases an example Flare lending workflow.
+A user requests a lone from the lending contract, sending FXRP as backing.
+They are issued a lending token (for example, USDT0), which they bridge back to XRPL.
+In this guide, we are going to look at how this workflow can be performed entirely through smart accounts' custom instructions.
+
+<ThemedImage
+  alt="Flare lending workflow"
+  sources={{
+    light: useBaseUrl("img/docs/smart-accounts/fsa_flare_lending_light.svg"),
+    dark: useBaseUrl("img/docs/smart-accounts/fsa_flare_lending_dark.svg"),
+  }}
+/>
+
+The code for this example is available in the [flare-smart-accounts-viem repository](https://github.com/flare-foundation/flare-smart-accounts-viem).
+The smart contract code is available in the [flare-hardhat-starter](https://github.com/flare-foundation/flare-hardhat-starter).
+
+:::note
+The above diagram indicates an additional `Verify credential` step.
+This will be omitted in the current guide, but it will be covered in a future one that will build upon this one.
+:::
+
+:::note
+The code in this guide is set up for the Coston2 Flare testnet and the XRPL testnet.
+Despite that, we will refer to the network as Flare and its currency as FLR instead of Coston2 and C2FLR, and the test XRP as XRP.
+We will also refer to the lending token as USDT0.
+:::
+
+## Prerequisites
+
+- Sufficient `FXRP` balance to deposit into the vault.
+- [Flare smart accounts Viem repository](https://github.com/flare-foundation/flare-smart-accounts-viem)
+- [Flare Network Periphery Contracts](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts)
+- [Flare Wagmi periphery package](https://www.npmjs.com/package/@flarenetwork/flare-wagmi-periphery-package)
+- Understanding of [Flare smart accounts](/smart-accounts/overview)
+- Understanding of [custom instructions](/smart-accounts/custom-instruction)
+- Understanding of [Viem custom instruction guide](/smart-accounts/guides/typescript-viem/custom-instruction-ts)
+- Understanding of [state lookup](/smart-accounts/guides/typescript-viem/state-lookup-ts)
+- Understanding of [FAssets](/fassets/overview)
+
+## Workflow
+
+Let us begin by taking a look at the Flare lending workflow in more detail.
+
+1. XRPL user sends a custom instruction for depositing collateral and taking a loan.
+   The instruction includes the following five custom calls:
+   1. Approve the transfer of the collateral amount of FXRP from the XRPL user's personal account to the lending contract.
+   2. Deposit the collateral to the lending protocol contract.
+   3. Take a loan.
+   4. Approve the transfer of the USDT0 to the bridge contract.
+   5. Initiate bridge of USDT0 to XRPL.
+2. The operator server bridges the instruction to the Flare chain, using the Flare data connector (FDC).
+3. The `MasterAccountController` contract delegates the custom instruction to the XRPL user's `PersonalAccount` contract.
+4. XRPL user's `PersonalAccount` deposits collateral to the lending protocol contract and takes a loan.
+5. The lending protocol transfers USDT0 to the XRPL user's `PersonalAccount`.
+6. XRPL user's `PersonalAccount` deposits USDT0 to the bridge contract.
+7. The USDT0 core vault on XRPL transfers USDT0 to the XRPL user's account.
+
+:::info
+In the following example, a single script is responsible for performing the entire process.
+In an actual build:
+- an XRPL wallet would prepare and send the custom instruction for the user and
+- a separate service would bridge USDT0 to XRPL.
+
+The latter could be a server run by an entity or, more securely, a TEE extension.
+:::
+
+## Smart contracts
+
+## Setup
+
+Some additional setup is required in order for the example code to work.
+A multipurpose token (MPT), representing USDT0 on XRPL, must be created and a supply of "capital" needs to be sent to the core vault.
+
+<CodeBlock language="typescript" title="src/issue-mint-mpt.ts">
+  {IssueMintMptScript}
+</CodeBlock>
+
+## Full Script
+
+<CodeBlock language="typescript" title="src/deposit-fxrp-borrow-mpt.ts">
+  {FlareLendingScript}
+</CodeBlock>
