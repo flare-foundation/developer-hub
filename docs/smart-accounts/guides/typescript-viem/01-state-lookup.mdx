@@ -23,6 +23,7 @@ import YouTubeEmbed from "@site/src/components/YouTubeEmbed";
 In this guide, you will learn how to get the following using the Viem TypeScript library:
 
 - the Flare address that corresponds to an XRPL account
+- whether a Flare address is a smart account
 - the total value of FXRP that belongs to a personal account tied to an XRPL address
 - a list of all the registered vaults
 - the total value of FXRP of a personal account, in each of the registered vaults
@@ -128,6 +129,36 @@ export async function getContractAddressByName(name: string) {
   });
 
   return contractAddress;
+}
+```
+
+## Checking if a Flare address is a smart account
+
+A Flare address is a smart account (PersonalAccount) if calling the `xrplOwner()` function on it returns an XRPL account using the [`IPersonalAccount`](/smart-accounts/reference/IPersonalAccount) interface.
+The `PersonalAccount` contract exposes the `xrplOwner()` function — the XRPL address that controls it.
+If the call succeeds and returns a non-empty and valid XRPL address, the address is a smart account.
+
+```typescript
+export async function getXrplAccountForAddress(
+  evmAddress: Address,
+): Promise<string | null> {
+  try {
+    const xrplOwner = await publicClient.readContract({
+      address: evmAddress,
+      // Use the IPersonalAccount interface
+      abi: coston2.iPersonalAccountAbi,
+      functionName: "xrplOwner",
+      args: [],
+    });
+    return xrplOwner && xrplOwner.length > 0 ? xrplOwner : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function isSmartAccount(evmAddress: Address): Promise<boolean> {
+  const xrplAccount = await getXrplAccountForAddress(evmAddress);
+  return xrplAccount !== null;
 }
 ```
 
