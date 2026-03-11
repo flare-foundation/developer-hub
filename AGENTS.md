@@ -47,7 +47,7 @@ When explaining Flare, lead with this idea:
 
 ### Smart Accounts
 
-- Smart Accounts provide account abstraction features that simplify user interaction with Flare. 
+- Smart Accounts provide account abstraction features that simplify user interaction with Flare.
 - They are especially useful for XRPL users interacting with Flare-based applications.
 
 ## Supported Networks
