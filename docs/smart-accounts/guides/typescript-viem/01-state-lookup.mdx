@@ -141,24 +141,21 @@ If the call succeeds and returns a non-empty and valid XRPL address, the address
 ```typescript
 export async function getXrplAccountForAddress(
   evmAddress: Address,
-): Promise<string | null> {
-  try {
-    const xrplOwner = await publicClient.readContract({
-      address: evmAddress,
-      // Use the IPersonalAccount interface
-      abi: coston2.iPersonalAccountAbi,
-      functionName: "xrplOwner",
-      args: [],
-    });
-    return xrplOwner && xrplOwner.length > 0 ? xrplOwner : null;
-  } catch {
-    return null;
-  }
+): Promise<`0x${string}`> {
+  const xrplOwner = await publicClient.readContract({
+    address: evmAddress,
+    abi: coston2.iPersonalAccountAbi,
+    functionName: "xrplOwner",
+    args: [],
+  });
+  return xrplOwner && xrplOwner.length > 0
+    ? evmAddress
+    : "0x0000000000000000000000000000000000000000";
 }
 
 export async function isSmartAccount(evmAddress: Address): Promise<boolean> {
-  const xrplAccount = await getXrplAccountForAddress(evmAddress);
-  return xrplAccount !== null;
+  const smartAccountAddress = await getXrplAccountForAddress(evmAddress);
+  return smartAccountAddress !== "0x0000000000000000000000000000000000000000";
 }
 ```
 
