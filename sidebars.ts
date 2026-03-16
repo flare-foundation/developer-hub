@@ -224,6 +224,13 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: "category",
+      label: "FCC",
+      collapsed: true,
+      link: { type: "doc", id: "fcc/overview" },
+      items: [],
+    },
+    {
+      type: "category",
       label: "FAssets",
       collapsed: true,
       link: { type: "doc", id: "fassets/overview" },
