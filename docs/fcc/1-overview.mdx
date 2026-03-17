@@ -87,6 +87,23 @@ The system comprises three core components:
    Upon successful verification, the TEE machine executes the corresponding computation and signs the result with a relevant private key.
    Results include signed payment transactions for external blockchains, signed attestations, or other computation outputs usable within smart contracts.
 
+## Flare Compute Extensions
+
+Applications within FCC are organized as **Flare Compute Extensions (FCE)**.
+Each compute extension represents an isolated set of functionalities running on TEE machines, extending the concept of smart contracts into TEE environments.
+A compute extension is defined by:
+
+- **Supported code versions**: Each code version is a hash of the Docker image running in the confidential VM and must be reproducible.
+- **Registered TEE machines**: Machines running supported code versions that have been registered with an onchain attestation proof.
+
+The FCC infrastructure provides the following for all compute extensions:
+
+- **Identity**: Each TEE machine has a unique identity (TEE id) defined by a private key generated at boot.
+- **Onchain Registration**: TEE machines register within a compute extension by proving they run a supported code version, verified through machine attestation and the FDC.
+- **Result Verification**: Data and computation results signed by a registered TEE identity can be trusted and verified onchain.
+- **Instruction Relaying**: Function calls on TEE machines are triggered through instruction events on Flare's smart contracts, securely relayed by data providers.
+- **Private Key Management**: Compute extensions support secure key generation, backup, and restoration across TEE machines.
+
 ### Deployment
 
 ```mermaid
