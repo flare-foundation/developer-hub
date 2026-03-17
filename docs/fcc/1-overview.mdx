@@ -28,12 +28,12 @@ It also delivers two built-in system applications: **Protocol Managed Wallets (P
 
 ## Key Features
 
-- **Secure Offchain Computation**: TEE machines run verifiable code in hardware-isolated environments, ensuring computation integrity even if the machine operator is untrusted.
-- **Cross-Chain Transaction Signing**: Protocol Managed Wallets enable programmable assembly and signing of transactions on external blockchains (XRPL, BTC) through smart contract calls on Flare.
-- **Fast Data Attestation**: A new TEE-based FDC enables rapid attestation of external data, where TEE machine signatures serve as proof of data provider consensus.
-- **Extensible Architecture**: Developers can build custom Flare Compute Extensions that run arbitrary computations within TEE machines, with results verifiable onchain.
-- **Decentralized Consensus**: Instructions are relayed to TEE machines only after reaching a 50%+ signature weight from Flare's data providers, leveraging the same [signing policy](/network/fsp) used across the Flare Systems Protocol.
-- **Private Key Management**: TEE machines securely generate, store, back up, and restore private keys, enabling multi-signature wallet operations across blockchains.
+- **Secure Offchain Computation:** TEE machines run verifiable code in hardware-isolated environments, ensuring computation integrity even if the machine operator is untrusted.
+- **Cross-Chain Transaction Signing:** Protocol Managed Wallets enable programmable assembly and signing of transactions on external blockchains (XRPL, BTC) through smart contract calls on Flare.
+- **Fast Data Attestation:** A new TEE-based FDC enables rapid attestation of external data, where TEE machine signatures serve as proof of data provider consensus.
+- **Extensible Architecture:** Developers can build custom Flare Compute Extensions that run arbitrary computations within TEE machines, with results verifiable onchain.
+- **Decentralized Consensus:** Instructions are relayed to TEE machines only after reaching a 50%+ signature weight from Flare's data providers, leveraging the same [signing policy](/network/fsp) used across the Flare Systems Protocol.
+- **Private Key Management:** TEE machines securely generate, store, back up, and restore private keys, enabling multi-signature wallet operations across blockchains.
 
 :::danger
 Although the Flare confidential compute is in the final stages of development, it is not yet publicly available.
@@ -46,9 +46,20 @@ Stay tuned for that and the upcoming guides.
 graph LR
 
     subgraph FCCSystem["FCC System"]
-        FC["<b>FCC Contracts</b> <p>Extensions Registration & attestation Instruction emission Private key administration</p>"]
-        DP["<b>Data Providers & Cosigners</b> <p>Instruction relaying Instruction augmentation Data connector verification</p>"]
-        TEE["<b>TEE Machines</b> <p>Identity Instruction verification Private key management Custom logic per extension</p>"]
+        FC["<b>FCC Contracts</b>
+        Extensions
+        Registration & attestation
+        Instruction emission
+        Private key administration"]
+        DP["<b>Data Providers & Cosigners</b>
+        Instruction relaying
+        Instruction augmentation 
+        FDC verification"]
+        TEE["<b>TEE Machines</b> 
+        Identity 
+        Instruction verification 
+        Private key management 
+        Custom logic per extension"]
     end
 
     Users["<b>Users</b> <p>Smart contracts Direct users</p>"] --> FC
@@ -102,13 +113,30 @@ graph TB
 
 Each TEE deployment consists of two main components:
 
-- **TEE Machine**: Runs inside a confidential virtual machine and is not publicly accessible.
+- **TEE Machine:** Runs inside a confidential virtual machine and is not publicly accessible.
   It sits behind a firewall and has a single configuration endpoint used by the owner.
   The TEE machine pulls actions from the proxy at its own pace, processes them, and pushes results back.
 
-- **TEE Proxy**: A publicly accessible server that acts as the interface between the outside world and the TEE machine.
+- **TEE Proxy:** A publicly accessible server that acts as the interface between the outside world and the TEE machine.
   It receives signed instructions from data providers, manages action queues, stores results, and serves them to external users.
   The proxy also monitors the Flare C-chain for signing policy updates.
+
+## Flare Confidential Compute Extensions
+
+Applications within FCC are organized as **Flare Compute Extensions (FCE)**.
+Each compute extension represents an isolated set of functionalities running on TEE machines, extending the concept of smart contracts into TEE environments.
+A compute extension is defined by:
+
+- **Supported code versions:** Each code version is a hash of the Docker image running in the confidential VM and must be reproducible.
+- **Registered TEE machines:** Machines running supported code versions that have been registered with an onchain attestation proof.
+
+The FCC infrastructure provides the following for all compute extensions:
+
+- **Identity:** Each TEE machine has a unique identity (TEE id) defined by a private key generated at boot.
+- **Onchain Registration:** TEE machines register within a compute extension by proving they run a supported code version, verified through machine attestation and the FDC.
+- **Result Verification:** Data and computation results signed by a registered TEE identity can be trusted and verified onchain.
+- **Instruction Relaying:** Function calls on TEE machines are triggered through instruction events on Flare's smart contracts, securely relayed by data providers.
+- **Private Key Management:** Compute extensions support secure key generation, backup, and restoration across TEE machines.
 
 ## System Applications
 
@@ -119,11 +147,11 @@ This introduces blockchain abstraction and external execution capabilities on Fl
 
 Key capabilities:
 
-- **Multisig Operations**: Wallets represent sets of private keys across multiple TEE machines, acting as signers on k-of-n native multisig accounts on external blockchains (XRPL, BTC).
-- **Nonce Management**: Each payment instruction is issued with a unique nonce.
+- **Multisig Operations:** Wallets represent sets of private keys across multiple TEE machines, acting as signers on k-of-n native multisig accounts on external blockchains (XRPL, BTC), where any k of the n keys are sufficient to authorize a transaction.
+- **Nonce Management:** Each payment instruction is issued with a unique nonce.
   On UTXO blockchains, nonces are emulated through transaction chaining.
-- **Reissuance and Nullification**: Transactions can be reissued with different fees, or nullified by consuming the nonce with a minimal-fee transaction.
-- **Execution Proofs**: FDC attestation proofs verify whether a payment was executed as expected, enabling protocols to automatically mitigate failed payments.
+- **Reissuance and Nullification:** Transactions can be reissued with different fees, or nullified by consuming the nonce with a minimal-fee transaction.
+- **Execution Proofs:** FDC attestation proofs verify whether a payment was executed as expected, enabling protocols to automatically mitigate failed payments.
 
 ### Flare Data Connector (FDC)
 
@@ -133,29 +161,3 @@ Data providers parse these requests, perform attestations using their existing d
 Each TEE machine that receives a threshold weight of signatures from data providers and cosigners signs the attestation response with its TEE identity key.
 Since TEE machine identities are verified on-chain during registration, their signatures serve as proof of data provider consensus usable within smart contracts.
 
-## Flare Compute Extensions
-
-Applications within FCC are organized as **Flare Compute Extensions (FCE)**.
-Each compute extension represents an isolated set of functionalities running on TEE machines, extending the concept of smart contracts into TEE environments.
-A compute extension is defined by:
-
-- **Supported code versions**: Each code version is a hash of the Docker image running in the confidential VM and must be reproducible.
-- **Registered TEE machines**: Machines running supported code versions that have been registered with an onchain attestation proof.
-
-The FCC infrastructure provides the following for all compute extensions:
-
-- **Identity**: Each TEE machine has a unique identity (TEE id) defined by a private key generated at boot.
-- **Onchain Registration**: TEE machines register within a compute extension by proving they run a supported code version, verified through machine attestation and the FDC.
-- **Result Verification**: Data and computation results signed by a registered TEE identity can be trusted and verified onchain.
-- **Instruction Relaying**: Function calls on TEE machines are triggered through instruction events on Flare's smart contracts, securely relayed by data providers.
-- **Private Key Management**: Compute extensions support secure key generation, backup, and restoration across TEE machines.
-
-### Building Custom Extensions
-
-The **Flare Confidential Compute SDK** provides a Golang framework and deployment guidelines for building custom compute extensions.
-Using the SDK, developers can focus on implementing specific functionalities while the framework handles:
-
-- Registration and attestation of TEE machines.
-- Secure instruction relay from the Flare blockchain.
-- Verification and use of TEE machine results on-chain.
-- Private key management.
