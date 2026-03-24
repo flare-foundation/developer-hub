@@ -7,10 +7,17 @@ let cachedBaseUrl = null;
 
 export default {
   async fetch(request, env) {
+    const url = new URL(request.url);
+
+    if (!url.pathname.startsWith("/mcp")) {
+      return new Response("Not found", { status: 404 });
+    }
+
     const baseUrl = env?.DOCS_BASE_URL ?? "https://dev.flare.network/";
 
     if (!cachedHandler || cachedBaseUrl !== baseUrl) {
       cachedBaseUrl = baseUrl;
+
       cachedHandler = createCloudflareHandler({
         docs,
         searchIndexData,
@@ -20,6 +27,11 @@ export default {
       });
     }
 
-    return cachedHandler(request);
+    const newRequest = new Request(
+      request.url.replace("/mcp", "") || "/",
+      request,
+    );
+
+    return cachedHandler(newRequest);
   },
 };
