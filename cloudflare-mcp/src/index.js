@@ -27,10 +27,49 @@ export default {
       });
     }
 
-    const newRequest = new Request(
-      request.url.replace("/mcp", "") || "/",
-      request,
-    );
+    const newUrl = request.url.replace("/mcp", "") || "/";
+    let newRequest = request;
+
+    if (request.method === "POST") {
+      try {
+        const body = await request.json();
+
+        const normalizeUrl = (url) => {
+          let normalized = url;
+          try {
+            normalized = new URL(url).href;
+          } catch {
+            // Already a relative path; leave as-is.
+          }
+          return normalized.replace(/\/+$/, "");
+        };
+
+        // Top-level url field (e.g. some direct requests)
+        if (body?.url && typeof body.url === "string") {
+          body.url = normalizeUrl(body.url);
+        }
+
+        // Nested url inside tools/call → docs_fetch arguments
+        if (
+          body?.method === "tools/call" &&
+          body?.params?.arguments?.url &&
+          typeof body.params.arguments.url === "string"
+        ) {
+          body.params.arguments.url = normalizeUrl(body.params.arguments.url);
+        }
+
+        newRequest = new Request(newUrl, {
+          method: "POST",
+          headers: request.headers,
+          body: JSON.stringify(body),
+        });
+      } catch {
+        // Non-JSON payloads should continue to pass through unchanged.
+        newRequest = new Request(newUrl, request);
+      }
+    } else {
+      newRequest = new Request(newUrl, request);
+    }
 
     return cachedHandler(newRequest);
   },
