@@ -359,6 +359,15 @@ const config: Config = {
         ],
       },
     ],
+    [
+      "docusaurus-plugin-mcp-server",
+      {
+        server: {
+          name: "flare-devhub",
+          version: "1.0.0",
+        },
+      },
+    ],
   ],
   scripts: [
     // Defer cookie script loading until after page load
