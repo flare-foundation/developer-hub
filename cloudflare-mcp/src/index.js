@@ -8,13 +8,9 @@ import { select } from "hast-util-select";
 import { toString } from "hast-util-to-string";
 import lunr from "lunr";
 import mcpDocs from "../../build/mcp/docs.json" with { type: "json" };
-import mcpSearchIndexData from "../../build/mcp/search-index.json" with {
-  type: "json",
-};
+import mcpSearchIndexData from "../../build/mcp/search-index.json" with { type: "json" };
 import mcpManifest from "../../build/mcp/manifest.json" with { type: "json" };
-import siteSearchIndexData from "../../build/search-index.json" with {
-  type: "json",
-};
+import siteSearchIndexData from "../../build/search-index.json" with { type: "json" };
 
 const CONTENT_SELECTORS = ["article", "main", ".main-wrapper", '[role="main"]'];
 
@@ -74,7 +70,11 @@ function makeTitle(doc) {
 }
 
 function makeSnippet(doc) {
-  if (typeof doc.t === "string" && typeof doc.s === "string" && doc.s !== doc.t) {
+  if (
+    typeof doc.t === "string" &&
+    typeof doc.s === "string" &&
+    doc.s !== doc.t
+  ) {
     return doc.t;
   }
   if (typeof doc.t === "string" && doc.t.trim()) return doc.t;
@@ -179,7 +179,8 @@ function normalizeToolUrl(value, docsBaseUrl) {
     const parsed = new URL(value);
     const docsBase = new URL(docsBaseUrl);
     const isDocsBase =
-      parsed.origin === docsBase.origin && parsed.pathname === docsBase.pathname;
+      parsed.origin === docsBase.origin &&
+      parsed.pathname === docsBase.pathname;
 
     if (!isDocsBase && parsed.pathname.length > 1) {
       parsed.pathname = parsed.pathname.replace(/\/+$/, "");
