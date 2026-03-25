@@ -264,7 +264,7 @@ const config: Config = {
       "docusaurus-plugin-copy-page-button",
       {
         mcpServer: {
-          name: "flare-devhub",
+          name: "Flare DevHub MCP Server",
           url: "https://dev.flare.network/mcp",
         },
       },
@@ -371,7 +371,7 @@ const config: Config = {
       "docusaurus-plugin-mcp-server",
       {
         server: {
-          name: "flare-devhub",
+          name: "Flare DevHub MCP Server",
           version: "1.0.0",
         },
       },
