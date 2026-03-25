@@ -260,7 +260,15 @@ const config: Config = {
   ],
   plugins: [
     require.resolve("./webpack.config.js"),
-    "docusaurus-plugin-copy-page-button",
+    [
+      "docusaurus-plugin-copy-page-button",
+      {
+        mcpServer: {
+          name: "flare-devhub",
+          url: "https://dev.flare.network/mcp",
+        },
+      },
+    ],
     [
       "docusaurus-plugin-llms",
       {
