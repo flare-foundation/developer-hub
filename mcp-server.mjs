@@ -1,26 +1,50 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
+import http from "http";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import lunr from "lunr";
 import { McpDocsServer } from "docusaurus-plugin-mcp-server";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
 import { unified } from "unified";
 import rehypeParse from "rehype-parse";
 import { select } from "hast-util-select";
 import { toString } from "hast-util-to-string";
-import lunr from "lunr";
-import mcpDocs from "../../build/mcp/docs.json" with { type: "json" };
-import mcpSearchIndexData from "../../build/mcp/search-index.json" with {
-  type: "json",
-};
-import mcpManifest from "../../build/mcp/manifest.json" with { type: "json" };
-import siteSearchIndexData from "../../build/search-index.json" with {
-  type: "json",
-};
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+const SERVER_NAME = "flare-devhub";
+const SERVER_VERSION = "1.0.0";
+const DOCS_BASE_URL = "https://dev.flare.network";
+
+const BUILD_DIR = path.join(__dirname, "build");
+const MCP_DOCS_PATH = path.join(BUILD_DIR, "mcp/docs.json");
+const MCP_INDEX_PATH = path.join(BUILD_DIR, "mcp/search-index.json");
+const MCP_MANIFEST_PATH = path.join(BUILD_DIR, "mcp/manifest.json");
+const SITE_SEARCH_INDEX_PATH = path.join(BUILD_DIR, "search-index.json");
 
 const CONTENT_SELECTORS = ["article", "main", ".main-wrapper", '[role="main"]'];
 
-let cachedServerKey = null;
-let cachedServerMode = null;
-let cachedHandler = null;
+function parseRequestBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = "";
+
+    req.on("data", (chunk) => {
+      body += chunk;
+    });
+
+    req.on("end", () => {
+      try {
+        resolve(body ? JSON.parse(body) : undefined);
+      } catch {
+        reject(new Error("Invalid JSON in request body"));
+      }
+    });
+
+    req.on("error", reject);
+  });
+}
 
 function extractPageTextAsMarkdown(html) {
   const tree = unified().use(rehypeParse).parse(html);
@@ -47,19 +71,14 @@ function extractPageTextAsMarkdown(html) {
   return text ? `# ${title}\n\n${text}` : `# ${title}`;
 }
 
-function getDocsBaseUrl(env) {
-  const value = env?.DOCS_BASE_URL ?? "https://dev.flare.network/";
-  return new URL(value).toString();
+function normalizeSearchText(value) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "");
 }
 
 function joinUrl(baseUrl, route, hash = "") {
   const base = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
   const pathname = route.startsWith("/") ? route : `/${route}`;
   return `${base}${pathname}${hash}`;
-}
-
-function normalizeSearchText(value) {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, "");
 }
 
 function toHeadingText(hash) {
@@ -74,7 +93,11 @@ function makeTitle(doc) {
 }
 
 function makeSnippet(doc) {
-  if (typeof doc.t === "string" && typeof doc.s === "string" && doc.s !== doc.t) {
+  if (
+    typeof doc.t === "string" &&
+    typeof doc.s === "string" &&
+    doc.s !== doc.t
+  ) {
     return doc.t;
   }
   if (typeof doc.t === "string" && doc.t.trim()) return doc.t;
@@ -118,14 +141,48 @@ function formatSearchResults(results) {
   return lines.join("\n");
 }
 
-function buildSiteSearchIndex() {
-  return siteSearchIndexData.map((batch) => ({
+function loadSiteSearchIndex() {
+  if (!fs.existsSync(SITE_SEARCH_INDEX_PATH)) return null;
+
+  const raw = fs.readFileSync(SITE_SEARCH_INDEX_PATH, "utf8");
+  const data = JSON.parse(raw);
+
+  return data.map((batch) => ({
     documents: batch.documents,
     index: lunr.Index.load(batch.index),
   }));
 }
 
-function searchSiteIndex(searchIndex, docsBaseUrl, query, limit = 5) {
+function resolveLocalHtmlPath(url) {
+  let parsedUrl;
+
+  try {
+    parsedUrl = new URL(url);
+  } catch {
+    return null;
+  }
+
+  if (parsedUrl.origin !== new URL(DOCS_BASE_URL).origin) return null;
+
+  const pathname = decodeURIComponent(parsedUrl.pathname);
+  const candidates = [];
+
+  if (pathname === "/") {
+    candidates.push(path.join(BUILD_DIR, "index.html"));
+  } else {
+    const relativePath = pathname.replace(/^\/+/, "");
+    if (relativePath.endsWith(".html")) {
+      candidates.push(path.join(BUILD_DIR, relativePath));
+    } else {
+      candidates.push(path.join(BUILD_DIR, `${relativePath}.html`));
+      candidates.push(path.join(BUILD_DIR, relativePath, "index.html"));
+    }
+  }
+
+  return candidates.find((candidate) => fs.existsSync(candidate)) ?? null;
+}
+
+function searchSiteIndex(searchIndex, query, limit = 5) {
   const seen = new Map();
 
   for (const batch of searchIndex) {
@@ -138,7 +195,7 @@ function searchSiteIndex(searchIndex, docsBaseUrl, query, limit = 5) {
       if (!doc || typeof doc.u !== "string") continue;
 
       const hash = typeof doc.h === "string" ? doc.h : "";
-      const url = joinUrl(docsBaseUrl, doc.u, hash);
+      const url = joinUrl(DOCS_BASE_URL, doc.u, hash);
       const heading = toHeadingText(hash);
 
       const next = {
@@ -162,43 +219,26 @@ function searchSiteIndex(searchIndex, docsBaseUrl, query, limit = 5) {
 }
 
 function hasUsableMcpArtifacts() {
-  const manifestDocCount = mcpManifest?.docCount;
-  const docsCount = Object.keys(mcpDocs ?? {}).length;
-
-  return (
-    typeof manifestDocCount === "number" &&
-    manifestDocCount > 10 &&
-    docsCount > 10
-  );
-}
-
-function normalizeToolUrl(value, docsBaseUrl) {
-  if (typeof value !== "string") return value;
+  if (
+    !fs.existsSync(MCP_DOCS_PATH) ||
+    !fs.existsSync(MCP_INDEX_PATH) ||
+    !fs.existsSync(MCP_MANIFEST_PATH)
+  ) {
+    return false;
+  }
 
   try {
-    const parsed = new URL(value);
-    const docsBase = new URL(docsBaseUrl);
-    const isDocsBase =
-      parsed.origin === docsBase.origin && parsed.pathname === docsBase.pathname;
-
-    if (!isDocsBase && parsed.pathname.length > 1) {
-      parsed.pathname = parsed.pathname.replace(/\/+$/, "");
-    }
-
-    return parsed.toString();
+    const manifest = JSON.parse(fs.readFileSync(MCP_MANIFEST_PATH, "utf8"));
+    return typeof manifest.docCount === "number" && manifest.docCount > 10;
   } catch {
-    return value;
+    return false;
   }
 }
 
-function createFallbackServer(env) {
-  const docsBaseUrl = getDocsBaseUrl(env);
-  const searchIndex = buildSiteSearchIndex();
-  const name = env?.MCP_SERVER_NAME ?? "flare-devhub";
-  const version = env?.MCP_SERVER_VERSION ?? "1.0.0";
-
+function createFallbackServer() {
+  const searchIndex = loadSiteSearchIndex();
   const mcpServer = new McpServer(
-    { name, version },
+    { name: SERVER_NAME, version: SERVER_VERSION },
     { capabilities: { tools: {} } },
   );
 
@@ -207,17 +247,23 @@ function createFallbackServer(env) {
     {
       description:
         "Fetch a documentation page by URL and return its main content as text.",
-      inputSchema: z.object({
-        url: z.string().url(),
-      }),
+      inputSchema: z.object({ url: z.string().url() }),
     },
     async ({ url }) => {
       try {
-        const res = await fetch(url, {
-          headers: { Accept: "text/html,application/xhtml+xml" },
-        });
+        const localHtmlPath = resolveLocalHtmlPath(url);
+        const html = localHtmlPath
+          ? fs.readFileSync(localHtmlPath, "utf8")
+          : await (async () => {
+              const res = await fetch(url, {
+                headers: { Accept: "text/html,application/xhtml+xml" },
+              });
 
-        if (!res.ok) {
+              if (!res.ok) return null;
+              return await res.text();
+            })();
+
+        if (!html) {
           return {
             content: [
               {
@@ -229,7 +275,6 @@ function createFallbackServer(env) {
           };
         }
 
-        const html = await res.text();
         const text = extractPageTextAsMarkdown(html);
         return { content: [{ type: "text", text }] };
       } catch (error) {
@@ -257,7 +302,19 @@ function createFallbackServer(env) {
       }),
     },
     async ({ query, limit }) => {
-      const results = searchSiteIndex(searchIndex, docsBaseUrl, query, limit);
+      if (!searchIndex) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: "docs_search is unavailable locally because no search index was found. Run `npm run build` first.",
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      const results = searchSiteIndex(searchIndex, query, limit);
       return {
         content: [{ type: "text", text: formatSearchResults(results) }],
       };
@@ -266,15 +323,15 @@ function createFallbackServer(env) {
 
   return {
     mode: "fallback",
-    async handleWebRequest(request) {
-      const transport = new WebStandardStreamableHTTPServerTransport({
+    async handleHttpRequest(req, res, parsedBody) {
+      const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: undefined,
         enableJsonResponse: true,
       });
 
       await mcpServer.connect(transport);
       try {
-        return await transport.handleRequest(request);
+        await transport.handleRequest(req, res, parsedBody);
       } finally {
         await transport.close();
       }
@@ -282,89 +339,60 @@ function createFallbackServer(env) {
   };
 }
 
-function createHandler(env) {
-  const docsBaseUrl = getDocsBaseUrl(env);
-  const name = env?.MCP_SERVER_NAME ?? "flare-devhub";
-  const version = env?.MCP_SERVER_VERSION ?? "1.0.0";
-  const mode = hasUsableMcpArtifacts() ? "plugin-artifacts" : "fallback";
-  const serverKey = `${name}@${version}|${docsBaseUrl}|${mode}`;
-
-  if (cachedHandler && cachedServerKey === serverKey) {
-    return { handler: cachedHandler, mode: cachedServerMode };
-  }
-
-  cachedServerKey = serverKey;
-  cachedServerMode = mode;
-
-  if (mode === "plugin-artifacts") {
-    const server = new McpDocsServer({
-      docs: mcpDocs,
-      searchIndexData: mcpSearchIndexData,
-      name,
-      version,
-      baseUrl: docsBaseUrl,
-    });
-
-    cachedHandler = {
-      async handleWebRequest(request) {
-        return await server.handleWebRequest(request);
-      },
+function createServer() {
+  if (hasUsableMcpArtifacts()) {
+    return {
+      mode: "plugin-artifacts",
+      server: new McpDocsServer({
+        docsPath: MCP_DOCS_PATH,
+        indexPath: MCP_INDEX_PATH,
+        name: SERVER_NAME,
+        version: SERVER_VERSION,
+        baseUrl: DOCS_BASE_URL,
+      }),
     };
-  } else {
-    cachedHandler = createFallbackServer(env);
   }
 
-  return { handler: cachedHandler, mode: cachedServerMode };
+  return {
+    mode: "fallback",
+    server: createFallbackServer(),
+  };
 }
 
-function rewriteMcpRequest(request, docsBaseUrl) {
-  const url = new URL(request.url);
-  const stripped = new URL(request.url);
-  stripped.pathname = url.pathname.replace(/^\/mcp/, "") || "/";
+const { mode, server } = createServer();
 
-  if (request.method !== "POST") {
-    return new Request(stripped.toString(), request);
-  }
-
-  return request
-    .clone()
-    .json()
-    .then((body) => {
-      if (body?.url && typeof body.url === "string") {
-        body.url = normalizeToolUrl(body.url, docsBaseUrl);
-      }
-
-      if (
-        body?.method === "tools/call" &&
-        body?.params?.arguments?.url &&
-        typeof body.params.arguments.url === "string"
-      ) {
-        body.params.arguments.url = normalizeToolUrl(
-          body.params.arguments.url,
-          docsBaseUrl,
-        );
-      }
-
-      return new Request(stripped.toString(), {
-        method: "POST",
-        headers: request.headers,
-        body: JSON.stringify(body),
+http
+  .createServer(async (req, res) => {
+    if (req.method === "OPTIONS") {
+      res.writeHead(204, {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Accept",
       });
-    })
-    .catch(() => new Request(stripped.toString(), request));
-}
-
-export default {
-  async fetch(request, env) {
-    const url = new URL(request.url);
-    if (!url.pathname.startsWith("/mcp")) {
-      return new Response("Not found", { status: 404 });
+      res.end();
+      return;
     }
 
-    const docsBaseUrl = getDocsBaseUrl(env);
-    const newRequest = await rewriteMcpRequest(request, docsBaseUrl);
-    const { handler } = createHandler(env);
+    if (req.method !== "POST") {
+      res.writeHead(405);
+      res.end();
+      return;
+    }
 
-    return await handler.handleWebRequest(newRequest);
-  },
-};
+    const parsedBody = await parseRequestBody(req);
+    await server.handleHttpRequest(req, res, parsedBody);
+  })
+  .listen(3456, () => {
+    console.log(`MCP server at http://localhost:3456 (${mode})`);
+
+    if (mode === "plugin-artifacts") {
+      console.log(
+        "Using build/mcp artifacts from docusaurus-plugin-mcp-server.",
+      );
+      return;
+    }
+
+    console.warn(
+      "build/mcp artifacts were missing or incomplete. Falling back to build/search-index.json for docs_search and local build/runtime fetching for docs_fetch.",
+    );
+  });
