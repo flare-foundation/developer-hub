@@ -1,0 +1,108 @@
+---
+slug: flare-developer-hub-mcp-server
+title: Flare Developer Hub MCP Server
+sidebar_label: Flare Developer Hub MCP Server
+description: Connect the Flare Developer Hub MCP server to Claude, Cursor, and other AI tools to get accurate Flare documentation in your AI assistant.
+keywords:
+  [
+    mcp,
+    model-context-protocol,
+    claude,
+    cursor,
+    ai-tools,
+    flare-docs,
+    developer-hub,
+  ]
+sidebar_position: 11
+---
+
+import CopyButton from "@site/src/components/CopyButton";
+import CodeBlock from "@theme/CodeBlock";
+import McpServer from "/static/img/docs/ai/mcp-server.png";
+import YouTubeEmbed from "@site/src/components/YouTubeEmbed";
+
+The Flare Developer Hub MCP server exposes the full Flare documentation to any [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) compatible AI tool.
+Once connected, your AI assistant can search and fetch accurate, up-to-date Flare documentation directly — no copy-pasting, no outdated context.
+
+The server is hosted at `https://dev.flare.network/mcp` <CopyButton textToCopy="https://dev.flare.network/mcp" /> and is available to anyone with an MCP-compatible AI client.
+
+## Available tools
+
+The server exposes the following tools:
+
+- `docs_search` - full-text search across all Flare Developer Hub documentation pages.
+- `docs_fetch` - fetch the full content of a specific Flare Developer Hub documentation page.
+
+## Setup
+
+### Quick connect
+
+The fastest way to connect is directly from any page on the Flare Developer Hub.
+Click the **Copy page** button in the top-right corner and choose one of the MCP options from the dropdown:
+
+- **Copy MCP Server** — copies the MCP server URL to your clipboard.
+- **Connect to Cursor** — opens Cursor and installs the MCP server automatically.
+- **Connect to VS Code** — opens VS Code and installs the MCP server automatically.
+
+<img
+  src={McpServer}
+  alt="Copy page dropdown showing Copy MCP Server, Connect to Cursor and Connect to VS Code options"
+/>
+
+### Claude Code
+
+Run the following command to add the Flare MCP server to Claude Code:
+
+```bash
+claude mcp add --transport http flare-devhub https://dev.flare.network/mcp
+```
+
+To verify the server is connected:
+
+```bash
+claude mcp list
+```
+
+### Cursor
+
+Add it directly to your Cursor MCP config file at `~/.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "flare-devhub": {
+      "url": "https://dev.flare.network/mcp"
+    }
+  }
+}
+```
+
+### Other MCP-compatible tools
+
+For any tool that supports the [MCP Streamable HTTP transport](https://modelcontextprotocol.io/docs/concepts/transports), use the following endpoint:
+
+```
+https://dev.flare.network/mcp
+```
+
+Refer to your tool's documentation for instructions on adding a remote MCP server.
+
+## Example prompts
+
+After connecting the server, your AI assistant can answer Flare-specific questions by searching and fetching documentation on demand.
+
+- `Search the Flare docs and explain how FTSO price feeds work` <CopyButton textToCopy="Search the Flare docs and explain how FTSO price feeds work" />
+- `Fetch the Flare FDC getting started page and show me how to request an EVMTransaction attestation` <CopyButton textToCopy="Fetch the Flare FDC getting started page and show me how to request an EVMTransaction attestation" />
+- `Search the Flare docs for FAssets minting and summarize the steps` <CopyButton textToCopy="Search the Flare docs for FAssets minting and summarize the steps" />
+- `Look up the Flare network RPC endpoints from the developer hub` <CopyButton textToCopy="Look up the Flare network RPC endpoints from the developer hub" />
+- `Search the Flare docs and explain how Smart Accounts work for XRPL users` <CopyButton textToCopy="Search the Flare docs and explain how Smart Accounts work for XRPL users" />
+
+## Video walkthrough
+
+<YouTubeEmbed videoId="JZAQm4T9q80"></YouTubeEmbed>
+
+:::tip[What's next]
+
+Explore [Flare AI Skills](/network/guides/flare-ai-skills) for structured domain knowledge that works alongside the MCP server.
+
+:::
