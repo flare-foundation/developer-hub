@@ -23,7 +23,7 @@ The TEE framework handles attestation, key management, and message routing — y
 
 The Private Key Manager extension demonstrates the core TEE workflow:
 
-1. A user sends an ECIES-encrypted private key on-chain via the `InstructionSender` contract
+1. A user sends an Elliptic Curve Integrated Encryption Scheme (ECIES) encrypted private key on-chain via the `InstructionSender` contract
 2. The TEE extension decrypts and stores the key inside the secure enclave
 3. A user sends a `sign` instruction with an arbitrary message
 4. The TEE extension signs the message with the stored key and returns the signature on-chain
@@ -40,46 +40,23 @@ The extension stack consists of three components running as Docker services:
   Watches the chain for new instructions targeting your extension, forwards them to your handler, and submits results back on-chain
 - **`redis`:** In-memory store used by the proxy for internal state
 
-````mermaid
-      graph LR
-          subgraph chain["Coston2 C-chain"]
-              IS[InstructionSender]
-              TER[TeeExtensionRegistry]
-              TMR[TeeMachineRegistry]
-          end
 
-          subgraph docker["Docker Compose Stack"]
-              proxy["ext-proxy"]
-              ext["extension"]
-              redis["redis"]
-              proxy <--> ext
-              proxy --- redis
-          end
-
-          subgraph tunnel["Tunnel (cloudflared / ngrok)"]
-              url["Public HTTPS URL"]
-          end
-
-          proxy <-- "read instructions /<br/>submit results" --> chain
-          url <--> proxy
-      ```
-
-The tunnel (Cloudflared or ngrok) exposes the proxy's external port so that other TEE nodes on the network can reach your extension for attestation and availability checks.
+The tunnel ([Cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) or [ngrok](https://ngrok.com/)) exposes the proxy's external port so that other TEE nodes on the network can reach your extension for attestation and availability checks.
 
 ## Prerequisites
 
 Before you begin, make sure you have the following installed:
 
-- [Docker](https://docs.docker.com/get-docker/) and Docker Compose
-- [Foundry](https://book.getfoundry.sh/getting-started/installation) (`forge`, `cast`) for contract compilation and verification
-- [cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) to expose a local port to the internet (no account required), or [ngrok](https://ngrok.com/) (requires sign-up)
-- A funded Coston2 wallet with C2FLR for gas and TEE registration fees — use the [Coston2 faucet](https://faucet.flare.network/coston2)
+- [Docker](https://docs.docker.com/get-docker/) and Docker Compose.
+- [Foundry](https://book.getfoundry.sh/getting-started/installation) (`forge`, `cast`) for contract compilation and verification.
+- [cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) to expose a local port to the internet (no account required), or [ngrok](https://ngrok.com/) (requires sign-up).
+- A funded Coston2 wallet with C2FLR for gas and TEE registration fees — use the [Coston2 faucet](https://faucet.flare.network/coston2).
 - Language-specific requirements:
   - **Go**: Go >= 1.23
   - **Python**: Python >= 3.10, pip
   - **TypeScript**: Node.js >= 18, npm
 
-## On-chain contract
+## Onchain Contract
 
 The `InstructionSender` contract is the on-chain entry point.
 It interacts with two Flare system contracts:
@@ -87,7 +64,7 @@ It interacts with two Flare system contracts:
 - **`TeeExtensionRegistry`:** Registers extensions and routes instructions to TEE machines
 - **`TeeMachineRegistry`:** Tracks registered TEE machines and provides random selection
 
-### Contract code
+### Contract Code
 
 ```solidity title="contract/InstructionSender.sol"
 // SPDX-License-Identifier: MIT
@@ -117,11 +94,11 @@ contract InstructionSender {
 :::note
 The constructor takes the addresses of the two Flare system contracts.
 These are already deployed on Coston2 — the deploy tooling reads their addresses from `config/coston2/deployed-addresses.json`.
-This is a temporary solution, because the Flare confidential compute is still in development;
-on release, both addresses will be available through the `FlareContractRegistry` contract.
+This is a temporary solution, because the Flare confidential compute is still in development.
+On release, both addresses will be available through the `FlareContractRegistry`](/network/guides/flare-contracts-registry) contract.
 :::
 
-### Instruction parameters
+### Instruction Parameters
 
 Every instruction sent to a TEE extension uses the `TeeInstructionParams` struct:
 
@@ -144,7 +121,7 @@ struct TeeInstructionParams {
 - **`cosigners` and `cosignersThreshold`:** Optional multi-party signing (not used in this example)
 - **`claimBackAddress`:** Optional refund address (not used in this example)
 
-### Sending instructions
+### Sending Instructions
 
 The `updateKey` function encrypts a private key and sends it to the TEE:
 
@@ -165,9 +142,9 @@ function updateKey(bytes calldata _encryptedKey) external payable returns (bytes
 
 The flow is:
 
-1. Call `getRandomTeeIds` to select a random TEE machine registered for this extension
-2. Build the instruction parameters with the appropriate `opType` and `opCommand`
-3. Call `sendInstructions` on the `TeeExtensionRegistry`, forwarding the fee as `msg.value`
+1. Call `getRandomTeeIds` to select a random TEE machine registered for this extension.
+2. Build the instruction parameters with the appropriate `opType` and `opCommand`.
+3. Call `sendInstructions` on the `TeeExtensionRegistry`, forwarding the fee as `msg.value`.
 
 The `sign` function follows the same pattern with `opCommand = "SIGN"`:
 
@@ -193,7 +170,7 @@ When building your own extension, change the `opType` and `opCommand` constants 
 The same constants must appear in both the Solidity contract and your off-chain handler code.
 :::
 
-## Off-chain handler
+## Offchain Handler
 
 The off-chain handler is where your extension's business logic lives.
 The TEE framework calls your registered handler functions whenever a matching instruction arrives from the chain.
@@ -242,7 +219,7 @@ func myHandler(msg string) (data *string, status int, err error)
 - **`status`:** `0` = error, `1` = success, `>=2` = pending
 - **`err`:** Go error if the handler failed
 
-### The `updateKey` handler
+### The `updateKey` Handler
 
 The `handleKeyUpdate` handler decrypts an ECIES-encrypted private key and stores it in memory:
 
@@ -275,7 +252,7 @@ The decryption uses the TEE node's built-in `/decrypt` endpoint.
 The caller ECIES-encrypts the private key using the TEE's public key (fetched from the proxy's `/info` endpoint) before sending it on-chain.
 This ensures the private key is never visible in plaintext on-chain.
 
-### The `sign` handler
+### The `sign` Handler
 
 The `handleKeySign` handler signs an arbitrary message with the stored private key:
 
@@ -308,7 +285,7 @@ func handleKeySign(msg string) (data *string, status int, err error) {
 The result is ABI-encoded as `(bytes, bytes)` — the original message and the ECDSA signature — and returned as hex.
 The proxy writes this data back on-chain.
 
-### Framework utilities
+### Framework Utilities
 
 The `base/` package in each language provides common utilities so you can focus on business logic:
 
@@ -323,7 +300,7 @@ The files in `base/` are framework infrastructure.
 You should not need to modify them when building your own extension.
 :::
 
-## Project structure
+## Project Structure
 
 ```
 sign/
@@ -355,12 +332,12 @@ sign/
 └── README.md
 ```
 
-## Deploying and testing on Coston2
+## Deploying and Testing on Coston2
 
-We will now walk through deploying the extension end-to-end on the Coston2 testnet (chain ID 114).
+We will now walk through deploying the extension end-to-end on the [Coston2 testnet](/network/overview#configuration).
 Each step builds on the previous one.
 
-### Step 0: Configure environment
+### Step 0: Configure Environment
 
 Create the environment file and proxy configuration from the provided examples:
 
@@ -398,7 +375,7 @@ If you prefer to run your own local indexer instead of connecting to the shared 
 A commented example is included in the file.
 :::
 
-### Step 1: Deploy the InstructionSender contract
+### Step 1: Deploy the InstructionSender Contract
 
 Deploy the `InstructionSender` contract to Coston2.
 The deploy tool reads the `TeeExtensionRegistry` and `TeeMachineRegistry` addresses from `config/coston2/deployed-addresses.json` and passes them to the constructor.
@@ -435,7 +412,7 @@ Save the printed contract address in `.env`:
 INSTRUCTION_SENDER="0x<deployed-address>"
 ```
 
-### Step 2: Register the extension
+### Step 2: Register the Extension
 
 Register your extension with the `TeeExtensionRegistry`.
 This tells the TEE framework that your `InstructionSender` contract is the authorized instruction sender for a new extension.
@@ -468,7 +445,7 @@ Save the printed extension ID in `.env`:
 EXTENSION_ID="0x<64-hex-chars>"
 ```
 
-### Step 3: Start the extension stack
+### Step 3: Start the Extension Stack
 
 Build and start the Docker Compose stack.
 The `LANGUAGE` variable in `.env` determines which implementation runs:
@@ -489,7 +466,7 @@ echo "Extension proxy is ready"
 If you change the `LANGUAGE` variable in `.env`, rebuild the stack with `docker compose build` before starting it again.
 :::
 
-### Step 4: Start the tunnel
+### Step 4: Start the Tunnel
 
 In a separate terminal, expose the extension proxy's external port (6676) to the internet:
 
@@ -513,7 +490,7 @@ If your computer sleeps or the tunnel restarts, the URL might change.
 Update `TUNNEL_URL` in `.env`, restart the Docker stack, and re-run steps 5-6.
 :::
 
-### Step 5: Add TEE version
+### Step 5: Add TEE Version
 
 Register the code version (hash) and platform of your TEE with the `TeeVersionManager`.
 This step tells the network which software version your TEE is running.
@@ -539,14 +516,14 @@ cd typescript/tools
 npx ts-node src/cmd/allow-tee-version.ts -p http://localhost:6676
 ```
 
-### Step 6: Register the TEE machine
+### Step 6: Register the TEE Machine
 
 Register your TEE machine with the `TeeMachineRegistry`.
 This is a multi-step process:
 
-1. **Pre-registration** — Announces the TEE machine to the network
-2. **Attestation** — The TEE proves it is running in a genuine secure enclave
-3. **Production** — After passing the FDC availability check, the TEE becomes active
+1. **Pre-registration** - Announces the TEE machine to the network.
+2. **Attestation** - The TEE proves it is running in a genuine secure enclave.
+3. **Production** - After passing the FDC availability check, the TEE becomes active.
 
 Make sure `TUNNEL_URL` is set correctly in `.env`, then run:
 
@@ -577,7 +554,7 @@ This is required when running outside of an actual TEE enclave.
 The `-p` flag specifies the proxy URL used for the FDC availability check.
 It defaults to `https://tee-proxy-coston2-1.flare.rocks` (the Coston2 public TEE proxy).
 
-### Step 7: Run the end-to-end test
+### Step 7: Run the End-to-end Test
 
 With the full stack running and the TEE machine registered, run the end-to-end test to verify everything works.
 
@@ -606,13 +583,13 @@ npm run run-test -- -p http://localhost:6676
 
 The test performs the following sequence:
 
-1. Calls `setExtensionId()` on the `InstructionSender` contract to discover and store the extension ID
-2. Fetches the TEE's public key from the proxy's `/info` endpoint
-3. ECIES-encrypts a test private key using the TEE's public key
-4. Sends an `updateKey` instruction on-chain with the encrypted key
-5. Waits for the TEE to process the instruction and store the key
-6. Sends a `sign` instruction on-chain with a test message
-7. Verifies the returned ECDSA signature matches the test private key
+1. Calls `setExtensionId()` on the `InstructionSender` contract to discover and store the extension ID.
+2. Fetches the TEE's public key from the proxy's `/info` endpoint.
+3. ECIES-encrypts a test private key using the TEE's public key.
+4. Sends an `updateKey` instruction on-chain with the encrypted key.
+5. Waits for the TEE to process the instruction and store the key.
+6. Sends a `sign` instruction on-chain with a test message.
+7. Verifies the returned ECDSA signature matches the test private key.
 
 If the test passes, your extension is fully operational.
 
@@ -631,12 +608,12 @@ The internal port (6675) is used for communication between the extension contain
 
 To create your own TEE extension using this template:
 
-1. **Clone the repository** and pick a language directory (`go/`, `python/`, or `typescript/`)
-2. **Define your instruction types** — Choose `opType` and `opCommand` constants that describe your extension's operations
-3. **Modify `InstructionSender.sol`** — Update the contract functions to use your new constants and accept the appropriate parameters
-4. **Write your handlers** — Implement handler functions in the `app/` directory that process your instructions
-5. **Register handlers** — Wire up your handlers with the framework using `f.Handle(opType, opCommand, myHandler)`
-6. **Deploy and test** — Follow the steps in this guide to deploy your contract, register the extension, and verify it works
+1. **Clone the repository** and pick a language directory (`go/`, `python/`, or `typescript/`).
+2. **Define your instruction types** - Choose `opType` and `opCommand` constants that describe your extension's operations.
+3. **Modify `InstructionSender.sol`** - Update the contract functions to use your new constants and accept the appropriate parameters.
+4. **Write your handlers** - Implement handler functions in the `app/` directory that process your instructions.
+5. **Register handlers** - Wire up your handlers with the framework using `f.Handle(opType, opCommand, myHandler)`.
+6. **Deploy and test** - Follow the steps in this guide to deploy your contract, register the extension, and verify it works.
 
 :::tip[What to change vs. what to keep]
 Only modify files in `app/` (your business logic) and `contract/InstructionSender.sol` (your on-chain interface).
@@ -645,7 +622,7 @@ The files in `base/` are framework infrastructure and should not need changes.
 
 ## Troubleshooting
 
-### Proxy won't start or DB sync error
+**Proxy won't start or DB sync error**
 
 The proxy needs a synced C-chain indexer database.
 Check the proxy logs and verify the DB credentials in `config/proxy/extension_proxy.toml`:
@@ -654,13 +631,14 @@ Check the proxy logs and verify the DB credentials in `config/proxy/extension_pr
 docker compose logs ext-proxy
 ```
 
-### Transaction reverts
+**Transaction reverts**
 
 Ensure your wallet has enough C2FLR for gas and fees.
+Fund it with the [Coston2 faucet](https://faucet.flare.network/coston2).
 The `TeeFeeCalculator` contract determines the required fee for each operation.
 If you get a `FeeTooLow` revert, increase `FEE_WEI` in `.env`.
 
-### TEE registration times out
+**TEE registration times out**
 
 Try restarting the proxy — it may have missed a signing policy round:
 
@@ -671,20 +649,20 @@ docker compose restart ext-proxy
 If that doesn't help, the FDC attestation flow requires active relay providers on Coston2.
 If no relay infrastructure is running, the availability check won't complete.
 
-### Tunnel URL changed
+**Tunnel URL changed**
 
 If your tunnel restarts and the URL changes:
 
-1. Update `TUNNEL_URL` in `.env`
+1. Update `TUNNEL_URL` in `.env`.
 2. Restart the Docker stack:
    ```bash
    docker compose down && docker compose up -d
    ```
-3. Re-run steps 5-6 (allow-tee-version + register-tee) to register a new TEE machine with the new URL
+3. Re-run steps 5-6 (allow-tee-version + register-tee) to register a new TEE machine with the new URL.
 
 ## Cleanup
 
-### Stop the Docker stack
+**1. Stop the Docker stack**
 
 ```bash
 docker compose down
@@ -692,7 +670,7 @@ docker compose down
 
 This stops and removes all containers (redis, ext-proxy, extension-tee).
 
-### Full reset
+**Full reset**
 
 To completely reset and start from scratch:
 
