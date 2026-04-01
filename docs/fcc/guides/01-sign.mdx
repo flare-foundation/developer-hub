@@ -23,10 +23,10 @@ The TEE framework handles attestation, key management, and message routing — y
 
 The Private Key Manager extension demonstrates the core TEE workflow:
 
-1. A user sends an Elliptic Curve Integrated Encryption Scheme (ECIES) encrypted private key on-chain via the `InstructionSender` contract
-2. The TEE extension decrypts and stores the key inside the secure enclave
-3. A user sends a `sign` instruction with an arbitrary message
-4. The TEE extension signs the message with the stored key and returns the signature on-chain
+1. A user sends an Elliptic Curve Integrated Encryption Scheme (ECIES) encrypted private key on-chain via the `InstructionSender` contract.
+2. The TEE extension decrypts and stores the key inside the secure enclave.
+3. A user sends a `sign` instruction with an arbitrary message.
+4. The TEE extension signs the message with the stored key and returns the signature on-chain.
 
 We will build this in three parts: the **on-chain contract** that sends instructions, the **off-chain handler** that processes them, and the **deployment tooling** that ties everything together.
 
@@ -35,11 +35,10 @@ We will build this in three parts: the **on-chain contract** that sends instruct
 The extension stack consists of three components running as Docker services:
 
 - **`extension-tee`:** Your extension code (Go, Python, or TypeScript).
-  Receives decoded instructions from the proxy and returns results
+  Receives decoded instructions from the proxy and returns results.
 - **`ext-proxy`:** The TEE extension proxy.
-  Watches the chain for new instructions targeting your extension, forwards them to your handler, and submits results back on-chain
-- **`redis`:** In-memory store used by the proxy for internal state
-
+  Watches the chain for new instructions targeting your extension, forwards them to your handler, and submits results back on-chain.
+- **`redis`:** In-memory store used by the proxy for internal state.
 
 The tunnel ([Cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) or [ngrok](https://ngrok.com/)) exposes the proxy's external port so that other TEE nodes on the network can reach your extension for attestation and availability checks.
 
@@ -89,7 +88,7 @@ contract InstructionSender {
 
     ...
 }
-````
+```
 
 :::note
 The constructor takes the addresses of the two Flare system contracts.
@@ -548,7 +547,7 @@ cd typescript/tools
 npm run register-tee -- -p http://localhost:6676 -l
 ```
 
-The `-l` flag enables **local/test mode**, which uses a test attestation token instead of a real GCP JWT.
+The `-l` flag enables **local/test mode**, which uses a test attestation token instead of a real [Google Cloud Platform JSON Web Token (JWT)](https://docs.cloud.google.com/api-gateway/docs/authenticating-users-jwt).
 This is required when running outside of an actual TEE enclave.
 
 The `-p` flag specifies the proxy URL used for the FDC availability check.
@@ -615,7 +614,7 @@ To create your own TEE extension using this template:
 5. **Register handlers** - Wire up your handlers with the framework using `f.Handle(opType, opCommand, myHandler)`.
 6. **Deploy and test** - Follow the steps in this guide to deploy your contract, register the extension, and verify it works.
 
-:::tip[What to change vs. what to keep]
+:::tip[What to change, what to keep]
 Only modify files in `app/` (your business logic) and `contract/InstructionSender.sol` (your on-chain interface).
 The files in `base/` are framework infrastructure and should not need changes.
 :::
@@ -662,7 +661,7 @@ If your tunnel restarts and the URL changes:
 
 ## Cleanup
 
-**1. Stop the Docker stack**
+**Stop the Docker stack**
 
 ```bash
 docker compose down
