@@ -2,7 +2,7 @@
 title: Private Key Extension
 slug: sign-extension
 authors: [nikerzetic]
-description: Build and deploy a TEE extension that stores a private key and signs messages on-chain.
+description: Build and deploy a TEE extension that stores a private key and signs messages onchain.
 tags: [intermediate, tee, ethereum]
 keywords:
   [tee, trusted-execution-environment, extension, flare-network, coston2]
@@ -14,8 +14,8 @@ Build and deploy a **Trusted Execution Environment (TEE) extension** that secure
 This guide walks through every step — from writing the smart contract and extension handler to deploying on Coston2 and running an end-to-end test.
 
 :::info[New to Flare TEE?]
-A TEE extension is an off-chain program that runs inside a Trusted Execution Environment.
-It receives **instructions** from on-chain transactions, processes them in a secure enclave, and writes results back on-chain.
+A TEE extension is an offchain program that runs inside a Trusted Execution Environment.
+It receives **instructions** from onchain transactions, processes them in a secure enclave, and writes results back onchain.
 The TEE framework handles attestation, key management, and message routing — you only write the business logic.
 :::
 
@@ -23,12 +23,12 @@ The TEE framework handles attestation, key management, and message routing — y
 
 The Private Key Manager extension demonstrates the core TEE workflow:
 
-1. A user sends an Elliptic Curve Integrated Encryption Scheme (ECIES) encrypted private key on-chain via the `InstructionSender` contract.
+1. A user sends an Elliptic Curve Integrated Encryption Scheme (ECIES) encrypted private key onchain via the `InstructionSender` contract.
 2. The TEE extension decrypts and stores the key inside the secure enclave.
 3. A user sends a `sign` instruction with an arbitrary message.
-4. The TEE extension signs the message with the stored key and returns the signature on-chain.
+4. The TEE extension signs the message with the stored key and returns the signature onchain.
 
-We will build this in three parts: the **on-chain contract** that sends instructions, the **off-chain handler** that processes them, and the **deployment tooling** that ties everything together.
+We will build this in three parts: the **onchain contract** that sends instructions, the **offchain handler** that processes them, and the **deployment tooling** that ties everything together.
 
 ## Architecture
 
@@ -37,7 +37,7 @@ The extension stack consists of three components running as Docker services:
 - **`extension-tee`:** Your extension code (Go, Python, or TypeScript).
   Receives decoded instructions from the proxy and returns results.
 - **`ext-proxy`:** The TEE extension proxy.
-  Watches the chain for new instructions targeting your extension, forwards them to your handler, and submits results back on-chain.
+  Watches the chain for new instructions targeting your extension, forwards them to your handler, and submits results back onchain.
 - **`redis`:** In-memory store used by the proxy for internal state.
 
 The tunnel ([Cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) or [ngrok](https://ngrok.com/)) exposes the proxy's external port so that other TEE nodes on the network can reach your extension for attestation and availability checks.
@@ -57,7 +57,7 @@ Before you begin, make sure you have the following installed:
 
 ## Onchain Contract
 
-The `InstructionSender` contract is the on-chain entry point.
+The `InstructionSender` contract is the onchain entry point.
 It interacts with two Flare system contracts:
 
 - **`TeeExtensionRegistry`:** Registers extensions and routes instructions to TEE machines
@@ -166,12 +166,12 @@ Both functions return a `bytes32` instruction ID that can be used to track the i
 
 :::tip[Customizing the contract]
 When building your own extension, change the `opType` and `opCommand` constants to match your use case.
-The same constants must appear in both the Solidity contract and your off-chain handler code.
+The same constants must appear in both the Solidity contract and your offchain handler code.
 :::
 
 ## Offchain Handler
 
-The off-chain handler is where your extension's business logic lives.
+The offchain handler is where your extension's business logic lives.
 The TEE framework calls your registered handler functions whenever a matching instruction arrives from the chain.
 
 This example is available in three languages.
@@ -207,14 +207,14 @@ const (
 
 ### Handler signature
 
-Every handler receives the hex-encoded `originalMessage` from the on-chain instruction and returns three values:
+Every handler receives the hex-encoded `originalMessage` from the onchain instruction and returns three values:
 
 ```go
 func myHandler(msg string) (data *string, status int, err error)
 ```
 
 - **`msg`:** Hex-encoded message payload from the instruction
-- **`data`:** Hex-encoded return data (written back on-chain), or `nil` if no data
+- **`data`:** Hex-encoded return data (written back onchain), or `nil` if no data
 - **`status`:** `0` = error, `1` = success, `>=2` = pending
 - **`err`:** Go error if the handler failed
 
@@ -248,8 +248,8 @@ func handleKeyUpdate(msg string) (data *string, status int, err error) {
 ```
 
 The decryption uses the TEE node's built-in `/decrypt` endpoint.
-The caller ECIES-encrypts the private key using the TEE's public key (fetched from the proxy's `/info` endpoint) before sending it on-chain.
-This ensures the private key is never visible in plaintext on-chain.
+The caller ECIES-encrypts the private key using the TEE's public key (fetched from the proxy's `/info` endpoint) before sending it onchain.
+This ensures the private key is never visible in plaintext onchain.
 
 ### The `sign` Handler
 
@@ -282,7 +282,7 @@ func handleKeySign(msg string) (data *string, status int, err error) {
 ```
 
 The result is ABI-encoded as `(bytes, bytes)` — the original message and the ECDSA signature — and returned as hex.
-The proxy writes this data back on-chain.
+The proxy writes this data back onchain.
 
 ### Framework Utilities
 
@@ -585,9 +585,9 @@ The test performs the following sequence:
 1. Calls `setExtensionId()` on the `InstructionSender` contract to discover and store the extension ID.
 2. Fetches the TEE's public key from the proxy's `/info` endpoint.
 3. ECIES-encrypts a test private key using the TEE's public key.
-4. Sends an `updateKey` instruction on-chain with the encrypted key.
+4. Sends an `updateKey` instruction onchain with the encrypted key.
 5. Waits for the TEE to process the instruction and store the key.
-6. Sends a `sign` instruction on-chain with a test message.
+6. Sends a `sign` instruction onchain with a test message.
 7. Verifies the returned ECDSA signature matches the test private key.
 
 If the test passes, your extension is fully operational.
@@ -614,8 +614,8 @@ To create your own TEE extension using this template:
 5. **Register handlers** - Wire up your handlers with the framework using `f.Handle(opType, opCommand, myHandler)`.
 6. **Deploy and test** - Follow the steps in this guide to deploy your contract, register the extension, and verify it works.
 
-:::tip[What to change, what to keep]
-Only modify files in `app/` (your business logic) and `contract/InstructionSender.sol` (your on-chain interface).
+:::tip[What to change vs. what to keep]
+Only modify files in `app/` (your business logic) and `contract/InstructionSender.sol` (your onchain interface).
 The files in `base/` are framework infrastructure and should not need changes.
 :::
 
@@ -684,7 +684,7 @@ rm -f .env config/proxy/extension_proxy.toml
 After a full reset, start again from [Step 0](#step-0-configure-environment).
 
 :::info
-On-chain state (deployed contracts, registered extensions, registered TEEs) cannot be reset.
+onchain state (deployed contracts, registered extensions, registered TEEs) cannot be reset.
 Each fresh start deploys a new `InstructionSender` contract and registers a new extension.
 This is fine for testing — Coston2 is a testnet.
 :::
