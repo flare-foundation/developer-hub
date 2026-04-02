@@ -1,105 +1,16 @@
-import { encodeFunctionData, toHex } from "viem";
+import { encodeFunctionData } from "viem";
 import { abi as checkpointAbi } from "./abis/Checkpoint";
 import { abi as piggyBankAbi } from "./abis/PiggyBank";
 import { abi as noticeBoardAbi } from "./abis/NoticeBoard";
-import { abi as iInstructionsFacetAbi } from "./abis/IInstructionsFacet";
 import {
-  getInstructionFee,
-  getOperatorXrplAddresses,
+  encodeCustomInstruction,
   getPersonalAccountAddress,
-  MASTER_ACCOUNT_CONTROLLER_ADDRESS,
   registerCustomInstruction,
+  sendCustomInstruction,
+  waitForCustomInstructionExecutedEvent,
   type CustomInstruction,
 } from "./utils/smart-accounts";
-import { publicClient } from "./utils/client";
-import { sendXrplPayment } from "./utils/xrpl";
 import { Client, Wallet } from "xrpl";
-import type { CustomInstructionExecutedEventType } from "./utils/event-types";
-import { abi } from "./abis/CustomInstructionsFacet";
-
-async function encodeCustomInstruction(
-  instructions: CustomInstruction[],
-  walletId: number,
-) {
-  const encodedInstruction = (await publicClient.readContract({
-    address: MASTER_ACCOUNT_CONTROLLER_ADDRESS,
-    abi: abi,
-    functionName: "encodeCustomInstruction",
-    args: [instructions],
-  })) as `0x${string}`;
-  // NOTE:(Nik) We cut off the `0x` prefix and the first 2 bytes to get the length down to 30 bytes
-  return ("0xff" +
-    toHex(walletId, { size: 1 }).slice(2) +
-    encodedInstruction.slice(6)) as `0x${string}`;
-}
-
-async function sendCustomInstruction({
-  encodedInstruction,
-  xrplClient,
-  xrplWallet,
-}: {
-  encodedInstruction: `0x${string}`;
-  xrplClient: Client;
-  xrplWallet: Wallet;
-}) {
-  const operatorXrplAddress = (await getOperatorXrplAddresses())[0] as string;
-
-  const instructionFee = await getInstructionFee(encodedInstruction);
-  console.log("Instruction fee:", instructionFee, "\n");
-
-  const customInstructionTransaction = await sendXrplPayment({
-    destination: operatorXrplAddress,
-    amount: instructionFee,
-    memos: [{ Memo: { MemoData: encodedInstruction.slice(2) } }],
-    wallet: xrplWallet,
-    client: xrplClient,
-  });
-
-  return customInstructionTransaction;
-}
-
-async function waitForCustomInstructionExecutedEvent({
-  encodedInstruction,
-  personalAccountAddress,
-}: {
-  encodedInstruction: `0x${string}`;
-  personalAccountAddress: string;
-}) {
-  let customInstructionExecutedEvent:
-    | CustomInstructionExecutedEventType
-    | undefined;
-  let customInstructionExecutedEventFound = false;
-
-  const unwatchCustomInstructionExecuted = publicClient.watchContractEvent({
-    address: MASTER_ACCOUNT_CONTROLLER_ADDRESS,
-    abi: iInstructionsFacetAbi,
-    eventName: "CustomInstructionExecuted",
-    onLogs: (logs) => {
-      for (const log of logs) {
-        customInstructionExecutedEvent =
-          log as CustomInstructionExecutedEventType;
-        if (
-          customInstructionExecutedEvent.args.callHash.slice(6) !==
-            encodedInstruction.slice(6) ||
-          customInstructionExecutedEvent.args.personalAccount.toLowerCase() !==
-            personalAccountAddress.toLowerCase()
-        ) {
-          continue;
-        }
-        customInstructionExecutedEventFound = true;
-        break;
-      }
-    },
-  });
-
-  console.log("Waiting for CustomInstructionExecuted event...");
-  while (!customInstructionExecutedEventFound) {
-    await new Promise((resolve) => setTimeout(resolve, 10000));
-  }
-  unwatchCustomInstructionExecuted();
-
-  return customInstructionExecutedEvent;
-}
 
 // NOTE:(Nik) For this example to work, you first need to faucet C2FLR to your personal account address.
 async function main() {
