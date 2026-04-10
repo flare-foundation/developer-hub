@@ -11,7 +11,8 @@ To do so, these holders, known as redeemers, send FAssets to the Asset Manager s
 
 This is the summary of the redemption process:
 
-1. The redeemer starts the redemption for a positive integer of lots by issuing a request to the Asset Manager smart contract.
+1. The redeemer starts the redemption by issuing a request to the Asset Manager smart contract.
+   The standard `redeem` method requires a whole number of lots, while `redeemAmount` and `redeemWithTag` allow redeeming any amount.
 
    The FAssets system chooses one or more redemption tickets from the front of the [FIFO redemption queue](/fassets/minting#redemption-tickets-and-the-redemption-queue).
    The number of chosen redemption tickets is capped to avoid high gas consumption.
@@ -50,6 +51,23 @@ This is the summary of the redemption process:
    - Ensure the system tracks the underlying chain balances correctly.
 
    After the collateral is released, it can either back the minting of more FAssets or be withdrawn.
+
+## Redeem Any Amount
+
+The standard `redeem` method requires whole lots.
+The `redeemAmount` method allows redeeming **any amount** of FAssets, which is useful for redeeming yields or partial amounts that don not align with lot boundaries.
+
+No redemption can be smaller than `minimumRedeemAmountUBA` to prevent uneconomical micro-redemptions.
+
+## Redeem with Tag
+
+The `redeemWithTag` method allows the redeemer to request an **XRP destination tag** on the redemption payment.
+This is useful when redeeming directly to an exchange address that requires a destination tag.
+Like `redeemAmount`, it also supports redeeming any amount, not just whole lots.
+
+This is an XRP-only feature, gated by the `redeemWithTagSupported` flag.
+Confirming a redemption with a tag requires the `confirmXRPRedemptionPayment` method, which uses a dedicated FDC proof type that supports destination tags.
+If the agent fails to pay, the redeemer calls `xrpRedemptionPaymentDefault` to trigger the default process.
 
 ## Fees
 
