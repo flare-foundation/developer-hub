@@ -1,0 +1,90 @@
+---
+title: Direct Minting
+description: Understand how direct minting works in FAssets.
+keywords: [fassets, xrp, flare-network, direct-minting]
+---
+
+Direct minting allows users to mint FAssets by creating a single transaction on the underlying chain, bypassing the multi-step [collateral reservation process](/fassets/minting#minting-process) of standard minting.
+This feature is currently available only for XRP.
+
+## How It Works
+
+The minter creates a payment transaction on the underlying chain (XRPL) to the [Core Vault](/fassets/core-vault) address, not to an individual agent's address.
+The transaction identifies the minting parameters (recipient and executor) through either a **destination tag** or a **memo field**.
+
+An **executor** then calls `executeDirectMinting` on the Flare side to finalize the mint.
+The executor is paid a fee upon successful completion.
+
+## Identifying Minting Parameters
+
+There are two ways to specify the minting recipient and executor in a direct minting payment.
+
+### Destination Tag
+
+XRPL transactions natively support a **destination tag**, a 32-bit integer.
+The `MintingTagManager` contract on Flare acts as a registry that maps these destination tags to Flare-side parameters: the minting recipient and the preferred executor.
+
+The tag on the XRPL side and the tag registered in `MintingTagManager` on Flare are the same tag.
+The Flare contract gives the XRPL tag its meaning in the FAsset system.
+This path is convenient for repeated use, such as an exchange or service that regularly mints.
+
+### Memo Field
+
+Instead of a tag, the minter can encode the recipient and executor directly in a 48-byte memo field on the XRPL payment:
+
+1. **8-byte prefix**: `0x4642505266410021` (`DIRECT_MINTING_EX`)
+2. **20-byte recipient address**
+3. **20-byte executor address**
+
+No reservation is needed, but the memo must be constructed for each payment.
+
+## Minting Tag Manager
+
+The `MintingTagManager` contract on Flare manages the reservation and ownership of XRPL destination tags for direct minting.
+
+- Users reserve destination tags by paying a reservation fee in native currency (FLR/SGB).
+  The fee exists because the XRPL destination tag space is limited to 32-bit integers, and without a cost, someone could squat on all available tags.
+- Tags are assigned sequentially.
+  The user always receives the next available tag.
+- The contract implements the **ERC-721** (NFT) interface, so reserved tags can be transferred or resold.
+- Tag owners can set a minting recipient with `setMintingRecipient` and a preferred executor with `setAllowedExecutor`.
+- On initial reservation and tag transfer, the recipient resets to the new owner and the executor resets to the zero address.
+
+## Executor Restrictions
+
+Executors can be restricted in three ways depending on the minting method:
+
+1. **Tag-based:** The tag manager's `setAllowedExecutor` method defines the allowed executor.
+   If set to the zero address, anyone can execute.
+2. **Memo-based:** The 48-byte memo format encodes the executor address directly.
+   If the executor address is the zero address, anyone can execute.
+3. **Smart account:** The smart account manager may restrict the executor.
+   The asset manager passes every request through.
+
+If the preferred executor does not act within `othersCanExecuteAfterSeconds`, anyone can execute the minting.
+
+## Rate Limits
+
+Direct minting has multiple rate-limiting safeguards to protect against compromises, such as FDC exploits.
+
+| Limit                                   | Description                                           |
+| :-------------------------------------- | :---------------------------------------------------- |
+| `directMintingHourlyLimitUBA`           | Hourly minting cap                                    |
+| `directMintingDailyLimitUBA`            | Daily minting cap                                     |
+| `directMintingLargeMintingThresholdUBA` | Threshold above which a minting is considered "large" |
+| `directMintingLargeMintingDelaySeconds` | Automatic delay for large mintings                    |
+
+Rate limits **throttle** rather than reject.
+When limits are hit, further mintings are delayed proportionally to the accumulated backlog.
+Large mintings above the threshold are delayed independently by a fixed duration.
+
+Delayed mintings emit the `DirectMintingDelayed` event instead of `DirectMintingExecuted`, with an `executionAllowedAt` timestamp.
+Governance can unblock delayed mintings via `unblockDirectMintingsUntil`, but only for past timestamps and after manual review.
+
+If a preferred executor's minting is delayed, their exclusive execution window restarts from `executionAllowedAt`.
+
+:::tip[What's next]
+
+Learn more about the different components and processes involved in FAssets - [standard minting](/fassets/minting), [redemptions](/fassets/redemption), [collateral](/fassets/collateral), [liquidations](/fassets/liquidation), and [Core Vault](/fassets/core-vault).
+
+:::
