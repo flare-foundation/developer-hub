@@ -15,6 +15,16 @@ The transaction identifies the minting parameters (recipient and executor) throu
 An **executor** then calls `executeDirectMinting` on the Flare side to finalize the mint.
 The executor is paid a fee upon successful completion.
 
+## Fees
+
+Direct minting charges two fees, both deducted from the underlying payment amount:
+
+- **Minting fee**: A percentage of the received amount (in BIPS), with a minimum floor.
+  This fee is paid to a governance-configured fee receiver.
+  If the payment is smaller than the minimum minting fee, no FAssets are minted and the entire payment goes to the fee receiver.
+- **Executor fee**: A flat fee in the underlying asset, paid to the executor who finalizes the minting.
+  The minting fee takes priority: if the payment only covers the minting fee, the executor receives nothing.
+
 ## Identifying Minting Parameters
 
 There are two ways to specify the minting recipient and executor in a direct minting payment.
@@ -30,13 +40,23 @@ This path is convenient for repeated use, such as an exchange or service that re
 
 ### Memo Field
 
-Instead of a tag, the minter can encode the recipient and executor directly in a 48-byte memo field on the XRPL payment:
+Instead of a tag, the minter can encode the minting parameters directly in the memo field on the XRPL payment.
+There are two supported formats:
+
+**32-byte memo** (recipient only):
+
+A standard direct minting payment reference that encodes only the 20-byte recipient address.
+Anyone can execute, as no executor is specified.
+
+**48-byte memo** (recipient and executor):
 
 1. **8-byte prefix**: `0x4642505266410021` (`DIRECT_MINTING_EX`)
 2. **20-byte recipient address**
 3. **20-byte executor address**
 
-No reservation is needed, but the memo must be constructed for each payment.
+If the executor address is the zero address, anyone can execute.
+
+No reservation is needed for either format, but the memo must be constructed for each payment.
 
 ## Minting Tag Manager
 
@@ -48,6 +68,7 @@ The `MintingTagManager` contract on Flare manages the reservation and ownership 
   The user always receives the next available tag.
 - The contract implements the **ERC-721** (NFT) interface, so reserved tags can be transferred or resold.
 - Tag owners can set a minting recipient with `setMintingRecipient` and a preferred executor with `setAllowedExecutor`.
+  Executor changes are not immediate: the new executor becomes active after a 10-minute cooldown to protect in-flight FDC proofs.
 - On initial reservation and tag transfer, the recipient resets to the new owner and the executor resets to the zero address.
 
 ## Executor Restrictions
@@ -57,7 +78,8 @@ Executors can be restricted in three ways depending on the minting method:
 1. **Tag-based:** The tag manager's `setAllowedExecutor` method defines the allowed executor.
    If set to the zero address, anyone can execute.
 2. **Memo-based:** The 48-byte memo format encodes the executor address directly.
-   If the executor address is the zero address, anyone can execute.
+   The 32-byte memo format does not specify an executor, so anyone can execute.
+   If the executor address in the 48-byte format is the zero address, anyone can also execute.
 3. **Smart account:** The smart account manager may restrict the executor.
    The asset manager passes every request through.
 
