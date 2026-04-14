@@ -248,6 +248,7 @@ const sidebars: SidebarsConfig = {
       link: { type: "doc", id: "fassets/overview" },
       items: [
         "fassets/minting",
+        "fassets/direct-minting",
         "fassets/redemption",
         "fassets/collateral",
         "fassets/core-vault",

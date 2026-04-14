@@ -31,7 +31,8 @@ This is the summary of the minting process:
 The minter chooses an agent from the publicly available [agent list](/fassets/overview#agents).
 The choice is based on the minting fee or the amount of free collateral, which must be enough to back the amount to be minted.
 
-The minter sends to the Asset Manager contract a collateral reservation transaction (CRT). The CRT includes:
+The minter sends to the Asset Manager contract a collateral reservation transaction (CRT).
+The CRT includes:
 
     - The address of the chosen agent.
     - The amount to mint, which must be a positive integer of [lots](/fassets/minting#lots).
@@ -120,11 +121,13 @@ The minting fee is further divided in two shares:
 
 #### Agent share
 
-This share remains in the agent's underlying account but is not marked as being in use. The agent can use this balance freely.
+This share remains in the agent's underlying account but is not marked as being in use.
+The agent can use this balance freely.
 
 #### Pool share
 
-This share is minted as FAssets and sent to the [collateral pool](/fassets/collateral#pool-collateral). The percentage of this share is defined by the agent and can be changed by the agent after a delay that provides time for minters to notice the change.
+This share is minted as FAssets and sent to the [collateral pool](/fassets/collateral#pool-collateral).
+The percentage of this share is defined by the agent and can be changed by the agent after a delay that provides time for minters to notice the change.
 
 ### Executor Fee
 
@@ -140,13 +143,21 @@ This design ensures timely and reliable minting finalization without relying on 
 
 ### Minting
 
-The FAssets agent verifies the minter after the user completes the collateral reservation and pays the collateral reservation fee. The agent is responsible for confirming or rejecting the minter's status. If the agent does not respond within a certain timeframe, the minter has the option to cancel the reservation and receive a full refund of the collateral reservation fee.
+The FAssets agent verifies the minter after the user completes the collateral reservation and pays the collateral reservation fee.
+The agent is responsible for confirming or rejecting the minter's status.
+If the agent does not respond within a certain timeframe, the minter has the option to cancel the reservation and receive a full refund of the collateral reservation fee.
 
-To enable the agent to verify the minter, the collateral reservation must include the address (or multiple addresses, in the case of UTXO chains) from which the payment will be made. If multiple addresses are provided, all of them must be used for the payment.
+To enable the agent to verify the minter, the collateral reservation must include the address (or multiple addresses, in the case of UTXO chains) from which the payment will be made.
+If multiple addresses are provided, all of them must be used for the payment.
 
-Users must wait up to 60 seconds before they can cancel their request. If the agent accepts within this time, the user can proceed to mint by depositing the underlying assets. Therefore, it is important for the agent to respond quickly. If the agent does not respond in time, it will depend on whether the user is willing to wait; otherwise, the agent will simply miss the opportunity to mint, but there will be no loss of tokens.
+Users must wait up to 60 seconds before they can cancel their request.
+If the agent accepts within this time, the user can proceed to mint by depositing the underlying assets.
+Therefore, it is important for the agent to respond quickly.
+If the agent does not respond in time, it will depend on whether the user is willing to wait; otherwise, the agent will simply miss the opportunity to mint, but there will be no loss of tokens.
 
-When the agent rejects the minter's request or the minter decides to cancel, the minter will receive a refund of the collateral reservation fee, minus a small percentage (e.g., 5%) that is burned. This burned amount is designed to prevent abuse of the agent by stopping someone from repeatedly reserving collateral from a sanctioned address. If the burned percentage were zero, an attacker could exploit the system without any cost.
+When the agent rejects the minter's request or the minter decides to cancel, the minter will receive a refund of the collateral reservation fee, minus a small percentage (e.g., 5%) that is burned.
+This burned amount is designed to prevent abuse of the agent by stopping someone from repeatedly reserving collateral from a sanctioned address.
+If the burned percentage were zero, an attacker could exploit the system without any cost.
 
 ## Payment Failure
 
@@ -200,7 +211,8 @@ FAssets are still transferred to the minter's account, and the agent's collatera
 ### Expired proof
 
 Proofs provided by the [Flare Data Connector](/fdc/overview) can be created for 14 days and remain valid indefinitely once created.
-Suppose neither the minter nor the agent presents the proof of payment or nonpayment within the 14-day window. In that case, the regular minting process cannot continue, and the agent's collateral could be locked indefinitely.
+Suppose neither the minter nor the agent presents the proof of payment or nonpayment within the 14-day window.
+In that case, the regular minting process cannot continue, and the agent's collateral could be locked indefinitely.
 
 In this case, the agent can still recover the collateral by buying it back with native tokens.
 The recovery is accomplished with the following procedure:
