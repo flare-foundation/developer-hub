@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.7.6 <0.9.0;
 
+import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
 import {RandomNumberV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/RandomNumberV2Interface.sol";
 
 /**
@@ -12,8 +13,6 @@ import {RandomNumberV2Interface} from "@flarenetwork/flare-periphery-contracts/c
  * @notice A lottery contract that utilizes a secure random number for determining winners.
  */
 contract LotteryWithRandomNumber {
-    RandomNumberV2Interface internal randomNumberGenerator;
-
     address[] public participants;
     uint256 public lotteryId;
     uint256 public lotteryEndTimestamp;
@@ -25,14 +24,6 @@ contract LotteryWithRandomNumber {
         uint256 randomNumber,
         uint256 timestamp
     );
-
-    /**
-     * @notice Initializes the contract with the address of the random number generator.
-     * @param _randomNumberGenerator The address of the RandomNumberV2Interface contract.
-     */
-    constructor(address _randomNumberGenerator) {
-        randomNumberGenerator = RandomNumberV2Interface(_randomNumberGenerator);
-    }
 
     /**
      * @notice Enter the lottery.
@@ -69,6 +60,8 @@ contract LotteryWithRandomNumber {
         require(participants.length > 0, "No participants in the lottery");
 
         // Get the current random number and its properties
+        RandomNumberV2Interface randomNumberGenerator = ContractRegistry
+            .getRandomNumberV2();
         (
             uint256 randomNumber,
             bool isSecureRandom,
