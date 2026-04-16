@@ -10,16 +10,6 @@ import {RandomNumberV2Interface} from "@flarenetwork/flare-periphery-contracts/c
  * @dev THIS IS AN EXAMPLE CONTRACT. DO NOT USE THIS EXACT CODE IN PRODUCTION.
  */
 contract SecureRandomConsumer {
-    /// @notice Random number provider (fetched from ContractRegistry at construction).
-    RandomNumberV2Interface public immutable randomV2;
-
-    /**
-     * @notice Initialize and grab the RandomNumberV2 instance from the ContractRegistry.
-     */
-    constructor() {
-        randomV2 = ContractRegistry.getRandomNumberV2();
-    }
-
     /**
      * @notice Returns the latest secure random number.
      * @dev The underlying provider returns `(uint256 random, bool isSecure, uint256 timestamp)`.
@@ -31,6 +21,7 @@ contract SecureRandomConsumer {
         view
         returns (uint256 randomNumber, bool isSecure, uint256 timestamp)
     {
+        RandomNumberV2Interface randomV2 = ContractRegistry.getRandomNumberV2();
         (uint256 _randomNumber, bool _isSecure, uint256 _timestamp) = randomV2
             .getRandomNumber();
 
@@ -51,6 +42,7 @@ contract SecureRandomConsumer {
         view
         returns (uint256 randomNumber, bool isSecure, uint256 timestamp)
     {
+        RandomNumberV2Interface randomV2 = ContractRegistry.getRandomNumberV2();
         (randomNumber, isSecure, timestamp) = randomV2.getRandomNumber();
     }
 }
