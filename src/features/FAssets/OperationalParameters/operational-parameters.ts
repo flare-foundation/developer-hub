@@ -1235,6 +1235,217 @@ export const operationalParameters = [
           },
         },
       },
+      {
+        name: "Core Vault Donation Tag",
+        settingName: "coreVaultDonationTag",
+        description:
+          "Destination tag that must be added to core vault donation transactions.",
+        values: {
+          coston2: {
+            xrp: "14",
+          },
+        },
+      },
+    ],
+  },
+  {
+    title: "Direct Minting",
+    parameters: [
+      {
+        name: "Direct Minting Minimum Fee",
+        settingName: "directMintingMinimumFee",
+        description:
+          "Minimum fee charged for direct minting, in base unit of the underlying asset (UBA).",
+        values: {
+          flare: {
+            xrp: "-",
+          },
+          coston2: {
+            xrp: "0.1 TestXRP",
+          },
+          songbird: {
+            xrp: "-",
+          },
+          coston: {
+            xrp: "-",
+          },
+        },
+      },
+      {
+        name: "Direct Minting Fee",
+        settingName: "directMintingFeeBIPS",
+        description:
+          "Direct minting fee as a percentage of the minting amount, in BIPS.",
+        values: {
+          flare: {
+            xrp: "-",
+          },
+          coston2: {
+            xrp: "0.25%",
+          },
+          songbird: {
+            xrp: "-",
+          },
+          coston: {
+            xrp: "-",
+          },
+        },
+      },
+      {
+        name: "Direct Minting Executor Fee",
+        settingName: "directMintingExecutorFeeUBA",
+        description:
+          "Fee paid to the executor of a direct minting request, in base unit of the underlying asset (UBA). This only applies to direct mintings to address, for direct minting to smart account the executor fee is calculated and paid by the smart account manager.",
+        values: {
+          flare: {
+            xrp: "-",
+          },
+          coston2: {
+            xrp: "0.1 TestXRP",
+          },
+          songbird: {
+            xrp: "-",
+          },
+          coston: {
+            xrp: "-",
+          },
+        },
+      },
+      {
+        name: "Direct Minting Others Can Execute After",
+        settingName: "directMintingOthersCanExecuteAfterSeconds",
+        description:
+          "Time in seconds after which anyone can execute a direct minting request (not just the executor set by the minter).",
+        values: {
+          flare: {
+            xrp: "-",
+          },
+          coston2: {
+            xrp: "2 hours",
+          },
+          songbird: {
+            xrp: "-",
+          },
+          coston: {
+            xrp: "-",
+          },
+        },
+      },
+      {
+        name: "Direct Minting Hourly Limit",
+        settingName: "directMintingHourlyLimitUBA",
+        description:
+          "Maximum amount that can be directly minted per hour, in base unit of the underlying asset (UBA). After that the mintings are delayed.",
+        values: {
+          flare: {
+            xrp: "-",
+          },
+          coston2: {
+            xrp: "100k TestXRP",
+          },
+          songbird: {
+            xrp: "-",
+          },
+          coston: {
+            xrp: "-",
+          },
+        },
+      },
+      {
+        name: "Direct Minting Daily Limit",
+        settingName: "directMintingDailyLimitUBA",
+        description:
+          "Maximum amount that can be directly minted per day, in base unit of the underlying asset (UBA). After that the mintings are delayed.",
+        values: {
+          flare: {
+            xrp: "-",
+          },
+          coston2: {
+            xrp: "500k TestXRP",
+          },
+          songbird: {
+            xrp: "-",
+          },
+          coston: {
+            xrp: "-",
+          },
+        },
+      },
+      {
+        name: "Direct Minting Large Minting Threshold",
+        settingName: "directMintingLargeMintingThresholdUBA",
+        description:
+          "Threshold above which a direct minting is considered large, in base unit of the underlying asset (UBA). Large mintings are always delayed.",
+        values: {
+          flare: {
+            xrp: "-",
+          },
+          coston2: {
+            xrp: "100k TestXRP",
+          },
+          songbird: {
+            xrp: "-",
+          },
+          coston: {
+            xrp: "-",
+          },
+        },
+      },
+      {
+        name: "Direct Minting Large Minting Delay",
+        settingName: "directMintingLargeMintingDelaySeconds",
+        description:
+          "Delay in seconds imposed on large direct mintings before they can be executed.",
+        values: {
+          flare: {
+            xrp: "-",
+          },
+          coston2: {
+            xrp: "1 hour",
+          },
+          songbird: {
+            xrp: "-",
+          },
+          coston: {
+            xrp: "-",
+          },
+        },
+      },
+      {
+        name: "Direct Minting Fee Receiver",
+        settingName: "directMintingFeeReceiver",
+        description: "Address that receives the direct minting fee.",
+        values: {
+          flare: {
+            xrp: "0x0000000000000000000000000000000000000000",
+          },
+          coston2: {
+            xrp: "0xDcDD7547EdA881b675B58c11922aF4A726cCb01B",
+          },
+          songbird: {
+            xrp: "0xDcDD7547EdA881b675B58c11922aF4A726cCb01B",
+          },
+          coston: {
+            xrp: "0xDcDD7547EdA881b675B58c11922aF4A726cCb01B",
+          },
+        },
+      },
+    ],
+  },
+  {
+    title: "Redeem With Tag",
+    parameters: [
+      {
+        name: "Minimum Redeem Amount",
+        settingName: "minimumRedeemAmount",
+        description:
+          "Minimum amount that can be redeemed, in base unit of the underlying asset (UBA).",
+        values: {
+          coston2: {
+            xrp: "5 TestXRP",
+          },
+        },
+      },
     ],
   },
 ];
