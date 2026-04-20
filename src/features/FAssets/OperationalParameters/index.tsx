@@ -8,9 +8,11 @@ import { operationalParameters } from "./operational-parameters";
 export default function OperationalParameters({
   sectionTitle,
   filterParameters,
+  networks,
 }: {
   sectionTitle: string;
   filterParameters?: string[];
+  networks?: ("songbird" | "coston" | "coston2" | "flare")[];
 }) {
   const operationalParametersSection = operationalParameters.find(
     (section) => section.title === sectionTitle,
@@ -29,6 +31,7 @@ export default function OperationalParameters({
 
   type OperationalParameter =
     (typeof operationalParameters)[number]["parameters"][number];
+  type Network = "songbird" | "coston" | "coston2" | "flare";
 
   function ParameterTable({
     network,
@@ -43,6 +46,14 @@ export default function OperationalParameters({
     hideBtc?: boolean;
     hideDoge?: boolean;
   }) {
+    const getNetworkValue = (
+      parameter: OperationalParameter,
+      asset: "xrp" | "btc" | "doge",
+    ) => {
+      const value = parameter.values?.[network]?.[asset];
+      return typeof value === "string" && value.trim().length > 0 ? value : "-";
+    };
+
     return (
       <table>
         <thead>
@@ -104,21 +115,21 @@ export default function OperationalParameters({
               {!hideXrp && (
                 <td
                   dangerouslySetInnerHTML={{
-                    __html: parameter.values[network].xrp,
+                    __html: getNetworkValue(parameter, "xrp"),
                   }}
                 />
               )}
               {!hideBtc && (
                 <td
                   dangerouslySetInnerHTML={{
-                    __html: parameter.values[network].btc,
+                    __html: getNetworkValue(parameter, "btc"),
                   }}
                 />
               )}
               {!hideDoge && (
                 <td
                   dangerouslySetInnerHTML={{
-                    __html: parameter.values[network].doge,
+                    __html: getNetworkValue(parameter, "doge"),
                   }}
                 />
               )}
@@ -129,43 +140,60 @@ export default function OperationalParameters({
     );
   }
 
+  const networkTabs: {
+    label: string;
+    value: Network;
+    hideBtc: boolean;
+    hideDoge: boolean;
+  }[] = [
+    {
+      label: "Flare Mainnet",
+      value: "flare",
+      hideBtc: true,
+      hideDoge: true,
+    },
+    {
+      label: "Flare Testnet Coston2",
+      value: "coston2",
+      hideBtc: true,
+      hideDoge: true,
+    },
+    {
+      label: "Songbird Canary-Network",
+      value: "songbird",
+      hideBtc: true,
+      hideDoge: true,
+    },
+    {
+      label: "Songbird Testnet Coston",
+      value: "coston",
+      hideBtc: false,
+      hideDoge: false,
+    },
+  ];
+
+  const visibleTabs = networks?.length
+    ? networkTabs.filter((tab) => networks.includes(tab.value))
+    : networkTabs;
+
   return (
     <Tabs
-      defaultValue="flare"
-      values={[
-        { label: "Flare Mainnet", value: "flare" },
-        { label: "Flare Testnet Coston2", value: "coston2" },
-        { label: "Songbird Canary-Network", value: "songbird" },
-        { label: "Songbird Testnet Coston", value: "coston" },
-      ]}
+      defaultValue={visibleTabs[0]?.value ?? "flare"}
+      values={visibleTabs.map((tab) => ({
+        label: tab.label,
+        value: tab.value,
+      }))}
     >
-      <TabItem value="flare">
-        <ParameterTable
-          network="flare"
-          parameters={parameters}
-          hideBtc
-          hideDoge
-        />
-      </TabItem>
-      <TabItem value="coston2">
-        <ParameterTable
-          network="coston2"
-          parameters={parameters}
-          hideBtc
-          hideDoge
-        />
-      </TabItem>
-      <TabItem value="songbird">
-        <ParameterTable
-          network="songbird"
-          parameters={parameters}
-          hideBtc
-          hideDoge
-        />
-      </TabItem>
-      <TabItem value="coston">
-        <ParameterTable network="coston" parameters={parameters} />
-      </TabItem>
+      {visibleTabs.map((tab) => (
+        <TabItem key={tab.value} value={tab.value}>
+          <ParameterTable
+            network={tab.value}
+            parameters={parameters}
+            hideBtc={tab.hideBtc}
+            hideDoge={tab.hideDoge}
+          />
+        </TabItem>
+      ))}
     </Tabs>
   );
 }
