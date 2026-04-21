@@ -1,0 +1,97 @@
+---
+title: IMintingTagManager
+description: FAssets IMintingTagManager interface reference.
+keywords: [fassets, minting-tags, xrp, bitcoin, dogecoin, flare-network]
+sidebar_position: 5
+---
+
+Reference for managing and interacting with FAssets `IMintingTagManager`.
+
+To get the minting tag manager address, use the [getMintingTagManager](/fassets/reference/IAssetManager#getmintingtagmanager) method on the [IAssetManager](/fassets/reference/IAssetManager) contract.
+
+## Functions
+
+### `reserve`
+
+Reserve a new minting tag by paying the reservation fee.
+The caller becomes the owner of the tag and the initial minting recipient.
+
+```solidity
+function reserve() external payable returns (uint256);
+```
+
+#### Returns
+
+- The newly reserved minting tag ID.
+
+### `setMintingRecipient`
+
+Set the minting recipient for a tag.
+Only callable by the tag owner.
+The minting recipient is the address that receives minted FAssets when this tag is used.
+
+```solidity
+function setMintingRecipient(uint256 _mintingTag, address _recipient) external;
+```
+
+#### Parameters
+
+- `_mintingTag`: The minting tag ID.
+- `_recipient`: The new minting recipient address (must not be the zero address).
+
+### `reservationFee`
+
+Return the fee (in native currency) required to reserve a new minting tag.
+
+```solidity
+function reservationFee() external view returns (uint256);
+```
+
+### `reservedTagsForOwner`
+
+Return all minting tag IDs owned by the given address.
+
+```solidity
+function reservedTagsForOwner(address _owner) external view returns (uint256[] memory);
+```
+
+#### Parameters
+
+- `_owner`: The address to query.
+
+#### Returns
+
+- An array of minting tag IDs owned by `_owner`.
+
+### `mintingRecipient`
+
+Return the minting recipient for a given tag.
+
+```solidity
+function mintingRecipient(uint256 _mintingTag) external view returns (address);
+```
+
+#### Parameters
+
+- `_mintingTag`: The minting tag ID.
+
+#### Returns
+
+- The address that receives minted FAssets when this tag is used.
+
+### `allowedExecutor`
+
+Return the currently active allowed executor for a given tag.
+If no executor is set or the pending change has not activated yet, this returns the previous executor.
+
+```solidity
+function allowedExecutor(uint256 _mintingTag) external view returns (address);
+```
+
+#### Parameters
+
+- `_mintingTag`: The minting tag ID.
+
+#### Returns
+
+- The address of the allowed executor, or `address(0)` if none is set.
