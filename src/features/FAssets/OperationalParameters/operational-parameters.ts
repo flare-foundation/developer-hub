@@ -1253,7 +1253,9 @@ export const operationalParameters = [
     parameters: [
       {
         name: "Direct Minting Minimum Fee",
-        settingName: "directMintingMinimumFee",
+        functionName: "getDirectMintingMinimumFeeUBA",
+        interfaceLink:
+          "/fassets/reference/IAssetManager#getdirectmintingminimumfeeuba",
         description:
           "Minimum fee charged for direct minting, in base unit of the underlying asset (UBA).",
         values: {
@@ -1273,7 +1275,9 @@ export const operationalParameters = [
       },
       {
         name: "Direct Minting Fee",
-        settingName: "directMintingFeeBIPS",
+        functionName: "getDirectMintingFeeBIPS",
+        interfaceLink:
+          "/fassets/reference/IAssetManager#getdirectmintingfeebips",
         description:
           "Direct minting fee as a percentage of the minting amount, in BIPS.",
         values: {
@@ -1293,7 +1297,9 @@ export const operationalParameters = [
       },
       {
         name: "Direct Minting Executor Fee",
-        settingName: "directMintingExecutorFeeUBA",
+        functionName: "getDirectMintingExecutorFeeUBA",
+        interfaceLink:
+          "/fassets/reference/IAssetManager#getdirectmintingexecutorfeeuba",
         description:
           "Fee paid to the executor of a direct minting request, in base unit of the underlying asset (UBA). This only applies to direct mintings to address, for direct minting to smart account the executor fee is calculated and paid by the smart account manager.",
         values: {
@@ -1313,7 +1319,9 @@ export const operationalParameters = [
       },
       {
         name: "Direct Minting Others Can Execute After",
-        settingName: "directMintingOthersCanExecuteAfterSeconds",
+        functionName: "getDirectMintingOthersCanExecuteAfterSeconds",
+        interfaceLink:
+          "/fassets/reference/IAssetManager#getdirectmintingotherscanexecuteafterseconds",
         description:
           "Time in seconds after which anyone can execute a direct minting request (not just the executor set by the minter).",
         values: {
@@ -1333,7 +1341,9 @@ export const operationalParameters = [
       },
       {
         name: "Direct Minting Hourly Limit",
-        settingName: "directMintingHourlyLimitUBA",
+        functionName: "getDirectMintingHourlyLimitUBA",
+        interfaceLink:
+          "/fassets/reference/IAssetManager#getdirectmintinghourlylimituba",
         description:
           "Maximum amount that can be directly minted per hour, in base unit of the underlying asset (UBA). After that the mintings are delayed.",
         values: {
@@ -1353,7 +1363,9 @@ export const operationalParameters = [
       },
       {
         name: "Direct Minting Daily Limit",
-        settingName: "directMintingDailyLimitUBA",
+        functionName: "getDirectMintingDailyLimitUBA",
+        interfaceLink:
+          "/fassets/reference/IAssetManager#getdirectmintingdailylimituba",
         description:
           "Maximum amount that can be directly minted per day, in base unit of the underlying asset (UBA). After that the mintings are delayed.",
         values: {
@@ -1373,7 +1385,9 @@ export const operationalParameters = [
       },
       {
         name: "Direct Minting Large Minting Threshold",
-        settingName: "directMintingLargeMintingThresholdUBA",
+        functionName: "getDirectMintingLargeMintingThresholdUBA",
+        interfaceLink:
+          "/fassets/reference/IAssetManager#getdirectmintinglargemintingthresholduba",
         description:
           "Threshold above which a direct minting is considered large, in base unit of the underlying asset (UBA). Large mintings are always delayed.",
         values: {
@@ -1393,7 +1407,9 @@ export const operationalParameters = [
       },
       {
         name: "Direct Minting Large Minting Delay",
-        settingName: "directMintingLargeMintingDelaySeconds",
+        functionName: "getDirectMintingLargeMintingDelaySeconds",
+        interfaceLink:
+          "/fassets/reference/IAssetManager#getdirectmintinglargemintingdelayseconds",
         description:
           "Delay in seconds imposed on large direct mintings before they can be executed.",
         values: {
@@ -1413,7 +1429,9 @@ export const operationalParameters = [
       },
       {
         name: "Direct Minting Fee Receiver",
-        settingName: "directMintingFeeReceiver",
+        functionName: "getDirectMintingFeeReceiver",
+        interfaceLink:
+          "/fassets/reference/IAssetManager#getdirectmintingfeereceiver",
         description: "Address that receives the direct minting fee.",
         values: {
           flare: {
@@ -1437,7 +1455,9 @@ export const operationalParameters = [
     parameters: [
       {
         name: "Minimum Redeem Amount",
-        settingName: "minimumRedeemAmount",
+        functionName: "minimumRedeemAmountUBA",
+        interfaceLink:
+          "/fassets/reference/IAssetManager#minimumredeemamountuba",
         description:
           "Minimum amount that can be redeemed, in base unit of the underlying asset (UBA).",
         values: {
