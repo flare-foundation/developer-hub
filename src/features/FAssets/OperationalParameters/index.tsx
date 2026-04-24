@@ -2,6 +2,7 @@ import React from "react";
 import Tabs from "@theme/Tabs";
 import TabItem from "@theme/TabItem";
 import Link from "@docusaurus/Link";
+import CopyButton from "@site/src/components/CopyButton";
 
 import { operationalParameters } from "./operational-parameters";
 
@@ -32,6 +33,20 @@ export default function OperationalParameters({
   type OperationalParameter =
     (typeof operationalParameters)[number]["parameters"][number];
   type Network = "songbird" | "coston" | "coston2" | "flare";
+  type ValueType = "text" | "address";
+
+  const networkAddressExplorerPrefix: Record<Network, string> = {
+    flare: "https://flare-explorer.flare.network/address/",
+    coston2: "https://coston2-explorer.flare.network/address/",
+    songbird: "https://songbird-explorer.flare.network/address/",
+    coston: "https://coston-explorer.flare.network/address/",
+  };
+  const networkExplorerLabel: Record<Network, string> = {
+    flare: "Flare Mainnet",
+    coston2: "Flare Testnet Coston2",
+    songbird: "Songbird Canary-Network",
+    coston: "Songbird Testnet Coston",
+  };
 
   function ParameterTable({
     network,
@@ -46,12 +61,46 @@ export default function OperationalParameters({
     hideBtc?: boolean;
     hideDoge?: boolean;
   }) {
+    const isAddress = (value: string) => /^0x[a-fA-F0-9]{40}$/.test(value);
+
     const getNetworkValue = (
       parameter: OperationalParameter,
       asset: "xrp" | "btc" | "doge",
     ) => {
       const value = parameter.values?.[network]?.[asset];
       return typeof value === "string" && value.trim().length > 0 ? value : "-";
+    };
+
+    const getValueType = (parameter: OperationalParameter): ValueType =>
+      "valueType" in parameter && parameter.valueType === "address"
+        ? "address"
+        : "text";
+
+    const renderValueCell = (
+      parameter: OperationalParameter,
+      asset: "xrp" | "btc" | "doge",
+    ) => {
+      const value = getNetworkValue(parameter, asset);
+      const valueType = getValueType(parameter);
+
+      if (valueType === "address" && value !== "-" && isAddress(value)) {
+        const explorerNetwork = networkExplorerLabel[network];
+        return (
+          <>
+            <Link
+              href={`${networkAddressExplorerPrefix[network]}${value}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={`Open address in ${explorerNetwork} explorer`}
+            >
+              <code>{value}</code>
+            </Link>{" "}
+            <CopyButton textToCopy={value} />
+          </>
+        );
+      }
+
+      return <span dangerouslySetInnerHTML={{ __html: value }} />;
     };
 
     return (
@@ -112,27 +161,9 @@ export default function OperationalParameters({
                 <br />
                 {parameter.description}
               </td>
-              {!hideXrp && (
-                <td
-                  dangerouslySetInnerHTML={{
-                    __html: getNetworkValue(parameter, "xrp"),
-                  }}
-                />
-              )}
-              {!hideBtc && (
-                <td
-                  dangerouslySetInnerHTML={{
-                    __html: getNetworkValue(parameter, "btc"),
-                  }}
-                />
-              )}
-              {!hideDoge && (
-                <td
-                  dangerouslySetInnerHTML={{
-                    __html: getNetworkValue(parameter, "doge"),
-                  }}
-                />
-              )}
+              {!hideXrp && <td>{renderValueCell(parameter, "xrp")}</td>}
+              {!hideBtc && <td>{renderValueCell(parameter, "btc")}</td>}
+              {!hideDoge && <td>{renderValueCell(parameter, "doge")}</td>}
             </tr>
           ))}
         </tbody>

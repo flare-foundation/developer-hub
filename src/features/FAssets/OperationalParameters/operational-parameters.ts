@@ -1433,6 +1433,7 @@ export const operationalParameters = [
         interfaceLink:
           "/fassets/reference/IAssetManager#getdirectmintingfeereceiver",
         description: "Address that receives the direct minting fee.",
+        valueType: "address",
         values: {
           flare: {
             xrp: "0x0000000000000000000000000000000000000000",
@@ -1463,6 +1464,63 @@ export const operationalParameters = [
         values: {
           coston2: {
             xrp: "5 TestXRP",
+          },
+        },
+      },
+    ],
+  },
+  {
+    title: "Minting Tag Manager",
+    parameters: [
+      {
+        name: "Name (NFT)",
+        description: "NFT collection name used by the minting tag manager.",
+        values: {
+          coston2: {
+            xrp: "Minting Tag Manager (FTestXRP open beta)",
+          },
+        },
+      },
+      {
+        name: "Symbol (NFT)",
+        description: "NFT collection symbol used by the minting tag manager.",
+        values: {
+          coston2: {
+            xrp: "MTMTXRP",
+          },
+        },
+      },
+      {
+        name: "Reservation Fee",
+        functionName: "reservationFee",
+        interfaceLink: "/fassets/reference/IMintingTagManager#reservationfee",
+        description:
+          "Fee charged when reserving a minting tag for the NFT-based manager.",
+        values: {
+          coston2: {
+            xrp: "100 C2FLR",
+          },
+        },
+      },
+      {
+        name: "Reservation Fee Recipient",
+        functionName: "mintingRecipient",
+        interfaceLink: "/fassets/reference/IMintingTagManager#mintingrecipient",
+        description: "Address that receives reservation fees.",
+        valueType: "address",
+        values: {
+          coston2: {
+            xrp: "0x355156629f25102c3cc51b7630eb80E9De5d1211",
+          },
+        },
+      },
+      {
+        name: "Reserved Tag Count",
+        settingName: "reservedTagCount",
+        description: "Number of tags reserved for minting operations.",
+        values: {
+          coston2: {
+            xrp: "20",
           },
         },
       },
