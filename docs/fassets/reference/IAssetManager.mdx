@@ -404,6 +404,76 @@ function redeem(
     returns (uint256 _redeemedAmountUBA);
 ```
 
+### `redeemAmount`
+
+Redeem up to `_amountUBA` FAssets, like [`redeem`](/fassets/reference/IAssetManager#redeem), but accepts an arbitrary amount in UBA instead of whole lots and does not require a destination tag.
+
+The `redeemAmount` function enforces a minimum redemption size `minimumRedeemAmount`.
+
+In some cases, not all sent FAssets can be redeemed (for example, if there are insufficient tickets or the maximum ticket limit has been reached).
+In that case, only part of the approved assets are burned and redeemed, and the redeemer can call this method again for the remaining amount.
+The [`RedemptionAmountIncomplete`](/fassets/reference/IAssetManagerEvents#redemptionamountincomplete) event is emitted with the remaining amount.
+
+Parameters:
+
+- `_amountUBA`: Amount of redeemer's FAssets that will be burned (this is not the received amount; redemption fee is subtracted).
+- `_redeemerUnderlyingAddressString`: Address to which the agent must transfer the underlying amount.
+- `_executor`: Account that can execute redemption default (besides redeemer and agent).
+
+Returns:
+
+- `_redeemedAmountUBA`: Actual redeemed amount; may be less than requested when ticket availability or ticket limits apply.
+
+```solidity
+function redeemAmount(
+    uint256 _amountUBA,
+    string memory _redeemerUnderlyingAddressString,
+    address payable _executor
+) external payable
+    returns (uint256 _redeemedAmountUBA);
+```
+
+### `redeemWithTag`
+
+Redeem up to `_amountUBA` FAssets and require a destination tag in the redemption XRPL payment.
+
+In some cases, not all sent FAssets can be redeemed (for example, if there are insufficient tickets or the maximum ticket limit has been reached).
+In that case, only part of the approved assets are burned and redeemed, and the redeemer can call this method again for the remaining amount.
+The [`RedemptionAmountIncomplete`](/fassets/reference/IAssetManagerEvents#redemptionamountincomplete) event is emitted with the remaining amount.
+
+Parameters:
+
+- `_amountUBA`: Amount of redeemer's FAssets that will be burned (this is not the received amount; redemption fee is subtracted).
+- `_redeemerUnderlyingAddressString`: Address to which the agent must transfer the underlying amount.
+- `_executor`: Account that can execute redemption default (besides redeemer and agent).
+- `_destinationTag`: Destination tag required in redemption payment (XRP only; must fit in 32 bits for now).
+
+Returns:
+
+- `_redeemedAmountUBA`: Actual redeemed amount; may be less than requested when ticket availability or ticket limits apply.
+
+```solidity
+function redeemWithTag(
+    uint256 _amountUBA,
+    string memory _redeemerUnderlyingAddressString,
+    address payable _executor,
+    uint256 _destinationTag
+) external payable
+    returns (uint256 _redeemedAmountUBA);
+```
+
+### `minimumRedeemAmountUBA`
+
+Minimum amount in UBA for redemption with tag.
+Redemption requests with smaller amounts are rejected.
+This governance-configured minimum applies to both [`redeemAmount`](/fassets/reference/IAssetManager#redeemamount) and [`redeemWithTag`](/fassets/reference/IAssetManager#redeemwithtag) functions.
+
+```solidity
+function minimumRedeemAmountUBA()
+    external view
+    returns (uint256);
+```
+
 ### `redemptionPaymentDefault`
 
 If the agent fails to transfer the redeemed underlying assets in a timely manner, the redeemer or appointed executor can invoke this method and receive payment in collateral.

@@ -222,6 +222,48 @@ event RedemptionRequested(
     uint256 executorFeeNatWei);
 ```
 
+### `RedemptionWithTagRequested`
+
+Emitted when the redeemer starts redemption with the tag and provides FAssets.
+The amount corresponding to `valueUBA` FAssets is burned.
+
+Several `RedemptionWithTagRequested` events can be emitted in a single redemption call (one per redeemed agent, with multiple tickets for the same agent combined).
+The agent's collateral remains locked at this stage.
+
+Parameters:
+
+- `agentVault`: Address of the agent vault.
+- `redeemer`: Address of the redeemer.
+- `requestId`: Unique identifier for the redemption request.
+- `paymentAddress`: Address on the underlying chain to which the agent must transfer the payment.
+- `valueUBA`: Amount redeemed in underlying base units.
+- `feeUBA`: Redemption fee in underlying base units.
+- `firstUnderlyingBlock`: First underlying block in the valid payment window.
+- `lastUnderlyingBlock`: Last underlying block in the valid payment window.
+- `lastUnderlyingTimestamp`: Last underlying timestamp in the valid payment window.
+- `paymentReference`: Payment reference that must be used in the underlying payment.
+- `executor`: Address allowed to execute redemption default (besides redeemer and agent).
+- `executorFeeNatWei`: Fee paid to the executor in NAT wei.
+- `destinationTag`: Destination tag required for the XRP payment.
+
+```solidity
+event RedemptionWithTagRequested(
+    address indexed agentVault,
+    address indexed redeemer,
+    uint256 indexed requestId,
+    string paymentAddress,
+    uint256 valueUBA,
+    uint256 feeUBA,
+    uint256 firstUnderlyingBlock,
+    uint256 lastUnderlyingBlock,
+    uint256 lastUnderlyingTimestamp,
+    bytes32 paymentReference,
+    address executor,
+    uint256 executorFeeNatWei,
+    uint256 destinationTag
+);
+```
+
 ### `RedemptionTicketCreated`
 
 This event is emitted when a redemption ticket is created, when a minting transaction is executed.
@@ -299,6 +341,22 @@ Parameters:
 event RedemptionRequestIncomplete(
     address indexed redeemer,
     uint256 remainingLots
+);
+```
+
+### `RedemptionAmountIncomplete`
+
+Emitted when only a partial redemption can occur, for instance, if there are insufficient redemption tickets or if fulfilling the entire request would exceed the allowed ticket limit.
+
+Parameters:
+
+- `redeemer`: Address of the user who requested redemption.
+- `remainingAmountUBA`: Amount (UBA) that could not be redeemed and is returned.
+
+```solidity
+event RedemptionAmountIncomplete(
+    address indexed redeemer,
+    uint256 remainingAmountUBA
 );
 ```
 

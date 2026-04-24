@@ -155,6 +155,29 @@ export const operationalParameters = [
           },
         },
       },
+      {
+        name: "Minimum Redeem Amount",
+        settingName: "minimumRedeemAmountUBA",
+        link: "/fassets/reference/IAssetManager#minimumredeemamountuba",
+        description:
+          "Minimum amount that can be redeemed, in base unit of the underlying asset (UBA).",
+        values: {
+          flare: {
+            xrp: "-",
+          },
+          coston2: {
+            xrp: "5 TestXRP",
+          },
+          songbird: {
+            xrp: "-",
+          },
+          coston: {
+            xrp: "-",
+            btc: "-",
+            doge: "-",
+          },
+        },
+      },
     ],
   },
   {
