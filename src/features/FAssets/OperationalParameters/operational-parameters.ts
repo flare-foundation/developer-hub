@@ -1267,6 +1267,9 @@ export const operationalParameters = [
           coston2: {
             xrp: "14",
           },
+          songbird: {
+            xrp: "1",
+          },
         },
       },
     ],
@@ -1282,17 +1285,11 @@ export const operationalParameters = [
         description:
           "Minimum fee charged for direct minting, in base unit of the underlying asset (UBA).",
         values: {
-          flare: {
-            xrp: "-",
-          },
           coston2: {
             xrp: "0.1 TestXRP",
           },
           songbird: {
-            xrp: "-",
-          },
-          coston: {
-            xrp: "-",
+            xrp: "0.1 XRP",
           },
         },
       },
@@ -1304,17 +1301,11 @@ export const operationalParameters = [
         description:
           "Direct minting fee as a percentage of the minting amount, in BIPS.",
         values: {
-          flare: {
-            xrp: "-",
-          },
           coston2: {
             xrp: "0.25%",
           },
           songbird: {
-            xrp: "-",
-          },
-          coston: {
-            xrp: "-",
+            xrp: "0.1%",
           },
         },
       },
@@ -1326,17 +1317,11 @@ export const operationalParameters = [
         description:
           "Fee paid to the executor of a direct minting request, in base unit of the underlying asset (UBA). This only applies to direct mintings to address, for direct minting to smart account the executor fee is calculated and paid by the smart account manager.",
         values: {
-          flare: {
-            xrp: "-",
-          },
           coston2: {
             xrp: "0.1 TestXRP",
           },
           songbird: {
-            xrp: "-",
-          },
-          coston: {
-            xrp: "-",
+            xrp: "0.2 XRP",
           },
         },
       },
@@ -1348,17 +1333,11 @@ export const operationalParameters = [
         description:
           "Time in seconds after which anyone can execute a direct minting request (not just the executor set by the minter).",
         values: {
-          flare: {
-            xrp: "-",
-          },
           coston2: {
             xrp: "2 hours",
           },
           songbird: {
-            xrp: "-",
-          },
-          coston: {
-            xrp: "-",
+            xrp: "2 hours",
           },
         },
       },
@@ -1370,17 +1349,11 @@ export const operationalParameters = [
         description:
           "Maximum amount that can be directly minted per hour, in base unit of the underlying asset (UBA). After that the mintings are delayed.",
         values: {
-          flare: {
-            xrp: "-",
-          },
           coston2: {
             xrp: "100k TestXRP",
           },
           songbird: {
-            xrp: "-",
-          },
-          coston: {
-            xrp: "-",
+            xrp: "50k",
           },
         },
       },
@@ -1392,17 +1365,11 @@ export const operationalParameters = [
         description:
           "Maximum amount that can be directly minted per day, in base unit of the underlying asset (UBA). After that the mintings are delayed.",
         values: {
-          flare: {
-            xrp: "-",
-          },
           coston2: {
             xrp: "500k TestXRP",
           },
           songbird: {
-            xrp: "-",
-          },
-          coston: {
-            xrp: "-",
+            xrp: "200k XRP",
           },
         },
       },
@@ -1414,17 +1381,11 @@ export const operationalParameters = [
         description:
           "Threshold above which a direct minting is considered large, in base unit of the underlying asset (UBA). Large mintings are always delayed.",
         values: {
-          flare: {
-            xrp: "-",
-          },
           coston2: {
             xrp: "100k TestXRP",
           },
           songbird: {
-            xrp: "-",
-          },
-          coston: {
-            xrp: "-",
+            xrp: "50k XRP",
           },
         },
       },
@@ -1436,17 +1397,11 @@ export const operationalParameters = [
         description:
           "Delay in seconds imposed on large direct mintings before they can be executed.",
         values: {
-          flare: {
-            xrp: "-",
-          },
           coston2: {
             xrp: "1 hour",
           },
           songbird: {
-            xrp: "-",
-          },
-          coston: {
-            xrp: "-",
+            xrp: "1 day",
           },
         },
       },
@@ -1458,17 +1413,11 @@ export const operationalParameters = [
         description: "Address that receives the direct minting fee.",
         valueType: "address",
         values: {
-          flare: {
-            xrp: "0x0000000000000000000000000000000000000000",
-          },
           coston2: {
             xrp: "0xDcDD7547EdA881b675B58c11922aF4A726cCb01B",
           },
           songbird: {
-            xrp: "0xDcDD7547EdA881b675B58c11922aF4A726cCb01B",
-          },
-          coston: {
-            xrp: "0xDcDD7547EdA881b675B58c11922aF4A726cCb01B",
+            xrp: "0xF55bcAd5568d1584ab6f013f144e1e433Ee551C7",
           },
         },
       },
@@ -1488,6 +1437,9 @@ export const operationalParameters = [
           coston2: {
             xrp: "5 TestXRP",
           },
+          songbird: {
+            xrp: "5 XRP",
+          },
         },
       },
     ],
@@ -1502,6 +1454,9 @@ export const operationalParameters = [
           coston2: {
             xrp: "Minting Tag Manager (FTestXRP open beta)",
           },
+          songbird: {
+            xrp: "FXRP Minting Tag",
+          },
         },
       },
       {
@@ -1510,6 +1465,9 @@ export const operationalParameters = [
         values: {
           coston2: {
             xrp: "MTMTXRP",
+          },
+          songbird: {
+            xrp: "MTFXRP",
           },
         },
       },
@@ -1522,6 +1480,9 @@ export const operationalParameters = [
         values: {
           coston2: {
             xrp: "100 C2FLR",
+          },
+          songbird: {
+            xrp: "1000 SGB",
           },
         },
       },
@@ -1536,6 +1497,9 @@ export const operationalParameters = [
           coston2: {
             xrp: "0x355156629f25102c3cc51b7630eb80E9De5d1211",
           },
+          songbird: {
+            xrp: "0x889A02c0E6d92e77188aDe03e3ce15B73228C197",
+          },
         },
       },
       {
@@ -1545,6 +1509,9 @@ export const operationalParameters = [
         values: {
           coston2: {
             xrp: "20",
+          },
+          songbird: {
+            xrp: "30",
           },
         },
       },
