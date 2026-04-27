@@ -1527,8 +1527,9 @@ export const operationalParameters = [
       },
       {
         name: "Reservation Fee Recipient",
-        functionName: "mintingRecipient",
-        interfaceLink: "/fassets/reference/IMintingTagManager#mintingrecipient",
+        functionName: "getDirectMintingFeeReceiver",
+        interfaceLink:
+          "/fassets/reference/IAssetManager#getdirectmintingfeereceiver",
         description: "Address that receives reservation fees.",
         valueType: "address",
         values: {
