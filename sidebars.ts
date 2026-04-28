@@ -255,7 +255,6 @@ const sidebars: SidebarsConfig = {
         "fassets/liquidation",
         "fassets/emergency-pause",
         "fassets/operational-parameters",
-        "fassets/songbird",
         {
           type: "category",
           label: "Developer Guides",
