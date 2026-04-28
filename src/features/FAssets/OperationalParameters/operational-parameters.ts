@@ -1260,7 +1260,9 @@ export const operationalParameters = [
       },
       {
         name: "Core Vault Donation Tag",
-        settingName: "coreVaultDonationTag",
+        functionName: "getCoreVaultDonationTag",
+        interfaceLink:
+          "/fassets/reference/IAssetManager#getcorevaultdonationtag",
         description:
           "Destination tag that must be added to core vault donation transactions.",
         values: {
@@ -1353,7 +1355,7 @@ export const operationalParameters = [
             xrp: "100k TestXRP",
           },
           songbird: {
-            xrp: "50k",
+            xrp: "50k XRP",
           },
         },
       },
@@ -1505,7 +1507,7 @@ export const operationalParameters = [
       {
         name: "Reserved Tag Count",
         settingName: "reservedTagCount",
-        description: "Number of tags reserved for minting operations.",
+        description: "Initial minting tag ID offset.",
         values: {
           coston2: {
             xrp: "20",
