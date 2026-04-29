@@ -58,7 +58,8 @@ For executor-restricted minting, use the 48-byte memo format described in [Memo 
 1. Define the direct minting prefix constant `DIRECT_MINTING_PREFIX`.
 2. `buildDirectMintingMemo` concatenates the prefix, four zero bytes, and the recipient address (without the `0x` prefix, lowercased) into a 32-byte hex string ready to be passed as [`MemoData`](https://xrpl.org/docs/references/protocol/transactions/common-fields#memos-field) on the XRPL payment.
 3. `sendDirectMintPayment` builds the memo for the recipient and submits an XRPL `Payment` transaction to the [Core Vault](/fassets/core-vault) address with `memos: [{ Memo: { MemoData } }]`, returning the resulting transaction.
-4. Set the net FXRP amount to mint in XRP. Minting and executor fees are added to the net amount to form the XRPL payment amount.
+4. Set the net FXRP amount to mint in XRP.
+   Minting and executor fees are added to the net amount to form the XRPL payment amount.
 5. Connect to the XRPL Testnet using `XRPL_TESTNET_RPC_URL` and load the sender wallet from `XRPL_SEED`.
 6. Resolve the recipient — the Flare [`PersonalAccount`](/smart-accounts/reference/IPersonalAccount) for the XRPL wallet — via [`getPersonalAccountAddress`](/smart-accounts/reference/IPersonalAccount), and look up `AssetManagerFXRP` through the [Flare Contract Registry](/network/guides/flare-contracts-registry) using [`getContractAddressByName`](/network/guides/flare-contracts-registry).
 7. Read three values in parallel:
