@@ -133,7 +133,9 @@ async function main() {
     await Promise.all([
       getDirectMintingPaymentAddress(assetManagerAddress),
       getFxrpBalance(personalAccountAddress),
-      computeDirectMintingPaymentAmountXrp({ netMintAmountXrp: fxrpMintAmount }),
+      computeDirectMintingPaymentAmountXrp({
+        netMintAmountXrp: fxrpMintAmount,
+      }),
     ]);
   console.log("Core Vault XRPL address:", coreVaultXrplAddress, "\n");
   console.log("AssetManagerFXRP address:", assetManagerAddress, "\n");
