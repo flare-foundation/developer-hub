@@ -1,0 +1,90 @@
+---
+title: Direct Mint FXRP with Tag
+tags: [intermediate, fassets]
+slug: fassets-direct-minting-tag
+description: Mint FXRP using a reserved XRPL destination tag.
+keywords: [fassets, fxrp, direct-minting, minting-tag, flare-network, xrpl]
+sidebar_position: 6
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import FAssetsDirectMintingTag from "!!raw-loader!/examples/developer-hub-javascript/fassetsDirectMintingTag.ts";
+
+## Overview
+
+This guide walks you through minting FXRP using [direct minting](/fassets/direct-minting) with an **XRPL destination tag** reserved on Flare that maps to a recipient (and optionally an executor).
+Once a tag is reserved and bound, every XRPL payment to the [Core Vault](/fassets/core-vault) carrying that destination tag mints FXRP to the configured recipient — no per-payment memo required.
+
+The complete runnable example is available in the [flare-viem-starter](https://github.com/flare-foundation/flare-viem-starter/blob/main/src/fassets/direct-mint-tag.ts) repository.
+
+## Tag vs. memo
+
+Compared to the [memo-based direct minting](/fassets/developer-guides/fassets-direct-minting), the tag flow is better suited for repeat minters:
+
+- **One-time setup**: reserve a tag once via [`MintingTagManager`](/fassets/reference/IMintingTagManager) — pay the [`reservationFee`](/fassets/reference/IMintingTagManager#reservationfee) in native token and bind the recipient with [`setMintingRecipient`](/fassets/reference/IMintingTagManager#setmintingrecipient).
+- **Reusable**: every subsequent XRPL payment with the same destination tag routes to the bound recipient without rebuilding a memo.
+- **Transferable**: tags are [ERC-721 NFTs](https://ethereum.org/developers/docs/standards/tokens/erc-721/) and can be transferred to another owner with [`transfer`](/fassets/reference/IMintingTagManager#transfer).
+- **Optional preferred executor**: the tag owner may restrict execution via `setAllowedExecutor`.
+  After [`othersCanExecuteAfterSeconds`](/fassets/reference/IAssetManager#getdirectmintingotherscanexecuteafterseconds), anyone can finalize.
+
+## Prerequisites
+
+- [Flare smart account](/smart-accounts/overview) controlled by your XRPL wallet.
+- Native FLR (or C2FLR on Coston2) on the Flare wallet to cover the tag reservation fee.
+- Testnet XRP on the XRP Ledger Testnet — get it from the [XRP Testnet Faucet](https://xrpl.org/resources/dev-tools/xrp-faucets).
+- Environment variables:
+  - `XRPL_TESTNET_RPC_URL` — XRPL Testnet RPC endpoint.
+  - `XRPL_SEED` — seed for the XRPL wallet that will send the payment.
+  - `MINTING_TAG` — _optional_.
+    If set, the script reuses this tag instead of reserving a new one.
+
+## Direct Minting Tag Script
+
+<CodeBlock language="typescript" title="src/fassets/direct-mint-tag.ts">
+  {FAssetsDirectMintingTag}
+</CodeBlock>
+
+## Code Breakdown
+
+1. `reserveTag` function reads the [`reservationFee`](/fassets/reference/IMintingTagManager#reservationfee) from [`MintingTagManager`](/fassets/reference/IMintingTagManager) contract and calls [`reserve`](/fassets/reference/IMintingTagManager#reserve) with the fee.
+   The contract assigns the next available tag and returns it.
+2. `setMintingRecipient` function binds the tag to a recipient address via [`setMintingRecipient`](/fassets/reference/IMintingTagManager#setmintingrecipient).
+   Payments arriving at the [Core Vault](/fassets/core-vault) with this destination tag will mint FXRP to that recipient.
+3. `getMintingRecipient` reads the [`mintingRecipient`](/fassets/reference/IMintingTagManager#mintingrecipient) currently configured for a tag.
+4. `getOrReserveTag` reuses `MINTING_TAG` from the `.env` variables if set; otherwise, it reserves a new tag and binds it to the recipient.
+5. Set the net FXRP amount to mint in XRP.
+   Minting and executor fees are added to the the XRPL payment amount.
+6. Connect to the XRPL Testnet using `XRPL_TESTNET_RPC_URL` and load the sender wallet from `XRPL_SEED`.
+7. Resolve the recipient — the Flare [`PersonalAccount`](/smart-accounts/reference/IPersonalAccount) for the XRPL wallet — via [`getPersonalAccountAddress`](/smart-accounts/reference/IPersonalAccount), and look up `AssetManagerFXRP` through the [Flare Contract Registry](/network/guides/flare-contracts-registry) using [`getContractAddressByName`](/network/guides/flare-contracts-registry).
+8. Resolve the [`MintingTagManager`](/fassets/reference/IMintingTagManager) contract address from the `AssetManager` using [`getMintingTagManager`](/fassets/reference/IAssetManager#getmintingtagmanager).
+9. Reserve a new tag (or reuse one from `MINTING_TAG`) and confirm the configured recipient.
+10. Read three values in parallel:
+    - `getDirectMintingPaymentAddress` — the Core Vault XRPL address that receives the payment.
+    - `getFxrpBalance` — the recipient's FXRP balance before minting.
+    - `computeDirectMintingPaymentAmountXrp` — the gross XRP amount equal to the net mint amount plus the minting fee and the executor fee, as quoted by the `AssetManagerFXRP` contract.
+11. Send the XRPL payment to the [Core Vault](/fassets/core-vault) with `destinationTag: Number(tag)` — no memo required.
+12. Wait for the [`DirectMintingExecuted`](/fassets/reference/IAssetManagerEvents#directmintingexecuted) event on `AssetManagerFXRP` using the `waitForDirectMintingExecuted` function.
+    The event's `mintedAmountUBA`, `mintingFeeUBA`, and `executorFeeUBA` describe how the underlying payment was split.
+13. Read the final FXRP balance and log the delta.
+
+## Important Notes
+
+- **Reservations cost native currency.**
+  Tag reservation pays a fee in native token.
+  Tags are assigned sequentially.
+- **Executor changes are not immediate.** After calling the `setAllowedExecutor` function, the new executor only becomes active after a 10-minute cooldown to protect in-flight FDC proofs.
+  See [Executor Restrictions](/fassets/direct-minting#executor-restrictions).
+- **Transferring a tag resets it.**
+  When ownership changes, the recipient is reset to the new owner, and the executor is reset to the zero address.
+- **Rate limits may delay execution.**
+  If the minting hits hourly, daily, or large-minting thresholds, [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) is emitted instead of [`DirectMintingExecuted`](/fassets/reference/IAssetManagerEvents#directmintingexecuted), with an `executionAllowedAt` timestamp.
+
+:::tip[What's next]
+
+To continue your FAssets development journey, you can:
+
+- Read the protocol details in [Direct Minting](/fassets/direct-minting).
+- Mint without a reserved tag using [memo-based direct minting](/fassets/developer-guides/fassets-direct-minting).
+- Check current limits and fees in [Operational Parameters](/fassets/operational-parameters).
+
+:::
