@@ -1,0 +1,64 @@
+---
+title: Redeem FXRP by Amount
+tags: [intermediate, fassets]
+slug: fassets-redeem-amount
+description: Redeem any amount of FXRP without rounding to whole lots.
+keywords: [fassets, fxrp, redemption, redeem-amount, flare-network, xrpl]
+sidebar_position: 9
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import FAssetsRedeemAmount from "!!raw-loader!/examples/developer-hub-javascript/fassetsRedeemAmount.ts";
+
+## Overview
+
+This guide walks you through redeeming FXRP using [`redeemAmount`](/fassets/reference/IAssetManager#redeemamount) on the `AssetManagerFXRP` contract.
+Unlike the previous [`redeem`](/fassets/reference/IAssetManager#redeem) guide, `redeemAmount` accepts an arbitrary amount instead of whole lots.
+
+The complete runnable example is available in the [flare-viem-starter](https://github.com/flare-foundation/flare-viem-starter/blob/main/src/fassets/redeem-amount.ts) repository.
+
+## Prerequisites
+
+- An EVM wallet with FXRP.
+- Native tokens on the same wallet to cover the gas fees.
+- An XRPL address to receive the redeemed XRP.
+
+## Redeem Amount Script
+
+<CodeBlock language="typescript" title="src/fassets/redeem-amount.ts">
+  {FAssetsRedeemAmount}
+</CodeBlock>
+
+## Code Breakdown
+
+1. Set `REDEEM_AMOUNT_UBA` to the amount of FXRP to redeem in UBA (underlying base unit).
+2. Set `REDEEMER_UNDERLYING_ADDRESS_STRING` to the XRPL address that will receive the redeemed XRP from the agent.
+3. `EXECUTOR_ZERO_ADDRESS` is used because no executor is appointed in this example.
+   Pass a real address to delegate default-handling to an executor.
+4. Resolve the `AssetManagerFXRP` address through the [Flare Contract Registry](/network/guides/flare-contracts-registry) using [`getContractAddressByName`](/network/guides/flare-contracts-registry).
+5. Read [`minimumRedeemAmountUBA`](/fassets/reference/IAssetManager#minimumredeemamountuba) and check that the requested amount is at least the protocol minimum.
+6. Simulate the [`redeemAmount`](/fassets/reference/IAssetManager#redeemamount) call to validate the arguments and produce a signed request payload.
+7. Submit the redemption request transaction.
+8. Wait for the transaction receipt.
+9. Decode [`RedemptionRequested`](/fassets/reference/IAssetManagerEvents#redemptionrequested) events from the receipt logs with the `parseEventLogs` function and select the one whose `redeemer` matches the caller.
+   A single call may emit multiple `RedemptionRequested` events when multiple agents fulfill the request.
+
+## Important Notes
+
+- **`minimumRedeemAmountUBA` is enforced on-chain.** Requests below the threshold revert.
+- **The redemption may be partial.** If the request requires too many redemption tickets, only part is fulfilled, and the remaining tickets are returned via [`RedemptionAmountIncomplete`](/fassets/reference/IAssetManagerEvents#redemptionamountincomplete).
+  Call `redeemAmount` again for the remainder.
+- **Multiple agents may pay.** A single `redeemAmount` call can produce several [`RedemptionRequested`](/fassets/reference/IAssetManagerEvents#redemptionrequested) events — one per agent serving the request.
+  Track each `requestId` for the agent's underlying-chain payment.
+- **Agents have a deadline to pay.** If an agent fails to pay within the redemption window, start the [redemption default process](/fassets/developer-guides/fassets-redemption-default).
+- **Use `redeemWithTag` for exchange deposits.** When the destination XRPL address requires a destination tag, call [`redeemWithTag`](/fassets/reference/IAssetManager#redeemwithtag) instead.
+
+:::tip[What's next]
+
+To continue your FAssets development journey, you can:
+
+- Redeem with tag with [`redeemWithTag`](/fassets/developer-guides/fassets-redeem-with-tag).
+- Handle non-paying agents in [Monitor Redemptions & Execute Defaults](/fassets/developer-guides/fassets-redemption-default).
+- Mint without a tag using [memo-based direct minting](/fassets/developer-guides/fassets-direct-minting) or [direct minting with tag](/fassets/developer-guides/fassets-direct-minting-tag).
+
+:::

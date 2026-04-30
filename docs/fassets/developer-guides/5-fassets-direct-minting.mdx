@@ -1,0 +1,89 @@
+---
+title: Direct Mint FXRP
+tags: [intermediate, fassets]
+slug: fassets-direct-minting
+description: Mint FXRP in a single XRPL payment using direct minting.
+keywords: [fassets, fxrp, direct-minting, flare-network, xrpl]
+sidebar_position: 5
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import FAssetsDirectMinting from "!!raw-loader!/examples/developer-hub-javascript/fassetsDirectMinting.ts";
+
+## Overview
+
+This guide walks you through minting FAssets FXRP using [direct minting](/fassets/direct-minting): a single XRPL payment to the FXRP [Core Vault](/fassets/core-vault) with a memo that encodes the Flare-side recipient.
+An executor then finalizes the mint on Flare, and the recipient receives FXRP.
+
+The complete runnable example is available in the [flare-viem-starter](https://github.com/flare-foundation/flare-viem-starter/blob/main/src/fassets/direct-mint.ts) repository.
+
+## How it differs from standard minting
+
+Compared to the standard [collateral reservation flow](/fassets/developer-guides/fassets-mint), direct minting is a single-step XRPL payment:
+
+- No collateral reservation — the minter does not call [`reserveCollateral`](/fassets/developer-guides/fassets-mint#reserve-collateral) and there is no agent selection.
+- A single XRPL payment to the Core Vault address replaces the agent payment.
+- The recipient (and optionally the executor) is encoded in the XRPL memo or destination tag.
+- An executor calls `executeDirectMinting` on Flare to finalize and receives a flat fee.
+
+This guide demonstrates the **32-byte memo format**, where the recipient is a Flare address and any executor can finalize.
+
+## Prerequisites
+
+- [Flare smart account](/smart-accounts/overview) controlled by your XRPL wallet.
+- Testnet XRP on the XRP Ledger Testnet usage.
+  Get testnet XRP from the [XRP Testnet Faucet](https://xrpl.org/resources/dev-tools/xrp-faucets).
+
+## Direct Minting Memo
+
+The memo is a packed 32-byte [`PaymentReference`](/fassets/direct-minting#memo-field):
+
+| Bytes | Value              | Meaning                                                       |
+| :---- | :----------------- | :------------------------------------------------------------ |
+| 0-7   | `4642505266410018` | Direct minting prefix.                                        |
+| 8-11  | `00000000`         | Zero padding to fill the 32-byte memo.                        |
+| 12-31 | 20-byte recipient  | EVM address of the Flare smart account receiving FXRP tokens. |
+
+Because no executor is encoded, anyone can finalize this minting on Flare.
+For executor-restricted minting, use the 48-byte memo format described in [Memo Field](/fassets/direct-minting#memo-field).
+
+## Direct Minting Script
+
+<CodeBlock language="typescript" title="src/fassets/direct-mint.ts">
+  {FAssetsDirectMinting}
+</CodeBlock>
+
+## Code Breakdown
+
+1. Define the direct minting prefix constant `DIRECT_MINTING_PREFIX`.
+2. `buildDirectMintingMemo` concatenates the prefix, four zero bytes, and the recipient address (without the `0x` prefix, lowercased) into a 32-byte hex string ready to be passed as [`MemoData`](https://xrpl.org/docs/references/protocol/transactions/common-fields#memos-field) on the XRPL payment.
+3. `sendDirectMintPayment` builds the memo for the recipient and submits an XRPL `Payment` transaction to the [Core Vault](/fassets/core-vault) address with `memos: [{ Memo: { MemoData } }]`, returning the resulting transaction.
+4. Set the net FXRP amount to mint in XRP.
+   Minting and executor fees are added to the net amount to form the XRPL payment amount.
+5. Connect to the XRPL Testnet using `XRPL_TESTNET_RPC_URL` and load the sender wallet from `XRPL_SEED`.
+6. Resolve the recipient — the Flare [`PersonalAccount`](/smart-accounts/reference/IPersonalAccount) for the XRPL wallet — via [`getPersonalAccountAddress`](/smart-accounts/reference/IPersonalAccount), and look up `AssetManagerFXRP` through the [Flare Contract Registry](/network/guides/flare-contracts-registry) using [`getContractAddressByName`](/network/guides/flare-contracts-registry).
+7. Read three values in parallel:
+   - `getDirectMintingPaymentAddress` — the Core Vault XRPL address that receives the payment.
+   - `getFxrpBalance` — the recipient's FXRP balance before minting.
+   - `computeDirectMintingPaymentAmountXrp` — the gross XRP amount equal to the net mint amount plus the minting fee and the executor fee, as quoted by the `AssetManagerFXRP` contract.
+8. Send the XRPL payment to the Core Vault with the recipient memo via the `sendDirectMintPayment` function.
+9. Wait for the [`DirectMintingExecuted`](/fassets/reference/IAssetManagerEvents#directmintingexecuted) event on `AssetManagerFXRP` using `waitForDirectMintingExecuted` function.
+   The event's `mintedAmountUBA`, `mintingFeeUBA`, and `executorFeeUBA` describe how the underlying payment was split.
+10. Read the final FXRP balance and log the delta.
+
+## Important Notes
+
+- **Fees are deducted from the underlying payment.** The XRP sent to the [Core Vault](/fassets/core-vault) must cover the net mint amount plus the minting fee and the executor fee.
+- **If the payment is below the minimum minting fee**, no FXRP is minted, and the entire payment is forfeited to the fee receiver.
+- **Rate limits may delay execution.** When hourly, daily, or large-minting thresholds are hit, the minting emits [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) instead of [`DirectMintingExecuted`](/fassets/reference/IAssetManagerEvents#directmintingexecuted), with an `executionAllowedAt` timestamp.
+- **For repeat minters**, prefer the destination-tag flow via `IMintingTagManager` — it avoids constructing a memo per payment and lets you set a preferred executor.
+
+:::tip[What's next]
+
+To continue your FAssets development journey, you can:
+
+- Mint with tag with [`mintWithTag`](/fassets/developer-guides/fassets-direct-minting-tag).
+- Read the protocol details in [Direct Minting](/fassets/direct-minting).
+- Redeem FAssets with [`redeemAmount`](/fassets/developer-guides/fassets-redeem-amount) or [`redeemWithTag`](/fassets/developer-guides/fassets-redeem-with-tag).
+
+:::

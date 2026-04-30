@@ -143,7 +143,12 @@ function getDirectMintingExecutorFeeUBA()
 
 ### `getDirectMintingOthersCanExecuteAfterSeconds`
 
-Returns the time in seconds after which anyone can execute a direct minting request.
+Returns the length of the preferred-executor exclusivity window for direct minting, in seconds.
+
+When a direct minting specifies a preferred executor — either through a tag bound on the [`IMintingTagManager`](/fassets/reference/IMintingTagManager) or through the 48-byte [memo format](/fassets/direct-minting#memo-field) — only that executor may finalize the minting until this number of seconds has elapsed since the underlying payment.
+After the window expires, anyone can call [`executeDirectMinting`](/fassets/reference/IAssetManager#executedirectminting) to finalize the request.
+
+If the minting is delayed by [rate limits](/fassets/direct-minting#rate-limits), the exclusivity window restarts from the [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) event's `executionAllowedAt` timestamp.
 
 ```solidity
 function getDirectMintingOthersCanExecuteAfterSeconds()
@@ -379,6 +384,23 @@ function executeMinting(
     IPayment.Proof calldata _payment,
     uint256 _collateralReservationId
 ) external nonReentrant;
+```
+
+## Execute Direct Minting
+
+### `executeDirectMinting`
+
+Finalizes [direct minting](/fassets/direct-minting): mints FAssets to the recipient encoded in the XRPL payment (destination tag or memo), using an attestation that the underlying was paid to the FAsset Core Vault.
+
+Who may call, executor preference and timeouts, fees, and rate limits are described in [Direct minting](/fassets/direct-minting) and in [`getDirectMintingOthersCanExecuteAfterSeconds`](#getdirectmintingotherscanexecuteafterseconds).
+
+Parameters:
+
+- `_payment`: XRP payment proof data (`IXRPPayment.Proof`) for the FDC-verified payment that satisfies the direct-minting rules.
+
+```solidity
+function executeDirectMinting(IXRPPayment.Proof calldata _payment)
+    external payable;
 ```
 
 ## Redemption
