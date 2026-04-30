@@ -8,11 +8,13 @@ const REDEEM_AMOUNT_UBA = 5000000n;
 // 2. Redeemer underlying (XRPL) address that will receive the redeemed XRP.
 const REDEEMER_UNDERLYING_ADDRESS_STRING = "rSHYuiEvsYsKR8uUHhBTuGP5zjRcGt4nm";
 // 3. Executor (not used here, so the zero address).
-const EXECUTOR_ZERO_ADDRESS: Address = "0x0000000000000000000000000000000000000000";
+const EXECUTOR_ZERO_ADDRESS: Address =
+  "0x0000000000000000000000000000000000000000";
 
 async function main() {
   // 4. Resolve the AssetManagerFXRP address from the Flare Contract Registry.
-  const assetManagerAddress = await getContractAddressByName("AssetManagerFXRP");
+  const assetManagerAddress =
+    await getContractAddressByName("AssetManagerFXRP");
   console.log("AssetManagerFXRP address:", assetManagerAddress, "\n");
 
   // 5. Read the protocol-wide minimum redemption amount and assert that the
@@ -22,12 +24,20 @@ async function main() {
     abi: coston2.iAssetManagerAbi,
     functionName: "minimumRedeemAmountUBA",
   });
-  console.log("minimumRedeemAmountUBA:", minimumRedeemAmountUBA.toString(), "\n");
-  console.log("Requested redeem amount UBA:", REDEEM_AMOUNT_UBA.toString(), "\n");
+  console.log(
+    "minimumRedeemAmountUBA:",
+    minimumRedeemAmountUBA.toString(),
+    "\n",
+  );
+  console.log(
+    "Requested redeem amount UBA:",
+    REDEEM_AMOUNT_UBA.toString(),
+    "\n",
+  );
 
   if (REDEEM_AMOUNT_UBA < minimumRedeemAmountUBA) {
     throw new Error(
-      `Redeem amount (${REDEEM_AMOUNT_UBA.toString()}) must be greater than minimumRedeemAmountUBA (${minimumRedeemAmountUBA.toString()}).`
+      `Redeem amount (${REDEEM_AMOUNT_UBA.toString()}) must be greater than minimumRedeemAmountUBA (${minimumRedeemAmountUBA.toString()}).`,
     );
   }
 
@@ -38,7 +48,11 @@ async function main() {
     address: assetManagerAddress,
     abi: coston2.iAssetManagerAbi,
     functionName: "redeemAmount",
-    args: [REDEEM_AMOUNT_UBA, REDEEMER_UNDERLYING_ADDRESS_STRING, EXECUTOR_ZERO_ADDRESS],
+    args: [
+      REDEEM_AMOUNT_UBA,
+      REDEEMER_UNDERLYING_ADDRESS_STRING,
+      EXECUTOR_ZERO_ADDRESS,
+    ],
   });
 
   // 7. Submit the redemption request transaction on Flare.
@@ -46,7 +60,9 @@ async function main() {
   console.log("redeemAmount tx hash:", txHash, "\n");
 
   // 8. Wait for the transaction receipt.
-  const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+  const receipt = await publicClient.waitForTransactionReceipt({
+    hash: txHash,
+  });
   console.log("redeemAmount status:", receipt.status, "\n");
 
   // 9. Decode RedemptionRequested events from the receipt logs and pick the
@@ -62,7 +78,9 @@ async function main() {
   );
 
   if (!redemptionEvent) {
-    throw new Error("RedemptionRequested event not found for this transaction and redeemer");
+    throw new Error(
+      "RedemptionRequested event not found for this transaction and redeemer",
+    );
   }
 
   console.log("RedemptionRequested event:", redemptionEvent, "\n");
