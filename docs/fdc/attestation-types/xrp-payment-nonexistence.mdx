@@ -1,0 +1,83 @@
+---
+title: XRPPaymentNonexistence
+description: An XRP payment matching memo data and/or destination tag was not made by the deadline.
+keywords: [fdc, oracle, flare-data-connector, flare-network, xrpl]
+sidebar_position: 9
+---
+
+Assertion that **no** XRP Ledger `Payment` transaction matching the specified destination, amount, memo, and/or destination tag was confirmed in the given block range.
+
+`XRPPaymentNonexistence` differs from the chain-agnostic [`ReferencedPaymentNonexistence`](/fdc/attestation-types/referenced-payment-nonexistence.mdx) in how the payment is matched: instead of a [standard payment reference](/fdc/attestation-types/referenced-payment-nonexistence.mdx#standard-payment-reference), matches use the **hash of the first Memo's `MemoData`** and/or the **`DestinationTag`** — the two fields XRPL applications natively use to correlate payments.
+This makes it suited for invoicing flows where payers identify themselves via a destination tag, as well as for memo-based protocols.
+
+## Supported chains
+
+| Network Type | Supported Chains         |
+| ------------ | ------------------------ |
+| **Mainnet**  | `XRP` (XRP Ledger)       |
+| **Testnet**  | `testXRP` (XRPL Testnet) |
+
+## Request
+
+| Field                    | Solidity Type | Description                                                                                                                                                                 |
+| ------------------------ | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `minimalBlockNumber`     | `uint64`      | The starting ledger of the search range (inclusive).                                                                                                                        |
+| `deadlineBlockNumber`    | `uint64`      | The ledger to be included as the end of the search range.                                                                                                                   |
+| `deadlineTimestamp`      | `uint64`      | The timestamp to be included as the end of the search range.                                                                                                                |
+| `destinationAddressHash` | `bytes32`     | The [standard address hash](/fdc/attestation-types/payment.mdx#standard-address-hash) of the expected receiver.                                                             |
+| `amount`                 | `uint256`     | The required payment amount in drops.                                                                                                                                       |
+| `checkFirstMemoData`     | `bool`        | If `true`, the first Memo's `MemoData` hash must match `firstMemoDataHash` for a transaction to be considered a match.                                                      |
+| `firstMemoDataHash`      | `bytes32`     | The [standard hash](/fdc/attestation-types/payment.mdx#standard-address-hash) of the expected first Memo's `MemoData`. Considered only when `checkFirstMemoData` is `true`. |
+| `checkDestinationTag`    | `bool`        | If `true`, the transaction's `DestinationTag` must equal `destinationTag` for a transaction to be considered a match.                                                       |
+| `destinationTag`         | `uint256`     | The expected destination tag. Considered only when `checkDestinationTag` is `true`. XRPL only supports `uint32` values.                                                     |
+| `proofOwner`             | `address`     | Address authorized to use the proof, where applicable. The verifier lower-cases this value.                                                                                 |
+
+:::warning[At least one match field is required]
+
+At least one of `checkFirstMemoData` or `checkDestinationTag` must be `true`.
+If both are `false`, the request would match any sufficiently-sized payment to the destination, which is rarely intended.
+
+:::
+
+## Response
+
+| Field                         | Solidity Type | Description                                                                                         |
+| ----------------------------- | ------------- | --------------------------------------------------------------------------------------------------- |
+| `minimalBlockTimestamp`       | `uint64`      | The timestamp of the ledger at `minimalBlockNumber`.                                                |
+| `firstOverflowBlockNumber`    | `uint64`      | The first ledger with both `blockNumber > deadlineBlockNumber` and `timestamp > deadlineTimestamp`. |
+| `firstOverflowBlockTimestamp` | `uint64`      | The timestamp of `firstOverflowBlockNumber`.                                                        |
+
+The search range covers ledgers from `minimalBlockNumber` (inclusive) to `firstOverflowBlockNumber` (exclusive).
+
+## Verification process
+
+1. **Range validation**: If `minimalBlockNumber` or `deadlineBlockNumber` is negative or unreasonably large, the request is rejected.
+   If `firstOverflowBlock` cannot be determined or lacks the required [confirmations](#finality), the request is rejected.
+   If `minimalBlockNumber >= firstOverflowBlockNumber`, the request is rejected.
+2. **Visibility**: If the verifier does not have a complete view of the search range, the request is rejected.
+3. **Match scan**: A transaction is considered a **match** (and would invalidate the nonexistence claim) when **all** of the following hold:
+   - The transaction is of type `Payment` and has a successful payment summary with one sender and one receiver.
+   - The receiver's [standard address hash](/fdc/attestation-types/payment.mdx#standard-address-hash) equals `destinationAddressHash`.
+   - The intended receiving amount is **greater than or equal to** `amount`.
+   - The transaction did not fail with `SENDER_FAILURE` (so `SUCCESS` and `RECEIVER_FAILURE` outcomes both qualify, mirroring [`ReferencedPaymentNonexistence`](/fdc/attestation-types/referenced-payment-nonexistence.mdx#account-based-chains-xrpl) on XRPL).
+   - If `checkFirstMemoData` is `true`: the standard hash of the first Memo's `MemoData` (or the standard hash of an empty value when no memo is present) equals `firstMemoDataHash`.
+   - If `checkDestinationTag` is `true`: the transaction has a destination tag, and it equals `destinationTag`.
+4. **Confirmation**: The request is confirmed if **no** transaction in the search range matches all applicable criteria.
+
+:::note[Lowest used timestamp]
+
+For the `lowestUsedTimestamp` parameter, the value of `minimalBlockTimestamp` is used.
+
+:::
+
+## Finality
+
+XRPL ledgers must reach the required confirmation depth before the search range can be considered complete.
+
+| Chain | `chainId` | Confirmations required | Confirmation time |
+| ----- | --------- | ---------------------- | ----------------- |
+| XRPL  | 3         | 3                      | ≈12 seconds       |
+
+## Contract Interface
+
+For the complete interface definition, see [`IXRPPaymentNonexistence`](/fdc/reference/IXRPPaymentNonexistence.mdx).
