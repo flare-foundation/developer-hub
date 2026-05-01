@@ -1,0 +1,104 @@
+---
+title: XRPPayment
+description: Information about an XRP Ledger payment, including memo data and destination tag.
+keywords: [fdc, oracle, flare-data-connector, flare-network, xrpl]
+sidebar_position: 8
+---
+
+import TransactionSuccessStatus from "./_transaction_success_status.mdx";
+
+Information about a `Payment` transaction on the **XRP Ledger** transferring native XRP from a source address to a receiving address.
+
+Unlike the chain-agnostic [`Payment`](/fdc/attestation-types/payment.mdx) attestation type, `XRPPayment` exposes XRPL-specific fields directly in the response: the source `r`-address (XRPL addresses) as a string, raw bytes of the first Memo's `MemoData`, and the destination tag.
+This avoids the need for off-chain helpers when a consumer contract needs to act on these fields.
+
+## Supported chains
+
+| Network Type | Supported Chains         |
+| ------------ | ------------------------ |
+| **Mainnet**  | `XRP` (XRP Ledger)       |
+| **Testnet**  | `testXRP` (XRPL Testnet) |
+
+## Request
+
+| Field           | Solidity Type | Description                                                                                 |
+| --------------- | ------------- | ------------------------------------------------------------------------------------------- |
+| `transactionId` | `bytes32`     | ID of the payment transaction.                                                              |
+| `proofOwner`    | `address`     | Address authorized to use the proof, where applicable. The verifier lower-cases this value. |
+
+## Response
+
+| Field                          | Solidity Type | Description                                                                                                                        |
+| ------------------------------ | ------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `blockNumber`                  | `uint64`      | Number of the ledger in which the transaction is included.                                                                         |
+| `blockTimestamp`               | `uint64`      | The timestamp of the ledger, derived from `close_time` converted to UNIX time.                                                     |
+| `sourceAddress`                | `string`      | The XRPL `r`-address of the source.                                                                                                |
+| `sourceAddressHash`            | `bytes32`     | [Standard address hash](#standard-address-hash) of the source address.                                                             |
+| `receivingAddressHash`         | `bytes32`     | Standard address hash of the receiving address. Zero `bytes32` if `status` is not success.                                         |
+| `intendedReceivingAddressHash` | `bytes32`     | Standard address hash of the intended receiving address (the `Destination` field). Relevant when the transaction failed.           |
+| `spentAmount`                  | `int256`      | Amount in drops actually spent by the source address.                                                                              |
+| `intendedSpentAmount`          | `int256`      | Amount in drops the source intended to spend (`Amount + Fee`). Relevant when the transaction failed.                               |
+| `receivedAmount`               | `int256`      | Amount in drops received by the receiving address.                                                                                 |
+| `intendedReceivedAmount`       | `int256`      | Amount in drops the receiving address would have received had the transaction succeeded.                                           |
+| `hasMemoData`                  | `bool`        | `true` if the transaction has a `MemoData` field.                                                                                  |
+| `firstMemoData`                | `bytes`       | Raw bytes of the `MemoData` field of the **first** Memo. Empty when `hasMemoData` is false.                                        |
+| `hasDestinationTag`            | `bool`        | `true` if the transaction has a destination tag.                                                                                   |
+| `destinationTag`               | `uint256`     | Destination tag of the transaction. `0` when `hasDestinationTag` is false. XRPL currently only supports `uint32` destination tags. |
+| `status`                       | `uint8`       | [Transaction success status](#transaction-success-status).                                                                         |
+
+:::note[Differences from `Payment`]
+
+`XRPPayment` is XRPL only and replaces the `inUtxo` / `utxo` request fields with `proofOwner`.
+The response drops `standardPaymentReference`, `oneToOne`, and `sourceAddressesRoot` (always implied for XRPL Payment transactions) and adds `sourceAddress`, `hasMemoData`, `firstMemoData`, `hasDestinationTag`, and `destinationTag`.
+
+:::
+
+## Verification process
+
+1. The transaction identified by `transactionId` is fetched from an XRPL node or indexer via the [`tx`](https://xrpl.org/docs/references/http-websocket-apis/public-api-methods/transaction-methods/tx) method.
+2. If the transaction cannot be retrieved, or its ledger lacks the required [confirmations](#finality), the request is rejected.
+3. A [payment summary](/fdc/attestation-types/payment.mdx#payment-summary) is computed for the transaction.
+   - Only XRPL transactions of type `Payment` produce a summary; other types are rejected.
+   - A successful payment has exactly one sender and at most one receiver.
+     Multi-output payments are rejected.
+4. `blockNumber` and `blockTimestamp` are extracted from the ledger if not present in the transaction data.
+   `blockTimestamp` is the ledger `close_time` converted to UNIX time.
+5. The first Memo's `MemoData` (if any) and the `DestinationTag` (if any) are surfaced unchanged in the response.
+
+:::note[Lowest used timestamp]
+
+For the `lowestUsedTimestamp` parameter, the `blockTimestamp` of the transaction is used.
+
+:::
+
+## Transaction success status
+
+<TransactionSuccessStatus />
+
+## Standard address hash
+
+The **standard address hash** is the `keccak256` hash of the XRPL standard address as a string:
+
+```solidity
+keccak256(standardAddress)
+```
+
+XRPL `r`-addresses are case-sensitive, so the address has a single canonical form (no lower-casing applied).
+
+**Example:**
+
+| Chain | Standard Address                     | Standard Address Hash                                                |
+| ----- | ------------------------------------ | -------------------------------------------------------------------- |
+| XRPL  | `rDsbeomae4FXwgQTJp9Rs64Qg9vDiTCdBv` | `0xa491aed10a1920ca31a85ff29e4bc410705d37d4dc9e690d4d500bcedfd8078f` |
+
+## Finality
+
+XRPL ledgers must reach the required confirmation depth before the transaction can be proven.
+
+| Chain | `chainId` | Confirmations required | Confirmation time |
+| ----- | --------- | ---------------------- | ----------------- |
+| XRPL  | 3         | 3                      | ≈12 seconds       |
+
+## Contract Interface
+
+For the complete interface definition, see [`IXRPPayment`](/fdc/reference/IXRPPayment.mdx).
