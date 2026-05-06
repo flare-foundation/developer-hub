@@ -20,29 +20,23 @@ unlisted: false
 import CodeBlock from "@theme/CodeBlock";
 import CustomInstructionsScript from "!!raw-loader!/examples/developer-hub-javascript/smart-accounts/custom-instructions.ts";
 
-The [Custom Instruction guide](/smart-accounts/custom-instruction) provides a general overview of how Flare smart account Custom Instructions work.
-In this guide, we will showcase an example script, which uses the TypeScript Viem library to register a Custom Instruction, send it on XRPL, and look for the `CustomInstructionExecuted` event on the Flare network.
+The [Custom Instruction overview](/smart-accounts/custom-instruction) explains how Flare smart accounts replay an [EIP-4337](https://eips.ethereum.org/EIPS/eip-4337) `PackedUserOperation` carried in an XRPL `Payment` memo.
+This guide walks through a TypeScript script that builds the user operation with Viem, sends a payment transaction with the user operation on XRPL, and waits for the [`UserOperationExecuted`](/smart-accounts/reference/IMasterAccountController#useroperationexecuted) event on Flare.
 
-The custom instruction we will be sending will execute three different calls on the Flare network.
-Each will interact with a different contract, and they will get progressively more complicated.
+The script executes three calls on three example smart contracts on the Flare blockchain.
+Because the XRPL memo field is capped at roughly `1024` bytes, the calls are split into two user operations sent in sequence.
 
-:::info
-The code in this guide is set up for the Coston2 testnet.
-Despite that, we will refer to the network as Flare and its currency as FLR instead of Coston2 and C2FLR.
-:::
+A prerequisite for the user operation to be executed is that the personal account holds enough native to cover the call values.
+The script calls forward a total of `2` C2FLR (Coston2 Flare native tokens), so fund the personal account from the [Flare faucet](https://faucet.flare.network/coston2) before running it.
+The [State Lookup guide](/smart-accounts/guides/state-lookup-ts#personal-account-of-an-xrpl-address) shows how to derive the personal account address.
 
-A prerequisite for the custom instruction to work is that it is properly funded.
-As we will see, the custom instruction that we will be sending transfers a total of `2` FLR to other accounts.
-The [State Lookup guide](/smart-accounts/guides/state-lookup-ts#personal-account-of-an-xrpl-address) explains how we can acquire its address.
-Then, we can use the [Flare faucet](https://faucet.flare.network/coston2) to fund our account.
-
-The full code showcased in this guide is available on [GitHub](https://github.com/flare-foundation/flare-viem-starter).
+The full code is available on [GitHub](https://github.com/flare-foundation/flare-viem-starter).
 
 ## Contracts
 
 The first contract is a `Checkpoint` that counts how many times each user has called its `passCheckpoint` function.
 It is useless as anything other than an example.
-The first call of our custom instruction will be to call the `passCheckpoint` function of this contract, deploy at the address [`0xEE6D54382aA623f4D16e856193f5f8384E487002`](https://coston2-explorer.flare.network/address/0xEE6D54382aA623f4D16e856193f5f8384E487002?tab=contract).
+The first call of our user operation will be to call the `passCheckpoint` function of this contract, deployed at the address [`0xEE6D54382aA623f4D16e856193f5f8384E487002`](https://coston2-explorer.flare.network/address/0xEE6D54382aA623f4D16e856193f5f8384E487002?tab=contract).
 
 ```Solidity
 // SPDX-License-Identifier: MIT
@@ -84,9 +78,9 @@ contract PiggyBank {
 
 The third and last contract is a `NoticeBoard`.
 It allows users to `pinNotice`.
-The value they send in this transaction will determine how long the notice stays up;
-as the contract is set up, `1` FLR gets you `30` days, with fractions allowed.
-The last call our personal account will perform is to pin a notice with the message `Hello World!` to the `NoticeBoard` at the address [`0x59D57652BF4F6d97a6e555800b3920Bd775661Dc`](https://coston2-explorer.flare.network/address/0x59D57652BF4F6d97a6e555800b3920Bd775661Dc?tab=contract) for `30` days (which means we need to attach a value of `1` FLR).
+The value they send in this transaction will determine how long the notice stays up.
+As the contract is set up, `1` FLR gets you `30` days, with fractions allowed.
+The last call our personal account will perform is to pin a notice with the message `Hello World!` to the `NoticeBoard` at the address [`0x59D57652BF4F6d97a6e555800b3920Bd775661Dc`](https://coston2-explorer.flare.network/address/0x59D57652BF4F6d97a6e555800b3920Bd775661Dc?tab=contract) for `30` days (which means we attach a value of `1` FLR).
 
 ```Solidity
 // SPDX-License-Identifier: MIT
@@ -130,56 +124,33 @@ contract NoticeBoard {
 }
 ```
 
-The contract also performs additional checks to ensure that each client is only added to the array of all the clients once, and that it returns only the notices that have not yet expired.
+The contract also performs additional checks to ensure each client is only added to the array once, and that `getNotices` returns only notices that have not yet expired.
 
-## Parameters
+## Building the call array
 
-Besides the contract addresses and their arguments, the only other parameter we need to specify is a `walletId`.
-This is a one-byte value, assigned by Flare on a case-by-case basis.
-It is intended for wallet identification by the operator.
-We will set it to `0`.
+Each entry in the user operation is a [`Call`](/smart-accounts/reference/IPersonalAccount#call) struct with three fields:
 
-```typescript
-const walletId = 0;
-
-const checkpointAddress = "0xEE6D54382aA623f4D16e856193f5f8384E487002";
-const piggyBankAddress = "0x42Ccd4F0aB1C6Fa36BfA37C9e30c4DC4DD94dE42";
-const noticeBoardAddress = "0x59D57652BF4F6d97a6e555800b3920Bd775661Dc";
-
-const depositAmount = 1 * 10 ** 18;
-const pinNoticeAmount = 1 * 10 ** 18;
-const pinNoticeMessage = "Hello World!";
-```
-
-As described in the general [Custom Instruction guide](/smart-accounts/custom-instruction), each custom instruction call is a Solidity struct containing the following fields:
-
-- `targetContract`: the address of the contract to call
-- `value`: the amount of FLR to send
-- `data`: the function calldata (function selector and parameter encoding)
-
-:::note
-Behind the scenes, each custom instruction call translates to sending a payment transaction to the `targetContract` address of `value` FLR with attached `data`.
-:::
-
-We define the `CustomInstruction` type:
+- `target` — the address of the contract to call;
+- `value` — the amount of FLR to send;
+- `data` — the function calldata (function selector and parameter encoding).
 
 ```typescript
-export type CustomInstruction = {
-  targetContract: Address;
+export type Call = {
+  target: Address;
   value: bigint;
   data: `0x${string}`;
 };
 ```
 
-The `targetContract` and `value` do not need additional processing, but how can we generate the calldata?
-For that, we will use the `encodeFunctionData` function from the Viem library.
-It calculates the encoding for a function from its contract's ABI, the function name, and the arguments used.
-With that, we can prepare an array of calls, which is our custom instruction for this example.
+We use Viem's [`encodeFunctionData`](https://viem.sh/docs/contract/encodeFunctionData) to build each `data` field from the contract ABI, function name, and arguments.
+
+XRPL caps the memo at roughly `1024` bytes.
+The `pinNotice` call carries a string argument that, together with the other two calls, exceeds that limit, so the script splits the work into two user operations:
 
 ```typescript
-const customInstructions = [
+const checkpointAndDepositCalls: Call[] = [
   {
-    targetContract: checkpointAddress,
+    target: checkpointAddress,
     value: BigInt(0),
     data: encodeFunctionData({
       abi: checkpointAbi,
@@ -188,7 +159,7 @@ const customInstructions = [
     }),
   },
   {
-    targetContract: piggyBankAddress,
+    target: piggyBankAddress,
     value: BigInt(depositAmount),
     data: encodeFunctionData({
       abi: piggyBankAbi,
@@ -196,8 +167,11 @@ const customInstructions = [
       args: [],
     }),
   },
+];
+
+const pinNoticeCalls: Call[] = [
   {
-    targetContract: noticeBoardAddress,
+    target: noticeBoardAddress,
     value: BigInt(pinNoticeAmount),
     data: encodeFunctionData({
       abi: noticeBoardAbi,
@@ -205,224 +179,240 @@ const customInstructions = [
       args: [pinNoticeMessage],
     }),
   },
-] as CustomInstruction[];
+];
 ```
 
-## Registering an instruction
+## Personal account and nonce
 
-Next, we need to register the custom instruction with the `MasterAccountController` contract.
-In order to read from the Flare chain, we first need to create a [Viem public client](https://viem.sh/docs/clients/public).
-
-```typescript
-import { createPublicClient, http } from "viem";
-import { flareTestnet } from "viem/chains";
-
-export const publicClient = createPublicClient({
-  chain: flareTestnet,
-  transport: http(),
-});
-```
-
-To register a custom instruction, we call the `registerCustomInstruction` function on the `MasterAccountController` contract and provide the custom instruction array as the argument.
-As recommended by the [Viem documentation](https://viem.sh/docs/contract/writeContract#writecontract), we first use the `simulateContract` function to prepare the request.
-Then we call the `writeContract` Viem function, and actually register the instruction.
-
-If the instruction has already been registered, a `CustomInstructionAlreadyRegistered` event is emitted.
-Otherwise, the instruction is registered, and a `CustomInstructionRegistered` event is emitted instead.
-
-We also need the address of the `MasterAccountController` contract, which we can look up by name using `getContractAddressByName` from the Flare Contract Registry.
+The personal account address is deterministic, so we can fetch it before the account is even deployed by calling [`getPersonalAccount`](/smart-accounts/reference/IMasterAccountController#getpersonalaccount) on the `MasterAccountController`.
+Before encoding the user operation, we also need the current nonce from [`getNonce`](/smart-accounts/reference/IMasterAccountController#getnonce).
+Each successful execution increments it, so passing an invalid value reverts to [`InvalidNonce`](/smart-accounts/reference/IMasterAccountController#invalidnonce).
 
 ```typescript
-export type CustomInstruction = {
-  targetContract: Address;
-  value: bigint;
-  data: `0x${string}`;
-};
-
-export async function registerCustomInstruction(
-  instructions: CustomInstruction[],
-): Promise<`0x${string}`> {
-  const { request } = await publicClient.simulateContract({
-    account: account,
+export async function getNonce(personalAccount: Address): Promise<bigint> {
+  return publicClient.readContract({
     address: await getMasterAccountControllerAddress(),
-    abi: iCustomInstructionsFacetAbi,
-    functionName: "registerCustomInstruction",
-    args: [instructions],
-  });
-  console.log("request:", request, "\n");
-
-  const registerCustomInstructionTransaction =
-    await walletClient.writeContract(request);
-  console.log(
-    "Register custom instruction transaction:",
-    registerCustomInstructionTransaction,
-    "\n",
-  );
-
-  return registerCustomInstructionTransaction;
+    abi: iMemoInstructionsFacetAbi,
+    functionName: "getNonce",
+    args: [personalAccount],
+  }) as Promise<bigint>;
 }
 ```
 
-## Encoding an instruction
+## Encoding the user operation
 
-Before the custom instruction can be sent on the XRPL, it must be properly encoded.
-We call the `encodeCustomInstruction` read function of the `MasterAccountController` contract with the instruction as parameter.
-It returns a 32-byte `callHash`, which is not yet a proper instruction encoding.
-We need to replace the first two bytes with the following values:
+The XRPL memo carries a 10-byte header followed by an ABI-encoded [`PackedUserOperation`](/smart-accounts/custom-instruction#packeduseroperation):
 
 - 1st byte: custom instruction command ID `0xff`
-- 2nd byte: wallet identifier `walletId` described above
+- 2nd byte: `walletId` — a one-byte wallet identifier assigned by Flare; we use `0`
+- bytes 3-10: `executorFeeUBA` as an 8-byte big-endian unsigned integer
+
+Only three fields of the `PackedUserOperation` are validated on chain: `sender` must equal the personal account address, `nonce` must equal the current nonce, and `callData` must be the encoded `executeUserOp(calls)` call.
+The rest can be left empty.
 
 ```typescript
-export async function encodeCustomInstruction(
-  instructions: CustomInstruction[],
-  walletId: number,
-) {
-  const encodedInstruction = (await publicClient.readContract({
-    address: await getMasterAccountControllerAddress(),
-    abi: iCustomInstructionsFacetAbi,
-    functionName: "encodeCustomInstruction",
-    args: [instructions],
-  })) as `0x${string}`;
-  // NOTE:(Nik) We cut off the `0x` prefix and the first 2 bytes to get the length down to 30 bytes
-  return ("0xff" +
-    toHex(walletId, { size: 1 }).slice(2) +
-    encodedInstruction.slice(6)) as `0x${string}`;
+export function encodeExecuteUserOpMemo({
+  calls,
+  walletId,
+  executorFeeUBA,
+  sender,
+  nonce,
+}: {
+  calls: Call[];
+  walletId: number;
+  executorFeeUBA: bigint;
+  sender: Address;
+  nonce: bigint;
+}): `0x${string}` {
+  const callData = encodeFunctionData({
+    abi: coston2.iPersonalAccountAbi,
+    functionName: "executeUserOp",
+    args: [calls],
+  });
+
+  const encodedUserOp = encodeAbiParameters(
+    [PACKED_USER_OPERATION_TUPLE],
+    [
+      {
+        sender,
+        nonce,
+        initCode: "0x",
+        callData,
+        accountGasLimits: ZERO_BYTES32,
+        preVerificationGas: 0n,
+        gasFees: ZERO_BYTES32,
+        paymasterAndData: "0x",
+        signature: "0x",
+      },
+    ],
+  );
+
+  // 10-byte header: 0xFF | walletId (1B) | executorFee (8B, big-endian)
+  const header = concatHex([
+    "0xff",
+    toHex(walletId, { size: 1 }),
+    toHex(executorFeeUBA, { size: 8 }),
+  ]);
+
+  return concatHex([header, encodedUserOp]);
 }
 ```
 
-## Sending an instruction
+## Computing the XRPL payment amount
 
-With that, we can send our custom instruction.
-We make an XRPL Payment transaction to one of the operator's XRPL addresses (the [State Lookup guide](/smart-accounts/guides/state-lookup-ts#operators-xrpl-addresses) explains how we can obtain these).
-The encoded instruction is attached as a memo of the transaction, with the preceding `0x` removed.
+A custom instruction rides on top of an FAssets direct minting payment, so the XRPL transfer must cover the net mint amount plus the minting fee and the executor fee, as read from the `AssetManagerFXRP` contract.
+For a memo-only transaction (no FXRP mint), the net amount is `0`, but the fees still apply.
 
 ```typescript
-async function sendCustomInstruction({
-  encodedInstruction,
+export async function computeDirectMintingPaymentAmountXrp({
+  netMintAmountXrp,
+}: {
+  netMintAmountXrp: number;
+}): Promise<number> {
+  const assetManagerAddress =
+    await getContractAddressByName("AssetManagerFXRP");
+  const [executorFeeUBA, feeBIPS, minimumFeeUBA] = await Promise.all([
+    publicClient.readContract({
+      address: assetManagerAddress,
+      abi: coston2.iDirectMintingSettingsAbi,
+      functionName: "getDirectMintingExecutorFeeUBA",
+    }),
+    publicClient.readContract({
+      address: assetManagerAddress,
+      abi: coston2.iDirectMintingSettingsAbi,
+      functionName: "getDirectMintingFeeBIPS",
+    }),
+    publicClient.readContract({
+      address: assetManagerAddress,
+      abi: coston2.iDirectMintingSettingsAbi,
+      functionName: "getDirectMintingMinimumFeeUBA",
+    }),
+  ]);
+
+  const netMintUBA = BigInt(xrpToDrops(netMintAmountXrp));
+  const proportionalFeeUBA = (netMintUBA * feeBIPS) / 10_000n;
+  const mintingFeeUBA =
+    proportionalFeeUBA > minimumFeeUBA ? proportionalFeeUBA : minimumFeeUBA;
+  const totalUBA = netMintUBA + mintingFeeUBA + executorFeeUBA;
+
+  return Number(dropsToXrp(totalUBA.toString()));
+}
+```
+
+The first user operation in the script also mints `10` FXRP as a side effect, so its payment amount includes the net mint amount.
+The second user operation carries only a memo, so its payment covers only fees.
+
+## Sending the user operation
+
+The XRPL `Payment` is sent to the FAssets **direct minting payment address** read from the `AssetManagerFXRP` contract — not to an operator wallet.
+The encoded user operation is attached as a memo, with the `0x` prefix removed.
+
+:::warning No destination tags
+XRPL payments targeting smart accounts must not use a destination tag.
+A destination tag forces the FAssets direct minting flow to credit the tag holder, which could let an unrelated party front-run the user's operation.
+:::
+
+```typescript
+export async function sendMemoFieldInstruction({
+  label,
+  calls,
+  amountXrp,
+  personalAccount,
   xrplClient,
   xrplWallet,
 }: {
-  encodedInstruction: `0x${string}`;
+  label: string;
+  calls: Call[];
+  amountXrp: number;
+  personalAccount: Address;
   xrplClient: Client;
   xrplWallet: Wallet;
 }) {
-  const operatorXrplAddress = (await getOperatorXrplAddresses())[0] as string;
+  const nonce = await getNonce(personalAccount);
 
-  const instructionFee = await getInstructionFee(encodedInstruction);
-  console.log("Instruction fee:", instructionFee, "\n");
+  const memoData = encodeExecuteUserOpMemo({
+    calls,
+    walletId: 0,
+    executorFeeUBA: 0n,
+    sender: personalAccount,
+    nonce,
+  });
 
-  const customInstructionTransaction = await sendXrplPayment({
-    destination: operatorXrplAddress,
-    amount: instructionFee,
-    memos: [{ Memo: { MemoData: encodedInstruction.slice(2) } }],
+  const assetManagerAddress =
+    await getContractAddressByName("AssetManagerFXRP");
+  const coreVaultXrplAddress =
+    await getDirectMintingPaymentAddress(assetManagerAddress);
+
+  const transaction = await sendXrplPayment({
+    destination: coreVaultXrplAddress,
+    amount: amountXrp,
+    memos: [{ Memo: { MemoData: memoData.slice(2) } }],
     wallet: xrplWallet,
     client: xrplClient,
   });
 
-  return customInstructionTransaction;
+  const event = await waitForUserOperationExecuted({ personalAccount, nonce });
+  return event;
 }
 ```
 
-The instruction fee is determined by the `MasterAccountController` contract from the decimal representation of the instruction ID.
-In this case, the decimal value of the instruction ID (`ff`) is `255`.
-But we define a more general function that accepts any encoded instruction as input and extracts the necessary data from it.
-
-```typescript
-export async function getInstructionFee(encodedInstruction: string) {
-  const instructionId = encodedInstruction.slice(0, 4);
-  const instructionIdDecimal = fromHex(
-    instructionId as `0x${string}`,
-    "bigint",
-  );
-
-  console.log("instructionIdDecimal:", instructionIdDecimal, "\n");
-
-  const requestFee = await publicClient.readContract({
-    address: await getMasterAccountControllerAddress(),
-    abi: coston2.iMasterAccountControllerAbi,
-    functionName: "getInstructionFee",
-    args: [instructionIdDecimal],
-  });
-  return dropsToXrp(Number(requestFee));
-}
-```
-
-The `sendCustomInstruction` function requires two additional parameters, the `xrplWallet` and `xrplClient`.
-These are the `Client` and the `Wallet` classes from the `xrpl` library.
-We initialise them with values from the `.env` file.
+The `xrplClient` and `xrplWallet` are the `Client` and `Wallet` classes from the `xrpl` library, initialized from the `.env` file:
 
 ```typescript
 const xrplClient = new Client(process.env.XRPL_TESTNET_RPC_URL!);
 const xrplWallet = Wallet.fromSeed(process.env.XRPL_SEED!);
 ```
 
-## Wait for instruction execution
+## Waiting for execution
 
-Lastly, we need to wait for the operator to bridge the instruction from XRPL to Flare, and for the instruction to be executed.
-Once it does, our personal account executes the instruction, and the `CustomInstructionExecuted` event is emitted by the `MasterAccountController` contract.
-We watch for such events with the [`watchContractEvent`](https://viem.sh/docs/contract/watchContractEvent#watchcontractevent) Viem function.
-
-We check each observed event, ensuring that:
-
-- the call hash of the event matches the one sent in the encoded instruction (here, only the last 30 bytes must match)
-- the personal account that executed the instruction is our personal account (lowercase to remove checksum validation)
-
-When we find the correct event, we set the `customInstructionExecutedEventFound` value to `true`.
-If the value is `false`, we wait for `10` seconds, then check again.
-Once the value has been found, we stop observing the contract and return the event.
+Once the operator bridges the instruction from XRPL to Flare, the personal account runs `executeUserOp` and the `MasterAccountController` emits [`UserOperationExecuted(personalAccount, nonce)`](/smart-accounts/reference/IMasterAccountController#useroperationexecuted).
+We watch for that event with Viem's [`watchContractEvent`](https://viem.sh/docs/contract/watchContractEvent#watchcontractevent), filtering on the personal account and the nonce we submitted:
 
 ```typescript
-export async function waitForCustomInstructionExecutedEvent({
-  encodedInstruction,
-  personalAccountAddress,
+export async function waitForUserOperationExecuted({
+  personalAccount,
+  nonce,
 }: {
-  encodedInstruction: `0x${string}`;
-  personalAccountAddress: string;
-}) {
-  let customInstructionExecutedEvent:
-    | CustomInstructionExecutedEventType
-    | undefined;
-  let customInstructionExecutedEventFound = false;
+  personalAccount: Address;
+  nonce: bigint;
+}): Promise<UserOperationExecutedEventType> {
+  const masterAccountControllerAddress =
+    await getMasterAccountControllerAddress();
 
-  const unwatchCustomInstructionExecuted = publicClient.watchContractEvent({
-    address: await getMasterAccountControllerAddress(),
-    abi: iInstructionsFacetAbi,
-    eventName: "CustomInstructionExecuted",
-    onLogs: (logs) => {
-      for (const log of logs) {
-        customInstructionExecutedEvent =
-          log as CustomInstructionExecutedEventType;
-        if (
-          customInstructionExecutedEvent.args.callHash.slice(6) !==
-            encodedInstruction.slice(6) ||
-          customInstructionExecutedEvent.args.personalAccount.toLowerCase() !==
-            personalAccountAddress.toLowerCase()
-        ) {
-          continue;
+  return new Promise((resolve) => {
+    const unwatch = publicClient.watchContractEvent({
+      address: masterAccountControllerAddress,
+      abi: iMemoInstructionsFacetAbi,
+      eventName: "UserOperationExecuted",
+      onLogs: (logs) => {
+        for (const log of logs) {
+          const typedLog = log as UserOperationExecutedEventType;
+          if (
+            typedLog.args.personalAccount.toLowerCase() !==
+              personalAccount.toLowerCase() ||
+            typedLog.args.nonce !== nonce
+          ) {
+            continue;
+          }
+          unwatch();
+          resolve(typedLog);
+          return;
         }
-        customInstructionExecutedEventFound = true;
-        break;
-      }
-    },
+      },
+    });
   });
-
-  console.log("Waiting for CustomInstructionExecuted event...");
-  while (!customInstructionExecutedEventFound) {
-    await new Promise((resolve) => setTimeout(resolve, 10000));
-  }
-  unwatchCustomInstructionExecuted();
-
-  return customInstructionExecutedEvent;
 }
 ```
 
-The vehicle for bridging the instruction is the [Flare Data Connector](/fdc/overview), which puts a maximum cap of 180 seconds on the process duration.
+The bridging is handled by the [Flare Data Connector](/fdc/overview), which caps the round trip at 180 seconds.
+
+If any inner call reverts, the whole user operation reverts with [`CallFailed(index, returnData)`](/smart-accounts/reference/IPersonalAccount#callfailed) and the nonce does not advance.
+The FXRP transfer, however, is performed before the memo is decoded, so the mint succeeds even when the user operation reverts — see [`DirectMintingExecuted`](/smart-accounts/reference/IMasterAccountController#directmintingexecuted).
 
 ## Full script
 
-The repository with the above example is available on [GitHub](https://github.com/flare-foundation/flare-viem-starter).
-In the example repository, certain functions are isolated into separate files in the `src/utils` directory.
+The repository with the example is available on [GitHub](https://github.com/flare-foundation/flare-viem-starter).
+Helper functions live in the `src/utils` directory.
 
 <CodeBlock language="typescript" title="src/custom-instructions.ts">
   {CustomInstructionsScript}
@@ -431,87 +421,65 @@ In the example repository, certain functions are isolated into separate files in
 ## Expected output
 
 ```bash
-Custom instructions: [
+Personal account address: 0xFd2f0eb6b9fA4FE5bb1F7B26fEE3c647ed103d9F
+
+Payment amount (XRP, net mint + fees): 10.0011
+
+Memo-only amount (XRP, fees only): 0.0011
+
+[checkpoint-and-deposit] calls: [
   {
-    targetContract: '0xEE6D54382aA623f4D16e856193f5f8384E487002',
+    target: '0xEE6D54382aA623f4D16e856193f5f8384E487002',
     value: 0n,
     data: '0x80abd133'
   },
   {
-    targetContract: '0x42Ccd4F0aB1C6Fa36BfA37C9e30c4DC4DD94dE42',
+    target: '0x42Ccd4F0aB1C6Fa36BfA37C9e30c4DC4DD94dE42',
     value: 1000000000000000000n,
     data: '0xd0e30db0'
+  }
+]
+
+[checkpoint-and-deposit] current nonce: 0n
+
+[checkpoint-and-deposit] XRPL transaction hash: 03165B82E4B7BB168AF7B217C9EC833896E968C796CA8BF8D2E66879ED311909
+
+[checkpoint-and-deposit] UserOperationExecuted event: {
+  eventName: 'UserOperationExecuted',
+  args: {
+    personalAccount: '0xFd2f0eb6b9fA4FE5bb1F7B26fEE3c647ed103d9F',
+    nonce: 0n
   },
+  ...
+}
+
+[pin-notice] calls: [
   {
-    targetContract: '0x59D57652BF4F6d97a6e555800b3920Bd775661Dc',
+    target: '0x59D57652BF4F6d97a6e555800b3920Bd775661Dc',
     value: 1000000000000000000n,
     data: '0x28d106b20000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000c48656c6c6f20576f726c64210000000000000000000000000000000000000000'
   }
 ]
 
-Personal account address: 0xFd2f0eb6b9fA4FE5bb1F7B26fEE3c647ed103d9F
+[pin-notice] current nonce: 1n
 
-request: {
-  abi: [
-    {
-      inputs: [Array],
-      name: 'registerCustomInstruction',
-      outputs: [Array],
-      stateMutability: 'nonpayable',
-      type: 'function'
-    }
-  ],
-  address: '0x32F662C63c1E24bB59B908249962F00B61C6638f',
-  args: [ [ [Object], [Object], [Object] ] ],
-  dataSuffix: undefined,
-  functionName: 'registerCustomInstruction',
-  account: {
-    address: '0xF5488132432118596fa13800B68df4C0fF25131d',
-    nonceManager: undefined,
-    sign: [AsyncFunction: sign],
-    signAuthorization: [AsyncFunction: signAuthorization],
-    signMessage: [AsyncFunction: signMessage],
-    signTransaction: [AsyncFunction: signTransaction],
-    signTypedData: [AsyncFunction: signTypedData],
-    source: 'privateKey',
-    type: 'local',
-    publicKey: '0x04cd84974fb965b048aa4230fdf0a2735c951f28b076727e1067bf56577a59b1cbc41e8d03b33acc9105828f048c0cf940c78bba518b0da2765078ca2a42e056c3'
-  }
-}
+[pin-notice] XRPL transaction hash: 9F1A4D7E2B83C5C0A6F4E1D8B7C9A2E5F6D3B4C1E0F7A8B9C2D3E4F5A6B7C8D9
 
-Register custom instruction transaction: 0x2f6500791d89ea7f8ff5f3ce8983d92d7aaf62e04207513e8e0b2a2bfdf09a1e
-
-Custom instruction call hash: 0x2f6500791d89ea7f8ff5f3ce8983d92d7aaf62e04207513e8e0b2a2bfdf09a1e
-
-Encoded instructions: 0xff00e54bf1b4e93c5306e08d919864ec111211c4fb36960261e8018da9959791
-
-instructionIdDecimal: 255n
-
-Instruction fee: 0.001
-
-Custom instruction transaction hash: 03165B82E4B7BB168AF7B217C9EC833896E968C796CA8BF8D2E66879ED311909
-
-Waiting for CustomInstructionExecuted event...
-CustomInstructionExecuted event: {
-  eventName: 'CustomInstructionExecuted',
+[pin-notice] UserOperationExecuted event: {
+  eventName: 'UserOperationExecuted',
   args: {
     personalAccount: '0xFd2f0eb6b9fA4FE5bb1F7B26fEE3c647ed103d9F',
-    callHash: '0x0000e54bf1b4e93c5306e08d919864ec111211c4fb36960261e8018da9959791',
-    customInstruction: [ [Object], [Object], [Object] ]
+    nonce: 1n
   },
-  address: '0x32f662c63c1e24bb59b908249962f00b61c6638f',
-  topics: [
-    '0x1c09418c54894f576841186935c5f666b3bedd66c29f3a03bcab4051fe2509f3',
-    '0x000000000000000000000000fd2f0eb6b9fa4fe5bb1f7b26fee3c647ed103d9f',
-    '0x0000e54bf1b4e93c5306e08d919864ec111211c4fb36960261e8018da9959791'
-  ],
-  data: '0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001a0000000000000000000000000ee6d54382aa623f4d16e856193f5f8384e48700200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000480abd1330000000000000000000000000000000000000000000000000000000000000000000000000000000042ccd4f0ab1c6fa36bfa37c9e30c4dc4dd94de420000000000000000000000000000000000000000000000000de0b6b3a764000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000004d0e30db00000000000000000000000000000000000000000000000000000000000000000000000000000000059d57652bf4f6d97a6e555800b3920bd775661dc0000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000006428d106b20000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000c48656c6c6f20576f726c6421000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
-  blockNumber: 26663892n,
-  transactionHash: '0xe3ba1751d63a9b11ff3b3185254c28c447f1db6ff101708f6968ff935c28e3f3',
-  transactionIndex: 2,
-  blockHash: '0x69a3b948a56a5195fbe0ced46b157ca33390226a4503f59a3d8e59fe07538d23',
-  logIndex: 7,
-  removed: false,
-  blockTimestamp: undefined
+  ...
 }
 ```
+
+:::tip What's next?
+
+To continue your Flare Smart Accounts development journey, you can:
+
+- Get the smart account state using the [State Lookup guide](/smart-accounts/guides/state-lookup-ts).
+- Explore the [Custom Instruction](/smart-accounts/custom-instruction) overview.
+- Dig into the `IMasterAccountController` [reference](/smart-accounts/reference/IMasterAccountController).
+  :::
