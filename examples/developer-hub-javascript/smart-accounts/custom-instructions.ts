@@ -64,7 +64,9 @@ async function main() {
   const [personalAccount, paymentAmountXrp, memoOnlyAmountXrp] =
     await Promise.all([
       getPersonalAccountAddress(xrplWallet.address),
-      computeDirectMintingPaymentAmountXrp({ netMintAmountXrp: fxrpMintAmount }),
+      computeDirectMintingPaymentAmountXrp({
+        netMintAmountXrp: fxrpMintAmount,
+      }),
       computeDirectMintingPaymentAmountXrp({ netMintAmountXrp: 0 }),
     ]);
   console.log("Personal account address:", personalAccount, "\n");
