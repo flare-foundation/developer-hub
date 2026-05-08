@@ -176,6 +176,55 @@ function getDirectMintingDailyLimitUBA()
     returns (uint256);
 ```
 
+### `getDirectMintingHourlyLimiterState`
+
+Returns the raw state of the hourly direct-minting [rate limiter](/fassets/direct-minting#rate-limits).
+
+Returns:
+
+- `_windowStartTimestamp`: Unix timestamp when the current hourly window started, snapped to a multiple of `windowSizeSeconds` (UTC hour boundaries).
+- `_mintedInCurrentWindow`: Amount minted in the current window, denominated in AMG.
+  Multiply by [`assetMintingGranularityUBA`](#assetmintinggranularityuba) to convert to UBA.
+
+The value is only updated on the next limiter write, so consumers that need a live view should advance the window off-chain — see the [Check Direct Minting Limits guide](/fassets/developer-guides/fassets-direct-minting-limits).
+
+```solidity
+function getDirectMintingHourlyLimiterState()
+    external view
+    returns (uint64 _windowStartTimestamp, uint64 _mintedInCurrentWindow);
+```
+
+### `getDirectMintingDailyLimiterState`
+
+Returns the raw state of the daily direct-minting [rate limiter](/fassets/direct-minting#rate-limits).
+
+Returns:
+
+- `_windowStartTimestamp`: Unix timestamp when the current daily window started, snapped to 00:00 UTC.
+- `_mintedInCurrentWindow`: Amount minted in the current window, denominated in AMG.
+  Multiply by [`assetMintingGranularityUBA`](#assetmintinggranularityuba) to convert to UBA.
+
+The value is only updated on the next limiter write, so consumers that need a live view should advance the window off-chain — see the [Check Direct Minting Limits guide](/fassets/developer-guides/fassets-direct-minting-limits).
+
+```solidity
+function getDirectMintingDailyLimiterState()
+    external view
+    returns (uint64 _windowStartTimestamp, uint64 _mintedInCurrentWindow);
+```
+
+### `getDirectMintingsUnblockUntilTimestamp`
+
+Returns the Unix timestamp until which the direct-minting [rate limiter](/fassets/direct-minting#rate-limits) is bypassed.
+
+While `block.timestamp` is below this value, the hourly and daily caps are not enforced and queued mintings can execute without delay.
+Governance sets this via `unblockDirectMintingsUntil` to drain a backlog after manual review; the value is `0` when the limiter is active.
+
+```solidity
+function getDirectMintingsUnblockUntilTimestamp()
+    external view
+    returns (uint256);
+```
+
 ### `getDirectMintingLargeMintingThresholdUBA`
 
 Returns the threshold above which direct minting is considered large, in UBA.
@@ -192,6 +241,19 @@ Returns the delay in seconds applied to large direct mintings.
 
 ```solidity
 function getDirectMintingLargeMintingDelaySeconds()
+    external view
+    returns (uint256);
+```
+
+### `assetMintingGranularityUBA`
+
+Returns the asset minting granularity — the smallest unit of FAsset stored internally within this asset manager instance.
+
+The direct-minting [rate limiter](/fassets/direct-minting#rate-limits) stores `mintedInCurrentWindow` as `uint64` AMG (asset minting granularity) for cheap on-chain storage.
+Multiplying the limiter state by `assetMintingGranularityUBA` rebases it into UBA so it can be compared against the UBA-denominated hourly and daily caps.
+
+```solidity
+function assetMintingGranularityUBA()
     external view
     returns (uint256);
 ```
