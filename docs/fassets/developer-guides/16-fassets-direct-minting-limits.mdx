@@ -1,0 +1,104 @@
+---
+title: Check Direct Minting Limits
+tags: [intermediate, fassets]
+slug: fassets-direct-minting-limits
+description: Read the live hourly and daily direct-minting rate limits and compute the maximum mint that fits both windows.
+keywords: [fassets, fxrp, direct-minting, rate-limits, flare-network, xrpl]
+sidebar_position: 16
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import FAssetsDirectMintingLimits from "!!raw-loader!/examples/developer-hub-javascript/fassetsDirectMintingLimits.ts";
+
+## Overview
+
+This guide reads the on-chain [direct minting](/fassets/direct-minting#rate-limits) rate limits, replays the tumbling-window state off-chain, and prints the maximum amount a single mint can request right now without being delayed.
+
+Direct minting is throttled by the `MintingRateLimiter` library: an hourly and a daily window cap how much FXRP can be minted before the asset manager starts pushing new mintings into a future window via [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed).
+A pre-flight check lets a frontend or executor avoid surprising the user with a delay.
+
+The complete runnable example is available in the [flare-viem-starter](https://github.com/flare-foundation/flare-viem-starter/blob/main/src/fassets/direct-minting-limits.ts) repository.
+
+## How the windows work
+
+`MintingRateLimiter` library uses **clock-aligned tumbling windows**, not rolling windows.
+On initialization, the window start is snapped to a multiple of `windowSizeSeconds`:
+
+```text
+windowStartTimestamp = block.timestamp - block.timestamp % windowSizeSeconds
+```
+
+With `windowSizeSeconds = 3600`, the hourly window aligns to UTC hour boundaries (00:00-01:00, 01:00-02:00, …).
+The daily window (`86400` seconds) aligns to 00:00 UTC.
+
+On every write, the limiter advances the window:
+
+```text
+windowsElapsed        = (now - windowStartTimestamp) / windowSizeSeconds
+mintedInCurrentWindow = subOrZero(mintedInCurrentWindow, windowsElapsed * maxPerWindow)
+windowStartTimestamp += windowsElapsed * windowSizeSeconds
+```
+
+Two consequences worth noting:
+
+1. **Unused capacity does not roll over.**
+   `subOrZero` clamps at zero, so an idle hour does not give twice the cap the next hour — every fresh window starts at exactly `maxPerWindow`.
+2. **Over-cap mints are delayed, not rejected.**
+   `executionAllowedAt` is set to `windowStartTimestamp + windowSize * mintedInCurrentWindow / maxPerWindow`, so overflow drains hour-by-hour through the `subOrZero` step.
+
+Reading the limiter state on its own returns stale `(windowStart, minted)` values until the next write touches the contract, so this script replays the slide off-chain to show the values as they would be right now.
+
+A mint can be delayed by either the hourly/daily window or the large-minting threshold — whichever pushes [`executionAllowedAt`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) further into the future wins.
+
+## Prerequisites
+
+- The [flare-viem-starter](https://github.com/flare-foundation/flare-viem-starter) cloned locally with dependencies installed.
+- A configured `publicClient` pointing at the [Flare network](/network/overview) you want to query (Coston2 by default in the starter).
+
+## Direct Minting Limits Script
+
+<CodeBlock language="typescript" title="src/fassets/direct-minting-limits.ts">
+  {FAssetsDirectMintingLimits}
+</CodeBlock>
+
+## Code Breakdown
+
+1. **Window sizes.**
+   `HOURLY_WINDOW_SECONDS` and `DAILY_WINDOW_SECONDS` are the `windowSizeSeconds` values the `MintingRateLimiter.sol` library uses — `3600` aligns to UTC hour boundaries, `86400` aligns to 00:00 UTC.
+2. **Format helpers.**
+   `formatUba` prints raw UBA (units of basis assets) alongside the XRP equivalent via `dropsToXrp`, and `formatTimestamp` shows ISO time with a relative offset so it is clear whether a timestamp is in the future or the past.
+3. **Replay the limiter slide.**
+   `computeWindowState` mirrors the window-advancement logic in `MintingRateLimiter.sol`: it advances `windowStart` past every tumble that has elapsed and drains `mintedInCurrentWindow` by `windowsElapsed * limit`.
+   Without this off-chain replay, you would see stale numbers between writes.
+4. **Print one window's live state.**
+   `printWindow` shows the live cap, used amount, and percentage, remaining headroom, the effective window start, and the next UTC tumble.
+5. **Resolve `AssetManagerFXRP`.**
+   `getContractAddressByName("AssetManagerFXRP")` looks up the asset manager through the [Flare Contract Registry](/network/guides/flare-contracts-registry).
+6. **Read everything in parallel.**
+   `Promise.all` fetches the [AMG granularity](/fassets/reference/IAssetManager#assetmintinggranularityuba), the [hourly](/fassets/reference/IAssetManager#getdirectmintinghourlylimituba) and [daily](/fassets/reference/IAssetManager#getdirectmintingdailylimituba) caps, the raw limiter state for [hourly](/fassets/reference/IAssetManager#getdirectmintinghourlylimiterstate) and [daily](/fassets/reference/IAssetManager#getdirectmintingdailylimiterstate) windows, the [`unblockUntilTimestamp`](/fassets/reference/IAssetManager#getdirectmintingsunblockuntiltimestamp), and the [large-minting threshold](/fassets/reference/IAssetManager#getdirectmintinglargemintingthresholduba) and [delay](/fassets/reference/IAssetManager#getdirectmintinglargemintingdelayseconds) in one round trip.
+7. **Convert AMG to UBA.**
+   The limiter stores `mintedInCurrentWindow` in AMG (`uint64`) for cheap on-chain storage.
+   Multiplying by [`assetMintingGranularityUBA`](/fassets/reference/IAssetManager#assetmintinggranularityuba) rebases it into UBA (units of basis assets) so it can be compared against the UBA-denominated cap.
+8. **Honor the unblock flag.**
+   When [`getDirectMintingsUnblockUntilTimestamp`](/fassets/reference/IAssetManager#getdirectmintingsunblockuntiltimestamp) returns a future timestamp, governance has temporarily turned off the limiter; treat full caps as available.
+9. **Pre-flight gate.**
+   `bigintMin(hourlyHeadroom, dailyHeadroom)` is the largest amount that fits both windows.
+   A request larger than this will not revert — it will mint with [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) and an `executionAllowedAt` in the future.
+
+## Important Notes
+
+- **Large mintings have an independent fixed delay.**
+  Mintings above [`directMintingLargeMintingThresholdUBA`](/fassets/reference/IAssetManager#getdirectmintinglargemintingthresholduba) are delayed by [`directMintingLargeMintingDelaySeconds`](/fassets/reference/IAssetManager#getdirectmintinglargemintingdelayseconds) even if the hourly and daily windows have headroom.
+- **Reads are stale between writes.**
+  Always advance the window off-chain when displaying live limiter state.
+- **Plan UI flows around [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed)** so users are not surprised by a deferred execution.
+
+:::tip[What's next]
+
+To continue your FAssets development journey, you can:
+
+- Mint with the 32-byte memo flow in [Direct Mint FXRP](/fassets/developer-guides/fassets-direct-minting).
+- Mint with a reserved tag in [Direct Mint FXRP with Tag](/fassets/developer-guides/fassets-direct-minting-tag).
+- Read the protocol details in [Direct Minting](/fassets/direct-minting).
+
+:::
