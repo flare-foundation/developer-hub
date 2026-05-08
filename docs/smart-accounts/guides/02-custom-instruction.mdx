@@ -21,16 +21,16 @@ import CodeBlock from "@theme/CodeBlock";
 import CustomInstructionsScript from "!!raw-loader!/examples/developer-hub-javascript/smart-accounts/custom-instructions.ts";
 
 The [Custom Instruction overview](/smart-accounts/custom-instruction) explains how Flare smart accounts replay an [EIP-4337](https://eips.ethereum.org/EIPS/eip-4337) `PackedUserOperation` carried in an XRPL `Payment` memo.
-This guide walks through a TypeScript script that builds the user operation with Viem, sends a payment transaction with the user operation on XRPL, and waits for the [`UserOperationExecuted`](/smart-accounts/reference/IMasterAccountController#useroperationexecuted) event on Flare.
+This guide walks through a TypeScript script that builds the user operation with Viem library, sends a payment transaction with the user operation on XRPL, and waits for the [`UserOperationExecuted`](/smart-accounts/reference/IMasterAccountController#useroperationexecuted) event on Flare.
 
 The script executes three calls on three example smart contracts on the Flare blockchain.
 Because the XRPL memo field is capped at roughly `1024` bytes, the calls are split into two user operations sent in sequence.
 
-A prerequisite for the user operation to be executed is that the personal account holds enough native to cover the call values.
+A prerequisite for the user operation to be executed is that the personal account holds enough native tokens to cover the call values.
 The script calls forward a total of `2` C2FLR (Coston2 Flare native tokens), so fund the personal account from the [Flare faucet](https://faucet.flare.network/coston2) before running it.
 The [State Lookup guide](/smart-accounts/guides/state-lookup-ts#personal-account-of-an-xrpl-address) shows how to derive the personal account address.
 
-The full code is available on [GitHub](https://github.com/flare-foundation/flare-viem-starter).
+The full code is available on [GitHub](https://github.com/flare-foundation/flare-viem-starter/blob/main/src/custom-instructions.ts).
 
 ## Contracts
 
@@ -184,7 +184,7 @@ const pinNoticeCalls: Call[] = [
 
 ## Personal account and nonce
 
-The personal account address is deterministic, so we can fetch it before the account is even deployed by calling [`getPersonalAccount`](/smart-accounts/reference/IMasterAccountController#getpersonalaccount) on the `MasterAccountController`.
+The personal account address is deterministic, so we can fetch it before the account is even deployed by calling [`getPersonalAccount`](/smart-accounts/reference/IMasterAccountController#getpersonalaccount) on the [`MasterAccountController`](/smart-accounts/reference/IMasterAccountController).
 Before encoding the user operation, we also need the current nonce from [`getNonce`](/smart-accounts/reference/IMasterAccountController#getnonce).
 Each successful execution increments it, so passing an invalid value reverts to [`InvalidNonce`](/smart-accounts/reference/IMasterAccountController#invalidnonce).
 
@@ -201,7 +201,7 @@ export async function getNonce(personalAccount: Address): Promise<bigint> {
 
 ## Encoding the user operation
 
-The XRPL memo carries a 10-byte header followed by an ABI-encoded [`PackedUserOperation`](/smart-accounts/custom-instruction#packeduseroperation):
+The XRPL memo carries a 10-byte header followed by an ABI-encoded [`PackedUserOperation`](https://eips.ethereum.org/EIPS/eip-4337#useroperation):
 
 - 1st byte: custom instruction command ID `0xff`
 - 2nd byte: `walletId` — a one-byte wallet identifier assigned by Flare; we use `0`
@@ -365,8 +365,8 @@ const xrplWallet = Wallet.fromSeed(process.env.XRPL_SEED!);
 
 ## Waiting for execution
 
-Once the operator bridges the instruction from XRPL to Flare, the personal account runs `executeUserOp` and the `MasterAccountController` emits [`UserOperationExecuted(personalAccount, nonce)`](/smart-accounts/reference/IMasterAccountController#useroperationexecuted).
-We watch for that event with Viem's [`watchContractEvent`](https://viem.sh/docs/contract/watchContractEvent#watchcontractevent), filtering on the personal account and the nonce we submitted:
+Once the operator bridges the instruction from XRPL to Flare, the personal account runs `executeUserOp` and the `MasterAccountController` emits [`UserOperationExecuted`](/smart-accounts/reference/IMasterAccountController#useroperationexecuted) event.
+We watch for that event with Viem's [`watchContractEvent`](https://viem.sh/docs/contract/watchContractEvent#watchcontractevent) function, filtering on the personal account and the nonce we submitted:
 
 ```typescript
 export async function waitForUserOperationExecuted({
@@ -406,7 +406,7 @@ export async function waitForUserOperationExecuted({
 
 The bridging is handled by the [Flare Data Connector](/fdc/overview), which caps the round trip at 180 seconds.
 
-If any inner call reverts, the whole user operation reverts with [`CallFailed(index, returnData)`](/smart-accounts/reference/IPersonalAccount#callfailed) and the nonce does not advance.
+If any inner call reverts, the whole user operation reverts with [`CallFailed`](/smart-accounts/reference/IPersonalAccount#callfailed) and the nonce does not increment.
 The FXRP transfer, however, is performed before the memo is decoded, so the mint succeeds even when the user operation reverts — see [`DirectMintingExecuted`](/smart-accounts/reference/IMasterAccountController#directmintingexecuted).
 
 ## Full script

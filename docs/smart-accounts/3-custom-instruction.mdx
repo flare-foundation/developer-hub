@@ -34,33 +34,17 @@ A destination tag forces [FAssets direct minting](/fassets/direct-minting) to cr
 
 The custom instruction payload has two layers: the outer EIP-4337 [`PackedUserOperation`](https://eips.ethereum.org/EIPS/eip-4337#useroperation) carried in the XRPL memo, and the inner [`executeUserOp(Call[])`](/smart-accounts/reference/IPersonalAccount#executeuserop) that the personal account runs once the controller dispatches it.
 
-### `PackedUserOperation`
-
-```solidity
-struct PackedUserOperation {
- address sender;
- uint256 nonce;
- bytes initCode;
- bytes callData;
- bytes32 accountGasLimits;
- uint256 preVerificationGas;
- bytes32 gasFees;
- bytes paymasterAndData;
- bytes signature;
-}
-```
-
-Only three fields are required for Flare Smart Accounts:
+Only three fields from the [`PackedUserOperation`](https://eips.ethereum.org/EIPS/eip-4337#useroperation) struct are required for Flare Smart Accounts:
 
 - `sender` **must** equal the address of the personal account derived from the XRPL sender.
-  Use [`getPersonalAccount(xrplOwner)`](/smart-accounts/reference/IMasterAccountController#getpersonalaccount) to look it up — the address is deterministic, so you can fetch it before the account is even deployed.
-- `nonce` **must** equal the personal account's current nonce returned by [`getNonce(personalAccount)`](/smart-accounts/reference/IMasterAccountController#getnonce).
+  Use [`getPersonalAccount`](/smart-accounts/reference/IMasterAccountController#getpersonalaccount) to look it up — the address is deterministic, so you can fetch it before the account is even deployed.
+- `nonce` **must** equal the personal account's current nonce returned by [`getNonce`](/smart-accounts/reference/IMasterAccountController#getnonce).
   The nonce auto-increments on every successful execution to prevent replay.
 - `callData` is the calldata that the controller invokes on the personal account.
   In practice, this is `abi.encodeCall(IPersonalAccount.executeUserOp, (calls))` — anything else either reverts or is rejected by the personal account's `onlyController` modifier.
 
 The remaining fields are not validated on-chain and can be left empty.
-Authorization comes from the XRPL signature on the `Payment` transaction itself: only the XRPL key for `sender`'s `xrplOwner` can deliver the memo.
+Authorization comes from the XRPL signature on the `Payment` XRPL payment transaction itself: only the XRPL key for `sender`'s `xrplOwner` can deliver the memo.
 If the personal account has pinned an executor via [`getExecutor`](/smart-accounts/reference/IMasterAccountController#getexecutor), only that executor is permitted to relay the mint.
 
 ### `executeUserOp` and the `Call` struct
@@ -69,21 +53,23 @@ The personal account's [`executeUserOp(Call[])`](/smart-accounts/reference/IPers
 
 ```solidity
 struct Call {
- address target;
- uint256 value;
- bytes data;
+  address target;
+  uint256 value;
+  bytes data;
 }
 
 function executeUserOp(Call[] calldata _calls) external payable;
 ```
 
 Each call is dispatched in array order with the personal account as `msg.sender`.
-If any call reverts, the whole user operation reverts with [`CallFailed(index, returnData)`](/smart-accounts/reference/IPersonalAccount#callfailed) — partial execution is not possible.
+If any call reverts, the whole user operation reverts with [`CallFailed`](/smart-accounts/reference/IPersonalAccount#callfailed) — partial execution is not possible.
 
-`executeUserOp` is `payable`, so the user operation can forward FLR alongside the calls.
-Funding works the usual way: send FLR to the personal account address (it is deterministic; see [State Lookup](/smart-accounts/guides/state-lookup-ts#personal-account-of-an-xrpl-address)) and the calls can spend it via `Call.value`.
+`executeUserOp` is `payable`, so the user operation can forward native tokens (e.g. FLR) alongside the calls.
+Funding works the usual way: send FLR to the personal account address.
 
 ### Building `callData` in TypeScript
+
+You can build the `callData` in TypeScript using the [`encodeFunctionData`](https://viem.sh/docs/contract/encodeFunctionData#encodefunctiondata) function from `viem` library:
 
 ```typescript
 import { encodeFunctionData } from "viem";
@@ -107,7 +93,7 @@ const callData = encodeFunctionData({
 });
 ```
 
-The encoded `callData` becomes the `callData` field of the `PackedUserOperation` placed in the XRPL memo.
+The encoded `callData` becomes the `callData` field of the `PackedUserOperation` placed in the XRPL payment memo field.
 
 ## Replay protection
 
@@ -121,7 +107,7 @@ The whole pipeline is atomic with respect to the user operation:
 - If `sender` does not match the personal account, the call reverts with [`InvalidSender`](/smart-accounts/reference/IMasterAccountController#invalidsender).
 - If `nonce` is not the expected value, it reverts with [`InvalidNonce`](/smart-accounts/reference/IMasterAccountController#invalidnonce).
 - If the memo body has the wrong length for its instruction ID, it reverts with [`InvalidMemoData`](/smart-accounts/reference/IMasterAccountController#invalidmemodata); an unrecognized instruction byte reverts with [`InvalidInstructionId`](/smart-accounts/reference/IMasterAccountController#invalidinstructionid).
-- If any inner call reverts, the personal account surfaces it as [`CallFailed(index, returnData)`](/smart-accounts/reference/IPersonalAccount#callfailed) and the entire user operation reverts.
+- If any inner call reverts, the personal account surfaces it as [`CallFailed`](/smart-accounts/reference/IPersonalAccount#callfailed) and the entire user operation reverts.
 
 Because the FXRP transfer is performed before the memo is decoded, **the mint succeeds even if the user operation reverts** — see [`DirectMintingExecuted`](/smart-accounts/reference/IMasterAccountController#directmintingexecuted).
-The freshly minted FXRP lands in the personal account, and the user can recover by either re-submitting a fixed user operation (after advancing the nonce with the `0xE1` memo, which emits [`NonceIncreased`](/smart-accounts/reference/IMasterAccountController#nonceincreased)) or sweeping the FXRP via standard FAsset instructions.
+The freshly minted FXRP lands in the personal account, and the user can recover by either re-submitting a fixed user operation or transferring the FXRP to another address via standard [FAssets instructions](/smart-accounts/fasset-instructions).
