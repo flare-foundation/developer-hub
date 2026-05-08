@@ -97,7 +97,8 @@ function printWindow(
 
 async function main() {
   // 5. Resolve `AssetManagerFXRP` through the Flare Contract Registry.
-  const assetManagerAddress = await getContractAddressByName("AssetManagerFXRP");
+  const assetManagerAddress =
+    await getContractAddressByName("AssetManagerFXRP");
   console.log("AssetManagerFXRP address:", assetManagerAddress, "\n");
 
   // 6. Read AMG granularity, hourly and daily caps, raw limiter state, the
@@ -183,9 +184,7 @@ async function main() {
   const hourlyHeadroomUBA = limiterDisabled
     ? hourlyLimitUBA
     : hourly.remainingUBA;
-  const dailyHeadroomUBA = limiterDisabled
-    ? dailyLimitUBA
-    : daily.remainingUBA;
+  const dailyHeadroomUBA = limiterDisabled ? dailyLimitUBA : daily.remainingUBA;
   const safeRemainingUBA = bigintMin(hourlyHeadroomUBA, dailyHeadroomUBA);
   console.log(
     "Maximum single mint that fits both windows:",
