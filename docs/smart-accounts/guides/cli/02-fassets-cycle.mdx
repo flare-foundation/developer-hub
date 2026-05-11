@@ -1,0 +1,177 @@
+---
+sidebar_position: 1
+slug: fassets-cycle
+title: FAssets Cycle
+authors: [nikerzetic]
+description: An overview of the FAssets cycle with the use of Flare Smart Accounts.
+tags: [intermediate, ethereum, flare-smart-accounts]
+keywords:
+  [
+    flare-fdc,
+    ethereum,
+    flare-smart-accounts,
+    evm,
+    flare-network,
+    account-abstraction,
+  ]
+unlisted: true
+---
+
+import ThemedImage from "@theme/ThemedImage";
+import useBaseUrl from "@docusaurus/useBaseUrl";
+
+In this guide, we will walk you through all aspects of the [FAssets](/fassets/overview) process.
+We will start with an account on XRPL, convert some of the XRP to FXRP on Flare, deposit it into an Upshift-type vault, redeem it from the vault, and then redeem FXRP back to XRP.
+The steps we will take will be as follows:
+
+1. **mint and deposit:** convert XRP to FXRP and deposit it to an Upshift-type vault
+2. **request redeem:** start the withdrawal process of the deposited FXRP the Upshift-type vault
+3. **claim:** finish the withdrawal process of FXRP from the Upshift-type vault
+4. **redeem:** convert FXRP back to XRP
+
+We will do all of that through the [Flare Smart Accounts CLI](/smart-accounts/guides/cli/introduction).
+The CLI allows us to make XRPL transactions through terminal commands.
+
+:::note
+The idea behind the Flare Smart Accounts is that we perform actions on the Flare chain through instructions sent on XRPL.
+:::
+
+The same process can be repeated for a Firelight-type vault, but in this guide, we will only focus on an Upshift-type vault.
+
+## Mint and deposit
+
+First, we mint FXRP by reserving the necessary collateral and then sending XRP to the agent's underlying address.
+We will mint `1` lot of FXRP, with the agent at the address whose vault has the ID `1`.
+Then, we deposit `10` FXRP into the Upshift-type vault, registered with the `MasterAccountController` with the ID `2`.
+
+The CLI command that does this is:
+
+```sh
+./smart_accounts.py encode upshift-cr-deposit --wallet-id 0 --value 1 --agent-vault-id 1 --vault-id 2 \
+  | ./smart_accounts.py bridge instruction - \
+  | ./smart_accounts.py bridge mint-tx --wait -
+```
+
+<details>
+<summary>Expected output</summary>
+```
+sent bridge instruction transaction: 77539CDED3BD58E151CD0000EEC611A43A5539620B7CE4198BB3D63B031E9818
+sent mint tx: 3C65E10D609AB3CC1DBD03C96E401704123C0630D8AE5622B651A1E0159C1D38
+3C65E10D609AB3CC1DBD03C96E401704123C0630D8AE5622B651A1E0159C1D38
+```
+
+</details>
+
+The CLI sends both the Upshift collateral reservation and deposit instruction, and the `Payment` transaction to the agent's underlying address.
+
+We could perform the minting and deposit steps separately.
+To do so, we would do so with the following commands.
+But that would take an additional transaction and twice as long, so it is recommended that we avoid it unless we have a very specific reason why the first command is not suitable.
+
+```sh
+./smart_accounts.py encode fxrp-cr --wallet-id 0 --value 1 --agent-vault-id 1 \
+  | ./smart_accounts.py bridge instruction - \
+  | ./smart_accounts.py bridge mint-tx --wait -
+```
+
+The first command reserves `1` lot of collateral with the agent's vault with ID `1`, and makes a mint payment to its address.
+
+```sh
+./smart_accounts.py encode upshift-deposit --wallet-id 0 --value 10 --vault-id 2 \
+  | ./smart_accounts.py bridge instruction -
+```
+
+The second command deposits `10` FXRP into an Upshift-type vault registered with the ID `2`.
+
+<details>
+<summary>Expected outputs</summary>
+
+Mint:
+
+```sh
+sent bridge instruction transaction: 75FB3ED006417FC1537432DA2D7180BD5BED93F23B988F77E32ED0804CD1A332
+sent mint tx: 4BF8F3B32E234335F9EC6FE503E33B9EDF4E3E37D1E952DF28D260AC909609F1
+4BF8F3B32E234335F9EC6FE503E33B9EDF4E3E37D1E952DF28D260AC909609F1
+```
+
+Deposit:
+
+```sh
+sent bridge instruction transaction: 404EE0470152513277B10E5ADB6388175010634CDAF1815979ED418CDBAD0C45
+404EE0470152513277B10E5ADB6388175010634CDAF1815979ED418CDBAD0C45
+```
+
+</details>
+
+## Request redeem
+
+We withdraw the same number of FXRP tokens that we have just deposited from the Firelight vault (`10`).
+The process involves two steps.
+Before we can withdraw the tokens, we need to request their withdrawal.
+In a production build, the tokens stay locked for a specified time.
+
+The CLI first sends the `withdraw` instruction, and afterwards, the `claimWithdraw`.
+The first instruction starts the withdrawal process, and the second claims the FXRP once it is released.
+
+To request the withdrawal of `10` FXRP from the Upshift-type vault with ID `2`, we use the command:
+
+```sh
+./smart_accounts.py encode upshift-request-redeem --wallet-id 0 --value 10 --vault-id 2 \
+  | ./smart_accounts.py bridge instruction -
+```
+
+<details>
+<summary>Expected output</summary>
+
+```sh
+sent bridge instruction transaction: 33B08253AE3907A8CE07EA3F5C9BE91EBCC6089339725A8BCFF371ED86F26238
+33B08253AE3907A8CE07EA3F5C9BE91EBCC6089339725A8BCFF371ED86F26238
+```
+
+</details>
+
+## Claim
+
+After the waiting period has passed, we can claim the FXRP we requested.
+This is the second step of the withdrawal process.
+We need to specify the date when the redemption request was put in.
+We made the request on 28 Dec 2025, so the value parameter should be `20251218`.
+But in general, the value should be `YYYYMMDD`, where `YYYY` is the year, `MM` the month, and `DD` the date.
+
+To complete the withdrawal from the Upshift-type vault with ID `2`, we use the command:
+
+```sh
+./smart_accounts.py encode upshift-claim --wallet-id 0 --value 20251218 --vault-id 2 \
+  | ./smart_accounts.py bridge instruction -
+```
+
+<details>
+<summary>Expected output</summary>
+
+```sh
+sent bridge instruction transaction: 8D81F5A2625A927A6759646806BC8217147523F069899A4A2586562D6E0F105E
+8D81F5A2625A927A6759646806BC8217147523F069899A4A2586562D6E0F105E
+```
+
+</details>
+
+## Redeem
+
+The last step is to convert FXRP back to XRP.
+We will redeem the `1` lot of FXRP we minted in the first step back to XRP.
+We will invoke the CLI with the following command:
+
+```sh
+./smart_accounts.py encode fxrp-redeem --wallet-id 0 --value 1 \
+  | ./smart_accounts.py bridge instruction -
+```
+
+<details>
+<summary>Expected output</summary>
+
+```sh
+sent bridge instruction transaction: FE9D00397D8F11364C6E2792D62F801AA8BEF3499EB5068B624CAD1477ED7721
+FE9D00397D8F11364C6E2792D62F801AA8BEF3499EB5068B624CAD1477ED7721
+```
+
+</details>
