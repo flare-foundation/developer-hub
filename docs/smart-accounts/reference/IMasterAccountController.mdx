@@ -243,12 +243,12 @@ function getPaymentProofValidityDurationSeconds()
 
 ## Memo Instructions
 
-The memo instruction surface lets a [`PersonalAccount`](/smart-accounts/reference/IPersonalAccount) execute [custom user operations](/smart-accounts/custom-instruction) embedded in the XRPL `Payment` memo when FAssets are direct-minted into the account.
+Memo instructions allow a [`PersonalAccount`](/smart-accounts/reference/IPersonalAccount) to execute [custom user operations](/smart-accounts/custom-instruction) embedded in the XRPL `Payment` memo when FAssets are direct-minted into the account.
 
 ### `mintedFAssets`
 
 Called by the FAssets `AssetManager` when FXRP is direct-minted into a personal account.
-Decodes the XRPL memo, distributes the minted FAssets between the personal account and the executor, and dispatches any embedded user operation.
+Decodes the XRPL memo, distributes the minted FAssets between the personal account and the executor, and dispatches the custom instruction.
 See [Custom Instruction](/smart-accounts/custom-instruction) for the end-to-end flow.
 
 ```solidity
@@ -278,6 +278,13 @@ The `AssetManager` is the only address allowed to call this function — any oth
 
 Returns the current memo-instruction nonce for a personal account.
 A `PackedUserOperation`'s `nonce` field must equal this value to be accepted; the nonce auto-increments on every successful execution.
+
+:::warning[Nonce collisions]
+
+Only one user operation can consume a given nonce.
+If several XRPL flows or off-chain builders read the same `getNonce` value and each embeds a **different** `PackedUserOperation` with that nonce, whichever mint executes first succeeds and increments the nonce; the others revert with [`InvalidNonce`](#invalidnonce).
+
+:::
 
 ```solidity
 function getNonce(
@@ -458,7 +465,7 @@ event Claimed(
 
 #### `UserOperationExecuted`
 
-Emitted when a memo-encoded user operation (`0xFF`) executes against a personal account.
+Emitted when a memo-encoded user operation (`0xFF`) executes with the personal account.
 
 ```solidity
 event UserOperationExecuted(

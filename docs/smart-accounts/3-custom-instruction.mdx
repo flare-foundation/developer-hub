@@ -19,7 +19,7 @@ keywords:
 import ThemedImage from "@theme/ThemedImage";
 import useBaseUrl from "@docusaurus/useBaseUrl";
 
-Flare Smart Accounts let an XRPL user execute arbitrary contract calls on Flare from a [`Payment`](https://xrpl.org/docs/references/protocol/transactions/types/payment) transaction on the XRPL blockchain.
+Flare Smart Accounts let an XRPL user execute arbitrary contract calls on Flare trough the [`Payment`](https://xrpl.org/docs/references/protocol/transactions/types/payment) transaction on the XRPL blockchain.
 Each personal account exposes an [EIP-4337](https://eips.ethereum.org/EIPS/eip-4337) style `executeUserOp` entry point that the [`MasterAccountController`](/smart-accounts/reference/IMasterAccountController) invokes when it processes a custom instruction memo.
 
 Custom instructions carry the full call payload in the XRPL **memo** field.
@@ -49,7 +49,7 @@ If the personal account has pinned an executor via [`getExecutor`](/smart-accoun
 
 ### `executeUserOp` and the `Call` struct
 
-The personal account's [`executeUserOp(Call[])`](/smart-accounts/reference/IPersonalAccount#executeuserop) iterates the provided calls and forwards each one with its supplied `value` and `data`:
+The personal account's [`executeUserOp(Call[])`](/smart-accounts/reference/IPersonalAccount#executeuserop) runs each entry in the `Call[]` in order, forwarding it with its supplied `value` and `data`:
 
 ```solidity
 struct Call {
@@ -61,7 +61,7 @@ struct Call {
 function executeUserOp(Call[] calldata _calls) external payable;
 ```
 
-Each call is dispatched in array order with the personal account as `msg.sender`.
+Each call is dispatched with the personal account as `msg.sender`.
 If any call reverts, the whole user operation reverts with [`CallFailed`](/smart-accounts/reference/IPersonalAccount#callfailed) — partial execution is not possible.
 
 `executeUserOp` is `payable`, so the user operation can forward native tokens (e.g. FLR) alongside the calls.
@@ -110,4 +110,4 @@ The whole pipeline is atomic with respect to the user operation:
 - If any inner call reverts, the personal account surfaces it as [`CallFailed`](/smart-accounts/reference/IPersonalAccount#callfailed) and the entire user operation reverts.
 
 Because the FXRP transfer is performed before the memo is decoded, **the mint succeeds even if the user operation reverts** — see [`DirectMintingExecuted`](/smart-accounts/reference/IMasterAccountController#directmintingexecuted).
-The freshly minted FXRP lands in the personal account, and the user can recover by either re-submitting a fixed user operation or transferring the FXRP to another address via standard [FAssets instructions](/smart-accounts/fasset-instructions).
+The freshly minted FXRP remains in the personal account, and the user can either re-submit a fixed user operation or transfer the FXRP to another address via standard [FAssets instructions](/smart-accounts/fasset-instructions).
