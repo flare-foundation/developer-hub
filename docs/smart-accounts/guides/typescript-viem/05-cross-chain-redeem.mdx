@@ -23,11 +23,11 @@ import CodeBlock from "@theme/CodeBlock";
 import CrossChainRedeemScript from "!!raw-loader!/examples/developer-hub-javascript/smart-accounts/cross-chain-redeem.ts";
 
 In this guide, you will learn how to send FXRP from Sepolia back to Flare and trigger an automatic redemption to native XRP on the XRPL, all in a single LayerZero transaction.
-The flow is:
 
-- the user holds FXRP on Sepolia and calls `send` on the FXRP OFT with a compose message attached
-- the message is delivered to a composer contract on Flare, which calls the `AssetManager` to redeem the FXRP for XRP
-- the XRP is paid out by an agent to the XRPL address specified in the compose message — without a destination tag
+The flow is:
+- the user holds FXRP on Sepolia and calls `send` on the FXRP OFT with a compose message attached.
+- the message is delivered to a composer contract on Flare, which calls the `AssetManager` to redeem the FXRP for XRP.
+- the XRP is paid out by an agent to the XRPL address specified in the compose message — without a destination tag.
 
 A prerequisite for the script to work is a Sepolia EOA that already holds FXRP and enough SETH to cover the LayerZero native fee.
 If you need to obtain FXRP on Sepolia first, see the [Cross-Chain Mint guide](/smart-accounts/guides/typescript-viem/cross-chain-mint-ts).
@@ -36,7 +36,7 @@ The default composer address (`0xa10569DFb38FE7Be211aCe4E4A566Cea387023b0`) can 
 The full code showcased in this guide is available on [GitHub](https://github.com/flare-foundation/flare-viem-starter).
 
 :::info
-The code in this guide is set up for the Coston2 testnet and the Sepolia testnet.
+The code in this guide is set up for the Coston2 and Sepolia testnets.
 Despite that, we will refer to the Flare-side network as Flare and its currency as FLR instead of Coston2 and C2FLR.
 Likewise, we will refer to the Sepolia testnet's currency as ETH instead of SETH.
 :::
@@ -201,7 +201,7 @@ const txHash = await sepoliaWalletClient.writeContract(request);
 The third argument of `send` is the refund address — any unused portion of `nativeFee` is returned there.
 Once the Sepolia receipt is in, the LayerZero scanner link is printed so the user can follow the cross-chain delivery in real time.
 
-## Waiting for `RedemptionRequested`
+## Waiting for `RedemptionRequested` Event
 
 A successful flow results in the `AssetManager` on Flare emitting a `RedemptionRequested` event with the composer as the `redeemer` indexed argument.
 The `waitForRedemptionOnCoston2` helper polls Flare in 25-block chunks (the Coston2 RPC caps `eth_getLogs` at 30 blocks per query) for up to 5 minutes.
@@ -248,7 +248,7 @@ async function waitForRedemptionOnCoston2(fromBlock: bigint) {
 The inner loop advances `cursor` chunk-by-chunk through any new blocks that have appeared, then sleeps 10 seconds before re-checking the chain tip.
 Filtering by `redeemer` on the indexed argument means the call only returns events tied to the composer this script is targeting.
 
-The actual XRP payment to `underlyingAddress` is handled off-chain by an F-Asset agent after the redemption request is filed.
+The actual XRP payment to `underlyingAddress` is handled off-chain by an FAsset agent after the redemption request is filed.
 That step is asynchronous and is not awaited by this script.
 
 ## Full script

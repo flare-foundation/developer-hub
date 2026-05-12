@@ -25,17 +25,17 @@ import CrossChainMintScript from "!!raw-loader!/examples/developer-hub-javascrip
 In this guide, you will learn how to mint FXRP from native XRP on the XRPL and bridge it to Sepolia in a single end-to-end flow.
 The script combines two operations into one user journey:
 
-- mint FXRP on Flare from a payment made on the XRPL by the user's personal account
-- bridge the minted FXRP to Sepolia using a LayerZero OFT, fronted by the `FxrpLzBridgeShim` helper contract
-- wait for the `OFTReceived` event on Sepolia to confirm that the FXRP has arrived
+- mint FXRP on Flare from a payment made on the XRPL by the user's personal account.
+- bridge the minted FXRP to Sepolia using a LayerZero OFT, fronted by the `FxrpLzBridgeShim` helper contract.
+- wait for the `OFTReceived` event on Sepolia to confirm that the FXRP has arrived.
 
 The script defaults to a public deployment of the bridge shim at `0x525CCe1C6d053B0e7f41A2011B536aA992200Be0`; override it via the `FXRP_LZ_BRIDGE_SHIM` environment variable only if you have redeployed the contract yourself.
 The shim resolves the FXRP token address on-chain from the `AssetManagerFXRP` entry in the `FlareContractRegistry`, so it does not need to be passed at deploy time.
 For Flare-to-Sepolia, the only route-specific params baked in at deploy are:
 
-- `oftAdapter = 0xCd3d2127935Ae82Af54Fc31cCD9D3440dbF46639`
-- `dstEid = 40161` (the Sepolia LayerZero V2 endpoint ID)
-- `executorGas = 200000`
+- `oftAdapter = 0xCd3d2127935Ae82Af54Fc31cCD9D3440dbF46639`,
+- `dstEid = 40161` (the Sepolia LayerZero V2 endpoint ID),
+- `executorGas = 200000`.
 
 A prerequisite for the script to work is a funded personal account on Flare (the C2FLR is used to pay the LayerZero native fee) and a funded XRPL testnet wallet that will originate the XRPL payment.
 The [State Lookup guide](/smart-accounts/guides/typescript-viem/state-lookup-ts#personal-account-of-an-xrpl-address) explains how to obtain the personal account address from the XRPL address.
@@ -437,17 +437,17 @@ const bridgeEvent = await sendMemoFieldInstruction({
 });
 ```
 
-The first payment is the one that actually mints FXRP: the XRP arrives at the core vault on XRPL, the FAssets executor proves the direct mint payment to Flare, and the `MasterAccountController` mints FXRP into the personal account and executes the embedded approve in the same on-chain transaction.
+The first payment is the one that actually mints FXRP: the XRP arrives at the [Core Vault](/fassets/core-vault) on XRPL, the FAssets executor proves the [direct mint](/fassets/direct-minting) payment to Flare, and the `MasterAccountController` mints FXRP into the personal account and executes the embedded approve in the same on-chain transaction.
 The second payment carries no mint value (`memoOnlyAmountXrp` only covers the protocol fee for the memo) and triggers the bridge call that hands the FXRP to LayerZero.
 
 The split exists because the XRPL memo field is capped at roughly 1024 bytes.
 A combined approve + bridge `UserOperation` encodes to about 1066 bytes — 42 bytes over the cap — so the two calls must be sent independently.
 
-The Sepolia block number is captured between the two instructions so the subsequent event poll has a tight lower bound.
+The Sepolia block number is captured between the two instructions, so the subsequent event poll has a tight lower bound.
 
 ## Waiting for arrival on Sepolia
 
-Once the bridge memo has been executed and LayerZero has accepted the message, the script tracks the LayerZero scanner link and then polls Sepolia for the `OFTReceived` event on the FXRP OFT contract.
+Once the bridge memo has been executed and LayerZero has accepted the message, the script tracks the LayerZero scanner link and then polls Sepolia for the `OFTReceived` event on the [FXRP OFT](/fxrp/oft) contract.
 
 ```typescript title="src/cross-chain-mint.ts"
 const arrivalEvent = await waitForOftReceivedOnSepolia({

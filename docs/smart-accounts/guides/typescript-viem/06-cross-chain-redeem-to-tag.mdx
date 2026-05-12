@@ -35,9 +35,9 @@ Likewise, we will refer to the Sepolia testnet's currency as ETH instead of SETH
 
 Three things change relative to the tagless redeem:
 
-- the compose message is a 6-field struct instead of a 3-tuple — it carries the destination tag and reserves space for an optional executor and executor fee
-- a new environment variable `REDEMPTION_DESTINATION_TAG` controls the XRPL destination tag (defaulting to `72`)
-- the script waits for a `FAssetRedeemed` event on the composer instead of a `RedemptionRequested` event on the `AssetManager`
+- the compose message is a 6-field struct instead of a 3-tuple — it carries the destination tag and reserves space for an optional executor and executor fee.
+- a new environment variable `REDEMPTION_DESTINATION_TAG` controls the XRPL destination tag (defaulting to `72`).
+- the script waits for a `FAssetRedeemed` event on the composer instead of a `RedemptionRequested` event on the `AssetManager`.
 
 Both scripts target the same composer contract (default `0xa10569DFb38FE7Be211aCe4E4A566Cea387023b0`).
 The rest of the flow — quoting the LayerZero fee, building the `SendParam`, checking the balance, sending the transaction, paying for the cross-chain message in ETH — is identical to the [Cross-Chain Redeem guide](/smart-accounts/guides/typescript-viem/cross-chain-redeem-ts).
@@ -62,8 +62,8 @@ const redeemComposeMessageAbi = [
 ] as const;
 ```
 
-The two `executor`-related fields support paying a third party to advance the redemption on the user's behalf;
-in this script they are set to the zero address and zero amount, so the user themselves drives the flow.
+The two `executor`-related fields support paying a third party to advance the redemption on the user's behalf.
+In this script they are set to the zero address and zero amount, so the user themselves drives the flow.
 
 ```typescript title="src/cross-chain-redeem-to-tag.ts"
 function encodeComposeMessage(
