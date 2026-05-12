@@ -1,0 +1,599 @@
+---
+sidebar_position: 1
+slug: cross-chain-mint-ts
+title: Cross-Chain Mint
+authors: [nikerzetic]
+description: Mint FXRP from XRP and bridge it to Sepolia in a single flow using Viem and LayerZero.
+tags: [intermediate, ethereum, flare-smart-accounts]
+keywords:
+  [
+    flare-fdc,
+    ethereum,
+    flare-smart-accounts,
+    evm,
+    flare-network,
+    account-abstraction,
+    layer-zero,
+    fxrp,
+  ]
+unlisted: false
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import CrossChainMintScript from "!!raw-loader!/examples/developer-hub-javascript/smart-accounts/cross-chain-mint.ts";
+
+In this guide, you will learn how to mint FXRP from native XRP on the XRPL and bridge it to Sepolia in a single end-to-end flow.
+The script combines two operations into one user journey:
+
+- mint FXRP on Flare from a payment made on the XRPL by the user's personal account
+- bridge the minted FXRP to Sepolia using a LayerZero OFT, fronted by the `FxrpLzBridgeShim` helper contract
+- wait for the `OFTReceived` event on Sepolia to confirm that the FXRP has arrived
+
+The script defaults to a public deployment of the bridge shim at `0x525CCe1C6d053B0e7f41A2011B536aA992200Be0`; override it via the `FXRP_LZ_BRIDGE_SHIM` environment variable only if you have redeployed the contract yourself.
+The shim resolves the FXRP token address on-chain from the `AssetManagerFXRP` entry in the `FlareContractRegistry`, so it does not need to be passed at deploy time.
+For Flare-to-Sepolia, the only route-specific params baked in at deploy are:
+
+- `oftAdapter = 0xCd3d2127935Ae82Af54Fc31cCD9D3440dbF46639`
+- `dstEid = 40161` (the Sepolia LayerZero V2 endpoint ID)
+- `executorGas = 200000`
+
+A prerequisite for the script to work is a funded personal account on Flare (the C2FLR is used to pay the LayerZero native fee) and a funded XRPL testnet wallet that will originate the XRPL payment.
+The [State Lookup guide](/smart-accounts/guides/typescript-viem/state-lookup-ts#personal-account-of-an-xrpl-address) explains how to obtain the personal account address from the XRPL address.
+Once known, the personal account can be funded using the [Flare faucet](https://faucet.flare.network/coston2).
+
+The full code showcased in this guide is available on [GitHub](https://github.com/flare-foundation/flare-viem-starter).
+
+:::info
+The code in this guide is set up for the Coston2 testnet and the Sepolia testnet.
+Despite that, we will refer to the Flare-side network as Flare and its currency as FLR instead of Coston2 and C2FLR.
+Likewise, we will refer to the Sepolia testnet's currency as ETH instead of SETH.
+:::
+
+## Setup
+
+The script uses three clients: a Flare public client, a Sepolia public client, and an XRPL client.
+The Flare client is the same one introduced in the [State Lookup guide](/smart-accounts/guides/typescript-viem/state-lookup-ts); a second Viem public client is added for Sepolia, plus a wallet client and a signing account for write operations.
+
+```typescript title="src/utils/client.ts"
+import { createPublicClient, createWalletClient, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { flareTestnet, sepolia } from "viem/chains";
+
+export const publicClient = createPublicClient({
+  chain: flareTestnet,
+  transport: http(),
+});
+
+export const account = privateKeyToAccount(
+  process.env.PRIVATE_KEY as `0x${string}`,
+);
+
+export const sepoliaPublicClient = createPublicClient({
+  chain: sepolia,
+  transport: http(process.env.SEPOLIA_RPC_URL),
+});
+
+export const sepoliaWalletClient = createWalletClient({
+  chain: sepolia,
+  transport: http(process.env.SEPOLIA_RPC_URL),
+});
+```
+
+The XRPL `Client` and `Wallet` are imported from the [`xrpl`](https://js.xrpl.org) library and initialised from environment variables.
+
+```typescript title="src/cross-chain-mint.ts"
+const xrplClient = new Client(process.env.XRPL_TESTNET_RPC_URL!);
+const xrplWallet = Wallet.fromSeed(process.env.XRPL_SEED!);
+const recipient = account.address;
+```
+
+The recipient of the bridged FXRP on Sepolia is the main EOA loaded from the wallet client, not the personal account on Flare.
+The personal account is only used as the intermediary that performs the mint and the bridge call.
+
+Before sending anything, the script reads a few values in parallel: the personal account address tied to the XRPL wallet, the FXRP token address on Flare, the FXRP decimals, and two XRPL payment amounts (one that covers the mint and one that only covers the fixed memo-field fee).
+
+```typescript title="src/cross-chain-mint.ts"
+const [
+  personalAccount,
+  fxrpAddress,
+  fxrpDecimals,
+  paymentAmountXrp,
+  memoOnlyAmountXrp,
+] = await Promise.all([
+  getPersonalAccountAddress(xrplWallet.address),
+  getFxrpAddress(),
+  getFxrpDecimals(),
+  computeDirectMintingPaymentAmountXrp({
+    netMintAmountXrp: CONFIG.FXRP_MINT_AMOUNT_XRP,
+  }),
+  computeDirectMintingPaymentAmountXrp({ netMintAmountXrp: 0 }),
+]);
+```
+
+The `getPersonalAccountAddress` and `getFxrpAddress` functions are covered in the [State Lookup guide](/smart-accounts/guides/typescript-viem/state-lookup-ts).
+The `getFxrpDecimals` function is a thin ERC-20 read on the FXRP token:
+
+```typescript title="src/utils/fassets.ts"
+export async function getFxrpDecimals() {
+  const fxrpAddress = await getFxrpAddress();
+  const decimals = await publicClient.readContract({
+    address: fxrpAddress,
+    abi: erc20Abi,
+    functionName: "decimals",
+    args: [],
+  });
+  return decimals;
+}
+```
+
+The `computeDirectMintingPaymentAmountXrp` function is a helper function around the FAsset minting fee schedule.
+It reads three values from the FXRP `AssetManager` — the per-operation executor fee, the proportional minting fee (in BIPS), and the minimum minting fee — and adds them on top of the requested net mint amount.
+
+```typescript title="src/utils/fassets.ts"
+export async function computeDirectMintingPaymentAmountXrp({
+  netMintAmountXrp,
+}: {
+  netMintAmountXrp: number;
+}): Promise<number> {
+  const assetManagerAddress =
+    await getContractAddressByName("AssetManagerFXRP");
+  const [executorFeeUBA, feeBIPS, minimumFeeUBA] = await Promise.all([
+    publicClient.readContract({
+      address: assetManagerAddress,
+      abi: coston2.iDirectMintingSettingsAbi,
+      functionName: "getDirectMintingExecutorFeeUBA",
+    }),
+    publicClient.readContract({
+      address: assetManagerAddress,
+      abi: coston2.iDirectMintingSettingsAbi,
+      functionName: "getDirectMintingFeeBIPS",
+    }),
+    publicClient.readContract({
+      address: assetManagerAddress,
+      abi: coston2.iDirectMintingSettingsAbi,
+      functionName: "getDirectMintingMinimumFeeUBA",
+    }),
+  ]);
+
+  const netMintUBA = BigInt(xrpToDrops(netMintAmountXrp));
+  const proportionalFeeUBA = (netMintUBA * feeBIPS) / 10_000n;
+  const mintingFeeUBA =
+    proportionalFeeUBA > minimumFeeUBA ? proportionalFeeUBA : minimumFeeUBA;
+  const totalUBA = netMintUBA + mintingFeeUBA + executorFeeUBA;
+
+  return Number(dropsToXrp(totalUBA.toString()));
+}
+```
+
+The first call from the `Promise.all` computes the XRP amount that, once paid to the personal account on XRPL, will result in `FXRP_MINT_AMOUNT_XRP` worth of FXRP being minted on Flare net of all fees.
+The second call (with `netMintAmountXrp: 0`) returns the much smaller XRP amount needed when no minting happens — only the executor fee and the minimum minting fee — which is what we attach to the second memo-field instruction.
+
+## Quoting the LayerZero fee
+
+The `FxrpLzBridgeShim` contract exposes a view function `quote(amount, recipient)` that returns the native fee (in FLR) that the LayerZero send will charge.
+The fee must be attached to the `bridge` call as `msg.value`.
+
+```typescript title="src/cross-chain-mint.ts"
+const nativeFee = await publicClient.readContract({
+  address: shim,
+  abi: fxrpLzBridgeShimAbi,
+  functionName: "quote",
+  args: [amountToBridge, recipient],
+});
+```
+
+The `amountToBridge` parameter is the FXRP amount in base units, derived from the XRP-denominated mint amount via `xrpToDrops`.
+
+## Encoding the approve and bridge calls
+
+The personal account holds the freshly minted FXRP, so it must approve the shim contract for that amount and then call `bridge`.
+Each call is encoded into a `Call` struct that the smart account memo-field instruction can execute.
+
+```typescript title="src/utils/smart-accounts.ts"
+export type Call = {
+  target: Address;
+  value: bigint;
+  data: `0x${string}`;
+};
+```
+
+The fields mirror the `Call` struct the `PersonalAccount` contract takes in `executeUserOp`: the target address, the native value to forward, and the encoded calldata.
+
+```typescript title="src/cross-chain-mint.ts"
+const approveShimCalls: Call[] = [
+  {
+    target: fxrpAddress,
+    value: 0n,
+    data: encodeFunctionData({
+      abi: erc20Abi,
+      functionName: "approve",
+      args: [shim, amountToBridge],
+    }),
+  },
+];
+
+const bridgeCalls: Call[] = [
+  {
+    target: shim,
+    value: nativeFee,
+    data: encodeFunctionData({
+      abi: fxrpLzBridgeShimAbi,
+      functionName: "bridge",
+      args: [amountToBridge, recipient],
+    }),
+  },
+];
+```
+
+Note that the `bridge` call carries `value: nativeFee` — the FLR that pays for the cross-chain message.
+The shim passes `msg.sender` — i.e. the personal account that called `bridge` — to the OFT Adapter as the refund address, so any unused native fee is returned to the personal account automatically.
+
+## Sending the memo-field instructions
+
+The encoded calls are dispatched by issuing an XRPL **direct mint payment** to the FXRP core vault, with an ABI-encoded `UserOperation` placed in the memo field.
+The XRP amount in that payment is what mints FXRP on Flare; the memo is what tells the personal account what to do with it.
+The FAssets executor picks the payment up off the XRPL, proves it via the Flare Data Connector, and delivers the memo to the `MasterAccountController` contract — which in turn dispatches the `UserOperation` to the personal account on Flare.
+
+The `sendMemoFieldInstruction` helper bundles the four steps required: read the current nonce, encode the memo, submit the XRPL payment, and wait for the on-chain event that confirms execution.
+
+```typescript title="src/utils/smart-accounts.ts"
+export async function sendMemoFieldInstruction({
+  label,
+  calls,
+  amountXrp,
+  personalAccount,
+  xrplClient,
+  xrplWallet,
+}: {
+  label: string;
+  calls: Call[];
+  amountXrp: number;
+  personalAccount: Address;
+  xrplClient: Client;
+  xrplWallet: Wallet;
+}) {
+  const nonce = await getNonce(personalAccount);
+
+  const memoData = encodeExecuteUserOpMemo({
+    calls,
+    walletId: 0,
+    executorFeeUBA: 0n,
+    sender: personalAccount,
+    nonce,
+  });
+
+  const coreVaultXrplAddress = await getDirectMintingPaymentAddress();
+
+  const transaction = await sendXrplPayment({
+    destination: coreVaultXrplAddress,
+    amount: amountXrp,
+    memos: [{ Memo: { MemoData: memoData.slice(2) } }],
+    wallet: xrplWallet,
+    client: xrplClient,
+  });
+
+  const event = await waitForUserOperationExecuted({ personalAccount, nonce });
+  return event;
+}
+```
+
+The destination of the XRPL payment is resolved by `getDirectMintingPaymentAddress`, a thin helper that looks up the FXRP `AssetManager` from the `FlareContractRegistry` and reads `directMintingPaymentAddress()` on it.
+The returned XRPL address is the core vault that the FAssets executor is listening to.
+
+```typescript title="src/utils/smart-accounts.ts"
+export async function getDirectMintingPaymentAddress(): Promise<string> {
+  const assetManagerAddress = await getAssetManagerFXRPAddress();
+  return publicClient.readContract({
+    address: assetManagerAddress,
+    abi: coston2.iDirectMintingAbi,
+    functionName: "directMintingPaymentAddress",
+  });
+}
+```
+
+The XRP amount is what mints FXRP on Flare, and the memo carries a `UserOperation` that the personal account executes in the same on-chain transaction as the mint.
+Bundling the two into a single XRPL payment is what makes mint-and-act atomic on Flare without needing to register and dispatch a separate custom instruction.
+
+The nonce is read from the `MemoInstructionsFacet` of the `MasterAccountController`; it increments with every executed user operation and prevents replay.
+
+```typescript title="src/utils/smart-accounts.ts"
+export async function getNonce(personalAccount: Address): Promise<bigint> {
+  return publicClient.readContract({
+    address: await getMasterAccountControllerAddress(),
+    abi: iMemoInstructionsFacetAbi,
+    functionName: "getNonce",
+    args: [personalAccount],
+  }) as Promise<bigint>;
+}
+```
+
+The memo is built in `encodeExecuteUserOpMemo`.
+It first encodes the array of `Call` structs as the calldata for `PersonalAccount.executeUserOp`, then wraps that calldata in a `PackedUserOperation` tuple matching ERC-4337's layout (with empty `initCode`, `paymasterAndData`, and `signature` for memo-bridged operations), and finally prepends a 10-byte header.
+The header is `0xFF` (instruction ID for memo-bridged user operations) followed by the wallet identifier byte and an 8-byte executor fee in big-endian UBA.
+
+```typescript title="src/utils/smart-accounts.ts"
+const PACKED_USER_OPERATION_TUPLE = {
+  type: "tuple",
+  components: [
+    { name: "sender", type: "address" },
+    { name: "nonce", type: "uint256" },
+    { name: "initCode", type: "bytes" },
+    { name: "callData", type: "bytes" },
+    { name: "accountGasLimits", type: "bytes32" },
+    { name: "preVerificationGas", type: "uint256" },
+    { name: "gasFees", type: "bytes32" },
+    { name: "paymasterAndData", type: "bytes" },
+    { name: "signature", type: "bytes" },
+  ],
+} as const;
+
+const ZERO_BYTES32 = ("0x" + "00".repeat(32)) as `0x${string}`;
+
+export function encodeExecuteUserOpMemo({
+  calls,
+  walletId,
+  executorFeeUBA,
+  sender,
+  nonce,
+}: {
+  calls: Call[];
+  walletId: number;
+  executorFeeUBA: bigint;
+  sender: Address;
+  nonce: bigint;
+}): `0x${string}` {
+  const callData = encodeFunctionData({
+    abi: coston2.iPersonalAccountAbi,
+    functionName: "executeUserOp",
+    args: [calls],
+  });
+
+  const encodedUserOp = encodeAbiParameters(
+    [PACKED_USER_OPERATION_TUPLE],
+    [
+      {
+        sender,
+        nonce,
+        initCode: "0x",
+        callData,
+        accountGasLimits: ZERO_BYTES32,
+        preVerificationGas: 0n,
+        gasFees: ZERO_BYTES32,
+        paymasterAndData: "0x",
+        signature: "0x",
+      },
+    ],
+  );
+
+  const header = concatHex([
+    "0xff",
+    toHex(walletId, { size: 1 }),
+    toHex(executorFeeUBA, { size: 8 }),
+  ]);
+
+  return concatHex([header, encodedUserOp]);
+}
+```
+
+After the XRPL payment is in, `waitForUserOperationExecuted` watches the `MasterAccountController` for the `UserOperationExecuted` event whose `personalAccount` and `nonce` match the one we just submitted.
+
+```typescript title="src/utils/smart-accounts.ts"
+export async function waitForUserOperationExecuted({
+  personalAccount,
+  nonce,
+}: {
+  personalAccount: Address;
+  nonce: bigint;
+}): Promise<UserOperationExecutedEventType> {
+  const masterAccountControllerAddress =
+    await getMasterAccountControllerAddress();
+
+  return new Promise((resolve) => {
+    const unwatch = publicClient.watchContractEvent({
+      address: masterAccountControllerAddress,
+      abi: iMemoInstructionsFacetAbi,
+      eventName: "UserOperationExecuted",
+      onLogs: (logs) => {
+        for (const log of logs) {
+          const typedLog = log as UserOperationExecutedEventType;
+          if (
+            typedLog.args.personalAccount.toLowerCase() !==
+              personalAccount.toLowerCase() ||
+            typedLog.args.nonce !== nonce
+          ) {
+            continue;
+          }
+          unwatch();
+          resolve(typedLog);
+          return;
+        }
+      },
+    });
+  });
+}
+```
+
+With those helpers in place, the script splits the work into two memo-field instructions:
+
+```typescript title="src/cross-chain-mint.ts"
+await sendMemoFieldInstruction({
+  label: "mint-and-approve-shim",
+  calls: approveShimCalls,
+  amountXrp: paymentAmountXrp,
+  personalAccount,
+  xrplClient,
+  xrplWallet,
+});
+
+const startSepoliaBlock = await sepoliaPublicClient.getBlockNumber();
+
+const bridgeEvent = await sendMemoFieldInstruction({
+  label: "bridge",
+  calls: bridgeCalls,
+  amountXrp: memoOnlyAmountXrp,
+  personalAccount,
+  xrplClient,
+  xrplWallet,
+});
+```
+
+The first payment is the one that actually mints FXRP: the XRP arrives at the core vault on XRPL, the FAssets executor proves the direct mint payment to Flare, and the `MasterAccountController` mints FXRP into the personal account and executes the embedded approve in the same on-chain transaction.
+The second payment carries no mint value (`memoOnlyAmountXrp` only covers the protocol fee for the memo) and triggers the bridge call that hands the FXRP to LayerZero.
+
+The split exists because the XRPL memo field is capped at roughly 1024 bytes.
+A combined approve + bridge `UserOperation` encodes to about 1066 bytes — 42 bytes over the cap — so the two calls must be sent independently.
+
+The Sepolia block number is captured between the two instructions so the subsequent event poll has a tight lower bound.
+
+## Waiting for arrival on Sepolia
+
+Once the bridge memo has been executed and LayerZero has accepted the message, the script tracks the LayerZero scanner link and then polls Sepolia for the `OFTReceived` event on the FXRP OFT contract.
+
+```typescript title="src/cross-chain-mint.ts"
+const arrivalEvent = await waitForOftReceivedOnSepolia({
+  oftAddress: sepoliaOft,
+  toAddress: recipient,
+  fromBlock: startSepoliaBlock,
+});
+```
+
+The `waitForOftReceivedOnSepolia` helper is defined in the same file as the main flow.
+It queries `sepoliaPublicClient.getContractEvents` every 10 seconds for up to 10 minutes, filtering on the recipient address.
+
+```typescript title="src/cross-chain-mint.ts"
+const SEPOLIA_ARRIVAL_TIMEOUT_MS = 10 * 60 * 1000;
+const SEPOLIA_ARRIVAL_POLL_INTERVAL_MS = 10_000;
+
+async function waitForOftReceivedOnSepolia({
+  oftAddress,
+  toAddress,
+  fromBlock,
+}: {
+  oftAddress: Address;
+  toAddress: Address;
+  fromBlock: bigint;
+}) {
+  const deadline = Date.now() + SEPOLIA_ARRIVAL_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    const logs = await sepoliaPublicClient.getContractEvents({
+      address: oftAddress,
+      abi: fxrpOftAbi,
+      eventName: "OFTReceived",
+      args: { toAddress },
+      fromBlock,
+      strict: true,
+    });
+    if (logs.length > 0) {
+      return logs[0]!;
+    }
+    await new Promise((resolve) =>
+      setTimeout(resolve, SEPOLIA_ARRIVAL_POLL_INTERVAL_MS),
+    );
+  }
+  throw new Error(
+    `OFTReceived event not observed on Sepolia within ${SEPOLIA_ARRIVAL_TIMEOUT_MS}ms`,
+  );
+}
+```
+
+Cross-chain delivery typically completes well within that window, but the timeout is generous because LayerZero's Sepolia executor occasionally batches messages.
+
+## Full script
+
+The repository with the above example is available on [GitHub](https://github.com/flare-foundation/flare-viem-starter).
+In the example repository, certain helpers are isolated into separate files in the `src/utils` directory.
+
+<CodeBlock language="typescript" title="src/cross-chain-mint.ts">
+  {CrossChainMintScript}
+</CodeBlock>
+
+## Expected output
+
+```bash
+Personal account: 0xFd2f0eb6b9fA4FE5bb1F7B26fEE3c647ed103d9F
+FXRP token: 0x0b6A3645c240605887a5532109323A3E12273dc7
+Bridge shim: 0x525CCe1C6d053B0e7f41A2011B536aA992200Be0
+
+Cross-chain mint details:
+From (XRPL): rPdLcCkSJzLvURM2vV3bCWwXBgT7FyJojU
+Via (Coston2 personal account): 0xFd2f0eb6b9fA4FE5bb1F7B26fEE3c647ed103d9F
+To (Sepolia): 0xF5488132432118596fa13800B68df4C0fF25131d
+Net FXRP to mint & bridge: 10 FXRP
+XRPL payment amount (mint + fees): 10.2 XRP
+LayerZero native fee: 22.950824887834713257 C2FLR
+[mint-and-approve-shim] calls: [
+  {
+    target: '0x0b6A3645c240605887a5532109323A3E12273dc7',
+    value: 0n,
+    data: '0x095ea7b3000000000000000000000000525cce1c6d053b0e7f41a2011b536aa992200be00000000000000000000000000000000000000000000000000000000000989680'
+  }
+]
+
+[mint-and-approve-shim] current nonce: 52n
+
+[mint-and-approve-shim] XRPL transaction hash: 96D1C1F07CBD8D471DB83C184056F16B3F9656E50F384586A295883662949E4F
+
+[mint-and-approve-shim] UserOperationExecuted event: {
+  eventName: 'UserOperationExecuted',
+  args: {
+    personalAccount: '0xFd2f0eb6b9fA4FE5bb1F7B26fEE3c647ed103d9F',
+    nonce: 52n
+  },
+  address: '0x434936d47503353f06750db1a444dbdc5f0ad37c',
+  topics: [
+    '0xf1fb8f9b365735a54cdafe3a27ffbad0a0cf1f35454f0c4c0c4dc68591d484fe',
+    '0x000000000000000000000000fd2f0eb6b9fa4fe5bb1f7b26fee3c647ed103d9f'
+  ],
+  data: '0x0000000000000000000000000000000000000000000000000000000000000034',
+  blockNumber: 30438058n,
+  transactionHash: '0x3fef14baf0773b8f207809724409d93e3adc462bcd547171a4bddb4f5521df52',
+  transactionIndex: 0,
+  blockHash: '0x197214d48d2cfcd35b0b710342459a5761bf631072a0fcf4145aaf5be48fe721',
+  logIndex: 6,
+  removed: false,
+  blockTimestamp: undefined
+}
+
+[bridge] calls: [
+  {
+    target: '0x525CCe1C6d053B0e7f41A2011B536aA992200Be0',
+    value: 22950824887834713257n,
+    data: '0x9394d2e80000000000000000000000000000000000000000000000000000000000989680000000000000000000000000f5488132432118596fa13800b68df4c0ff25131d'
+  }
+]
+
+[bridge] current nonce: 53n
+
+[bridge] XRPL transaction hash: 014A8541410B6A419C1CEFA66588FD3769AC4EF00737ABC998D170991AB019CA
+
+[bridge] UserOperationExecuted event: {
+  eventName: 'UserOperationExecuted',
+  args: {
+    personalAccount: '0xFd2f0eb6b9fA4FE5bb1F7B26fEE3c647ed103d9F',
+    nonce: 53n
+  },
+  address: '0x434936d47503353f06750db1a444dbdc5f0ad37c',
+  topics: [
+    '0xf1fb8f9b365735a54cdafe3a27ffbad0a0cf1f35454f0c4c0c4dc68591d484fe',
+    '0x000000000000000000000000fd2f0eb6b9fa4fe5bb1f7b26fee3c647ed103d9f'
+  ],
+  data: '0x0000000000000000000000000000000000000000000000000000000000000035',
+  blockNumber: 30438109n,
+  transactionHash: '0xab44459cb4f758e442008ce18262115273a03e40ad16553411cbfab1292bd56a',
+  transactionIndex: 0,
+  blockHash: '0x393535e7d19f64b8990050c0d72f8c66feb0402527df0216294e5353143a0dcd',
+  logIndex: 14,
+  removed: false,
+  blockTimestamp: undefined
+}
+
+Track your cross-chain transaction:
+https://testnet.layerzeroscan.com/tx/0xab44459cb4f758e442008ce18262115273a03e40ad16553411cbfab1292bd56a
+
+Waiting for FXRP to arrive on Sepolia (this can take a few minutes)...
+
+FXRP arrived on Sepolia:
+  Tx hash: 0xdaa60adf3cb24627dc71294b5e6921c14c1a5418c7ab2206cfc65fee9510497a
+  Amount received: 10 FXRP
+  Recipient: 0xF5488132432118596fa13800B68df4C0fF25131d
+```

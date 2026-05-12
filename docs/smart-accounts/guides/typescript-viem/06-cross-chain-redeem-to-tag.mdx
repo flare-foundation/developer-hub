@@ -1,0 +1,221 @@
+---
+sidebar_position: 1
+slug: cross-chain-redeem-to-tag-ts
+title: Cross-Chain Redeem to Tag
+authors: [nikerzetic]
+description: Send FXRP from Sepolia back to Flare and auto-redeem to an XRPL address with a destination tag.
+tags: [intermediate, ethereum, flare-smart-accounts]
+keywords:
+  [
+    flare-fdc,
+    ethereum,
+    flare-smart-accounts,
+    evm,
+    flare-network,
+    account-abstraction,
+    layer-zero,
+    fxrp,
+  ]
+unlisted: false
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import CrossChainRedeemToTagScript from "!!raw-loader!/examples/developer-hub-javascript/smart-accounts/cross-chain-redeem-to-tag.ts";
+
+This guide is a variant of the [Cross-Chain Redeem guide](/smart-accounts/guides/typescript-viem/cross-chain-redeem-ts) that redeems FXRP to an XRPL address with a [destination tag](https://xrpl.org/docs/concepts/transactions/source-and-destination-tags).
+Read the redeem guide first — only the differences are covered here.
+
+:::info
+The code in this guide is set up for the Coston2 testnet and the Sepolia testnet.
+Despite that, we will refer to the Flare-side network as Flare and its currency as FLR instead of Coston2 and C2FLR.
+Likewise, we will refer to the Sepolia testnet's currency as ETH instead of SETH.
+:::
+
+## What's different
+
+Three things change relative to the tagless redeem:
+
+- the compose message is a 6-field struct instead of a 3-tuple — it carries the destination tag and reserves space for an optional executor and executor fee
+- a new environment variable `REDEMPTION_DESTINATION_TAG` controls the XRPL destination tag (defaulting to `72`)
+- the script waits for a `FAssetRedeemed` event on the composer instead of a `RedemptionRequested` event on the `AssetManager`
+
+Both scripts target the same composer contract (default `0xa10569DFb38FE7Be211aCe4E4A566Cea387023b0`).
+The rest of the flow — quoting the LayerZero fee, building the `SendParam`, checking the balance, sending the transaction, paying for the cross-chain message in ETH — is identical to the [Cross-Chain Redeem guide](/smart-accounts/guides/typescript-viem/cross-chain-redeem-ts).
+
+## The compose message
+
+The destination composer expects a single ABI-encoded struct that mirrors the on-chain `IFAssetRedeemComposer.RedeemComposeMessage` type.
+
+```typescript title="src/cross-chain-redeem-to-tag.ts"
+const redeemComposeMessageAbi = [
+  {
+    type: "tuple",
+    components: [
+      { name: "redeemer", type: "address" },
+      { name: "redeemerUnderlyingAddress", type: "string" },
+      { name: "redeemWithTag", type: "bool" },
+      { name: "destinationTag", type: "uint256" },
+      { name: "executor", type: "address" },
+      { name: "executorFee", type: "uint256" },
+    ],
+  },
+] as const;
+```
+
+The two `executor`-related fields support paying a third party to advance the redemption on the user's behalf;
+in this script they are set to the zero address and zero amount, so the user themselves drives the flow.
+
+```typescript title="src/cross-chain-redeem-to-tag.ts"
+function encodeComposeMessage(
+  redeemer: Address,
+  underlyingAddress: string,
+  destinationTag: bigint,
+): `0x${string}` {
+  return encodeAbiParameters(redeemComposeMessageAbi, [
+    {
+      redeemer,
+      redeemerUnderlyingAddress: underlyingAddress,
+      redeemWithTag: true,
+      destinationTag,
+      executor: zeroAddress,
+      executorFee: 0n,
+    },
+  ]);
+}
+```
+
+The `redeemWithTag` argument is hardcoded to `true` — that is the whole point of this guide.
+For tagless redemption against the same composer, see the [Cross-Chain Redeem guide](/smart-accounts/guides/typescript-viem/cross-chain-redeem-ts).
+
+:::warning
+Before the script can use `REDEMPTION_DESTINATION_TAG`, the tag has to be reserved on the `MintingTagManager` (via `reserve()`) and bound to the redeemer with `setMintingRecipient(tag, recipient)`.
+Without that registration the composer will refuse to process the redemption.
+See the [Redeem with Tag](/fassets/redemption#redeem-with-tag) section of the Redemption guide for the registration flow.
+:::
+
+## Waiting for `FAssetRedeemed`
+
+Because the composer is the contract that pulls the trigger on the redemption, it emits its own event that fires after the underlying `AssetManager.redeem` call succeeds.
+The polling loop is the same shape as `waitForRedemptionOnCoston2` in the tagless redeem (25-block chunks, 5-minute timeout) but reads from the composer's ABI and filters on the user as the `redeemer`.
+
+```typescript title="src/cross-chain-redeem-to-tag.ts"
+async function waitForFAssetRedeemedOnCoston2(
+  redeemer: Address,
+  fromBlock: bigint,
+) {
+  const deadline = Date.now() + REDEMPTION_TIMEOUT_MS;
+
+  let cursor = fromBlock;
+  while (Date.now() < deadline) {
+    const latest = await publicClient.getBlockNumber();
+    while (cursor <= latest) {
+      const chunkEnd = cursor + MAX_BLOCK_RANGE - 1n;
+      const toBlock = chunkEnd > latest ? latest : chunkEnd;
+      const logs = await publicClient.getContractEvents({
+        address: CONFIG.COSTON2_COMPOSER,
+        abi: coston2.ifAssetRedeemComposerAbi,
+        eventName: "FAssetRedeemed",
+        args: { redeemer },
+        fromBlock: cursor,
+        toBlock,
+      });
+      if (logs.length > 0) {
+        return logs[0]!;
+      }
+      cursor = toBlock + 1n;
+    }
+    await new Promise((resolve) =>
+      setTimeout(resolve, REDEMPTION_POLL_INTERVAL_MS),
+    );
+  }
+
+  throw new Error(
+    `FAssetRedeemed event not observed within ${REDEMPTION_TIMEOUT_MS}ms`,
+  );
+}
+```
+
+The `redeemer` argument here is the Sepolia signer address — i.e. the user — which makes the event easy to filter even if multiple unrelated redemptions are in flight against the same composer.
+All the other helpers used by this script (Sepolia client setup, `calculateAmountToSend`, the `SendParam` builder, the balance check, fee quote, and send path) are unchanged from the [Cross-Chain Redeem guide](/smart-accounts/guides/typescript-viem/cross-chain-redeem-ts).
+
+## Full script
+
+The repository with the above example is available on [GitHub](https://github.com/flare-foundation/flare-viem-starter).
+
+<CodeBlock language="typescript" title="src/cross-chain-redeem-to-tag.ts">
+  {CrossChainRedeemToTagScript}
+</CodeBlock>
+
+## Expected output
+
+```bash
+nik ~/g/g/f/s/flare-smart-accounts-viem on main !8 via node-v24.14.1
+> pnpm run script src/layer-zero/cross-chain-redeem-to-tag.ts
+
+> @flarenetwork/flare-smart-accounts-viem@0.0.1 script /home/nik/git/gitlab.com/flarenetwork/starters-examples/flare-smart-accounts-viem
+> tsx --env-file=.env src/layer-zero/cross-chain-redeem-to-tag.ts
+
+Using account: 0xF5488132432118596fa13800B68df4C0fF25131d
+Composer configured: 0xa10569DFb38FE7Be211aCe4E4A566Cea387023b0
+Connecting to FXRP OFT on Sepolia: 0x81672c5d42F3573aD95A0bdfBE824FaaC547d4E6
+Token decimals: 6
+
+Redemption Parameters:
+Amount: 10000000 FXRP base units
+XRP Address: rpHuw4bKSjonKRrKKVYUZYYVedg1jyPrmp
+Redeemer: 0xF5488132432118596fa13800B68df4C0fF25131d
+Destination tag: 72
+
+Current FXRP balance: 70
+
+LayerZero Fee: 0.000101716112596574 ETH
+
+Sending 10 FXRP to Coston2 with auto-redeem-with-tag...
+Target composer: 0xa10569DFb38FE7Be211aCe4E4A566Cea387023b0
+
+Transaction sent: 0xca0e2558b4397beef13c8b7b0acf6e9ecf42b22ea93aeec7e837656d7f23674c
+Confirmed in block: 10838169n
+
+Track your cross-chain transaction:
+https://testnet.layerzeroscan.com/tx/0xca0e2558b4397beef13c8b7b0acf6e9ecf42b22ea93aeec7e837656d7f23674c
+
+The auto-redeem-with-tag will execute once the message arrives on Coston2.
+XRP will be sent to: rpHuw4bKSjonKRrKKVYUZYYVedg1jyPrmp
+Destination tag: 72
+
+Waiting for FAssetRedeemed event on Coston2 composer...
+
+FAssetRedeemed event observed on Coston2:
+{
+  eventName: 'FAssetRedeemed',
+  args: {
+    guid: '0xaebbeadcb6b78b8ab0c541cefec4a5b9d037d4f069a7f333fb8b16f9b6439cb3',
+    srcEid: 40161,
+    redeemer: '0xF5488132432118596fa13800B68df4C0fF25131d',
+    redeemerAccount: '0xEB947e97BD6b02C4121D2AdBAa1e07A4cA3D8D1E',
+    amountToRedeemUBA: 9990000n,
+    redeemerUnderlyingAddress: 'rpHuw4bKSjonKRrKKVYUZYYVedg1jyPrmp',
+    redeemWithTag: true,
+    destinationTag: 72n,
+    executor: '0x103b384064ae85577127097A7cCadfd6fb13f437',
+    executorFee: 0n,
+    redeemedAmountUBA: 9990000n,
+    wrappedAmount: 0n
+  },
+  address: '0xa10569dfb38fe7be211ace4e4a566cea387023b0',
+  topics: [
+    '0x9e8ed1306ec6ca165a2c23ae451b161741d3da7ab41fe134775ebd94b2351f04',
+    '0xaebbeadcb6b78b8ab0c541cefec4a5b9d037d4f069a7f333fb8b16f9b6439cb3',
+    '0x0000000000000000000000000000000000000000000000000000000000009ce1',
+    '0x000000000000000000000000f5488132432118596fa13800b68df4c0ff25131d'
+  ],
+  data: '0x000000000000000000000000eb947e97bd6b02c4121d2adbaa1e07a4ca3d8d1e0000000000000000000000000000000000000000000000000000000000986f70000000000000000000000000000000000000000000000000000000000000012000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000048000000000000000000000000103b384064ae85577127097a7ccadfd6fb13f43700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000986f7000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000022727048757734624b536a6f6e4b52724b4b5659555a595956656467316a7950726d70000000000000000000000000000000000000000000000000000000000000',
+  blockNumber: 30438770n,
+  transactionHash: '0xc1d39bc7383e856a92f9a3a60f1b33f89926a21c68910f29a3566c1a0f557679',
+  transactionIndex: 9,
+  blockHash: '0x2071fdbb5d07266f380a40c819818fff507f7142340961681af5a8ec796e6b09',
+  logIndex: 18,
+  removed: false,
+  blockTimestamp: undefined
+}
+```
