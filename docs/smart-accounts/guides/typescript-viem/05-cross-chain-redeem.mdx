@@ -1,0 +1,339 @@
+---
+sidebar_position: 1
+slug: cross-chain-redeem-ts
+title: Cross-Chain Redeem
+authors: [nikerzetic]
+description: Send FXRP from Sepolia back to Flare and auto-redeem it to XRP on the XRPL using Viem and LayerZero.
+tags: [intermediate, ethereum, flare-smart-accounts]
+keywords:
+  [
+    flare-fdc,
+    ethereum,
+    flare-smart-accounts,
+    evm,
+    flare-network,
+    account-abstraction,
+    layer-zero,
+    fxrp,
+  ]
+unlisted: false
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import CrossChainRedeemScript from "!!raw-loader!/examples/developer-hub-javascript/smart-accounts/cross-chain-redeem.ts";
+
+In this guide, you will learn how to send FXRP from Sepolia back to Flare and trigger an automatic redemption to native XRP on the XRPL, all in a single LayerZero transaction.
+
+The flow is:
+
+- the user holds FXRP on Sepolia and calls `send` on the FXRP OFT with a compose message attached.
+- the message is delivered to a composer contract on Flare, which calls the `AssetManager` to redeem the FXRP for XRP.
+- the XRP is paid out by an agent to the XRPL address specified in the compose message — without a destination tag.
+
+A prerequisite for the script to work is a Sepolia externally owned account (EOA) that already holds FXRP and enough ETH to cover the LayerZero native fee.
+If you need to obtain FXRP on Sepolia first, see the [Cross-Chain Mint guide](/smart-accounts/guides/typescript-viem/cross-chain-mint-ts).
+The default composer address (`0xa10569DFb38FE7Be211aCe4E4A566Cea387023b0`) can be overridden via the `COSTON2_COMPOSER` environment variable; the amount and destination are controlled by `SEND_LOTS` and `XRP_ADDRESS`.
+
+The full code showcased in this guide is available on [GitHub](https://github.com/flare-foundation/flare-viem-starter).
+
+:::info
+The code in this guide is set up for the Coston2 and Sepolia testnets.
+Despite that, we will refer to the Flare-side network as Flare and its currency as FLR instead of Coston2 and C2FLR.
+Likewise, we will refer to the Sepolia testnet's currency as ETH instead of SETH.
+:::
+
+## Setup
+
+Because the script reads from and writes to two chains, it sets up Viem public and wallet clients for both Flare and Sepolia, plus a signing account loaded from `PRIVATE_KEY`.
+
+```typescript title="src/utils/client.ts"
+import { createPublicClient, createWalletClient, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { flareTestnet, sepolia } from "viem/chains";
+
+export const publicClient = createPublicClient({
+  chain: flareTestnet,
+  transport: http(),
+});
+
+export const account = privateKeyToAccount(
+  process.env.PRIVATE_KEY as `0x${string}`,
+);
+
+export const sepoliaPublicClient = createPublicClient({
+  chain: sepolia,
+  transport: http(process.env.SEPOLIA_RPC_URL),
+});
+
+export const sepoliaWalletClient = createWalletClient({
+  chain: sepolia,
+  transport: http(process.env.SEPOLIA_RPC_URL),
+});
+```
+
+The Flare public client is the same one introduced in the [State Lookup guide](/smart-accounts/guides/typescript-viem/state-lookup-ts) — only the redemption-event polling needs it on this script's path.
+All the FXRP transfer activity happens through the Sepolia clients.
+
+The FXRP send amount is derived from the `SEND_LOTS` config via `calculateAmountToSend`.
+A single FXRP lot is a unit of redeemable FXRP determined by the FXRP `AssetManager` settings; the helper multiplies the lot count by `lotSizeAMG × assetMintingGranularityUBA` to get the FXRP base-unit amount.
+
+```typescript title="src/utils/fassets.ts"
+export async function calculateAmountToSend(lots: bigint): Promise<bigint> {
+  const assetManagerAddress = await getAssetManagerFXRPAddress();
+  const settings = await publicClient.readContract({
+    address: assetManagerAddress,
+    abi: coston2.iAssetManagerAbi,
+    functionName: "getSettings",
+  });
+  return (
+    lots *
+    BigInt(settings.lotSizeAMG) *
+    BigInt(settings.assetMintingGranularityUBA)
+  );
+}
+```
+
+The `getAssetManagerFXRPAddress` helper is covered in the [State Lookup guide](/smart-accounts/guides/typescript-viem/state-lookup-ts#accounts-fxrp-balance).
+
+## The compose message
+
+A LayerZero compose message is opaque calldata that the destination chain's executor passes to a contract after the OFT credit has been applied.
+The redemption composer on Flare expects a tuple of `(uint256 amount, string underlyingAddress, address redeemer)`.
+
+```typescript title="src/cross-chain-redeem.ts"
+function encodeComposeMessage(
+  amountToSend: bigint,
+  underlyingAddress: string,
+  redeemer: Address,
+): `0x${string}` {
+  return encodeAbiParameters(
+    [{ type: "uint256" }, { type: "string" }, { type: "address" }],
+    [amountToSend, underlyingAddress, redeemer],
+  );
+}
+```
+
+The `amountToSend` parameter is the FXRP amount in base units, the `underlyingAddress` is the XRPL address to receive the XRP, and the `redeemer` is the Sepolia account credited as the redeemer on the `AssetManager`.
+
+## Compose and executor options
+
+LayerZero needs to know how much gas to budget on the destination chain for two things: the regular `lzReceive` that credits the OFT, and the additional `lzCompose` that executes the composer's redemption logic.
+
+```typescript title="src/cross-chain-redeem.ts"
+function buildComposeOptions(): `0x${string}` {
+  return Options.newOptions()
+    .addExecutorLzReceiveOption(CONFIG.EXECUTOR_GAS, 0)
+    .addExecutorComposeOption(0, CONFIG.COMPOSE_GAS, 0)
+    .toHex() as `0x${string}`;
+}
+```
+
+Both `EXECUTOR_GAS` and `COMPOSE_GAS` are set to `1_000_000`, which is generous enough to cover the OFT credit plus a redemption request and event emission on Flare.
+The first argument of `addExecutorComposeOption` is the compose index (`0`, since there is exactly one composed call); the last argument of each is the value attached to the call (`0` in both cases).
+
+## Building the `SendParam`
+
+The OFT `send` function takes a `SendParam` struct.
+The recipient is the composer contract — padded to 32 bytes — so that LayerZero delivers the credit to the composer rather than to a user wallet.
+
+```typescript title="src/cross-chain-redeem.ts"
+function buildSendParam(
+  amountToSend: bigint,
+  composeMsg: `0x${string}`,
+  extraOptions: `0x${string}`,
+): SendParam {
+  return {
+    dstEid: CONFIG.COSTON2_EID,
+    to: pad(CONFIG.COSTON2_COMPOSER, { size: 32 }),
+    amountLD: amountToSend,
+    minAmountLD: amountToSend,
+    extraOptions,
+    composeMsg,
+    oftCmd: "0x",
+  };
+}
+```
+
+The `amountLD` and `minAmountLD` parameters are set to the same value because no slippage is expected on a 1:1 OFT bridge.
+The `oftCmd` argument is empty for the standard `SEND` operation.
+
+## Balance check and fee quote
+
+Before broadcasting, the script confirms that the signer has enough FXRP and quotes the native fee that LayerZero will charge on Sepolia.
+
+```typescript title="src/cross-chain-redeem.ts"
+const balance = await sepoliaPublicClient.readContract({
+  address: oftAddress,
+  abi: fxrpOftAbi,
+  functionName: "balanceOf",
+  args: [signerAddress],
+});
+```
+
+```typescript title="src/cross-chain-redeem.ts"
+const { nativeFee, lzTokenFee } = await sepoliaPublicClient.readContract({
+  address: oftAddress,
+  abi: fxrpOftAbi,
+  functionName: "quoteSend",
+  args: [sendParam, false],
+});
+```
+
+The fee is denominated in ETH because that is the chain the transaction originates on.
+The `quoteSend` function accounts for the compose payload — a larger `composeMsg` increases the quoted fee.
+
+## Sending the transaction
+
+The send is performed with the standard Viem `simulateContract` + `writeContract` pattern, attaching the quoted native fee as the transaction value.
+
+```typescript title="src/cross-chain-redeem.ts"
+const { request } = await sepoliaPublicClient.simulateContract({
+  account,
+  address: oftAddress,
+  abi: fxrpOftAbi,
+  functionName: "send",
+  args: [sendParam, { nativeFee, lzTokenFee }, signerAddress],
+  value: nativeFee,
+});
+
+const txHash = await sepoliaWalletClient.writeContract(request);
+```
+
+The third argument of `send` is the refund address — any unused portion of `nativeFee` is returned there.
+Once the Sepolia receipt is in, the LayerZero scanner link is printed so the user can follow the cross-chain delivery in real time.
+
+## Waiting for `RedemptionRequested` Event
+
+A successful flow results in the `AssetManager` on Flare emitting a [`RedemptionRequested`](/fassets/reference/IAssetManagerEvents#redemptionrequested) event with the composer as the `redeemer` indexed argument.
+The `waitForRedemptionOnCoston2` helper polls Flare in 25-block chunks (the Coston2 RPC caps `eth_getLogs` at 30 blocks per query) for up to 5 minutes.
+
+```typescript title="src/cross-chain-redeem.ts"
+const REDEMPTION_TIMEOUT_MS = 5 * 60 * 1000;
+const REDEMPTION_POLL_INTERVAL_MS = 10_000;
+const MAX_BLOCK_RANGE = 25n;
+
+async function waitForRedemptionOnCoston2(fromBlock: bigint) {
+  const assetManagerAddress = await getAssetManagerFXRPAddress();
+  const deadline = Date.now() + REDEMPTION_TIMEOUT_MS;
+
+  let cursor = fromBlock;
+  while (Date.now() < deadline) {
+    const latest = await publicClient.getBlockNumber();
+    while (cursor <= latest) {
+      const chunkEnd = cursor + MAX_BLOCK_RANGE - 1n;
+      const toBlock = chunkEnd > latest ? latest : chunkEnd;
+      const logs = await publicClient.getContractEvents({
+        address: assetManagerAddress,
+        abi: coston2.iAssetManagerAbi,
+        eventName: "RedemptionRequested",
+        args: { redeemer: CONFIG.COSTON2_COMPOSER },
+        fromBlock: cursor,
+        toBlock,
+      });
+      if (logs.length > 0) {
+        return logs[0]!;
+      }
+      cursor = toBlock + 1n;
+    }
+    await new Promise((resolve) =>
+      setTimeout(resolve, REDEMPTION_POLL_INTERVAL_MS),
+    );
+  }
+
+  throw new Error(
+    `RedemptionRequested event not observed within ${REDEMPTION_TIMEOUT_MS}ms`,
+  );
+}
+```
+
+The inner loop advances `cursor` chunk-by-chunk through any new blocks that have appeared, then sleeps 10 seconds before re-checking the chain tip.
+Filtering by `redeemer` on the indexed argument means the call only returns events tied to the composer this script is targeting.
+
+The actual XRP payment to `underlyingAddress` is handled off-chain by an FAsset agent after the redemption request is filed.
+That step is asynchronous and is not awaited by this script.
+
+## Full script
+
+The repository with the above example is available on [GitHub](https://github.com/flare-foundation/flare-viem-starter).
+In the example repository, certain helpers are isolated into separate files in the `src/utils` directory, and the shared `SendParam` type lives in `src/layer-zero/types.ts`.
+
+<CodeBlock language="typescript" title="src/cross-chain-redeem.ts">
+  {CrossChainRedeemScript}
+</CodeBlock>
+
+## Expected output
+
+```bash
+> pnpm run script src/layer-zero/cross-chain-redeem.ts
+
+> @flarenetwork/flare-smart-accounts-viem@0.0.1 script ~/flare-smart-accounts-viem
+> tsx --env-file=.env src/layer-zero/cross-chain-redeem.ts
+
+Using account: 0xF5488132432118596fa13800B68df4C0fF25131d
+Composer configured: 0xa10569DFb38FE7Be211aCe4E4A566Cea387023b0
+Connecting to FXRP OFT on Sepolia: 0x81672c5d42F3573aD95A0bdfBE824FaaC547d4E6
+Token decimals: 6
+
+Redemption Parameters:
+Amount: 10000000 FXRP base units
+XRP Address: rpHuw4bKSjonKRrKKVYUZYYVedg1jyPrmp
+Redeemer: 0xF5488132432118596fa13800B68df4C0fF25131d
+
+Current FXRP balance: 80
+
+LayerZero Fee: 0.000101716112596574 ETH
+
+Sending 10 FXRP to Coston2 with auto-redeem...
+Target composer: 0xa10569DFb38FE7Be211aCe4E4A566Cea387023b0
+
+Transaction sent: 0x92f51cdc9b7ed4c9c63876340c843415ee5d5721624fadeb2549bfc539a657e7
+Confirmed in block: 10838150n
+
+Track your cross-chain transaction:
+https://testnet.layerzeroscan.com/tx/0x92f51cdc9b7ed4c9c63876340c843415ee5d5721624fadeb2549bfc539a657e7
+
+The auto-redeem will execute once the message arrives on Coston2.
+XRP will be sent to: rpHuw4bKSjonKRrKKVYUZYYVedg1jyPrmp
+
+Waiting for RedemptionRequested event on Coston2...
+
+RedemptionRequested event observed on Coston2:
+{
+  eventName: 'RedemptionRequested',
+  args: {
+    agentVault: '0xd5dEFe2c62D48788BB3889534FBFe7Aea0602D64',
+    redeemer: '0xa10569DFb38FE7Be211aCe4E4A566Cea387023b0',
+    requestId: 29197906n,
+    paymentAddress: 'rpHuw4bKSjonKRrKKVYUZYYVedg1jyPrmp',
+    valueUBA: 10000000n,
+    feeUBA: 50000n,
+    firstUnderlyingBlock: 17306757n,
+    lastUnderlyingBlock: 17307376n,
+    lastUnderlyingTimestamp: 1778579481n,
+    paymentReference: '0x4642505266410002000000000000000000000000000000000000000001bd8652',
+    executor: '0x0000000000000000000000000000000000000000',
+    executorFeeNatWei: 0n
+  },
+  address: '0xc1ca88b937d0b528842f95d5731ffb586f4fbdfa',
+  topics: [
+    '0x8cbbd73a8d1b8b02a53c4c3b0ee34b472fe3099cc19bcfb57f1aae09e8a9847e',
+    '0x000000000000000000000000d5defe2c62d48788bb3889534fbfe7aea0602d64',
+    '0x0000000000000000000000005051e8db650e9e0e2a3f03010ee5c60e79cf583e',
+    '0x0000000000000000000000000000000000000000000000000000000001bd8652'
+  ],
+  data: '0x00000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000989680000000000000000000000000000000000000000000000000000000000000c350000000000000000000000000000000000000000000000000000000000108148500000000000000000000000000000000000000000000000000000000010816f0000000000000000000000000000000000000000000000000000000006a02f8194642505266410002000000000000000000000000000000000000000001bd8652000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000022727048757734624b536a6f6e4b52724b4b5659555a595956656467316a7950726d70000000000000000000000000000000000000000000000000000000000000',
+  blockNumber: 30438649n,
+  transactionHash: '0x9d82fe98f04fa37f729c786cab99632c781b9f3bc655cdd040a8adcfc497f736',
+  transactionIndex: 1,
+  blockHash: '0xa006cf7988226e5e57a1194e9c5a183beec2a37d999f966199f943fe044a77a2',
+  logIndex: 9,
+  removed: false,
+  blockTimestamp: undefined
+}
+```
+
+## What's next
+
+- [Cross-Chain Mint guide](/smart-accounts/guides/typescript-viem/cross-chain-mint-ts)
+- [Cross-Chain Redeem to Tag guide](/smart-accounts/guides/typescript-viem/cross-chain-redeem-to-tag-ts)
+- [Direct Minting overview](/fassets/direct-minting)
