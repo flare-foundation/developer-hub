@@ -29,8 +29,8 @@ The script combines two operations into one user journey:
 - bridge the minted FXRP to Sepolia using a LayerZero OFT, fronted by the `FxrpLzBridgeShim` helper contract.
 - wait for the `OFTReceived` event on Sepolia to confirm that the FXRP has arrived.
 
-The script defaults to a public deployment of the bridge shim at `0x525CCe1C6d053B0e7f41A2011B536aA992200Be0`; override it via the `FXRP_LZ_BRIDGE_SHIM` environment variable only if you have redeployed the contract yourself.
-The shim resolves the FXRP token address on-chain from the `AssetManagerFXRP` entry in the `FlareContractRegistry`, so it does not need to be passed at deploy time.
+The script defaults to a public deployment of the bridge shim on Coston2 at [`0x525CCe1C6d053B0e7f41A2011B536aA992200Be0`](https://coston2-explorer.flare.network/address/0x525CCe1C6d053B0e7f41A2011B536aA992200Be0?tab=contract); override it via the `FXRP_LZ_BRIDGE_SHIM` environment variable only if you have redeployed the contract yourself.
+The shim resolves the FXRP token address on-chain from the [`AssetManagerFXRP`](/fassets/reference/IAssetManager) entry in the [`FlareContractRegistry`](https://dev.flare.network/network/guides/flare-contracts-registry), so it does not need to be passed at deploy time.
 For Flare-to-Sepolia, the only route-specific params baked in at deploy are:
 
 - `oftAdapter = 0xCd3d2127935Ae82Af54Fc31cCD9D3440dbF46639`,
@@ -87,10 +87,15 @@ const xrplWallet = Wallet.fromSeed(process.env.XRPL_SEED!);
 const recipient = account.address;
 ```
 
-The recipient of the bridged FXRP on Sepolia is the main EOA loaded from the wallet client, not the personal account on Flare.
+The recipient of the bridged FXRP on Sepolia is the main externally owned account (EOA) loaded from the wallet client, not the personal account on Flare.
 The personal account is only used as the intermediary that performs the mint and the bridge call.
 
-Before sending anything, the script reads a few values in parallel: the personal account address tied to the XRPL wallet, the FXRP token address on Flare, the FXRP decimals, and two XRPL payment amounts (one that covers the mint and one that only covers the fixed memo-field fee).
+Before sending anything, the script reads a few values in parallel:
+
+- the personal account address tied to the XRPL wallet,
+- the FXRP token address on Flare,
+- the FXRP decimals,
+- two XRPL payment amounts (one that covers the mint and one that only covers the fixed memo-field fee).
 
 ```typescript title="src/cross-chain-mint.ts"
 const [
@@ -126,7 +131,7 @@ export async function getFxrpDecimals() {
 }
 ```
 
-The `computeDirectMintingPaymentAmountXrp` function is a helper function around the FAsset minting fee schedule.
+The `computeDirectMintingPaymentAmountXrp` function is a helper that computes the XRP amount required for a [direct minting](/fassets/direct-minting) payment.
 It reads three values from the FXRP `AssetManager` — the per-operation executor fee, the proportional minting fee (in BIPS), and the minimum minting fee — and adds them on top of the requested net mint amount.
 
 ```typescript title="src/utils/fassets.ts"
@@ -232,7 +237,7 @@ The shim passes `msg.sender` — i.e. the personal account that called `bridge` 
 
 The encoded calls are dispatched by issuing an XRPL **direct mint payment** to the FXRP core vault, with an ABI-encoded `UserOperation` placed in the memo field.
 The XRP amount in that payment is what mints FXRP on Flare; the memo is what tells the personal account what to do with it.
-The FAssets executor picks the payment up off the XRPL, proves it via the Flare Data Connector, and delivers the memo to the `MasterAccountController` contract — which in turn dispatches the `UserOperation` to the personal account on Flare.
+The FAssets executor picks the payment up off the XRPL, proves it via the [Flare Data Connector](https://dev.flare.network/fdc/attestation-types/xrp-payment), and delivers the memo to the `MasterAccountController` contract — which in turn dispatches the `UserOperation` to the personal account on Flare.
 
 The `sendMemoFieldInstruction` helper bundles the four steps required: read the current nonce, encode the memo, submit the XRPL payment, and wait for the on-chain event that confirms execution.
 
@@ -277,7 +282,7 @@ export async function sendMemoFieldInstruction({
 }
 ```
 
-The destination of the XRPL payment is resolved by `getDirectMintingPaymentAddress`, a thin helper that looks up the FXRP `AssetManager` from the `FlareContractRegistry` and reads `directMintingPaymentAddress()` on it.
+The destination of the XRPL payment is resolved by `getDirectMintingPaymentAddress`, a thin helper that looks up the FXRP `AssetManager` from the `FlareContractRegistry` and reads [`directMintingPaymentAddress()`](/fassets/reference/IAssetManager#directmintingpaymentaddress) on it.
 The returned XRPL address is the core vault that the FAssets executor is listening to.
 
 ```typescript title="src/utils/smart-accounts.ts"
@@ -294,7 +299,7 @@ export async function getDirectMintingPaymentAddress(): Promise<string> {
 The XRP amount is what mints FXRP on Flare, and the memo carries a `UserOperation` that the personal account executes in the same on-chain transaction as the mint.
 Bundling the two into a single XRPL payment is what makes mint-and-act atomic on Flare without needing to register and dispatch a separate custom instruction.
 
-The nonce is read from the `MemoInstructionsFacet` of the `MasterAccountController`; it increments with every executed user operation and prevents replay.
+The nonce is read from the [`MasterAccountController`](/smart-accounts/reference/IMasterAccountController); it increments with every executed user operation and prevents replay.
 
 ```typescript title="src/utils/smart-accounts.ts"
 export async function getNonce(personalAccount: Address): Promise<bigint> {
@@ -440,8 +445,10 @@ const bridgeEvent = await sendMemoFieldInstruction({
 The first payment is the one that actually mints FXRP: the XRP arrives at the [Core Vault](/fassets/core-vault) on XRPL, the FAssets executor proves the [direct mint](/fassets/direct-minting) payment to Flare, and the `MasterAccountController` mints FXRP into the personal account and executes the embedded approve in the same on-chain transaction.
 The second payment carries no mint value (`memoOnlyAmountXrp` only covers the protocol fee for the memo) and triggers the bridge call that hands the FXRP to LayerZero.
 
+:::info
 The split exists because the XRPL memo field is capped at roughly 1024 bytes.
 A combined approve + bridge `UserOperation` encodes to about 1066 bytes — 42 bytes over the cap — so the two calls must be sent independently.
+:::
 
 The Sepolia block number is captured between the two instructions, so the subsequent event poll has a tight lower bound.
 
@@ -597,3 +604,9 @@ FXRP arrived on Sepolia:
   Amount received: 10 FXRP
   Recipient: 0xF5488132432118596fa13800B68df4C0fF25131d
 ```
+
+## What's next
+
+- [Cross-Chain Redeem guide](/smart-accounts/guides/typescript-viem/cross-chain-redeem-ts)
+- [Cross-Chain Redeem to Tag guide](/smart-accounts/guides/typescript-viem/cross-chain-redeem-to-tag-ts)
+- [Direct Minting overview](/fassets/direct-minting)
