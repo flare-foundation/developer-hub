@@ -29,7 +29,9 @@ The starter kit includes a basic setup for configuring Hardhat and Foundry, alon
 
     :::tip
 
-    [Hardhat for Visual Studio Code](https://hardhat.org/hardhat-vscode) is the official Hardhat extension that adds advanced support for Solidity to VSCode. If you use VSCode, give it a try!
+    [Hardhat for Visual Studio Code](https://hardhat.org/hardhat-vscode) is the official Hardhat extension that adds advanced support for Solidity to VSCode.
+
+If you use VSCode, give it a try!
 
     :::
 
@@ -102,18 +104,31 @@ The starter kit includes a basic setup for configuring Hardhat and Foundry, alon
     2. Install the project dependencies.
 
         ```bash
-        forge soldeer install
+        make install
         ```
 
-    3. You might need to modify `remappings.txt` so `/src` paths are read correctly, e.g.:
+        The `make install` target runs `forge soldeer install` and additionally fetches the npm-only dependencies (`ftso-adapters`, `pyth-sdk-solidity`, `lz-address-book`) used by the starter's adapter and OFT examples.
 
-        ```bash
+    3. The starter ships with a `remappings.txt` ready for the current periphery release.
+
+For reference, it contains:
+
+        ```text title="remappings.txt"
         @openzeppelin-contracts/=dependencies/@openzeppelin-contracts-5.2.0-rc.1/
-        flare-periphery/=dependencies/flare-periphery-0.0.1/
+        flare-periphery/=dependencies/flare-periphery-0.1.37/
+        @flarenetwork/flare-periphery-contracts/=dependencies/flare-periphery-0.1.37/src/
         forge-std/=dependencies/forge-std-1.9.5/src/
-        forge-std/=dependencies/forge-std-1.9.5/
         surl/=dependencies/surl-0.0.0/src/
         surl/=dependencies/surl-0.0.0/
+        lz-address-book/=dependencies/lz-address-book/src/
+        @layerzerolabs/lz-evm-protocol-v2/=dependencies/lz-address-book/lib/LayerZero-v2/packages/layerzero-v2/evm/protocol/
+        @layerzerolabs/lz-evm-messagelib-v2/=dependencies/lz-address-book/lib/LayerZero-v2/packages/layerzero-v2/evm/messagelib/
+        @layerzerolabs/oft-evm/=dependencies/lz-address-book/lib/devtools/packages/oft-evm/
+        @layerzerolabs/oapp-evm/=dependencies/lz-address-book/lib/devtools/packages/oapp-evm/
+        solidity-bytes-utils/=dependencies/lz-address-book/lib/solidity-bytes-utils/
+        solady/=dependencies/solady-0.1.26/
+        ftso-adapters/=dependencies/ftso-adapters-0.0.1/
+        @pythnetwork/pyth-sdk-solidity/=dependencies/pyth-sdk-solidity-2.2.0/
         ```
 
     4. Copy `.env.example` to `.env` and update it with your settings.
@@ -157,7 +172,7 @@ The starter kit includes a basic setup for configuring Hardhat and Foundry, alon
         or alternatively:
 
         ```bash
-        npx hardhat compile
+        yarn hardhat compile
         ```
 
         This command compiles all `.sol` files in the `/contracts` folder and generates artifacts needed for testing.
@@ -171,10 +186,12 @@ The starter kit includes a basic setup for configuring Hardhat and Foundry, alon
         or alternatively:
 
         ```bash
-        npx hardhat test
+        yarn hardhat test
         ```
 
-    3. Review and modify `hardhat.config.ts` to specify the networks you want to deploy to. The details for Flare Mainnet, Flare Testnet Coston2, Songbird Canary-Network and Songbird Testnet Coston are already included.
+    3. Review and modify `hardhat.config.ts` to specify the networks you want to deploy to.
+
+The details for Flare Mainnet, Flare Testnet Coston2, Songbird Canary-Network and Songbird Testnet Coston are already included.
 
     Optionally you can add the API keys for [Flare Explorer](https://flare-explorer.flare.network) in the `.env` file.
 
@@ -185,10 +202,12 @@ The starter kit includes a basic setup for configuring Hardhat and Foundry, alon
         or alternatively:
 
         ```bash
-        npx hardhat run scripts/tryDeployment.ts
+        yarn hardhat run scripts/tryDeployment.ts --network coston2
         ```
 
-    Congratulations! You have successfully integrated Flare into Hardhat.
+    Congratulations!
+
+You have successfully integrated Flare into Hardhat.
 
   </TabItem>
   <TabItem value="foundry" label="Foundry">
@@ -210,12 +229,16 @@ The starter kit includes a basic setup for configuring Hardhat and Foundry, alon
     3. Run the deployment script using Foundry:
 
         ```bash
-        forge script script/Counter.s.sol --broadcast --private-key $PRIVATE_KEY --rpc-url <RPC_URL>
+        forge script script/HelloWorld.s.sol --broadcast --private-key $PRIVATE_KEY --rpc-url <RPC_URL>
         ```
 
-        Replace `<RPC_URL>` with the RPC endpoint of the network you are deploying to. A list of RPC endpoints for Flare networks can be found in Flare's [Network Configuration](/network/overview#configuration).
+        Replace `<RPC_URL>` with the RPC endpoint of the network you are deploying to.
 
-    Congratulations! You have successfully integrated Flare into Foundry.
+A list of RPC endpoints for Flare networks can be found in Flare's [Network Configuration](/network/overview#configuration).
+
+    Congratulations!
+
+You have successfully integrated Flare into Foundry.
 
   </TabItem>
 </Tabs>

@@ -44,13 +44,15 @@ If manipulation is detected (e.g., a reveal omission), the round's `isSecure` fl
 
 As described in the [FTSOv2 whitepaper](/pdf/whitepapers/20240223-FlareTimeSeriesOracleV2.pdf), the Scaling protocol consists of the following phases:
 
-1. **Commit:** During the Commit phase, data providers prepare their submissions for each of the data feeds and encode them into a 4-byte vector. Then, each data provider publishes on chain a hash commitment obtained as:
+1. **Commit:** During the Commit phase, data providers prepare their submissions for each of the data feeds and encode them into a 4-byte vector.
+   Then, each data provider publishes on chain a hash commitment obtained as:
 
    `Hash(address, voting_epoch_id, random_number, price_data)`
    - **Random Number**: This Commit includes a locally generated random number.
    - **Purpose**: The random number blinds the Commit hash of the user from a search attack and is used later (once revealed) to contribute to onchain randomness.
 
-2. **Reveal:** During the Reveal phase, each data provider reveals all inputs to their hash commitment. As such, all locally produced random numbers become available onchain.
+2. **Reveal:** During the Reveal phase, each data provider reveals all inputs to their hash commitment.
+   As such, all locally produced random numbers become available onchain.
 
 3. **Signing:** After the Reveal phase, data providers perform a number of local computations relevant to the Scaling protocol, which include:
    - Computing the weighted median prices
@@ -62,7 +64,8 @@ As described in the [FTSOv2 whitepaper](/pdf/whitepapers/20240223-FlareTimeSerie
 
 **Secure Random Numbers**
 
-For each voting round (90 seconds), let each provider's random value be $r_i \in [0, 2^n -1]$. The voting round's random number is:
+For each voting round (90 seconds), let each provider's random value be $r_i \in [0, 2^n -1]$.
+The voting round's random number is:
 
 $$
 R = \left( \sum_{i} r_i \right) \mod{2^n}
@@ -125,18 +128,19 @@ Participants can enter the lottery, and the winner is drawn using the secure ran
 
 To obtain a secure random number offchain, you need two key pieces of information:
 
-1. **RPC Endpoint URL:** The RPC Endpoint URL determines which network your code will interact with. You can use a node provider service or point to your [own RPC node](/run-node#rpc-node). A comprehensive list of public and private RPC endpoints for all Flare networks is available on the [Network Configuration](/network/overview#configuration) page.
+1. **RPC Endpoint URL:** The RPC Endpoint URL determines which network your code will interact with.
+   You can use a node provider service or point to your [own RPC node](/run-node#rpc-node).
+   A comprehensive list of public and private RPC endpoints for all Flare networks is available on the [Network Configuration](/network/overview#configuration) page.
 
-2. **Contract Address:** The address for the `RandomNumberV2` contract varies by network. You can obtain this address in two ways:
+2. **Contract Address:** The address for the `RandomNumberV2` contract varies by network.
+   You can obtain this address in two ways:
    - **From the Solidity Reference page:** Find the `RandomNumberV2` address for each network on the [Solidity Reference](/network/solidity-reference) page.
 
      **OR**
 
-   - **Query the FlareContractRegistry Contract:** The `FlareContractRegistry` contract has the same address across all networks. You can query it to get the `RandomNumberV2` contract address. Refer to the specific language guides for examples:
-     - [JavaScript](/network/guides/flare-for-javascript-developers#make-query)
-     - [Python](/network/guides/flare-for-python-developers#make-query)
-     - [Rust](/network/guides/flare-for-rust-developers#make-query)
-     - [Go](/network/guides/flare-for-go-developers#make-query)
+   - **Query the FlareContractRegistry Contract:** The `FlareContractRegistry` contract has the same address across all networks.
+     You can query it to get the `RandomNumberV2` contract address.
+     Refer to the specific language guides for examples: - [JavaScript](/network/guides/flare-for-javascript-developers#make-query) - [Python](/network/guides/flare-for-python-developers#make-query) - [Rust](/network/guides/flare-for-rust-developers#make-query) - [Go](/network/guides/flare-for-go-developers#make-query)
 
 :::tip[Polling interval]
 
@@ -231,7 +235,10 @@ Poll no more than once per round or subscribe to the contract's update in your c
     ```
 
     With Go, you need to manually fetch the contract's ABI and generate the Go bindings.
-    Copy the [RandomNumberV2 ABI](https://api.routescan.io/v2/network/testnet/evm/114/etherscan/api?module=contract&action=getabi&address=0x5CdF9eAF3EB8b44fB696984a1420B56A7575D250&format=raw) and paste it into a file named `RandomNumberV2.abi`, located in the root of your project, i.e. same level as `go.mod`. Then using [abigen](https://geth.ethereum.org/docs/tools/abigen), generate the Go bindings.
+
+Look up the `RandomNumberV2` address by name via the [FlareContractRegistry](/network/guides/flare-contracts-registry) on your target network, then fetch the ABI from the routescan API for that address.
+For Coston2 (chain id 114) the route is `https://api.routescan.io/v2/network/testnet/evm/114/etherscan/api?module=contract&action=getabi&address=<random-number-v2-address>&format=raw`; for Flare mainnet use `https://api.routescan.io/v2/network/mainnet/evm/14/etherscan/api?...`.
+Save the response as `RandomNumberV2.abi` next to `go.mod` and generate the Go bindings with [abigen](https://geth.ethereum.org/docs/tools/abigen).
 
     ```bash
     abigen --abi RandomNumberV2.abi --pkg coston2 --type RandomNumberV2 --out coston2/RandomNumberV2.go
