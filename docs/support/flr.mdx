@@ -2,7 +2,8 @@
 slug: flr
 title: FLR
 description: Overview of Flare's token economics, allocation, and utility
-keywords: [tokenomics, FLR, token, allocation, distribution, inflation, vesting]
+keywords:
+  [tokenomics, FLR, token, allocation, distribution, inflation, vesting, FIP.16]
 hide_table_of_contents: false
 ---
 
@@ -37,7 +38,7 @@ You can acquire Coston and Coston2 testnet tokens using the [faucets](/network/o
 ## Genesis token allocation
 
 At network genesis, 100 billion FLR tokens (100,000,000,000) were created.
-The majority of tokens are destined for community ownership, whether by direct token distribution, network incentives, or through Flare Foundation ecosystem programs.
+The majority of tokens are intended for community ownership, whether through direct token distribution, network incentives, or the Flare Foundation ecosystem programs.
 
 <div style={{ maxWidth: "600px", margin: "0 auto" }}>
   <ThemedImage
@@ -63,7 +64,8 @@ The majority of tokens are destined for community ownership, whether by direct t
 
 <FlareDrops />
 
-These tokens have been allocated to the following groups. Note the delegation, claiming, and voting abilities of each, defined here:
+These tokens have been allocated to the following groups.
+Note the delegation, claiming, and voting abilities of each, defined here:
 
 - **Can delegate**: The entity can earn standard inflationary rewards by delegating tokens to the [Flare Time Series Oracle (FTSO)](/ftso/overview).
 - **Can claim**: The entity can wrap tokens to claim a portion of the [FlareDrop](/network/guides/manage-flaredrops).
@@ -110,21 +112,73 @@ These tokens have been allocated to the following groups. Note the delegation, c
 
 The 28,524,921,372 FLR public distribution is split into two parts:
 
-1. The first 15%, the initial Airdrop (4,278,738,206 FLR), was distributed during the Token Distribution Event (TDE) on January 9, 2023 to wallets that held XRP on December 12, 2020.
+1. The first 15%, the initial Airdrop (4,278,738,206 FLR), was distributed during the Token Distribution Event (TDE) on January 9, 2023, to wallets that held XRP on December 12, 2020.
 
 2. The remaining 85% (24,246,183,166 FLR), the FlareDrop, are being distributed over 36 monthly amounts directly to token holders who have wrapped their FLR into WFLR.
 
-The annual inflation is calculated based on circulating supply:
+### Inflation under FIP.01
+
+Under [FIP.01](https://proposals.flare.network/FIP/FIP_1.html), annual inflation was defined as a percentage of circulating supply on a stepped schedule:
 
 - **Year 1:** 10%
 - **Year 2:** 7%
-- **Year 3+:** 5%
+- **Year 3 onward:** 5%
+
+### FIP.16 and ongoing inflation (2026)
+
+[FIP.16: Restructure FLR Tokenomics for Long-Term Network Sustainability](https://proposals.flare.network/FIP/FIP_16.html) was approved by governance (voting concluded April 24, 2026).
+It changes the ongoing economics of inflation and related mechanisms.
+Rollout is phased — some parameters take effect soon after the vote, while others require a network hard fork and coordinated releases.
+
+| Parameter                 | Before FIP.16 | After FIP.16 (target) |
+| ------------------------- | ------------- | --------------------- |
+| Annual inflation rate     | 5%            | 3%                    |
+| Annual inflation hard cap | 5 billion FLR | 3 billion FLR         |
+
+The proposal also revises which token balances count toward the inflatable supply used in the percentage calculation.
+For example, excluding certain temporarily or permanently unavailable pools, such as the burn address and Flare Income Reinvestment pools.
+
+This can further reduce realized inflation versus headline percentages.
+
+Inflation rewards are planned one reward cycle ahead of distribution.
+
+On Flare, a common rule of thumb is one cycle of roughly four epochs, or about 14 days, for inflation-funded rewards such as FSP, staking, and legacy FTSOv1 buckets.
+
+The annualized percentage in analytics is typically computed from each cycle’s minted inflation versus circulating supply.
+
+After governance execution, dashboards move to the new target as cycle parameters update.
+
+For live supply, emissions, burns, and staking, use the [FLR Tokenomics Dashboard](https://dune.com/flare/tokenomics).
+
+:::note[FIP.16 items not yet fully live]
+
+The following were approved in FIP.16 but depend on forks, contract redeployments, or further rollout.
+
+Confirm current status in the proposal, release notes, and the tokenomics dashboard.
+
+- **Transaction fees:** All native FLR paid as transaction fees are burned, which is already true on Flare.
+
+  FIP.16 additionally proposes a substantial increase in base transaction fees.
+
+  The proposal describes a 20× increase in the minimal base gas fee after the v1.13.0-related fee path, alongside [ACP-176](https://github.com/flare-foundation/go-flare) parameters.
+
+  See FIP.16 §3 for the exact parameter story and illustrative cost table.
+
+- **FIRE (Flare Income Reinvestment Entity):** Framework for routing protocol revenues (for example from FDC, FAssets, Flare Smart Accounts, Flare Confidential Compute (FCC), and captured MEV) toward supply reduction and ecosystem growth.
+
+- **Protocol-owned block building and MEV:** Staged roadmap toward a verifiable builder model with on-chain MEV capture (FIP.16 §4.4).
+
+- **P-Chain staking and provider economics:** Higher relative weight for P-Chain stake in signing weight, larger per-validator stake cap, and a minimum 20% infrastructure provider (entity) fee share on relevant rewards (FIP.16 §5).
+
+- **Fee redirection:** Portions of fees from FDC attestations, FAssets minting and redemption paths, and FCC flows directed to the protocol incentive side (FIRE or incentive pool) as described in FIP.16 §4.
+
+:::
 
 ## Supply metrics
 
-The recipients of the initial token distribution (the airdrop) make up the largest group of FLR holders.
+The recipients of the initial token distribution (the Airdrop) make up the largest group of FLR holders.
 These tokens are immediately available for use in the network, such as participating in governance or delegating to the Flare Time Series Oracle (FTSO).
-The allocations to the Flare Foundation and Flare Labs also include tokens reserved for backers that have already unlocked, although their distribution doesn't begin until month six.
+The allocations to the Flare Foundation and Flare Labs also include tokens reserved for backers who have already unlocked, although their distribution doesn't begin until month six.
 
 Flare team members can use their tokens to actively participate in the network and help provide reliable FTSO data.
 However, they are restricted from selling any of their tokens for the first six months and may sell no more than 25% within the first 18 months.
@@ -149,9 +203,9 @@ The remaining 19.8% - held by the Flare Foundation and the Flare VC Fund - is no
 ## Distribution schedule
 
 By the end of the 36-month token distribution period, 93.9 billion FLR tokens will be liquid and in circulation.
-After the initial 15% distribution, most recipients receive the remainder of their allocation gradually and consistently over the full 36 months.
+After the initial 15% distribution, most recipients receive the remaining allocation gradually and consistently over the full 36 months.
 
-While these tokens can be used for network participation - such as governance and delegation to the Flare Time Series Oracle (FTSO) - they are not considered liquid during the vesting period.
+While these tokens can be used for network participation, such as governance and delegation to the Flare Time Series Oracle (FTSO), they are not considered liquid during the vesting period.
 Restrictions on team token sales mean that, until month 19, there are fewer liquid tokens than there are tokens eligible to participate in governance and FTSO delegation.
 Once the distribution is complete, 85% of the total FLR supply (93.9 billion out of 110.1 billion) will be in circulation.
 
