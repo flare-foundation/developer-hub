@@ -37,6 +37,11 @@ const globalDataPath = path.join(rootDir, ".docusaurus", "globalData.json");
 
 const SITE_BASE = "https://dev.flare.network";
 
+/** Avoid incomplete substring checks (e.g. https://dev.flare.network.evil.com). */
+function isSiteOriginUrl(url) {
+  return url === SITE_BASE || url.startsWith(`${SITE_BASE}/`);
+}
+
 function escapeRe(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -159,7 +164,7 @@ function loadCanonicalRoutes() {
     const locRe = /<loc>([^<]+)<\/loc>/g;
     for (const m of xml.matchAll(locRe)) {
       const url = m[1];
-      if (!url.startsWith(SITE_BASE)) continue;
+      if (!isSiteOriginUrl(url)) continue;
       const route = url.slice(SITE_BASE.length).replace(/\/$/, "");
       routes.add(route);
     }
@@ -217,7 +222,10 @@ function pruneAndMarkdownify(content, canonicalRoutes) {
     // first link is stale.
     if (/^\s*[-*]\s+\[/.test(line) && links.length > 0) {
       const url = links[0][2];
-      const route = url.replace(SITE_BASE, "").replace(/\.md$/i, "");
+      if (!isSiteOriginUrl(url)) {
+        continue;
+      }
+      const route = url.slice(SITE_BASE.length).replace(/\.md$/i, "");
       if (!canonicalRoutes.has(route)) {
         // Dropped — stale or unlisted.
         continue;
@@ -226,10 +234,12 @@ function pruneAndMarkdownify(content, canonicalRoutes) {
 
     // Otherwise: keep the line, but rewrite same-origin doc links to .md.
     const rewritten = line.replace(linkRe, (full, title, url) => {
-      const route = url.replace(SITE_BASE, "");
+      if (!isSiteOriginUrl(url)) {
+        return full;
+      }
+      const route = url.slice(SITE_BASE.length);
       // Skip non-doc paths (assets, anchors-only, already-.md, off-site)
       if (
-        !url.startsWith(SITE_BASE) ||
         /\.(md|txt|json|xml|pdf|html?|svg|png|jpe?g|gif|webp|ico|css|js)$/i.test(
           url,
         ) ||
