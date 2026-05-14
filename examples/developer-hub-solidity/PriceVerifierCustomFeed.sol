@@ -3,7 +3,7 @@ pragma solidity ^0.8.25;
 
 import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
 import {IWeb2Json} from "@flarenetwork/flare-periphery-contracts/coston2/IWeb2Json.sol";
-import {IICustomFeed} from "@flarenetwork/flare-periphery-contracts/coston2/customFeeds/interface/IICustomFeed.sol";
+import {IICustomFeed} from "@flarenetwork/flare-periphery-contracts/coston2/customFeeds/interfaces/IICustomFeed.sol";
 
 struct PriceData {
     uint256 price;
