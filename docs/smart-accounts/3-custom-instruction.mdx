@@ -19,126 +19,95 @@ keywords:
 import ThemedImage from "@theme/ThemedImage";
 import useBaseUrl from "@docusaurus/useBaseUrl";
 
-Flare Smart Accounts allow users to execute custom function calls on the Flare chain through instructions on XRPL.
-The process expands on the workflow for other actions by including an additional step at the beginning.
+Flare Smart Accounts let an XRPL user execute arbitrary contract calls on Flare trough the [`Payment`](https://xrpl.org/docs/references/protocol/transactions/types/payment) transaction on the XRPL blockchain.
+Each personal account exposes an [EIP-4337](https://eips.ethereum.org/EIPS/eip-4337) style `executeUserOp` entry point that the [`MasterAccountController`](/smart-accounts/reference/IMasterAccountController) invokes when it processes a custom instruction memo.
 
-In order for the `MasterAccountController` contract to be able to give a custom instruction to a personal account, the custom action must first be registered with the said contract.
-The custom instruction is stored in a mapper, with its 30-byte hash as a key.
-That hash is then sent as the payment reference, along with the byte representation of the hexadecimal number `ff` (decimal `255`) in the first byte and the `walletId` in the second byte.
-The `walletId` is a Flare-designated value, used by the operator for wallet identification.
+Custom instructions carry the full call payload in the XRPL **memo** field.
+The user signs a `PackedUserOperation`, ships it on XRPL, and the smart account replays it on the Flare blockchain.
 
-<div
-  style={{
-    width: "90%",
-    margin: "0 auto",
-    display: "flex",
-    justifyContent: "center",
-  }}
->
-  <ThemedImage
-    alt="Breakdown of bytes in payment reference for the custom action"
-    style={{ width: "100%" }}
-    sources={{
-      light: useBaseUrl(
-        "/img/docs/smart-accounts/bytes-custom-instruction-light.png",
-      ),
-      dark: useBaseUrl(
-        "/img/docs/smart-accounts/bytes-custom-instruction-dark.png",
-      ),
-    }}
-  />
-</div>
-
-## The expanded workflow
-
-We expand the workflow described in the [Flare Smart Accounts overview](/smart-accounts/overview) with an additional step before the first.
-
-0. A custom instruction is registered with the `MasterAccountController` contract.
-1. The XRPL user sends instructions as a `Payment` transaction to a specific XRPL address, with instructions encoded as the payment reference in the memo field.
-2. The operator interacts with the [Flare Data Connector](/fdc/overview) to procure a `Payment` proof.
-   It then calls the `executeTransaction` function on the `MasterAccountController` contract, with the `Payment` proof and the XRPL address that made the transaction.
-3. The XRPL user's smart account performs the actions given in the instructions.
-
-## Custom Instructions
-
-Custom instructions are an array of the `CustomInstructions.CustomCall` Solidity struct.
-The struct contains three fields:
-
-- `targetContract`: the address of the smart contract that will execute the custom function
-- `value`: the amount of FLR paid to the contract
-- `data`: transaction calldata, which includes a function selector and values of the function's arguments
-
-Each of the custom instructions in the array will be performed in order.
-A call to the `targetContract` address is made, with the specified `value` and the calldata `data`.
-
-In Solidity, we can obtain the calldata by doing the following:
-
-```Solidity
-abi.encodeWithSignature("<functionName>(<type1>,<type2>,...,<typeN>)", [<value1>, <value2>, ..., <valueN>]);
-```
-
-where `<functionName>` is the name of the function that we want to call, `<type1>`, `<type2>`, . . . , `<typeN>` are its argument types, and `<value1>`, `<value2>`, . . . , `<valueN>` their values.
-
-Only function calls with specific parameter values included can be registered.
-That means that a new custom instruction needs to be registered for each unique action (though this can be done just seconds in advance).
-It is also the reason why special FAsset actions have their own IDs, instead of defaulting to the custom call - it allows us to also specify certain parameters within the instructions on XRPL.
-
-:::warning
-Encoding calldata by hand is error prone.
-It is recommended to use established libraries, or an [online tool](https://abi.hashex.org/) (if you want to quickly check something).
+:::warning No destination tags
+XRPL transactions targeting smart accounts must not use a destination tag.
+A destination tag forces [FAssets direct minting](/fassets/direct-minting) to credit the tag-holder, which would let an unrelated party front-run the user operation.
 :::
 
-## Call hash
+## User operation payload
 
-To produce the custom instructions calldata, we first ABI encode the array of the `CustomInstructions.CustomCall` struct.
-We then take the `keccak256` hash of that value, and drop the first two bytes (`(1 << 240) - 1` shifts the number binary number `1` left `30*8` times, and replaces it with `0` and all the `0`s that follow it with `1`; essentially, we create a mask of length `30*8` of only `1`s).
-That is the call hash that is provided as the payment reference for the custom action, and the ID under which the custom instructions are stored in the `MasterAccountController` contract.
+The custom instruction payload has two layers: the outer EIP-4337 [`PackedUserOperation`](https://eips.ethereum.org/EIPS/eip-4337#useroperation) carried in the XRPL memo, and the inner [`executeUserOp(Call[])`](/smart-accounts/reference/IPersonalAccount#executeuserop) that the personal account runs once the controller dispatches it.
 
-```Solidity
-return bytes32(uint256(keccak256(abi.encode(_customInstruction))) & ((1 << 240) - 1));
+Only three fields from the [`PackedUserOperation`](https://eips.ethereum.org/EIPS/eip-4337#useroperation) struct are required for Flare Smart Accounts:
+
+- `sender` **must** equal the address of the personal account derived from the XRPL sender.
+  Use [`getPersonalAccount`](/smart-accounts/reference/IMasterAccountController#getpersonalaccount) to look it up — the address is deterministic, so you can fetch it before the account is even deployed.
+- `nonce` **must** equal the personal account's current nonce returned by [`getNonce`](/smart-accounts/reference/IMasterAccountController#getnonce).
+  The nonce auto-increments on every successful execution to prevent replay.
+- `callData` is the calldata that the controller invokes on the personal account.
+  In practice, this is `abi.encodeCall(IPersonalAccount.executeUserOp, (calls))` — anything else either reverts or is rejected by the personal account's `onlyController` modifier.
+
+The remaining fields are not validated on-chain and can be left empty.
+Authorization comes from the XRPL signature on the `Payment` XRPL payment transaction itself: only the XRPL key for `sender`'s `xrplOwner` can deliver the memo.
+If the personal account has pinned an executor via [`getExecutor`](/smart-accounts/reference/IMasterAccountController#getexecutor), only that executor is permitted to relay the mint.
+
+### `executeUserOp` and the `Call` struct
+
+The personal account's [`executeUserOp(Call[])`](/smart-accounts/reference/IPersonalAccount#executeuserop) runs each entry in the `Call[]` in order, forwarding it with its supplied `value` and `data`:
+
+```solidity
+struct Call {
+  address target;
+  uint256 value;
+  bytes data;
+}
+
+function executeUserOp(Call[] calldata _calls) external payable;
 ```
 
-The call hash can also be obtained through the `encodeCustomInstruction` helper function of the `MasterAccountController` contract.
+Each call is dispatched with the personal account as `msg.sender`.
+If any call reverts, the whole user operation reverts with [`CallFailed`](/smart-accounts/reference/IPersonalAccount#callfailed) — partial execution is not possible.
 
-```Solidity
-function encodeCustomInstruction(
-        CustomInstructions.CustomCall[] calldata _customInstruction
-    ) public pure returns (bytes32) {
-        return CustomInstructions.encodeCustomInstruction(_customInstruction);
-    }
+The `executeUserOp` function is `payable`, so the user operation can forward native tokens (e.g. FLR) alongside the calls.
+To fund the personal account, send FLR to the address using the [Flare faucet](https://faucet.flare.network/).
+
+### Building `callData` in TypeScript
+
+You can build the `callData` in TypeScript using the [`encodeFunctionData`](https://viem.sh/docs/contract/encodeFunctionData#encodefunctiondata) function from the `viem` library:
+
+```typescript
+import { encodeFunctionData } from "viem";
+
+const calls = [
+  {
+    target: counterAddress,
+    value: 0n,
+    data: encodeFunctionData({
+      abi: counterAbi,
+      functionName: "increment",
+      args: [],
+    }),
+  },
+];
+
+const callData = encodeFunctionData({
+  abi: personalAccountAbi,
+  functionName: "executeUserOp",
+  args: [calls],
+});
 ```
 
-Behind the scenes, the `MasterAccountController` contract calls the `encodeCustomInstruction` function of the `CustomInstructions` library.
+The encoded `callData` becomes the `callData` field of the `PackedUserOperation` struct placed in the XRPL payment memo field.
 
-```Solidity
-function encodeCustomInstruction(
-        CustomCall[] calldata _customInstruction
-    )
-        internal pure
-        returns (bytes32)
-    {
-        return bytes32(uint256(keccak256(abi.encode(_customInstruction))) & ((1 << 240) - 1));
-    }
+## Replay protection
 
-```
+Each personal account maintains a monotonically increasing nonce, accessible via [`getNonce`](/smart-accounts/reference/IMasterAccountController#getnonce).
+A successful `executeUserOp` increments the nonce and emits [`UserOperationExecuted`](/smart-accounts/reference/IMasterAccountController#useroperationexecuted), so the same `PackedUserOperation` cannot be re-executed.
 
-## 0. Register custom instructions
+## Failure Handling
 
-We register a custom instruction by calling the `registerCustomInstruction` function on the `MasterAccountController` contract.
-The `CustomInstructions.CustomCall` array is provided as an argument.
-It is encoded as described above and stored in a `CustomInstructions` mapping.
+The whole pipeline is atomic with respect to the user operation:
 
-To obtain the instruction that can be sent as the memo of an XRPL Payment transaction, we take the call hash produced by the `encodeCustomInstruction` function and modify it the following way.
-First, we remove the initial two bytes from this hash.
-Next, we prepend the hexadecimal value `ff` followed by the `walletId`.
-This is the encoded custom instruction.
+- If `sender` does not match the personal account, the call reverts with [`InvalidSender`](/smart-accounts/reference/IMasterAccountController#invalidsender).
+- If `nonce` is not the expected value, it reverts with [`InvalidNonce`](/smart-accounts/reference/IMasterAccountController#invalidnonce).
+- If the memo body has the wrong length for its instruction ID, it reverts with [`InvalidMemoData`](/smart-accounts/reference/IMasterAccountController#invalidmemodata); an unrecognized instruction byte reverts with [`InvalidInstructionId`](/smart-accounts/reference/IMasterAccountController#invalidinstructionid).
+- If any inner call reverts, the personal account surfaces it as [`CallFailed`](/smart-accounts/reference/IPersonalAccount#callfailed) and the entire user operation reverts.
 
-<ThemedImage
-  alt="Flare smart accounts custom instruction workflow"
-  sources={{
-    light: useBaseUrl(
-      "img/docs/smart-accounts/fsa-developer-workflow-light.png",
-    ),
-    dark: useBaseUrl("img/docs/smart-accounts/fsa-developer-workflow-dark.png"),
-  }}
-/>
+Because the FXRP transfer is performed before the memo is decoded, **the mint succeeds even if the user operation reverts** — see [`DirectMintingExecuted`](/smart-accounts/reference/IMasterAccountController#directmintingexecuted).
+The freshly minted FXRP remains in the personal account, and the user can either re-submit a fixed user operation or transfer the FXRP to another address via standard [FAssets instructions](/smart-accounts/fasset-instructions).

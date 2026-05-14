@@ -241,6 +241,80 @@ function getPaymentProofValidityDurationSeconds()
     returns (uint256);
 ```
 
+## Memo Instructions
+
+Memo instructions allow a [`PersonalAccount`](/smart-accounts/reference/IPersonalAccount) to execute [custom user operations](/smart-accounts/custom-instruction) embedded in the XRPL `Payment` memo when FAssets are direct-minted into the account.
+
+### `mintedFAssets`
+
+Called by the FAssets `AssetManager` when FXRP is direct-minted into a personal account.
+Decodes the XRPL memo, distributes the minted FAssets between the personal account and the executor, and dispatches the custom instruction.
+See [Custom Instruction](/smart-accounts/custom-instruction) for the end-to-end flow.
+
+```solidity
+function mintedFAssets(
+    bytes32 _transactionId,
+    string calldata _sourceAddress,
+    uint256 _amount,
+    uint256 _underlyingTimestamp,
+    bytes calldata _memoData,
+    address payable _executor
+)
+    external payable;
+```
+
+Parameters:
+
+- `_transactionId`: The XRPL transaction ID for replay protection.
+- `_sourceAddress`: The XRPL source address that triggered the mint.
+- `_amount`: The total minted FAsset amount, in the FAsset's smallest unit (XRP drops for FXRP).
+- `_underlyingTimestamp`: The XRPL transaction timestamp.
+- `_memoData`: The raw XRPL memo bytes carrying the [memo instruction](/smart-accounts/custom-instruction).
+- `_executor`: The executor address; must equal the personal account's pinned executor when one is set.
+
+The `AssetManager` is the only address allowed to call this function — any other caller reverts with [`OnlyAssetManager`](#onlyassetmanager).
+
+### `getNonce`
+
+Returns the current memo-instruction nonce for a personal account.
+A `PackedUserOperation`'s `nonce` field must equal this value to be accepted; the nonce auto-increments on every successful execution.
+
+:::warning[Nonce collisions]
+
+Only one user operation can consume a given nonce.
+If several XRPL flows or off-chain builders read the same `getNonce` value and each embeds a **different** `PackedUserOperation` with that nonce, whichever mint executes first succeeds and increments the nonce; the others revert with [`InvalidNonce`](#invalidnonce).
+
+:::
+
+```solidity
+function getNonce(
+    address _personalAccount
+)
+    external view
+    returns (uint256);
+```
+
+Parameters:
+
+- `_personalAccount`: The personal account address to query.
+
+### `getExecutor`
+
+Returns the executor pinned to a personal account, or `address(0)` if no executor is pinned.
+When set, only that executor can deliver memos to the account (except for the executor-management memos `0xD0` and `0xD1`).
+
+```solidity
+function getExecutor(
+    address _personalAccount
+)
+    external view
+    returns (address);
+```
+
+Parameters:
+
+- `_personalAccount`: The personal account address to query.
+
 ## Events
 
 ### Instructions
@@ -385,4 +459,280 @@ event Claimed(
     uint256 shares,
     uint256 amount
 );
+```
+
+### Memo Instructions
+
+#### `UserOperationExecuted`
+
+Emitted when a memo-encoded user operation (`0xFF`) executes with the personal account.
+
+```solidity
+event UserOperationExecuted(
+    address indexed personalAccount,
+    uint256 nonce
+);
+```
+
+Parameters:
+
+- `personalAccount`: The personal account that ran the user operation.
+- `nonce`: The nonce consumed by the user operation.
+
+#### `IgnoreMemoSet`
+
+Emitted when an `0xE0` memo marks a target XRPL transaction's memo to be skipped on its next direct mint.
+
+```solidity
+event IgnoreMemoSet(
+    address indexed personalAccount,
+    bytes32 indexed targetTxId
+);
+```
+
+Parameters:
+
+- `personalAccount`: The personal account that owns the ignore flag.
+- `targetTxId`: The XRPL transaction ID whose memo will be skipped.
+
+#### `NonceIncreased`
+
+Emitted when an `0xE1` memo fast-forwards the personal account's memo-instruction nonce.
+
+```solidity
+event NonceIncreased(
+    address indexed personalAccount,
+    uint256 newNonce
+);
+```
+
+Parameters:
+
+- `personalAccount`: The personal account whose nonce was advanced.
+- `newNonce`: The new nonce value.
+
+#### `ExecutorSet`
+
+Emitted when an `0xD0` memo pins an executor to the personal account.
+
+```solidity
+event ExecutorSet(
+    address indexed personalAccount,
+    address indexed executor
+);
+```
+
+Parameters:
+
+- `personalAccount`: The personal account.
+- `executor`: The pinned executor address.
+
+#### `ExecutorRemoved`
+
+Emitted when an `0xD1` memo unpins the executor from the personal account.
+
+```solidity
+event ExecutorRemoved(
+    address indexed personalAccount
+);
+```
+
+Parameters:
+
+- `personalAccount`: The personal account whose executor was cleared.
+
+#### `ReplacementFeeSet`
+
+Emitted when an `0xE2` memo sets a replacement executor fee for a stuck XRPL transaction.
+
+```solidity
+event ReplacementFeeSet(
+    address indexed personalAccount,
+    bytes32 indexed targetTxId,
+    uint64 newFee
+);
+```
+
+Parameters:
+
+- `personalAccount`: The personal account.
+- `targetTxId`: The XRPL transaction ID whose fee is being replaced.
+- `newFee`: The new executor fee, in the FAsset's smallest unit.
+
+#### `DirectMintingExecuted`
+
+Emitted when direct minting credits FAssets to a personal account.
+
+```solidity
+event DirectMintingExecuted(
+    address indexed personalAccount,
+    bytes32 indexed transactionId,
+    string sourceAddress,
+    uint256 amount,
+    uint256 executorFee,
+    address executor
+);
+```
+
+Parameters:
+
+- `personalAccount`: The recipient personal account.
+- `transactionId`: The XRPL transaction ID.
+- `sourceAddress`: The XRPL source address that triggered the mint.
+- `amount`: The total minted amount (before deducting the executor fee).
+- `executorFee`: The fee paid to the executor.
+- `executor`: The executor address that delivered the mint.
+
+## Errors
+
+### Memo Instructions
+
+These errors are surfaced by [`mintedFAssets`](#mintedfassets) and the memo dispatch path.
+
+#### `TransactionAlreadyExecuted`
+
+Thrown when an XRPL transaction ID has already been processed.
+
+```solidity
+error TransactionAlreadyExecuted();
+```
+
+#### `OnlyAssetManager`
+
+Thrown when [`mintedFAssets`](#mintedfassets) is called by any address other than the FAssets `AssetManager`.
+
+```solidity
+error OnlyAssetManager();
+```
+
+#### `InsufficientAmountForFee`
+
+Thrown when the minted amount is smaller than the executor fee.
+
+```solidity
+error InsufficientAmountForFee(
+    uint256 amount,
+    uint256 fee
+);
+```
+
+Parameters:
+
+- `amount`: The minted amount.
+- `fee`: The executor fee.
+
+#### `WrongExecutor`
+
+Thrown when the delivered executor does not match the executor pinned to the personal account.
+
+```solidity
+error WrongExecutor(
+    address expected,
+    address actual
+);
+```
+
+Parameters:
+
+- `expected`: The executor pinned via [`getExecutor`](#getexecutor).
+- `actual`: The executor that delivered the mint.
+
+#### `InvalidMemoData`
+
+Thrown when the memo payload does not match the expected length for the given memo instruction ID.
+
+```solidity
+error InvalidMemoData();
+```
+
+#### `InvalidInstructionId`
+
+Thrown when the first byte of the memo is not a recognized memo instruction ID (`0xFF`, `0xE0`, `0xE1`, `0xE2`, `0xD0`, `0xD1`).
+
+```solidity
+error InvalidInstructionId(
+    uint8 instructionId
+);
+```
+
+Parameters:
+
+- `instructionId`: The unrecognized memo instruction ID.
+
+#### `InvalidSender`
+
+Thrown when the `sender` field of the embedded `PackedUserOperation` does not match the personal account derived from the XRPL source address.
+
+```solidity
+error InvalidSender(
+    address sender,
+    address personalAccount
+);
+```
+
+Parameters:
+
+- `sender`: The sender field of the user operation.
+- `personalAccount`: The expected personal account address.
+
+#### `InvalidNonce`
+
+Thrown when the `nonce` field of the embedded `PackedUserOperation` does not equal the personal account's current nonce.
+
+```solidity
+error InvalidNonce(
+    uint256 expected,
+    uint256 actual
+);
+```
+
+Parameters:
+
+- `expected`: The nonce currently stored for the personal account.
+- `actual`: The nonce supplied in the user operation.
+
+#### `InvalidNonceIncrease`
+
+Thrown by an `0xE1` memo when the requested nonce is not strictly greater than the current nonce, or jumps by more than `type(uint32).max`.
+
+```solidity
+error InvalidNonceIncrease(
+    uint256 currentNonce,
+    uint256 newNonce
+);
+```
+
+Parameters:
+
+- `currentNonce`: The current nonce value.
+- `newNonce`: The requested new nonce value.
+
+#### `CallFailed`
+
+Thrown when the `callData` carried by the user operation reverts when invoked on the personal account.
+
+```solidity
+error CallFailed(
+    bytes returnData
+);
+```
+
+Parameters:
+
+- `returnData`: The raw return data from the failed call.
+
+#### `AddressZero`
+
+Thrown when an address parsed from a memo payload (for example, the executor in an `0xD0` memo) is the zero address.
+
+```solidity
+error AddressZero();
+```
+
+#### `ValueZero`
+
+Thrown when a value parsed from a payment reference is zero.
+
+```solidity
+error ValueZero();
 ```

@@ -42,6 +42,138 @@ Returns the implementation contract address for this personal account (used by t
 function implementation() external view returns (address);
 ```
 
+## State-Changing Functions
+
+### `executeUserOp`
+
+Executes a series of arbitrary calls from this personal account as a single user operation.
+Each call is made with the personal account as `msg.sender`, allowing the account to interact with any contract on Flare.
+The function is `payable` so the account can forward FLR alongside the calls.
+
+```solidity
+function executeUserOp(
+    Call[] calldata _calls
+)
+    external payable;
+```
+
+Parameters:
+
+- `_calls`: Array of [`Call`](#call) structs describing each call to execute.
+
+Reverts with [`CallFailed(index, returnData)`](#callfailed) if any call in the array fails, where `index` identifies the failing call and `returnData` is the raw revert data returned by the target.
+
+## Structs
+
+### `Call`
+
+Describes a single call dispatched by [`executeUserOp`](#executeuserop).
+
+```solidity
+struct Call {
+    address target;
+    uint256 value;
+    bytes data;
+}
+```
+
+Fields:
+
+- `target`: The target contract address to call.
+- `value`: The amount of FLR (in wei) to send with the call.
+- `data`: The ABI-encoded calldata to pass to the target.
+
+## Errors
+
+### `CallFailed`
+
+Thrown by [`executeUserOp`](#executeuserop) when one of the underlying calls reverts.
+
+```solidity
+error CallFailed(uint256 index, bytes returnData);
+```
+
+Parameters:
+
+- `index`: The index of the failing call within the `_calls` array.
+- `returnData`: The raw return data from the failed call.
+
+### `InsufficientFundsForCollateralReservation`
+
+Thrown when the value sent with a collateral reservation is not enough to cover both the collateral reservation fee and the executor fee.
+
+```solidity
+error InsufficientFundsForCollateralReservation(
+    uint256 collateralReservationFee,
+    uint256 executorFee
+);
+```
+
+Parameters:
+
+- `collateralReservationFee`: The required collateral reservation fee.
+- `executorFee`: The required executor fee.
+
+### `InsufficientFundsForRedeem`
+
+Thrown when the value sent with a redeem operation is not enough to cover the executor fee.
+
+```solidity
+error InsufficientFundsForRedeem(uint256 executorFee);
+```
+
+Parameters:
+
+- `executorFee`: The required executor fee.
+
+### `OnlyController`
+
+Thrown when a function restricted to the [`MasterAccountController`](/smart-accounts/reference/IMasterAccountController) is called by any other address.
+
+```solidity
+error OnlyController();
+```
+
+### `AlreadyInitialized`
+
+Thrown when the personal account initializer is called more than once.
+
+```solidity
+error AlreadyInitialized();
+```
+
+### `InvalidControllerAddress`
+
+Thrown when the controller address provided at initialization is the zero address or otherwise invalid.
+
+```solidity
+error InvalidControllerAddress();
+```
+
+### `InvalidXrplOwner`
+
+Thrown when the XRPL owner string provided at initialization is empty or otherwise invalid.
+
+```solidity
+error InvalidXrplOwner();
+```
+
+### `AgentNotAvailable`
+
+Thrown when the FAssets agent selected for a minting or redemption operation is not available.
+
+```solidity
+error AgentNotAvailable();
+```
+
+### `ApprovalFailed`
+
+Thrown when an ERC-20 approval issued by the personal account (for example, when granting a vault permission to spend FXRP) returns `false` or reverts.
+
+```solidity
+error ApprovalFailed();
+```
+
 ## Events
 
 ### `CollateralReserved`
