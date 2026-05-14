@@ -89,7 +89,7 @@ The `deployAndVerifyContract` function should be modified to deploy and verify t
 If the contract is deployed and verified by another script, and thus the script will only interact with an existing contract, the function should simply return that contract.
 
 ```typescript title="scripts/fdcExample/modifiedWeb2Json.ts"
-async function deployAndVerifyContract(address: str) {
+async function deployAndVerifyContract(address: string) {
   return MyContract.at(address);
 }
 ```
@@ -145,11 +145,11 @@ async function interactWithContract(myContract: MyContractInstance, proof: any) 
     const decodedResponse = web3.eth.abi.decodeParameter(responseType, proof.response_hex);
     console.log("Decoded proof:", decodedResponse, "\n");
 
-    // Only the bellow code fundamentally changed
+    // Only the below code fundamentally changed
     const transaction = await myContract.customFunction({
- merkleProof: proof.proof,
- data: decodedResponse,
- });
+      merkleProof: proof.proof,
+      data: decodedResponse,
+    });
     console.log("Transaction:", transaction.tx, "\n");
     ...
 }

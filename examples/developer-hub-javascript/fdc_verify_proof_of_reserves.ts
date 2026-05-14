@@ -24,7 +24,7 @@ const ProofOfReserves = artifacts.require("ProofOfReserves");
 const {
   VERIFIER_URL_TESTNET,
   VERIFIER_API_KEY_TESTNET,
-  WEB2JSON_VERIFIER_URL_TESTNET,
+  VERIFIER_URL_TESTNET,
   COSTON2_DA_LAYER_URL,
 } = process.env;
 
@@ -43,7 +43,7 @@ const requests: AttestationRequest[] = [
   {
     source: "web2json",
     sourceIdBase: "PublicWeb2",
-    verifierUrlBase: WEB2JSON_VERIFIER_URL_TESTNET,
+    verifierUrlBase: VERIFIER_URL_TESTNET,
     verifierApiKey: VERIFIER_API_KEY_TESTNET,
     urlTypeBase: "",
     data: {
@@ -175,7 +175,7 @@ async function submitAttestationRequests(data: Map<string, string>) {
 
     const roundId = await calculateRoundId(transaction);
     console.log(
-      `Check round progress at: https://${hre.network.name}-systems-explorer.flare.rocks/voting-epoch/${roundId}?tab=fdc\n`,
+      `Check round progress at: https://${hre.network.name}-systems-explorer.flare.rocks/voting-round/${roundId}?tab=fdc\n`,
     );
     roundIds.set(source, roundId);
   }
@@ -191,7 +191,7 @@ async function retrieveDataAndProofs(
 
   const proofs: Map<string, unknown> = new Map();
 
-  const url = `${COSTON2_DA_LAYER_URL}api/v1/fdc/proof-by-request-round-raw`;
+  const url = `${COSTON2_DA_LAYER_URL}/api/v1/fdc/proof-by-request-round-raw`;
   console.log("Url:", url, "\n");
   for (const [source, roundId] of roundIds.entries()) {
     console.log(`(${source})\n`);
