@@ -4,7 +4,7 @@ const TARGET_ROUND_ID = 123; // The round id we want to get the proof for (the o
 async function getProof(roundId: number) {
   const request = await prepareRequest();
   const proofAndData = await fetch(
-    `${DA_LAYER_URL}api/v0/fdc/get-proof-round-id-bytes`,
+    `${DA_LAYER_URL}/api/v0/fdc/get-proof-round-id-bytes`,
     {
       method: "POST",
       headers: {
