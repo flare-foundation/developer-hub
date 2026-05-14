@@ -1,0 +1,67 @@
+---
+title: IJsonApi
+sidebar_position: 11
+description: Legacy JsonApi attestation type — superseded by Web2Json.
+unlisted: true
+---
+
+:::caution Deprecated
+The `JsonApi` attestation type is the predecessor of [`Web2Json`](/fdc/reference/IWeb2Json) and is retained in periphery v0.1.41 for backward compatibility only.
+**New integrations should use `Web2Json`** — it supports the same URL/jq/abi-signature contract plus headers, query parameters, and an explicit HTTP method.
+The field names below intentionally use the legacy `postprocessJq` / `abi_signature` / `abi_encoded_data` snake_case form.
+:::
+
+Sourced from `IJsonApi.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/IJsonApi.sol).
+
+## Structs
+
+### Request
+
+```solidity
+struct Request {
+    bytes32 attestationType;
+    bytes32 sourceId;
+    bytes32 messageIntegrityCode;
+    RequestBody requestBody;
+}
+```
+
+### Response
+
+```solidity
+struct Response {
+    bytes32 attestationType;
+    bytes32 sourceId;
+    uint64 votingRound;
+    uint64 lowestUsedTimestamp;
+    RequestBody requestBody;
+    ResponseBody responseBody;
+}
+```
+
+### Proof
+
+```solidity
+struct Proof {
+    bytes32[] merkleProof;
+    Response data;
+}
+```
+
+### RequestBody
+
+```solidity
+struct RequestBody {
+    string url;
+    string postprocessJq;
+    string abi_signature;
+}
+```
+
+### ResponseBody
+
+```solidity
+struct ResponseBody {
+    bytes abi_encoded_data;
+}
+```

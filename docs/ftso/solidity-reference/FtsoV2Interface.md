@@ -12,7 +12,8 @@ import FTSOV2FeedsById from "!!raw-loader!/examples/developer-hub-solidity/FTSOV
 import FTSOV2FeedsByIdWei from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2FeedsByIdWei.sol";
 import FTSOV2AnchorConsumer from "!!raw-loader!/examples/developer-hub-solidity/FTSOV2AnchorConsumer.sol";
 
-Primary interface for interacting with FTSOv2. This is a long-term support (LTS) interface, designed to ensure continuity even as underlying contracts evolve or protocols migrate to new versions.
+Primary interface for interacting with FTSOv2.
+This is a long-term support (LTS) interface, designed to ensure continuity even as underlying contracts evolve or protocols migrate to new versions.
 
 Sourced from `FtsoV2Interface.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/LTS/FtsoV2Interface.sol).
 
@@ -158,6 +159,79 @@ function getFeedsByIdInWei(
 
 <RemixEmbed fileName="FTSOV2FeedsByIdWei.sol">Open sample in Remix</RemixEmbed>
 
+### getFtsoProtocolId
+
+Returns the FTSO protocol id.
+
+```solidity
+function getFtsoProtocolId() external view returns (uint256);
+```
+
+### getSupportedFeedIds
+
+Returns the list of currently supported (active) feed ids.
+To enumerate every feed id that has ever existed, combine the result with [`getFeedIdChanges`](#getfeedidchanges).
+
+```solidity
+function getSupportedFeedIds()
+    external view
+    returns (bytes21[] memory _feedIds);
+```
+
+#### Returns
+
+- `_feedIds`: The list of supported feed ids.
+
+### getFeedIdChanges
+
+Returns the list of feed id changes (old/new pairs).
+
+```solidity
+function getFeedIdChanges()
+    external view
+    returns (FeedIdChange[] memory _feedIdChanges);
+```
+
+#### Returns
+
+- `_feedIdChanges`: The list of changed feed id pairs.
+
+### calculateFeeById
+
+Calculates the fee for fetching a single feed.
+
+```solidity
+function calculateFeeById(bytes21 _feedId)
+    external view
+    returns (uint256 _fee);
+```
+
+#### Parameters
+
+- `_feedId`: The id of the feed.
+
+#### Returns
+
+- `_fee`: The fee for fetching the feed.
+
+### calculateFeeByIds
+
+Calculates the fee for fetching multiple feeds at once.
+
+```solidity
+function calculateFeeByIds(bytes21[] memory _feedIds)
+    external view
+    returns (uint256 _fee);
+```
+
+#### Parameters
+
+- `_feedIds`: The list of feed ids.
+
+#### Returns
+
+- `_fee`: The combined fee.
+
 ### verifyFeedData
 
 Checks if the feed data is valid (i.e. is part of the confirmed Merkle tree).
@@ -214,4 +288,25 @@ struct FeedDataWithProof {
     bytes32[] proof;
     struct FtsoV2Interface.FeedData body;
 }
+```
+
+### FeedIdChange
+
+Pair representing a feed id rename (e.g. when a feed is relabelled).
+
+```solidity
+struct FeedIdChange {
+    bytes21 oldFeedId;
+    bytes21 newFeedId;
+}
+```
+
+## Events
+
+### FeedIdChanged
+
+Emitted when a feed id is changed (e.g. when a feed is renamed).
+
+```solidity
+event FeedIdChanged(bytes21 indexed oldFeedId, bytes21 indexed newFeedId);
 ```
