@@ -285,6 +285,7 @@ const config: Config = {
         llmsFullTxtFilename: "llms-full.txt",
         // curation
         includeOrder: [
+          "1-intro.mdx",
           "**/network/**/*.mdx",
           "**/network/**/*.md",
           "**/ftso/**/*.mdx",
@@ -293,6 +294,12 @@ const config: Config = {
           "**/fdc/**/*.md",
           "**/fassets/**/*.mdx",
           "**/fassets/**/*.md",
+          "**/fxrp/**/*.mdx",
+          "**/fxrp/**/*.md",
+          "**/smart-accounts/**/*.mdx",
+          "**/smart-accounts/**/*.md",
+          "**/fcc/**/*.mdx",
+          "**/fcc/**/*.md",
           "**/run-node/**/*.mdx",
           "**/run-node/**/*.md",
           "**/support/**/*.mdx",
@@ -343,6 +350,33 @@ const config: Config = {
             title: "FAssets Documentation",
             description:
               "FAssets concepts, integration guides, and API/Solidity references",
+          },
+          {
+            filename: "llms-fxrp.txt",
+            includePatterns: ["**/fxrp/**/*.mdx", "**/fxrp/**/*.md"],
+            fullContent: true,
+            title: "FXRP Documentation",
+            description:
+              "FXRP utility on Flare, including Firelight/Upshift vaults, OFT auto-mint/redeem, and token interactions",
+          },
+          {
+            filename: "llms-smart-accounts.txt",
+            includePatterns: [
+              "**/smart-accounts/**/*.mdx",
+              "**/smart-accounts/**/*.md",
+            ],
+            fullContent: true,
+            title: "Flare Smart Accounts Documentation",
+            description:
+              "Account abstraction for XRPL users interacting with Flare, including the MasterAccountController, custom instructions, and CLI guides",
+          },
+          {
+            filename: "llms-fcc.txt",
+            includePatterns: ["**/fcc/**/*.mdx", "**/fcc/**/*.md"],
+            fullContent: true,
+            title: "Flare Confidential Compute Documentation",
+            description:
+              "Flare Confidential Compute (FCC) concepts and integration guides using Trusted Execution Environments",
           },
           {
             filename: "llms-node-operators.txt",
