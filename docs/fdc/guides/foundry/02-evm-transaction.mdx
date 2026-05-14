@@ -24,7 +24,7 @@ In this guide, we will be following the steps outlined in the [FDC Overview](/fd
 Our implementation requires handling the FDC voting round finalization process.
 To manage this, we will create separate scripts in `script/fdcExample/EVMTransaction.s.sol` that handle different stages of the validation process:
 
-```solidity title="scrip/fdcExample/EVMTransaction.s.sol"
+```solidity title="script/fdcExample/EVMTransaction.s.sol"
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
@@ -101,7 +101,7 @@ These functions are included in the [Base library](https://github.com/flare-foun
 The first function translates a string to a UTF8 encoded hex string.
 The other then zero-right-pads such a string, so that it is 32 bytes long.
 
-```solidity title="scrip/fdcExample/Base.s.sol"
+```solidity title="script/fdcExample/Base.s.sol"
 function toHexString(
  bytes memory data
 ) public pure returns (string memory) {
@@ -118,7 +118,7 @@ function toHexString(
 }
 ```
 
-```solidity title="scrip/fdcExample/Base.s.sol"
+```solidity title="script/fdcExample/Base.s.sol"
 function toUtf8HexString(
  string memory _string
 ) internal pure returns (string memory) {
@@ -137,14 +137,14 @@ function toUtf8HexString(
 
 We also define a helper function for formatting data into a JSON string.
 
-```solidity title="scrip/fdcExample/Base.s.sol"
+```solidity title="script/fdcExample/Base.s.sol"
 function prepareAttestationRequest(
  string memory attestationType,
  string memory sourceId,
  string memory requestBody
 ) internal view returns (string[] memory, string memory) {
  // We read the API key from the .env file
- string memory apiKey = vm.envString("VERIFIER_API_KEY");
+ string memory apiKey = vm.envString("VERIFIER_API_KEY_TESTNET");
 
  // Preparing headers
  string[] memory headers = prepareHeaders(apiKey);
@@ -200,7 +200,7 @@ In the example repository, these are once again included within the [Base](https
 
 Thus, the part of the script that prepares the verifier request looks like:
 
-```solidity title="scrip/fdcExample/EVMTransaction.s.sol"
+```solidity title="script/fdcExample/EVMTransaction.s.sol"
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
@@ -301,14 +301,14 @@ Before submitting address validation requests to the FDC protocol, we first need
 This section walks through the request submission process using the `surl` package.
 We place `using Surl for *;` at the start of our `PostRequest` contract, and then call its `post` method on the verifier URL.
 
-```solidity title="scrip/fdcExample/EVMTransaction.s.sol"
+```solidity title="script/fdcExample/EVMTransaction.s.sol"
 (, bytes memory data) = url.post(headers, body);
 ```
 
 We construct the URL by appending to the verifier address `https://fdc-verifiers-testnet.flare.network/` the path `/verifier/eth/EVMTransaction/prepareRequest`.
 We can do so dynamically with the following code.
 
-```solidity title="scrip/fdcExample/EVMTransaction.s.sol"
+```solidity title="script/fdcExample/EVMTransaction.s.sol"
 string memory baseUrl = "https://fdc-verifiers-testnet.flare.network/";
 string memory url = string.concat(
  baseUrl,
@@ -329,7 +329,7 @@ string memory requestBody = string.concat(
 Lastly, we parse the return data from the verifier server.
 Using the Foundry `parseJson` shortcode, and a custom struct `AttestationResponse`, we decode the returned data and extract from it the ABI encoded request.
 
-```solidity title="scrip/fdcExample/Base.s.sol"
+```solidity title="script/fdcExample/Base.s.sol"
 function parseAttestationRequest(
  bytes memory data
 ) internal pure returns (AttestationResponse memory) {
@@ -382,7 +382,7 @@ What this demonstrates is that, with some effort, the `abiEncodedRequest` can be
 
 We write the `abiEncodedRequest` to a file (`data/EVMTransaction_abiEncodedRequest.txt`) to it in the next step.
 
-```solidity title="scrip/fdcExample/EVMTransaction.s.sol"
+```solidity title="script/fdcExample/EVMTransaction.s.sol"
 Base.writeToFile(
     dirPath,
     string.concat(attestationTypeName, "_abiEncodedRequest"),
@@ -393,13 +393,14 @@ Base.writeToFile(
 
 ## Submit request to FDC
 
-This step transitions from offchain request preparation to onchain interaction with the FDC protocol. Now, we submit the validated request to the blockchain using deployed smart contracts.
+This step transitions from offchain request preparation to onchain interaction with the FDC protocol.
+Now, we submit the validated request to the blockchain using deployed smart contracts.
 
 ### Submit request
 
 The entire submission process requires only five key steps:
 
-```solidity title="scrip/fdcExample/Base.s.sol"
+```solidity title="script/fdcExample/Base.s.sol"
 function submitAttestationRequest(bytes memory abiEncodedRequest) internal {
     uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
     vm.startBroadcast(deployerPrivateKey);
@@ -496,14 +497,14 @@ If you want to learn more about how the FDC protocol works, check [here](/fdc/ov
 We prepare the proof request in a similar manner as in the step Prepare the request, by string concatenation.
 We import two new variables from the `.env` file; the URL of a verifier server and the corresponding API key.
 
-```solidity title="scrip/fdcExample/EVMTransaction.s.sol"
+```solidity title="script/fdcExample/EVMTransaction.s.sol"
 string memory daLayerUrl = vm.envString("COSTON2_DA_LAYER_URL");
 string memory apiKey = vm.envString("X_API_KEY");
 ```
 
 Also, by repeatedly using the Foundry shortcode `vm.readLine`, we read the data, saved to a file in the previous step, to variables.
 
-```solidity title="scrip/fdcExample/EVMTransaction.s.sol"
+```solidity title="script/fdcExample/EVMTransaction.s.sol"
 string memory requestBytes = vm.readLine(
     string.concat(
         dirPath,
@@ -524,7 +525,7 @@ string memory votingRoundId = vm.readLine(
 
 The code is as follows.
 
-```solidity title="scrip/fdcExample/EVMTransaction.s.sol"
+```solidity title="script/fdcExample/EVMTransaction.s.sol"
 contract RetrieveDataAndProof is Script {
  using Surl for *;
 
@@ -577,7 +578,7 @@ contract RetrieveDataAndProof is Script {
 
 We post the proof request to a chosen DA Layer provider server also with the same code as we did in the previous step.
 
-```solidity title="scrip/fdcExample/EVMTransaction.s.sol"
+```solidity title="script/fdcExample/EVMTransaction.s.sol"
 string memory url = string.concat(
  daLayerUrl,
  // "api/v0/fdc/get-proof-round-id-bytes"
@@ -592,7 +593,7 @@ Parsing the returned data requires the definition of an auxiliary `struct`.
 
 {/* <!-- TODO rename after renaming --> */}
 
-```solidity title="scrip/fdcExample/Base.s.sol"
+```solidity title="script/fdcExample/Base.s.sol"
 struct ParsableProof {
  bytes32 attestationType;
  bytes32[] proofs;
@@ -610,7 +611,7 @@ Lastly, `responseHex` is the ABI encoding of the chosen attestation type respons
 In this case, it is the `IEVMTransaction.Response` struct.
 We retrieve this data as follows.
 
-```solidity title="scrip/fdcExample/EVMTransaction.s.sol"
+```solidity title="script/fdcExample/EVMTransaction.s.sol"
 bytes memory dataJson = parseData(data);
 ParsableProof memory proof = abi.decode(dataJson, (ParsableProof));
 
@@ -832,7 +833,7 @@ This capability is crucial for maintaining system integrity and allowing users t
 FDC provides verification functionality through the `FdcVerification` contract.
 To verify address validity, we first format our data using the `IEVMTransaction.Proof` struct, which contains both the Merkle proof and the response data.
 
-```solidity title="scrip/fdcExample/EVMTransaction.s.sol"
+```solidity title="script/fdcExample/EVMTransaction.s.sol"
 IEVMTransaction.Proof memory _proof = IEVMTransaction.Proof(
  proof.proofs,
  proofResponse
@@ -859,7 +860,7 @@ In actuality, we will only verify the proof within a deployed contract, which we
 What we will do here instead is, we will save the proof to a file so that it can be later loaded into a variable.
 The code that does this is as follows.
 
-```solidity title="scrip/fdcExample/EVMTransaction.s.sol"
+```solidity title="script/fdcExample/EVMTransaction.s.sol"
 Base.writeToFile(
     dirPath,
     string.concat(attestationTypeName, "_proof"),
@@ -906,9 +907,7 @@ contract TransferEventListener is ITransferEventListener {
     ) public view returns (bool) {
         // Use the library to get the verifier contract and verify that this transaction was proved by the FDC
         IFdcVerification fdc = ContractRegistry.getFdcVerification();
-        console.log("transaction: %s\n", FdcStrings.toJsonString(transaction));
-        return true;
-        //return fdc.verifyEVMTransaction(transaction);
+        return fdc.verifyEVMTransaction(transaction);
     }
 
     function collectTransferEvents(
@@ -981,9 +980,9 @@ contract TransferEventListener is ITransferEventListener {
 ```
 
 We deploy the contract through a simple script.
-The script creates a new `TransferEventListener` contract, and writes its address to a file (`data/EVMTransaction_listenerAddress.txt`).
+The script creates a new `TransferEventListener` contract, and writes its address to a file (`data/EVMTransaction_address.txt`).
 
-```solidity title="scrip/fdcExample/EVMTransaction.s.sol"
+```solidity title="script/fdcExample/EVMTransaction.s.sol"
 contract DeployContract is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -994,7 +993,7 @@ contract DeployContract is Script {
 
         Base.writeToFile(
             dirPath,
-            string.concat(attestationTypeName, "_listenerAddress"),
+            string.concat(attestationTypeName, "_address"),
             StringsBase.toHexString(abi.encodePacked(listenerAddress)),
             true
         );
@@ -1005,7 +1004,7 @@ contract DeployContract is Script {
 We deploy the contract with the following console command.
 
 ```bash
-forge script script/fdcExample/EVMTransaction.s.sol:DeployContract --private-key $PRIVATE_KEY --rpc-url $COSTON2_RPC_URL --etherscan-api-key $FLARE_RPC_API_KEY --broadcast --verify --ffi
+forge script script/fdcExample/EVMTransaction.s.sol:DeployContract --private-key $PRIVATE_KEY --rpc-url $COSTON2_RPC_URL --broadcast --verify --verifier blockscout --verifier-url $COSTON2_EXPLORER_API --ffi
 ```
 
 Lastly, we define a script that interacts with the above contract.
@@ -1020,7 +1019,7 @@ contract InteractWithContract is Script {
             string.concat(
                 dirPath,
                 attestationTypeName,
-                "_listenerAddress",
+                "_address",
                 ".txt"
             )
         );

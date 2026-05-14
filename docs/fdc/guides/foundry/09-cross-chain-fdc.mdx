@@ -33,12 +33,15 @@ The code used in this guide is available in the [Flare Foundry starter repositor
 
 ### 1. Deploy Infrastructure on Target Chain (XRPL EVM Sidechain)
 
-This workflow requires a one-time deployment of a persistent infrastructure on the target chain. These core contracts manage contract addresses and proof verification.
+This workflow requires a one-time deployment of a persistent infrastructure on the target chain.
+These core contracts manage contract addresses and proof verification.
 
 - **`AddressUpdater`**: A governance-controlled contract that maintains a registry of key contract addresses, such as the `Relay`.
-- **`FdcVerification`**: A custom verification contract that retrieves the trusted Merkle root from the `Relay` to verify FDC proofs on the target chain. The protocol ID (e.g., 200 for Coston2) configured in this contract must match the FDC instance on the source Flare network.
+- **`FdcVerification`**: A custom verification contract that retrieves the trusted Merkle root from the `Relay` to verify FDC proofs on the target chain.
+  The protocol ID (e.g., 200 for Coston2) configured in this contract must match the FDC instance on the source Flare network.
 
-The `DeployInfrastructure` script handles this setup. On a non-Flare chain, the `Relay` address is a known, pre-deployed address that must be provided in your `.env` file.
+The `DeployInfrastructure` script handles this setup.
+On a non-Flare chain, the `Relay` address is a known, pre-deployed address that must be provided in your `.env` file.
 
 ```solidity title="script/CrossChainFdc.s.sol"
 // Deploys the persistent CORE INFRASTRUCTURE contracts to the target non-Flare chain.
@@ -87,7 +90,8 @@ contract DeployInfrastructure is Script {
 }
 ```
 
-Run the script to deploy the core contracts to the XRPL EVM Sidechain. This only needs to be done once.
+Run the script to deploy the core contracts to the XRPL EVM Sidechain.
+This only needs to be done once.
 
 ```bash
 forge script script/CrossChainFdc.s.sol:DeployInfrastructure --rpc-url $XRPLEVM_RPC_URL_TESTNET --broadcast
@@ -121,8 +125,8 @@ contract PrepareAndSubmitRequest is Script {
 
         // Prepare request off-chain
         (string[] memory headers, string memory body) = FdcBase.prepareAttestationRequest(attestationType, sourceId, requestBody);
-        string memory baseUrl = vm.envString("WEB2JSON_VERIFIER_URL_TESTNET");
-        string memory url = string.concat(baseUrl, attestationTypeName, "/prepareRequest");
+        string memory baseUrl = vm.envString("VERIFIER_URL_TESTNET");
+        string memory url = string.concat(baseUrl, "/verifier/web2/", attestationTypeName, "/prepareRequest");
         (, bytes memory data) = url.post(headers, body);
         FdcBase.AttestationResponse memory response = FdcBase.parseAttestationRequest(data);
 
@@ -151,8 +155,10 @@ The final script, `DeliverProofToContract`, is executed on the target chain (XRP
 It handles deploying the consumer contract, retrieving the proof, and delivering it for verification.
 
 1.  **Deploy Consumer Contract**: It first deploys the `StarWarsCharacterListV3` contract, passing it the address of the `FdcVerification` contract deployed in Step 1.
-2.  **Retrieve Proof**: It reads the `abiEncodedRequest` and `votingRoundId` from the files created in Step 2. After waiting for the voting round on Flare to finalize (max. 180 seconds), it polls the Data Availability layer to get the proof.
-3.  **Interact with Consumer**: It calls `addCharacter` on the deployed consumer contract, passing the `finalProof`. A `value` of 1 wei is sent to cover the fee required by the `Relay` contract to fetch the Merkle root from the source chain.
+2.  **Retrieve Proof**: It reads the `abiEncodedRequest` and `votingRoundId` from the files created in Step 2.
+    After waiting for the voting round on Flare to finalize (max. 180 seconds), it polls the Data Availability layer to get the proof.
+3.  **Interact with Consumer**: It calls `addCharacter` on the deployed consumer contract, passing the `finalProof`.
+    A `value` of 1 wei is sent to cover the fee required by the `Relay` contract to fetch the Merkle root from the source chain.
 
 ```solidity title="script/CrossChainFdc.s.sol"
 // Deploys the consumer, waits, retrieves proof, and delivers it on the target chain.
