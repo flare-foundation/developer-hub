@@ -117,6 +117,8 @@ To execute the swap and redeem process, you need to deploy the smart contract in
 
 - **4. Approve Tokens**
   - Uses the ERC-20 `approve` method to allow the contract to spend WCFLR.
+    The approved allowance must cover `amountIn` (the WCFLR being spent), not `amountOut` (the FXRP received).
+    The current starter script over-approves on `amountOut`; a follow-up starter PR will switch it to `amountIn`.
     :::warning
     In a production environment, you should use a secure method to approve spending the tokens.
     :::
@@ -129,7 +131,7 @@ To execute the swap and redeem process, you need to deploy the smart contract in
 To run the script, use the [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit) with the following command:
 
 ```bash
-npx hardhat run scripts/fassets/swapAndRedeem.ts --network coston
+yarn hardhat run scripts/fassets/swapAndRedeem.ts --network coston2
 ```
 
 The script outputs transaction details, including swap amounts and redemption results.

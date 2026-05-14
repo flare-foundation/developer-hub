@@ -41,7 +41,7 @@ async function prepareFdcRequest(
     utxo: utxo,
   };
 
-  const url = `${verifierUrlBase}verifier/${urlTypeBase}/Payment/prepareRequest`;
+  const url = `${verifierUrlBase}/verifier/${urlTypeBase}/Payment/prepareRequest`;
 
   return await prepareAttestationRequestBase(
     url,
@@ -56,7 +56,7 @@ async function prepareFdcRequest(
 async function getProof(roundId: number) {
   const request = await prepareFdcRequest(transactionId, inUtxo, utxo);
   const proofAndData = await fetch(
-    `${COSTON2_DA_LAYER_URL}api/v0/fdc/get-proof-round-id-bytes`,
+    `${COSTON2_DA_LAYER_URL}/api/v0/fdc/get-proof-round-id-bytes`,
     {
       method: "POST",
       headers: {
