@@ -24,7 +24,8 @@ function setAutoClaiming(
 
 #### Parameters
 
-- `_executors`: The new executors. All old executors will be deleted and replaced by these.
+- `_executors`: The new executors.
+  All old executors will be deleted and replaced by these.
 - `_enableDelegationAccount`:
 
 ### setClaimExecutors
@@ -40,7 +41,8 @@ function setClaimExecutors(
 
 #### Parameters
 
-- `_executors`: The new executors. All old executors will be deleted and replaced by these.
+- `_executors`: The new executors.
+  All old executors will be deleted and replaced by these.
 
 ### setAllowedClaimRecipients
 
@@ -55,7 +57,8 @@ function setAllowedClaimRecipients(
 
 #### Parameters
 
-- `_recipients`: The new allowed recipients. All old recipients will be deleted and replaced by these.
+- `_recipients`: The new allowed recipients.
+  All old recipients will be deleted and replaced by these.
 
 ### enableDelegationAccount
 
@@ -151,7 +154,8 @@ function delegate(
 #### Parameters
 
 - `_to`: The address of the recipient
-- `_bips`: The percentage of voting power to be delegated expressed in basis points (1/100 of one percent). Not cumulative - every call resets the delegation value (and value of 0 revokes delegation).
+- `_bips`: The percentage of voting power to be delegated expressed in basis points (1/100 of one percent).
+  Not cumulative - every call resets the delegation value (and value of 0 revokes delegation).
 
 ### batchDelegate
 
@@ -168,7 +172,8 @@ function batchDelegate(
 #### Parameters
 
 - `_delegatees`: The addresses of the new recipients.
-- `_bips`: The percentages of voting power to be delegated expressed in basis points (1/100 of one percent). Total of all `_bips` values must be at most 10000.
+- `_bips`: The percentages of voting power to be delegated expressed in basis points (1/100 of one percent).
+  Total of all `_bips` values must be at most 10000.
 
 ### undelegateAll
 
@@ -251,7 +256,8 @@ function transferExternalToken(
 
 ### accountToDelegationAccount
 
-Gets the delegation account of the `_owner`. Returns address(0) if not created yet.
+Gets the delegation account of the `_owner`.
+Returns address(0) if not created yet.
 
 ```solidity
 function accountToDelegationAccount(
@@ -262,7 +268,8 @@ function accountToDelegationAccount(
 
 ### getDelegationAccountData
 
-Gets the delegation account data for the `_owner`. Returns address(0) if not created yet.
+Gets the delegation account data for the `_owner`.
+Returns address(0) if not created yet.
 
 ```solidity
 function getDelegationAccountData(

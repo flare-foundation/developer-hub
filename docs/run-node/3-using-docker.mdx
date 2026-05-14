@@ -40,7 +40,8 @@ First, you'll prepare your host machine by setting up a dedicated disk for block
 Blockchain data requires significant storage, so it's best practice to use a separate, dedicated disk.
 These steps will guide you through formatting and mounting it.
 
-1. **Define environment variables:** To prevent errors, define the device name and your current user as variables. This avoids having to manually replace placeholders in every command.
+1. **Define environment variables:** To prevent errors, define the device name and your current user as variables.
+   This avoids having to manually replace placeholders in every command.
 
    ```bash
    # Identify your disk with `lsblk`, then set it here.
@@ -75,7 +76,8 @@ These steps will guide you through formatting and mounting it.
    sudo mount ${DISK_DEVICE} /mnt/db
    ```
 
-3. **Ensure persistent mounting:** To ensure the disk is automatically mounted after a system reboot, add an entry to `/etc/fstab`. Using the disk's `UUID` is a robust method because device names like `/dev/sdb` can sometimes change.
+3. **Ensure persistent mounting:** To ensure the disk is automatically mounted after a system reboot, add an entry to `/etc/fstab`.
+   Using the disk's `UUID` is a robust method because device names like `/dev/sdb` can sometimes change.
 
    ```bash
    # Back up your current fstab file
@@ -104,7 +106,8 @@ Mounting these allows you to manage them directly without entering the container
    sudo chown -R ${DOCKER_USER}:${DOCKER_USER} /opt/flare
    ```
 
-2. **Create configuration file:** Create a `config.json` file. This example provides a standard configuration for a public RPC node.
+2. **Create configuration file:** Create a `config.json` file.
+   This example provides a standard configuration for a public RPC node.
    Most of the C-Chain configuration options can be found in the [Avalanche C-Chain Configuration docs](https://build.avax.network/docs/nodes/chain-configs/avalanche-l1s/subnet-evm).
    Note that the default values are overridden only if specified in the given config file.
    Only provide values which differ from the defaults to avoid issues with future updates.
@@ -252,7 +255,8 @@ You can run your node using either the [Docker CLI](#using-docker-cli) directly 
 
    </Tabs>
 
-3. **Check health:** Once the node is running, you can check its health. It will report `"healthy": true` only after it has fully synced.
+3. **Check health:** Once the node is running, you can check its health.
+   It will report `"healthy": true` only after it has fully synced.
 
    ```bash
    # Press Ctrl+C to exit the logs, then run:
@@ -617,12 +621,14 @@ Keep your node up-to-date with the latest stable release of `go-flare` for secur
 
 If you encounter issues, here are some common troubleshooting steps.
 
-- **Check Peer Count:** A node needs sufficient peers (typically at least 16) to sync and operate correctly. Use the health endpoint to check your connection count.
+- **Check Peer Count:** A node needs sufficient peers (typically at least 16) to sync and operate correctly.
+  Use the health endpoint to check your connection count.
   ```bash
   # Check the "connectedPeers" value in the output
   curl -s http://127.0.0.1:9650/ext/health | jq -r '.checks.network.message'
   ```
-- **Monitor Disk Space:** If your node stops syncing, ensure the database location (`/mnt/db`) has enough free space. Run `df -h /mnt/db` to check.
+- **Monitor Disk Space:** If your node stops syncing, ensure the database location (`/mnt/db`) has enough free space.
+  Run `df -h /mnt/db` to check.
 - **Restart on Errors:** If the node becomes unhealthy or you see persistent `GetAcceptedFrontier` errors in the logs, a simple restart can often resolve the issue.
   - Docker CLI: `docker restart <container_name>`
   - Docker Compose: `cd /opt/node && docker compose restart`

@@ -10,10 +10,12 @@ import CodeBlock from "@theme/CodeBlock";
 import ThemedImage from "@theme/ThemedImage";
 import useBaseUrl from "@docusaurus/useBaseUrl";
 
-Flare's sub-protocols utilize a uniform signing weight for decision-making; however, reward distribution is based on the delegators' participation weights. Each sub-protocol calculates rewards for various participation weight types, allowing delegators to claim rewards according to their specific contribution shares.
+Flare's sub-protocols utilize a uniform signing weight for decision-making; however, reward distribution is based on the delegators' participation weights.
+Each sub-protocol calculates rewards for various participation weight types, allowing delegators to claim rewards according to their specific contribution shares.
 
 All rewards are managed through the [`RewardManager`](/network/fsp/solidity-reference/IRewardManager) contract and are claimable after the reward epoch concludes.
-Sub-protocols implement their own contracts to gather rewarding inputs, which are passed to the Reward Manager for distribution. Funding is provided by sub-protocol-specific contracts, which may also handle inflation-based rewards through automated offers.
+Sub-protocols implement their own contracts to gather rewarding inputs, which are passed to the Reward Manager for distribution.
+Funding is provided by sub-protocol-specific contracts, which may also handle inflation-based rewards through automated offers.
 
 ## Minimal Conditions
 
@@ -131,7 +133,8 @@ Sub-protocols are designed to encourage fast signature deposition and finalizati
 
 2. **Finalization Rewards**:
    - Finalization of a Merkle root can be carried out only once, by the first entity to collect sufficient signing weight of signatures and send them to the voting contract.
-   - During a 20s grace period, a set of selected data providers gets rewarded either for successful finalization or an attempt of it. (i.e. If the call got reverted due to data being already finalized.)
+   - During a 20s grace period, a set of selected data providers gets rewarded either for successful finalization or an attempt of it.
+     (i.e. If the call got reverted due to data being already finalized.)
    - If finalization is not carried out within the grace period, any other data provider is allowed to finalize, and the first entity to do so receives the full finalization reward.
    - Just like with signature deposition, finalization rewards are only available within a **hard cutoff**: finalization must occur before the end of the voting epoch following the one in which the signature round started.
 

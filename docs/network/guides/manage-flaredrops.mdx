@@ -31,7 +31,10 @@ Differences between PDAs and regular accounts:
 <details>
 <summary>**Understanding the Registered Claim Process.**</summary>
 
-Registration allows accounts to list themselves onchain as registered executors and post their service fees. This simplifies the process for both users and executors: users can easily find a suitable executor, and executors benefit from automatic fee transfers when user rewards are claimed. Users pay a fee to set an executor for claiming their rewards, which are then claimed automatically without user intervention. All agreements with a registered executor occur onchain.
+Registration allows accounts to list themselves onchain as registered executors and post their service fees.
+This simplifies the process for both users and executors: users can easily find a suitable executor, and executors benefit from automatic fee transfers when user rewards are claimed.
+Users pay a fee to set an executor for claiming their rewards, which are then claimed automatically without user intervention.
+All agreements with a registered executor occur onchain.
 
 Here is how the registered claiming process works, with applications performing these actions on behalf of executors and users:
 
@@ -59,7 +62,8 @@ Working with the FlareDrop requires interacting with these contracts:
 ## Basic Claiming
 
 The [`claim`](/network/solidity-reference/IDistributionToDelegators#claim) method on `DistributionToDelegators` allows claiming the FlareDrop one account at a time.
-It transfers the FlareDrop rewards accrued by account `_rewardOwner` during the specified `_month` to the specified `_recipient`. `_wrap` controls whether the reward is transferred in native FLR tokens or wrapped in WFLR tokens.
+It transfers the FlareDrop rewards accrued by account `_rewardOwner` during the specified `_month` to the specified `_recipient`.
+`_wrap` controls whether the reward is transferred in native FLR tokens or wrapped in WFLR tokens.
 You can use [`getCurrentMonth()`](/network/solidity-reference/IDistributionToDelegators#getcurrentmonth) to find out the current month (starting at 0), or [`getClaimableMonths()`](/network/solidity-reference/IDistributionToDelegators#getclaimablemonths) to get the interval of months which are currently available for claiming.
 
 ```solidity
@@ -79,7 +83,8 @@ Use [`getClaimableAmount()`](/network/solidity-reference/IDistributionToDelegato
 
 :::
 
-The `claim()` function returns the amount of claimed rewards. Two modes of operation are supported:
+The `claim()` function returns the amount of claimed rewards.
+Two modes of operation are supported:
 
 - **Self-Claiming**: When `msg.sender` matches `_rewardOwner`
 
@@ -87,7 +92,8 @@ The `claim()` function returns the amount of claimed rewards. Two modes of opera
 
 - **Claiming on behalf of another account**: When `msg.sender` does not match `_rewardOwner`
 
-  Here, the caller must be a claim executor, claiming on behalf of `_rewardOwner`. If `_msg.sender` is not in the authorized list of executors for `_rewardOwner`, the call will revert.
+  Here, the caller must be a claim executor, claiming on behalf of `_rewardOwner`.
+  If `_msg.sender` is not in the authorized list of executors for `_rewardOwner`, the call will revert.
   Authorized executors must be set beforehand by `_rewardOwner` using [`setClaimExecutors()`](/network/solidity-reference/IClaimSetupManager#setclaimexecutors).
   The `_recipient` must either be `_rewardOwner`, its PDA, or any of the authorized recipients previously set by `_rewardOwner` using the [`setAllowedClaimRecipients()`](/network/solidity-reference/IClaimSetupManager#setallowedclaimrecipients) on `ClaimSetupManager`.
   The call will revert otherwise.

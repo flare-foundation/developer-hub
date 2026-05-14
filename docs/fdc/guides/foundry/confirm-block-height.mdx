@@ -113,29 +113,41 @@ interface ConfirmedBlockHeightExists {
 }
 ```
 
-The request body is quite simple. You provide the `blockNumber` you want to confirm exists on the chain and the `queryWindow`—the length of the period in which the block production rate is to be computed (relative to the timestamp of the block you are requesting). Importantly, for the block to be considered visible, at least `X` blocks above it must be confirmed. This ensures that blocks not on the main chain are not confirmed. The number of confirmations required varies by chain and is listed in the specification.
+The request body is quite simple.
+You provide the `blockNumber` you want to confirm exists on the chain and the `queryWindow`—the length of the period in which the block production rate is to be computed (relative to the timestamp of the block you are requesting).
+Importantly, for the block to be considered visible, at least `X` blocks above it must be confirmed.
+This ensures that blocks not on the main chain are not confirmed.
+The number of confirmations required varies by chain and is listed in the specification.
 
 #### What Do You Get in Return?
 
-As per the specification, you only receive information confirming that the block with `blockNumber` is confirmed by at least `numberOfConfirmations`. If the block is not confirmed, the request is rejected (none of the attestation clients will confirm the response, and it will not be included in the Merkle tree). The response body contains the following fields:
+As per the specification, you only receive information confirming that the block with `blockNumber` is confirmed by at least `numberOfConfirmations`.
+If the block is not confirmed, the request is rejected (none of the attestation clients will confirm the response, and it will not be included in the Merkle tree).
+The response body contains the following fields:
 
 - **`blockTimestamp`**: The timestamp of the block with `blockNumber`.
 
-- **`numberOfConfirmations`**: The depth at which a block is considered confirmed depending on the chain. This is fixed per chain and specified in the documentation.
+- **`numberOfConfirmations`**: The depth at which a block is considered confirmed depending on the chain.
+  This is fixed per chain and specified in the documentation.
 
-- **`lowestQueryWindowBlockNumber`**: The block number of the latest block that has a timestamp strictly smaller than `blockTimestamp` - `queryWindow`. This allows you to gauge the average block production time in the specified block range.
+- **`lowestQueryWindowBlockNumber`**: The block number of the latest block that has a timestamp strictly smaller than `blockTimestamp` - `queryWindow`.
+  This allows you to gauge the average block production time in the specified block range.
 
 - **`lowestQueryWindowBlockTimestamp`**: The timestamp of the block at height `lowestQueryWindowBlockNumber`, indicating when the block was produced.
 
 ### Example
 
-To check the top block, you would typically query the RPC of the chain, get the top block, subtract the number of confirmations, and then query the attestation client to get the result. Alternatively, you can piggyback on the previous example, create a transaction, see the block it was included in, and proceed from there.
+To check the top block, you would typically query the RPC of the chain, get the top block, subtract the number of confirmations, and then query the attestation client to get the result.
+Alternatively, you can piggyback on the previous example, create a transaction, see the block it was included in, and proceed from there.
 
-Each attestation provider also exposes several diagnostic endpoints that allow you to get information about the chain it is operating on. The endpoint that is particularly interesting for this purpose is the `block-range` endpoint, which returns the range of blocks the attestation provider is currently observing.
+Each attestation provider also exposes several diagnostic endpoints that allow you to get information about the chain it is operating on.
+The endpoint that is particularly interesting for this purpose is the `block-range` endpoint, which returns the range of blocks the attestation provider is currently observing.
 
-By querying the `block-range` endpoint, you can get the range of blocks the attestation provider is observing and then request the confirmation of the top block in that range. This approach allows you to verify the top block efficiently without manually tracking the block production and confirmation process.
+By querying the `block-range` endpoint, you can get the range of blocks the attestation provider is observing and then request the confirmation of the top block in that range.
+This approach allows you to verify the top block efficiently without manually tracking the block production and confirmation process.
 
-Use the following code (also found in `tryConfirmedBlockHeightExists.ts`) and try to see how `prepareResponse` fares for blocks that are out of range for the current confirmation limit. This will help you understand how the attestation client handles requests for blocks that have not yet reached the necessary number of confirmations.
+Use the following code (also found in `tryConfirmedBlockHeightExists.ts`) and try to see how `prepareResponse` fares for blocks that are out of range for the current confirmation limit.
+This will help you understand how the attestation client handles requests for blocks that have not yet reached the necessary number of confirmations.
 
 ```typescript title="tryConfirmedBlockHeightExists.ts"
 const { ATTESTATION_URL, ATTESTATION_API_KEY } = process.env;
@@ -305,9 +317,12 @@ XRPL Range:  { first: 45585486, last: 45678173 }
 
 This attestation type is also useful for observing another important response: `INDETERMINATE`.
 
-An `INDETERMINATE` response means that the attestation can't be confirmed (yet) because there are not enough confirmations for the block. This response indicates that the attestation client cannot confirm or reject the block for sure, but it might be valid in the future once more confirmations are received.
+An `INDETERMINATE` response means that the attestation can't be confirmed (yet) because there are not enough confirmations for the block.
+This response indicates that the attestation client cannot confirm or reject the block for sure, but it might be valid in the future once more confirmations are received.
 
-To see this in action, take the provided code and check for a block that has not yet been confirmed by the required amount. The easiest way to do this is to add 10 to the block range and observe the response. If done correctly, the response should be:
+To see this in action, take the provided code and check for a block that has not yet been confirmed by the required amount.
+The easiest way to do this is to add 10 to the block range and observe the response.
+If done correctly, the response should be:
 
 ```json
 {
@@ -315,4 +330,6 @@ To see this in action, take the provided code and check for a block that has not
 }
 ```
 
-One important thing to note is that all numbers are sent as strings (either decimal or hex). The main reason for this is that JavaScript does not have a native 64-bit integer type, and numbers are represented as 64-bit floating-point numbers, which can lead to incorrect representation of large numbers. Even though block numbers might not be that large, encoding JSON numbers as strings ensures they are represented correctly.
+One important thing to note is that all numbers are sent as strings (either decimal or hex).
+The main reason for this is that JavaScript does not have a native 64-bit integer type, and numbers are represented as 64-bit floating-point numbers, which can lead to incorrect representation of large numbers.
+Even though block numbers might not be that large, encoding JSON numbers as strings ensures they are represented correctly.

@@ -184,13 +184,16 @@ function protocolFeeInWei(
 
 Finalization function for new signing policies and protocol messages.
 It can be used as finalization contract on Flare chain or as relay contract on other EVM chain.
-Can be called in two modes. It expects calldata that is parsed in a custom manner.
+Can be called in two modes.
+It expects calldata that is parsed in a custom manner.
 Hence the transaction calls should assemble relevant calldata in the 'data' field.
 Depending on the data provided, the contract operations in essentially two modes:
-(1) Relaying signing policy. The structure of the calldata is:
+(1) Relaying signing policy.
+The structure of the calldata is:
 function signature (4 bytes) + active signing policy + 0 (1 byte) + new signing policy,
 total of exactly 4423 bytes.
-(2) Relaying signed message. The structure of the calldata is:
+(2) Relaying signed message.
+The structure of the calldata is:
 function signature (4 bytes) + signing policy + signed message (38 bytes) + ECDSA signatures with indices (67 bytes each)
 This case splits into two subcases: - protocolMessageId = 1: Message id must be of the form (protocolMessageId, 0, 0, merkleRoot).
 The validity of the signatures of sufficient weight is checked and if
@@ -252,7 +255,8 @@ function toSigningPolicyHash(
 
 Verifies the leaf (or intermediate node) with the Merkle proof against the Merkle root
 for given protocol id and voting round id.
-A fee may need to be paid. It is protocol specific.
+A fee may need to be paid.
+It is protocol specific.
 **NOTE:** Overpayment is not refunded.
 
 ```solidity

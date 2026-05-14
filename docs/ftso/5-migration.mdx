@@ -9,14 +9,21 @@ keywords:
 import CodeBlock from "@theme/CodeBlock";
 import FtsoV2MigrationExample from "!!raw-loader!/examples/developer-hub-solidity/FtsoV2MigrationExample.sol";
 
-This guide is for applications moving from FTSOv1 to FTSOv2. Briefly, FTSOv2 comprises of:
+This guide is for applications moving from FTSOv1 to FTSOv2.
+Briefly, FTSOv2 comprises of:
 
-- **[Block-Latency Feeds](/ftso/feeds)**: These feeds are updated with each new block, approximately every 1.8 seconds. They can be accessed through [FtsoV2Interface](/ftso/solidity-reference/FtsoV2Interface) and are available directly onchain.
-- **[Anchor Feeds](/ftso/scaling/anchor-feeds)**: These feeds are provided through [Scaling](/ftso/scaling/overview) with a latency of 90 seconds. Feeds can be verified using [FtsoV2Interface](/ftso/solidity-reference/FtsoV2Interface) but are not immediately available onchain.
+- **[Block-Latency Feeds](/ftso/feeds)**: These feeds are updated with each new block, approximately every 1.8 seconds.
+  They can be accessed through [FtsoV2Interface](/ftso/solidity-reference/FtsoV2Interface) and are available directly onchain.
+- **[Anchor Feeds](/ftso/scaling/anchor-feeds)**: These feeds are provided through [Scaling](/ftso/scaling/overview) with a latency of 90 seconds.
+  Feeds can be verified using [FtsoV2Interface](/ftso/solidity-reference/FtsoV2Interface) but are not immediately available onchain.
 
-A key difference between the two is the introduction of a payment mechanism for data access. This system helps prevent unnecessary data requests and ensures sustainable funding. For more details, refer to the [`IFeeCalculator`](/ftso/solidity-reference/IFeeCalculator) contract, which calculates fees for data access using the [`calculateFeeByIds`](/ftso/solidity-reference/IFeeCalculator#calculatefeebyids) method.
+A key difference between the two is the introduction of a payment mechanism for data access.
+This system helps prevent unnecessary data requests and ensures sustainable funding.
+For more details, refer to the [`IFeeCalculator`](/ftso/solidity-reference/IFeeCalculator) contract, which calculates fees for data access using the [`calculateFeeByIds`](/ftso/solidity-reference/IFeeCalculator#calculatefeebyids) method.
 
-Additionally, a new Long Term Support (LTS) system has been launched to ensure continued access to essential data and metadata within the Flare ecosystem. A series of [LTS interfaces](#lts-interfaces) have been introduced, each aligned with a specific product in the Flare ecosystem. It is strongly recommended to use these LTS contracts for data access instead of querying individual contracts or interfaces, as they are designed for long-term stability, even as underlying protocols evolve or migrate.
+Additionally, a new Long Term Support (LTS) system has been launched to ensure continued access to essential data and metadata within the Flare ecosystem.
+A series of [LTS interfaces](#lts-interfaces) have been introduced, each aligned with a specific product in the Flare ecosystem.
+It is strongly recommended to use these LTS contracts for data access instead of querying individual contracts or interfaces, as they are designed for long-term stability, even as underlying protocols evolve or migrate.
 
 ## Deprecated contracts (v1)
 
@@ -29,7 +36,10 @@ If you were using `PriceSubmitter` for the following purposes, here are the reco
 - **Accessing other important contracts**: Use the [`FlareContractRegistry`](/network/solidity-reference/IFlareContractRegistry) instead.
 - **Voting-related functionalities**: These are now integrated into the new FTSO system.
 
-- **Random number generation** (`getCurrentRandom` or `getRandom`, applicable to Flare only): Switch to the new [`RandomNumberV2Interface`](#lts-interfaces). The new protocol updates random numbers every 90 seconds (aligned with the voting epoch duration, as returned by `votingEpochDurationSeconds`). This setting is immutable but could change if the protocol configuration is updated. In contrast, the old protocol updated random numbers every 180 seconds.
+- **Random number generation** (`getCurrentRandom` or `getRandom`, applicable to Flare only): Switch to the new [`RandomNumberV2Interface`](#lts-interfaces).
+  The new protocol updates random numbers every 90 seconds (aligned with the voting epoch duration, as returned by `votingEpochDurationSeconds`).
+  This setting is immutable but could change if the protocol configuration is updated.
+  In contrast, the old protocol updated random numbers every 180 seconds.
 
 #### Required Changes:
 
@@ -40,48 +50,67 @@ If you were using `PriceSubmitter` for the following purposes, here are the reco
 
 ### FTSO
 
-The legacy `FTSO` contract is being deprecated and replaced. A minimal proxy will be deployed at the same address to provide basic backward compatibility. The replacement will be [`FtsoProxy`](#ftsoproxy), which will respond to a limited subset of calls that the old `FTSO` contract handled. Although the addresses will change, the `FTSORegistry` will be updated to point to the new contract addresses.
+The legacy `FTSO` contract is being deprecated and replaced.
+A minimal proxy will be deployed at the same address to provide basic backward compatibility.
+The replacement will be [`FtsoProxy`](#ftsoproxy), which will respond to a limited subset of calls that the old `FTSO` contract handled.
+Although the addresses will change, the `FTSORegistry` will be updated to point to the new contract addresses.
 
 #### Recommended Changes:
 
-- **Random number retrieval**: Switch to the new [`RandomNumberV2Interface`](#lts-interfaces). The proxy contract will still return current and historical random numbers, but they will be uniform across all `FTSO` contracts, and randomness will be sourced from the new provider.
+- **Random number retrieval**: Switch to the new [`RandomNumberV2Interface`](#lts-interfaces).
+  The proxy contract will still return current and historical random numbers, but they will be uniform across all `FTSO` contracts, and randomness will be sourced from the new provider.
 
-- **Fetching the current price**: For methods like `getCurrentPrice`, `getCurrentPriceDetails`, or `getCurrentPriceWithDecimals`, switch to the [`FTSOv2Interface`](#lts-interfaces). While the proxy interface will continue to function temporarily, it will not receive future updates.
+- **Fetching the current price**: For methods like `getCurrentPrice`, `getCurrentPriceDetails`, or `getCurrentPriceWithDecimals`, switch to the [`FTSOv2Interface`](#lts-interfaces).
+  While the proxy interface will continue to function temporarily, it will not receive future updates.
 
-- **Fetching historical prices**: For methods such as `getEpochPrice`, or retrieving prices for specific voters or trusted data providers, the proxy contract **WILL REVERT**. It is essential to migrate to the new `FTSOv2Interface` for these functionalities.
+- **Fetching historical prices**: For methods such as `getEpochPrice`, or retrieving prices for specific voters or trusted data providers, the proxy contract **WILL REVERT**.
+  It is essential to migrate to the new `FTSOv2Interface` for these functionalities.
 
 ### FTSORegistry
 
-The `FTSORegistry` (`IFTSORegistry`) is being deprecated. While you can continue to use it temporarily with its backward-compatible methods, it is strongly recommended to transition to the new interfaces as soon as possible, as `FTSORegistry` will no longer be maintained in the future.
+The `FTSORegistry` (`IFTSORegistry`) is being deprecated.
+While you can continue to use it temporarily with its backward-compatible methods, it is strongly recommended to transition to the new interfaces as soon as possible, as `FTSORegistry` will no longer be maintained in the future.
 
 #### Recommended Changes:
 
-- **Getting FTSOs**: The methods `getFtso`, `getFtsoBySymbol`, `getFtsoIndex`, `getFtsoSymbol`, and `getSupportedIndices/Symbols/Ftsos` are now deprecated. They will still return the proxy implementation of FTSO, but these proxies will not be maintained moving forward. It is recommended to update your code to use the [FTSOv2Interface](#lts-interfaces) for price retrieval. Additional details like decimals and timestamps for individual FTSOs are now considered deprecated and can be obtained by querying prices directly through `FTSOv2`.
+- **Getting FTSOs**: The methods `getFtso`, `getFtsoBySymbol`, `getFtsoIndex`, `getFtsoSymbol`, and `getSupportedIndices/Symbols/Ftsos` are now deprecated.
+  They will still return the proxy implementation of FTSO, but these proxies will not be maintained moving forward.
+  It is recommended to update your code to use the [FTSOv2Interface](#lts-interfaces) for price retrieval.
+  Additional details like decimals and timestamps for individual FTSOs are now considered deprecated and can be obtained by querying prices directly through `FTSOv2`.
 
-- **Reading prices** using methods such as `getCurrentPrice(_ftso_index/_symbol)` or their array and decimal implementations is also deprecated. Although these methods will still return correct values, they will not be updated in the future. Use the [FTSOv2Interface](#lts-interfaces) instead to ensure future compatibility.
+- **Reading prices** using methods such as `getCurrentPrice(_ftso_index/_symbol)` or their array and decimal implementations is also deprecated.
+  Although these methods will still return correct values, they will not be updated in the future.
+  Use the [FTSOv2Interface](#lts-interfaces) instead to ensure future compatibility.
 
-- **Getting supported FTSOs**: This function will return correct results for legacy price pairs but will not be updated for new pairs introduced in the FTSOv2 system. To retrieve information about available pairs in the new system, you should transition to the [FTSOv2Interface](#lts-interfaces) interface.
+- **Getting supported FTSOs**: This function will return correct results for legacy price pairs but will not be updated for new pairs introduced in the FTSOv2 system.
+  To retrieve information about available pairs in the new system, you should transition to the [FTSOv2Interface](#lts-interfaces) interface.
 
-- **Read prices directly from `FtsoV2Interface`**: This will give you up-to-date prices and more detailed information. Additionally, the `FtsoV2Interface` is part of the Long Term Support (LTS) system, ensuring it will be maintained for an extended period.
+- **Read prices directly from `FtsoV2Interface`**: This will give you up-to-date prices and more detailed information.
+  Additionally, the `FtsoV2Interface` is part of the Long Term Support (LTS) system, ensuring it will be maintained for an extended period.
 
 - **New system indexing and ID scheme**:
-  - The indexing and ID scheme has changed. Old indices are now invalid, so do not use the previous `getFeedByIndex` method with the old indices.
+  - The indexing and ID scheme has changed.
+    Old indices are now invalid, so do not use the previous `getFeedByIndex` method with the old indices.
   - IDs in the new system are 21-byte values, formatted as `"${OLD_FEED_NAME}/USD"` and zero-padded.
   - Use the `getFeedById` method in the new interface to retrieve old prices with this format: `getFeedById(bytes21(bytes.concat(bytes1(1), bytes(string.concat(OLD_FEED_NAME, "/USD")))))`.
 
 ### FTSORewardManager
 
-The reward system is undergoing significant changes. While an implementation of the old `FTSORewardManager` contract is provided, it will only support the most basic claim types and require pre-provided reward proofs.
+The reward system is undergoing significant changes.
+While an implementation of the old `FTSORewardManager` contract is provided, it will only support the most basic claim types and require pre-provided reward proofs.
 
 #### Recommended Changes:
 
-- **Claiming rewards**: Switch to the new [`RewardsV2Interface`](#lts-interfaces). The proxy contract will still allow you to claim rewards from the FTSO system, but it will not support claiming fees for data providers.
+- **Claiming rewards**: Switch to the new [`RewardsV2Interface`](#lts-interfaces).
+  The proxy contract will still allow you to claim rewards from the FTSO system, but it will not support claiming fees for data providers.
 
 - **Claiming rewards when delegating by amount**: This feature is no longer supported in the new system.
 
 ## LTS interfaces
 
-The primary goal of the Long Term Support (LTS) interfaces is to offer a stable and reliable way to access essential data and metadata within the Flare ecosystem. These interfaces are designed for long-term maintenance, ensuring continuity even as underlying contracts evolve or protocols migrate to new versions. Each LTS interface is aligned with a specific product within the Flare ecosystem, providing consistency and ease of use over time.
+The primary goal of the Long Term Support (LTS) interfaces is to offer a stable and reliable way to access essential data and metadata within the Flare ecosystem.
+These interfaces are designed for long-term maintenance, ensuring continuity even as underlying contracts evolve or protocols migrate to new versions.
+Each LTS interface is aligned with a specific product within the Flare ecosystem, providing consistency and ease of use over time.
 
 | **Interface**                                                                  | **Contract registry name** | **Notes**                                                 |
 | ------------------------------------------------------------------------------ | -------------------------- | --------------------------------------------------------- |
@@ -92,8 +121,11 @@ The primary goal of the Long Term Support (LTS) interfaces is to offer a stable 
 
 :::warning
 
-- **RandomNumberV2Interface:** In addition to providing random numbers, the new methods also return a `_isSecureRandom` flag. Learn more about this flag in the guide on [Secure Random Numbers](/network/guides/secure-random-numbers).
-- **FtsoV2Interface:** Provides access to fetching block-latency feeds onchain, and verifying anchor feeds onchain. You can retrieve feeds using the [`getFeedById`](/ftso/solidity-reference/FtsoV2Interface#getfeedbyid) or [`getFeedsById`](/ftso/solidity-reference/FtsoV2Interface#getfeedsbyid) methods. These methods are now payable, and while the current fee is set to `0`, it is advisable to use [`FeeCalculator`](/ftso/solidity-reference/IFeeCalculator) to calculate the fee and be prepared for potential future changes.
+- **RandomNumberV2Interface:** In addition to providing random numbers, the new methods also return a `_isSecureRandom` flag.
+  Learn more about this flag in the guide on [Secure Random Numbers](/network/guides/secure-random-numbers).
+- **FtsoV2Interface:** Provides access to fetching block-latency feeds onchain, and verifying anchor feeds onchain.
+  You can retrieve feeds using the [`getFeedById`](/ftso/solidity-reference/FtsoV2Interface#getfeedbyid) or [`getFeedsById`](/ftso/solidity-reference/FtsoV2Interface#getfeedsbyid) methods.
+  These methods are now payable, and while the current fee is set to `0`, it is advisable to use [`FeeCalculator`](/ftso/solidity-reference/IFeeCalculator) to calculate the fee and be prepared for potential future changes.
 
 :::
 
@@ -109,7 +141,8 @@ These proxies offer a temporary solution to ensure that previously deployed cont
 
 ### FtsoProxy
 
-The `FtsoProxy` contract is designed to maintain backward compatibility with the old FTSO contract. While it will be deployed at different addresses from the original FTSO contract, the `FTSORegistry` will be updated to point to these new addresses.
+The `FtsoProxy` contract is designed to maintain backward compatibility with the old FTSO contract.
+While it will be deployed at different addresses from the original FTSO contract, the `FTSORegistry` will be updated to point to these new addresses.
 
 <details>
 <summary>Methods in `FtsoProxy`</summary>
@@ -242,7 +275,8 @@ The `FtsoProxy` contract is designed to maintain backward compatibility with the
 
 ### FtsoRewardManagerProxy
 
-The `FtsoRewardManagerProxy` contract is designed to maintain backward compatibility with the old `FTSORewardManager` contract. It will be deployed at a different address than the original contract.
+The `FtsoRewardManagerProxy` contract is designed to maintain backward compatibility with the old `FTSORewardManager` contract.
+It will be deployed at a different address than the original contract.
 
 This proxy only supports the most basic reward claim types and requires that reward proofs be provided in advance.
 

@@ -17,9 +17,14 @@ The primary contract interface for this attestation type is [`IConfirmedBlockHei
 
 This attestation type is designed to prove that a transaction either decreases the balance of an address or is signed by the source address.
 
-One of the purposes of the Data Connector is to provide connectivity between different blockchains, allowing the use of information from one chain on another. Other chains may not have smart contract capability or support any kind of "fund locking" and unlocking based on conditions. This is where the Data Connector comes into play, allowing the Flare network to monitor (and police) an address on another chain and act upon changes in its balance.
+One of the purposes of the Data Connector is to provide connectivity between different blockchains, allowing the use of information from one chain on another.
+Other chains may not have smart contract capability or support any kind of "fund locking" and unlocking based on conditions.
+This is where the Data Connector comes into play, allowing the Flare network to monitor (and police) an address on another chain and act upon changes in its balance.
 
-For instance, we can have an address on the Bitcoin network that acts as a vault (think fAssets). If the address owner violates an agreement by sending funds out, the Data Connector can detect it. To enhance security and avoid dependence on a single chain, this attestation type makes minimal assumptions about the violating transaction. A transaction is considered "offending" if the balance of the designated address is lower after the transaction or if the address is among the signers of the transaction (even if its balance is higher than before the transaction).
+For instance, we can have an address on the Bitcoin network that acts as a vault (think fAssets).
+If the address owner violates an agreement by sending funds out, the Data Connector can detect it.
+To enhance security and avoid dependence on a single chain, this attestation type makes minimal assumptions about the violating transaction.
+A transaction is considered "offending" if the balance of the designated address is lower after the transaction or if the address is among the signers of the transaction (even if its balance is higher than before the transaction).
 
 This allows us to track balance decreases even if the change results from a complex transaction (e.g., multisig, complex scripts, or specific XRPL transactions where a non-participating address can have funds removed).
 
@@ -31,21 +36,27 @@ The request body consists of only two arguments:
   - On Bitcoin and Dogecoin, this is the index of the transaction input in hex, padded to a 0x prefixed 32-byte string (very similar to `inUtxo` in the payment type).
   - On XRPL, this is the standard address hash of the address whose balance we want to prove has decreased.
 
-Once the request is submitted, the verifiers will check the transaction, perform full accounting of the requested source address, and confirm the response if and only if the transaction indeed decreases the balance of the address or the address is among the signers of the transaction. In short, the request won't be confirmed if the balance stays the same and the address is not among the signers of the transaction, ensuring there are no false positives.
+Once the request is submitted, the verifiers will check the transaction, perform full accounting of the requested source address, and confirm the response if and only if the transaction indeed decreases the balance of the address or the address is among the signers of the transaction.
+In short, the request won't be confirmed if the balance stays the same and the address is not among the signers of the transaction, ensuring there are no false positives.
 
-If the address has indeed decreased the balance (or participated as a signer), the response will also contain information about when exactly the offending transaction occurred. The balance decrease might be allowed under certain conditions (e.g., after a certain time, or with the correct payment reference).
+If the address has indeed decreased the balance (or participated as a signer), the response will also contain information about when exactly the offending transaction occurred.
+The balance decrease might be allowed under certain conditions (e.g., after a certain time, or with the correct payment reference).
 
 The response will include the following information:
 
 - **`blockNumber`**: The number of the block in which the transaction is included.
 
-- **`blockTimestamp`**: The timestamp of the block in which the transaction is included. For UTXO chains, this is `mediantime`; for XRPL, this is `close_time` of the ledger.
+- **`blockTimestamp`**: The timestamp of the block in which the transaction is included.
+  For UTXO chains, this is `mediantime`; for XRPL, this is `close_time` of the ledger.
 
-- **`sourceAddressHash`**: The standard address hash of the address indicated by the `sourceAddressIndicator`. For UTXO chains, this gives us the address that controlled the designated input.
+- **`sourceAddressHash`**: The standard address hash of the address indicated by the `sourceAddressIndicator`.
+  For UTXO chains, this gives us the address that controlled the designated input.
 
-- **`spentAmount`**: The amount spent by the source address in minimal units. If this is negative, the address has received funds in the transaction but might still be among the signers.
+- **`spentAmount`**: The amount spent by the source address in minimal units.
+  If this is negative, the address has received funds in the transaction but might still be among the signers.
 
-- **`standardPaymentReference`**: The standard payment reference of the transaction. This is useful if the transaction is an allowed payment and the payment reference is used to identify it.
+- **`standardPaymentReference`**: The standard payment reference of the transaction.
+  This is useful if the transaction is an allowed payment and the payment reference is used to identify it.
 
 Let's see how the verification contract looks.
 
@@ -79,19 +90,27 @@ contract BalanceDecreasingTransactionVerification is IBalanceDecreasingTransacti
 }
 ```
 
-If you remember the payment verification contract, this one is very similar. We still use the `MerkleProof` library to verify the proof, but the type we verify is different. We just ABI encode the response and hash it, and then we verify that the hash is included in the Merkle tree for the round—exactly the same way as with the payment type. All other types are very similar; only the type we verify is different.
+If you remember the payment verification contract, this one is very similar.
+We still use the `MerkleProof` library to verify the proof, but the type we verify is different.
+We just ABI encode the response and hash it, and then we verify that the hash is included in the Merkle tree for the round—exactly the same way as with the payment type.
+All other types are very similar; only the type we verify is different.
 
-Importantly, the verification contract simply checks that this proof indeed proves that the structure we requested was included in a specific round. It does not make any assumptions about the response itself. The response itself should be checked by the dapp to ensure it is the expected one.
+Importantly, the verification contract simply checks that this proof indeed proves that the structure we requested was included in a specific round.
+It does not make any assumptions about the response itself.
+The response itself should be checked by the dapp to ensure it is the expected one.
 
 In some cases, the verifiers will not confirm the response (as there is no such confirmation), but in this case, they might confirm the response and also indicate that the balance has not decreased (and has indeed increased).
 
 ### Example
 
-Showing a balance decreasing transaction is simple—we will reuse the script from creating a transaction and just prove that the transaction has indeed decreased the balance of the address. The complete code that produces the following example is present in `tryXRPLBalanceDecreasingTransaction.ts`.
+Showing a balance decreasing transaction is simple—we will reuse the script from creating a transaction and just prove that the transaction has indeed decreased the balance of the address.
+The complete code that produces the following example is present in `tryXRPLBalanceDecreasingTransaction.ts`.
 
 The code is practically the same as before; we just make the request to a different endpoint (due to the different attestation type), change the `attestationType` field in the request body, and specify the transaction and the address we want to prove the balance decrease for.
 
-As mentioned earlier, specifying the address is important since the address's balance might have decreased in the transaction, but its participation might have been minimal (or it was not even part of the initial signers). For UTXO chains, we also need to specify `sourceAddressIndicator` because many addresses might be involved in the transaction (by signing an array of outputs). We need to specify which one we want to prove the balance decrease for and request the verifiers to do the full accounting.
+As mentioned earlier, specifying the address is important since the address's balance might have decreased in the transaction, but its participation might have been minimal (or it was not even part of the initial signers).
+For UTXO chains, we also need to specify `sourceAddressIndicator` because many addresses might be involved in the transaction (by signing an array of outputs).
+We need to specify which one we want to prove the balance decrease for and request the verifiers to do the full accounting.
 
 ```typescript title="tryXRPLBalanceDecreasingTransaction.ts"
 const xrpl = require("xrpl");
@@ -246,6 +265,7 @@ An example response would look like this:
 Hello world!
 ```
 
-All the fields are populated correctly. Most importantly, although the transaction sent 10 XRP drops, the response clearly shows that the balance decreased by 22 drops, as 12 drops were spent on the transaction fee.
+All the fields are populated correctly.
+Most importantly, although the transaction sent 10 XRP drops, the response clearly shows that the balance decreased by 22 drops, as 12 drops were spent on the transaction fee.
 
 {/* <!-- TODO:BTC Example, and if possible one with XRPL clawback --> */}

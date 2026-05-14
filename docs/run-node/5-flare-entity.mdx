@@ -175,12 +175,9 @@ You can proceed directly to [Fund FSP addresses](#fund-fsp-addresses).
 
 On mainnet, or if you prefer not to use the automated script on testnets, you must manually register the required FSP addresses by interacting directly with the [`EntityManager`](/network/fsp/solidity-reference/IEntityManager) contract.
 
-1.  Ensure you have generated the following five addresses and **securely stored their private keys**. Understand their roles:
-    - `Identity`: The central identity address. **Crucially, keep the private key secure (e.g., cold storage on mainnet).** This address initiates proposals and signs registrations.
-    - `Submit`: Used for sending FTSO commit/reveal transactions.
-    - `SubmitSignatures`: Used for sending FTSO result signatures (often separate from `Submit` to manage transaction nonces).
-    - `SigningPolicy`: Used for signing FTSO data during voting and for reward epoch configurations.
-    - `Delegation`: Public address for receiving WNat (e.g., WFLR, WC2FLR) delegations to increase vote power and collect rewards.
+1.  Ensure you have generated the following five addresses and **securely stored their private keys**.
+    Understand their roles: - `Identity`: The central identity address.
+    **Crucially, keep the private key secure (e.g., cold storage on mainnet).** This address initiates proposals and signs registrations. - `Submit`: Used for sending FTSO commit/reveal transactions. - `SubmitSignatures`: Used for sending FTSO result signatures (often separate from `Submit` to manage transaction nonces). - `SigningPolicy`: Used for signing FTSO data during voting and for reward epoch configurations. - `Delegation`: Public address for receiving WNat (e.g., WFLR, WC2FLR) delegations to increase vote power and collect rewards.
 
 2.  For each address role (`Submit`, `SubmitSignatures`, `SigningPolicy`, `Delegation`), perform the two-step propose-confirm process using the `EntityManager` contract (see [FSP Reference](/network/fsp/solidity-reference)):
     - **Step A (Propose):** Call the relevant `propose<Role>Address` method from your `Identity` address.
@@ -226,34 +223,32 @@ This key pair is used for the FTSOv2 Fast Updates protocol.
     }
     ```
 
-2.  Register public key:
-    - If you used the **Automated Registration** script on a testnet (Method 1 above), this step is already completed, skip to [Register validator node](#register-validator-node).
-    - If you used **Manual Registration** (Method 2) or need to register manually:
-      1. Create a signature proving your `Identity` address owns the generated sortition private key. Use the `keygen` command again, providing the `PrivateKey` (from Step 1) and your `Identity` address.
+2.  Register public key: - If you used the **Automated Registration** script on a testnet (Method 1 above), this step is already completed, skip to [Register validator node](#register-validator-node). - If you used **Manual Registration** (Method 2) or need to register manually: 1. Create a signature proving your `Identity` address owns the generated sortition private key.
+    Use the `keygen` command again, providing the `PrivateKey` (from Step 1) and your `Identity` address.
 
-         ```bash
-         # Replace placeholders with your actual values
-         docker run --rm ghcr.io/flare-foundation/fast-updates/go-client:latest keygen \
-           --key PrivateKey \ # <-- REPLACE WITH YOUR GENERATED PrivateKey
-           --address Identity  # <-- REPLACE WITH YOUR Identity ADDRESS
-         ```
+             ```bash
+             # Replace placeholders with your actual values
+             docker run --rm ghcr.io/flare-foundation/fast-updates/go-client:latest keygen \
+               --key PrivateKey \ # <-- REPLACE WITH YOUR GENERATED PrivateKey
+               --address Identity  # <-- REPLACE WITH YOUR Identity ADDRESS
+             ```
 
-         This will generate a signature of the form:
+             This will generate a signature of the form:
 
-         ```plaintext
-         Signature generated: 0x10b0f6b68acf899944ce9406c807f38e904401dcf962d7fdd9943b0dee0222321f6863ed9f46d048695942793f1c16158b9a886b6ff2120390f5ddcbbdb0d3b02d8fff2c8f0583c8269650f97a169f5c5ea04ce3bdd91ca959188ac2cf2ff517
-         ```
+             ```plaintext
+             Signature generated: 0x10b0f6b68acf899944ce9406c807f38e904401dcf962d7fdd9943b0dee0222321f6863ed9f46d048695942793f1c16158b9a886b6ff2120390f5ddcbbdb0d3b02d8fff2c8f0583c8269650f97a169f5c5ea04ce3bdd91ca959188ac2cf2ff517
+             ```
 
-      2. Call the [`registerPublicKey`](/network/fsp/solidity-reference/IEntityManager#registerpublickey) method from your `Identity` address.
-         Provide the `PublicKeyX`, `PublicKeyY` (from Step 1), and the `Signature` (from Step 2a) as arguments.
+          2. Call the [`registerPublicKey`](/network/fsp/solidity-reference/IEntityManager#registerpublickey) method from your `Identity` address.
+             Provide the `PublicKeyX`, `PublicKeyY` (from Step 1), and the `Signature` (from Step 2a) as arguments.
 
-         ```solidity
-         registerPublicKey(
-           bytes32 _part1, // <-- REPLACE WITH YOUR GENERATED PublicKeyX
-           bytes32 _part2, // <-- REPLACE WITH YOUR GENERATED PublicKeyY
-           bytes _verificationData  // <-- REPLACE WITH YOUR GENERATED Signature
-         )
-         ```
+             ```solidity
+             registerPublicKey(
+               bytes32 _part1, // <-- REPLACE WITH YOUR GENERATED PublicKeyX
+               bytes32 _part2, // <-- REPLACE WITH YOUR GENERATED PublicKeyY
+               bytes _verificationData  // <-- REPLACE WITH YOUR GENERATED Signature
+             )
+             ```
 
 ### Register validator node
 
@@ -363,7 +358,8 @@ The [fdc-suite-deployment](https://github.com/flare-foundation/fdc-suite-deploym
    cd fdc-suite-deployment
    ```
 
-2. (optional) Images are typically pulled automatically from the GitHub Container Registry. If manual building is needed:
+2. (optional) Images are typically pulled automatically from the GitHub Container Registry.
+   If manual building is needed:
 
    ```bash
    # Clone the specific component repo first, then build
@@ -405,30 +401,30 @@ Configuration for the indexer and verifier services is managed centrally via the
 
 1.  Create and Edit `.env`:
 
-    ```bash
-    cp .env.example .env
-    ```
+        ```bash
+        cp .env.example .env
+        ```
 
-    Now, carefully edit the `.env` file, providing values for all variables relevant to the FDC components you are deploying. Pay close attention to:
-    - **RPC Node Connection Details (`*_URL`, `*_RPC_USERNAME`, `*_RPC_PASSWORD` / `*_RPC_AUTH`)**: Provide the full URL and credentials for connecting to each required blockchain node.
-      - If using nodes deployed via `fdc-suite-deployment` on the _same host_, you can often use `172.17.0.1` (Docker's default bridge IP) as the hostname in the URL (e.g., `http://admin:<PASSWORD>@172.17.0.1:8332/` for BTC, using the password generated earlier).
-      - If using _external_ nodes (your own or third-party), use their publicly accessible RPC endpoint URL and associated credentials.
+        Now, carefully edit the `.env` file, providing values for all variables relevant to the FDC components you are deploying.
 
-    - **Start Block Number (`*_START_BLOCK_NUMBER`)**: Crucial for the first run only. Set this for each UTXO indexer (BTC, DOGE, XRP) to a block number finalized approximately **14 days prior** to the current date.
-      (Tip: Use a blockchain explorer for the respective chain to find a block number from around that time). This limits initial indexing duration.
-      **Do not change this value on subsequent restarts** unless intentionally resetting the indexer database; the indexer will automatically resume.
-    - **Testnet Mode (`TESTNET`):** Set to `true` if deploying for Coston/Coston2, otherwise `false` (or omit).
-    - **Verifier API Keys (`VERIFIER_API_KEYS`)**: Set one or more comma-separated **secret keys**. These keys grant access to your verifier API servers and will be needed by the FDC Client (in the main Flare Entity deployment).
-      Generate strong, unique keys.
-    - **Database Passwords (`*_DB_PASSWORD`)**: Set secure, random passwords for the internal indexer databases.
+    Pay close attention to: - **RPC Node Connection Details (`*_URL`, `*_RPC_USERNAME`, `*_RPC_PASSWORD` / `*_RPC_AUTH`)**: Provide the full URL and credentials for connecting to each required blockchain node. - If using nodes deployed via `fdc-suite-deployment` on the _same host_, you can often use `172.17.0.1` (Docker's default bridge IP) as the hostname in the URL (e.g., `http://admin:<PASSWORD>@172.17.0.1:8332/` for BTC, using the password generated earlier). - If using _external_ nodes (your own or third-party), use their publicly accessible RPC endpoint URL and associated credentials.
 
-2.  After saving your `.env` file, run the provided script. This injects your `.env` values into the configuration templates used by the individual services.
+        - **Start Block Number (`*_START_BLOCK_NUMBER`)**: Crucial for the first run only.
 
-    ```bash
-    ./generate-config.sh
-    ```
+    Set this for each UTXO indexer (BTC, DOGE, XRP) to a block number finalized approximately **14 days prior** to the current date.
+    (Tip: Use a blockchain explorer for the respective chain to find a block number from around that time).
+    This limits initial indexing duration. - **Testnet Mode (`TESTNET`):** Set to `true` if deploying for Coston/Coston2, otherwise `false` (or omit). - **Verifier API Keys (`VERIFIER_API_KEYS`)**: Set one or more comma-separated **secret keys**.
+    These keys grant access to your verifier API servers and will be needed by the FDC Client (in the main Flare Entity deployment).
+    Generate strong, unique keys. - **Database Passwords (`*_DB_PASSWORD`)**: Set secure, random passwords for the internal indexer databases.
 
-    _This populates files in `verifiers/`, `evm-verifier/`, etc. Remember to **re-run this script** every time you make changes to your `.env` file._
+2.  After saving your `.env` file, run the provided script.
+    This injects your `.env` values into the configuration templates used by the individual services.
+
+        ```bash
+        ./generate-config.sh
+        ```
+
+        _This populates files in `verifiers/`, `evm-verifier/`, etc. Remember to **re-run this script** every time you make changes to your `.env` file._
 
 ### Start FDC Services
 
@@ -494,11 +490,13 @@ For reliable mainnet operation and reward eligibility, you MUST implement, deplo
 - Develop your service adhering strictly to the [Required Endpoints Specification](#required-endpoints-specification) below.
 - Deploy your custom provider service using production-grade practices (e.g., as a container with restart policies, behind a load balancer if needed, with monitoring).
 - The provider's API endpoint must be network-accessible from the environment where your [main Flare Entity services run](#run-flare-entity) (i.e., where the `flare-systems-deployment` Docker containers will run).
-  It typically _does not_ need public internet exposure. Note down its internal network URL (e.g., `http://<provider-internal-ip>:<port>`) for the `VALUE_PROVIDER_URL` variable in the final deployment configuration.
+  It typically _does not_ need public internet exposure.
+  Note down its internal network URL (e.g., `http://<provider-internal-ip>:<port>`) for the `VALUE_PROVIDER_URL` variable in the final deployment configuration.
 
 #### Required endpoints specification
 
-Your custom Feed Value Provider must implement the following two HTTP `POST` endpoints. Both endpoints expect and return JSON payloads (`Content-Type: application/json`).
+Your custom Feed Value Provider must implement the following two HTTP `POST` endpoints.
+Both endpoints expect and return JSON payloads (`Content-Type: application/json`).
 
 <details>
 <summary>**`POST /feed-values`**</summary>
@@ -529,7 +527,8 @@ Your custom Feed Value Provider must implement the following two HTTP `POST` end
 <details>
 <summary>**`POST /feed-values/:votingRoundId`**</summary>
 
-- **Description**: Returns the feed values for the specified voting round, used by FTSOv2 Scaling client. For category and name values, refer to [FTSOv2 anchor feeds](/ftso/scaling/anchor-feeds).
+- **Description**: Returns the feed values for the specified voting round, used by FTSOv2 Scaling client.
+  For category and name values, refer to [FTSOv2 anchor feeds](/ftso/scaling/anchor-feeds).
 - **Example request:**
   ```bash
   curl -X 'POST' 'http://localhost:3101/feed-values/0' \
@@ -596,9 +595,12 @@ curl -fs -o feeds.json https://raw.githubusercontent.com/flare-foundation/ftso-v
 
 The FTSOv2 Fast Updates protocol uses dedicated accounts for submitting frequent price updates, separate from the main FSP addresses to manage transaction nonces effectively.
 
-- Generate at least three (3) new, unique blockchain accounts. These accounts must **not** be any of the five main [FSP addresses](#register-and-fund-fsp-addresses) (`Identity`, `Submit`, etc.).
-- Securely store the private keys for these newly created accounts. You will need them later for the `FAST_UPDATES_ACCOUNTS` variable in the final deployment `.env` file.
-- Ensure each of these new Fast Updates accounts is funded with a sufficient amount of the network's native token (e.g., FLR, SGB) to cover the gas costs of frequent transaction submissions. Monitor balances periodically.
+- Generate at least three (3) new, unique blockchain accounts.
+  These accounts must **not** be any of the five main [FSP addresses](#register-and-fund-fsp-addresses) (`Identity`, `Submit`, etc.).
+- Securely store the private keys for these newly created accounts.
+  You will need them later for the `FAST_UPDATES_ACCOUNTS` variable in the final deployment `.env` file.
+- Ensure each of these new Fast Updates accounts is funded with a sufficient amount of the network's native token (e.g., FLR, SGB) to cover the gas costs of frequent transaction submissions.
+  Monitor balances periodically.
 
 ## Run Flare Entity
 
@@ -722,11 +724,12 @@ Keep your Flare Entity software up-to-date with the latest official releases pro
     ./populate_config.sh
     ```
 
-4.  Start the services using the updated images (and configuration, if changed). `docker compose up -d` will typically recreate containers whose images have changed.
+4.  Start the services using the updated images (and configuration, if changed).
+    `docker compose up -d` will typically recreate containers whose images have changed.
 
-    ```bash
-    docker compose up -d
-    ```
+        ```bash
+        docker compose up -d
+        ```
 
 5.  After restarting, re-check container status (`docker ps`) and monitor logs as described in the [Verify deployment success](#verify-deployment-success) above to ensure all services start correctly with the new versions.
 
@@ -740,28 +743,35 @@ Once merged, explorers should update on their next sync.
 :::
 
 <details>
-<summary>T1. `system-client` is not doing anything</summary>
+T1.
+`system-client` is not doing anything
 
-Likely, your entity is not registered as a voter for the current reward epoch. There is a time window for voter registration on every reward epoch, and if you leave things running you should eventually see `RegisterVoter success` in the logs. It should then start submitting data successfully in the **following** reward epoch.
-
-</details>
-
-<details>
-<summary>T2. `system-client` fails to fetch sub-protocol data</summary>
-
-The `c-chain-indexer` may still be indexing data, once it's finished you should see `Indexer at block x` in the logs. If it's still processing blocks you will see various errors across all services.
+Likely, your entity is not registered as a voter for the current reward epoch.
+There is a time window for voter registration on every reward epoch, and if you leave things running you should eventually see `RegisterVoter success` in the logs.
+It should then start submitting data successfully in the **following** reward epoch.
 
 </details>
 
 <details>
-<summary>T3. `fast-updates` client is not doing anything</summary>
+T2.
+`system-client` fails to fetch sub-protocol data
+
+The `c-chain-indexer` may still be indexing data, once it's finished you should see `Indexer at block x` in the logs.
+If it's still processing blocks you will see various errors across all services.
+
+</details>
+
+<details>
+T3.
+`fast-updates` client is not doing anything
 
 If you have low weight it may take some time until you are selected to submit an update.
 
 </details>
 
 <details>
-<summary>T4. Insufficient funds errors on `fast-updates` client</summary>
+T4.
+Insufficient funds errors on `fast-updates` client
 
 If your Fast Updates client is showing the following error, it means that the account you are using to submit transactions does not have enough funds to cover the gas fees.
 
@@ -774,7 +784,8 @@ You need to fund [all Fast Updates accounts](#create-fast-updates-accounts) acco
 </details>
 
 <details>
-<summary>T5. Icon and logo don't show up on Flare explorers</summary>
+T5.
+Icon and logo don't show up on Flare explorers
 
 Submit a PR to [TowoLabs/ftso-signal-providers](https://github.com/TowoLabs/ftso-signal-providers) adding your validator name, description, delegation address, and logo (per repo guidelines).
 Once merged, explorers should update on their next sync.
@@ -784,7 +795,8 @@ Once merged, explorers should update on their next sync.
 ## FAQs
 
 <details>
-<summary>F1. How do I check if my Flare Entity meets Minimal Conditions?</summary>
+F1.
+How do I check if my Flare Entity meets Minimal Conditions?
 
 Meeting [minimal conditions](/network/fsp/rewarding#minimal-conditions) for availability and performance in each reward epoch is necessary for FSP reward eligibility.
 You can check your entity's status using two primary methods:
@@ -795,7 +807,8 @@ This is the easiest and most reliable way to check your status.
 
 1.  Navigate to the **Minimal Conditions** tab on the [Flare Systems Explorer](https://flare-systems-explorer.flare.network/providers?tab=minimalConditions).
 2.  Find your entity by searching for your `Identity` address.
-3.  Review the status column for the relevant reward epoch(s). A **`YES`** indicates conditions were met for that epoch.
+3.  Review the status column for the relevant reward epoch(s).
+    A **`YES`** indicates conditions were met for that epoch.
 
 **Method 2: Explorer Backend API (CLI)**
 
@@ -835,7 +848,8 @@ You can query the API that powers the explorer for programmatic access.
 </details>
 
 <details>
-<summary>F2. Where can I find calculated rewards data and my specific rewards?</summary>
+F2.
+Where can I find calculated rewards data and my specific rewards?
 
 Reward amounts for both staking and FSP participation are calculated and published periodically.
 Always refer to official Flare sources for the latest data locations.
@@ -867,7 +881,8 @@ To inspect your entity's validator rewards for a specific epoch via CLI:
 
 **FSP (FTSO & FDC) Rewards:**
 
-Calculated per reward epoch (every 3.5 days, starting Mon/Thu). Requires meeting minimal conditions requirements.
+Calculated per reward epoch (every 3.5 days, starting Mon/Thu).
+Requires meeting minimal conditions requirements.
 Published data is usually available shortly after epoch finalization at:
 
 - **GitHub:** **[flare-foundation/fsp-rewards](https://github.com/flare-foundation/fsp-rewards/tree/main/flare)** repository (look for files named by epoch).
@@ -896,7 +911,8 @@ To inspect your entity's FSP rewards for a specific epoch via CLI:
 </details>
 
 <details>
-<summary>F3. How does the pass system work with minimal conditions?</summary>
+F3.
+How does the pass system work with minimal conditions?
 
 The pass system is an incentive mechanism for Flare Entities.
 Each entity has a number of passes, which can be gained or lost based on their performance in meeting the minimum participation requirements for each protocol within a reward epoch.
@@ -910,7 +926,8 @@ Here's how it works:
   It's important to note that entities can lose multiple passes for failing across multiple protocols within that reward epoch.
 - **Consequences of Losing Passes:**
   - If an entity has one pass and fails to meet one minimal condition, they will be reduced to zero passes but will still receive FSP rewards for that epoch.
-  - However, if an entity has zero passes and fails to meet a minimal condition, they will forfeit all FSP rewards for that epoch. For information on where to find reward data, see **FAQ F2**.
+  - However, if an entity has zero passes and fails to meet a minimal condition, they will forfeit all FSP rewards for that epoch.
+    For information on where to find reward data, see **FAQ F2**.
 
 Refer to **FAQ F1** to check how many passes your Flare Entity has.
 
@@ -923,9 +940,11 @@ If you are fail to register for a reward epoch your Flare Entity will lose all p
 </details>
 
 <details>
-<summary>F4. How can I monitor the health of my Flare Entity?</summary>
+F4.
+How can I monitor the health of my Flare Entity?
 
-Consistent monitoring is key to maintaining performance and reward eligibility. Here are primary areas and methods:
+Consistent monitoring is key to maintaining performance and reward eligibility.
+Here are primary areas and methods:
 
 **1. Validator node health:**
 
@@ -951,30 +970,34 @@ Consistent monitoring is key to maintaining performance and reward eligibility. 
     INFO epoch/registry_utils.go:187 Voter 0x... registered for epoch ...
     ```
 
-  - **Submissions:** Look for `Submitter ... successfully sent tx` messages in `system-client` logs during voting periods. Absence for >10 mins may indicate issues.
+  - **Submissions:** Look for `Submitter ... successfully sent tx` messages in `system-client` logs during voting periods.
+    Absence for >10 mins may indicate issues.
 
-    ```plaintext
-    # Example Submission Log Entries (Timestamp/Type vary)
-    INFO protocol/submitter.go:76 Submitter submitSignatures successfully sent tx
-    INFO protocol/submitter.go:76 Submitter submit1 successfully sent tx
-    ```
+        ```plaintext
+        # Example Submission Log Entries (Timestamp/Type vary)
+        INFO protocol/submitter.go:76 Submitter submitSignatures successfully sent tx
+        INFO protocol/submitter.go:76 Submitter submit1 successfully sent tx
+        ```
 
-    **Alerting Tip:** Set alerts if no successful submission messages appear for 5-10 minutes during active voting periods.
+        **Alerting Tip:** Set alerts if no successful submission messages appear for 5-10 minutes during active voting periods.
 
-  - **Finalization:** Look for `Relaying finished for protocol ... with success` messages in `system-client` logs after voting periods. Non-fatal errors may occur but should be investigated if persistent. (Protocol 100 = FTSOv2, Protocol 200 = FDC).
+  - **Finalization:** Look for `Relaying finished for protocol ... with success` messages in `system-client` logs after voting periods.
+    Non-fatal errors may occur but should be investigated if persistent.
+    (Protocol 100 = FTSOv2, Protocol 200 = FDC).
 
-    ```plaintext
-    # Example Finalization Log Entries (Timestamp/Status vary)
-    INFO finalizer/relay_client.go:168 Relaying finished for protocol 100 with success
-    INFO finalizer/relay_client.go:168 Relaying finished for protocol 200 with success
-    ```
+        ```plaintext
+        # Example Finalization Log Entries (Timestamp/Status vary)
+        INFO finalizer/relay_client.go:168 Relaying finished for protocol 100 with success
+        INFO finalizer/relay_client.go:168 Relaying finished for protocol 200 with success
+        ```
 
-    **Alerting Tip:** Set alerts if no successful finalization messages appear for protocols 100/200 within 5-10 minutes after a voting round should have completed.
+        **Alerting Tip:** Set alerts if no successful finalization messages appear for protocols 100/200 within 5-10 minutes after a voting round should have completed.
 
 </details>
 
 <details>
-<summary>F5. How can I opt-out of receiving FlareDrops?</summary>
+F5.
+How can I opt-out of receiving FlareDrops?
 
 <FlareDrops />
 
@@ -983,7 +1006,8 @@ To opt-out of receiving all future FlareDrops, you need to call the [`optOutOfAi
 </details>
 
 <details>
-<summary>F6. How do I get real-time Slack/Discord/Telegram alerts for issues with my Flare Entity?</summary>
+F6.
+How do I get real-time Slack/Discord/Telegram alerts for issues with my Flare Entity?
 
 To receive instant notifications about critical validator or data provider issues - such as FTSO or FDC reveal offenses, registration failures, and more - use the [flare-foundation/fsp-observer](https://github.com/flare-foundation/fsp-observer) monitoring service.
 

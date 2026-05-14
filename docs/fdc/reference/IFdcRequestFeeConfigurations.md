@@ -14,13 +14,15 @@ Sourced from `IFdcRequestFeeConfigurations.sol` on [GitHub](https://github.com/f
 
 ## Overview
 
-The IFdcRequestFeeConfigurations interface provides functionality for managing and retrieving fees associated with attestation requests in the Flare Data Connector (FDC) system. It allows for querying the base fee required for specific attestation requests.
+The IFdcRequestFeeConfigurations interface provides functionality for managing and retrieving fees associated with attestation requests in the Flare Data Connector (FDC) system.
+It allows for querying the base fee required for specific attestation requests.
 
 ## Functions
 
 ### getRequestFee
 
-Method to get the base fee for an attestation request. It reverts if the request is not supported.
+Method to get the base fee for an attestation request.
+It reverts if the request is not supported.
 
 ```solidity
 function getRequestFee(
