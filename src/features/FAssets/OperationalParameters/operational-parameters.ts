@@ -163,7 +163,7 @@ export const operationalParameters = [
           "Minimum amount that can be redeemed, in base unit of the underlying asset (UBA).",
         values: {
           flare: {
-            xrp: "-",
+            xrp: "5 XRP",
           },
           coston2: {
             xrp: "5 TestXRP",
@@ -1266,6 +1266,9 @@ export const operationalParameters = [
         description:
           "Destination tag that must be added to core vault donation transactions.",
         values: {
+          flare: {
+            xrp: "1",
+          },
           coston2: {
             xrp: "14",
           },
@@ -1287,6 +1290,9 @@ export const operationalParameters = [
         description:
           "Minimum fee charged for direct minting, in base unit of the underlying asset (UBA).",
         values: {
+          flare: {
+            xrp: "0.1 XRP",
+          },
           coston2: {
             xrp: "0.1 TestXRP",
           },
@@ -1303,6 +1309,9 @@ export const operationalParameters = [
         description:
           "Direct minting fee as a percentage of the minting amount, in BIPS.",
         values: {
+          flare: {
+            xrp: "0.1%",
+          },
           coston2: {
             xrp: "0.25%",
           },
@@ -1319,6 +1328,9 @@ export const operationalParameters = [
         description:
           "Fee paid to the executor of a direct minting request, in base unit of the underlying asset (UBA). This only applies to direct mintings to address, for direct minting to smart account the executor fee is calculated and paid by the smart account manager.",
         values: {
+          flare: {
+            xrp: "0.2 XRP",
+          },
           coston2: {
             xrp: "0.1 TestXRP",
           },
@@ -1335,6 +1347,9 @@ export const operationalParameters = [
         description:
           "Time in seconds after which anyone can execute a direct minting request (not just the executor set by the minter).",
         values: {
+          flare: {
+            xrp: "2 hours",
+          },
           coston2: {
             xrp: "2 hours",
           },
@@ -1351,6 +1366,9 @@ export const operationalParameters = [
         description:
           "Maximum amount that can be directly minted per hour, in base unit of the underlying asset (UBA). After that the mintings are delayed.",
         values: {
+          flare: {
+            xrp: "4M XRP",
+          },
           coston2: {
             xrp: "100k TestXRP",
           },
@@ -1367,6 +1385,9 @@ export const operationalParameters = [
         description:
           "Maximum amount that can be directly minted per day, in base unit of the underlying asset (UBA). After that the mintings are delayed.",
         values: {
+          flare: {
+            xrp: "40M XRP",
+          },
           coston2: {
             xrp: "500k TestXRP",
           },
@@ -1383,6 +1404,9 @@ export const operationalParameters = [
         description:
           "Threshold above which a direct minting is considered large, in base unit of the underlying asset (UBA). Large mintings are always delayed.",
         values: {
+          flare: {
+            xrp: "4M XRP",
+          },
           coston2: {
             xrp: "100k TestXRP",
           },
@@ -1399,6 +1423,9 @@ export const operationalParameters = [
         description:
           "Delay in seconds imposed on large direct mintings before they can be executed.",
         values: {
+          flare: {
+            xrp: "2 hours",
+          },
           coston2: {
             xrp: "1 hour",
           },
@@ -1415,6 +1442,9 @@ export const operationalParameters = [
         description: "Address that receives the direct minting fee.",
         valueType: "address",
         values: {
+          flare: {
+            xrp: "0xF55bcAd5568d1584ab6f013f144e1e433Ee551C7",
+          },
           coston2: {
             xrp: "0xDcDD7547EdA881b675B58c11922aF4A726cCb01B",
           },
@@ -1436,6 +1466,9 @@ export const operationalParameters = [
         description:
           "Minimum amount that can be redeemed, in base unit of the underlying asset (UBA).",
         values: {
+          flare: {
+            xrp: "5 XRP",
+          },
           coston2: {
             xrp: "5 TestXRP",
           },
@@ -1453,6 +1486,9 @@ export const operationalParameters = [
         name: "Name (NFT)",
         description: "NFT collection name used by the minting tag manager.",
         values: {
+          flare: {
+            xrp: "FXRP Minting Tag",
+          },
           coston2: {
             xrp: "Minting Tag Manager (FTestXRP open beta)",
           },
@@ -1465,6 +1501,9 @@ export const operationalParameters = [
         name: "Symbol (NFT)",
         description: "NFT collection symbol used by the minting tag manager.",
         values: {
+          flare: {
+            xrp: "MTFXRP",
+          },
           coston2: {
             xrp: "MTMTXRP",
           },
@@ -1480,6 +1519,9 @@ export const operationalParameters = [
         description:
           "Fee charged when reserving a minting tag for the NFT-based manager.",
         values: {
+          flare: {
+            xrp: "100 FLR",
+          },
           coston2: {
             xrp: "100 C2FLR",
           },
@@ -1496,6 +1538,9 @@ export const operationalParameters = [
         description: "Address that receives reservation fees.",
         valueType: "address",
         values: {
+          flare: {
+            xrp: "0x889A02c0E6d92e77188aDe03e3ce15B73228C197",
+          },
           coston2: {
             xrp: "0x355156629f25102c3cc51b7630eb80E9De5d1211",
           },
@@ -1509,6 +1554,9 @@ export const operationalParameters = [
         settingName: "reservedTagCount",
         description: "Initial minting tag ID offset.",
         values: {
+          flare: {
+            xrp: "30",
+          },
           coston2: {
             xrp: "20",
           },
