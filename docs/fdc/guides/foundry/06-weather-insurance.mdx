@@ -18,7 +18,7 @@ keywords:
 sidebar_position: 1
 ---
 
-In this guide, we will examine an example of a simple insurance dApp that uses the FDC's [Web2Json](/fdc/guides/hardhat/web2-json) attestation type.
+In this guide, we will examine an example of a simple insurance dApp that uses the FDC's [Web2Json](/fdc/guides/foundry/web2-json) attestation type.
 The dApp will allow users to create insurance policies for temperatures at specific coordinates falling below a specified threshold.
 Other users will be able to claim those policies, and the policies will be settled automatically by the contract.
 
@@ -48,10 +48,11 @@ With that, we can describe the process of using the Weather Insurance dApp.
     The contract pays out the deposited premium to the insurer.
     If no insurer has accepted the policy by the time it comes into effect (before its start timestamp), the policy can be retired.
 
-3.  The policy is resolved. This happens in three ways:
-    - The policy has expired because no insurer accepted it in the allotted time. The contract returns the premium to the policyholder.
-    - An insurer has accepted the policy, and proof has been provided to the contract, demonstrating that a loss has occurred (in this case, that the temperature at the specified location fell below the agreed-upon threshold). The contract pays out the deposited loss coverage amount to the policyholder.
-    - An insurer has accepted the policy, and the expiration timestamp has been reached without valid proof having been provided. The contract returns the loss coverage deposit to the insurer.
+3.  The policy is resolved.
+    This happens in three ways: - The policy has expired because no insurer accepted it in the allotted time.
+    The contract returns the premium to the policyholder. - An insurer has accepted the policy, and proof has been provided to the contract, demonstrating that a loss has occurred (in this case, that the temperature at the specified location fell below the agreed-upon threshold).
+    The contract pays out the deposited loss coverage amount to the policyholder. - An insurer has accepted the policy, and the expiration timestamp has been reached without valid proof having been provided.
+    The contract returns the loss coverage deposit to the insurer.
 
 With that we can now focus on the technical aspects of the procedure described above, starting with the main smart contract.
 
@@ -59,7 +60,7 @@ With that we can now focus on the technical aspects of the procedure described a
 
 The contract that we will define will be called `MinTempAgency`.
 This name coincides with the field name in the response on a call to the [OpenWeatherMap API](https://openweathermap.org/api), which we will be using to acquire weather data.
-We will use the [Flare Data Connector](/fdc/overview) to collect the weather data so, in keeping with the [Web2Json guide](/fdc/guides/hardhat/web2-json), we start by defining a `DataTransportObject` which will determine how the FDC should encode the data.
+We will use the [Flare Data Connector](/fdc/overview) to collect the weather data so, in keeping with the [Web2Json guide](/fdc/guides/foundry/web2-json), we start by defining a `DataTransportObject` which will determine how the FDC should encode the data.
 
 ```solidity title="src/weatherInsurance/MinTempAgency.sol"
 struct DataTransportObject {
@@ -98,7 +99,7 @@ When a policy is accepted, the contract will save the insurer's address to the m
 We also define several events that will be emitted at different stages of a policy's lifetime.
 
 ```solidity title="src/weatherInsurance/MinTempAgency.sol"
-contract MinTempAgency is FdcVerification {
+contract MinTempAgency {
     Policy[] public registeredPolicies;
     mapping(uint256 => address) public insurers;
 
@@ -172,7 +173,8 @@ So, instead of Celsius, we will use micro-Celsius, instead of degrees for latitu
 :::
 
 The `claimPolicy` function first retrieves the policy with the given ID.
-It checks that the policy is yet `Unclaimed`.
+It checks that the policy is still `Unclaimed`.
+If the policy's start timestamp has already passed, the function silently routes through `retireUnclaimedPolicy` (without reverting), so an insurer can never accidentally claim a stale policy.
 
 Just like the premium, the coverage value is also not a parameter but the amount paid to the contract.
 The function checks that it has received a sufficient amount before continuing.
@@ -183,15 +185,15 @@ Lastly, the premium is paid to the insurer, and a `PolicyClaimed` event is emitt
 
 ```solidity title="src/weatherInsurance/MinTempAgency.sol"
 function claimPolicy(uint256 id) public payable {
-    Policy storage policy = registeredPolicies[id];
+    Policy memory policy = registeredPolicies[id];
     require(policy.status == PolicyStatus.Unclaimed, "Policy already claimed");
-    if (block.timestamp > policy.expirationTimestamp) {
+    if (block.timestamp > policy.startTimestamp) {
         retireUnclaimedPolicy(id);
-        revert("Policy already expired");
     }
     require(msg.value >= policy.coverage, "Insufficient coverage paid");
 
     policy.status = PolicyStatus.Open;
+    registeredPolicies[id] = policy;
     insurers[id] = msg.sender;
 
     payable(msg.sender).transfer(policy.premium);
@@ -227,11 +229,11 @@ A `PolicySettled` event is emitted.
 
 ```solidity title="src/weatherInsurance/MinTempAgency.sol"
 function resolvePolicy(uint256 id, IWeb2Json.Proof calldata proof) public {
-    Policy storage policy = registeredPolicies[id];
+    Policy memory policy = registeredPolicies[id];
     require(policy.status == PolicyStatus.Open, "Policy not open");
-    require(isWeb2JsonProofValid(proof), "Invalid proof");
+    require(isJsonApiProofValid(proof), "Invalid proof");
 
-    DataTransportObject memory dto = abi.decode(proof.data.responseBody.abi_encoded_data, (DataTransportObject));
+    DataTransportObject memory dto = abi.decode(proof.data.responseBody.abiEncodedData, (DataTransportObject));
 
     require(
         block.timestamp >= policy.startTimestamp,
@@ -272,16 +274,17 @@ function resolvePolicy(uint256 id, IWeb2Json.Proof calldata proof) public {
     );
 
     policy.status = PolicyStatus.Settled;
+    registeredPolicies[id] = policy;
     payable(policy.holder).transfer(policy.coverage);
     emit PolicySettled(id);
 }
 ```
 
-The `IWeb2Json.Proof` is validated as demonstrated in the [Web2Json guide](/fdc/guides/hardhat/web2-json).
+The `IWeb2Json.Proof` is validated as demonstrated in the [Web2Json guide](/fdc/guides/foundry/web2-json).
 
 ```solidity title="src/weatherInsurance/MinTempAgency.sol"
-function isWeb2JsonProofValid(IWeb2Json.Proof calldata _proof) private view returns (bool) {
-    return FdcVerification.verifyWeb2Json(_proof);
+function isJsonApiProofValid(IWeb2Json.Proof calldata _proof) private view returns (bool) {
+    return ContractRegistry.getFdcVerification().verifyWeb2Json(_proof);
 }
 ```
 
@@ -294,25 +297,27 @@ A `PolicyExpired` event is emitted.
 
 ```solidity title="src/weatherInsurance/MinTempAgency.sol"
 function expirePolicy(uint256 id) public {
-    Policy storage policy = registeredPolicies[id];
+    Policy memory policy = registeredPolicies[id];
     require(policy.status == PolicyStatus.Open, "Policy not open");
     require(block.timestamp > policy.expirationTimestamp, "Policy not yet expired");
     policy.status = PolicyStatus.Settled;
+    registeredPolicies[id] = policy;
     payable(insurers[id]).transfer(policy.coverage);
     emit PolicyExpired(id);
 }
 ```
 
 The last of the non-helper functions allows us to retire unclaimed policies.
-If the policy's status is `Unclaimed`, and the timestamp of the current block exceeds the policy's expiration timestamp, the policy is marked as `Settled`, and its premium is returned to the policyholder.
+If the policy's status is `Unclaimed`, and the timestamp of the current block exceeds the policy's start timestamp, the policy is marked as `Settled`, and its premium is returned to the policyholder.
 A `PolicyRetired` event is emitted.
 
 ```solidity title="src/weatherInsurance/MinTempAgency.sol"
 function retireUnclaimedPolicy(uint256 id) public {
-    Policy storage policy = registeredPolicies[id];
+    Policy memory policy = registeredPolicies[id];
     require(policy.status == PolicyStatus.Unclaimed, "Policy not unclaimed");
-    require(block.timestamp > policy.expirationTimestamp, "Policy not yet expired");
+    require(block.timestamp > policy.startTimestamp, "Policy not yet expired");
     policy.status = PolicyStatus.Settled;
+    registeredPolicies[id] = policy;
     payable(policy.holder).transfer(policy.premium);
     emit PolicyRetired(id);
 }
@@ -333,7 +338,8 @@ function getInsurer(uint256 id) public view returns (address) {
 
 ### The Scripts
 
-The following scripts reflect the process described at the start of this guide. Most of them are straightforward, performing a single function call.
+The following scripts reflect the process described at the start of this guide.
+Most of them are straightforward, performing a single function call.
 
 The first script deploys the `MinTempAgency` contract and saves its address to a file in the `data/weatherInsurance/` directory for other scripts to use.
 
@@ -358,26 +364,32 @@ contract DeployAgency is Script {
 **Run the script:**
 
 ```bash
-forge script script/MinTemp.s.sol:DeployAgency --rpc-url $COSTON2_RPC_URL --broadcast --verify
+forge script script/MinTemp.s.sol:DeployAgency --rpc-url $COSTON2_RPC_URL --broadcast --verify --verifier blockscout --verifier-url $COSTON2_EXPLORER_API
 ```
 
 Next, we will create a new policy with the following parameters:
 
 - latitude: `46.419402`
 - longitude: `15.587079`
-- start timestamp: 30 seconds from now
-- expiration timestamp: an hour from now
-- minimum temperature threshold: 30 degrees Celsius
-- premium: 10 wei
-- coverage: 1000 wei
+- start timestamp: 180 seconds from now
+- expiration timestamp: an hour from now (3600 seconds duration)
+- minimum temperature threshold: 10 degrees Celsius (encoded as `10 * 1e6` micro-Celsius)
+- premium: `0.01 ether`
+- coverage: `0.1 ether`
 
 :::note
 We have set the minimum temperature threshold high enough that the policy will always be resolved successfully.
 :::
 
-Because the response of the OpenWeatherMap API includes not the provided coordinates, but those of the nearest weather station, we will first replace our latitude and longitude with those. This will ensure that the coordinates of the created policy match the ones in the proof data. Without this step, we could never prove that a loss has occurred.
+Because the response of the OpenWeatherMap API includes not the provided coordinates, but those of the nearest weather station, we will first replace our latitude and longitude with those.
+This will ensure that the coordinates of the created policy match the ones in the proof data.
+Without this step, we could never prove that a loss has occurred.
 
-We find the correct coordinates by making a GET request to the same URL that will be provided to the FDC. To do this in a Foundry script, we use the `ffi` cheatcode, which can execute arbitrary shell commands. To use the API, we need to provide it with an API key, which is available on a free account. We read the API key from the `.env` file. Also, we explicitly state that we are using metric units, although this is the default.
+We find the correct coordinates by making a GET request to the same URL that will be provided to the FDC.
+To do this in a Foundry script, we use the `ffi` cheatcode, which can execute arbitrary shell commands.
+To use the API, we need to provide it with an API key, which is available on a free account.
+We read the API key from the `.env` file.
+Also, we explicitly state that we are using metric units, although this is the default.
 
 The script calls the API via `curl`, parses the JSON response to get the exact coordinates, scales them by 10<sup>6</sup> to avoid floating-point values, and finally calls `createPolicy`.
 
@@ -393,9 +405,10 @@ contract CreatePolicy is Script {
 
         string memory url = string.concat("https://api.openweathermap.org/data/2.5/weather?lat=", lat, "&lon=", lon, "&appid=", apiKey, "&units=", units);
 
-        string[] memory inputs = new string[](2);
+        string[] memory inputs = new string[](3);
         inputs[0] = "curl";
-        inputs[1] = url;
+        inputs[1] = "-s";
+        inputs[2] = url;
         bytes memory jsonResponseBytes = vm.ffi(inputs);
         string memory jsonResponse = string(jsonResponseBytes);
 
@@ -405,11 +418,11 @@ contract CreatePolicy is Script {
         int256 actualLatitude = FdcBase.stringToScaledInt(latString, 6);
         int256 actualLongitude = FdcBase.stringToScaledInt(lonString, 6);
 
-        uint256 startTimestamp = block.timestamp + 30 seconds;
-        uint256 expirationTimestamp = block.timestamp + 1 hours;
-        int256 minTempThreshold = 30 * 1e6;
-        uint256 premium = 10;
-        uint256 coverage = 1000;
+        uint256 startTimestamp = block.timestamp + 180;
+        uint256 expirationTimestamp = startTimestamp + 1 hours;
+        int256 minTempThreshold = 10 * 1e6;
+        uint256 premium = 0.01 ether;
+        uint256 coverage = 0.1 ether;
 
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
@@ -426,7 +439,9 @@ contract CreatePolicy is Script {
 forge script script/MinTemp.s.sol:CreatePolicy --rpc-url $COSTON2_RPC_URL --broadcast --ffi
 ```
 
-The script for claiming a policy reads the policy details from the contract to determine the required coverage amount. It then calls the `claimPolicy` function, sending the coverage value to the contract. In this example, the policy claimed has the ID of `0`.
+The script for claiming a policy reads the policy details from the contract to determine the required coverage amount.
+It then calls the `claimPolicy` function, sending the coverage value to the contract.
+In this example, the policy claimed has the ID of `0`.
 
 ```solidity title="script/MinTemp.s.sol"
 contract ClaimPolicy is Script {
@@ -450,27 +465,35 @@ contract ClaimPolicy is Script {
 forge script script/MinTemp.s.sol:ClaimPolicy --rpc-url $COSTON2_RPC_URL --broadcast --sig "run(uint256)" <POLICY_ID>
 ```
 
-The script for resolving a policy is slightly more complicated. It involves making a Web2Json attestation request to the FDC and providing the returned proof to the `MinTempAgency` contract. To learn more about the Web2Json attestation request look at the [related guide](/fdc/guides/hardhat/web2-json), or its [spec](/fdc/attestation-types/web2-json).
+The script for resolving a policy is slightly more complicated.
+It involves making a Web2Json attestation request to the FDC and providing the returned proof to the `MinTempAgency` contract.
+To learn more about the Web2Json attestation request look at the [related guide](/fdc/guides/foundry/web2-json), or its [spec](/fdc/attestation-types/web2-json).
 
-The URL we will be submitting to the FDC is the one already mentioned above. We prepare the URL using a helper function in our script, dividing the coordinates by 10<sup>6</sup> to return them to their original value.
+The URL we will be submitting to the FDC is the one already mentioned above.
+We prepare the URL using a helper function in our script, dividing the coordinates by 10<sup>6</sup> to return them to their original value.
 
-We need to specify the `jq` filter that the FDC should apply to the data received in the response. Only a few fields are needed, and most must first be multiplied by 10<sup>6</sup> so that we can store them as `uint256` or `int256` values in Solidity. The filter we will be using is:
+We need to specify the `jq` filter that the FDC should apply to the data received in the response.
+Only a few fields are needed, and most must first be multiplied by 10<sup>6</sup> so that we can store them as `uint256` or `int256` values in Solidity.
+The filter we will be using is:
 
-````jq
+```jq
 {
-   latitude: (.coord.lat | if . != null then .*pow(10;6) else null end),
-   longitude: (.coord.lon | if . != null then .*pow(10;6) else null end),
-   description: .weather[0].description,
-   temperature: (.main.temp | if . != null then .*pow(10;6) else null end),
-   minTemp: (.main.temp_min | if . != null then .*pow(10;6) else null end),
-   windSpeed: (.wind.speed | if . != null then . *pow(10;6) end),
-   windDeg: .wind.deg
+  latitude: (.coord.lat | if . !== null then .*1000000 else 0 end | floor),
+  longitude: (.coord.lon | if . !== null then .*1000000 else 0 end | floor),
+  description: .weather[0].description,
+  temperature: (.main.temp | if . !== null then .*1000000 else 0 end | floor),
+  minTemp: (.main.temp_min | if . !== null then .*1000000 else 0 end | floor),
+  windSpeed: (.wind.speed | if . !== null then . *1000000 else 0 end | floor),
+  windDeg: .wind.deg
 }
-```The Foundry scripts workflow automates the three-step FDC process: preparing the request, submitting it, and executing the resolution with the final proof.
+```
+
+The Foundry scripts workflow automates the three-step FDC process: preparing the request, submitting it, and executing the resolution with the final proof.
 
 ##### Step 4.1: Prepare the Resolve Request
 
-This script prepares the `Web2Json` attestation request needed to fetch the weather data. It constructs the API query parameters and the `jq` filter, then calls the FDC verifier to get the final `abiEncodedRequest`.
+This script prepares the `Web2Json` attestation request needed to fetch the weather data.
+It constructs the API query parameters and the `jq` filter, then calls the FDC verifier to get the final `abiEncodedRequest`.
 
 ```solidity title="script/MinTemp.s.sol"
 contract PrepareResolveRequest is Script {
@@ -484,7 +507,7 @@ contract PrepareResolveRequest is Script {
     }
     // ... helper functions for preparing API and FDC requests ...
 }
-````
+```
 
 **Run the script:**
 
@@ -520,18 +543,19 @@ forge script script/MinTemp.s.sol:SubmitResolveRequest --rpc-url $COSTON2_RPC_UR
 
 After waiting for the voting round to finalize (90-180 seconds), this script retrieves the proof from the Data Availability Layer and calls the `resolvePolicy` function on the `MinTempAgency` contract, providing the proof.
 
-````solidity title="script/MinTemp.s.sol"
+```solidity title="script/MinTemp.s.sol"
 contract ExecuteResolve is Script {
     function run(uint256 policyId) external {
         // ... read requestHex and roundIdStr from files ...
 
+        IFdcVerification fdcVerification = ContractRegistry.getFdcVerification();
+        uint8 protocolId = fdcVerification.fdcProtocolId();
         bytes memory proofData = FdcBase.retrieveProof(protocolId, requestHex, submissionRoundId);
 
-        // ... decode proofData into IWeb2Json.Proof struct ...
-        (bool success, bytes memory parsable) = proofData.tryLast(2 * 32);
-        require(success, "Invalid proof data");
-        IWeb2Json.Proof memory finalProof;
-        (finalProof.proofs, finalProof.data) = abi.decode(parsable, (bytes[], IWeb2Json.Response));
+        // Decode proofData into IWeb2Json.Proof
+        FdcBase.ParsableProof memory parsableProof = abi.decode(proofData, (FdcBase.ParsableProof));
+        IWeb2Json.Response memory response = abi.decode(parsableProof.responseHex, (IWeb2Json.Response));
+        IWeb2Json.Proof memory finalProof = IWeb2Json.Proof(parsableProof.proofs, response);
 
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(privateKey);
@@ -539,11 +563,17 @@ contract ExecuteResolve is Script {
         vm.stopBroadcast();
     }
     // ...
-}```
+}
+```
+
 **Run the script:**
+
 ```bash
 forge script script/MinTemp.s.sol:ExecuteResolve --rpc-url $COSTON2_RPC_URL --broadcast --ffi --sig "run(uint256)" <POLICY_ID>
-````
+```
+
+A full life-cycle of the more elaborate `WeatherIdAgency` (which keys on OpenWeatherMap's `weatherId` code) is implemented in `script/WeatherId.s.sol` in the [Flare Foundry starter](https://github.com/flare-foundation/flare-foundry-starter).
+The flow mirrors the steps above but uses different policy parameters.
 
 ### Modifications and enhancements
 
@@ -575,4 +605,5 @@ This would prevent either party's funds from being locked within a contract for 
 Another option would be to issue ERC1155 tokens expressing the stake.
 It would enable the trade of fractions of policies while optimizing gas consumption.
 
-No doubt there is an even better token type for such use case. But that goes beyond the purpose of this guide.
+No doubt there is an even better token type for such use case.
+But that goes beyond the purpose of this guide.
