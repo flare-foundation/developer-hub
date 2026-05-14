@@ -4,12 +4,18 @@ tags: [intermediate, fassets]
 slug: usdt0-fxrp-swap
 description: Swap USDT0 to FXRP using Uniswap V3 router
 keywords: [fassets, flare-network]
+unlisted: true
 ---
 
 import CodeBlock from "@theme/CodeBlock";
 import UniswapV3Wrapper from "!!raw-loader!/examples/developer-hub-solidity/UniswapV3Wrapper.sol";
 import UniswapV3WrapperScript from "!!raw-loader!/examples/developer-hub-javascript/uniswapV3Wrapper.ts";
 import RemixEmbed from "@site/src/components/RemixEmbed";
+
+:::warning Draft
+The runnable script `scripts/fassets/uniswapV3Wrapper.ts` referenced from this guide does not yet exist in the Flare Hardhat Starter.
+The guide is hidden (`unlisted: true`) until the script lands in the starter.
+:::
 
 ## Overview
 
@@ -44,40 +50,54 @@ This Solidity contract wraps the Uniswap V3 router, providing safe token transfe
 
 ### Code Explanation
 
-1. Define the Uniswap V3 router function for swaps, which allows interaction with the Uniswap V3 protocol.
-   It comes from the [Uniswap V3 periphery](https://github.com/Uniswap/v3-periphery).
+1.  Define the Uniswap V3 router function for swaps, which allows interaction with the Uniswap V3 protocol.
+    It comes from the [Uniswap V3 periphery](https://github.com/Uniswap/v3-periphery).
 
-2. Use the Uniswap V3 factory interface to locate a specific pool for a token pair and the fee tier.
+2.  Use the Uniswap V3 factory interface to locate a specific pool for a token pair and the fee tier.
 
-3. Define the Uniswap V3 pool interface that provides liquidity and token details for a given pool.
+3.  Define the Uniswap V3 pool interface that provides liquidity and token details for a given pool.
 
-4. Create the `UniswapV3Wrapper` contract, which acts as a wrapper around Uniswap V3 to simplify swaps and add safety checks.
+4.  Create the `UniswapV3Wrapper` contract, which acts as a wrapper around Uniswap V3 to simplify swaps and add safety checks.
 
-5. Use the existing Uniswap V3 SwapRouter on Flare (SparkDEX) as the main entry point for executing swaps.
+5.  Use the existing Uniswap V3 SwapRouter on Flare (SparkDEX) as the main entry point for executing swaps.
 
-6. Store the Uniswap V3 factory in the contract for looking up pools.
+6.  Store the Uniswap V3 factory in the contract for looking up pools.
 
-7. Define events that log important actions such as swaps executed, pools checked, and tokens approved.
+7.  Define events that log important actions such as swaps executed, pools checked, and tokens approved.
 
-8. Create a constructor that initializes the swap router and factory.
+8.  Create a constructor that initializes the swap router and factory.
 
-9. Check if the pool exists and has liquidity, preventing the swaps execution in empty or non-existent pools.
+9.  Check if the pool exists and has liquidity, preventing the swaps execution in empty or non-existent pools.
 
 10. Create a swap exact input single function that executes a single-hop swap through the Uniswap V3 router protocol.
 
-    10.1. Check if pool exists, ensuring a valid pool address is returned.
+        10.1.
 
-    10.2. Check if the pool has liquidity, requiring the available liquidity is greater than zero.
+    Check if pool exists, ensuring a valid pool address is returned.
 
-    10.3. Transfer tokens from the user to this contract, using SafeERC20 for secure transfers.
+        10.2.
 
-    10.4. Approve the router to spend tokens using the `SafeERC20` library, allowing the router to perform the swap.
+    Check if the pool has liquidity, requiring the available liquidity is greater than zero.
 
-    10.5. Prepare swap parameters, filling the `ExactInputSingleParams` struct with all necessary details.
+        10.3.
 
-    10.6. Execute the swap, calling the `swapRouter.exactInputSingle` function to perform the transaction.
+    Transfer tokens from the user to this contract, using SafeERC20 for secure transfers.
 
-    10.7. Emit the swap executed event, logging details about the user, tokens, and amounts.
+        10.4.
+
+    Approve the router to spend tokens using the `SafeERC20` library, allowing the router to perform the swap.
+
+        10.5.
+
+    Prepare swap parameters, filling the `ExactInputSingleParams` struct with all necessary details.
+
+        10.6.
+
+    Execute the swap, calling the `swapRouter.exactInputSingle` function to perform the transaction.
+
+        10.7.
+
+    Emit the swap executed event, logging details about the user, tokens, and amounts.
 
 ## Execute the Swap with Hardhat
 
