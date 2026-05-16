@@ -7,7 +7,13 @@ sidebar_position: 5
 
 Reference for managing and interacting with FAssets `IMintingTagManager`.
 
+Each minting tag is an [ERC721 token](https://ethereum.org/developers/docs/standards/tokens/erc-721/) that authorizes its owner to perform direct mintings.
+Tags are reserved by paying [a fee](/fassets/reference/IMintingTagManager#reservationfee) in native currency.
+Each tag has a configurable minting recipient (the address that receives minted FAssets) and an optional allowed executor (the only address permitted to execute direct mintings with that tag).
+
 To get the minting tag manager address, use the [getMintingTagManager](/fassets/reference/IAssetManager#getmintingtagmanager) function of the [IAssetManager](/fassets/reference/IAssetManager) contract.
+
+Sourced from `IMintingTagManager.sol` on [GitHub](https://github.com/flare-foundation/fassets/blob/main/contracts/userInterfaces/IMintingTagManager.sol).
 
 ## Functions
 
@@ -39,6 +45,31 @@ function setMintingRecipient(uint256 _mintingTag, address _recipient) external;
 - `_mintingTag`: The minting tag ID.
 - `_recipient`: The new minting recipient address (must not be the zero address).
 
+### `setAllowedExecutor`
+
+Set the allowed executor for a tag.
+Only callable by the tag owner.
+The allowed executor is the only address that can execute direct mintings with this tag.
+Setting an allowed executor is optional; if not set, anyone can execute mintings with the tag.
+Changes to the allowed executor are subject to a cooldown delay before they become active.
+
+```solidity
+function setAllowedExecutor(uint256 _mintingTag, address _executor) external;
+```
+
+#### Parameters
+
+- `_mintingTag`: The minting tag ID.
+- `_executor`: The new allowed executor address (must not be the zero address).
+
+### `nextAvailableTag`
+
+Return the next minting tag ID that will be assigned on the next reservation.
+
+```solidity
+function nextAvailableTag() external view returns (uint256);
+```
+
 ### `reservationFee`
 
 Return the fee (in native currency) required to reserve a new minting tag.
@@ -69,12 +100,6 @@ Transfer a minting tag to a new owner.
 Also updates the minting recipient to the new owner and resets the allowed executor.
 
 ```solidity
-/**
- * Transfer a minting tag to a new owner. Also updates the minting recipient
- * to the new owner and resets the allowed executor.
- * @param _to The address to transfer the tag to.
- * @param _mintingTag The minting tag id to transfer.
- */
 function transfer(address _to, uint256 _mintingTag) external;
 ```
 
@@ -88,11 +113,6 @@ function transfer(address _to, uint256 _mintingTag) external;
 Return the minting recipient for a given tag.
 
 ```solidity
-/**
- * Return the minting recipient for a given tag.
- * @param _mintingTag The minting tag id.
- * @return The address that receives minted FAsset when this tag is used.
- */
 function mintingRecipient(uint256 _mintingTag) external view returns (address);
 ```
 
@@ -121,19 +141,27 @@ function allowedExecutor(uint256 _mintingTag) external view returns (address);
 
 - The address of the allowed executor, or `address(0)` if none is set.
 
-### `setAllowedExecutor`
+### `pendingAllowedExecutorChange`
 
-Set the allowed executor for a tag.
-Only callable by the tag owner.
-The allowed executor is the only address that can execute direct mintings with this tag.
-Setting an allowed executor is optional; if not set, anyone can execute mintings with the tag.
-Changes to the allowed executor are subject to a cooldown delay before they become active.
+Return information about a pending allowed executor change for a given tag.
+
+Executor changes are subject to a cooldown delay before they become active.
+During the cooldown, `allowedExecutor` continues to return the previous executor.
+Use this function to learn when a pending change takes effect so the current executor can avoid starting FDC-backed minting flows they will no longer be allowed to complete.
 
 ```solidity
-function setAllowedExecutor(uint256 _mintingTag, address _executor) external;
+function pendingAllowedExecutorChange(uint256 _mintingTag)
+    external
+    view
+    returns (bool _pending, address _newExecutor, uint256 _activeAfterTs);
 ```
 
 #### Parameters
 
 - `_mintingTag`: The minting tag ID.
-- `_executor`: The new allowed executor address (must not be the zero address).
+
+#### Returns
+
+- `_pending`: `true` if there is a pending executor change that has not activated yet.
+- `_newExecutor`: The address of the pending new executor (`address(0)` if there is no pending change).
+- `_activeAfterTs`: The timestamp after which the new executor becomes active (`0` if there is no pending change).
