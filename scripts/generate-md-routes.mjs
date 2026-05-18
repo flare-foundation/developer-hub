@@ -17,6 +17,8 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { expandMdxBody } from "./mdx-markdown-expanders.mjs";
+import { markdownFromBuiltHtml } from "./html-to-markdown.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, "..");
@@ -118,36 +120,15 @@ function indexSources() {
 }
 
 /**
- * Strip MDX import/export statements and a small set of common JSX-only blocks
- * (e.g. <Tabs>...<TabItem>) so the body reads as plain markdown for LLMs.
- * We deliberately preserve fenced code blocks, tables, lists, and prose.
+ * Turn MDX source into agent-facing markdown: expand data-driven React
+ * components, inline partials, and strip remaining JSX.
  */
-function cleanMdxBody(body) {
-  // Drop everything that looks like an ESM import/export at the top level.
-  let cleaned = body
-    .split(/\r?\n/)
-    .filter((line) => {
-      const trimmed = line.trim();
-      if (trimmed.startsWith("import ") && /from\s+['"]/.test(trimmed))
-        return false;
-      if (
-        trimmed.startsWith("export ") &&
-        !trimmed.startsWith("export const meta")
-      ) {
-        // strip simple `export const Foo = ...;` lines used by MDX
-        return false;
-      }
-      return true;
-    })
-    .join("\n");
-
-  // Strip self-closing JSX components like `<Tabs />`, `<DocCardList />`.
-  cleaned = cleaned.replace(/^[ \t]*<[A-Z][A-Za-z0-9]*[^>]*\/>[ \t]*$/gm, "");
-
-  // Collapse 3+ blank lines into 2.
-  cleaned = cleaned.replace(/\n{3,}/g, "\n\n");
-
-  return cleaned.trimStart();
+function cleanMdxBody(body, sourceRelPath) {
+  return expandMdxBody(body, {
+    rootDir,
+    docsDir,
+    sourcePath: sourceRelPath,
+  });
 }
 
 /**
@@ -157,9 +138,16 @@ function cleanMdxBody(body) {
 function buildMarkdownForDoc(docId, route, sourcePath, frontmatter) {
   if (!sourcePath || !fs.existsSync(sourcePath)) return null;
 
-  const raw = fs.readFileSync(sourcePath, "utf8");
-  const { body } = parseFrontmatter(raw);
-  const cleaned = cleanMdxBody(body);
+  const htmlBody = markdownFromBuiltHtml(buildDir, route);
+  let cleaned;
+  if (htmlBody) {
+    cleaned = htmlBody;
+  } else {
+    const raw = fs.readFileSync(sourcePath, "utf8");
+    const { body } = parseFrontmatter(raw);
+    const sourceRelPath = path.relative(docsDir, sourcePath);
+    cleaned = cleanMdxBody(body, sourceRelPath);
+  }
 
   const title =
     (typeof frontmatter.title === "string" && frontmatter.title.trim()) ||

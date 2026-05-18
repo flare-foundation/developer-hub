@@ -7,7 +7,7 @@ import styles from "../tableStyles.module.css";
 
 const CustomFeeds = () => {
   return (
-    <table className={styles.table}>
+    <table className={styles.table} data-markdown-ignore>
       <thead>
         <tr className={styles.header}>
           <th>Name</th>

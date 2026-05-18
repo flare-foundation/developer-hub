@@ -56,7 +56,7 @@ const FtsoFeeds: React.FC<FeedsProps> = ({
   data = tableData as FeedRow[],
   showIndex = false,
 }) => (
-  <table className={styles.table}>
+  <table className={styles.table} data-markdown-ignore>
     <thead>
       <tr className={styles.header}>
         <th>Name</th>

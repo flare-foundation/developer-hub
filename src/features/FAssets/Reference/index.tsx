@@ -12,7 +12,7 @@ export default function Reference() {
     network: "songbird" | "coston" | "coston2" | "flare";
   }) {
     return (
-      <table>
+      <table data-markdown-ignore>
         <thead>
           <tr>
             <th>Contract</th>

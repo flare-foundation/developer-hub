@@ -100,6 +100,7 @@ const SolidityReference: React.FC<SolidityReferenceProps> = ({
 
   return (
     <table
+      data-markdown-ignore
       className={styles.table}
       aria-label={`Solidity reference (${links.label})`}
     >
