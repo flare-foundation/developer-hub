@@ -223,21 +223,24 @@ This key pair is used for the FTSOv2 Fast Updates protocol.
     }
     ```
 
-2.  Register public key: - If you used the **Automated Registration** script on a testnet (Method 1 above), this step is already completed, skip to [Register validator node](#register-validator-node). - If you used **Manual Registration** (Method 2) or need to register manually: 1. Create a signature proving your `Identity` address owns the generated sortition private key.
-    Use the `keygen` command again, providing the `PrivateKey` (from Step 1) and your `Identity` address.
+2.  Register public key:
+    - If you used the **Automated Registration** script on a testnet (Method 1 above), this step is already completed, skip to [Register validator node](#register-validator-node).
+    - If you used **Manual Registration** (Method 2) or need to register manually:
+      1.  Create a signature proving your `Identity` address owns the generated sortition private key.
+          Use the `keygen` command again, providing the `PrivateKey` (from Step 1) and your `Identity` address.
 
-             ```bash
-             # Replace placeholders with your actual values
-             docker run --rm ghcr.io/flare-foundation/fast-updates/go-client:latest keygen \
-               --key PrivateKey \ # <-- REPLACE WITH YOUR GENERATED PrivateKey
-               --address Identity  # <-- REPLACE WITH YOUR Identity ADDRESS
-             ```
+              ```bash
+              # Replace placeholders with your actual values
+              docker run --rm ghcr.io/flare-foundation/fast-updates/go-client:latest keygen \
+                --key PrivateKey \ # <-- REPLACE WITH YOUR GENERATED PrivateKey
+                --address Identity  # <-- REPLACE WITH YOUR Identity ADDRESS
+              ```
 
-             This will generate a signature of the form:
+              This will generate a signature of the form:
 
-             ```plaintext
-             Signature generated: 0x10b0f6b68acf899944ce9406c807f38e904401dcf962d7fdd9943b0dee0222321f6863ed9f46d048695942793f1c16158b9a886b6ff2120390f5ddcbbdb0d3b02d8fff2c8f0583c8269650f97a169f5c5ea04ce3bdd91ca959188ac2cf2ff517
-             ```
+              ```plaintext
+              Signature generated: 0x10b0f6b68acf899944ce9406c807f38e904401dcf962d7fdd9943b0dee0222321f6863ed9f46d048695942793f1c16158b9a886b6ff2120390f5ddcbbdb0d3b02d8fff2c8f0583c8269650f97a169f5c5ea04ce3bdd91ca959188ac2cf2ff517
+              ```
 
           2. Call the [`registerPublicKey`](/network/fsp/solidity-reference/IEntityManager#registerpublickey) method from your `Identity` address.
              Provide the `PublicKeyX`, `PublicKeyY` (from Step 1), and the `Signature` (from Step 2a) as arguments.
@@ -407,15 +410,19 @@ Configuration for the indexer and verifier services is managed centrally via the
 
         Now, carefully edit the `.env` file, providing values for all variables relevant to the FDC components you are deploying.
 
-    Pay close attention to: - **RPC Node Connection Details (`*_URL`, `*_RPC_USERNAME`, `*_RPC_PASSWORD` / `*_RPC_AUTH`)**: Provide the full URL and credentials for connecting to each required blockchain node. - If using nodes deployed via `fdc-suite-deployment` on the _same host_, you can often use `172.17.0.1` (Docker's default bridge IP) as the hostname in the URL (e.g., `http://admin:<PASSWORD>@172.17.0.1:8332/` for BTC, using the password generated earlier). - If using _external_ nodes (your own or third-party), use their publicly accessible RPC endpoint URL and associated credentials.
-
-        - **Start Block Number (`*_START_BLOCK_NUMBER`)**: Crucial for the first run only.
-
-    Set this for each UTXO indexer (BTC, DOGE, XRP) to a block number finalized approximately **14 days prior** to the current date.
-    (Tip: Use a blockchain explorer for the respective chain to find a block number from around that time).
-    This limits initial indexing duration. - **Testnet Mode (`TESTNET`):** Set to `true` if deploying for Coston/Coston2, otherwise `false` (or omit). - **Verifier API Keys (`VERIFIER_API_KEYS`)**: Set one or more comma-separated **secret keys**.
-    These keys grant access to your verifier API servers and will be needed by the FDC Client (in the main Flare Entity deployment).
-    Generate strong, unique keys. - **Database Passwords (`*_DB_PASSWORD`)**: Set secure, random passwords for the internal indexer databases.
+    Pay close attention to:
+    - **RPC Node Connection Details (`*_URL`, `*_RPC_USERNAME`, `*_RPC_PASSWORD` / `*_RPC_AUTH`)**: Provide the full URL and credentials for connecting to each required blockchain node.
+      - If using nodes deployed via `fdc-suite-deployment` on the _same host_, you can often use `172.17.0.1` (Docker's default bridge IP) as the hostname in the URL (e.g., `http://admin:<PASSWORD>@172.17.0.1:8332/` for BTC, using the password generated earlier).
+      - If using _external_ nodes (your own or third-party), use their publicly accessible RPC endpoint URL and associated credentials.
+    - **Start Block Number (`*_START_BLOCK_NUMBER`)**: Crucial for the first run only.
+      Set this for each UTXO indexer (BTC, DOGE, XRP) to a block number finalized approximately **14 days prior** to the current date.
+      (Tip: Use a blockchain explorer for the respective chain to find a block number from around that time).
+      This limits initial indexing duration.
+    - **Testnet Mode (`TESTNET`):** Set to `true` if deploying for Coston/Coston2, otherwise `false` (or omit).
+    - **Verifier API Keys (`VERIFIER_API_KEYS`)**: Set one or more comma-separated **secret keys**.
+      These keys grant access to your verifier API servers and will be needed by the FDC Client (in the main Flare Entity deployment).
+      Generate strong, unique keys.
+    - **Database Passwords (`*_DB_PASSWORD`)**: Set secure, random passwords for the internal indexer databases.
 
 2.  After saving your `.env` file, run the provided script.
     This injects your `.env` values into the configuration templates used by the individual services.
