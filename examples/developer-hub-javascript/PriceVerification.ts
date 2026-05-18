@@ -8,7 +8,7 @@ import {
   postRequestToDALayer,
   sleep,
 } from "../utils/fdc";
-import { getFdcHub, getRelay, getFdcVerification } from "../utils/getters";
+import { getFdcHub, getRelay } from "../utils/getters";
 import {
   getFdcRequestFee,
   calculateRoundId,
