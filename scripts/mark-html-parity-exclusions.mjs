@@ -26,9 +26,11 @@ function markExclusions(html) {
   const root = $(".theme-doc-markdown").first();
   if (!root.length) return null;
 
-  root.find("pre, .theme-tabs-container, .codeBlockContainer_Ckt0").each((_, el) => {
-    $(el).attr("data-markdown-ignore", "");
-  });
+  root
+    .find("pre, .theme-tabs-container, .codeBlockContainer_Ckt0")
+    .each((_, el) => {
+      $(el).attr("data-markdown-ignore", "");
+    });
 
   return $.html();
 }

@@ -8,13 +8,27 @@
 import fs from "fs";
 import path from "path";
 
-const RISK_ICON = { 0: "🟢", 1: "🟢", 2: "🟡", 3: "🔴", 4: "⚫" };
+const ICON_GREEN = "\u{1F7E2}";
+const ICON_YELLOW = "\u{1F7E1}";
+const ICON_RED = "\u{1F534}";
+const ICON_BLACK = "\u{26AB}";
+
+const RISK_ICON = {
+  0: ICON_GREEN,
+  1: ICON_GREEN,
+  2: ICON_YELLOW,
+  3: ICON_RED,
+  4: ICON_BLACK,
+};
+
+const PIPE = "|";
 
 function escapeCell(value) {
   return String(value ?? "")
-    .replace(/\|/g, "\\|")
     .replace(/\n/g, " ")
-    .trim();
+    .trim()
+    .split(PIPE)
+    .join("\\|");
 }
 
 function markdownTable(headers, rows) {
@@ -48,8 +62,7 @@ function loadExportedArray(rootDir, relPath, exportName) {
 
 function parseJsxProps(tagSource) {
   const props = {};
-  const attrRe =
-    /([A-Za-z_][\w-]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|\{([^}]*)\})/g;
+  const attrRe = /([A-Za-z_][\w-]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|\{([^}]*)\})/g;
   let m;
   while ((m = attrRe.exec(tagSource)) !== null) {
     const key = m[1];
@@ -76,15 +89,12 @@ function parseJsxProps(tagSource) {
 }
 
 function resolveSitePaths(text) {
-  return text
-    .replace(/@site\/static\//g, "/")
-    .replace(/@site\//g, "/");
+  return text.replace(/@site\/static\//g, "/").replace(/@site\//g, "/");
 }
 
 function collectRawLoaderImports(body) {
   const imports = new Map();
-  const re =
-    /import\s+(\w+)\s+from\s+["']!!raw-loader!([^"']+)["'];?/g;
+  const re = /import\s+(\w+)\s+from\s+["']!!raw-loader!([^"']+)["'];?/g;
   let m;
   while ((m = re.exec(body)) !== null) {
     imports.set(m[1], m[2]);
@@ -108,10 +118,7 @@ function expandRawLoaderCodeBlocks(body, rootDir) {
   let result = body;
 
   for (const [name, relImportPath] of imports) {
-    const filePath = path.join(
-      rootDir,
-      relImportPath.replace(/^!?\/?/, ""),
-    );
+    const filePath = path.join(rootDir, relImportPath.replace(/^!?\/?/, ""));
     if (!fs.existsSync(filePath)) continue;
     const content = fs.readFileSync(filePath, "utf8").trimEnd();
     const ext = path.extname(filePath).slice(1);
@@ -133,9 +140,7 @@ function expandRawLoaderCodeBlocks(body, rootDir) {
     result = result.replace(blockRe, (_, attrs) => {
       const titleMatch = attrs.match(/title=["']([^"']+)["']/);
       const title = titleMatch?.[1];
-      const fence = title
-        ? `\`\`\`${lang} title="${title}"`
-        : `\`\`\`${lang}`;
+      const fence = title ? `\`\`\`${lang} title="${title}"` : `\`\`\`${lang}`;
       return `${fence}\n${content}\n\`\`\``;
     });
   }
@@ -146,7 +151,8 @@ function expandRawLoaderCodeBlocks(body, rootDir) {
 function expandTabs(body) {
   return body.replace(/<Tabs[^>]*>([\s\S]*?)<\/Tabs>/g, (_, inner) => {
     const items = [];
-    const tabRe = /<TabItem[^>]*value=["']([^"']+)["'][^>]*(?:label=["']([^"']*)["'])?[^>]*>([\s\S]*?)<\/TabItem>/g;
+    const tabRe =
+      /<TabItem[^>]*value=["']([^"']+)["'][^>]*(?:label=["']([^"']*)["'])?[^>]*>([\s\S]*?)<\/TabItem>/g;
     let m;
     while ((m = tabRe.exec(inner)) !== null) {
       const label = m[2] || m[1];
@@ -163,7 +169,13 @@ function expandFtsoFeeds(body, rootDir) {
   );
   return body.replace(/<FtsoFeeds([^>]*)\/>/g, (_, attrs) => {
     const { showIndex } = parseJsxProps(`<x ${attrs}/>`);
-    const headers = ["Name", ...(showIndex ? ["Index"] : []), "Feed ID", "Details", "Risk"];
+    const headers = [
+      "Name",
+      ...(showIndex ? ["Index"] : []),
+      "Feed ID",
+      "Details",
+      "Risk",
+    ];
     const rows = data.map((row) => {
       const explorer = `https://flare-systems-explorer.flare.network/price-feeds/ftso?feed=${encodeURIComponent(row.feed_id)}`;
       return [
@@ -213,7 +225,15 @@ function expandFeedStability(body, rootDir) {
       const base = [
         row.name,
         `${row.stability.toFixed(2)}%`,
-        row.stability >= 99 ? "🟢" : row.stability >= 97 ? "🟢" : row.stability >= 94 ? "🟡" : row.stability >= 80 ? "🔴" : "⚫",
+        row.stability >= 99
+          ? ICON_GREEN
+          : row.stability >= 97
+            ? ICON_GREEN
+            : row.stability >= 94
+              ? ICON_YELLOW
+              : row.stability >= 80
+                ? ICON_RED
+                : ICON_BLACK,
       ];
       if (showRisk) base.push(RISK_ICON[r] ?? "");
       return base;
@@ -257,10 +277,12 @@ function expandOperationalParameters(body, rootDir) {
     );
     if (!section) return "";
     let parameters = section.parameters;
-    if (Array.isArray(props.filterParameters) && props.filterParameters.length) {
+    if (
+      Array.isArray(props.filterParameters) &&
+      props.filterParameters.length
+    ) {
       parameters = parameters.filter(
-        (p) =>
-          p.settingName && props.filterParameters.includes(p.settingName),
+        (p) => p.settingName && props.filterParameters.includes(p.settingName),
       );
     }
     const visibleTabs = Array.isArray(props.networks)
@@ -274,8 +296,8 @@ function expandOperationalParameters(body, rootDir) {
       if (!tab.hideDoge) cols.push("DOGE");
       const rows = parameters.map((param) => {
         const nameCell = param.link
-          ? `**[${param.name}](${param.link})** — ${param.description}`
-          : `**${param.name}** — ${param.description}`;
+          ? `**[${param.name}](${param.link})** - ${param.description}`
+          : `**${param.name}** - ${param.description}`;
         const row = [nameCell];
         const assets = ["xrp"];
         if (!tab.hideBtc) assets.push("btc");
@@ -321,22 +343,27 @@ function expandSolidityReference(body, rootDir) {
     const network = props.network;
     const links = networkLinks[network];
     if (!links) return "";
-    const names = Array.isArray(props.contractNames)
-      ? props.contractNames
-      : [];
-    const rows = tableData[network]
-      ?.filter((row) => names.length === 0 || names.includes(row.name))
-      .map((row) => [
-        row.name,
-        row.address
-          ? `[\`${row.address}\`](${links.prefix}${row.address}?tab=contract_abi)`
-          : "-",
-      ]) ?? [];
+    const names = Array.isArray(props.contractNames) ? props.contractNames : [];
+    const rows =
+      tableData[network]
+        ?.filter((row) => names.length === 0 || names.includes(row.name))
+        .map((row) => [
+          row.name,
+          row.address
+            ? `[\`${row.address}\`](${links.prefix}${row.address}?tab=contract_abi)`
+            : "-",
+        ]) ?? [];
     return `\n### ${links.label}\n\n${markdownTable(["Contract", "Address"], rows)}\n`;
   });
 }
 
-function expandReferenceComponent(body, rootDir, tagName, dataPath, exportName) {
+function expandReferenceComponent(
+  body,
+  rootDir,
+  tagName,
+  dataPath,
+  exportName,
+) {
   const reference = loadExportedArray(rootDir, dataPath, exportName);
   const networks = [
     { key: "flare", label: "Flare Mainnet", explorer: "flare" },
@@ -353,9 +380,7 @@ function expandReferenceComponent(body, rootDir, tagName, dataPath, exportName) 
           ? `[\`${item.address[key]}\`](https://${explorer}-explorer.flare.network/address/${item.address[key]})`
           : "-",
         item.description +
-          (item.guide
-            ? ` [${item.guide.title}](${item.guide.link})`
-            : ""),
+          (item.guide ? ` [${item.guide.title}](${item.guide.link})` : ""),
       ]);
       return `### ${label}\n\n${markdownTable(["Contract", "Address", "Description"], rows)}`;
     });
@@ -410,7 +435,10 @@ function stripRemainingJsx(body) {
       const trimmed = line.trim();
       if (trimmed.startsWith("import ") && /from\s+['"]/.test(trimmed))
         return false;
-      if (trimmed.startsWith("export ") && !trimmed.startsWith("export const meta"))
+      if (
+        trimmed.startsWith("export ") &&
+        !trimmed.startsWith("export const meta")
+      )
         return false;
       return true;
     })

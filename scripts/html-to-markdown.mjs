@@ -43,7 +43,8 @@ function createTurndown() {
   service.addRule("details", {
     filter: "details",
     replacement(content, node) {
-      const summary = node.querySelector("summary")?.textContent?.trim() || "Details";
+      const summary =
+        node.querySelector("summary")?.textContent?.trim() || "Details";
       return `\n<details>\n<summary>${summary}</summary>\n\n${content.trim()}\n\n</details>\n`;
     },
   });
