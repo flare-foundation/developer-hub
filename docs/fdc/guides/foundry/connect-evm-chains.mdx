@@ -8,7 +8,8 @@ sidebar_position: 5
 unlisted: true
 ---
 
-This guide is for developers who want to connect to EVM chains. In this guide, you will learn how to:
+This guide is for developers who want to connect to EVM chains.
+In this guide, you will learn how to:
 
 - Use the `EVMTransaction` attestation type.
 
@@ -18,7 +19,8 @@ This guide is for developers who want to connect to EVM chains. In this guide, y
 
 ## Examples
 
-Now that you know how to request an attestation and what you are getting in return, let's explore some examples. These examples are a bit more involved and each will come in a few parts:
+Now that you know how to request an attestation and what you are getting in return, let's explore some examples.
+These examples are a bit more involved and each will come in a few parts:
 
 - Script making a dummy transaction on the `Sepolia` testnet.
 - Smart contract(s) accepting an attestation request and performing some desired action.
@@ -28,7 +30,8 @@ This deployment script will also allow you to understand exactly how long the wa
 
 ### Simple ETH transfer
 
-Let's start small. You will create a smart contract that just tallies the top-level amounts transferred to a designated address on Sepolia.
+Let's start small.
+You will create a smart contract that just tallies the top-level amounts transferred to a designated address on Sepolia.
 
 The scenario is pretty simple:
 
@@ -124,19 +127,31 @@ Here is an example result:
 }
 ```
 
-After you have the transaction hashes, copy them to the part of the `main` method that will execute the Data Connector part, this time on Coston. Let's take a look at `executeStateConnectorProof`.
+After you have the transaction hashes, copy them to the part of the `main` method that will execute the Data Connector part, this time on Coston.
+Let's take a look at `executeStateConnectorProof`.
 
-Here, the Data Connector part comes into play. You have already seen it in the previous guides, so you will just quickly scan through it. The code is a bit more involved, as you are now working with multiple transactions (this is not EVMTransaction specific, but it is a good example of how you can use the Data Connector to do more complex things). Again, you get an encoded attestation request (one for each transaction) and then you submit them to the Data Connector. Once this is done, you wait for the round to be confirmed (see the while loop that takes most of the time) and then you get the proof.
+Here, the Data Connector part comes into play.
+You have already seen it in the previous guides, so you will just quickly scan through it.
+The code is a bit more involved, as you are now working with multiple transactions (this is not EVMTransaction specific, but it is a good example of how you can use the Data Connector to do more complex things).
+Again, you get an encoded attestation request (one for each transaction) and then you submit them to the Data Connector.
+Once this is done, you wait for the round to be confirmed (see the while loop that takes most of the time) and then you get the proof.
 
-The `EthereumPaymentCollector` contract is deployed on Coston with one important method `collectPayment`. This method accepts the `EVMTransaction.Proof` response and does the important accounting.
+The `EthereumPaymentCollector` contract is deployed on Coston with one important method `collectPayment`.
+This method accepts the `EVMTransaction.Proof` response and does the important accounting.
 
 As usual, first check that the provided proof is correct: that the Merkle proof really attests that this transaction was included in the Merkle tree.
 
-Then comes the fun part - you can use the information from a transaction to do whatever you want. You won't just write it to the list of all transactions and be done. Instead, you will try to decode the event data and see what you can get from it. As mentioned before, the event data is specific to the event and you need to know the event structure to decode it properly. In this case, you know how it looks, and the decoding is done by the built-in `abi.decode`. You then just push the decoded data in struct form to the list of events and you are done.
+Then comes the fun part - you can use the information from a transaction to do whatever you want.
+You won't just write it to the list of all transactions and be done.
+Instead, you will try to decode the event data and see what you can get from it.
+As mentioned before, the event data is specific to the event and you need to know the event structure to decode it properly.
+In this case, you know how it looks, and the decoding is done by the built-in `abi.decode`.
+You then just push the decoded data in struct form to the list of events and you are done.
 
 :::warning
 
-`abi.decode` is not type-safe and you can easily get wrong results if you don't know the event structure. Even more, this might be a security risk if you are not careful (or revert unexpectedly), but it is a nice representation of how powerful the events - and their information - can be.
+`abi.decode` is not type-safe and you can easily get wrong results if you don't know the event structure.
+Even more, this might be a security risk if you are not careful (or revert unexpectedly), but it is a nice representation of how powerful the events - and their information - can be.
 
 :::
 
@@ -253,9 +268,11 @@ On the previous attestation types, we were only able to get transactions in the 
 
 ### Decoding emitted events
 
-As previously stated, an event will be the core feature for observing what is happening on other chains. Let's now use this to prove that an ERC20 payment was made on Sepolia and then decode the event to see who made the payment and how much.
+As previously stated, an event will be the core feature for observing what is happening on other chains.
+Let's now use this to prove that an ERC20 payment was made on Sepolia and then decode the event to see who made the payment and how much.
 
-As before, you will deploy an ERC20 contract on Sepolia, mint some tokens, and send them to an address. The full code is available in the `scripts/evm/tryERC20transfers.ts` and `contracts/MintableERC20.sol` files.
+As before, you will deploy an ERC20 contract on Sepolia, mint some tokens, and send them to an address.
+The full code is available in the `scripts/evm/tryERC20transfers.ts` and `contracts/MintableERC20.sol` files.
 
 A sample response for the ERC20 transaction would look like:
 
@@ -370,7 +387,9 @@ Let's now decode the data you got back and explore the event in a little more de
 }
 ```
 
-When processing the events, it is important to know which contract should be emitting the event (you don't want to count a memecoin transfer as a USDT transfer). The `topics` are the indexed arguments of the event, and the `data` is the non-indexed arguments. This was glossed over in the first part, but now it will be important.
+When processing the events, it is important to know which contract should be emitting the event (you don't want to count a memecoin transfer as a USDT transfer).
+The `topics` are the indexed arguments of the event, and the `data` is the non-indexed arguments.
+This was glossed over in the first part, but now it will be important.
 
 If you take a look at the event definition:
 
@@ -378,9 +397,14 @@ If you take a look at the event definition:
 event Transfer(address indexed from, address indexed to, uint256 value);
 ```
 
-You see that it has three arguments, two indexed and one non-indexed. However, there are three topics in the event. How do we interpret that? In our case, the first one is the event signature, and the other two are the indexed arguments. Importantly, that is not always the case (it is the case for events that are emitted by Solidity contracts, but not necessarily for other contracts or direct assembly code).
+You see that it has three arguments, two indexed and one non-indexed.
+However, there are three topics in the event.
+How do we interpret that?
+In our case, the first one is the event signature, and the other two are the indexed arguments.
+Importantly, that is not always the case (it is the case for events that are emitted by Solidity contracts, but not necessarily for other contracts or direct assembly code).
 
-Let's now decode the event data. The second event has the following data:
+Let's now decode the event data.
+The second event has the following data:
 
 ```json
 "topics": [
@@ -390,23 +414,28 @@ Let's now decode the event data. The second event has the following data:
 ]
 ```
 
-The first topic is the [event signature](https://www.4byte.directory/event-signatures/?bytes_signature=0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef), and the other two are the from and to addresses. You can easily see how they are zero-padded to accommodate the whole 32 bytes.
+The first topic is the [event signature](https://www.4byte.directory/event-signatures/?bytes_signature=0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef), and the other two are the from and to addresses.
+You can easily see how they are zero-padded to accommodate the whole 32 bytes.
 
 Similarly, the event in the first transaction that just minted 1,000,000 token wei (hex encoded in the data field) has the same zeroth topic, same recipient (topic with index 2), and zero address as the sender.
 
 {/* <!-- This is good for future examples, but too time consuming to do now --><!-- #### ERC20 payment --> */}
 
-Let's upgrade the contract from before to tally ERC20 payments on external chains. You can do this by listening to events, decoding them, and using the decoded information.
+Let's upgrade the contract from before to tally ERC20 payments on external chains.
+You can do this by listening to events, decoding them, and using the decoded information.
 
 {/* TODO: Here, we will create a simple contract on Sepolia and follow the events it emits, just to see another example of how events function. --> */}
 
 ### Decoding transaction data
 
-You now know how to listen to events and decode them. Let's see how we can also decode top-level transaction data. Here, you will verify whether the top-level transaction really did increase the ERC20 allowance and see how to get top-level calldata.
+You now know how to listen to events and decode them.
+Let's see how we can also decode top-level transaction data.
+Here, you will verify whether the top-level transaction really did increase the ERC20 allowance and see how to get top-level calldata.
 
 The full code for this example is in the `scripts/evm/tryERC20Allowance.ts` and `contracts/MintableERC20.sol` files.
 
-You initiate a simple `allowance` increase on Sepolia and then decode the calldata to see if it is really what you expect. The example response is something like this:
+You initiate a simple `allowance` increase on Sepolia and then decode the calldata to see if it is really what you expect.
+The example response is something like this:
 
 ```json
 {
@@ -453,11 +482,15 @@ Result(2) [ '0xFf02F742106B8a25C26e65C1f0d66BEC3C90d429', 1000n ]
 
 By now, you should be able to see that the emitted event was the `Approval` event, and the data is the new allowance (with the correct participant addresses in the topics).
 
-What we want to take a look at is the `input` field. It contains the calldata of the top-level transaction. Since you know the signature of this method, you can easily decode it and get the result you expect.
+What we want to take a look at is the `input` field.
+It contains the calldata of the top-level transaction.
+Since you know the signature of this method, you can easily decode it and get the result you expect.
 
 ### Observing state through events
 
-We do not have direct access to state on the other chain, but we can circumvent this using events. If we deploy a contract on the external chain that emits events pertaining to the state it can read (at that block) from the chain, we can easily observe this state (frozen at that point in time) on Flare. Let's see how we can easily observe the current status of ERC20 allowance.
+We do not have direct access to state on the other chain, but we can circumvent this using events.
+If we deploy a contract on the external chain that emits events pertaining to the state it can read (at that block) from the chain, we can easily observe this state (frozen at that point in time) on Flare.
+Let's see how we can easily observe the current status of ERC20 allowance.
 
 The full code for this example is in the `scripts/evm/tryStateChecking.ts` and `contracts/FallbackWithEventContract.sol` files.
 
@@ -478,7 +511,10 @@ Any call to this contract will be forwarded to the target contract, and the resu
 
 The script is also relatively simple (though it does a lot of things).
 
-We get the event in the same way as before, but now we also get the calldata and the target address. We need to do two things: First, decode the event to see what happened, and then decode the calldata to see what the state is. Then, decode both data bytes to see what we got. Importantly, it is necessary to know the structure of the event and the method we called to properly decode it.
+We get the event in the same way as before, but now we also get the calldata and the target address.
+We need to do two things: First, decode the event to see what happened, and then decode the calldata to see what the state is.
+Then, decode both data bytes to see what we got.
+Importantly, it is necessary to know the structure of the event and the method we called to properly decode it.
 
 The response is something like this:
 
@@ -536,17 +572,28 @@ Decoded calldata Result(2) [
 Decoded state data Result(1) [ 12345678n ]
 ```
 
-We can see that the event was emitted and all the calldata was properly decoded. Why is that important?
+We can see that the event was emitted and all the calldata was properly decoded.
+Why is that important?
 
-It means that you can now observe any state on the external blockchain without having to modify the contract on the external blockchain. This allows you to easily observe USDT movements, current token balances, and other state changes on the external blockchain.
+It means that you can now observe any state on the external blockchain without having to modify the contract on the external blockchain.
+This allows you to easily observe USDT movements, current token balances, and other state changes on the external blockchain.
 
 ### State observation and decoding
 
-The last example showed how you can observe the state on another blockchain and use it in TypeScript. Now, we will also see how to properly decode the event in a smart contract. We will use the same contract onchain as before to emit events, `CallResult`, and then decode them in the contract. The result will then be passed to the contract on Coston, which will first decode the full event, ensure that the correct function was called, and then decode the returned data (which is the state you want to observe).
+The last example showed how you can observe the state on another blockchain and use it in TypeScript.
+Now, we will also see how to properly decode the event in a smart contract.
+We will use the same contract onchain as before to emit events, `CallResult`, and then decode them in the contract.
+The result will then be passed to the contract on Coston, which will first decode the full event, ensure that the correct function was called, and then decode the returned data (which is the state you want to observe).
 
-The full contract that does this is in `contracts/ERC20BalanceMonitor.sol` and the accompanying script is in the `scripts/evm/tryStateCheckingAndSave.ts` file. What you want to do is simple: query the ERC20 balance of a specific address and save it in the contract storage. Here, you need to be careful, as this query is valid only at the time of the transaction; it might be different at the time of block creation and confirmation. Plus, keep in mind that emitting an event means executing a transaction, and that means gas, so you should be careful with how often you do this.
+The full contract that does this is in `contracts/ERC20BalanceMonitor.sol` and the accompanying script is in the `scripts/evm/tryStateCheckingAndSave.ts` file.
+What you want to do is simple: query the ERC20 balance of a specific address and save it in the contract storage.
+Here, you need to be careful, as this query is valid only at the time of the transaction; it might be different at the time of block creation and confirmation.
+Plus, keep in mind that emitting an event means executing a transaction, and that means gas, so you should be careful with how often you do this.
 
-The process is the same as before: you invoke the contract, it emits the event, and you use the result to interact with the chain. But this time, you cheat a bit. Instead of waiting for the whole data connector process to finish, you use `getResponse` to get just the response without the proof. The `ERC20BalanceMonitor` then disregards the proof and just uses the response to process the data.
+The process is the same as before: you invoke the contract, it emits the event, and you use the result to interact with the chain.
+But this time, you cheat a bit.
+Instead of waiting for the whole data connector process to finish, you use `getResponse` to get just the response without the proof.
+The `ERC20BalanceMonitor` then disregards the proof and just uses the response to process the data.
 
 The number of events can be quite large and processing all of them can be tedious (and error-prone), so the easiest way is to find out which event is the one you want and add an index parameter to the function call.
 
@@ -605,15 +652,23 @@ function confirmBalanceEvent(EVMTransaction.Proof calldata transaction, address 
 }
 ```
 
-We just ignore the proof, but then the fun part starts. We get the top-level event out of the response (this is the one that contains calldata and return data), check that the topic matches, and then decode the resulting data. Be careful, decoding the data might fail if you don't have the correct signature, so the example code is fine to show, but you might want to add more checks in production code.
+We just ignore the proof, but then the fun part starts.
+We get the top-level event out of the response (this is the one that contains calldata and return data), check that the topic matches, and then decode the resulting data.
+Be careful, decoding the data might fail if you don't have the correct signature, so the example code is fine to show, but you might want to add more checks in production code.
 
-Once the data of the top-level event is decoded, we check if the call data is what we expect and then decode the return data to get the balance, which is again dependent on what kind of return value was produced in the transaction. Again, the return data needs to be decoded (it might return something more complicated than just one `uint256`), but it is easy to get the full result. Once you have all this, you just write it to the contract storage, and you are done.
+Once the data of the top-level event is decoded, we check if the call data is what we expect and then decode the return data to get the balance, which is again dependent on what kind of return value was produced in the transaction.
+Again, the return data needs to be decoded (it might return something more complicated than just one `uint256`), but it is easy to get the full result.
+Once you have all this, you just write it to the contract storage, and you are done.
 
 Let's take a look at the test code and show a simple trick that is also hidden in there.
 
-The code is practically the same as before: you create a transaction, query the data connector, and use the data in the contract. But this time, everything is done on the same (Coston - `testSGB`) network. This makes it a bit easier to test, as you don't need to change the network, but it is a minor thing.
+The code is practically the same as before: you create a transaction, query the data connector, and use the data in the contract.
+But this time, everything is done on the same (Coston - `testSGB`) network.
+This makes it a bit easier to test, as you don't need to change the network, but it is a minor thing.
 
-It does sound strange (and pointless) to allow the Data Connector to be used on the same network, but the main improvement comes from the top-level relayer coming in the FSP. Once the Data Connector is included in the top-level protocol, any Data Connector data is immediately relayed to externally connected chains via relay (as is the FTSO data). This means that external chains can also observe what is happening on Flare.
+It does sound strange (and pointless) to allow the Data Connector to be used on the same network, but the main improvement comes from the top-level relayer coming in the FSP.
+Once the Data Connector is included in the top-level protocol, any Data Connector data is immediately relayed to externally connected chains via relay (as is the FTSO data).
+This means that external chains can also observe what is happening on Flare.
 
 Think about this: up until now, you only relayed information from other chains to Flare, but now any example from the EVM part can immediately be replicated on the Sepolia chain with Flare being the source chain (where things happen).
 

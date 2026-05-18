@@ -12,9 +12,11 @@ unlisted: true
 
 [Full specification on GitHub](https://github.com/flare-foundation/songbird-state-connector-protocol/blob/main/specs/attestations/active-types/ReferencedPaymentNonexistence.md).
 
-You are getting more and more familiar with the attestation types, and you are starting to see that they are very powerful and can be used in many different ways. Let's check a more involved one—the `ReferencePaymentNonexistence` type.
+You are getting more and more familiar with the attestation types, and you are starting to see that they are very powerful and can be used in many different ways.
+Let's check a more involved one—the `ReferencePaymentNonexistence` type.
 
-This type is a bit more difficult to implement and properly use, as it requires the attestation client to do a lot of work—they need to prove that a certain payment has not been made. Instead of looking at the transaction and checking if it is valid, you will be looking at the block range and checking that no valid payment conforming to your requirements has been made in the specified block range.
+This type is a bit more difficult to implement and properly use, as it requires the attestation client to do a lot of work—they need to prove that a certain payment has not been made.
+Instead of looking at the transaction and checking if it is valid, you will be looking at the block range and checking that no valid payment conforming to your requirements has been made in the specified block range.
 
 ### Type Definition
 
@@ -155,11 +157,13 @@ The request body for the `ReferencePaymentNonexistence` attestation type is a bi
 
 - **`deadlineBlockNumber`**: The block number to be included in the search range.
 
-- **`deadlineTimestamp`**: The timestamp to be included in the search range. By including both block number and timestamp, the requested range will encompass all blocks from `minimalBlockNumber` to `deadlineBlockNumber` and all blocks with timestamps from `minimalBlockTimestamp` to `deadlineTimestamp`.
+- **`deadlineTimestamp`**: The timestamp to be included in the search range.
+  By including both block number and timestamp, the requested range will encompass all blocks from `minimalBlockNumber` to `deadlineBlockNumber` and all blocks with timestamps from `minimalBlockTimestamp` to `deadlineTimestamp`.
 
 - **`destinationAddressHash`**: The standard address hash of the address to which the payment should have been made.
 
-- **`amount`**: The requested amount in minimal units that should have been paid. The amount is chain specific.
+- **`amount`**: The requested amount in minimal units that should have been paid.
+  The amount is chain specific.
 
 - **`standardPaymentReference`**: The requested standard payment reference that the payment should have had.
 
@@ -169,27 +173,33 @@ The response body is simpler and essentially contains the searched range:
 
 - **`minimalBlockTimestamp`**: The timestamp of the minimal block that was included in the search range—this is the timestamp of the block with `minimalBlockNumber`.
 
-- **`firstOverflowBlockNumber`**: The height of the first overflow block. This is the first block with a block number higher than `deadlineBlockNumber` and a timestamp later than `deadlineTimestamp`.
+- **`firstOverflowBlockNumber`**: The height of the first overflow block.
+  This is the first block with a block number higher than `deadlineBlockNumber` and a timestamp later than `deadlineTimestamp`.
 
-- **`firstOverflowBlockTimestamp`**: The timestamp of the first overflow block. This is the timestamp of the first block with a block number higher than `deadlineBlockNumber` and a timestamp later than `deadlineTimestamp`.
+- **`firstOverflowBlockTimestamp`**: The timestamp of the first overflow block.
+  This is the timestamp of the first block with a block number higher than `deadlineBlockNumber` and a timestamp later than `deadlineTimestamp`.
 
 #### Confirmation
 
 If the request is confirmed, it means that there was no payment in the specified range (including the minimal block, but excluding the maximal block) with an amount greater than or equal to the requested amount and with the requested reference.
 
-The full rules for verification are quite complex (and chain-dependent) and are available in the [specification](https://github.com/flare-foundation/songbird-state-connector-protocol/blob/main/specs/attestations/active-types/ReferencedPaymentNonexistence.md#verification). The important point is that the request is confirmed if no transaction meeting the specified criteria is found in the search range.
+The full rules for verification are quite complex (and chain-dependent) and are available in the [specification](https://github.com/flare-foundation/songbird-state-connector-protocol/blob/main/specs/attestations/active-types/ReferencedPaymentNonexistence.md#verification).
+The important point is that the request is confirmed if no transaction meeting the specified criteria is found in the search range.
 
 ### Example
 
-To produce a correct and thorough example that allows you to test everything properly, you need to be careful. Since you are proving a negative, any mistake during request preparation can result in a transaction that was not made (a simple mis-encoding of a memo field would almost certainly produce a non-existing transaction) and give a false sense of security.
+To produce a correct and thorough example that allows you to test everything properly, you need to be careful.
+Since you are proving a negative, any mistake during request preparation can result in a transaction that was not made (a simple mis-encoding of a memo field would almost certainly produce a non-existing transaction) and give a false sense of security.
 
 To ensure accuracy, structure your request as follows:
 
 1. **Create a transaction** with a reference payment and some nonzero value.
-2. **Confirm `Payment` attestation request** to make sure you get back the correct reference and value, ensuring the transaction is seen. Use the information about when this transaction happened to construct a range for the next step, ensuring it contains your transaction.
+2. **Confirm `Payment` attestation request** to make sure you get back the correct reference and value, ensuring the transaction is seen.
+   Use the information about when this transaction happened to construct a range for the next step, ensuring it contains your transaction.
 3. **Make three requests for non-existing payments**:
    - **Correct (or lower) value and correct reference**: This should return `INVALID`, as the verifier can't prove the non-existence of such a transaction.
-   - **Correct value but slightly wrong payment reference**: Change just one index of the reference. This should be confirmed, as no such transaction exists (the payment reference does not match).
+   - **Correct value but slightly wrong payment reference**: Change just one index of the reference.
+     This should be confirmed, as no such transaction exists (the payment reference does not match).
    - **Too large value but correct payment reference**: This should be confirmed, as the transaction with the payment reference exists but does not transfer enough value.
 
 #### XRP Ledger

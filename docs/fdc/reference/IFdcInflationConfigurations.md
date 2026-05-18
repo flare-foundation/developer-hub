@@ -14,7 +14,8 @@ Sourced from `IFdcInflationConfigurations.sol` on [GitHub](https://github.com/fl
 
 ## Overview
 
-The IFdcInflationConfigurations interface allows access to the inflation distribution settings for different attestation types and sources within the Flare Data Connector system. These configurations determine how inflation rewards are allocated to validators based on the attestation requests they process.
+The IFdcInflationConfigurations interface allows access to the inflation distribution settings for different attestation types and sources within the Flare Data Connector system.
+These configurations determine how inflation rewards are allocated to validators based on the attestation requests they process.
 
 ## Functions
 

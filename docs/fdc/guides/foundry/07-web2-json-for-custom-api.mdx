@@ -27,7 +27,7 @@ Those are:
 - `abiSignature`
 
 3. The `DeployContract` script within the `script/fdcExample/Web2Json.s.sol` file.
-4. The `InteractWithContract` function within the `script/fdcExample/Web2Json.s.sol` file.
+4. The `InteractWithContract` contract within the `script/fdcExample/Web2Json.s.sol` file.
 
 ## Contract
 
@@ -41,11 +41,11 @@ The only requirement is that at least one contract - the one interacting with FD
   // Setting request data
   string public apiUrl = "https://swapi.info/api/people/3";
   string public httpMethod = "GET";
-  string public headers = '{\\"Content-Type\\":\\"text/plain\\"}';
+  string public headers = ""; // defaults to Content-Type: application/json
   string public queryParams = "{}";
   string public body = "{}";
   string public postProcessJq =
-      '{name: .name, height: .height, mass: .mass, numberOfFilms: .films | length, uid: (.url | split(\\"/\\") | .[-1] | tonumber)}';
+      '{name: .name, height: .height, mass: .mass, numberOfFilms: .films | length, uid: (.url | split(\\"/\\") | .[-1] | . * 1)}';
   string public abiSignature =
       '{\\"components\\": [{\\"internalType\\": \\"string\\", \\"name\\": \\"name\\", \\"type\\": \\"string\\"},{\\"internalType\\": \\"uint256\\", \\"name\\": \\"height\\", \\"type\\": \\"uint256\\"},{\\"internalType\\": \\"uint256\\", \\"name\\": \\"mass\\", \\"type\\": \\"uint256\\"},{\\"internalType\\": \\"uint256\\", \\"name\\": \\"numberOfFilms\\", \\"type\\": \\"uint256\\"},{\\"internalType\\": \\"uint256\\", \\"name\\": \\"uid\\", \\"type\\": \\"uint256\\"}],\\"name\\": \\"task\\",\\"type\\": \\"tuple\\"}';
 ```

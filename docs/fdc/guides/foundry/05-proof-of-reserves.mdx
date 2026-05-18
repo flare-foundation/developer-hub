@@ -64,13 +64,14 @@ pragma solidity ^0.8.25;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract MyStablecoin is ERC20, ERC20Burnable, Ownable {
-    constructor(address recipient, address initialOwner)
-        ERC20("MyStablecoin", "MST")
-        Ownable(initialOwner)
-    {
+contract MyStablecoin is ERC20, ERC20Burnable, Ownable, ERC20Permit {
+    constructor(
+        address recipient,
+        address initialOwner
+    ) ERC20("MyStablecoin", "MST") Ownable(initialOwner) ERC20Permit("MyStablecoin") {
         _mint(recipient, 666 * 10 ** decimals());
     }
 
@@ -143,6 +144,14 @@ contract ProofOfReserves is Ownable {
         tokenStateReaders[readerAddress] = tokenAddress;
     }
 
+    // Two events and values for debug purposes
+    event GoodPair(address reader, address token, uint256 totalSupply);
+    event BadPair(address reader, address token, uint256 totalSupply);
+    uint256 public debugTokenReserves;
+    uint256 public debugClaimedReserves;
+
+    function abiSignatureHack(DataTransportObject calldata dto) public pure {}
+
     function verifyReserves(
         IWeb2Json.Proof calldata jsonProof,
         IEVMTransaction.Proof[] calldata transactionProofs
@@ -151,34 +160,32 @@ contract ProofOfReserves is Ownable {
 
         uint256 totalTokenSupply = 0;
         for (uint256 i = 0; i < transactionProofs.length; i++) {
-            totalTokenSupply += readTokenSupply(transactionProofs[i]);
+            totalTokenSupply += readReserves(transactionProofs[i]);
         }
+        debugTokenReserves = totalTokenSupply;
 
         return totalTokenSupply <= (claimedReserves * 1 ether);
     }
 
-    function readReserves(IWeb2Json.Proof calldata proof) private view returns (uint256) {
+    function readReserves(IWeb2Json.Proof calldata proof) private returns (uint256) {
         require(isValidProof(proof), "Invalid json proof");
-        // Decode the reserve amount from the proof
-        DataTransportObject memory data = abi.decode(
-            proof.data.responseBody.abi_encoded_data,
-            (DataTransportObject)
-        );
+        DataTransportObject memory data = abi.decode(proof.data.responseBody.abiEncodedData, (DataTransportObject));
+        debugClaimedReserves = data.reserves;
         return data.reserves;
     }
 
-    function readTokenSupply(IEVMTransaction.Proof calldata proof) private view returns (uint256) {
+    function readReserves(IEVMTransaction.Proof calldata proof) private returns (uint256) {
         require(isValidProof(proof), "Invalid transaction proof");
         uint256 totalSupply = 0;
-        // Loop through all events in the transaction proof
         for (uint256 i = 0; i < proof.data.responseBody.events.length; i++) {
             IEVMTransaction.Event memory _event = proof.data.responseBody.events[i];
             address readerAddress = _event.emitterAddress;
             (address tokenAddress, uint256 supply) = abi.decode(_event.data, (address, uint256));
-
-            // Ensure the event came from a registered reader for the correct token
             if (tokenStateReaders[readerAddress] == tokenAddress) {
                 totalSupply += supply;
+                emit GoodPair(readerAddress, tokenAddress, supply);
+            } else {
+                emit BadPair(readerAddress, tokenAddress, supply);
             }
         }
         return totalSupply;
@@ -204,9 +211,9 @@ The complete process follows these sequential steps:
 1. Deploy and verify the `MyStablecoin` contract on both Coston and Coston2 chains
 2. Deploy and verify the `TokenStateReader` contract on both Coston and Coston2 chains
 3. Deploy and verify the `ProofOfReserves` contract on Coston2 chain only
-4. Save `MyStablecoin`, `TokenStateReader`, and `ProofOfReserves` addresses to `scripts/proofOfReserves/config.ts`
+4. Save `MyStablecoin`, `TokenStateReader`, and `ProofOfReserves` addresses to `.txt` files under `data/proofOfReserves/`
 5. Call the `broadcastTokenSupply` function of both `TokenStateReader` contracts with the corresponding `MyStablecoin` addresses
-6. Save transaction hashes of both function calls to `scripts/proofOfReserves/config.ts`
+6. Save transaction hashes of both function calls to `.txt` files under `data/proofOfReserves/`
 7. Request attestation from the [FDC](/fdc/overview), and call `verifyReserves` function of the `ProofOfReserves` with the received data
 
 Throughout this guide, we'll provide separate scripts for each step above, with filenames that clearly indicate their purpose.
@@ -217,10 +224,17 @@ While we deploy stablecoin and reader contracts on both chains, the `ProofOfRese
 
 ## Scripts
 
-The first three scripts each deploy and verify one of the contracts defined in the first part of the guide, ie. `MyStablecoin`, `TokenStateReader`, and `ProofOfReserves`.
+The first three scripts each deploy and verify one of the contracts defined in the first part of the guide, ie.
+`MyStablecoin`, `TokenStateReader`, and `ProofOfReserves`.
 They are more or less the same script, the only real difference being the contracts deployed, and the arguments that are passed to their constructor.
 
 The `Deploy` script deploys and verifies the `MyStablecoin` contract on the Coston and Coston2 chain.
+
+:::note
+The intermediate `.txt` filenames shown below (`_token<chainId>.txt`, `_proofOfReserves<chainId>.txt`, `_EVMTransaction_Coston_request.txt`, `_Web2Json_roundId.txt`, etc.) describe the **intended**, consistent naming.
+The current `flare-foundry-starter` is being aligned to this scheme in a follow-up PR — until then, the files actually written and read by the script may differ in their leading-underscore and separator placement.
+If you run the starter and a step can't find the expected file, double-check the filename hyphenation in the failing script.
+:::
 
 ### Step 1: Deploy Contracts
 
@@ -346,7 +360,7 @@ contract PrepareRequests is Script {
 Run the script to prepare all requests:
 
 ```bash
-forge script script/ProofOfReserves.s.sol:PrepareRequests --rpc-url $COSTON_RPC_URL --ffi
+forge script script/ProofOfReserves.s.sol:PrepareRequests --rpc-url $COSTON2_RPC_URL --ffi
 ```
 
 ### Step 4: Submit Requests to FDC
@@ -372,7 +386,7 @@ contract SubmitRequests is Script {
 Run the script to submit all requests to the FDC:
 
 ```bash
-forge script script/ProofOfReserves.s.sol:SubmitRequests --rpc-url $COSTON_RPC_URL --broadcast
+forge script script/ProofOfReserves.s.sol:SubmitRequests --rpc-url $COSTON2_RPC_URL --broadcast
 ```
 
 ### Step 5: Retrieve Proofs
@@ -394,7 +408,7 @@ contract RetrieveProofs is Script {
 Run the script to fetch the finalized proofs:
 
 ```bash
-forge script script/ProofOfReserves.s.sol:RetrieveProofs --rpc-url $COSTON_RPC_URL --ffi
+forge script script/ProofOfReserves.s.sol:RetrieveProofs --rpc-url $COSTON2_RPC_URL --ffi
 ```
 
 ### Step 6: Verify Reserves
@@ -434,5 +448,5 @@ contract VerifyReserves is Script {
 Run the script to execute the final verification:
 
 ```bash
-forge script script/ProofOfReserves.s.sol:VerifyReserves --rpc-url $COSTON_RPC_URL --broadcast
+forge script script/ProofOfReserves.s.sol:VerifyReserves --rpc-url $COSTON2_RPC_URL --broadcast
 ```

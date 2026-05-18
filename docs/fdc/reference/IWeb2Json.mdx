@@ -1,0 +1,75 @@
+---
+title: IWeb2Json
+sidebar_position: 9
+description: Attestation type that fetches JSON over HTTP, applies a jq filter, and returns ABI-encoded data.
+---
+
+The `Web2Json` attestation type fetches data from a URL, post-processes the returned JSON with a `jq` filter, and returns the result as ABI-encoded bytes.
+The interface only declares the request/response/proof structs — verification is exposed via [`IFdcVerification.verifyWeb2Json`](/fdc/reference/IFdcVerification#verifyweb2json).
+
+Sourced from `IWeb2Json.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/IWeb2Json.sol).
+
+## Structs
+
+### Request
+
+Top-level request.
+
+```solidity
+struct Request {
+    bytes32 attestationType;
+    bytes32 sourceId;
+    bytes32 messageIntegrityCode;
+    RequestBody requestBody;
+}
+```
+
+### Response
+
+Top-level response.
+
+```solidity
+struct Response {
+    bytes32 attestationType;
+    bytes32 sourceId;
+    uint64 votingRound;
+    uint64 lowestUsedTimestamp;
+    RequestBody requestBody;
+    ResponseBody responseBody;
+}
+```
+
+### Proof
+
+Top-level proof.
+
+```solidity
+struct Proof {
+    bytes32[] merkleProof;
+    Response data;
+}
+```
+
+### RequestBody
+
+```solidity
+struct RequestBody {
+    string url;
+    string httpMethod;   // "GET" | "POST" | "PUT" | "PATCH" | "DELETE"
+    string headers;      // "{}" if none
+    string queryParams;  // "{}" if none
+    string body;         // "{}" if none
+    string postProcessJq;
+    string abiSignature;
+}
+```
+
+### ResponseBody
+
+```solidity
+struct ResponseBody {
+    bytes abiEncodedData;
+}
+```
+
+Decode `abiEncodedData` into the struct described by your `abiSignature` to consume the post-processed payload on-chain.

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
-import {ContractRegistry} from "flare-periphery-contracts-fassets-test/coston2/ContractRegistry.sol";
-import {IAssetManager} from "flare-periphery-contracts-fassets-test/coston2/IAssetManager.sol";
-import {AssetManagerSettings} from "flare-periphery-contracts-fassets-test/coston2/data/AssetManagerSettings.sol";
+import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
+import {IAssetManager} from "@flarenetwork/flare-periphery-contracts/coston2/IAssetManager.sol";
+import {AssetManagerSettings} from "@flarenetwork/flare-periphery-contracts/coston2/data/AssetManagerSettings.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {RedemptionRequestInfo} from "flare-periphery-contracts-fassets-test/coston2/data/RedemptionRequestInfo.sol";
+import {RedemptionRequestInfo} from "@flarenetwork/flare-periphery-contracts/coston2/data/RedemptionRequestInfo.sol";
 
 contract FAssetsRedeem {
     // 1. Redeem FAssets

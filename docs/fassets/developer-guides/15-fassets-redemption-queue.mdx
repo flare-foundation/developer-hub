@@ -46,7 +46,7 @@ The [`redemptionQueue`](/fassets/reference/IAssetManager#redemptionqueue) functi
 Each `RedemptionTicketInfo` includes:
 
 - `agentVault`: address of the backing agent.
-- `valueUBA`: value in underlying base amount.
+- `ticketValueUBA`: value of the ticket in underlying base amount (UBA).
 - `lots`: number of lots.
 - `createdAt`: creation timestamp.
 
@@ -78,8 +78,8 @@ The script:
 4. Get the `maxRedeemedTickets` value from the system settings (maximum number of tickets that can be redeemed in a single request).
    The actual number of tickets returned may be less than `maxRedeemedTickets` if the queue is shorter.
 5. Get the lot size value from the settings (minimum quantity required for minting FAssets).
-6. Get the redemption queue by calling the contract method `redemptionQueue` starting from `0` and up to `maxRedeemedTickets`.
-   You can paginate over the queue.
+6. Get the redemption queue by calling the contract method `redemptionQueue(_firstRedemptionTicketId, _pageSize)` — passing `0` as the first id starts at the **beginning of the queue** (it does not refer to ticket index `0`).
+   The method returns `(_queue, _nextRedemptionTicketId)`; use `_nextRedemptionTicketId` to paginate.
 7. Sum all ticket values in the redemption queue to calculate the total value in UBA (Underlying Asset Base Amount)
 8. Calculate the total lots in the redemption queue by dividing the total value by the lot size.
 

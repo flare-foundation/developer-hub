@@ -8,7 +8,7 @@ Registry interface with all Flare contract addresses.
 
 Check out the [guide](/network/guides/flare-contracts-registry) for instructions on how to interact with the Flare contracts registry.
 
-Sourced from `IFlareContractRegistry.sol` on [GitLab](https://gitlab.com/flarenetwork/flare-smart-contracts/-/blob/master/contracts/userInterfaces/IFlareContractRegistry.sol).
+Sourced from `IFlareContractRegistry.sol` on [GitHub](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/IFlareContractRegistry.sol).
 
 ## Functions
 

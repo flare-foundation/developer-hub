@@ -2,10 +2,10 @@
 pragma solidity ^0.8.25;
 
 // 1. Import the Flare Contract Registry
-import {ContractRegistry} from "flare-periphery-contracts-fassets-test/coston2/ContractRegistry.sol";
+import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
 
 // 2. Import the AssetManager interface
-import {IAssetManager} from "flare-periphery-contracts-fassets-test/coston2/IAssetManager.sol";
+import {IAssetManager} from "@flarenetwork/flare-periphery-contracts/coston2/IAssetManager.sol";
 
 // 3. Contract for accessing FAssets settings from the asset manager
 contract FAssetsSettings {

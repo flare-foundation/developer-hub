@@ -43,7 +43,8 @@ To read anchor feeds on Flare, follow these key steps:
 
    After verification, integrate the feed data into your onchain application logic.
 
-Scaling only stores **commitments to feed data** onchain. Complete feed data resides offchain but can be verified against an onchain Merkle root, ensuring data integrity and tamper resistance.
+Scaling only stores **commitments to feed data** onchain.
+Complete feed data resides offchain but can be verified against an onchain Merkle root, ensuring data integrity and tamper resistance.
 
 ## DA Layer API URLs
 
@@ -62,11 +63,13 @@ The DA Layer provides API endpoints for querying offchain data from Flare protoc
 | Flare Testnet Coston2   | `https://ctn2-data-availability.flare.network/` |
 | Songbird Testnet Coston | `https://ctn-data-availability.flare.network/`  |
 
-All networks have the same API structure. For a full list of endpoints see [Data Availability API Reference](/ftso/scaling/solidity-reference/data-availability-api).
+All networks have the same API structure.
+For a full list of endpoints see [Data Availability API Reference](/ftso/scaling/solidity-reference/data-availability-api).
 
 ## Fetching anchor feed data
 
-The DA Layer API allows querying values and proofs for multiple feeds from the same voting epoch in a single request. Use the `anchor-feeds-with-proof` POST endpoint to retrieve pricing data.
+The DA Layer API allows querying values and proofs for multiple feeds from the same voting epoch in a single request.
+Use the `anchor-feeds-with-proof` POST endpoint to retrieve pricing data.
 
 To fetch the feed values for FLR/USD, BTC/USD, and ETH/USD at the latest voting round, use the following command:
 
@@ -149,11 +152,14 @@ The response contains JSON objects for each feed, with the following fields:
 ]
 ```
 
-The floating point value of a feed can be calculated by dividing the `value` by 10^`decimals`. For example, if the feed value of BTC/USD is `6900420` and the decimal is `2`, the floating point feed value is `69004.20`.
+The floating point value of a feed can be calculated by dividing the `value` by 10^`decimals`.
+For example, if the feed value of BTC/USD is `6900420` and the decimal is `2`, the floating point feed value is `69004.20`.
 
 ### Fetching Timestamps
 
-The `ftso/anchor-feeds-with-proof` endpoint returns a `votingRoundId`. Each voting round lasts for a fixed duration of **90 seconds**. To determine the **starting timestamp**, use the `fsp/status` GET endpoint:
+The `ftso/anchor-feeds-with-proof` endpoint returns a `votingRoundId`.
+Each voting round lasts for a fixed duration of **90 seconds**.
+To determine the **starting timestamp**, use the `fsp/status` GET endpoint:
 
 ```bash
 curl -X 'GET' \
@@ -193,7 +199,8 @@ The response indicates that:
 
 ## Verifying proof onchain
 
-To verify feed data onchain, use the [`FtsoV2Interface`](/ftso/solidity-reference/FtsoV2Interface). This interface offers the [`verifyFeedData`](/ftso/solidity-reference/FtsoV2Interface#verifyfeeddata) method to validate feed data and proof against the onchain Merkle root.
+To verify feed data onchain, use the [`FtsoV2Interface`](/ftso/solidity-reference/FtsoV2Interface).
+This interface offers the [`verifyFeedData`](/ftso/solidity-reference/FtsoV2Interface#verifyfeeddata) method to validate feed data and proof against the onchain Merkle root.
 The function requires a single input struct [`FeedDataWithProof`](/ftso/solidity-reference/FtsoV2Interface#feeddatawithproof), which includes the feed data and voting round ID within the [`FeedData`](/ftso/solidity-reference/FtsoV2Interface#feeddata) struct, and a Merkle proof.
 
 An example contract verifying and consuming anchor feeds onchain

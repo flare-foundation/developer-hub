@@ -31,7 +31,7 @@ async function submitRequest() {
     (block!.timestamp - firstVotingRoundStartTs) / votingEpochDurationSeconds,
   );
   console.log(
-    `Check round progress at: https://coston-systems-explorer.flare.rocks/voting-epoch/${roundId}?tab=fdc`,
+    `Check round progress at: https://coston-systems-explorer.flare.rocks/voting-round/${roundId}?tab=fdc`,
   );
   return roundId;
 }

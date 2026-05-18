@@ -33,7 +33,8 @@ This guide covers four key functionalities:
 - [LayerZero Composer](https://docs.layerzero.network/v2/developers/evm/oft/composing) pattern for executing custom logic (like FAsset redemption) automatically when tokens arrive on the destination chain.
 - [Hyperliquid spotSend API](https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/exchange-endpoint#spot-transfer) for transferring tokens between HyperCore and HyperEVM.
 
-A shared [`FAssetRedeemComposer`](https://coston2-explorer.flare.network/address/0x80c5ebBD65b4857CA2f917EAB1e9F83bcC947c52?tab=contract) contract is pre-deployed on Coston2, so users do not need to deploy their own. This guide includes four TypeScript scripts (`bridgeToHyperEVM.ts`, `bridgeToHyperCore.ts`, `autoRedeemFromHyperEVM.ts`, and `autoRedeemFromHyperCore.ts`) that demonstrate the complete workflows.
+A shared [`FAssetRedeemComposer`](https://coston2-explorer.flare.network/address/0xa10569DFb38FE7Be211aCe4E4A566Cea387023b0?tab=contract) contract is pre-deployed on Coston2, so users do not need to deploy their own.
+This guide includes four TypeScript scripts (`bridgeToHyperEVM.ts`, `bridgeToHyperCore.ts`, `autoRedeemFromHyperEVM.ts`, and `autoRedeemFromHyperCore.ts`) that demonstrate the complete workflows.
 
 Clone the [Flare Hardhat Starter](https://github.com/flare-foundation/flare-hardhat-starter) to follow along.
 
@@ -77,7 +78,7 @@ yarn hardhat run scripts/fassets/autoRedeemFromHyperEVM.ts --network hyperliquid
 
 ### What It Is
 
-The [`FAssetRedeemComposer`](https://coston2-explorer.flare.network/address/0x80c5ebBD65b4857CA2f917EAB1e9F83bcC947c52?tab=contract) is a shared LayerZero Composer contract **pre-deployed on Coston2** that automatically redeems FAssets to their underlying assets when tokens arrive via LayerZero's compose message feature.
+The [`FAssetRedeemComposer`](https://coston2-explorer.flare.network/address/0xa10569DFb38FE7Be211aCe4E4A566Cea387023b0?tab=contract) is a shared LayerZero Composer contract **pre-deployed on Coston2** that automatically redeems FAssets to their underlying assets when tokens arrive via LayerZero's compose message feature.
 
 ### How It Works
 
@@ -114,7 +115,8 @@ const composeMsg = web3.eth.abi.encodeParameters(
 
 ### Executor Fee
 
-The `lzCompose` call must include native value to cover the executor fee on Coston2. This is set via `addExecutorLzComposeOption`:
+The `lzCompose` call must include native value to cover the executor fee on Coston2.
+This is set via `addExecutorLzComposeOption`:
 
 ```typescript
 const options = Options.newOptions()
@@ -122,7 +124,7 @@ const options = Options.newOptions()
   .addExecutorComposeOption(0, COMPOSE_GAS, COMPOSE_VALUE);
 ```
 
-The current executor fee can be queried via `getExecutorData()` on the [composer contract](https://coston2-explorer.flare.network/address/0x80c5ebBD65b4857CA2f917EAB1e9F83bcC947c52?tab=contract).
+The current executor fee can be queried via `getExecutorData()` on the [composer contract](https://coston2-explorer.flare.network/address/0xa10569DFb38FE7Be211aCe4E4A566Cea387023b0?tab=contract).
 
 ### Contract Source
 
@@ -133,7 +135,7 @@ The current executor fee can be queried via `getExecutorData()` on the [composer
   {FassetRedeemComposer}
 </CodeBlock>
 
-The full verified source is available on the [Coston2 explorer](https://coston2-explorer.flare.network/address/0x80c5ebBD65b4857CA2f917EAB1e9F83bcC947c52?tab=contract).
+The full verified source is available on the [Coston2 explorer](https://coston2-explorer.flare.network/address/0xa10569DFb38FE7Be211aCe4E4A566Cea387023b0?tab=contract).
 
 </details>
 
@@ -168,7 +170,7 @@ You must successfully complete this step before running the `autoRedeemFromHyper
    - Approves OFT Adapter to spend FTestXRP.
    - Approves Composer (if needed for future operations).
 4. **Build Send Parameters**:
-   - Destination: Hyperliquid EVM Testnet (EndpointID for Hyperliquid Testnet: `40294`).
+   - Destination: Hyperliquid EVM Testnet (EndpointID for Hyperliquid Testnet: `40362`).
    - Recipient: Same address on destination chain.
    - Amount: Calculated from configured lots (default 1 lot, with 10% buffer for safety).
    - LayerZero options: Executor gas limit set to 200,000.
@@ -216,7 +218,7 @@ This gets your FXRP tokens onto Hyperliquid EVM.
    # .env file
    COSTON2_RPC_URL=https://coston2-api.flare.network/ext/C/rpc
    DEPLOYER_PRIVATE_KEY=your_private_key_here
-   COSTON2_COMPOSER=0x80c5ebBD65b4857CA2f917EAB1e9F83bcC947c52
+   COSTON2_COMPOSER=0xa10569DFb38FE7Be211aCe4E4A566Cea387023b0
    ```
 
 3. **Run the Script on Flare Testnet Coston2**:
@@ -341,7 +343,7 @@ sequenceDiagram
    - Executor gas for `lzReceive()`: 200,000
    - Compose gas for `lzCompose()`: 300,000
 7. **Build Send Parameters**:
-   - Destination: HyperEVM (EndpointID for Hyperliquid Testnet: `40294`).
+   - Destination: HyperEVM (EndpointID for Hyperliquid Testnet: `40362`).
    - Recipient: HyperliquidComposer contract (not user address).
    - Amount: Calculated from configured lots (default 1 lot, with 10% buffer).
 8. **Quote Fee**: Calculates the LayerZero cross-chain messaging fee.
@@ -355,8 +357,8 @@ sequenceDiagram
   - C2FLR tokens (for gas fees + LayerZero fees).
     You can get some from the Flare Testnet [faucet](https://faucet.flare.network/).
 - **Deployed Contracts**:
-  - HyperliquidComposer must be deployed on HyperEVM Testnet.
-  - Set `COSTON2_COMPOSER=0x80c5ebBD65b4857CA2f917EAB1e9F83bcC947c52` in `.env`.
+  - HyperliquidComposer must be deployed on HyperEVM Testnet by you (see [Bridge FXRP to HyperCore](#bridge-fxrp-to-hypercore)).
+  - Set `HYPERLIQUID_COMPOSER=0x...` in `.env` (your HyperEVM composer address).
 
 ### Configuration
 
@@ -488,7 +490,7 @@ It uses LayerZero's compose feature to trigger the `FAssetRedeemComposer` contra
 
 - You must have FXRP OFT tokens on Hyperliquid EVM Testnet.
 - If you don't have FXRP on Hyperliquid, run `bridgeToHyperEVM.ts` first ([Step 1](#step-1-bridge-fxrp-to-hyperliquid-evm-required-first)).
-- The shared FAssetRedeemComposer is pre-deployed on Coston2 at `0x80c5ebBD65b4857CA2f917EAB1e9F83bcC947c52`.
+- The shared FAssetRedeemComposer is pre-deployed on Coston2 at `0xa10569DFb38FE7Be211aCe4E4A566Cea387023b0`.
 
 ### How It Works
 
@@ -531,7 +533,7 @@ sequenceDiagram
    - Executor gas for `lzReceive()`: 1,000,000
    - Compose gas for `lzCompose()`: 1,000,000
 6. **Build Send Parameters**:
-   - Destination: Coston2 (Endpoint ID: `40296`).
+   - Destination: Coston2 (Endpoint ID: `40294`).
    - Recipient: FAssetRedeemComposer contract.
    - Amount: Calculated from configured lots (default 1 lot).
    - Compose message included
@@ -547,8 +549,8 @@ sequenceDiagram
   - FXRP OFT tokens on Hyperliquid (amount you want to redeem).
   - HYPE tokens (for gas fees + LayerZero fees).
 - **Deployed Contracts**:
-  - The shared FAssetRedeemComposer is pre-deployed on Coston2 at `0x80c5ebBD65b4857CA2f917EAB1e9F83bcC947c52`.
-  - Set `COSTON2_COMPOSER=0x80c5ebBD65b4857CA2f917EAB1e9F83bcC947c52` in `.env`.
+  - The shared FAssetRedeemComposer is pre-deployed on Coston2 at `0xa10569DFb38FE7Be211aCe4E4A566Cea387023b0`.
+  - Set `COSTON2_COMPOSER=0xa10569DFb38FE7Be211aCe4E4A566Cea387023b0` in `.env`.
 
 ### Configuration
 
@@ -562,7 +564,7 @@ const CONFIG = {
   // Shared FAssetRedeemComposer (pre-deployed on Coston2)
   COSTON2_COMPOSER:
     process.env.COSTON2_COMPOSER ||
-    "0x80c5ebBD65b4857CA2f917EAB1e9F83bcC947c52",
+    "0xa10569DFb38FE7Be211aCe4E4A566Cea387023b0",
   COSTON2_EID: EndpointId.FLARE_V2_TESTNET,
   EXECUTOR_GAS: 1_000_000, // Gas for receiving on Coston2
   COMPOSE_GAS: 1_000_000, // Gas for compose execution
@@ -585,17 +587,15 @@ If you don't have FXRP on Hyperliquid yet:
 
 Once you have FXRP on Hyperliquid:
 
-````
-
 2. **Configure Environment**:
 
 ```bash
 # .env file
 HYPERLIQUID_TESTNET_RPC_URL=https://api.hyperliquid-testnet.xyz/evm
 DEPLOYER_PRIVATE_KEY=your_private_key_here
-COSTON2_COMPOSER=0x80c5ebBD65b4857CA2f917EAB1e9F83bcC947c52
+COSTON2_COMPOSER=0xa10569DFb38FE7Be211aCe4E4A566Cea387023b0
 HYPERLIQUID_FXRP_OFT=0x14bfb521e318fc3d5e92A8462C65079BC7d4284c
-````
+```
 
 3. **Update XRP Address**:
    - Edit `CONFIG.XRP_ADDRESS` in the script to your XRP ledger address
@@ -678,7 +678,7 @@ Tokens must be transferred from HyperCore to HyperEVM before they can be bridged
 
 - You must have FXRP tokens in your HyperCore spot wallet.
 - You need HYPE tokens on HyperEVM for LayerZero fees.
-- The shared FAssetRedeemComposer is pre-deployed on Coston2 at `0x80c5ebBD65b4857CA2f917EAB1e9F83bcC947c52`.
+- The shared FAssetRedeemComposer is pre-deployed on Coston2 at `0xa10569DFb38FE7Be211aCe4E4A566Cea387023b0`.
 
 ### How It Works
 
@@ -775,8 +775,8 @@ FXRP_SYSTEM_ADDRESS: "0x20000000000000000000000000000000000005a3";
   - FXRP tokens in your HyperCore spot wallet (amount you want to redeem).
   - HYPE tokens on HyperEVM (for gas fees + LayerZero fees).
 - **Deployed Contracts**:
-  - The shared FAssetRedeemComposer is pre-deployed on Coston2 at `0x80c5ebBD65b4857CA2f917EAB1e9F83bcC947c52`.
-  - Set `COSTON2_COMPOSER=0x80c5ebBD65b4857CA2f917EAB1e9F83bcC947c52` in `.env`.
+  - The shared FAssetRedeemComposer is pre-deployed on Coston2 at `0xa10569DFb38FE7Be211aCe4E4A566Cea387023b0`.
+  - Set `COSTON2_COMPOSER=0xa10569DFb38FE7Be211aCe4E4A566Cea387023b0` in `.env`.
 
 ### Configuration
 
@@ -796,7 +796,7 @@ const CONFIG = {
   // Shared FAssetRedeemComposer (pre-deployed on Coston2)
   COSTON2_COMPOSER:
     process.env.COSTON2_COMPOSER ||
-    "0x80c5ebBD65b4857CA2f917EAB1e9F83bcC947c52",
+    "0xa10569DFb38FE7Be211aCe4E4A566Cea387023b0",
   COSTON2_EID: EndpointId.FLARE_V2_TESTNET,
   EXECUTOR_GAS: 1_000_000, // Gas for receiving on Coston2
   COMPOSE_GAS: 1_000_000, // Gas for compose execution
@@ -812,18 +812,16 @@ const CONFIG = {
 
 **PREREQUISITE: You must have FXRP tokens in your HyperCore spot wallet before running this script.**
 
-````
-
 2. **Configure Environment**:
 
 ```bash
 # .env file
 HYPERLIQUID_TESTNET_RPC_URL=https://api.hyperliquid-testnet.xyz/evm
 DEPLOYER_PRIVATE_KEY=your_private_key_here
-COSTON2_COMPOSER=0x80c5ebBD65b4857CA2f917EAB1e9F83bcC947c52
+HYPERLIQUID_COMPOSER=0x... # Composer deployed on HyperEVM by you (see Step 1.1)
 HYPERLIQUID_FXRP_OFT=0x14bfb521e318fc3d5e92A8462C65079BC7d4284c
 XRP_ADDRESS=rYourXRPAddressHere # Your XRP ledger address
-````
+```
 
 3. **Ensure you have FXRP on HyperCore**:
    - Bridge FXRP to HyperCore using `bridgeToHyperEVM.ts` followed by a transfer to HyperCore.
@@ -843,7 +841,7 @@ FXRP Auto-Redemption from HyperCore
 HyperCore → HyperEVM → Coston2 → XRP Ledger
 ============================================================
 Using account: 0x742d35Cc6634C0532925a3b844Bc454e4438f44e
-✓ Coston2 Composer configured: 0x80c5ebBD65b4857CA2f917EAB1e9F83bcC947c52
+✓ Coston2 Composer configured: 0xa10569DFb38FE7Be211aCe4E4A566Cea387023b0
 
 📊 Checking HyperCore spot balance...
    HyperCore FXRP balance: 25.0
@@ -873,7 +871,7 @@ Compose message encoded for auto-redemption
 
 📤 Step 2: Sending FXRP from HyperEVM to Coston2 with auto-redeem...
    Amount: 10.0 FXRP
-   Target composer: 0x80c5ebBD65b4857CA2f917EAB1e9F83bcC947c52
+   Target composer: 0xa10569DFb38FE7Be211aCe4E4A566Cea387023b0
    XRP destination: rpHuw4bKSjonKRrKKVYYVedg1jyPrmp
 
 ✓ Transaction sent: 0xabc123...
@@ -928,16 +926,19 @@ XRP will be sent to: rpHuw4bKSjonKRrKKVYYVedg1jyPrmp
 A: Typically 2-5 minutes for LayerZero message delivery + execution time.
 
 **Q: What's the minimum amount I can bridge?**
-A: Any amount for bridging to Hyperliquid. For auto-redeem, minimum is 1 [lot](https://dev.flare.network/fassets/minting#lots) (10 FXRP for XRP).
+A: Any amount for bridging to Hyperliquid.
+For auto-redeem, minimum is 1 [lot](https://dev.flare.network/fassets/minting#lots) (10 FXRP for XRP).
 
 **Q: Can I bridge to a different address?**
 A: Yes, edit the `recipientAddress` parameter in the scripts.
 
 **Q: What happens if compose execution fails?**
-A: Tokens will be stuck in the composer. Owner can recover using `recoverTokens()`.
+A: Tokens will be stuck in the composer.
+Owner can recover using `recoverTokens()`.
 
 **Q: Can I use this on mainnet?**
-A: This is designed for testnet. For mainnet, update contract addresses, thoroughly test, and audit all code.
+A: This is designed for testnet.
+For mainnet, update contract addresses, thoroughly test, and audit all code.
 
 **Q: How do I get FTestXRP on Flare Testnet Coston2?**
 A: Use Flare's FAsset minting process via the AssetManager contract.
@@ -946,10 +947,13 @@ A: Use Flare's FAsset minting process via the AssetManager contract.
 A: Get them from Hyperliquid testnet [faucet](https://hyperliquid.gitbook.io/hyperliquid-docs/onboarding/testnet-faucet) or DEX.
 
 **Q: What's the difference between HyperCore and HyperEVM?**
-A: HyperCore is Hyperliquid's high-performance spot trading layer where tokens are held in spot wallets. HyperEVM is Hyperliquid's EVM-compatible execution environment where tokens exist as ERC-20s. You need to transfer tokens from HyperCore to HyperEVM before bridging via LayerZero.
+A: HyperCore is Hyperliquid's high-performance spot trading layer where tokens are held in spot wallets.
+HyperEVM is Hyperliquid's EVM-compatible execution environment where tokens exist as ERC-20s.
+You need to transfer tokens from HyperCore to HyperEVM before bridging via LayerZero.
 
 **Q: Why does the HyperCore transfer use Arbitrum's chainId?**
-A: Hyperliquid's API requires Arbitrum's chainId (42161) for all EIP-712 signatures. This is a legacy requirement from when Hyperliquid settled on Arbitrum.
+A: Hyperliquid's API requires Arbitrum's chainId (42161) for all EIP-712 signatures.
+This is a legacy requirement from when Hyperliquid settled on Arbitrum.
 
 ## Discovering Available Bridge Routes
 
@@ -974,7 +978,7 @@ This script:
 #### How to Run
 
 ```bash
-yarn hardhat run scripts/layerzero/getOFTPeers.ts --network coston2
+yarn hardhat run scripts/layerZero/getOFTPeers.ts --network coston2
 ```
 
 #### Expected Output
@@ -1020,7 +1024,7 @@ Once you've identified available peers, you can:
 <details>
 <summary>View `getOftPeers.ts` source code</summary>
 
-<CodeBlock language="typescript" title="scripts/layerzero/getOFTPeers.ts">
+<CodeBlock language="typescript" title="scripts/layerZero/getOFTPeers.ts">
   {getOftPeers}
 </CodeBlock>
 

@@ -49,7 +49,8 @@ With that, we can describe the process of using the Weather Insurance dApp.
    If no insurer has accepted the policy by the time it comes into effect (before its start timestamp), the policy is considered expired.
    {/* TODO rethink if the insurer should be allowed to accept the contract after it comes into effect */}
 
-3. The policy is resolved. This happens in three ways:
+3. The policy is resolved.
+   This happens in three ways:
 
 - The policy has expired because no insurer accepted it in the allotted time.
   The contract returns the premium to the policyholder.
@@ -181,8 +182,8 @@ So, instead of Celsius, we will use micro-Celsius, instead of degrees for latitu
 :::
 
 The `claimPolicy` function first retrieves the policy with the given ID.
-It checks that the policy is yet `Unclaimed`.
-{/* TODO block.timestamp < policy.startTimestamp */}
+It checks that the policy is still `Unclaimed`.
+If the policy's start timestamp has already passed, the function silently routes through `retireUnclaimedPolicy` (without reverting), so an insurer can never accidentally claim a stale policy.
 
 Just like the premium, the coverage value is also not a parameter but the amount paid to the contract.
 The function checks that it has received a sufficient amount before continuing.
@@ -195,9 +196,8 @@ Lastly, the premium is paid to the insurer, and a `PolicyClaimed` event is emitt
     function claimPolicy(uint256 id) public payable {
         Policy memory policy = registeredPolicies[id];
         require(policy.status == PolicyStatus.Unclaimed, "Policy already claimed");
-        if (block.timestamp > policy.expirationTimestamp) {
+        if (block.timestamp > policy.startTimestamp) {
             retireUnclaimedPolicy(id);
-            revert("Policy already expired");
         }
         require(msg.value >= policy.coverage, "Insufficient coverage paid");
 
@@ -241,7 +241,7 @@ A `PolicySettled` event is emitted.
         Policy memory policy = registeredPolicies[id];
         require(policy.status == PolicyStatus.Open, "Policy not open");
         require(isWeb2JsonProofValid(proof), "Invalid proof");
-        DataTransportObject memory dto = abi.decode(proof.data.responseBody.abi_encoded_data, (DataTransportObject));
+        DataTransportObject memory dto = abi.decode(proof.data.responseBody.abiEncodedData, (DataTransportObject));
         require(
             block.timestamp >= policy.startTimestamp,
             string.concat(
@@ -315,14 +315,14 @@ A `PolicyExpired` event is emitted.
 ```
 
 The last of the non-helper functions allows us to retire unclaimed policies.
-If the policy's status is `Unclaimed`, and the timestamp of the current block exceeds the policy's expiration timestamp, the policy is marked as `Settled`, and its premium is returned to the policyholder.
+If the policy's status is `Unclaimed`, and the timestamp of the current block exceeds the policy's start timestamp, the policy is marked as `Settled`, and its premium is returned to the policyholder.
 A `PolicyRetired` event is emitted.
 
 ```solidity title="contracts/weatherInsurance/MinTempAgency.sol"
     function retireUnclaimedPolicy(uint256 id) public {
         Policy memory policy = registeredPolicies[id];
         require(policy.status == PolicyStatus.Unclaimed, "Policy not unclaimed");
-        require(block.timestamp > policy.expirationTimestamp, "Policy not yet expired");
+        require(block.timestamp > policy.startTimestamp, "Policy not yet expired");
         policy.status = PolicyStatus.Settled;
         registeredPolicies[id] = policy;
         payable(policy.holder).transfer(policy.premium);
@@ -368,7 +368,7 @@ The first script deploys the `MinTempAgency` contract and prints its address to 
 We save the address to a `scripts/weatherInsurance/minTemp/config.ts` file because we will access it in other scripts.
 
 ```typescript title="scripts/weatherInsurance/minTemp/config.ts"
-export const agencyAddress = "0x991dEEEc12084Afa2FB318145E03fC87009E709f";
+export const agencyAddress = "0x5Ac39E3DC1Bb32c21A0ab3eF45395207d45c8EB6";
 ```
 
 Next, we will create a new policy with the following parameters:
@@ -377,9 +377,9 @@ Next, we will create a new policy with the following parameters:
 - longitude: `15.587079308221126`
 - start timestamp: 30 seconds from now
 - expiration timestamp: an hour from now
-- minimum temperature threshold: 30 degrees Celsius
-- premium: 10 wei
-- coverage: 1000 wei
+- minimum temperature threshold: 20 degrees Celsius (encoded as `20 * 10**6` micro-Celsius)
+- premium: `0.01 ether`
+- coverage: `0.1 ether`
 
 :::note
 We have set the minimum temperature threshold high enough that the policy will always be resolved successfully.
@@ -389,19 +389,28 @@ Because the response of the [OpenWeather](https://openweathermap.org/api) API in
 This will ensure that the coordinates of the created policy match the ones in the proof data.
 Without this step, we could never prove that a loss has occurred.
 
-We find the correct coordinates by making a GET request to the same URL that will be provided to the FDC.
+We find the correct coordinates by making a GET request to the OpenWeather API.
 To use the API, we need to provide it with an API key, which is available on a free account.
 We read the API key from the `.env` file.
 Also, we explicitly state that we are using metric units, although this is the default.
 
-```typescript
-const latitude = 46.419402127862405;
-const longitude = 15.587079308221126;
-const apiId = process.env.OPEN_WEATHER_API_KEY ?? "";
+The Web2Json verifier accepts the base URL and the query parameters as separate fields: `apiUrl` carries the bare endpoint and `queryParams` carries the per-request parameters as a JSON-encoded object.
+The starter encodes them like so:
 
+```typescript
+const apiUrl = "https://api.openweathermap.org/data/2.5/weather";
+const apiId = process.env.OPEN_WEATHER_API_KEY ?? "";
 const units = "metric";
 
-const apiUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${apiId}&units=${units}`;
+function prepareQueryParams(policy: any) {
+  const queryParams = {
+    lat: policy.latitude / 10 ** 6,
+    lon: policy.longitude / 10 ** 6,
+    units: units,
+    appid: apiId,
+  };
+  return JSON.stringify(queryParams);
+}
 ```
 
 The script collects the appropriate coordinates as described above.
@@ -430,30 +439,8 @@ The script for resolving a policy is slightly more complicated.
 It involves making a Web2Json attestation request to the FDC and providing the returned proof to the `MinTempAgency` contract.
 To learn more about the Web2Json attestation request look at the [related guide](/fdc/guides/hardhat/web2-json), or its [spec](/fdc/attestation-types/web2-json).
 
-We prepare an attestation request using the verifier server.
-We do so by making a POST request to the appropriate endpoint;
-{/* TODO add the new address when available */}
-in this case, the URL is ``.
-
-The URL we will be submitting to the FDC is the one already mentioned above.
-More specifically:
-
-```sh
-https://api.openweathermap.org/data/2.5/weather?
-    lat=46.419400&lon=15.587100&appid=${apiId}&units=metric
-```
-
-Where `apiId` will be replaced with our OpenWeather API key from the `.env` file.
-We prepare the URL using the following helper function.
-Here, we divide the coordinates by `10^6` to return them to their original value.
-
-```typescript title="scripts/weatherInsurance/minTemp/resolvePolicy.ts"
-async function prepareUrl(policy: any) {
-  return `https://api.openweathermap.org/data/2.5/weather?lat=${
-    policy.latitude / 10 ** 6
-  }&lon=${policy.longitude / 10 ** 6}&units=${units}&appid=${apiId}`;
-}
-```
+We prepare an attestation request by POSTing to the Web2Json verifier endpoint at `${VERIFIER_URL_TESTNET}/verifier/web2/Web2Json/prepareRequest`.
+The request body packages the `apiUrl`, `queryParams`, `postProcessJq` and `abiSignature` as separate fields so the verifier can compose the GET request itself.
 
 We need to specify the jq filter that the FDC should apply to the data received in the response to the POST request to the above URL.
 Only a few fields are needed, and most must first be multiplied by `10^6` so that we can store them as `uint256` values in Solidity.
@@ -461,15 +448,15 @@ We also employ some IF-statements, to avoid the error of multiplying `null` valu
 The filter we will be using is:
 
 ```typescript title="scripts/weatherInsurance/minTemp/resolvePolicy.ts"
-const postprocessJq = `{
-   latitude: (.coord.lat | if . != null then .*pow(10;6) else null end),
-   longitude: (.coord.lon | if . != null then .*pow(10;6) else null end),
-   description: .weather[0].description,
-   temperature: (.main.temp | if . != null then .*pow(10;6) else null end),
-   minTemp: (.main.temp_min | if . != null then .*pow(10;6) else null end),
-   windSpeed: (.wind.speed | if . != null then . *pow(10;6) end),
-   windDeg: .wind.deg
-   }`;
+const postProcessJq = `{
+  latitude: (.coord.lat | if . !== null then .*pow(10;6) else 0 end | floor),
+  longitude: (.coord.lon | if . !== null then .*pow(10;6) else 0 end | floor),
+  description: .weather[0].description,
+  temperature: (.main.temp | if . !== null then .*pow(10;6) else 0 end | floor),
+  minTemp: (.main.temp_min | if . !== null then .*pow(10;6) else 0 end | floor),
+  windSpeed: (.wind.speed | if . !== null then . *pow(10;6) else 0 end | floor),
+  windDeg: .wind.deg
+  }`;
 ```
 
 The last parameter missing is the ABI encoding for the FDC to store the processed data as.
@@ -584,4 +571,5 @@ This would prevent either party's funds from being locked within a contract for 
 Another option would be to issue ERC1155 tokens expressing the stake.
 It would enable the trade of fractions of policies while optimizing gas consumption.
 
-No doubt there is an even better token type for such use case. But that goes beyond the purpose of this guide.
+No doubt there is an even better token type for such use case.
+But that goes beyond the purpose of this guide.

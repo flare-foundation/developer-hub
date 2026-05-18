@@ -14,7 +14,8 @@ Sourced from `IFdcHub.sol` on [GitHub](https://github.com/flare-foundation/flare
 
 ## Overview
 
-The IFdcHub interface serves as the main entry point for applications requesting attestations from the Flare Data Connector. It provides functionality to request attestations, access configuration contracts, and handle related events.
+The IFdcHub interface serves as the main entry point for applications requesting attestations from the Flare Data Connector.
+It provides functionality to request attestations, access configuration contracts, and handle related events.
 
 ## Functions
 

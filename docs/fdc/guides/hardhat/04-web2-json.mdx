@@ -18,19 +18,20 @@ The same procedure works for all public APIs.
 
 In this guide, we will follow the steps outlined in the [FDC overview](/fdc/overview).
 We will define a `scripts/fdcExample/Web2Json.ts` file that will encapsulate the whole process.
+The shared helpers used below live in the starter under `scripts/utils/fdc.ts` and `scripts/utils/getters.ts`.
 
-```typescript title="scripts/fdcExample/Web2Json.s.sol"
+```typescript title="scripts/fdcExample/Web2Json.ts"
 import { run, web3 } from "hardhat";
-import { TransferEventListenerInstance } from "../../typechain-types";
+import { StarWarsCharacterListV2Instance } from "../../typechain-types";
 import {
   prepareAttestationRequestBase,
   submitAttestationRequest,
   retrieveDataAndProofBase,
-} from "./Base";
+} from "../utils/fdc";
 
 const StarWarsCharacterListV2 = artifacts.require("StarWarsCharacterListV2");
 
-const { WEB2JSON_VERIFIER_URL_TESTNET, VERIFIER_API_KEY_TESTNET, COSTON2_DA_LAYER_URL } = process.env;
+const { VERIFIER_URL_TESTNET, VERIFIER_API_KEY_TESTNET, COSTON2_DA_LAYER_URL } = process.env;
 
 ...
 
@@ -47,7 +48,7 @@ async function main() {
 
   const proof = await retrieveDataAndProof(abiEncodedRequest, roundId);
 
-  const characterList: StarWarsCharacterListInstance =
+  const characterList: StarWarsCharacterListV2Instance =
     await deployAndVerifyContract();
 
   await interactWithContract(characterList, proof);
@@ -123,7 +124,7 @@ const abiSignature = `{"components": [{"internalType": "string", "name": "name",
 // Configuration constants
 const attestationTypeBase = "Web2Json";
 const sourceIdBase = "PublicWeb2";
-const verifierUrlBase = WEB2JSON_VERIFIER_URL_TESTNET;
+const verifierUrlBase = VERIFIER_URL_TESTNET;
 ```
 
 ### Encoding Functions
@@ -135,7 +136,7 @@ To encode values into UTF8 hex:
 
 These functions are included in the [Base library](https://github.com/flare-foundation/flare-hardhat-starter/blob/master/scripts/fdcExample/Base.ts) within the [example repository](https://github.com/flare-foundation/flare-hardhat-starter/), but they can also be defined locally in your contract or script.
 
-```typescript title="scripts/fdcExample/Base.ts"
+```typescript title="scripts/utils/fdc.ts"
 function toHex(data: string) {
   var result = "";
   for (var i = 0; i < data.length; i++) {
@@ -145,7 +146,7 @@ function toHex(data: string) {
 }
 ```
 
-```typescript title="scripts/fdcExample/Base.ts"
+```typescript title="scripts/utils/fdc.ts"
 function toUtf8HexString(data: string) {
   return "0x" + toHex(data);
 }
@@ -159,7 +160,7 @@ For that reason we define a base function that the `prepareAttestationRequest` f
 
 The `prepareAttestationRequestBase` function formulates a request for the verifier server, and posts it to the given URL.
 
-```typescript title="scripts/fdcExample/Base.ts"
+```typescript title="scripts/utils/fdc.ts"
 async function prepareAttestationRequestBase(
   url: string,
   apiKey: string,
@@ -219,7 +220,7 @@ async function prepareAttestationRequest(
     abiSignature: abiSignature,
   };
 
-  const url = `${verifierUrlBase}Web2Json/prepareRequest`;
+  const url = `${verifierUrlBase}/verifier/web2/Web2Json/prepareRequest`;
   const apiKey = VERIFIER_API_KEY_TESTNET;
 
   return await prepareAttestationRequestBase(
@@ -297,61 +298,22 @@ This step transitions from offchain request preparation to onchain interaction w
 We will submit the validated request to the blockchain using deployed official Flare smart contracts.
 To streamline the process of accessing these, the [Flare smart contracts periphery package](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts) is shipped with the `ContractRegistry` library.
 
-The `ContractRegistry` library allows us to
-{/* TODO contract registry */}
-
-We define a `Helpers` contract that will give us access to the following contracts:
+The `IFlareContractRegistry` deployed at `0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019` on every Flare-family network resolves names to live contract addresses.
+We use it to discover:
 
 - `FdcHub`: for posting the request to
 - `FdcRequestFeeConfigurations`: calculates the fee of the request
 - `FlareSystemsManager`: for calculating the round ID
 - `Relay`: confirms the round has finalized
+- `FdcVerification`: exposes the FDC protocol id and verification entry points
 
-```solidity title="contracts/fdcExample/Helpers.sol"
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.25;
-
-import {console} from "hardhat/console.sol";
-import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
-import {IFdcHub} from "@flarenetwork/flare-periphery-contracts/coston2/IFdcHub.sol";
-import {IFdcRequestFeeConfigurations} from
-    "@flarenetwork/flare-periphery-contracts/coston2/IFdcRequestFeeConfigurations.sol";
-import {IFlareSystemsManager} from "@flarenetwork/flare-periphery-contracts/coston2/IFlareSystemsManager.sol";
-import {IRelay} from "@flarenetwork/flare-periphery-contracts/coston2/IRelay.sol";
-
-contract Helpers {
-    function getFdcHub() public view returns (IFdcHub) {
-        return ContractRegistry.getFdcHub();
-    }
-
-    function getFdcRequestFeeConfigurations() public view returns (IFdcRequestFeeConfigurations) {
-        return ContractRegistry.getFdcRequestFeeConfigurations();
-    }
-
-    function getFlareSystemsManager() public view returns (IFlareSystemsManager) {
-        return ContractRegistry.getFlareSystemsManager();
-    }
-
-    function getRelay() public view returns (IRelay) {
-        return ContractRegistry.getRelay();
-    }
-}
-```
-
-We expose the `Helpers` contract through the following function.
-
-```typescript title="scripts/fdcExample/Base.ts"
-async function getHelpers() {
-  const helpers: HelpersInstance = await Helpers.new();
-  return helpers;
-}
-```
+The starter resolves these from TypeScript via small wrappers in `scripts/utils/getters.ts` that call `IFlareContractRegistry.getContractAddressByName(...)` and return a typechain instance.
 
 To submit the attestation request, we first access the deployed `FdcHub` contract.
 We determine the fee for our attestation type, and then request the attestation of the FDC, paying the required fee.
 Lastly, we calculate the voting round Id from the transaction that carried the attestation request; we will need it to query the data and proof.
 
-```typescript title="scripts/fdcExample/Base.ts"
+```typescript title="scripts/utils/fdc.ts"
 async function submitAttestationRequest(abiEncodedRequest: string) {
   const fdcHub = await getFdcHub();
 
@@ -364,7 +326,7 @@ async function submitAttestationRequest(abiEncodedRequest: string) {
 
   const roundId = await calculateRoundId(transaction);
   console.log(
-    `Check round progress at: https://${hre.network.name}-systems-explorer.flare.rocks/voting-epoch/${roundId}?tab=fdc\n`,
+    `Check round progress at: https://${hre.network.name}-systems-explorer.flare.rocks/voting-round/${roundId}?tab=fdc\n`,
   );
   return roundId;
 }
@@ -372,22 +334,31 @@ async function submitAttestationRequest(abiEncodedRequest: string) {
 
 {/* TODO */}
 
-```typescript title="scripts/fdcExample/Base.ts"
+```typescript title="scripts/utils/getters.ts"
 async function getFdcHub() {
-  const helpers: HelpersInstance = await getHelpers();
-  const fdcHubAddress: string = await helpers.getFdcHub();
+  const FlareContractRegistry = artifacts.require("IFlareContractRegistry");
+  const registry: IFlareContractRegistryInstance =
+    await FlareContractRegistry.at(
+      "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019",
+    );
+  const fdcHubAddress: string =
+    await registry.getContractAddressByName("FdcHub");
   return await FdcHub.at(fdcHubAddress);
 }
 ```
 
 The request fee is obtained from the `fdcRequestFeeConfigurations` contract.
-We once again connect to the `fdcRequestFeeConfigurations` contract through the `ContractRegistry` library.
+We once again resolve its address through the `IFlareContractRegistry`.
 
-```typescript title="scripts/fdcExample/Base.ts"
+```typescript title="scripts/utils/fdc.ts"
 async function getFdcRequestFee(abiEncodedRequest: string) {
-  const helpers: HelpersInstance = await getHelpers();
+  const FlareContractRegistry = artifacts.require("IFlareContractRegistry");
+  const registry: IFlareContractRegistryInstance =
+    await FlareContractRegistry.at(
+      "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019",
+    );
   const fdcRequestFeeConfigurationsAddress: string =
-    await helpers.getFdcRequestFeeConfigurations();
+    await registry.getContractAddressByName("FdcRequestFeeConfigurations");
   const fdcRequestFeeConfigurations: IFdcRequestFeeConfigurationsInstance =
     await FdcRequestFeeConfigurations.at(fdcRequestFeeConfigurationsAddress);
   return await fdcRequestFeeConfigurations.getRequestFee(abiEncodedRequest);
@@ -399,7 +370,7 @@ We first subtract from the block timestamp the timestamp of the first voting epo
 Then, we divide the number by the duration of the voting epoch (90 seconds).
 Instead of hard-coding them, we retrieve these values from another official Flare contract, the `flareSystemsManager`.
 
-```typescript title="scripts/fdcExample/Base.ts"
+```typescript title="scripts/utils/fdc.ts"
 async function calculateRoundId(transaction: any) {
   const blockNumber = transaction.receipt.blockNumber;
   const block = await ethers.provider.getBlock(blockNumber);
@@ -435,13 +406,17 @@ async function calculateRoundId(transaction: any) {
 }
 ```
 
-We obtain the `flareSystemsManager` contract through the `ContractRegistry` library and the previously defined `Helpers` contract as well.
+We obtain the `flareSystemsManager` contract through the `IFlareContractRegistry`.
 
-```typescript title="scripts/fdcExample/Base.ts"
+```typescript title="scripts/utils/getters.ts"
 async function getFlareSystemsManager() {
-  const helpers: HelpersInstance = await getHelpers();
+  const FlareContractRegistry = artifacts.require("IFlareContractRegistry");
+  const registry: IFlareContractRegistryInstance =
+    await FlareContractRegistry.at(
+      "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019",
+    );
   const flareSystemsManagerAddress: string =
-    await helpers.getFlareSystemsManager();
+    await registry.getContractAddressByName("FlareSystemsManager");
   return await FlareSystemsManager.at(flareSystemsManagerAddress);
 }
 ```
@@ -460,7 +435,7 @@ If you want to learn more about how the FDC protocol works, check [here](/fdc/ov
 Because the process includes waiting for the voting round to finalize, we prepare a `sleep` function.
 The function pauses the execution of the script for a given number of milliseconds.
 
-```typescript title="scripts/fdcExample/Base.ts"
+```typescript title="scripts/utils/fdc.ts"
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -472,7 +447,7 @@ The function waits for the round to finalize - rechecking every 10 seconds if ne
 Then, it prepares a proof request, and posts it to the DA Layer server.
 Because it might take a few seconds for the server to generate the proof, the function ensures that the response actually contains a sufficient response, and retries otherwise.
 
-```typescript title="scripts/fdcExample/Base.ts"
+```typescript title="scripts/utils/fdc.ts"
 async function retrieveDataAndProofBase(
   url: string,
   abiEncodedRequest: string,
@@ -481,7 +456,9 @@ async function retrieveDataAndProofBase(
   console.log("Waiting for the round to finalize...");
   // We check every 10 seconds if the round is finalized
   const relay: IRelayInstance = await getRelay();
-  while (!(await relay.isFinalized(200, roundId))) {
+  const fdcVerification: IFdcVerificationInstance = await getFdcVerification();
+  const protocolId = await fdcVerification.fdcProtocolId();
+  while (!(await relay.isFinalized(protocolId, roundId))) {
     await sleep(10000);
   }
   console.log("Round finalized!\n");
@@ -506,19 +483,34 @@ async function retrieveDataAndProofBase(
 }
 ```
 
-We access the Flare's official `Relay` contract with a helper function.
+We access the Flare's official `Relay` and `FdcVerification` contracts with helper functions.
 
-```typescript title="scripts/fdcExample/Base.ts"
+```typescript title="scripts/utils/getters.ts"
 async function getRelay() {
-  const helpers: HelpersInstance = await getHelpers();
-  const relayAddress: string = await helpers.getRelay();
+  const FlareContractRegistry = artifacts.require("IFlareContractRegistry");
+  const registry: IFlareContractRegistryInstance =
+    await FlareContractRegistry.at(
+      "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019",
+    );
+  const relayAddress: string = await registry.getContractAddressByName("Relay");
   return await IRelay.at(relayAddress);
+}
+
+async function getFdcVerification() {
+  const FlareContractRegistry = artifacts.require("IFlareContractRegistry");
+  const registry: IFlareContractRegistryInstance =
+    await FlareContractRegistry.at(
+      "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019",
+    );
+  const fdcVerificationAddress: string =
+    await registry.getContractAddressByName("FdcVerification");
+  return await IFdcVerification.at(fdcVerificationAddress);
 }
 ```
 
 The following function posts a proof request to the DA Layer.
 
-```typescript title="scripts/fdcExample/Base.ts"
+```typescript title="scripts/utils/fdc.ts"
 async function postRequestToDALayer(
   url: string,
   request: any,
@@ -551,7 +543,7 @@ async function retrieveDataAndProof(
   abiEncodedRequest: string,
   roundId: number,
 ) {
-  const url = `${COSTON2_DA_LAYER_URL}api/v1/fdc/proof-by-request-round-raw`;
+  const url = `${COSTON2_DA_LAYER_URL}/api/v1/fdc/proof-by-request-round-raw`;
   console.log("Url:", url, "\n");
   return await retrieveDataAndProofBase(url, abiEncodedRequest, roundId);
 }
@@ -751,7 +743,7 @@ contract StarWarsCharacterList {
         require(isWeb2JsonProofValid(data), "Invalid proof");
 
         DataTransportObject memory dto = abi.decode(
-            data.data.responseBody.abi_encoded_data,
+            data.data.responseBody.abiEncodedData,
             (DataTransportObject)
         );
 
@@ -798,7 +790,7 @@ While data verification is optional if you trust your data provider, FDC ensures
 This capability is crucial for maintaining system integrity and allowing users to independently verify data when needed, particularly in production environments.
 
 FDC provides verification functionality through the `FdcVerification` contract.
-If we proof is valid, the function `verifyEVMTransaction` will return `true`, otherwise `false`.
+If the proof is valid, the function `verifyWeb2Json` will return `true`, otherwise `false`.
 
 We deploy and verify this contract with the `deployAndVerifyContract` function in the `scripts/fdcExample/Web2Json.ts` file.
 
@@ -864,5 +856,5 @@ async function interactWithContract(
 We can run the whole script by calling the following console command.
 
 ```bash
-yarn hardhat run scripts/fdcExample/Web2Json.ts
+yarn hardhat run scripts/fdcExample/Web2Json.ts --network coston2
 ```

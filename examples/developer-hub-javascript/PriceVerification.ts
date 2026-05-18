@@ -5,22 +5,20 @@ import type {
 } from "../../typechain-types";
 import {
   prepareAttestationRequestBase,
-  getFdcHub,
+  postRequestToDALayer,
+  sleep,
+} from "../utils/fdc";
+import { getFdcHub, getRelay } from "../utils/getters";
+import {
   getFdcRequestFee,
   calculateRoundId,
   toUtf8HexString,
-  getRelay,
-  postRequestToDALayer,
-  sleep,
-} from "../fdcExample/Base";
+} from "../utils/core";
 
 const PriceVerifierCustomFeed = artifacts.require("PriceVerifierCustomFeed");
 
-const {
-  WEB2JSON_VERIFIER_URL_TESTNET,
-  VERIFIER_API_KEY_TESTNET,
-  COSTON2_DA_LAYER_URL,
-} = process.env;
+const { VERIFIER_URL_TESTNET, VERIFIER_API_KEY_TESTNET, COSTON2_DA_LAYER_URL } =
+  process.env;
 
 type AttestationRequest = {
   source: string;
@@ -62,7 +60,7 @@ const requests: AttestationRequest[] = [
   {
     source: "web2json",
     sourceIdBase: "PublicWeb2",
-    verifierUrlBase: WEB2JSON_VERIFIER_URL_TESTNET!,
+    verifierUrlBase: VERIFIER_URL_TESTNET!,
     verifierApiKey: VERIFIER_API_KEY_TESTNET!,
     urlTypeBase: "",
     data: {
@@ -140,7 +138,7 @@ async function retrieveDataAndProofs(
 ) {
   console.log("\nRetrieving data and proofs...\n");
   const proofs: Map<string, any> = new Map(); // eslint-disable-line @typescript-eslint/no-explicit-any
-  const url = `${COSTON2_DA_LAYER_URL}api/v1/fdc/proof-by-request-round-raw`;
+  const url = `${COSTON2_DA_LAYER_URL}/api/v1/fdc/proof-by-request-round-raw`;
   console.log("Url:", url, "\n");
   for (const [source, roundId] of roundIds.entries()) {
     console.log(`(${source})\n`);
@@ -267,12 +265,12 @@ async function getLatestVerifiedPrice(
 
 async function main() {
   if (
-    !WEB2JSON_VERIFIER_URL_TESTNET ||
+    !VERIFIER_URL_TESTNET ||
     !VERIFIER_API_KEY_TESTNET ||
     !COSTON2_DA_LAYER_URL
   ) {
     throw new Error(
-      "Missing one or more required environment variables: WEB2JSON_VERIFIER_URL_TESTNET, VERIFIER_API_KEY_TESTNET, COSTON2_DA_LAYER_URL",
+      "Missing one or more required environment variables: VERIFIER_URL_TESTNET, VERIFIER_API_KEY_TESTNET, COSTON2_DA_LAYER_URL",
     );
   }
   const customFeed = await deployAndVerifyContract();

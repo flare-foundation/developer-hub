@@ -89,18 +89,31 @@ This guide is for developers who want to build an FTSOv2 application using eithe
     2. Install the project dependencies:
 
         ```bash
-        forge soldeer install
+        make install
         ```
 
-    3. You might need to modify `remappings.txt` so `/src` paths are read correctly, e.g.:
+        The `make install` target runs `forge soldeer install` and additionally fetches any npm-only dependencies (`ftso-adapters`, `pyth-sdk-solidity`, `lz-address-book`) that the starter's adapters/OFT examples need.
+
+    3. The starter ships with `remappings.txt` ready for the current periphery release.
+
+If you're adding the starter's setup to an existing project, copy these remappings:
 
         ```plaintext title="remappings.txt"
         @openzeppelin-contracts/=dependencies/@openzeppelin-contracts-5.2.0-rc.1/
-        flare-periphery/=dependencies/flare-periphery-0.0.1/
+        flare-periphery/=dependencies/flare-periphery-0.1.37/
+        @flarenetwork/flare-periphery-contracts/=dependencies/flare-periphery-0.1.37/src/
         forge-std/=dependencies/forge-std-1.9.5/src/
-        forge-std/=dependencies/forge-std-1.9.5/
         surl/=dependencies/surl-0.0.0/src/
         surl/=dependencies/surl-0.0.0/
+        lz-address-book/=dependencies/lz-address-book/src/
+        @layerzerolabs/lz-evm-protocol-v2/=dependencies/lz-address-book/lib/LayerZero-v2/packages/layerzero-v2/evm/protocol/
+        @layerzerolabs/lz-evm-messagelib-v2/=dependencies/lz-address-book/lib/LayerZero-v2/packages/layerzero-v2/evm/messagelib/
+        @layerzerolabs/oft-evm/=dependencies/lz-address-book/lib/devtools/packages/oft-evm/
+        @layerzerolabs/oapp-evm/=dependencies/lz-address-book/lib/devtools/packages/oapp-evm/
+        solidity-bytes-utils/=dependencies/lz-address-book/lib/solidity-bytes-utils/
+        solady/=dependencies/solady-0.1.26/
+        ftso-adapters/=dependencies/ftso-adapters-0.0.1/
+        @pythnetwork/pyth-sdk-solidity/=dependencies/pyth-sdk-solidity-2.2.0/
         ```
 
   </TabItem>
@@ -200,7 +213,7 @@ This guide is for developers who want to build an FTSOv2 application using eithe
     3. Compile the contract:
 
         ```bash
-        npx hardhat compile
+        yarn hardhat compile
         ```
 
     </TabItem>
@@ -232,7 +245,7 @@ This guide is for developers who want to build an FTSOv2 application using eithe
         [⠃] Solc 0.8.27 finished in 797.51ms
         Compiler run successful!
 
-        Ran 2 tests for test/FtsoV2FeedConsumer_foundry.t.sol:FtsoV2FeedConsumerTestFoundry
+        Ran 2 tests for test/FtsoV2FeedConsumer_foundry.t.sol:FtsoV2FeedConsumerTest
         [PASS] testCheckFees() (gas: 21085)
         [PASS] testGetFlrUsdPrice() (gas: 25610)
         Logs:
@@ -258,7 +271,7 @@ This guide is for developers who want to build an FTSOv2 application using eithe
     2. Run the tests:
 
         ```bash
-        npx hardhat test
+        yarn hardhat test
         ```
 
   </TabItem>
@@ -299,7 +312,9 @@ This guide is for developers who want to build an FTSOv2 application using eithe
         export RPC_URL="https://coston2-api.flare.network/ext/C/rpc"
         ```
 
-    3.  Use the [Coston2 Faucet](https://faucet.flare.network/coston2) to get some testnet C2FLR tokens. You can verify that the 100 C2FLR has arrived in your wallet:
+    3.  Use the [Coston2 Faucet](https://faucet.flare.network/coston2) to get some testnet C2FLR tokens.
+
+You can verify that the 100 C2FLR has arrived in your wallet:
 
         ```bash
         cast balance $ACCOUNT -r $RPC_URL -e
@@ -468,7 +483,9 @@ This guide is for developers who want to build an FTSOv2 application using eithe
 
     You can see the transaction using the [Coston2 Explorer](https://coston2-explorer.flare.network) by searching for its `transactionHash`.
 
-    Congratulations! You've built your first FTSOv2 app using Foundry.
+    Congratulations!
+
+You've built your first FTSOv2 app using Foundry.
 
   </TabItem>
   <TabItem value="hardhat" label="Hardhat">
@@ -482,14 +499,16 @@ This guide is for developers who want to build an FTSOv2 application using eithe
     2. Deploy to Flare Testnet Coston2:
 
         ```bash
-        npx hardhat run scripts/deployFTSOConsumer.ts --network coston2
+        yarn hardhat run scripts/deployFTSOConsumer.ts --network coston2
         ```
 
     3. Interact with the contract:
 
         Copy and paste the deployed contract address into the [Coston2 explorer](https://coston2-explorer.flare.network) to view and interact with the contract.
 
-    Congratulations! You've built your first FTSOv2 app using Hardhat.
+    Congratulations!
+
+You've built your first FTSOv2 app using Hardhat.
 
   </TabItem>
 </Tabs>

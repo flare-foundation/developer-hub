@@ -56,11 +56,12 @@ Make sure to check the [hardware requirements](/run-node/system-requirements) be
 
 ## Run the node
 
-1. The following command is the simplest way to quickly get your node up and running. The next section explains the parameters used here, along with additional parameters you may wish to configure.
+1. The following command is the simplest way to quickly get your node up and running.
+   The next section explains the parameters used here, along with additional parameters you may wish to configure.
 
-   <Tabs groupId="network" block>
+      <Tabs groupId="network" block>
 
-   <TabItem value="flare" label="Flare Mainnet" default>
+      <TabItem value="flare" label="Flare Mainnet" default>
 
    ```bash
    ./build/avalanchego --network-id=flare \
@@ -70,9 +71,9 @@ Make sure to check the [hardware requirements](/run-node/system-requirements) be
       --bootstrap-ids="$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeID"}' -H 'content-type:application/json;' https://flare-bootstrap.flare.network/ext/info | jq -r '.result.nodeID')"
    ```
 
-   </TabItem>
+      </TabItem>
 
-   <TabItem value="coston2" label="Flare Testnet Coston2">
+      <TabItem value="coston2" label="Flare Testnet Coston2">
 
    ```bash
    ./build/avalanchego --network-id=costwo \
@@ -82,9 +83,9 @@ Make sure to check the [hardware requirements](/run-node/system-requirements) be
       --bootstrap-ids="$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeID"}' -H 'content-type:application/json;' https://coston2-bootstrap.flare.network/ext/info | jq -r '.result.nodeID')"
    ```
 
-   </TabItem>
+      </TabItem>
 
-   <TabItem value="songbird" label="Songbird Canary-Network">
+      <TabItem value="songbird" label="Songbird Canary-Network">
 
    ```bash
    ./build/avalanchego --network-id=songbird \
@@ -94,9 +95,9 @@ Make sure to check the [hardware requirements](/run-node/system-requirements) be
       --bootstrap-ids="$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeID"}' -H 'content-type:application/json;' https://songbird-bootstrap.flare.network/ext/info | jq -r '.result.nodeID')"
    ```
 
-   </TabItem>
+      </TabItem>
 
-   <TabItem value="coston" label="Songbird Testnet Coston">
+      <TabItem value="coston" label="Songbird Testnet Coston">
 
    ```bash
    ./build/avalanchego --network-id=coston \
@@ -106,9 +107,9 @@ Make sure to check the [hardware requirements](/run-node/system-requirements) be
       --bootstrap-ids="$(curl -m 10 -sX POST --data '{"jsonrpc":"2.0", "id":1, "method":"info.getNodeID"}' -H 'content-type:application/json;' https://coston-bootstrap.flare.network/ext/info | jq -r '.result.nodeID')"
    ```
 
-   </TabItem>
+      </TabItem>
 
-   </Tabs>
+      </Tabs>
 
 2. After a lot of log messages the node should start synchronizing with the network, which might take anywhere from a **few hours to a few days** depending on the chosen network and hardware specification.
    Node syncing can be stopped at any time.
@@ -181,22 +182,30 @@ If the node gets stuck during bootstrap (or it takes far longer than the estimat
 
 ### CLI parameters
 
-These are some of the most relevant CLI parameters you can use. Read more about them in the [Avalanche documentation](https://build.avax.network/docs/nodes/configure/configs-flags).
+These are some of the most relevant CLI parameters you can use.
+Read more about them in the [Avalanche documentation](https://build.avax.network/docs/nodes/configure/configs-flags).
 
 {/* prettier-ignore */}
 - [`--bootstrap-ips`](https://build.avax.network/docs/nodes/configure/configs-flags#--bootstrap-ips-string),
   [`--bootstrap-ids`](https://build.avax.network/docs/nodes/configure/configs-flags#--bootstrap-ids-string):
   IP address and node ID of the peer used to connect to the rest of the network for bootstrapping. In the run command above, the bootstrap details are programmatically retrieved from the Flare bootstrap nodes upon startup. This is the recommended approach as the bootstrap node's IP and ID can rotate.
 
-- [`--http-host`](https://build.avax.network/docs/nodes/configure/configs-flags#--http-host-string): Use `--http-host=` (empty) to allow connections from other machines. Otherwise, only connections from `localhost` are accepted.
+- [`--http-host`](https://build.avax.network/docs/nodes/configure/configs-flags#--http-host-string): Use `--http-host=` (empty) to allow connections from other machines.
+Otherwise, only connections from `localhost` are accepted.
 
-- [`--http-port`](https://build.avax.network/docs/nodes/configure/configs-flags#--http-port-int): The port through which the node will listen to API requests. The default value is `9650`.
+- [`--http-port`](https://build.avax.network/docs/nodes/configure/configs-flags#--http-port-int): The port through which the node will listen to API requests.
+The default value is `9650`.
 
-- [`--http-allowed-hosts`](https://build.avax.network/docs/nodes/configure/configs-flags#--http-allowed-hosts-string): Use `--http-allowed-hosts="*"` to allow connections from any machine. Otherwise, only connections from `localhost` are accepted.
+- [`--http-allowed-hosts`](https://build.avax.network/docs/nodes/configure/configs-flags#--http-allowed-hosts-string): Use `--http-allowed-hosts="*"` to allow connections from any machine.
+Otherwise, only connections from `localhost` are accepted.
 
-- [`--staking-port`](https://build.avax.network/docs/nodes/configure/configs-flags#--staking-port-int): The port through which the network peers will connect to this node externally. Having this port accessible from the internet is required for correct node operation. The default value is `9651`.
+- [`--staking-port`](https://build.avax.network/docs/nodes/configure/configs-flags#--staking-port-int): The port through which the network peers will connect to this node externally.
+Having this port accessible from the internet is required for correct node operation.
+The default value is `9651`.
 
-- [`--db-dir`](https://build.avax.network/docs/nodes/configure/configs-flags#--db-dir-string-file-path): Directory where the database is stored, defaults to `~/.avalanchego/db`. Make sure to use a disk with enough space as recommended in the [hardware requirements](/run-node/system-requirements) page. For example, you can use this option to store the database on an external drive.
+- [`--db-dir`](https://build.avax.network/docs/nodes/configure/configs-flags#--db-dir-string-file-path): Directory where the database is stored, defaults to `~/.avalanchego/db`.
+Make sure to use a disk with enough space as recommended in the [hardware requirements](/run-node/system-requirements) page.
+For example, you can use this option to store the database on an external drive.
 
 - [`--chain-config-dir`](https://build.avax.network/docs/nodes/configure/configs-flags#--chain-config-dir-string): Optional JSON configuration file for using non-default values.
 
@@ -267,10 +276,12 @@ To update your node to a newer version of go-flare:
 
 If you encounter issues, here are some common troubleshooting steps.
 
-- **Check Peer Count:** A node needs sufficient peers (typically at least 16) to sync and operate correctly. Use the health endpoint to check your connection count.
+- **Check Peer Count:** A node needs sufficient peers (typically at least 16) to sync and operate correctly.
+  Use the health endpoint to check your connection count.
   ```bash
   # Check the "connectedPeers" value in the output
   curl -s http://127.0.0.1:9650/ext/health | jq -r '.checks.network.message'
   ```
-- **Monitor Disk Space:** If your node stops syncing, ensure the database location (`/mnt/db`) has enough free space. Run `df -h /mnt/db` to check.
+- **Monitor Disk Space:** If your node stops syncing, ensure the database location (`/mnt/db`) has enough free space.
+  Run `df -h /mnt/db` to check.
 - **Restart on Errors:** If the node becomes unhealthy or you see persistent `GetAcceptedFrontier` errors in the logs, a simple restart can often resolve the issue.

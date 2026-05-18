@@ -14,7 +14,8 @@ Sourced from `IFdcVerification.sol` on [GitHub](https://github.com/flare-foundat
 
 ## Overview
 
-The IFdcVerification interface provides methods to verify different types of attestations from the Flare Data Connector. Smart contracts can use these verification functions to validate proofs provided by the FDC, ensuring the authenticity and integrity of the external data being used.
+The IFdcVerification interface provides methods to verify different types of attestations from the Flare Data Connector.
+Smart contracts can use these verification functions to validate proofs provided by the FDC, ensuring the authenticity and integrity of the external data being used.
 
 ## Verification Functions
 
@@ -139,6 +140,45 @@ function verifyReferencedPaymentNonexistence(
 **Returns**
 
 - `_proved`: Boolean indicating if the proof is valid
+
+### verifyWeb2Json
+
+Verifies a proof for a Web2Json attestation (FDC-fetched HTTP response post-processed through JQ).
+
+```solidity
+function verifyWeb2Json(
+    struct IWeb2Json.Proof _proof
+) external view returns (
+    bool _proved
+);
+```
+
+**Parameters**
+
+- `_proof`: The Web2Json proof structure
+
+**Returns**
+
+- `_proved`: Boolean indicating if the proof is valid
+
+## Metadata accessors
+
+### fdcProtocolId
+
+Returns the FDC protocol id used as the `protocolId` argument when querying `IRelay.isFinalized(protocolId, votingRoundId)`.
+Read this at runtime instead of hard-coding a literal — the value can change between network releases.
+
+```solidity
+function fdcProtocolId() external view returns (uint8 _fdcProtocolId);
+```
+
+### relay
+
+Returns the `IRelay` contract address bound to this `IFdcVerification` deployment.
+
+```solidity
+function relay() external view returns (IRelay);
+```
 
 ## Usage Example
 

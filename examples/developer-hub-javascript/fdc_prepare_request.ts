@@ -28,7 +28,7 @@ async function prepareRequest() {
     },
   };
   const response = await fetch(
-    `${VERIFIER_BASE_URL}verifier/eth/EVMTransaction/prepareRequest`,
+    `${VERIFIER_BASE_URL}/verifier/eth/EVMTransaction/prepareRequest`,
     {
       method: "POST",
       headers: {

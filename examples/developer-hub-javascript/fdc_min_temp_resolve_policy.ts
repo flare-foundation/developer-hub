@@ -7,11 +7,8 @@ import {
   sleep,
 } from "../../fdcExample/Base";
 
-const {
-  WEB2JSON_VERIFIER_URL_TESTNET,
-  VERIFIER_API_KEY_TESTNET,
-  COSTON2_DA_LAYER_URL,
-} = process.env;
+const { VERIFIER_URL_TESTNET, VERIFIER_API_KEY_TESTNET, COSTON2_DA_LAYER_URL } =
+  process.env;
 
 const MinTempAgency = artifacts.require("MinTempAgency");
 
@@ -84,7 +81,7 @@ const abiSignature = `{
 // Configuration constants
 const attestationTypeBase = "Web2Json";
 const sourceIdBase = "PublicWeb2";
-const verifierUrlBase = WEB2JSON_VERIFIER_URL_TESTNET;
+const verifierUrlBase = VERIFIER_URL_TESTNET;
 
 async function getPolicy(agency: MinTempAgencyInstance, id: number) {
   const response = await agency.registeredPolicies(id);
@@ -136,7 +133,7 @@ async function prepareAttestationRequest(
     `Query string: ${apiUrl}?${queryParams.replaceAll(":", "=").replaceAll(",", "&").replaceAll("{", "").replaceAll("}", "").replaceAll('"', "")}\n`,
   );
 
-  const url = `${verifierUrlBase}Web2Json/prepareRequest`;
+  const url = `${verifierUrlBase}/verifier/web2/Web2Json/prepareRequest`;
   const apiKey = VERIFIER_API_KEY_TESTNET;
 
   return await prepareAttestationRequestBase(
@@ -152,7 +149,7 @@ async function retrieveDataAndProof(
   abiEncodedRequest: string,
   roundId: number,
 ) {
-  const url = `${COSTON2_DA_LAYER_URL}api/v1/fdc/proof-by-request-round-raw`;
+  const url = `${COSTON2_DA_LAYER_URL}/api/v1/fdc/proof-by-request-round-raw`;
   console.log("Url:", url, "\n");
   return await retrieveDataAndProofBase(url, abiEncodedRequest, roundId);
 }

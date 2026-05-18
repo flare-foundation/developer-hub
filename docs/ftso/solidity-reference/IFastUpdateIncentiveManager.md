@@ -43,15 +43,6 @@ function getExpectedSampleSize(
 );
 ```
 
-### getIncentiveDuration
-
-```solidity
-function getIncentiveDuration(
-) external view returns (
-    uint256
-);
-```
-
 ### getPrecision
 
 Viewer for the current value of the unit delta's precision (the fractional part of the scale).
@@ -87,9 +78,11 @@ function getScale(
 
 ### offerIncentive
 
-The entry point for third parties to make incentive offers. It accepts a payment and, using the contents of
+The entry point for third parties to make incentive offers.
+It accepts a payment and, using the contents of
 `_offer`, computes how much the expected sample size will be increased to apply the requested (but capped) range
-increase. If the ultimate value of the range exceeds the cap, funds are returned to the sender in proportion to
+increase.
+If the ultimate value of the range exceeds the cap, funds are returned to the sender in proportion to
 the amount by which the increase is adjusted to reach the cap.
 
 ```solidity

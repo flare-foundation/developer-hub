@@ -1,0 +1,48 @@
+---
+title: IAgentPing
+sidebar_position: 9
+description: On-chain liveness ping/response between users and FAssets agent bots.
+---
+
+`IAgentPing` exposes a simple ping/response protocol for verifying that an FAssets agent's off-chain bot is alive.
+Users (or anyone) call `agentPing(agentVault, query)` to emit a `AgentPing` event; the bot listens for these events and replies with `agentPingResponse(agentVault, query, response)`, which emits an `AgentPingResponse` event identifying the owner address.
+
+Sourced from `IAgentPing.sol` on [GitHub](https://github.com/flare-foundation/fassets/blob/main/contracts/userInterfaces/IAgentPing.sol).
+
+## Functions
+
+### agentPing
+
+```solidity
+function agentPing(address _agentVault, uint256 _query) external;
+```
+
+Emits an `AgentPing` event addressed at `_agentVault`.
+`_query` is an off-chain-defined identifier that helps the bot decide which kind of response is required (and whether the request is worth responding to at all).
+
+### agentPingResponse
+
+```solidity
+function agentPingResponse(
+    address _agentVault,
+    uint256 _query,
+    string calldata _response
+) external;
+```
+
+Called by the agent owner address in response to an `AgentPing`.
+Emits `AgentPingResponse(agentVault, owner, query, response)`.
+
+## Events
+
+### AgentPing
+
+```solidity
+event AgentPing(address indexed agentVault, address indexed sender, uint256 query);
+```
+
+### AgentPingResponse
+
+```solidity
+event AgentPingResponse(address indexed agentVault, address indexed owner, uint256 query, string response);
+```

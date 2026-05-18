@@ -42,7 +42,7 @@ Before you begin, ensure you have:
 - Familiarity with TypeScript/JavaScript and Node.js.
 - Hardhat development environment set up.
 - Knowledge of the FTSO and an overview of the Flare Data Connector (FDC).
-- Environment variables set up for `WEB2JSON_VERIFIER_URL_TESTNET`, `VERIFIER_API_KEY_TESTNET`, and `COSTON2_DA_LAYER_URL` as used in the `PriceVerification.ts` script.
+- Environment variables set up for `VERIFIER_URL_TESTNET`, `VERIFIER_API_KEY_TESTNET`, and `COSTON2_DA_LAYER_URL` as used in the `PriceVerification.ts` script.
 
 ## Concepts
 
@@ -53,10 +53,12 @@ This interface, found in the [`@flarenetwork/flare-periphery-contracts`](https:/
 
 #### Key functions
 
-- `feedId() external view returns (bytes21 _feedId)`:Returns the feed's unique identifier. The first byte must be 0x21 to signify a custom feed.
+- `feedId() external view returns (bytes21 _feedId)`:Returns the feed's unique identifier.
+  The first byte must be 0x21 to signify a custom feed.
 - `read() public view returns (uint256 value)`: Returns the latest value of the feed.
 - `decimals() external view returns (int8)`: Returns the number of decimals for the feed's value.
-- `calculateFee() external pure returns (uint256 _fee)`: Calculates the fee for reading the feed. This can be zero.
+- `calculateFee() external pure returns (uint256 _fee)`: Calculates the fee for reading the feed.
+  This can be zero.
 - `getCurrentFeed() external payable returns (uint256 _value, int8 _decimals, uint64 _timestamp)`: The primary method for retrieving the current feed data, including value, decimals, and a timestamp.
 
 ### Onchain contract: `PriceVerifierCustomFeed.sol`
@@ -77,7 +79,8 @@ It then exposes this price through the `IICustomFeed` interface.
   address public owner; // Address that deployed the contract, with privileges to update mappings.
   ```
 
-- **Constructor**: Initializes the feed's immutable properties, such as its `feedIdentifier`, symbol, and decimals. It also sets up an initial mapping of asset symbols (e.g., "BTC") to API-specific identifiers (e.g., CoinGecko's "bitcoin").
+- **Constructor**: Initializes the feed's immutable properties, such as its `feedIdentifier`, symbol, and decimals.
+  It also sets up an initial mapping of asset symbols (e.g., "BTC") to API-specific identifiers (e.g., CoinGecko's "bitcoin").
 
   ```solidity
   constructor(
@@ -140,7 +143,8 @@ The `PriceVerification.ts` script automates fetching data from CoinGecko via the
 
 It follows these sequential steps:
 
-1. **Deploy Contract:** The script first deploys the `PriceVerifierCustomFeed.sol` contract to the network. It constructs the unique `feedId` by combining the `0x21` prefix with a hash of the asset string (e.g., "BTC/USD-HIST").
+1. **Deploy Contract:** The script first deploys the `PriceVerifierCustomFeed.sol` contract to the network.
+   It constructs the unique `feedId` by combining the `0x21` prefix with a hash of the asset string (e.g., "BTC/USD-HIST").
 
 2. **Prepare Attestation Request:** It constructs a request for the FDC [Web2Json](/fdc/attestation-types/web2-json) attestation type, specifying the target API endpoint (CoinGecko), the parameters (which coin and date), and the JQ filter to extract the exact data point (the USD price) from the JSON response.
 
@@ -148,7 +152,8 @@ It follows these sequential steps:
 
 4. **Retrieve Proof:** After the attestation round is final, the script queries the [Data Availability (DA)](/fdc/reference/data-availability-api) layer to retrieve the finalized data and its corresponding Merkle proof.
 
-5. **Submit Proof to Custom Feed:** Finally, the script calls the `verifyPrice()` function on the deployed `PriceVerifierCustomFeed` contract, passing the retrieved proof. The contract then executes its verification logic and, if successful, updates the onchain price.
+5. **Submit Proof to Custom Feed:** Finally, the script calls the `verifyPrice()` function on the deployed `PriceVerifierCustomFeed` contract, passing the retrieved proof.
+   The contract then executes its verification logic and, if successful, updates the onchain price.
 
 <details>
   <summary>
@@ -193,10 +198,14 @@ cp .env.example .env
 
 You will need to provide the following:
 
-- `PRIVATE_KEY`: The private key of the account you want to use for deployment on the Coston2 testnet. This account must be funded with C2FLR tokens from the [Coston2 Faucet](https://faucet.flare.network/coston2).
-- `WEB2JSON_VERIFIER_URL_TESTNET`: The URL for the Web2Json Verifier service. You can leave the default value.
-- `VERIFIER_API_KEY_TESTNET`: An API key for the verifier service. You can get one from the [Flare Developer Portal](https://portal.flare.network/).
-- `COSTON2_DA_LAYER_URL`: The URL for the Data Availability Layer on Coston2. You can leave the default value.
+- `PRIVATE_KEY`: The private key of the account you want to use for deployment on the Coston2 testnet.
+  This account must be funded with C2FLR tokens from the [Coston2 Faucet](https://faucet.flare.network/coston2).
+- `VERIFIER_URL_TESTNET`: The URL for the Web2Json Verifier service.
+  You can leave the default value.
+- `VERIFIER_API_KEY_TESTNET`: An API key for the verifier service.
+  You can get one from the [Flare Developer Portal](https://portal.flare.network/).
+- `COSTON2_DA_LAYER_URL`: The URL for the Data Availability Layer on Coston2.
+  You can leave the default value.
 
 :::danger
 
@@ -206,10 +215,11 @@ Never commit your `.env` file or share your private keys publicly.
 
 ### 4. Run the verification script
 
-The `PriceVerification.ts` script, located in `scripts/customFeeds/`, automates the entire process. Execute it on the Coston2 Testnet:
+The `PriceVerification.ts` script, located in `scripts/customFeeds/`, automates the entire process.
+Execute it on the Coston2 Testnet:
 
 ```bash
-npx hardhat run scripts/customFeeds/PriceVerification.ts --network coston2
+yarn hardhat run scripts/customFeeds/PriceVerification.ts --network coston2
 ```
 
 The script will:
@@ -252,7 +262,8 @@ Price verification process completed successfully.
 ### 6. Verify on explorer
 
 You can view your deployed contract on the [Coston2 Explorer](https://coston2-explorer.flare.network/).
-Use the contract address from the script's output to look it up. On the **Read Contract** tab, call the `latestVerifiedPrice()` function to confirm the price was stored onchain.
+Use the contract address from the script's output to look it up.
+On the **Read Contract** tab, call the `latestVerifiedPrice()` function to confirm the price was stored onchain.
 
 ## Propose a new Custom Feed
 

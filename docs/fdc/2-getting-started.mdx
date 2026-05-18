@@ -33,7 +33,8 @@ Learn how to [deploy your first smart contract](/network/getting-started) on Fla
 
 :::
 
-At its core, FDC enables any smart contract on Flare to query immutable, verifiable information from supported blockchain networks. The protocol achieves consensus through the BitVote-reveal mechanism within the Flare Systems Protocol suite, allowing dapps to validate external blockchain data using Merkle proofs.
+At its core, FDC enables any smart contract on Flare to query immutable, verifiable information from supported blockchain networks.
+The protocol achieves consensus through the BitVote-reveal mechanism within the Flare Systems Protocol suite, allowing dapps to validate external blockchain data using Merkle proofs.
 
 Currently supported networks include:
 
@@ -100,7 +101,8 @@ The Data Connector operates in separate environments for mainnets and testnets, 
 ## Prepare the attestation request
 
 To attest to transaction data, we need to encode it in a format that the Flare Data Connector (FDC) can process.
-This is done through a verifier service. While you can set up your own verifier, we'll use Flare's testnet verifier service available at `https://fdc-verifiers-testnet.flare.network/`.
+This is done through a verifier service.
+While you can set up your own verifier, we'll use Flare's testnet verifier service available at `https://fdc-verifiers-testnet.flare.network/`.
 You can explore the API through their Swagger interface at `https://fdc-verifiers-testnet.flare.network/verifier/api-doc`.
 
 ### Request structure
@@ -164,7 +166,10 @@ If consensus fails, you'll need to resubmit the request.
 <details>
     <summary>Understanding the structure of `abiEncodedRequest`.</summary>
 
-    The structure of `abiEncodedRequest` may seem complex, but it's essentially a concatenated hex string (with the initial 0x removed) representing different parts of the request. Each part is 32 bytes long (64 characters in hex). Here's a breakdown of the string:
+    The structure of `abiEncodedRequest` may seem complex, but it's essentially a concatenated hex string (with the initial 0x removed) representing different parts of the request.
+
+Each part is 32 bytes long (64 characters in hex).
+Here's a breakdown of the string:
 
     ```text
     45564d5472616e73616374696f6e000000000000000000000000000000000000
@@ -187,7 +192,10 @@ If consensus fails, you'll need to resubmit the request.
 
     - **Second line:** `toHex("testETH")`
 
-    - **Third line:** Message Integrity Code (MIC). This is a hash of the whole response salted with a string `Flare`. It ensures the integrity of the attestation and prevents tampering.
+    - **Third line:** Message Integrity Code (MIC).
+
+This is a hash of the whole response salted with a string `Flare`.
+It ensures the integrity of the attestation and prevents tampering.
 
     - **Remaining lines:** ABI encoded request body (as solidity struct).
       The structure of the body is defined in the accompanying attestation [type specification](https://github.com/flare-foundation/songbird-state-connector-protocol/blob/main/contracts/interface/types/EVMTransaction.sol#L68).
@@ -305,7 +313,8 @@ This data is now ready to be used in your smart contract to:
 
 ## Verify and use the data
 
-Let's examine how to verify and utilize the data from the DA Layer API in your smart contract. We'll focus on a practical example: listening for and verifying USDC transfer events.
+Let's examine how to verify and utilize the data from the DA Layer API in your smart contract.
+We'll focus on a practical example: listening for and verifying USDC transfer events.
 
 ### Data structure
 
@@ -387,7 +396,8 @@ Don't forget to set the EVM version to `cancun` in Remix before compiling the co
 
 1. **Proof Verification**
 
-   The contract uses the `ContractRegistry` library to access Flare's official verifiers. The verification process:
+   The contract uses the `ContractRegistry` library to access Flare's official verifiers.
+   The verification process:
    - Retrieves the current verifier through the Flare governance-managed registry
    - Uses `isEVMTransactionProofValid` to verify the Merkle proof and data integrity
    - Requires successful verification before proceeding with any data processing

@@ -1,0 +1,33 @@
+---
+title: ICoreVaultClient
+sidebar_position: 8
+description: Agent-facing interface for transferring backing assets into and out of the FAssets core vault.
+---
+
+`ICoreVaultClient` is the agent-facing surface of the FAssets **core vault** subsystem.
+Agents transfer backing into the core vault to free up capital, and request returns when they need to redeem.
+Direct minting (FAssets minted without an XRPL payment from the user) and direct redemptions also flow through this client.
+
+Sourced from `ICoreVaultClient.sol` on [GitHub](https://github.com/flare-foundation/fassets/blob/main/contracts/userInterfaces/ICoreVaultClient.sol).
+
+## Workflows
+
+The interface groups three lifecycle flows:
+
+1. **Transfer to core vault** — `transferToCoreVault`, with `TransferToCoreVaultStarted` → `TransferToCoreVaultSuccessful` (or `TransferToCoreVaultDefaulted`) events.
+2. **Return from core vault** — `requestReturnFromCoreVault` → `confirmReturnFromCoreVault`, with the corresponding `ReturnFromCoreVault*` events.
+3. **Core-vault redemption** — `redeemFromCoreVault`, emitting `CoreVaultRedemptionRequested`.
+
+## Events
+
+A non-exhaustive list of the events exposed by `ICoreVaultClient` (consult the source for the full list and field semantics):
+
+- `TransferToCoreVaultStarted(address agentVault, uint256 transferRedemptionRequestId, uint256 valueUBA)`
+- `TransferToCoreVaultDefaulted(address agentVault, uint256 transferRedemptionRequestId, uint256 remintedUBA)`
+- `TransferToCoreVaultSuccessful(address agentVault, uint256 transferRedemptionRequestId, uint256 valueUBA)`
+- `ReturnFromCoreVaultRequested(address agentVault, uint256 requestId, bytes32 paymentReference, uint256 valueUBA)`
+- `ReturnFromCoreVaultCancelled(address agentVault, uint256 requestId)`
+- `ReturnFromCoreVaultConfirmed(address agentVault, uint256 requestId, uint256 receivedUnderlyingUBA, uint256 remintedUBA)`
+- `CoreVaultRedemptionRequested(address redeemer, string paymentAddress, bytes32 paymentReference, uint256 valueUBA, uint256 feeUBA)`
+
+See the linked source for the full set of functions and accompanying NatSpec.
