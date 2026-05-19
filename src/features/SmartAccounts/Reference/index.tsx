@@ -8,7 +8,7 @@ import { reference } from "./reference-data";
 export default function SmartAccountsReference() {
   function ReferenceTable({ network }: { network: "coston2" | "flare" }) {
     return (
-      <table>
+      <table data-markdown-ignore>
         <thead>
           <tr>
             <th>Contract</th>

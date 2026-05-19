@@ -104,7 +104,7 @@ export default function OperationalParameters({
     };
 
     return (
-      <table>
+      <table data-markdown-ignore>
         <thead>
           <tr>
             <th>Parameter</th>

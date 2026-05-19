@@ -93,7 +93,7 @@ const FeedStability: React.FC<FeedStabilityProps> = ({
   const sortedData = [...data].sort((a, b) => b.stability - a.stability);
 
   return (
-    <table className={styles.table}>
+    <table className={styles.table} data-markdown-ignore>
       <thead>
         <tr className={styles.header}>
           <th>Feed</th>

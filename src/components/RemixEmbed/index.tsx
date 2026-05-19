@@ -20,7 +20,7 @@ export default function RemixEmbed({
   const parameters =
     "&version=builtin&evmVersion=cancun&optimize=true&runs=200";
   return (
-    <div>
+    <div data-markdown-ignore>
       <Link
         className="button button--primary"
         href={baseUrl + githubUrl + parameters}

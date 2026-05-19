@@ -84,7 +84,11 @@ const YouTubeEmbed: React.FC<YouTubeEmbedProps> = ({
   }, [isActivated, loadStrategy, rootMargin]);
 
   return (
-    <div ref={containerRef} className={clsx(styles.container, className)}>
+    <div
+      ref={containerRef}
+      className={clsx(styles.container, className)}
+      data-markdown-ignore
+    >
       <Head>
         <link rel="preconnect" href="https://i.ytimg.com" />
         <link
