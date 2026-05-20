@@ -27,11 +27,12 @@ async function main() {
   const xrplWallet = Wallet.fromSeed(process.env.XRPL_SEED!);
 
   // 3. Resolve the personal account, memo-only XRP fee, and market decimals in parallel.
-  const [personalAccount, memoOnlyAmountXrp, marketDecimals] = await Promise.all([
-    getPersonalAccountAddress(xrplWallet.address),
-    computeDirectMintingPaymentAmountXrp({ netMintAmountXrp: 0 }),
-    fetchMarketDecimals(),
-  ]);
+  const [personalAccount, memoOnlyAmountXrp, marketDecimals] =
+    await Promise.all([
+      getPersonalAccountAddress(xrplWallet.address),
+      computeDirectMintingPaymentAmountXrp({ netMintAmountXrp: 0 }),
+      fetchMarketDecimals(),
+    ]);
 
   // 4. Log the addresses involved in this run.
   console.log("Personal account:", personalAccount, "\n");
@@ -46,13 +47,22 @@ async function main() {
   await mintMock(
     COLLATERAL_TOKEN_ADDRESS,
     personalAccount,
-    collateralFundingUnits * 10n ** BigInt(marketDecimals.collateralDecimals)
+    collateralFundingUnits * 10n ** BigInt(marketDecimals.collateralDecimals),
   );
-  await mintMock(LOAN_TOKEN_ADDRESS, personalAccount, loanFundingUnits * 10n ** BigInt(marketDecimals.loanDecimals));
+  await mintMock(
+    LOAN_TOKEN_ADDRESS,
+    personalAccount,
+    loanFundingUnits * 10n ** BigInt(marketDecimals.loanDecimals),
+  );
   console.log("Funded smart account with collateral and loan tokens.\n");
 
   // 7. Approve the shim for both tokens and authorize it on Morpho Blue (XRPL memos).
-  await ensureShimSetup({ personalAccount, xrplClient, xrplWallet, amountXrp: memoOnlyAmountXrp });
+  await ensureShimSetup({
+    personalAccount,
+    xrplClient,
+    xrplWallet,
+    amountXrp: memoOnlyAmountXrp,
+  });
 
   // 8. Snapshot state again to confirm balances and that setup memos succeeded.
   await getAndLogState("After setup", personalAccount, marketDecimals);

@@ -2,7 +2,10 @@ import { encodeFunctionData, formatUnits } from "viem";
 import { Client, Wallet } from "xrpl";
 import { abi as MorphoMarketShimAbi } from "../abis/MorphoMarketShim";
 import { account, publicClient } from "../utils/client";
-import { getPersonalAccountAddress, sendMemoFieldInstruction } from "../utils/smart-accounts";
+import {
+  getPersonalAccountAddress,
+  sendMemoFieldInstruction,
+} from "../utils/smart-accounts";
 import { computeDirectMintingPaymentAmountXrp } from "../utils/fassets";
 import {
   LLTV,
@@ -35,12 +38,17 @@ async function main() {
   const xrplWallet = Wallet.fromSeed(process.env.XRPL_SEED!);
 
   // 2. Resolve the personal account, memo-only XRP fee, market decimals, and oracle price in parallel.
-  const [personalAccount, memoOnlyAmountXrp, marketDecimals, oraclePrice] = await Promise.all([
-    getPersonalAccountAddress(xrplWallet.address),
-    computeDirectMintingPaymentAmountXrp({ netMintAmountXrp: 0 }),
-    fetchMarketDecimals(),
-    publicClient.readContract({ address: ORACLE_ADDRESS, abi: ORACLE_ABI, functionName: "price" }),
-  ]);
+  const [personalAccount, memoOnlyAmountXrp, marketDecimals, oraclePrice] =
+    await Promise.all([
+      getPersonalAccountAddress(xrplWallet.address),
+      computeDirectMintingPaymentAmountXrp({ netMintAmountXrp: 0 }),
+      fetchMarketDecimals(),
+      publicClient.readContract({
+        address: ORACLE_ADDRESS,
+        abi: ORACLE_ABI,
+        functionName: "price",
+      }),
+    ]);
   const { loanDecimals, collateralDecimals, oraclePriceScale } = marketDecimals;
 
   // 3. Fix collateral supply at 100 whole units (scaled by token decimals).
@@ -56,7 +64,8 @@ async function main() {
   await getAndLogState("Before borrow", personalAccount, marketDecimals);
 
   // 6. Compute max borrow off-chain via Morpho Blue's health formula, then borrow 99% for a safety margin.
-  const maxBorrowAssets = (collateralAssets * oraclePrice * LLTV) / (oraclePriceScale * WAD);
+  const maxBorrowAssets =
+    (collateralAssets * oraclePrice * LLTV) / (oraclePriceScale * WAD);
   const borrowAssets = (maxBorrowAssets * 99n) / 100n;
   console.log("Oracle price:", oraclePrice.toString());
   console.log(
@@ -64,7 +73,7 @@ async function main() {
     formatUnits(maxBorrowAssets, loanDecimals),
     "→ borrowing:",
     formatUnits(borrowAssets, loanDecimals),
-    "\n"
+    "\n",
   );
 
   // 7. Supply collateral and borrow loan tokens in one XRPL memo via the shim.

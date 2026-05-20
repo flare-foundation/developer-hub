@@ -2,9 +2,17 @@ import { encodeFunctionData } from "viem";
 import { Client, Wallet } from "xrpl";
 import { abi as MorphoMarketShimAbi } from "../abis/MorphoMarketShim";
 import { account } from "../utils/client";
-import { getPersonalAccountAddress, sendMemoFieldInstruction } from "../utils/smart-accounts";
+import {
+  getPersonalAccountAddress,
+  sendMemoFieldInstruction,
+} from "../utils/smart-accounts";
 import { computeDirectMintingPaymentAmountXrp } from "../utils/fassets";
-import { MORPHO_MARKET_SHIM_ADDRESS, fetchMarketDecimals, getAndLogState, marketId } from "./utils";
+import {
+  MORPHO_MARKET_SHIM_ADDRESS,
+  fetchMarketDecimals,
+  getAndLogState,
+  marketId,
+} from "./utils";
 
 // NOTE:(Nik) Run after src/morpho/borrow.ts has opened a position. Assumes
 // src/morpho/setup.ts has already funded the smart account and configured
@@ -18,11 +26,12 @@ async function main() {
   const xrplWallet = Wallet.fromSeed(process.env.XRPL_SEED!);
 
   // 2. Resolve on-chain inputs in parallel — personal account, XRPL memo fee, Morpho token decimals for logging.
-  const [personalAccount, memoOnlyAmountXrp, marketDecimals] = await Promise.all([
-    getPersonalAccountAddress(xrplWallet.address),
-    computeDirectMintingPaymentAmountXrp({ netMintAmountXrp: 0 }),
-    fetchMarketDecimals(),
-  ]);
+  const [personalAccount, memoOnlyAmountXrp, marketDecimals] =
+    await Promise.all([
+      getPersonalAccountAddress(xrplWallet.address),
+      computeDirectMintingPaymentAmountXrp({ netMintAmountXrp: 0 }),
+      fetchMarketDecimals(),
+    ]);
 
   // 3. Log addresses for this run.
   console.log("Personal account:", personalAccount, "\n");
@@ -31,14 +40,22 @@ async function main() {
   console.log("Shim address:    ", MORPHO_MARKET_SHIM_ADDRESS, "\n");
 
   // 4. Snapshot before repay — exit early if there is no open position.
-  const { borrowShares, collateral } = await getAndLogState("Before repay", personalAccount, marketDecimals);
+  const { borrowShares, collateral } = await getAndLogState(
+    "Before repay",
+    personalAccount,
+    marketDecimals,
+  );
 
   if (borrowShares === 0n && collateral === 0n) {
     console.log("Nothing to repay or withdraw. Exiting.");
     return;
   }
 
-  console.log("Repaying full position, borrowShares:", borrowShares.toString(), "\n");
+  console.log(
+    "Repaying full position, borrowShares:",
+    borrowShares.toString(),
+    "\n",
+  );
   // 5. Send repay-and-withdraw memo — shim repays full borrow shares, withdraws all collateral atomically (receiver = smart account).
   await sendMemoFieldInstruction({
     label: "repay-and-withdraw",
@@ -60,7 +77,11 @@ async function main() {
   });
 
   // 6. Snapshot after repay — expect borrow shares and position collateral near zero (loan-token balance reflects interest paid).
-  await getAndLogState("After repay + withdraw", personalAccount, marketDecimals);
+  await getAndLogState(
+    "After repay + withdraw",
+    personalAccount,
+    marketDecimals,
+  );
 }
 
 void main()
