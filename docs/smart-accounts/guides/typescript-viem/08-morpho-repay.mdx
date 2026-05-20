@@ -1,0 +1,99 @@
+---
+sidebar_position: 8
+slug: morpho-repay-ts
+title: Morpho Repay
+authors: [nikerzetic]
+description: Close a Morpho Blue position from a Flare smart account via repayAndWithdrawCollateral.
+tags: [intermediate, ethereum, flare-smart-accounts]
+keywords:
+  [
+    ethereum,
+    flare-smart-accounts,
+    evm,
+    flare-network,
+    account-abstraction,
+    morpho,
+    defi,
+  ]
+unlisted: false
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import MorphoRepayScript from "!!raw-loader!/examples/developer-hub-javascript/smart-accounts/morpho/repay.ts";
+
+This guide closes a Morpho Blue position that was opened in the [Morpho Borrow](/smart-accounts/guides/typescript-viem/morpho-borrow-ts) guide.
+
+:::info Setup
+It assumes the [Morpho Setup](/smart-accounts/guides/typescript-viem/morpho-setup-ts) guide has already funded the smart account and configured shim approvals plus Morpho authorization.
+:::
+
+## Full Script
+
+To close the position, explore the full script below.
+
+<CodeBlock language="typescript" title="src/morpho/repay.ts">
+  {MorphoRepayScript}
+</CodeBlock>
+
+## Code Breakdown
+
+**1. Connect to XRPL.**
+The XRPL wallet controls the personal account.
+Morpho operations are sent as memo-field custom instructions from the smart account, not as Flare EOA (Externally Owned Account) transactions.
+
+**2. Resolve on-chain inputs in parallel.**
+The script fetches the personal account address, the memo-only XRP fee, and market token decimals.
+
+**3. Log addresses.**
+It prints the personal account, operator EOA, Morpho market ID, and shim smart contract address for this run.
+
+**4. Snapshot before repayment and early exit.**
+It reads the current Morpho position for the smart account and logs the borrowed shares and position collateral.
+
+**5. Send the repay-and-withdraw memo.**
+A single custom instruction calls `MorphoMarketShim` smart contract `repayAndWithdrawCollateral` function with:
+
+- **`borrowShares`** — repay the full borrowed position in share units (matches what Morpho reports for the smart account).
+- **`collateral`** — withdraw the entire position collateral amount in asset units.
+- **`personalAccount`** — using the personal account address as the `collateralReceiver` so withdrawn collateral returns to the smart account rather than an external address.
+
+Repay uses share-denominated repayment and asset-denominated withdrawal, aligned with Morpho Blue.
+The shim smart contract performs repay and withdraw operations atomically, so the position cannot be left half-closed if one leg fails.
+
+**6. Snapshot after repayment.**
+Log position and wallet balances again.
+Expect the borrowed shares and position collateral to be near zero.
+The loan token balance may be slightly lower than before the borrow cycle due to accrued interest.
+
+## Expected Output
+
+When you run the script, you should see output similar to the following.
+
+```bash
+Personal account: 0x...
+Operator EOA:     0x...
+Morpho market id: 0x...
+Shim address:     0x...
+
+=== Before repay ===
+  position borrow (≈loan tokens):   ...
+  position collateral:              100
+  ...
+
+Repaying full position, borrowShares: ...
+
+[repay-and-withdraw] XRPL transaction hash: ...
+[repay-and-withdraw] UserOperationExecuted event: ...
+
+=== After repay + withdraw ===
+  position borrow (≈loan tokens):   0
+  position collateral:              0
+  ...
+```
+
+:::tip[What's next]
+After you have completed the repayment, you can explore how to [open a new borrow position](/smart-accounts/guides/typescript-viem/morpho-borrow-ts) again.
+
+You can open and repay, re-running the setup while the loan-token buffer covers interest.
+Re-run [setup](/smart-accounts/guides/typescript-viem/morpho-setup-ts) if allowances are revoked or the loan-token balance is exhausted.
+:::

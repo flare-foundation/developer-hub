@@ -1,0 +1,112 @@
+---
+sidebar_position: 7
+slug: morpho-borrow-ts
+title: Morpho Borrow
+authors: [nikerzetic]
+description: Open a Morpho Blue borrow position from a Flare smart account via supplyAndBorrow.
+tags: [intermediate, ethereum, flare-smart-accounts]
+keywords:
+  [
+    ethereum,
+    flare-smart-accounts,
+    evm,
+    flare-network,
+    account-abstraction,
+    morpho,
+    defi,
+  ]
+unlisted: false
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import MorphoBorrowScript from "!!raw-loader!/examples/developer-hub-javascript/smart-accounts/morpho/borrow.ts";
+
+This guide opens a [Morpho Blue](https://docs.morpho.org/) borrow position from a Flare smart account in a single XRPL memo.
+It calls the `MorphoMarketShim` smart contract `supplyAndBorrow` function, which supplies `100` units of collateral and borrows up to roughly `99%` of the maximum healthy loan amount.
+
+:::info Setup
+Run the [Morpho Setup](/smart-accounts/guides/typescript-viem/morpho-setup-ts) guide first.
+Without funded tokens, shim smart contract approvals, and Morpho authorization, the transaction reverts.
+:::
+
+To close the position follow the [Morpho Repay](/smart-accounts/guides/typescript-viem/morpho-repay-ts) guide.
+
+The full Morpho cycle lives in the [flare-viem-starter](https://github.com/flare-foundation/flare-viem-starter).
+
+## Full Script
+
+To open a borrow position, explore the full script below.
+
+<CodeBlock language="typescript" title="src/morpho/borrow.ts">
+  {MorphoBorrowScript}
+</CodeBlock>
+
+## Code Breakdown
+
+**1. Connect to XRPL.**
+Open an XRPL client and wallet.
+The XRPL wallet controls the personal account.
+Morpho operations are sent as memo-field custom instructions from the smart account, not as Flare EOA (External Owned Account) transactions.
+
+**2. Resolve on-chain inputs in parallel.**
+The script fetches the personal account address, the memo-only XRP fee, market token decimals, and the mock oracle price in parallel.
+
+**3. Set collateral supply size.**
+Collateral is fixed at `100` whole token units, scaled by `collateralDecimals`.
+This matches the collateral funding amount from [Morpho Setup](/smart-accounts/guides/typescript-viem/morpho-setup-ts).
+
+**4. Log addresses.**
+It prints the personal account, operator EOA, Morpho market ID, and shim address for this run.
+
+**5. Snapshot before borrowing.**
+It logs the Morpho position and wallet balances before the borrow.
+On a first borrow after setup, the borrowed shares and the position collateral should be zero while the smart account holds the funded tokens.
+
+**6. Compute borrow size off-chain.**
+The script reads the mock oracle price and applies Morpho Blue's health formula to derive the maximum borrowable amount:
+
+```
+maxBorrowAssets = collateral * oraclePrice * lltv / (oraclePriceScale * WAD)
+```
+
+It then borrows `99%` of that value to leave a small safety margin for interest accrued during the transaction.
+
+**7. Send the supply-and-borrow memo.**
+A single custom instruction executes the `MorphoMarketShim` smart contract `supplyAndBorrow` function.
+
+Bundling supply and borrow inside the shim smart contract keeps the encoded user operation under the XRPL memo size limit.
+
+**8. Snapshot after borrowing.**
+Print the Morpho position and wallet balances after the borrow.
+Expect position collateral to be near `100`, a non-zero borrow balance, and an increased loan-token wallet balance.
+
+## Expected Output
+
+When you run the script, you should see output similar to the following.
+
+```bash
+Personal account: 0x...
+Operator EOA:     0x...
+Morpho market id: 0x...
+Shim address:     0x33d81a1d7986bB3AbAB4F67Ad6117233ADd6F87A
+
+=== Before borrow ===
+  position borrow (≈loan tokens):   0
+  position collateral:              0
+  ...
+
+Oracle price: ...
+Max borrowable: ... → borrowing: ...
+
+[supply-and-borrow] XRPL transaction hash: ...
+[supply-and-borrow] UserOperationExecuted event: ...
+
+=== After borrow ===
+  position borrow (≈loan tokens):   ...
+  position collateral:              100
+  ...
+```
+
+:::tip[What's next]
+After you have completed the borrow, you can explore how to [repay the borrow position](/smart-accounts/guides/typescript-viem/morpho-repay-ts).
+:::
