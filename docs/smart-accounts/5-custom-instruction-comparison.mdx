@@ -3,7 +3,7 @@ sidebar_position: 1
 slug: custom-instruction-comparison
 title: Custom Instruction Comparison
 authors: [nikerzetic]
-description: Comparing the full (0xFF) and hash (0xFE) custom instruction flows for Flare Smart Accounts.
+description: Comparing the raw (0xFF) and hash-based (0xFE) custom instruction flows for Flare Smart Accounts.
 tags: [intermediate, ethereum, flare-smart-accounts]
 keywords:
   [
@@ -18,54 +18,54 @@ keywords:
 
 Flare Smart Accounts expose two custom instruction memo opcodes that ultimately execute the same `PackedUserOperation` against a personal account:
 
-- [**Full Custom Instruction**](/smart-accounts/full-custom-instruction) — opcode `0xFF`. The XRPL memo contains the ABI-encoded `PackedUserOperation` in full.
-- [**Hash Custom Instruction**](/smart-accounts/hash-custom-instruction) — opcode `0xFE`. The XRPL memo carries only `keccak256(userOp)` in fixed 42 bytes; an off-chain executor delivers the ABI-encoded custom instruction (`userOp`) via `executeDirectMintingWithData`.
+- [**Custom Instruction**](/smart-accounts/custom-instruction) - opcode `0xFE`. The XRPL memo carries only `keccak256(userOp)` in fixed 42 bytes; an off-chain executor delivers the ABI-encoded custom instruction (`userOp`) via `executeDirectMintingWithData`.
+- [**Raw Custom Instruction**](/smart-accounts/raw-custom-instruction) - opcode `0xFF`. The XRPL memo contains the ABI-encoded `PackedUserOperation` in full.
 
 Both flows are validated on-chain against the same `(sender, nonce)` rules and emit the same [`UserOperationExecuted`](/smart-accounts/reference/IMasterAccountController#useroperationexecuted) event.
 The difference is purely in how the user-operation bytes travel to Flare, and which actor performs which step.
 
-The hash flow was added because the XRPL `Payment` memo is capped at `1024` bytes — small enough that non-trivial user operations either had to be split across multiple XRPL payments (each paying its own minting and executor fees) or routed through purpose-built shim contracts on Flare that compressed the call into something memo-sized.
+The hash-based flow was added because the XRPL `Payment` memo is capped at `1024` bytes - small enough that non-trivial user operations either had to be split across multiple XRPL payments (each paying its own minting and executor fees) or routed through purpose-built shim contracts on Flare that compressed the call into something memo-sized.
 The 0xFE memo is a constant 42 bytes regardless of the user operation size, which removes the need for both workarounds.
 
 ## Side-by-side
 
-| Dimension                          | Full (`0xFF`)                                                                             | Hash (`0xFE`)                                                                                 |
-| ---------------------------------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| XRPL memo payload                  | 10-byte header + `abi.encode(PackedUserOperation)`                                        | 10-byte header + `keccak256(userOp)` (fixed 42 bytes)                                         |
-| XRPL memo size                     | Grows linearly with batch and argument sizes; capped at ~1024 bytes                       | Constant 42 bytes regardless of batch size                                                    |
-| Privacy of call payload            | `target`, `value`, `data` are public on XRPL                                              | Only the hash is public; bytes travel off-chain to the executor                               |
-| Actors                             | One: the XRPL user; an indexer relays the payment                                         | Two: the XRPL user plus an off-chain executor who calls `executeDirectMintingWithData`        |
-| Where the UserOp is decoded        | The `MasterAccountController` decodes from `_memoData` in `handleMintedFAssets`           | The `MasterAccountController` decodes from `_data` after verifying `keccak256(_data) == hash` |
-| AssetManager entry point           | `executeDirectMinting(proof)`                                                             | `executeDirectMintingWithData(proof, data)`                                                   |
-| `msg.value` on the inner call      | Whatever the relayer attaches; forwarded to `executeUserOp`                               | Whatever the executor attaches; forwarded to `executeUserOp`                                  |
-| Confirmation                       | Watch for `UserOperationExecuted` after the `MasterAccountController` dispatches the memo | Same event lives in the executor's transaction receipt                                        |
-| Replay protection                  | Personal account nonce + `usedTransactionIds`                                             | Same — plus the on-chain hash check pins `_data` to the memo's commitment                     |
-| Failure modes specific to the flow | None beyond shared ones                                                                   | `CustomInstructionHashMismatch` if `keccak256(_data)` differs from the commitment             |
+| Dimension                          | Custom Instruction (`0xFE`)                                                                   | Raw Custom Instruction (`0xFF`)                                                           |
+| ---------------------------------- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| XRPL memo payload                  | 10-byte header + `keccak256(userOp)` (fixed 42 bytes)                                         | 10-byte header + `abi.encode(PackedUserOperation)`                                        |
+| XRPL memo size                     | Constant 42 bytes regardless of batch size                                                    | Grows linearly with batch and argument sizes; capped at ~1024 bytes                       |
+| Privacy of call payload            | Only the hash is public; bytes travel off-chain to the executor                               | `target`, `value`, `data` are public on XRPL                                              |
+| Actors                             | Two: the XRPL user plus an off-chain executor who calls `executeDirectMintingWithData`        | One: the XRPL user; an indexer relays the payment                                         |
+| Where the UserOp is decoded        | The `MasterAccountController` decodes from `_data` after verifying `keccak256(_data) == hash` | The `MasterAccountController` decodes from `_memoData` in `handleMintedFAssets`           |
+| AssetManager entry point           | `executeDirectMintingWithData(proof, data)`                                                   | `executeDirectMinting(proof)`                                                             |
+| `msg.value` on the inner call      | Whatever the executor attaches; forwarded to `executeUserOp`                                  | Whatever the relayer attaches; forwarded to `executeUserOp`                               |
+| Confirmation                       | Same event lives in the executor's transaction receipt                                        | Watch for `UserOperationExecuted` after the `MasterAccountController` dispatches the memo |
+| Replay protection                  | Same as raw - plus the on-chain hash check pins `_data` to the memo's commitment              | Personal account nonce + `usedTransactionIds`                                             |
+| Failure modes specific to the flow | `CustomInstructionHashMismatch` if `keccak256(_data)` differs from the commitment             | None beyond shared ones                                                                   |
 
 ## When to use which
 
-**Use the full flow (`0xFF`) when**
+**Use the custom instruction (`0xFE`) when**
+
+- The user operation's ABI encoding exceeds the XRPL memo cap (long `bytes` arguments, large call batches, or deeply nested structs). Without it, you would either split the logical user operation into multiple XRPL payments (paying minting and executor fees on each) or deploy a Flare-side shim contract to compress the call - the custom instruction eliminates both.
+- You want the call payload to remain off the public XRPL ledger.
+- You already operate an executor that observes XRPL payments and submits Flare transactions - the custom instruction lets that executor batch deliveries or rate-limit submissions without splitting user operations into multiple XRPL payments.
+- You need fee predictability: the XRPL memo is always 42 bytes, so the XRPL fee is constant regardless of how complex the user operation is.
+
+**Use the raw custom instruction (`0xFF`) when**
 
 - The call batch fits comfortably inside the XRPL ~1024-byte memo (most single-call user operations and small batches do).
 - You do not need to hide the call payload from public XRPL observers.
 - You do not want to operate or coordinate with an executor service.
 - You want the simplest possible on-chain integration: a single FAssets transaction `executeDirectMinting(proof)` carries the whole thing.
 
-**Use the hash flow (`0xFE`) when**
-
-- The user operation's ABI encoding exceeds the XRPL memo cap (long `bytes` arguments, large call batches, or deeply nested structs). Without it, you would either split the logical user operation into multiple XRPL payments (paying minting and executor fees on each) or deploy a Flare-side shim contract to compress the call — the hash flow eliminates both.
-- You want the call payload to remain off the public XRPL ledger.
-- You already operate an executor that observes XRPL payments and submits Flare transactions — the hash flow lets that executor batch deliveries or rate-limit submissions without splitting user operations into multiple XRPL payments.
-- You need fee predictability: the XRPL memo is always 42 bytes, so the XRPL fee is constant regardless of how complex the user operation is.
-
-In short, the hash flow trades a small amount of off-chain coordination (and one extra on-chain proof-binding check) for a fixed memo size and private payloads.
-The full flow trades memo bandwidth for end-to-end simplicity.
+In short, the custom instruction trades a small amount of off-chain coordination (and one extra on-chain proof-binding check) for a fixed memo size and private payloads.
+The raw custom instruction trades memo bandwidth for end-to-end simplicity.
 
 ## What stays the same
 
 The two flows share more than they differ:
 
-- The `PackedUserOperation` is built the same way in both — only `sender`, `nonce`, and `callData` are validated; the rest can be empty.
+- The `PackedUserOperation` is built the same way in both - only `sender`, `nonce`, and `callData` are validated; the rest can be empty.
 - The `Call[]` struct is identical.
 - The personal account's `executeUserOp` runs identically: each call is dispatched in order with the personal account as `msg.sender`, and any inner revert surfaces as `CallFailed`.
 - The XRPL `Payment` must be **untagged** in both flows; a destination tag forces the FAssets minting to credit the tag holder instead of the smart account.
@@ -76,13 +76,13 @@ The two flows share more than they differ:
 
 The example helpers in [`flare-viem-starter`](https://github.com/flare-foundation/flare-viem-starter) mirror the two flows directly:
 
-- Full: [`sendMemoFieldInstruction`](/smart-accounts/guides/typescript-viem/full-custom-instruction-ts#sending-the-user-operation) — one call, waits for the event.
-- Hash: [`sendHashInstruction`](/smart-accounts/guides/typescript-viem/hash-custom-instruction-ts#step-1-send-the-hash-memo-on-xrpl) + [`executeDirectMintingWithData`](/smart-accounts/guides/typescript-viem/hash-custom-instruction-ts#step-2-executor-submits-the-proof-and-the-bytes) + [`findUserOperationExecuted`](/smart-accounts/guides/typescript-viem/hash-custom-instruction-ts#step-3-confirm-execution-from-the-receipt) — three calls, one per actor.
+- Custom Instruction: [`sendHashInstruction`](/smart-accounts/guides/typescript-viem/custom-instruction-ts#step-1-send-the-hash-memo-on-xrpl) + [`executeDirectMintingWithData`](/smart-accounts/guides/typescript-viem/custom-instruction-ts#step-2-executor-submits-the-proof-and-the-bytes) + [`findUserOperationExecuted`](/smart-accounts/guides/typescript-viem/custom-instruction-ts#step-3-confirm-execution-from-the-receipt) - three calls, one per actor.
+- Raw Custom Instruction: [`sendMemoFieldInstruction`](/smart-accounts/guides/typescript-viem/raw-custom-instruction-ts#sending-the-user-operation) - one call, waits for the event.
 
 A practical decision rule when integrating:
 
-1. Encode your `PackedUserOperation` with `abi.encode`. If the result is well under ~900 bytes (leaving room for the 10-byte header and XRPL framing), the full flow is the simpler choice.
-2. If you cannot guarantee that bound — or if you need privacy — switch to the hash flow and stand up an executor.
+1. Default to the custom instruction (`0xFE`). It fits every call batch and keeps the call payload off the public XRPL ledger.
+2. Reach for the raw custom instruction (`0xFF`) only when you do not want to operate or coordinate with an executor service, and you can guarantee `abi.encode(userOp)` stays well under ~900 bytes (leaving room for the 10-byte header and XRPL framing).
 
 ## Reference
 

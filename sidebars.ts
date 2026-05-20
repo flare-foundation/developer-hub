@@ -167,8 +167,8 @@ const sidebars: SidebarsConfig = {
       link: { type: "doc", id: "smart-accounts/overview" },
       items: [
         "smart-accounts/fasset-instructions",
-        "smart-accounts/full-custom-instruction",
-        "smart-accounts/hash-custom-instruction",
+        "smart-accounts/custom-instruction",
+        "smart-accounts/raw-custom-instruction",
         "smart-accounts/custom-instruction-comparison",
         {
           type: "category",

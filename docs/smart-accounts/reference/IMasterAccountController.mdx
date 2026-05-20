@@ -249,7 +249,7 @@ Memo instructions allow a [`PersonalAccount`](/smart-accounts/reference/IPersona
 
 Called by the FAssets `AssetManager` when FXRP is direct-minted into a personal account.
 Decodes the XRPL memo, distributes the minted FAssets between the personal account and the executor, and dispatches the custom instruction.
-For the [`0xFE` hash flow](/smart-accounts/hash-custom-instruction), the `_data` parameter carries the ABI-encoded `PackedUserOperation` whose hash was committed to in the memo.
+For the [`0xFE` custom instruction](/smart-accounts/custom-instruction), the `_data` parameter carries the ABI-encoded `PackedUserOperation` whose hash was committed to in the memo.
 See [Custom Instruction Comparison](/smart-accounts/custom-instruction-comparison) for the end-to-end flow.
 
 ```solidity
@@ -273,7 +273,7 @@ Parameters:
 - `_underlyingTimestamp`: The XRPL transaction timestamp.
 - `_memoData`: The raw XRPL memo bytes carrying the [memo instruction](/smart-accounts/custom-instruction-comparison).
 - `_executor`: The executor address; must equal the personal account's pinned executor when one is set.
-- `_data`: Extra data not contained in the XRPL memo. For the `0xFE` hash flow this is the ABI-encoded `PackedUserOperation`; for all other instruction IDs it is ignored.
+- `_data`: Extra data not contained in the XRPL memo. For the `0xFE` custom instruction this is the ABI-encoded `PackedUserOperation`; for all other instruction IDs it is ignored.
 
 The `AssetManager` is the only address allowed to call this function — any other caller reverts with [`OnlyAssetManager`](#onlyassetmanager).
 
@@ -468,7 +468,7 @@ event Claimed(
 
 #### `UserOperationExecuted`
 
-Emitted when a memo-dispatched user operation (`0xFF` full flow or `0xFE` hash flow) executes against the personal account.
+Emitted when a memo-dispatched user operation (`0xFF` raw custom instruction or `0xFE` custom instruction) executes against the personal account.
 
 ```solidity
 event UserOperationExecuted(
@@ -664,7 +664,7 @@ Parameters:
 
 #### `CustomInstructionHashMismatch`
 
-Thrown by the [`0xFE` hash custom instruction](/smart-accounts/hash-custom-instruction) when `keccak256(_data)` does not match the 32-byte hash carried in the XRPL memo.
+Thrown by the [`0xFE` custom instruction](/smart-accounts/custom-instruction) when `keccak256(_data)` does not match the 32-byte hash carried in the XRPL memo.
 
 ```solidity
 error CustomInstructionHashMismatch(

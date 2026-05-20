@@ -1,0 +1,316 @@
+---
+sidebar_position: 3
+slug: raw-custom-instruction-ts
+title: Raw Custom Instruction
+authors: [nikerzetic]
+description: Sending the full PackedUserOperation in an XRPL memo with Viem (0xFF flow).
+tags: [intermediate, ethereum, flare-smart-accounts]
+keywords:
+  [
+    flare-fdc,
+    ethereum,
+    flare-smart-accounts,
+    evm,
+    flare-network,
+    account-abstraction,
+  ]
+unlisted: false
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import RawCustomInstructionsScript from "!!raw-loader!/examples/developer-hub-javascript/smart-accounts/custom-instructions-raw.ts";
+
+The [Raw Custom Instruction overview](/smart-accounts/raw-custom-instruction) explains how Flare smart accounts replay an [EIP-4337](https://eips.ethereum.org/EIPS/eip-4337) `PackedUserOperation` carried in full in an XRPL `Payment` memo (opcode `0xFF`).
+This guide walks through a TypeScript script that builds the user operation with the Viem library, sends a payment transaction with the user operation on XRPL, and waits for the [`UserOperationExecuted`](/smart-accounts/reference/IMasterAccountController#useroperationexecuted) event on Flare.
+
+This page covers only what differs from the [Custom Instruction TypeScript guide](/smart-accounts/guides/typescript-viem/custom-instruction-ts).
+For the [example contracts](/smart-accounts/guides/typescript-viem/custom-instruction-ts#contracts) (`Checkpoint`, `PiggyBank`, `NoticeBoard`), the [`Call` struct shape](/smart-accounts/guides/typescript-viem/custom-instruction-ts#building-the-call-array), the [personal-account/nonce lookup](/smart-accounts/guides/typescript-viem/custom-instruction-ts#personal-account-and-nonce), and the [XRPL payment amount calculation](/smart-accounts/guides/typescript-viem/custom-instruction-ts#computing-the-xrpl-payment-amount), refer to that guide.
+
+The recommended path is the [Custom Instruction TypeScript guide](/smart-accounts/guides/typescript-viem/custom-instruction-ts) - it lifts the XRPL memo cap, hides the call payload, and uses the executor flow the rest of the smart-accounts tooling defaults to.
+Use the raw flow when you do not want to operate or coordinate with an executor and your call batch fits inside the XRPL memo cap.
+
+This guide hits that cap head-on: it executes the same three example calls as the [Custom Instruction TypeScript guide](/smart-accounts/guides/typescript-viem/custom-instruction-ts), but the XRPL memo field is capped at `1024` bytes, and the three calls together exceed that budget when ABI-encoded.
+The script therefore splits the work into two user operations sent in sequence, paying the FAssets minting fee and executor fee on each XRPL payment.
+The same cap is also why some calls - those whose calldata alone overruns the memo budget - cannot be expressed in the 0xFF flow without deploying a shim contract on Flare to compress them.
+
+A prerequisite for the user operation to be executed is that the personal account holds enough native tokens to cover the call values.
+The script calls forward a total of `2` C2FLR (Coston2 Flare native tokens), so fund the personal account from the [Flare faucet](https://faucet.flare.network/coston2) before running it.
+
+The full code is available on [GitHub](https://github.com/flare-foundation/flare-viem-starter/blob/main/src/custom-instructions-raw.ts).
+
+## Splitting the call array across two payments
+
+XRPL caps the memo at roughly `1024` bytes.
+The `pinNotice` call carries a string argument that, together with the other two calls, exceeds that limit, so the script splits the work into two user operations:
+
+```typescript
+const checkpointAndDepositCalls: Call[] = [
+  {
+    target: checkpointAddress,
+    value: BigInt(0),
+    data: encodeFunctionData({
+      abi: checkpointAbi,
+      functionName: "passCheckpoint",
+      args: [],
+    }),
+  },
+  {
+    target: piggyBankAddress,
+    value: BigInt(depositAmount),
+    data: encodeFunctionData({
+      abi: piggyBankAbi,
+      functionName: "deposit",
+      args: [],
+    }),
+  },
+];
+
+const pinNoticeCalls: Call[] = [
+  {
+    target: noticeBoardAddress,
+    value: BigInt(pinNoticeAmount),
+    data: encodeFunctionData({
+      abi: noticeBoardAbi,
+      functionName: "pinNotice",
+      args: [pinNoticeMessage],
+    }),
+  },
+];
+```
+
+The `Call` struct fields are the same as for the [custom instruction](/smart-accounts/guides/typescript-viem/custom-instruction-ts#building-the-call-array).
+The split is the entire reason this guide exists: in the [custom instruction flow](/smart-accounts/guides/typescript-viem/custom-instruction-ts) the same three calls fit in a single 42-byte memo, regardless of batch size.
+
+## Encoding the user operation
+
+The XRPL memo carries a 10-byte header followed by an ABI-encoded [`PackedUserOperation`](https://eips.ethereum.org/EIPS/eip-4337#useroperation):
+
+- 1st byte: custom instruction command ID `0xff`
+- 2nd byte: `walletId` - a one-byte wallet identifier assigned by Flare; we use `0`
+- bytes 3-10: `executorFeeUBA` as an 8-byte big-endian unsigned integer
+
+Only three fields of the `PackedUserOperation` are validated on chain: `sender` must equal the personal account address, `nonce` must equal the current nonce, and `callData` must be the encoded `executeUserOp(calls)` call.
+The rest can be left empty.
+
+```typescript
+export function encodeExecuteUserOpMemo({
+  calls,
+  walletId,
+  executorFeeUBA,
+  sender,
+  nonce,
+}: {
+  calls: Call[];
+  walletId: number;
+  executorFeeUBA: bigint;
+  sender: Address;
+  nonce: bigint;
+}): `0x${string}` {
+  const callData = encodeFunctionData({
+    abi: coston2.iPersonalAccountAbi,
+    functionName: "executeUserOp",
+    args: [calls],
+  });
+
+  const encodedUserOp = encodeAbiParameters(
+    [PACKED_USER_OPERATION_TUPLE],
+    [
+      {
+        sender,
+        nonce,
+        initCode: "0x",
+        callData,
+        accountGasLimits: ZERO_BYTES32,
+        preVerificationGas: 0n,
+        gasFees: ZERO_BYTES32,
+        paymasterAndData: "0x",
+        signature: "0x",
+      },
+    ],
+  );
+
+  // 10-byte header: 0xFF | walletId (1B) | executorFee (8B, big-endian)
+  const header = concatHex([
+    "0xff",
+    toHex(walletId, { size: 1 }),
+    toHex(executorFeeUBA, { size: 8 }),
+  ]);
+
+  return concatHex([header, encodedUserOp]);
+}
+```
+
+Unlike the custom instruction, which carries only `keccak256(userOp)` in the memo, this header is followed by the full ABI-encoded `PackedUserOperation` - hence the memo cap problem above.
+
+## Sending the user operation
+
+The XRPL `Payment` is sent to the FAssets **direct minting payment address** read from the `AssetManagerFXRP` contract - not to an operator wallet.
+The encoded user operation is attached as a memo, with the `0x` prefix removed.
+
+:::warning No destination tags
+XRPL payments targeting smart accounts must not use a destination tag.
+A destination tag forces the FAssets direct minting flow to credit the tag holder, which could let an unrelated party front-run the user's operation.
+:::
+
+```typescript
+export async function sendMemoFieldInstruction({
+  label,
+  calls,
+  amountXrp,
+  personalAccount,
+  xrplClient,
+  xrplWallet,
+}: {
+  label: string;
+  calls: Call[];
+  amountXrp: number;
+  personalAccount: Address;
+  xrplClient: Client;
+  xrplWallet: Wallet;
+}) {
+  const nonce = await getNonce(personalAccount);
+
+  const memoData = encodeExecuteUserOpMemo({
+    calls,
+    walletId: 0,
+    executorFeeUBA: 0n,
+    sender: personalAccount,
+    nonce,
+  });
+
+  const coreVaultXrplAddress = await getDirectMintingPaymentAddress();
+
+  const transaction = await sendXrplPayment({
+    destination: coreVaultXrplAddress,
+    amount: amountXrp,
+    memos: [{ Memo: { MemoData: memoData.slice(2) } }],
+    wallet: xrplWallet,
+    client: xrplClient,
+  });
+
+  const event = await waitForUserOperationExecuted({ personalAccount, nonce });
+  return event;
+}
+```
+
+There is no `(data, totalCallValue)` to hand off to an executor here: the entire user operation already lives in the memo, so the only handoff is the XRPL payment itself.
+The `xrplClient` and `xrplWallet` are the `Client` and `Wallet` classes from the `xrpl` library, initialized from the `.env` file.
+
+## Waiting for execution
+
+Because the raw flow has no executor receipt to parse, the script watches for the `UserOperationExecuted` event with Viem's [`watchContractEvent`](https://viem.sh/docs/contract/watchContractEvent#watchcontractevent), filtering on the personal account and the nonce we submitted:
+
+```typescript
+export async function waitForUserOperationExecuted({
+  personalAccount,
+  nonce,
+}: {
+  personalAccount: Address;
+  nonce: bigint;
+}): Promise<UserOperationExecutedEventType> {
+  const masterAccountControllerAddress =
+    await getMasterAccountControllerAddress();
+
+  return new Promise((resolve) => {
+    const unwatch = publicClient.watchContractEvent({
+      address: masterAccountControllerAddress,
+      abi: iMemoInstructionsFacetAbi,
+      eventName: "UserOperationExecuted",
+      onLogs: (logs) => {
+        for (const log of logs) {
+          const typedLog = log as UserOperationExecutedEventType;
+          if (
+            typedLog.args.personalAccount.toLowerCase() !==
+              personalAccount.toLowerCase() ||
+            typedLog.args.nonce !== nonce
+          ) {
+            continue;
+          }
+          unwatch();
+          resolve(typedLog);
+          return;
+        }
+      },
+    });
+  });
+}
+```
+
+The bridging is handled by the [Flare Data Connector](/fdc/overview), which caps the round trip at 180 seconds.
+
+If any inner call reverts, the whole user operation reverts with [`CallFailed`](/smart-accounts/reference/IPersonalAccount#callfailed) and the nonce does not increment.
+The FXRP transfer, however, is performed before the memo is decoded, so the mint succeeds even when the user operation reverts - see [`DirectMintingExecuted`](/smart-accounts/reference/IMasterAccountController#directmintingexecuted).
+
+## Full script
+
+The repository with the example is available on [GitHub](https://github.com/flare-foundation/flare-viem-starter).
+Helper functions live in the `src/utils` directory.
+
+<CodeBlock language="typescript" title="src/custom-instructions-raw.ts">
+  {RawCustomInstructionsScript}
+</CodeBlock>
+
+## Expected output
+
+```bash
+Personal account address: 0xFd2f0eb6b9fA4FE5bb1F7B26fEE3c647ed103d9F
+
+Payment amount (XRP, net mint + fees): 10.0011
+
+Memo-only amount (XRP, fees only): 0.0011
+
+[checkpoint-and-deposit] calls: [
+  {
+    target: '0xEE6D54382aA623f4D16e856193f5f8384E487002',
+    value: 0n,
+    data: '0x80abd133'
+  },
+  {
+    target: '0x42Ccd4F0aB1C6Fa36BfA37C9e30c4DC4DD94dE42',
+    value: 1000000000000000000n,
+    data: '0xd0e30db0'
+  }
+]
+
+[checkpoint-and-deposit] current nonce: 0n
+
+[checkpoint-and-deposit] XRPL transaction hash: 03165B82E4B7BB168AF7B217C9EC833896E968C796CA8BF8D2E66879ED311909
+
+[checkpoint-and-deposit] UserOperationExecuted event: {
+  eventName: 'UserOperationExecuted',
+  args: {
+    personalAccount: '0xFd2f0eb6b9fA4FE5bb1F7B26fEE3c647ed103d9F',
+    nonce: 0n
+  },
+  ...
+}
+
+[pin-notice] calls: [
+  {
+    target: '0x59D57652BF4F6d97a6e555800b3920Bd775661Dc',
+    value: 1000000000000000000n,
+    data: '0x28d106b20000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000c48656c6c6f20576f726c64210000000000000000000000000000000000000000'
+  }
+]
+
+[pin-notice] current nonce: 1n
+
+[pin-notice] XRPL transaction hash: 9F1A4D7E2B83C5C0A6F4E1D8B7C9A2E5F6D3B4C1E0F7A8B9C2D3E4F5A6B7C8D9
+
+[pin-notice] UserOperationExecuted event: {
+  eventName: 'UserOperationExecuted',
+  args: {
+    personalAccount: '0xFd2f0eb6b9fA4FE5bb1F7B26fEE3c647ed103d9F',
+    nonce: 1n
+  },
+  ...
+}
+```
+
+:::tip What's next?
+
+- Use the recommended single-payment flow in the [Custom Instruction TypeScript guide](/smart-accounts/guides/typescript-viem/custom-instruction-ts).
+- Compare the two flows in the [Custom Instruction Comparison](/smart-accounts/custom-instruction-comparison).
+- Explore the [Raw Custom Instruction overview](/smart-accounts/raw-custom-instruction).
+- Dig into the `IMasterAccountController` [reference](/smart-accounts/reference/IMasterAccountController).
+  :::

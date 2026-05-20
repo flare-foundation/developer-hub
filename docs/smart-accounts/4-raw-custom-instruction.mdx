@@ -1,0 +1,76 @@
+---
+sidebar_position: 1
+slug: raw-custom-instruction
+title: Raw Custom Instruction
+authors: [nikerzetic]
+description: Performing custom function calls in the Flare Smart Accounts by carrying the full PackedUserOperation in the XRPL memo (0xFF).
+tags: [intermediate, ethereum, flare-smart-accounts]
+keywords:
+  [
+    flare-fdc,
+    ethereum,
+    flare-smart-accounts,
+    evm,
+    flare-network,
+    account-abstraction,
+  ]
+---
+
+The **raw custom instruction** (memo opcode `0xFF`) is a single-actor variant of the [Custom Instruction](/smart-accounts/custom-instruction): instead of committing to a `keccak256(userOp)` hash and relying on an executor to deliver the bytes, the XRPL `Payment` memo carries the entire ABI-encoded `PackedUserOperation` inline immediately after a 10-byte header.
+The user signs the XRPL `Payment`, ships the payload on XRPL, and the smart account replays the user operation on Flare with no further off-chain data.
+
+The recommended path is the [Custom Instruction](/smart-accounts/custom-instruction) - it lifts the XRPL memo size cap and is what the rest of the smart-accounts tooling defaults to.
+Reach for the raw variant when you do not want to operate or coordinate with an executor and your call batch fits inside the XRPL memo cap.
+The [comparison guide](/smart-accounts/custom-instruction-comparison) breaks down when each is appropriate.
+
+This page covers only what differs from the [Custom Instruction](/smart-accounts/custom-instruction).
+For the [`PackedUserOperation` construction](/smart-accounts/custom-instruction#user-operation-payload) (`sender`, `nonce`, `callData`), the [`Call` struct](/smart-accounts/custom-instruction#executeuserop-and-the-call-struct), and how to [build `callData` in TypeScript](/smart-accounts/custom-instruction#building-calldata-in-typescript), refer to the Custom Instruction page.
+
+:::warning No destination tags
+XRPL transactions targeting smart accounts must not use a destination tag.
+A destination tag forces [FAssets direct minting](/fassets/direct-minting) to credit the tag-holder, which would let an unrelated party front-run the user operation.
+:::
+
+## Memo layout
+
+The XRPL memo carries a 10-byte instruction header followed by the ABI-encoded `PackedUserOperation`:
+
+| Bytes | Field            | Meaning                                                                |
+| ----- | ---------------- | ---------------------------------------------------------------------- |
+| `0`   | `instructionId`  | `0xFF` - raw custom instruction                                        |
+| `1`   | `walletId`       | One-byte wallet identifier assigned by Flare; `0` if not registered    |
+| `2-9` | `executorFeeUBA` | Executor fee in the FAsset's smallest unit, big-endian `uint64`        |
+| `10+` | `userOpData`     | `abi.encode(PackedUserOperation)` - the call payload the facet decodes |
+
+The total memo length is `10 + len(abi.encode(userOp))` bytes.
+The XRPL caps each memo at `1024` bytes, so large or repetitive call batches must be split across multiple XRPL payments - each of which pays its own FAssets minting fee and executor fee - and a single call whose ABI-encoded calldata alone exceeds the budget cannot be expressed at all without deploying a shim contract on Flare to compress it.
+
+## Dispatch flow
+
+A single XRPL payment drives the whole flow: the FAssets `AssetManager` mints FXRP into the smart account, calls `MasterAccountController.handleMintedFAssets`, and the controller decodes the `PackedUserOperation` directly from the memo bytes (no `_data` parameter, no hash check) before dispatching `executeUserOp` on the personal account.
+There is no executor split: any indexer that observes the XRPL payment can submit the FDC proof through `executeDirectMinting(proof)`, and the `MasterAccountController` validates the same `sender`, `nonce`, and `callData` fields as for the [custom instruction](/smart-accounts/custom-instruction#user-operation-payload).
+
+## Replay protection
+
+Each personal account maintains a monotonically increasing nonce, accessible via [`getNonce`](/smart-accounts/reference/IMasterAccountController#getnonce).
+A successful `executeUserOp` increments the nonce and emits [`UserOperationExecuted`](/smart-accounts/reference/IMasterAccountController#useroperationexecuted), so the same `PackedUserOperation` cannot be re-executed.
+The XRPL transaction ID is also recorded in the controller to prevent the same payment from being submitted twice.
+
+## Failure Handling
+
+The whole pipeline is atomic with respect to the user operation:
+
+- If `sender` does not match the personal account, the call reverts with [`InvalidSender`](/smart-accounts/reference/IMasterAccountController#invalidsender).
+- If `nonce` is not the expected value, it reverts with [`InvalidNonce`](/smart-accounts/reference/IMasterAccountController#invalidnonce).
+- If the memo body has the wrong length for its instruction ID, it reverts with [`InvalidMemoData`](/smart-accounts/reference/IMasterAccountController#invalidmemodata); an unrecognized instruction byte reverts with [`InvalidInstructionId`](/smart-accounts/reference/IMasterAccountController#invalidinstructionid).
+- If any inner call reverts, the personal account surfaces it as [`CallFailed`](/smart-accounts/reference/IPersonalAccount#callfailed) and the entire user operation reverts.
+
+Because the FXRP transfer is performed before the memo is decoded, **the mint succeeds even if the user operation reverts** - see [`DirectMintingExecuted`](/smart-accounts/reference/IMasterAccountController#directmintingexecuted).
+The freshly minted FXRP remains in the personal account, and the user can either re-submit a fixed user operation or transfer the FXRP to another address via standard [FAssets instructions](/smart-accounts/fasset-instructions).
+
+## Next steps
+
+- Walk through a Viem implementation in the [Raw Custom Instruction TypeScript guide](/smart-accounts/guides/typescript-viem/raw-custom-instruction-ts).
+- Read the [Custom Instruction](/smart-accounts/custom-instruction) for the recommended hash-commitment variant.
+- Compare the two flows in the [Custom Instruction Comparison](/smart-accounts/custom-instruction-comparison).
+- Dig into `IMasterAccountController` in the [reference](/smart-accounts/reference/IMasterAccountController).

@@ -106,7 +106,7 @@ The first nibble is the instruction type.
 This is either `FXRP`, `Firelight`, or `Upshift` (with corresponding type IDS `0`, `1`, and `2`).
 The second nibble is the instruction command; the available commands are different for each instruction type.
 
-For the direct-minting flow, the memo carries a different layout — see the [Full Custom Instruction guide](/smart-accounts/full-custom-instruction) for the `PackedUserOperation` format, the [Hash Custom Instruction guide](/smart-accounts/hash-custom-instruction) for the 0xFE variant, or the [comparison](/smart-accounts/custom-instruction-comparison) of `0xFF`/`0xFE` and the executor-management codes `0xE0`/`0xE1`/`0xE2`/`0xD0`/`0xD1`.
+For the direct-minting flow, the memo carries a different layout - see the [Custom Instruction guide](/smart-accounts/custom-instruction) for the 0xFE variant, the [Raw Custom Instruction guide](/smart-accounts/raw-custom-instruction) for the `PackedUserOperation` format, or the [comparison](/smart-accounts/custom-instruction-comparison) of `0xFE`/`0xFF` and the executor-management codes `0xE0`/`0xE1`/`0xE2`/`0xD0`/`0xD1`.
 
 <details>
   <summary>Table of instruction IDs and corresponding actions.</summary>
@@ -180,8 +180,8 @@ The facet enforces that the caller is the `AssetManager`, resolves (or deploys) 
 
 The XRPL user's smart account performs the actions in the instructions.
 This can be any of the instructions listed above, reserving collateral for minting FXRP, transferring FXRP to another address, redeeming FXRP, depositing it into a vault ...
-Furthermore, custom instructions can be executed — arbitrary function calls on Flare, encoded as an EIP-4337 `PackedUserOperation` and replayed on-chain by the personal account.
-The user operation can be carried in the XRPL memo in full (opcode `0xFF`, see the [Full Custom Instruction guide](/smart-accounts/full-custom-instruction)), or committed to as a 32-byte hash with the bytes delivered to Flare by an off-chain executor (opcode `0xFE`, see the [Hash Custom Instruction guide](/smart-accounts/hash-custom-instruction)).
+Furthermore, custom instructions can be executed - arbitrary function calls on Flare, encoded as an EIP-4337 `PackedUserOperation` and replayed on-chain by the personal account.
+The user operation can be committed to as a 32-byte hash with the bytes delivered to Flare by an off-chain executor (opcode `0xFE`, see the [Custom Instruction guide](/smart-accounts/custom-instruction)), or carried in the XRPL memo in full (opcode `0xFF`, see the [Raw Custom Instruction guide](/smart-accounts/raw-custom-instruction)).
 Authorization comes from the XRPL `Payment` signature itself; the on-chain check only validates the `sender` and `nonce` fields of the `PackedUserOperation`.
 The [Custom Instruction Comparison](/smart-accounts/custom-instruction-comparison) covers when to pick each.
 
