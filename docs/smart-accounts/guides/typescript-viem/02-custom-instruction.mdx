@@ -148,9 +148,12 @@ The on-chain checks (XRPL signature, `proofOwner` binding, `keccak256(data)` com
 
 Each entry in the user operation is a [`Call`](/smart-accounts/reference/IPersonalAccount#call) struct with three fields:
 
-- `target` - the address of the Flare contract to invoke. The personal account dispatches the call with itself as `msg.sender`, so this is the contract that ultimately runs the call.
-- `value` - the amount of the native token (FLR on mainnet, C2FLR on Coston2) in wei to attach to the call. The sum of `value` across all calls is what the executor must attach as `msg.value` on `executeDirectMintingWithData` in Step 2; that value flows `AssetManagerFXRP -> MasterAccountController -> PersonalAccount.executeUserOp` and is split back across the inner calls.
-- `data` - the ABI-encoded calldata (4-byte function selector followed by ABI-encoded arguments) the personal account passes to `target`. Use Viem's [`encodeFunctionData`](https://viem.sh/docs/contract/encodeFunctionData) to build it from the contract ABI, function name, and arguments.
+- `target` - the address of the Flare contract to invoke.
+  The personal account dispatches the call with itself as `msg.sender`, so this is the contract that ultimately runs the call.
+- `value` - the amount of the native token (FLR on mainnet, C2FLR on Coston2) in wei to attach to the call.
+  The sum of `value` across all calls is what the executor must attach as `msg.value` on `executeDirectMintingWithData` in Step 2; that value flows `AssetManagerFXRP -> MasterAccountController -> PersonalAccount.executeUserOp` and is split back across the inner calls.
+- `data` - the ABI-encoded calldata (4-byte function selector followed by ABI-encoded arguments) the personal account passes to `target`.
+  Use Viem's [`encodeFunctionData`](https://viem.sh/docs/contract/encodeFunctionData) to build it from the contract ABI, function name, and arguments.
 
 ```typescript
 export type Call = {
@@ -411,8 +414,11 @@ export async function executeDirectMintingWithData({
 
 Two details are critical here:
 
-- **`proofOwner`**: the FDC `XRPPayment` request binds the proof to the externally owned account that will eventually submit it. `AssetManagerFXRP` enforces this through `TransactionAttestation.verifyProofOwnership`. Pass the executor's address so the proof can only be used by that executor.
-- **`value`**: `msg.value` on `executeDirectMintingWithData` is forwarded `AssetManager -> MasterAccountController.handleMintedFAssets -> PersonalAccount.executeUserOp`. It must therefore equal the sum of `call.value` across the user operation - exactly the `totalCallValue` returned by Step 1.
+- **`proofOwner`**: the FDC `XRPPayment` request binds the proof to the externally owned account that will eventually submit it.
+  `AssetManagerFXRP` enforces this through `TransactionAttestation.verifyProofOwnership`.
+  Pass the executor's address so the proof can only be used by that executor.
+- **`value`**: `msg.value` on `executeDirectMintingWithData` is forwarded `AssetManager -> MasterAccountController.handleMintedFAssets -> PersonalAccount.executeUserOp`.
+  It must therefore equal the sum of `call.value` across the user operation - exactly the `totalCallValue` returned by Step 1.
 
 ## Step 3: confirm execution from the receipt
 
