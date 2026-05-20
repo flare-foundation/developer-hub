@@ -1,9 +1,9 @@
 ---
 sidebar_position: 1
-slug: custom-instruction
-title: Custom Instruction
+slug: full-custom-instruction
+title: Full Custom Instruction
 authors: [nikerzetic]
-description: Performing custom function calls in the Flare Smart Accounts.
+description: Performing custom function calls in the Flare Smart Accounts by carrying the full PackedUserOperation in the XRPL memo (0xFF).
 tags: [intermediate, ethereum, flare-smart-accounts]
 keywords:
   [
@@ -19,16 +19,31 @@ keywords:
 import ThemedImage from "@theme/ThemedImage";
 import useBaseUrl from "@docusaurus/useBaseUrl";
 
-Flare Smart Accounts let an XRPL user execute arbitrary contract calls on Flare trough the [`Payment`](https://xrpl.org/docs/references/protocol/transactions/types/payment) transaction on the XRPL blockchain.
+Flare Smart Accounts let an XRPL user execute arbitrary contract calls on Flare through an XRPL [`Payment`](https://xrpl.org/docs/references/protocol/transactions/types/payment) transaction.
 Each personal account exposes an [EIP-4337](https://eips.ethereum.org/EIPS/eip-4337) style `executeUserOp` entry point that the [`MasterAccountController`](/smart-accounts/reference/IMasterAccountController) invokes when it processes a custom instruction memo.
 
-Custom instructions carry the full call payload in the XRPL **memo** field.
-The user signs a `PackedUserOperation`, ships it on XRPL, and the smart account replays it on the Flare blockchain.
+The **full** custom instruction (memo opcode `0xFF`) carries the entire ABI-encoded `PackedUserOperation` in the XRPL memo immediately after a 10-byte header.
+The user signs an XRPL `Payment`, ships the payload on XRPL, and the smart account replays the user operation on Flare with no further off-chain data.
+For the alternative that ships only a 32-byte hash of the user operation and lets an executor deliver the bytes on Flare, see the [Hash Custom Instruction](/smart-accounts/hash-custom-instruction); the [comparison guide](/smart-accounts/custom-instruction-comparison) covers when to pick which.
 
 :::warning No destination tags
 XRPL transactions targeting smart accounts must not use a destination tag.
 A destination tag forces [FAssets direct minting](/fassets/direct-minting) to credit the tag-holder, which would let an unrelated party front-run the user operation.
 :::
+
+## Memo layout
+
+The XRPL memo carries a 10-byte instruction header followed by the ABI-encoded `PackedUserOperation`:
+
+| Bytes | Field            | Meaning                                                                  |
+| ----- | ---------------- | ------------------------------------------------------------------------ |
+| `0`   | `instructionId`  | `0xFF` — full custom instruction                                         |
+| `1`   | `walletId`       | One-byte wallet identifier assigned by Flare; `0` if not registered      |
+| `2-9` | `executorFeeUBA` | Executor fee in the FAsset's smallest unit, big-endian `uint64`          |
+| `10+` | `userOpData`     | `abi.encode(PackedUserOperation)` — the call payload the facet decodes   |
+
+The total memo length is `10 + len(abi.encode(userOp))` bytes.
+The XRPL caps each memo at roughly `1024` bytes, so large or repetitive call batches may need to be split across multiple XRPL payments.
 
 ## User operation payload
 

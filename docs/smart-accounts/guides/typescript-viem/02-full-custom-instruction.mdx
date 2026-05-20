@@ -1,9 +1,9 @@
 ---
 sidebar_position: 2
-slug: custom-instruction-ts
-title: Custom Instruction
+slug: full-custom-instruction-ts
+title: Full Custom Instruction
 authors: [nikerzetic]
-description: Sending custom smart account instructions using Viem.
+description: Sending the full PackedUserOperation in an XRPL memo with Viem (0xFF flow).
 tags: [quickstart, ethereum, flare-smart-accounts]
 keywords:
   [
@@ -20,8 +20,10 @@ unlisted: false
 import CodeBlock from "@theme/CodeBlock";
 import CustomInstructionsScript from "!!raw-loader!/examples/developer-hub-javascript/smart-accounts/custom-instructions.ts";
 
-The [Custom Instruction overview](/smart-accounts/custom-instruction) explains how Flare smart accounts replay an [EIP-4337](https://eips.ethereum.org/EIPS/eip-4337) `PackedUserOperation` carried in an XRPL `Payment` memo.
-This guide walks through a TypeScript script that builds the user operation with Viem library, sends a payment transaction with the user operation on XRPL, and waits for the [`UserOperationExecuted`](/smart-accounts/reference/IMasterAccountController#useroperationexecuted) event on Flare.
+The [Full Custom Instruction overview](/smart-accounts/full-custom-instruction) explains how Flare smart accounts replay an [EIP-4337](https://eips.ethereum.org/EIPS/eip-4337) `PackedUserOperation` carried in full in an XRPL `Payment` memo (opcode `0xFF`).
+This guide walks through a TypeScript script that builds the user operation with the Viem library, sends a payment transaction with the user operation on XRPL, and waits for the [`UserOperationExecuted`](/smart-accounts/reference/IMasterAccountController#useroperationexecuted) event on Flare.
+
+If your batch overflows the XRPL memo cap, or you want to keep call payloads off the public XRPL ledger, see the [Hash Custom Instruction guide](/smart-accounts/guides/typescript-viem/hash-custom-instruction-ts) for the 0xFE variant that ships only `keccak256(userOp)` in the memo.
 
 The script executes three calls on three example smart contracts on the Flare blockchain.
 Because the XRPL memo field is capped at roughly `1024` bytes, the calls are split into two user operations sent in sequence.
@@ -477,6 +479,8 @@ Memo-only amount (XRP, fees only): 0.0011
 To continue your Flare Smart Accounts development journey, you can:
 
 - Get the smart account state using the [State Lookup guide](/smart-accounts/guides/typescript-viem/state-lookup-ts).
-- Explore the [Custom Instruction](/smart-accounts/custom-instruction) overview.
+- Explore the [Full Custom Instruction overview](/smart-accounts/full-custom-instruction).
+- Compare the full and hash variants in the [Custom Instruction Comparison](/smart-accounts/custom-instruction-comparison).
+- Try the hash variant with the [Hash Custom Instruction guide](/smart-accounts/guides/typescript-viem/hash-custom-instruction-ts).
 - Dig into the `IMasterAccountController` [reference](/smart-accounts/reference/IMasterAccountController).
   :::
