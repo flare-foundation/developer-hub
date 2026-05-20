@@ -33,7 +33,7 @@ Flare Smart Accounts support two complementary flows for turning an XRPL `Paymen
 ### Proof-based flow (payment reference)
 
 1. The XRPL user sends a `Payment` transaction to the operator's XRPL address with a 32-byte instruction encoded as the **payment reference**.
-2. The operator requests a [`Payment` attestation](/fdc/attestation-types/payment) from the [Flare Data Connector](/fdc/overview) and submits it to the `MasterAccountController`.
+2. The operator requests a [`Payment` attestation](/fdc/attestation-types/payment) from the [Flare Data Connector (FDC)](/fdc/overview) and submits it to the `MasterAccountController`.
 3. The XRPL user's `PersonalAccount` performs the action encoded in the reference.
 
 <ThemedImage
@@ -51,8 +51,8 @@ Flare Smart Accounts support two complementary flows for turning an XRPL `Paymen
 
 ### Direct-minting (memo) flow
 
-1. The XRPL user sends a `Payment` to an FAssets agent's XRPL address that mints FXRP directly to the smart account, with the [memo field](/smart-accounts/custom-instruction) carrying the instruction.
-2. The FAssets `AssetManager` mints FXRP to the `MasterAccountController` and calls back into [`mintedFAssets`](/smart-accounts/reference/IMasterAccountController#mintedfassets) on `MemoInstructionsFacet`.
+1. The XRPL user sends a `Payment` to an FAssets agent's XRPL address that mints FXRP directly to the smart account, with the [memo field](/smart-accounts/custom-instruction-comparison) carrying the instruction.
+2. The FAssets `AssetManager` mints FXRP to the `MasterAccountController` and calls back into [`handleMintedFAssets`](/smart-accounts/reference/IMasterAccountController#handlemintedfassets) on `MemoInstructionsFacet`.
 3. The facet routes the FAssets to the user's `PersonalAccount`, optionally pays an executor fee, and dispatches any memo instruction (`0xFF` execute UserOp, `0xE0` ignore memo, `0xE1` set nonce, `0xE2` replace fee, `0xD0`/`0xD1` set/remove executor).
 
 ```mermaid
@@ -65,16 +65,16 @@ graph TB
  subgraph Flare["Flare"]
  Executor[("<b>Executor</b><br/><i>backend</i>")]
  AssetManager["<b>FAssets AssetManager</b><br/><i>contract</i>"]
- MAC["<b>MasterAccountController</b><br/><i>contract</i>"]
- PA["<b>PersonalAccount</b><br/><i>contract</i>"]
+ MasterAccountController["<b>MasterAccountController</b><br/><i>contract</i>"]
+ PersonalAccount["<b>PersonalAccount</b><br/><i>contract</i>"]
  end
 
  User -- "1 - Payment + memo" --> Agent
  Agent -. "2 - observe payment" .-> Executor
  Executor -- "3 - executeDirectMinting" --> AssetManager
- AssetManager == "4 - mint FXRP +<br/>mintedFAssets callback" ==> MAC
- MAC -- "5 - forward FXRP +<br/>dispatch memo instruction" --> PA
- User -. "controls" .-> PA
+ AssetManager == "4 - mint FXRP +<br/>handleMintedFAssets callback" ==> MasterAccountController
+ MasterAccountController -- "5 - forward FXRP +<br/>dispatch memo instruction" --> PersonalAccount
+ User -. "controls" .-> PersonalAccount
 
  style Flare stroke-dasharray: 5 5
  style XRPL stroke-dasharray: 5 5
@@ -83,7 +83,7 @@ graph TB
 <p style={{ textAlign: "center", fontStyle: "italic" }}>
   Direct-minting flow: XRPL `Payment` carrying a memo (1) → FAssets agent (2) →
   executor calls `AssetManager.executeDirectMinting` (3) → `AssetManager` mints
-  FXRP and calls back into `mintedFAssets` (4) → `MasterAccountController`
+  FXRP and calls back into `handleMintedFAssets` (4) → `MasterAccountController`
   forwards FXRP and dispatches the memo to the user's `PersonalAccount` (5).
 </p>
 
@@ -106,7 +106,7 @@ The first nibble is the instruction type.
 This is either `FXRP`, `Firelight`, or `Upshift` (with corresponding type IDS `0`, `1`, and `2`).
 The second nibble is the instruction command; the available commands are different for each instruction type.
 
-For the direct-minting flow, the memo carries a different layout — see the [Custom Instruction guide](/smart-accounts/custom-instruction) for the `PackedUserOperation` format and the `0xFF`/`0xE0`/`0xE1`/`0xE2`/`0xD0`/`0xD1` instruction codes.
+For the direct-minting flow, the memo carries a different layout — see the [Full Custom Instruction guide](/smart-accounts/full-custom-instruction) for the `PackedUserOperation` format, the [Hash Custom Instruction guide](/smart-accounts/hash-custom-instruction) for the 0xFE variant, or the [comparison](/smart-accounts/custom-instruction-comparison) of `0xFF`/`0xFE` and the executor-management codes `0xE0`/`0xE1`/`0xE2`/`0xD0`/`0xD1`.
 
 <details>
   <summary>Table of instruction IDs and corresponding actions.</summary>
@@ -173,16 +173,17 @@ The contract then resolves the XRPL user's `PersonalAccount` from the address ma
 
 ### Direct-minting flow
 
-When the user mints FXRP directly to their smart account via [FAssets direct minting](/fassets/direct-minting), the FAssets `AssetManager` calls back into [`mintedFAssets`](/smart-accounts/reference/IMasterAccountController#mintedfassets) on `MemoInstructionsFacet`.
-The facet enforces that the caller is the `AssetManager`, resolves (or deploys) the user's `PersonalAccount`, pays an executor fee out of the minted FAssets, forwards the remainder to the personal account, and dispatches any memo instruction (`0xFF`, `0xE0`, `0xE1`, `0xE2`, `0xD0`, `0xD1`).
+When the user mints FXRP directly to their smart account via [FAssets direct minting](/fassets/direct-minting), the FAssets `AssetManager` calls back into [`handleMintedFAssets`](/smart-accounts/reference/IMasterAccountController#handlemintedfassets) on `MemoInstructionsFacet`.
+The facet enforces that the caller is the `AssetManager`, resolves (or deploys) the user's `PersonalAccount`, pays an executor fee out of the minted FAssets, forwards the remainder to the personal account, and dispatches any memo instruction (`0xFF`, `0xFE`, `0xE0`, `0xE1`, `0xE2`, `0xD0`, `0xD1`).
 
 ## Actions on Flare
 
 The XRPL user's smart account performs the actions in the instructions.
 This can be any of the instructions listed above, reserving collateral for minting FXRP, transferring FXRP to another address, redeeming FXRP, depositing it into a vault ...
-Furthermore, custom instructions (`0xFF`) can be executed — arbitrary function calls on Flare, encoded as an EIP-4337 `PackedUserOperation` carried in the XRPL memo and replayed on-chain by the personal account.
+Furthermore, custom instructions can be executed — arbitrary function calls on Flare, encoded as an EIP-4337 `PackedUserOperation` and replayed on-chain by the personal account.
+The user operation can be carried in the XRPL memo in full (opcode `0xFF`, see the [Full Custom Instruction guide](/smart-accounts/full-custom-instruction)), or committed to as a 32-byte hash with the bytes delivered to Flare by an off-chain executor (opcode `0xFE`, see the [Hash Custom Instruction guide](/smart-accounts/hash-custom-instruction)).
 Authorization comes from the XRPL `Payment` signature itself; the on-chain check only validates the `sender` and `nonce` fields of the `PackedUserOperation`.
-See the [Custom Instruction guide](/smart-accounts/custom-instruction) for the details.
+The [Custom Instruction Comparison](/smart-accounts/custom-instruction-comparison) covers when to pick each.
 
 ## Video Tutorials
 

@@ -243,22 +243,24 @@ function getPaymentProofValidityDurationSeconds()
 
 ## Memo Instructions
 
-Memo instructions allow a [`PersonalAccount`](/smart-accounts/reference/IPersonalAccount) to execute [custom user operations](/smart-accounts/custom-instruction) embedded in the XRPL `Payment` memo when FAssets are direct-minted into the account.
+Memo instructions allow a [`PersonalAccount`](/smart-accounts/reference/IPersonalAccount) to execute [custom user operations](/smart-accounts/custom-instruction-comparison) embedded in the XRPL `Payment` memo when FAssets are direct-minted into the account.
 
-### `mintedFAssets`
+### `handleMintedFAssets`
 
 Called by the FAssets `AssetManager` when FXRP is direct-minted into a personal account.
 Decodes the XRPL memo, distributes the minted FAssets between the personal account and the executor, and dispatches the custom instruction.
-See [Custom Instruction](/smart-accounts/custom-instruction) for the end-to-end flow.
+For the [`0xFE` hash flow](/smart-accounts/hash-custom-instruction), the `_data` parameter carries the ABI-encoded `PackedUserOperation` whose hash was committed to in the memo.
+See [Custom Instruction Comparison](/smart-accounts/custom-instruction-comparison) for the end-to-end flow.
 
 ```solidity
-function mintedFAssets(
+function handleMintedFAssets(
     bytes32 _transactionId,
     string calldata _sourceAddress,
     uint256 _amount,
     uint256 _underlyingTimestamp,
     bytes calldata _memoData,
-    address payable _executor
+    address payable _executor,
+    bytes calldata _data
 )
     external payable;
 ```
@@ -269,8 +271,9 @@ Parameters:
 - `_sourceAddress`: The XRPL source address that triggered the mint.
 - `_amount`: The total minted FAsset amount, in the FAsset's smallest unit (XRP drops for FXRP).
 - `_underlyingTimestamp`: The XRPL transaction timestamp.
-- `_memoData`: The raw XRPL memo bytes carrying the [memo instruction](/smart-accounts/custom-instruction).
+- `_memoData`: The raw XRPL memo bytes carrying the [memo instruction](/smart-accounts/custom-instruction-comparison).
 - `_executor`: The executor address; must equal the personal account's pinned executor when one is set.
+- `_data`: Extra data not contained in the XRPL memo. For the `0xFE` hash flow this is the ABI-encoded `PackedUserOperation`; for all other instruction IDs it is ignored.
 
 The `AssetManager` is the only address allowed to call this function — any other caller reverts with [`OnlyAssetManager`](#onlyassetmanager).
 
@@ -465,7 +468,7 @@ event Claimed(
 
 #### `UserOperationExecuted`
 
-Emitted when a memo-encoded user operation (`0xFF`) executes with the personal account.
+Emitted when a memo-dispatched user operation (`0xFF` full flow or `0xFE` hash flow) executes against the personal account.
 
 ```solidity
 event UserOperationExecuted(
@@ -587,7 +590,7 @@ Parameters:
 
 ### Memo Instructions
 
-These errors are surfaced by [`mintedFAssets`](#mintedfassets) and the memo dispatch path.
+These errors are surfaced by [`handleMintedFAssets`](#handlemintedfassets) and the memo dispatch path.
 
 #### `TransactionAlreadyExecuted`
 
@@ -599,7 +602,7 @@ error TransactionAlreadyExecuted();
 
 #### `OnlyAssetManager`
 
-Thrown when [`mintedFAssets`](#mintedfassets) is called by any address other than the FAssets `AssetManager`.
+Thrown when [`handleMintedFAssets`](#handlemintedfassets) is called by any address other than the FAssets `AssetManager`.
 
 ```solidity
 error OnlyAssetManager();
@@ -647,7 +650,7 @@ error InvalidMemoData();
 
 #### `InvalidInstructionId`
 
-Thrown when the first byte of the memo is not a recognized memo instruction ID (`0xFF`, `0xE0`, `0xE1`, `0xE2`, `0xD0`, `0xD1`).
+Thrown when the first byte of the memo is not a recognized memo instruction ID (`0xFF`, `0xFE`, `0xE0`, `0xE1`, `0xE2`, `0xD0`, `0xD1`).
 
 ```solidity
 error InvalidInstructionId(
@@ -658,6 +661,22 @@ error InvalidInstructionId(
 Parameters:
 
 - `instructionId`: The unrecognized memo instruction ID.
+
+#### `CustomInstructionHashMismatch`
+
+Thrown by the [`0xFE` hash custom instruction](/smart-accounts/hash-custom-instruction) when `keccak256(_data)` does not match the 32-byte hash carried in the XRPL memo.
+
+```solidity
+error CustomInstructionHashMismatch(
+    bytes32 expected,
+    bytes32 actual
+);
+```
+
+Parameters:
+
+- `expected`: The hash committed to in the memo.
+- `actual`: The hash of the supplied `_data`.
 
 #### `InvalidSender`
 

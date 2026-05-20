@@ -23,10 +23,10 @@ import CustomInstructionsScript from "!!raw-loader!/examples/developer-hub-javas
 The [Full Custom Instruction overview](/smart-accounts/full-custom-instruction) explains how Flare smart accounts replay an [EIP-4337](https://eips.ethereum.org/EIPS/eip-4337) `PackedUserOperation` carried in full in an XRPL `Payment` memo (opcode `0xFF`).
 This guide walks through a TypeScript script that builds the user operation with the Viem library, sends a payment transaction with the user operation on XRPL, and waits for the [`UserOperationExecuted`](/smart-accounts/reference/IMasterAccountController#useroperationexecuted) event on Flare.
 
-If your batch overflows the XRPL memo cap, or you want to keep call payloads off the public XRPL ledger, see the [Hash Custom Instruction guide](/smart-accounts/guides/typescript-viem/hash-custom-instruction-ts) for the 0xFE variant that ships only `keccak256(userOp)` in the memo.
-
-The script executes three calls on three example smart contracts on the Flare blockchain.
-Because the XRPL memo field is capped at roughly `1024` bytes, the calls are split into two user operations sent in sequence.
+The script in this guide hits the cap head-on: it executes three calls on three example smart contracts, but the XRPL memo field is capped at `1024` bytes, and the three calls together exceed that budget when ABI-encoded.
+The script therefore splits the work into two user operations sent in sequence, paying the FAssets minting fee and executor fee on each XRPL payment.
+The same cap is also why some calls — those whose calldata alone overruns the memo budget — cannot be expressed in the 0xFF flow without deploying a shim contract on Flare to compress them.
+The [Hash Custom Instruction guide](/smart-accounts/guides/typescript-viem/hash-custom-instruction-ts) shows the 0xFE variant that ships only `keccak256(userOp)` in the memo and lifts both limitations; pick that flow when your batches overflow the cap, when individual calls cannot be encoded, or when you want call payloads to stay off the public XRPL ledger.
 
 A prerequisite for the user operation to be executed is that the personal account holds enough native tokens to cover the call values.
 The script calls forward a total of `2` C2FLR (Coston2 Flare native tokens), so fund the personal account from the [Flare faucet](https://faucet.flare.network/coston2) before running it.
