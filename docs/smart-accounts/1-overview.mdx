@@ -174,13 +174,13 @@ The contract then resolves the XRPL user's `PersonalAccount` from the address ma
 ### Direct-minting flow
 
 When the user mints FXRP directly to their smart account via [FAssets direct minting](/fassets/direct-minting), the FAssets `AssetManager` calls back into [`handleMintedFAssets`](/smart-accounts/reference/IMasterAccountController#handlemintedfassets) on `MemoInstructionsFacet`.
-The facet enforces that the caller is the `AssetManager`, resolves (or deploys) the user's `PersonalAccount`, pays an executor fee out of the minted FAssets, forwards the remainder to the personal account, and dispatches any memo instruction (`0xFF`, `0xFE`, `0xE0`, `0xE1`, `0xE2`, `0xD0`, `0xD1`).
+It enforces that the caller is the `AssetManager`, resolves (or deploys) the user's `PersonalAccount`, pays an executor fee out of the minted FAssets, forwards the remainder to the personal account, and dispatches any memo instruction (`0xFF`, `0xFE`, `0xE0`, `0xE1`, `0xE2`, `0xD0`, `0xD1`).
 
 ## Actions on Flare
 
 The XRPL user's smart account performs the actions in the instructions.
 This can be any of the instructions listed above, reserving collateral for minting FXRP, transferring FXRP to another address, redeeming FXRP, depositing it into a vault ...
-Furthermore, custom instructions can be executed - arbitrary function calls on Flare, encoded as an EIP-4337 `PackedUserOperation` and replayed on-chain by the personal account.
+Furthermore, custom instructions can be executed - arbitrary function calls on Flare, encoded as an [EIP-4337](https://eips.ethereum.org/EIPS/eip-4337) `PackedUserOperation` and replayed on-chain by the personal account.
 The user operation can be committed to as a 32-byte hash with the bytes delivered to Flare by an off-chain executor (opcode `0xFE`, see the [Custom Instruction guide](/smart-accounts/custom-instruction)), or carried in the XRPL memo in full (opcode `0xFF`, see the [Raw Custom Instruction guide](/smart-accounts/raw-custom-instruction)).
 Authorization comes from the XRPL `Payment` signature itself; the on-chain check only validates the `sender` and `nonce` fields of the `PackedUserOperation`.
 The [Custom Instruction Comparison](/smart-accounts/custom-instruction-comparison) covers when to pick each.

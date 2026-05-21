@@ -3,7 +3,7 @@ sidebar_position: 1
 slug: raw-custom-instruction
 title: Raw Custom Instruction
 authors: [nikerzetic]
-description: Performing custom function calls in the Flare Smart Accounts by carrying the full PackedUserOperation in the XRPL memo (0xFF).
+description: Performing custom function calls in the Flare Smart Accounts by carrying the full PackedUserOperation in the XRPL memo.
 tags: [intermediate, ethereum, flare-smart-accounts]
 keywords:
   [
@@ -24,14 +24,14 @@ Reach for the raw variant when you do not want to operate or coordinate with an 
 The [comparison guide](/smart-accounts/custom-instruction-comparison) breaks down when each is appropriate.
 
 This page covers only what differs from the [Custom Instruction](/smart-accounts/custom-instruction).
-For the [`PackedUserOperation` construction](/smart-accounts/custom-instruction#user-operation-payload) (`sender`, `nonce`, `callData`), the [`Call` struct](/smart-accounts/custom-instruction#executeuserop-and-the-call-struct), and how to [build `callData` in TypeScript](/smart-accounts/custom-instruction#building-calldata-in-typescript), refer to the Custom Instruction page.
+For the [`PackedUserOperation` construction](/smart-accounts/custom-instruction#user-operation-payload) (`sender`, `nonce`, `callData`), the [`Call` struct](/smart-accounts/custom-instruction#executeuserop-and-the-call-struct), and how to [build `callData` in TypeScript](/smart-accounts/custom-instruction#building-calldata-in-typescript), refer to the [Custom Instruction page](/smart-accounts/custom-instruction).
 
 :::warning No destination tags
 XRPL transactions targeting smart accounts must not use a destination tag.
 A destination tag forces [FAssets direct minting](/fassets/direct-minting) to credit the tag-holder, which would let an unrelated party front-run the user operation.
 :::
 
-## Memo layout
+## Memo Layout
 
 The XRPL memo carries a 10-byte instruction header followed by the ABI-encoded `PackedUserOperation`:
 
@@ -45,12 +45,12 @@ The XRPL memo carries a 10-byte instruction header followed by the ABI-encoded `
 The total memo length is `10 + len(abi.encode(userOp))` bytes.
 The XRPL caps each memo at `1024` bytes, so large or repetitive call batches must be split across multiple XRPL payments - each of which pays its own FAssets minting fee and executor fee - and a single call whose ABI-encoded calldata alone exceeds the budget cannot be expressed at all without deploying a shim contract on Flare to compress it.
 
-## Dispatch flow
+## Dispatch Flow
 
 A single XRPL payment drives the whole flow: the FAssets `AssetManager` mints FXRP into the smart account, calls `MasterAccountController.handleMintedFAssets`, and the controller decodes the `PackedUserOperation` directly from the memo bytes (no `_data` parameter, no hash check) before dispatching `executeUserOp` on the personal account.
 There is no executor split: any indexer that observes the XRPL payment can submit the FDC proof through `executeDirectMinting(proof)`, and the `MasterAccountController` validates the same `sender`, `nonce`, and `callData` fields as for the [custom instruction](/smart-accounts/custom-instruction#user-operation-payload).
 
-## Replay protection
+## Replay Protection
 
 Each personal account maintains a monotonically increasing nonce, accessible via [`getNonce`](/smart-accounts/reference/IMasterAccountController#getnonce).
 A successful `executeUserOp` increments the nonce and emits [`UserOperationExecuted`](/smart-accounts/reference/IMasterAccountController#useroperationexecuted), so the same `PackedUserOperation` cannot be re-executed.
@@ -68,7 +68,7 @@ The whole pipeline is atomic with respect to the user operation:
 Because the FXRP transfer is performed before the memo is decoded, **the mint succeeds even if the user operation reverts** - see [`DirectMintingExecuted`](/smart-accounts/reference/IMasterAccountController#directmintingexecuted).
 The freshly minted FXRP remains in the personal account, and the user can either re-submit a fixed user operation or transfer the FXRP to another address via standard [FAssets instructions](/smart-accounts/fasset-instructions).
 
-## Next steps
+## Next Steps
 
 - Walk through a Viem implementation in the [Raw Custom Instruction TypeScript guide](/smart-accounts/guides/typescript-viem/raw-custom-instruction-ts).
 - Read the [Custom Instruction](/smart-accounts/custom-instruction) for the recommended hash-commitment variant.

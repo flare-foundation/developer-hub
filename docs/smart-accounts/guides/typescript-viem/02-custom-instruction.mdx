@@ -125,9 +125,9 @@ contract NoticeBoard {
 
 The contract also performs additional checks to ensure each client is only added to the array once, and that `getNotices` returns only notices that have not yet expired.
 
-## Two actors, three steps
+## Two Actors, Three Steps
 
-The 0xFE flow is a three-step procedure that maps to two independent actors in production.
+The `0xFE` flow is a three-step procedure that maps to two independent actors on mainnet.
 This script runs all three steps from a single process for demo purposes, but the on-chain checks are designed around the split:
 
 | Step | Actor    | Action                                                                                                                                                                 |
@@ -136,7 +136,7 @@ This script runs all three steps from a single process for demo purposes, but th
 | 2    | Executor | Fetch an FDC `XRPPayment` proof and call `AssetManagerFXRP.executeDirectMintingWithData(proof, userOp)`.                                                               |
 | 3    | Both     | The `MasterAccountController` executes the user operation inside the executor's transaction and emits `UserOperationExecuted`.                                         |
 
-In production, the user delivers the `PackedUserOperation` bytes to the executor **out-of-band** (e.g. over an authenticated HTTP API); they never go onto the XRPL ledger.
+On mainnet, the user delivers the `PackedUserOperation` bytes to the executor **off-chain** (e.g. over an authenticated HTTP API); they never go onto the XRPL ledger.
 
 :::info Executor role in this script
 For demo purposes this script plays **both** roles itself: the same process encodes the user operation, sends the XRPL `Payment`, then fetches the FDC proof and submits `executeDirectMintingWithData`.
@@ -144,7 +144,7 @@ In production, Step 2 will be run by an executor service - initially a service o
 The on-chain checks (XRPL signature, `proofOwner` binding, `keccak256(data)` commitment) are what make the split safe: the executor cannot substitute different bytes or run the user operation against a payment that was not theirs to deliver.
 :::
 
-## Building the call array
+## Building the Call Array
 
 Each entry in the user operation is a [`Call`](/smart-accounts/reference/IPersonalAccount#call) struct with three fields:
 
@@ -163,7 +163,7 @@ export type Call = {
 };
 ```
 
-Because the 0xFE memo is independent of batch size, the script issues a single batch for all three calls - the same three that overflow the XRPL memo cap in the [raw flow](/smart-accounts/guides/typescript-viem/raw-custom-instruction-ts):
+Because the `0xFE` memo is independent of batch size, the script issues a single batch for all three calls - the same three that overflow the XRPL memo cap in the [raw flow](/smart-accounts/guides/typescript-viem/raw-custom-instruction-ts):
 
 ```typescript
 const calls: Call[] = [
@@ -214,7 +214,7 @@ export async function getNonce(personalAccount: Address): Promise<bigint> {
 }
 ```
 
-## Encoding the hash memo
+## Encoding the Hash Memo
 
 The XRPL memo is a fixed 42 bytes: 10-byte header followed by the 32-byte hash of the ABI-encoded `PackedUserOperation`.
 The ABI-encoded user operation bytes are returned alongside the memo so they can be handed to the executor:
@@ -245,7 +245,7 @@ export function encodeHashInstructionMemo({
 The `encodePackedUserOpData` helper ABI-encodes a `PackedUserOperation` whose only meaningful fields are `sender`, `nonce`, and `callData` - the others are not validated on-chain.
 The `buildInstructionHeader` helper packs the opcode (`0xFE` for the custom instruction, `0xFF` for the raw variant), the one-byte `walletId`, and the 8-byte big-endian `executorFeeUBA` into the 10-byte instruction header.
 
-## Computing the XRPL payment amount
+## Computing the XRPL Payment Amount
 
 A custom instruction rides on top of an FAssets direct minting payment, so the XRPL transfer must cover the net mint amount plus the minting fee and the executor fee, as read from the `AssetManagerFXRP` contract.
 For a memo-only transaction (no FXRP mint), the net amount is `0`, but the fees still apply.
@@ -288,7 +288,7 @@ export async function computeDirectMintingPaymentAmountXrp({
 
 The script also mints `10` FXRP as a side effect of the same payment, so the payment amount includes the net mint amount on top of the fees.
 
-## Step 1: send the hash memo on XRPL
+## Step 1: Send the hash memo on XRPL
 
 The user-side helper function computes the memo, sends the XRPL `Payment` to the FAssets direct-minting address, and returns everything the executor needs to drive Step 2:
 
@@ -355,9 +355,9 @@ XRPL payments targeting smart accounts must not use a destination tag.
 A destination tag forces the FAssets direct minting flow to credit the tag holder, which could let an unrelated party front-run the user's operation.
 :::
 
-## Step 2: executor submits the proof and the bytes
+## Step 2: Executor submits the proof and the bytes
 
-The executor takes the XRPL transaction hash, waits for the XRPL ledger to bury it under the required number of validated ledgers (see [Finality](/fdc/attestation-types/xrp-payment#finality) on the `XRPPayment` attestation reference for the exact depth and reasoning), requests an FDC `XRPPayment` attestation, and submits `AssetManagerFXRP.executeDirectMintingWithData` with the proof and the user-operation bytes:
+The executor takes the XRPL transaction hash, waits for the XRPL ledger to confirm it under the required number of validated ledgers (see [Finality](/fdc/attestation-types/xrp-payment#finality) on the `XRPPayment` attestation reference for the exact depth and reasoning), requests an FDC `XRPPayment` attestation, and submits `AssetManagerFXRP.executeDirectMintingWithData` with the proof and the user-operation bytes:
 
 ```typescript
 export async function executeDirectMintingWithData({
@@ -418,9 +418,9 @@ Two details are critical here:
   `AssetManagerFXRP` enforces this through `TransactionAttestation.verifyProofOwnership`.
   Pass the executor's address so the proof can only be used by that executor.
 - **`value`**: `msg.value` on `executeDirectMintingWithData` is forwarded `AssetManager -> MasterAccountController.handleMintedFAssets -> PersonalAccount.executeUserOp`.
-  It must therefore equal the sum of `call.value` across the user operation - exactly the `totalCallValue` returned by Step 1.
+  It must therefore equal the sum of `call.value` across the user operation - exactly the `totalCallValue` returned by [Step 1](#step-1-send-the-hash-memo-on-xrpl).
 
-## Step 3: confirm execution from the receipt
+## Step 3: Confirm execution from the receipt
 
 The `MasterAccountController` runs the user operation **inside** the executor's transaction, so `UserOperationExecuted` is already present in the receipt's logs by the time `executeDirectMintingWithData` returns.
 There is no event watcher to start; the script just parses the receipt:
@@ -457,7 +457,7 @@ export function findUserOperationExecuted(
 The error path matters: if the `AssetManager` hits a rate limit or the minting is otherwise delayed (`DirectMintingDelayed`), the FAsset transfer is deferred and the user operation does not execute synchronously.
 In that case the executor must wait for the delay to clear and re-call `executeDirectMintingWithData`.
 
-## Wiring it together
+## Wiring it Together
 
 The `main` function chains the three steps:
 
@@ -484,10 +484,10 @@ const event = findUserOperationExecuted(
 );
 ```
 
-In production, `sendHashInstruction` would run on the user's machine, the `(data, totalCallValue, xrplTransactionHash)` triple would be POST-ed to the executor service, and `executeDirectMintingWithData` would run there.
+On mainnet, `sendHashInstruction` would run on the user's machine, the `(data, totalCallValue, xrplTransactionHash)` triple would be POST-ed to the executor service, and `executeDirectMintingWithData` would run there.
 `findUserOperationExecuted` can run on either side once the executor publishes the resulting receipt.
 
-## Full script
+## Full Script
 
 The repository with the example is available on [GitHub](https://github.com/flare-foundation/flare-viem-starter).
 Helper functions live in the `src/utils` directory.
@@ -584,7 +584,7 @@ To continue your Flare Smart Accounts development journey, you can:
 
 - Get the smart account state using the [State Lookup guide](/smart-accounts/guides/typescript-viem/state-lookup-ts).
 - Read the [Custom Instruction overview](/smart-accounts/custom-instruction) for the on-chain details.
-- Try the simpler single-actor variant in the [Raw Custom Instruction TypeScript guide](/smart-accounts/guides/typescript-viem/raw-custom-instruction-ts).
+- Explore the [Raw Custom Instruction TypeScript guide](/smart-accounts/guides/typescript-viem/raw-custom-instruction-ts).
 - Compare the two flows in the [Custom Instruction Comparison](/smart-accounts/custom-instruction-comparison).
 - Dig into the `IMasterAccountController` [reference](/smart-accounts/reference/IMasterAccountController).
   :::

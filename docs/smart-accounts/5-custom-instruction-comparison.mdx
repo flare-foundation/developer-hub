@@ -16,7 +16,7 @@ keywords:
   ]
 ---
 
-Flare Smart Accounts expose two custom instruction memo opcodes that ultimately execute the same `PackedUserOperation` against a personal account:
+Flare Smart Accounts expose two custom instruction memo opcodes that ultimately execute the same `PackedUserOperation` in the personal account scope:
 
 - [**Custom Instruction**](/smart-accounts/custom-instruction) - opcode `0xFE`.
   The XRPL memo carries only `keccak256(userOp)` in fixed 42 bytes; an off-chain executor delivers the ABI-encoded custom instruction (`userOp`) via `executeDirectMintingWithData`.
@@ -27,11 +27,11 @@ Both flows are validated on-chain against the same `(sender, nonce)` rules and e
 The difference is purely in how the user-operation bytes travel to Flare, and which actor performs which step.
 
 The hash-based flow was added because the XRPL `Payment` memo is capped at `1024` bytes - small enough that non-trivial user operations either had to be split across multiple XRPL payments (each paying its own minting and executor fees) or routed through purpose-built shim contracts on Flare that compressed the call into something memo-sized.
-The 0xFE memo is a constant 42 bytes regardless of the user operation size, which removes the need for both workarounds.
+The `0xFE` memo is a constant 42 bytes regardless of the user's operation size, removing the need for both workarounds.
 
-## Side-by-side
+## Comparison
 
-| Dimension                          | Custom Instruction (`0xFE`)                                                                   | Raw Custom Instruction (`0xFF`)                                                           |
+| Dimension                          | [Custom Instruction](/smart-accounts/custom-instruction) (`0xFE`)                             | [Raw Custom Instruction](/smart-accounts/raw-custom-instruction) (`0xFF`)                 |
 | ---------------------------------- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | XRPL memo payload                  | 10-byte header + `keccak256(userOp)` (fixed 42 bytes)                                         | 10-byte header + `abi.encode(PackedUserOperation)`                                        |
 | XRPL memo size                     | Constant 42 bytes regardless of batch size                                                    | Grows linearly with batch and argument sizes; capped at ~1024 bytes                       |
@@ -43,8 +43,6 @@ The 0xFE memo is a constant 42 bytes regardless of the user operation size, whic
 | Confirmation                       | Same event lives in the executor's transaction receipt                                        | Watch for `UserOperationExecuted` after the `MasterAccountController` dispatches the memo |
 | Replay protection                  | Same as raw - plus the on-chain hash check pins `_data` to the memo's commitment              | Personal account nonce + `usedTransactionIds`                                             |
 | Failure modes specific to the flow | `CustomInstructionHashMismatch` if `keccak256(_data)` differs from the commitment             | None beyond shared ones                                                                   |
-
-## When to use which
 
 **Use the custom instruction (`0xFE`) when**
 
@@ -64,7 +62,7 @@ The 0xFE memo is a constant 42 bytes regardless of the user operation size, whic
 In short, the custom instruction trades a small amount of off-chain coordination (and one extra on-chain proof-binding check) for a fixed memo size and private payloads.
 The raw custom instruction trades memo bandwidth for end-to-end simplicity.
 
-## What stays the same
+## Similarities
 
 The two flows share more than they differ:
 

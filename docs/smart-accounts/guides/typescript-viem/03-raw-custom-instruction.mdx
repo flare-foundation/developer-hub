@@ -23,24 +23,26 @@ import RawCustomInstructionsScript from "!!raw-loader!/examples/developer-hub-ja
 The [Raw Custom Instruction overview](/smart-accounts/raw-custom-instruction) explains how Flare smart accounts replay an [EIP-4337](https://eips.ethereum.org/EIPS/eip-4337) `PackedUserOperation` carried in full in an XRPL `Payment` memo (opcode `0xFF`).
 This guide walks through a TypeScript script that builds the user operation with the Viem library, sends a payment transaction with the user operation on XRPL, and waits for the [`UserOperationExecuted`](/smart-accounts/reference/IMasterAccountController#useroperationexecuted) event on Flare.
 
+:::info
 This page covers only what differs from the [Custom Instruction TypeScript guide](/smart-accounts/guides/typescript-viem/custom-instruction-ts).
 For the [example contracts](/smart-accounts/guides/typescript-viem/custom-instruction-ts#contracts) (`Checkpoint`, `PiggyBank`, `NoticeBoard`), the [`Call` struct shape](/smart-accounts/guides/typescript-viem/custom-instruction-ts#building-the-call-array), the [personal-account/nonce lookup](/smart-accounts/guides/typescript-viem/custom-instruction-ts#personal-account-and-nonce), and the [XRPL payment amount calculation](/smart-accounts/guides/typescript-viem/custom-instruction-ts#computing-the-xrpl-payment-amount), refer to that guide.
+:::
 
 The recommended path is the [Custom Instruction TypeScript guide](/smart-accounts/guides/typescript-viem/custom-instruction-ts) - it lifts the XRPL memo cap, hides the call payload, and uses the executor flow the rest of the smart-accounts tooling defaults to.
 Use the raw flow when you do not want to operate or coordinate with an executor and your call batch fits inside the XRPL memo cap.
 
 This guide hits that cap head-on: it executes the same three example calls as the [Custom Instruction TypeScript guide](/smart-accounts/guides/typescript-viem/custom-instruction-ts), but the XRPL memo field is capped at `1024` bytes, and the three calls together exceed that budget when ABI-encoded.
 The script therefore splits the work into two user operations sent in sequence, paying the FAssets minting fee and executor fee on each XRPL payment.
-The same cap is also why some calls - those whose calldata alone overruns the memo budget - cannot be expressed in the 0xFF flow without deploying a shim contract on Flare to compress them.
+The same cap is also why some calls - those whose calldata alone overruns the memo budget - cannot be expressed in the `0xFF` flow without deploying a shim contract on Flare to compress them.
 
 A prerequisite for the user operation to be executed is that the personal account holds enough native tokens to cover the call values.
 The script calls forward a total of `2` C2FLR (Coston2 Flare native tokens), so fund the personal account from the [Flare faucet](https://faucet.flare.network/coston2) before running it.
 
 The full code is available on [GitHub](https://github.com/flare-foundation/flare-viem-starter/blob/main/src/custom-instructions-raw.ts).
 
-## Splitting the call array across two payments
+## Splitting the Call Array Across Two Payments
 
-XRPL caps the memo at roughly `1024` bytes.
+XRPL caps the memo at `1024` bytes.
 The `pinNotice` call carries a string argument that, together with the other two calls, exceeds that limit, so the script splits the work into two user operations:
 
 ```typescript
@@ -81,7 +83,7 @@ const pinNoticeCalls: Call[] = [
 The `Call` struct fields are the same as for the [custom instruction](/smart-accounts/guides/typescript-viem/custom-instruction-ts#building-the-call-array).
 The split is the entire reason this guide exists: in the [custom instruction flow](/smart-accounts/guides/typescript-viem/custom-instruction-ts) the same three calls fit in a single 42-byte memo, regardless of batch size.
 
-## Encoding the user operation
+## Encoding the User Operation
 
 The XRPL memo carries a 10-byte header followed by an ABI-encoded [`PackedUserOperation`](https://eips.ethereum.org/EIPS/eip-4337#useroperation):
 
@@ -142,9 +144,9 @@ export function encodeExecuteUserOpMemo({
 
 Unlike the custom instruction, which carries only `keccak256(userOp)` in the memo, this header is followed by the full ABI-encoded `PackedUserOperation` - hence the memo cap problem above.
 
-## Sending the user operation
+## Sending the User Operation
 
-The XRPL `Payment` is sent to the FAssets **direct minting payment address** read from the `AssetManagerFXRP` contract - not to an operator wallet.
+The XRPL `Payment` is sent to the FAssets [direct minting payment address](/fassets/reference/IAssetManager#directmintingpaymentaddress) read from the `AssetManagerFXRP` contract - not to an operator wallet.
 The encoded user operation is attached as a memo, with the `0x` prefix removed.
 
 :::warning No destination tags
@@ -196,7 +198,7 @@ export async function sendMemoFieldInstruction({
 There is no `(data, totalCallValue)` to hand off to an executor here: the entire user operation already lives in the memo, so the only handoff is the XRPL payment itself.
 The `xrplClient` and `xrplWallet` are the `Client` and `Wallet` classes from the `xrpl` library, initialized from the `.env` file.
 
-## Waiting for execution
+## Waiting for Execution
 
 Because the raw flow has no executor receipt to parse, the script watches for the `UserOperationExecuted` event with Viem's [`watchContractEvent`](https://viem.sh/docs/contract/watchContractEvent#watchcontractevent), filtering on the personal account and the nonce we submitted:
 
@@ -241,7 +243,7 @@ The bridging is handled by the [Flare Data Connector](/fdc/overview), which caps
 If any inner call reverts, the whole user operation reverts with [`CallFailed`](/smart-accounts/reference/IPersonalAccount#callfailed) and the nonce does not increment.
 The FXRP transfer, however, is performed before the memo is decoded, so the mint succeeds even when the user operation reverts - see [`DirectMintingExecuted`](/smart-accounts/reference/IMasterAccountController#directmintingexecuted).
 
-## Full script
+## Full Script
 
 The repository with the example is available on [GitHub](https://github.com/flare-foundation/flare-viem-starter).
 Helper functions live in the `src/utils` directory.
@@ -250,7 +252,7 @@ Helper functions live in the `src/utils` directory.
   {RawCustomInstructionsScript}
 </CodeBlock>
 
-## Expected output
+## Expected Output
 
 ```bash
 Personal account address: 0xFd2f0eb6b9fA4FE5bb1F7B26fEE3c647ed103d9F

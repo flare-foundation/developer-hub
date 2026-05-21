@@ -33,9 +33,9 @@ XRPL transactions targeting smart accounts must not use a destination tag.
 A destination tag forces [FAssets direct minting](/fassets/direct-minting) to credit the tag-holder, which would let an unrelated party front-run the user operation.
 :::
 
-## User operation payload
+## User Operation Payload
 
-A custom instruction has two layers: the outer EIP-4337 [`PackedUserOperation`](https://eips.ethereum.org/EIPS/eip-4337#useroperation) that the XRPL memo commits to, and the inner [`executeUserOp(Call[])`](/smart-accounts/reference/IPersonalAccount#executeuserop) that the personal account runs once the controller dispatches it.
+A custom instruction has two layers: the outer [EIP-4337](https://eips.ethereum.org/EIPS/eip-4337) [`PackedUserOperation`](https://eips.ethereum.org/EIPS/eip-4337#useroperation) that the XRPL memo commits to, and the inner [`executeUserOp(Call[])`](/smart-accounts/reference/IPersonalAccount#executeuserop) that the personal account runs once the controller dispatches it.
 
 Only three fields from the [`PackedUserOperation`](https://eips.ethereum.org/EIPS/eip-4337#useroperation) struct are required for Flare Smart Accounts:
 
@@ -43,7 +43,7 @@ Only three fields from the [`PackedUserOperation`](https://eips.ethereum.org/EIP
   Use [`getPersonalAccount`](/smart-accounts/reference/IMasterAccountController#getpersonalaccount) to look it up - the address is deterministic, so you can fetch it before the account is even deployed.
 - `nonce` **must** equal the personal account's current nonce returned by [`getNonce`](/smart-accounts/reference/IMasterAccountController#getnonce).
   The nonce auto-increments on every successful execution to prevent replay.
-- `callData` is the calldata that the controller invokes on the personal account.
+- `callData` is the data that the controller invokes on the personal account.
   In practice, this is `abi.encodeCall(IPersonalAccount.executeUserOp, (calls))` - anything else either reverts or is rejected by the personal account's `onlyController` modifier.
 
 The remaining fields are not validated on-chain and can be left empty.
@@ -98,7 +98,7 @@ const callData = encodeFunctionData({
 
 The encoded `callData` becomes the `callData` field of the `PackedUserOperation` that the XRPL memo commits to.
 
-## Memo layout
+## Memo Layout
 
 The custom instruction memo is a constant 42 bytes:
 
@@ -115,9 +115,9 @@ This is the main practical advantage over the [Raw Custom Instruction](/smart-ac
 The off-chain delivery also makes the call payload **private on XRPL**.
 Only the 32-byte commitment is published; the inner `target`, `value`, and `data` of each call only become visible when the executor submits the user operation to Flare.
 
-## Three-step protocol
+## Three-step Protocol
 
-The 0xFE flow runs three steps that map onto two independent actors in production.
+The `0xFE` flow runs three steps that map onto two independent actors.
 A demo script can run all three from the same process, but the on-chain checks are designed around the two-actor split.
 The executor bridges the XRPL payment to Flare with a proof from the [Flare Data Connector (FDC)](/fdc/overview), the same attestation system used by the proof-based flow:
 
@@ -133,7 +133,7 @@ sequenceDiagram
     User->>User: 1. encode UserOp
     User->>User: compute keccak256(userOp)
     User->>XRPL: 2. Payment to direct-minting<br/>address with 42-byte memo<br/>[0xFE][walletId][fee][hash]
-    Note over Executor: receives userOp bytes<br/>out-of-band
+    Note over Executor: receives userOp bytes<br/>off-chain
 
     Executor->>Executor: 3. fetch FDC XRPPayment proof
     Executor->>AM: 4. executeDirectMintingWithData(proof, data)<br/>{value: sum(call.value)}
@@ -143,16 +143,15 @@ sequenceDiagram
     MasterAccountController-->>User: UserOperationExecuted event
 ```
 
-### Step 1: user side
+### Step 1: User Side
 
 The user constructs the `PackedUserOperation` as described in [User operation payload](#user-operation-payload), computes `keccak256` over the ABI encoding, and packs the 42-byte memo from [Memo layout](#memo-layout).
 
-The user sends an XRPL `Payment` to the FAssets direct-minting address with this memo, and delivers the full `PackedUserOperation` bytes to the executor **out-of-band** (e.g. over an authenticated HTTP API).
-The bytes never appear on the XRPL ledger.
+The user sends an XRPL `Payment` to the FAssets [direct minting address](/fassets/reference/IAssetManager#directmintingpaymentaddress) with this memo, and delivers the full `PackedUserOperation` bytes to the executor **off-chain** (e.g. over an authenticated HTTP API).
 
-### Step 2: executor side
+### Step 2: Executor Side
 
-The executor takes the XRPL transaction hash, requests an [`IXRPPayment` attestation](/fdc/attestation-types/payment) from the [Flare Data Connector](/fdc/overview), and calls `executeDirectMintingWithData` on `AssetManagerFXRP` (see the [FAssets direct minting page](/fassets/direct-minting)):
+The executor takes the XRPL transaction hash, requests an [`XRPPayment` attestation](/fdc/attestation-types/xrp-payment) from the [Flare Data Connector](/fdc/overview), and calls `executeDirectMintingWithData` on `AssetManagerFXRP` (see the [FAssets direct minting page](/fassets/direct-minting)):
 
 ```solidity
 function executeDirectMintingWithData(
@@ -162,30 +161,30 @@ function executeDirectMintingWithData(
 ```
 
 - `_payment` is the FDC proof of the XRPL `Payment`.
-- `_data` is the ABI-encoded `PackedUserOperation` that was delivered out-of-band.
+- `_data` is the ABI-encoded `PackedUserOperation` that was delivered off-chain.
 - `msg.value` **must equal the sum of `call.value` across the user operation**.
-  `AssetManagerFXRP` forwards this value into `MasterAccountController.handleMintedFAssets`, which forwards it again into the personal account's `executeUserOp` so the inner calls can attach native value.
+  The `AssetManagerFXRP` forwards this value to the `MasterAccountController` function `handleMintedFAssets`, which forwards it to the personal account's `executeUserOp` function so that the inner calls can attach the native value.
 
 The `executeDirectMintingWithData` function is **only valid for smart-account targets** - calling it for a non-smart-account direct mint reverts.
 
-### Step 3: confirmation
+### Step 3: Confirmation
 
 The `MasterAccountController` verifies on-chain that `keccak256(_data) == userOpHash` from the memo.
 If it matches, it decodes `_data` as a `PackedUserOperation`, validates `sender` and `nonce`, executes `executeUserOp` on the personal account, and emits [`UserOperationExecuted`](/smart-accounts/reference/IMasterAccountController#useroperationexecuted) - **all inside the executor's transaction**.
 This is the key difference from the proof-based dispatch: there is no separate cross-chain wait, because the executor's call already executed the user operation by the time it returns.
 
-## Hash mismatch
+## Hash Mismatch
 
 If the bytes the executor submits do not hash to the commitment in the memo, `handleMintedFAssets` reverts with `CustomInstructionHashMismatch(expected, actual)`.
-The FAsset transfer is performed before the memo is decoded, however, so even on a mismatch the FXRP credited by direct minting remains in the personal account, and the user can recover by issuing a fresh user operation (see [Failure Handling](#failure-handling)).
+The FAsset transfer is performed before the memo is decoded, however, so even on a mismatch the FXRP credited by direct minting remains in the personal account, and the user can recover by issuing a new user operation (see [Failure Handling](#failure-handling)).
 
-## Call value accounting
+## Call Value Accounting
 
 Whatever native value the executor attaches to `executeDirectMintingWithData` is forwarded all the way to `executeUserOp` (`AssetManagerFXRP -> MasterAccountController.handleMintedFAssets -> PersonalAccount.executeUserOp`).
-The executor must therefore compute the total native value to attach as the sum of `call.value` across the user operation it received out-of-band.
+The executor must therefore compute the total native value to attach as the sum of `call.value` across the user operation it received off-chain.
 The user-side helper in the [TypeScript guide](/smart-accounts/guides/typescript-viem/custom-instruction-ts) returns this value alongside the XRPL transaction hash, so the executor does not have to recompute it from scratch.
 
-## Replay protection
+## Replay Protection
 
 Two replay-protection layers gate every custom instruction:
 
