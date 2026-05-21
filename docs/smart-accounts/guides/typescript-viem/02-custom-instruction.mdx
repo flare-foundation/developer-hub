@@ -3,7 +3,7 @@ sidebar_position: 2
 slug: custom-instruction-ts
 title: Custom Instruction
 authors: [nikerzetic]
-description: Sending only keccak256(userOp) on XRPL and delivering the PackedUserOperation bytes via an executor (0xFE flow).
+description: Sending custom smart account instructions via XRPL using Viem and an off-chain executor.
 tags: [quickstart, ethereum, flare-smart-accounts]
 keywords:
   [
@@ -20,12 +20,15 @@ unlisted: false
 import CodeBlock from "@theme/CodeBlock";
 import CustomInstructionsScript from "!!raw-loader!/examples/developer-hub-javascript/smart-accounts/custom-instructions.ts";
 
-The [Custom Instruction overview](/smart-accounts/custom-instruction) introduces the 0xFE memo opcode, which keeps the XRPL memo at a fixed 42 bytes by carrying only `keccak256(PackedUserOperation)` and delivers the user operation bytes to Flare through an off-chain executor.
+The [Custom Instruction overview](/smart-accounts/custom-instruction) introduces the `0xFE` memo opcode, which keeps the XRPL memo at a fixed 42 bytes by carrying only `keccak256(PackedUserOperation)` and delivers the user operation bytes to Flare through an off-chain executor.
 This guide walks through a TypeScript script that drives all three steps of the protocol with Viem and the [Flare Data Connector (FDC)](/fdc/overview).
 
 A prerequisite for the user operation to be executed is that the personal account holds enough native tokens to cover the call values.
 The script forwards a total of `2` C2FLR (Coston2 Flare native tokens), so fund the personal account from the [Flare faucet](https://faucet.flare.network/coston2) before running it.
 The [State Lookup guide](/smart-accounts/guides/typescript-viem/state-lookup-ts#personal-account-of-an-xrpl-address) shows how to derive the personal account address.
+
+The XRPL wallet that signs the `Payment` also needs enough XRP to cover the payment amount (net mint plus fees, computed below).
+Before sending, the script reads the wallet's XRP balance with the `getXrpBalance` helper and aborts if it is below the required amount.
 
 The full code is available on [GitHub](https://github.com/flare-foundation/flare-viem-starter/blob/main/src/custom-instructions.ts).
 
@@ -288,6 +291,52 @@ export async function computeDirectMintingPaymentAmountXrp({
 
 The script also mints `10` FXRP as a side effect of the same payment, so the payment amount includes the net mint amount on top of the fees.
 
+## Checking the XRPL Wallet Balance
+
+The signer of the XRPL `Payment` must hold at least `paymentAmountXrp` XRP, otherwise the payment will fail when submitted to the network.
+The `getXrpBalance` helper issues an [`account_info`](https://xrpl.org/account_info.html) request against the validated ledger and returns the wallet's balance in XRP.
+It reuses the caller's `Client` when one is passed in, and otherwise opens and closes its own connection:
+
+```typescript
+export async function getXrpBalance(
+  xrplAddress: string,
+  client?: Client,
+): Promise<number> {
+  const ownsClient = client === undefined;
+  const xrplClient = client ?? new Client(process.env.XRPL_TESTNET_RPC_URL!);
+  if (!xrplClient.isConnected()) {
+    await xrplClient.connect();
+  }
+  try {
+    const response = await xrplClient.request({
+      command: "account_info",
+      account: xrplAddress,
+      ledger_index: "validated",
+    });
+    return Number(dropsToXrp(response.result.account_data.Balance));
+  } finally {
+    if (ownsClient) {
+      await xrplClient.disconnect();
+    }
+  }
+}
+```
+
+The `main` function calls it right after computing `paymentAmountXrp` and aborts before touching XRPL if the wallet is short.
+Failing fast here avoids a half-committed flow where the XRPL submission errors out after the user has already paid gas on Flare for unrelated reads:
+
+```typescript
+const xrpBalance = await getXrpBalance(xrplWallet.address, xrplClient);
+if (xrpBalance < paymentAmountXrp) {
+  throw new Error(
+    `Insufficient XRP balance on ${xrplWallet.address}: have ${xrpBalance} XRP, need ${paymentAmountXrp} XRP`,
+  );
+}
+```
+
+This check covers only the payment amount; the XRPL network also requires the account to keep its base reserve, which is not subtracted here.
+If the wallet's spendable balance is close to the reserve, the payment can still fail with `tecUNFUNDED_PAYMENT` even though this check passes.
+
 ## Step 1: Send the hash memo on XRPL
 
 The user-side helper function computes the memo, sends the XRPL `Payment` to the FAssets direct-minting address, and returns everything the executor needs to drive Step 2:
@@ -502,6 +551,8 @@ Helper functions live in the `src/utils` directory.
 Personal account address: 0xFd2f0eb6b9fA4FE5bb1F7B26fEE3c647ed103d9F
 
 Payment amount (XRP, net mint + fees): 10.2
+
+XRPL wallet XRP balance: 1000
 
 [hash-instruction-batch] calls: [
   {

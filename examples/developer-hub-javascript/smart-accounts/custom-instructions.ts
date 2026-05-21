@@ -11,6 +11,7 @@ import {
   type Call,
 } from "./utils/smart-accounts";
 import { computeDirectMintingPaymentAmountXrp } from "./utils/fassets";
+import { getXrpBalance } from "./utils/xrpl";
 
 // NOTE:(Nik) For this example to work, you first need to faucet C2FLR to your personal account address.
 //
@@ -79,6 +80,14 @@ async function main() {
   ]);
   console.log("Personal account address:", personalAccount, "\n");
   console.log("Payment amount (XRP, net mint + fees):", paymentAmountXrp, "\n");
+
+  const xrpBalance = await getXrpBalance(xrplWallet.address, xrplClient);
+  console.log("XRPL wallet XRP balance:", xrpBalance, "\n");
+  if (xrpBalance < paymentAmountXrp) {
+    throw new Error(
+      `Insufficient XRP balance on ${xrplWallet.address}: have ${xrpBalance} XRP, need ${paymentAmountXrp} XRP`,
+    );
+  }
 
   // --- 1. USER SIDE -------------------------------------------------------
   // Send the XRPL Payment carrying the 32-byte UserOp hash in the memo. The

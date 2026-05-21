@@ -35,12 +35,12 @@ A destination tag forces [FAssets direct minting](/fassets/direct-minting) to cr
 
 The XRPL memo carries a 10-byte instruction header followed by the ABI-encoded `PackedUserOperation`:
 
-| Bytes | Field            | Meaning                                                                |
-| ----- | ---------------- | ---------------------------------------------------------------------- |
-| `0`   | `instructionId`  | `0xFF` - raw custom instruction                                        |
-| `1`   | `walletId`       | One-byte wallet identifier assigned by Flare; `0` if not registered    |
-| `2-9` | `executorFeeUBA` | Executor fee in the FAsset's smallest unit, big-endian `uint64`        |
-| `10+` | `userOpData`     | `abi.encode(PackedUserOperation)` - the call payload the facet decodes |
+| Bytes | Field            | Meaning                                                                     |
+| ----- | ---------------- | --------------------------------------------------------------------------- |
+| `0`   | `instructionId`  | `0xFF` - raw custom instruction                                             |
+| `1`   | `walletId`       | One-byte wallet identifier assigned by Flare; `0` if not registered         |
+| `2-9` | `executorFeeUBA` | Executor fee in the FAsset's smallest unit, big-endian `uint64`             |
+| `10+` | `userOpData`     | `abi.encode(PackedUserOperation)` - the call payload the controller decodes |
 
 The total memo length is `10 + len(abi.encode(userOp))` bytes.
 The XRPL caps each memo at `1024` bytes, so large or repetitive call batches must be split across multiple XRPL payments - each of which pays its own FAssets minting fee and executor fee - and a single call whose ABI-encoded calldata alone exceeds the budget cannot be expressed at all without deploying a shim contract on Flare to compress it.

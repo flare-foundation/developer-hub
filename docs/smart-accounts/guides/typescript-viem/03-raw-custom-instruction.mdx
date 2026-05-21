@@ -38,6 +38,19 @@ The same cap is also why some calls - those whose calldata alone overruns the me
 A prerequisite for the user operation to be executed is that the personal account holds enough native tokens to cover the call values.
 The script calls forward a total of `2` C2FLR (Coston2 Flare native tokens), so fund the personal account from the [Flare faucet](https://faucet.flare.network/coston2) before running it.
 
+The XRPL wallet must also cover the **sum** of both payments, `paymentAmountXrp + memoOnlyAmountXrp`, since the raw flow splits the batch into two XRPL `Payment` transactions.
+The script reads the wallet's balance with the shared [`getXrpBalance`](/smart-accounts/guides/typescript-viem/custom-instruction-ts#checking-the-xrpl-wallet-balance) helper and aborts before sending either payment if the wallet is short, so neither half of the batch is submitted on partial funding:
+
+```typescript
+const totalRequiredXrp = paymentAmountXrp + memoOnlyAmountXrp;
+const xrpBalance = await getXrpBalance(xrplWallet.address, xrplClient);
+if (xrpBalance < totalRequiredXrp) {
+  throw new Error(
+    `Insufficient XRP balance on ${xrplWallet.address}: have ${xrpBalance} XRP, need ${totalRequiredXrp} XRP (both payments)`,
+  );
+}
+```
+
 The full code is available on [GitHub](https://github.com/flare-foundation/flare-viem-starter/blob/main/src/custom-instructions-raw.ts).
 
 ## Splitting the Call Array Across Two Payments
@@ -260,6 +273,8 @@ Personal account address: 0xFd2f0eb6b9fA4FE5bb1F7B26fEE3c647ed103d9F
 Payment amount (XRP, net mint + fees): 10.0011
 
 Memo-only amount (XRP, fees only): 0.0011
+
+XRPL wallet XRP balance: 1000
 
 [checkpoint-and-deposit] calls: [
   {
