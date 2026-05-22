@@ -1,7 +1,7 @@
 ---
 sidebar_position: 1
-slug: raw-custom-instruction
-title: Raw Custom Instruction
+slug: memo-field-custom-instruction
+title: Memo Field Custom Instruction
 authors: [nikerzetic]
 description: Performing custom function calls in the Flare Smart Accounts by carrying the full PackedUserOperation in the XRPL memo.
 tags: [intermediate, ethereum, flare-smart-accounts]
@@ -16,11 +16,11 @@ keywords:
   ]
 ---
 
-The **raw custom instruction** (memo opcode `0xFF`) is a single-actor variant of the [Custom Instruction](/smart-accounts/custom-instruction): instead of committing to a `keccak256(userOp)` hash and relying on an executor to deliver the bytes, the XRPL `Payment` memo carries the entire ABI-encoded `PackedUserOperation` inline immediately after a 10-byte header.
+The **memo field custom instruction** (memo opcode `0xFF`) is a single-actor variant of the [Custom Instruction](/smart-accounts/custom-instruction): instead of committing to a `keccak256(userOp)` hash and relying on an executor to deliver the bytes, the XRPL `Payment` memo carries the entire ABI-encoded `PackedUserOperation` inline immediately after a 10-byte header.
 The user signs the XRPL `Payment`, ships the payload on XRPL, and the smart account replays the user operation on Flare with no further off-chain data.
 
 The recommended path is the [Custom Instruction](/smart-accounts/custom-instruction) - it lifts the XRPL memo size cap and is what the rest of the smart-accounts tooling defaults to.
-Reach for the raw variant when you do not want to operate or coordinate with an executor and your call batch fits inside the XRPL memo cap.
+Reach for the memo field variant when you do not want to operate or coordinate with an executor and your call batch fits inside the XRPL memo cap.
 The [comparison guide](/smart-accounts/custom-instruction-comparison) breaks down when each is appropriate.
 
 This page covers only what differs from the [Custom Instruction](/smart-accounts/custom-instruction).
@@ -37,7 +37,7 @@ The XRPL memo carries a 10-byte instruction header followed by the ABI-encoded `
 
 | Bytes | Field            | Meaning                                                                     |
 | ----- | ---------------- | --------------------------------------------------------------------------- |
-| `0`   | `instructionId`  | `0xFF` - raw custom instruction                                             |
+| `0`   | `instructionId`  | `0xFF` - memo field custom instruction                                      |
 | `1`   | `walletId`       | One-byte wallet identifier assigned by Flare; `0` if not registered         |
 | `2-9` | `executorFeeUBA` | Executor fee in the FAsset's smallest unit, big-endian `uint64`             |
 | `10+` | `userOpData`     | `abi.encode(PackedUserOperation)` - the call payload the controller decodes |
@@ -70,7 +70,7 @@ The freshly minted FXRP remains in the personal account, and the user can either
 
 ## Next Steps
 
-- Walk through a Viem implementation in the [Raw Custom Instruction TypeScript guide](/smart-accounts/guides/typescript-viem/raw-custom-instruction-ts).
+- Walk through a Viem implementation in the [Memo Field Custom Instruction TypeScript guide](/smart-accounts/guides/typescript-viem/memo-field-custom-instruction-ts).
 - Read the [Custom Instruction](/smart-accounts/custom-instruction) for the recommended hash-commitment variant.
 - Compare the two flows in the [Custom Instruction Comparison](/smart-accounts/custom-instruction-comparison).
 - Dig into `IMasterAccountController` in the [reference](/smart-accounts/reference/IMasterAccountController).

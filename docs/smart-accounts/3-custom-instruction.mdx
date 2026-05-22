@@ -26,7 +26,7 @@ The **custom instruction** (memo opcode `0xFE`) is the recommended way to drive 
 The XRPL memo is a fixed 42 bytes that commits to a `PackedUserOperation` by carrying only its `keccak256` hash, and an off-chain executor delivers the actual user operation bytes to the FAssets `AssetManager` on Flare.
 This keeps the XRPL footprint constant regardless of how complex the call batch is.
 
-For the simpler single-actor variant that ships the entire `PackedUserOperation` inline in the XRPL memo, see the [Raw Custom Instruction](/smart-accounts/raw-custom-instruction); the [comparison guide](/smart-accounts/custom-instruction-comparison) covers when to pick which.
+For the simpler single-actor variant that ships the entire `PackedUserOperation` inline in the XRPL memo, see the [Memo Field Custom Instruction](/smart-accounts/memo-field-custom-instruction); the [comparison guide](/smart-accounts/custom-instruction-comparison) covers when to pick which.
 
 :::warning No destination tags
 XRPL transactions targeting smart accounts must not use a destination tag.
@@ -110,7 +110,7 @@ The custom instruction memo is a constant 42 bytes:
 | `10-41` | `userOpHash`     | `keccak256(abi.encode(userOp))` - the 32-byte commitment            |
 
 The memo length is independent of the call batch: a single small call and a 50-call batch both fit in the same 42 bytes, because the user-operation bytes the executor delivers off-chain never touch the XRPL ledger.
-This is the main practical advantage over the [Raw Custom Instruction](/smart-accounts/raw-custom-instruction), whose memo carries the entire ABI-encoded `PackedUserOperation` and is therefore subject to the XRPL's 1024-byte memo cap.
+This is the main practical advantage over the [Memo Field Custom Instruction](/smart-accounts/memo-field-custom-instruction), whose memo carries the entire ABI-encoded `PackedUserOperation` and is therefore subject to the XRPL's 1024-byte memo cap.
 
 The off-chain delivery also makes the call payload **private on XRPL**.
 Only the 32-byte commitment is published; the inner `target`, `value`, and `data` of each call only become visible when the executor submits the user operation to Flare.
@@ -211,6 +211,6 @@ The minted FXRP remains in the personal account and the user can recover by eith
 ## Next steps
 
 - Walk through a Viem implementation in the [Custom Instruction TypeScript guide](/smart-accounts/guides/typescript-viem/custom-instruction-ts).
-- See the simpler single-actor variant in the [Raw Custom Instruction](/smart-accounts/raw-custom-instruction).
+- See the simpler single-actor variant in the [Memo Field Custom Instruction](/smart-accounts/memo-field-custom-instruction).
 - Compare the two flows in the [Custom Instruction Comparison](/smart-accounts/custom-instruction-comparison).
 - Dig into `IMasterAccountController` in the [reference](/smart-accounts/reference/IMasterAccountController).

@@ -1,7 +1,7 @@
 ---
 sidebar_position: 3
-slug: raw-custom-instruction-ts
-title: Raw Custom Instruction
+slug: memo-field-custom-instruction-ts
+title: Memo Field Custom Instruction
 authors: [nikerzetic]
 description: Sending the full PackedUserOperation in an XRPL memo with Viem (0xFF flow).
 tags: [intermediate, ethereum, flare-smart-accounts]
@@ -18,9 +18,9 @@ unlisted: false
 ---
 
 import CodeBlock from "@theme/CodeBlock";
-import RawCustomInstructionsScript from "!!raw-loader!/examples/developer-hub-javascript/smart-accounts/custom-instructions-raw.ts";
+import MemoFieldCustomInstructionsScript from "!!raw-loader!/examples/developer-hub-javascript/smart-accounts/custom-instructions-memo-field.ts";
 
-The [Raw Custom Instruction overview](/smart-accounts/raw-custom-instruction) explains how Flare smart accounts replay an [EIP-4337](https://eips.ethereum.org/EIPS/eip-4337) `PackedUserOperation` carried in full in an XRPL `Payment` memo (opcode `0xFF`).
+The [Memo Field Custom Instruction overview](/smart-accounts/memo-field-custom-instruction) explains how Flare smart accounts replay an [EIP-4337](https://eips.ethereum.org/EIPS/eip-4337) `PackedUserOperation` carried in full in an XRPL `Payment` memo (opcode `0xFF`).
 This guide walks through a TypeScript script that builds the user operation with the Viem library, sends a payment transaction with the user operation on XRPL, and waits for the [`UserOperationExecuted`](/smart-accounts/reference/IMasterAccountController#useroperationexecuted) event on Flare.
 
 :::info
@@ -29,7 +29,7 @@ For the [example contracts](/smart-accounts/guides/typescript-viem/custom-instru
 :::
 
 The recommended path is the [Custom Instruction TypeScript guide](/smart-accounts/guides/typescript-viem/custom-instruction-ts) - it lifts the XRPL memo cap, hides the call payload, and uses the executor flow the rest of the smart-accounts tooling defaults to.
-Use the raw flow when you do not want to operate or coordinate with an executor and your call batch fits inside the XRPL memo cap.
+Use the memo field flow when you do not want to operate or coordinate with an executor and your call batch fits inside the XRPL memo cap.
 
 This guide hits that cap head-on: it executes the same three example calls as the [Custom Instruction TypeScript guide](/smart-accounts/guides/typescript-viem/custom-instruction-ts), but the XRPL memo field is capped at `1024` bytes, and the three calls together exceed that budget when ABI-encoded.
 The script therefore splits the work into two user operations sent in sequence, paying the FAssets minting fee and executor fee on each XRPL payment.
@@ -38,7 +38,7 @@ The same cap is also why some calls - those whose calldata alone overruns the me
 A prerequisite for the user operation to be executed is that the personal account holds enough native tokens to cover the call values.
 The script calls forward a total of `2` C2FLR (Coston2 Flare native tokens), so fund the personal account from the [Flare faucet](https://faucet.flare.network/coston2) before running it.
 
-The XRPL wallet must also cover the **sum** of both payments, `paymentAmountXrp + memoOnlyAmountXrp`, since the raw flow splits the batch into two XRPL `Payment` transactions.
+The XRPL wallet must also cover the **sum** of both payments, `paymentAmountXrp + memoOnlyAmountXrp`, since the memo field flow splits the batch into two XRPL `Payment` transactions.
 The script reads the wallet's balance with the shared [`getXrpBalance`](/smart-accounts/guides/typescript-viem/custom-instruction-ts#checking-the-xrpl-wallet-balance) helper and aborts before sending either payment if the wallet is short, so neither half of the batch is submitted on partial funding:
 
 ```typescript
@@ -51,7 +51,7 @@ if (xrpBalance < totalRequiredXrp) {
 }
 ```
 
-The full code is available on [GitHub](https://github.com/flare-foundation/flare-viem-starter/blob/main/src/custom-instructions-raw.ts).
+The full code is available on [GitHub](https://github.com/flare-foundation/flare-viem-starter/blob/main/src/custom-instructions-memo-field.ts).
 
 ## Splitting the Call Array Across Two Payments
 
@@ -213,7 +213,7 @@ The `xrplClient` and `xrplWallet` are the `Client` and `Wallet` classes from the
 
 ## Waiting for Execution
 
-Because the raw flow has no executor receipt to parse, the script watches for the `UserOperationExecuted` event with Viem's [`watchContractEvent`](https://viem.sh/docs/contract/watchContractEvent#watchcontractevent), filtering on the personal account and the nonce we submitted:
+Because the memo field flow has no executor receipt to parse, the script watches for the `UserOperationExecuted` event with Viem's [`watchContractEvent`](https://viem.sh/docs/contract/watchContractEvent#watchcontractevent), filtering on the personal account and the nonce we submitted:
 
 ```typescript
 export async function waitForUserOperationExecuted({
@@ -261,8 +261,8 @@ The FXRP transfer, however, is performed before the memo is decoded, so the mint
 The repository with the example is available on [GitHub](https://github.com/flare-foundation/flare-viem-starter).
 Helper functions live in the `src/utils` directory.
 
-<CodeBlock language="typescript" title="src/custom-instructions-raw.ts">
-  {RawCustomInstructionsScript}
+<CodeBlock language="typescript" title="src/custom-instructions-memo-field.ts">
+  {MemoFieldCustomInstructionsScript}
 </CodeBlock>
 
 ## Expected Output
@@ -328,6 +328,6 @@ XRPL wallet XRP balance: 1000
 
 - Use the recommended single-payment flow in the [Custom Instruction TypeScript guide](/smart-accounts/guides/typescript-viem/custom-instruction-ts).
 - Compare the two flows in the [Custom Instruction Comparison](/smart-accounts/custom-instruction-comparison).
-- Explore the [Raw Custom Instruction overview](/smart-accounts/raw-custom-instruction).
+- Explore the [Memo Field Custom Instruction overview](/smart-accounts/memo-field-custom-instruction).
 - Dig into the `IMasterAccountController` [reference](/smart-accounts/reference/IMasterAccountController).
   :::
