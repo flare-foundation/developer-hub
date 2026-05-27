@@ -9,10 +9,10 @@ export const operationalParameters = [
           "Total amount of allowed FAssets in circulation. Once reached, no more FAssets can be minted until some are redeemed. This is intended as a security measure. In the final deployment, this cap will be gradually increased and finally removed.",
         values: {
           flare: {
-            xrp: "70M XRP",
+            xrp: "170M XRP",
           },
           coston2: {
-            xrp: "none",
+            xrp: "-",
           },
           songbird: {
             xrp: "750k XRP",
@@ -169,7 +169,7 @@ export const operationalParameters = [
             xrp: "5 TestXRP",
           },
           songbird: {
-            xrp: "-",
+            xrp: "5 XRP",
           },
           coston: {
             xrp: "-",
@@ -353,7 +353,7 @@ export const operationalParameters = [
             xrp: "1.3",
           },
           coston2: {
-            xrp: "1.2",
+            xrp: "1.3",
           },
           songbird: {
             xrp: "1.3",
@@ -527,7 +527,7 @@ export const operationalParameters = [
         description: "Where do the funds come from to pay for liquidations?",
         values: {
           flare: {
-            xrp: "The collateral's vault",
+            xrp: "The collateral pool",
           },
           coston2: {
             xrp: "The collateral pool",
@@ -919,11 +919,14 @@ export const operationalParameters = [
           "The minting fee is when users (minters) mint FAssets by depositing underlying assets with an agent.",
         link: "/fassets/minting#minting-fee",
         values: {
+          flare: {
+            xrp: "0.1%",
+          },
           coston2: {
             xrp: "0.25%",
           },
           songbird: {
-            xrp: "1%",
+            xrp: "0.25%",
           },
           coston: {
             xrp: "0.25%",
@@ -939,6 +942,9 @@ export const operationalParameters = [
           "The pool share fee is the portion of the minting and redemption fees allocated to pool collateral providers.",
         link: "/fassets/minting#pool-share",
         values: {
+          flare: {
+            xrp: "30%",
+          },
           coston2: {
             xrp: "40%",
           },
@@ -959,6 +965,9 @@ export const operationalParameters = [
           "The minting vault collateral ratio is the minimum collateral required to back FAssets, ensuring value protection against under-collateralization.",
         link: "/fassets/collateral#minting-cr",
         values: {
+          flare: {
+            xrp: "1.4",
+          },
           coston2: {
             xrp: "1.4",
           },
@@ -979,6 +988,9 @@ export const operationalParameters = [
           "The minting pool collateral ratio ensures the collateral value supports the minted FAssets.",
         link: "/fassets/collateral#minting-cr",
         values: {
+          flare: {
+            xrp: "1.7",
+          },
           coston2: {
             xrp: "1.7",
           },
@@ -999,6 +1011,9 @@ export const operationalParameters = [
           "The pool exit collateral ratio is the minimum collateral ratio agents must maintain when exiting their pool collateral.",
         link: "/fassets/collateral#exit-cr",
         values: {
+          flare: {
+            xrp: "1.6",
+          },
           coston2: {
             xrp: "1.6",
           },
@@ -1019,6 +1034,9 @@ export const operationalParameters = [
           "Applied when agents buy back FAssets during liquidation events, shown as a factor on the Agent UI.",
         link: "/fassets/liquidation#stopping-liquidations",
         values: {
+          flare: {
+            xrp: "99%",
+          },
           coston2: {
             xrp: "99%",
           },
@@ -1038,6 +1056,9 @@ export const operationalParameters = [
         description:
           "Percentage of redemption fees paid to the pool to sustain it during high redemption periods.",
         values: {
+          flare: {
+            xrp: "30%",
+          },
           coston2: {
             xrp: "40%",
           },
@@ -1109,7 +1130,7 @@ export const operationalParameters = [
           "The time of day (UTC) when the escrows expire. Exactly one escrow per day will expire.",
         values: {
           flare: {
-            xrp: "57600 (16:00 UTC)",
+            xrp: "TBD (16:00 UTC)",
           },
           coston2: {
             xrp: "43200 (12:00 UTC)",
@@ -1532,9 +1553,9 @@ export const operationalParameters = [
       },
       {
         name: "Reservation Fee Recipient",
-        functionName: "getDirectMintingFeeReceiver",
+        functionName: "reservationFeeRecipient",
         interfaceLink:
-          "/fassets/reference/IAssetManager#getdirectmintingfeereceiver",
+          "/fassets/reference/IMintingTagManager#reservationfeerecipient",
         description: "Address that receives reservation fees.",
         valueType: "address",
         values: {
