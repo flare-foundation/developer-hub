@@ -168,7 +168,7 @@ const sidebars: SidebarsConfig = {
       items: [
         "smart-accounts/fasset-instructions",
         "smart-accounts/custom-instruction",
-        "smart-accounts/raw-custom-instruction",
+        "smart-accounts/memo-field-custom-instruction",
         "smart-accounts/custom-instruction-comparison",
         {
           type: "category",

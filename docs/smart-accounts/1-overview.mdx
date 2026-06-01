@@ -155,15 +155,15 @@ Instructions for interacting with an Upshift-type vault.
 
 The XRPL memo for the direct-minting flow selects one of the following opcodes in its first byte:
 
-| Memo opcode | Action                 | Description                                                                                                                                                         |
-| ----------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `0xFE`      | Custom Instruction     | Carry `keccak256(PackedUserOperation)` in the memo; the bytes are delivered off-chain by an executor. See [Custom Instruction](/smart-accounts/custom-instruction). |
-| `0xFF`      | Raw Custom Instruction | Carry the full ABI-encoded `PackedUserOperation` inline in the memo. See [Raw Custom Instruction](/smart-accounts/raw-custom-instruction).                          |
-| `0xE0`      | Skip memo              | Mark a target XRPL transaction's memo to be skipped on its next direct mint.                                                                                        |
-| `0xE1`      | Fast-forward nonce     | Advance the personal account's memo-instruction nonce.                                                                                                              |
-| `0xE2`      | Replace executor fee   | Set a replacement executor fee for a stuck XRPL transaction.                                                                                                        |
-| `0xD0`      | Pin executor           | Pin a specific executor address to the personal account.                                                                                                            |
-| `0xD1`      | Unpin executor         | Unpin the executor from the personal account.                                                                                                                       |
+| Memo opcode | Action                        | Description                                                                                                                                                         |
+| ----------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `0xFE`      | Custom Instruction            | Carry `keccak256(PackedUserOperation)` in the memo; the bytes are delivered off-chain by an executor. See [Custom Instruction](/smart-accounts/custom-instruction). |
+| `0xFF`      | Memo Field Custom Instruction | Carry the full ABI-encoded `PackedUserOperation` inline in the memo. See [Memo Field Custom Instruction](/smart-accounts/memo-field-custom-instruction).            |
+| `0xE0`      | Skip memo                     | Mark a target XRPL transaction's memo to be skipped on its next direct mint.                                                                                        |
+| `0xE1`      | Fast-forward nonce            | Advance the personal account's memo-instruction nonce.                                                                                                              |
+| `0xE2`      | Replace executor fee          | Set a replacement executor fee for a stuck XRPL transaction.                                                                                                        |
+| `0xD0`      | Pin executor                  | Pin a specific executor address to the personal account.                                                                                                            |
+| `0xD1`      | Unpin executor                | Unpin the executor from the personal account.                                                                                                                       |
 
 The [Custom Instruction Comparison](/smart-accounts/custom-instruction-comparison) covers when to choose `0xFE` over `0xFF`.
 
@@ -197,7 +197,7 @@ It enforces that the caller is the `AssetManager`, resolves (or deploys) the use
 The XRPL user's smart account performs the actions in the instructions.
 This can be any of the instructions listed above, reserving collateral for minting FXRP, transferring FXRP to another address, redeeming FXRP, depositing it into a vault ...
 Furthermore, custom instructions can be executed - arbitrary function calls on Flare, encoded as an [EIP-4337](https://eips.ethereum.org/EIPS/eip-4337) `PackedUserOperation` and replayed on-chain by the personal account.
-The user operation can be committed to as a 32-byte hash with the bytes delivered to Flare by an off-chain executor (opcode `0xFE`, see the [Custom Instruction guide](/smart-accounts/custom-instruction)), or carried in the XRPL memo in full (opcode `0xFF`, see the [Raw Custom Instruction guide](/smart-accounts/raw-custom-instruction)).
+The user operation can be committed to as a 32-byte hash with the bytes delivered to Flare by an off-chain executor (opcode `0xFE`, see the [Custom Instruction guide](/smart-accounts/custom-instruction)), or carried in the XRPL memo in full (opcode `0xFF`, see the [Memo Field Custom Instruction guide](/smart-accounts/memo-field-custom-instruction)).
 Authorization comes from the XRPL `Payment` signature itself; the on-chain check only validates the `sender` and `nonce` fields of the `PackedUserOperation`.
 The [Custom Instruction Comparison](/smart-accounts/custom-instruction-comparison) covers when to pick each.
 

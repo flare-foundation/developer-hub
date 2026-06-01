@@ -3,7 +3,7 @@ sidebar_position: 1
 slug: custom-instruction-comparison
 title: Custom Instruction Comparison
 authors: [nikerzetic]
-description: Comparing the raw (0xFF) and hash-based (0xFE) custom instruction flows for Flare Smart Accounts.
+description: Comparing the memo field (0xFF) and hash-based (0xFE) custom instruction flows for Flare Smart Accounts.
 tags: [intermediate, ethereum, flare-smart-accounts]
 keywords:
   [
@@ -20,7 +20,7 @@ Flare Smart Accounts expose two custom instruction memo opcodes that ultimately 
 
 - [**Custom Instruction**](/smart-accounts/custom-instruction) - opcode `0xFE`.
   The XRPL memo carries only `keccak256(userOp)` in fixed 42 bytes; an off-chain executor delivers the ABI-encoded custom instruction (`userOp`) via `executeDirectMintingWithData`.
-- [**Raw Custom Instruction**](/smart-accounts/raw-custom-instruction) - opcode `0xFF`.
+- [**Memo Field Custom Instruction**](/smart-accounts/memo-field-custom-instruction) - opcode `0xFF`.
   The XRPL memo contains the ABI-encoded `PackedUserOperation` in full.
 
 Both flows are validated on-chain against the same `(sender, nonce)` rules and emit the same [`UserOperationExecuted`](/smart-accounts/reference/IMasterAccountController#useroperationexecuted) event.
@@ -31,7 +31,7 @@ The `0xFE` memo is a constant 42 bytes regardless of the user's operation size, 
 
 ## Comparison
 
-| Dimension                          | [Custom Instruction](/smart-accounts/custom-instruction) (`0xFE`)                             | [Raw Custom Instruction](/smart-accounts/raw-custom-instruction) (`0xFF`)                 |
+| Dimension                          | [Custom Instruction](/smart-accounts/custom-instruction) (`0xFE`)                             | [Memo Field Custom Instruction](/smart-accounts/memo-field-custom-instruction) (`0xFF`)   |
 | ---------------------------------- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | XRPL memo payload                  | 10-byte header + `keccak256(userOp)` (fixed 42 bytes)                                         | 10-byte header + `abi.encode(PackedUserOperation)`                                        |
 | XRPL memo size                     | Constant 42 bytes regardless of batch size                                                    | Grows linearly with batch and argument sizes; capped at ~1024 bytes                       |
@@ -41,7 +41,7 @@ The `0xFE` memo is a constant 42 bytes regardless of the user's operation size, 
 | AssetManager entry point           | `executeDirectMintingWithData(proof, data)`                                                   | `executeDirectMinting(proof)`                                                             |
 | `msg.value` on the inner call      | Whatever the executor attaches; forwarded to `executeUserOp`                                  | Whatever the relayer attaches; forwarded to `executeUserOp`                               |
 | Confirmation                       | Same event lives in the executor's transaction receipt                                        | Watch for `UserOperationExecuted` after the `MasterAccountController` dispatches the memo |
-| Replay protection                  | Same as raw - plus the on-chain hash check pins `_data` to the memo's commitment              | Personal account nonce + `usedTransactionIds`                                             |
+| Replay protection                  | Same as memo field - plus the on-chain hash check pins `_data` to the memo's commitment       | Personal account nonce + `usedTransactionIds`                                             |
 | Failure modes specific to the flow | `CustomInstructionHashMismatch` if `keccak256(_data)` differs from the commitment             | None beyond shared ones                                                                   |
 
 **Use the custom instruction (`0xFE`) when**
@@ -52,7 +52,7 @@ The `0xFE` memo is a constant 42 bytes regardless of the user's operation size, 
 - You already operate an executor that observes XRPL payments and submits Flare transactions - the custom instruction lets that executor batch deliveries or rate-limit submissions without splitting user operations into multiple XRPL payments.
 - You need fee predictability: the XRPL memo is always 42 bytes, so the XRPL fee is constant regardless of how complex the user operation is.
 
-**Use the raw custom instruction (`0xFF`) when**
+**Use the memo field custom instruction (`0xFF`) when**
 
 - The call batch fits comfortably inside the XRPL ~1024-byte memo (most single-call user operations and small batches do).
 - You do not need to hide the call payload from public XRPL observers.
@@ -60,7 +60,7 @@ The `0xFE` memo is a constant 42 bytes regardless of the user's operation size, 
 - You want the simplest possible on-chain integration: a single FAssets transaction `executeDirectMinting(proof)` carries the whole thing.
 
 In short, the custom instruction trades a small amount of off-chain coordination (and one extra on-chain proof-binding check) for a fixed memo size and private payloads.
-The raw custom instruction trades memo bandwidth for end-to-end simplicity.
+The memo field custom instruction trades memo bandwidth for end-to-end simplicity.
 
 ## Similarities
 
@@ -78,13 +78,13 @@ The two flows share more than they differ:
 The example helpers in [`flare-viem-starter`](https://github.com/flare-foundation/flare-viem-starter) mirror the two flows directly:
 
 - Custom Instruction: [`sendHashInstruction`](/smart-accounts/guides/typescript-viem/custom-instruction-ts#step-1-send-the-hash-memo-on-xrpl) + [`executeDirectMintingWithData`](/smart-accounts/guides/typescript-viem/custom-instruction-ts#step-2-executor-submits-the-proof-and-the-bytes) + [`findUserOperationExecuted`](/smart-accounts/guides/typescript-viem/custom-instruction-ts#step-3-confirm-execution-from-the-receipt) - three calls, one per actor.
-- Raw Custom Instruction: [`sendMemoFieldInstruction`](/smart-accounts/guides/typescript-viem/raw-custom-instruction-ts#sending-the-user-operation) - one call, waits for the event.
+- Memo Field Custom Instruction: [`sendMemoFieldInstruction`](/smart-accounts/guides/typescript-viem/memo-field-custom-instruction-ts#sending-the-user-operation) - one call, waits for the event.
 
 A practical decision rule when integrating:
 
 1. Default to the custom instruction (`0xFE`).
    It fits every call batch and keeps the call payload off the public XRPL ledger.
-2. Reach for the raw custom instruction (`0xFF`) only when you do not want to operate or coordinate with an executor service, and you can guarantee `abi.encode(userOp)` stays well under ~900 bytes (leaving room for the 10-byte header and XRPL framing).
+2. Reach for the memo field custom instruction (`0xFF`) only when you do not want to operate or coordinate with an executor service, and you can guarantee `abi.encode(userOp)` stays well under ~900 bytes (leaving room for the 10-byte header and XRPL framing).
 
 ## Reference
 
