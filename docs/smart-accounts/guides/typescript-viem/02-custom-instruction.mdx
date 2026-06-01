@@ -169,7 +169,7 @@ export type Call = {
 Because the `0xFE` memo is independent of batch size, the script issues a single batch for all three calls - the same three that overflow the XRPL memo cap in the [memo field flow](/smart-accounts/guides/typescript-viem/memo-field-custom-instruction-ts):
 
 ```typescript
-const calls: Call[] = [
+const customInstruction: Call[] = [
   {
     target: checkpointAddress,
     value: BigInt(0),
@@ -224,29 +224,30 @@ The ABI-encoded user operation bytes are returned alongside the memo so they can
 
 ```typescript
 export function encodeHashInstructionMemo({
-  calls,
+  customInstruction,
   walletId,
   executorFeeUBA,
   sender,
   nonce,
 }: {
-  calls: Call[];
+  customInstruction: Call[];
   walletId: number;
   executorFeeUBA: bigint;
   sender: Address;
   nonce: bigint;
 }): { memoData: `0x${string}`; data: `0x${string}` } {
-  const data = encodePackedUserOpData({ calls, sender, nonce });
-  const memoData = concatHex([
-    buildInstructionHeader("0xfe", walletId, executorFeeUBA),
-    keccak256(data),
-  ]);
+  const data = encodePackedUserOpData({ customInstruction, sender, nonce });
+  const memoData = new UserOpCustomInstruction({
+    walletId,
+    executorFeeUBA,
+    userOperationHash: keccak256(data),
+  }).encode();
   return { memoData, data };
 }
 ```
 
 The `encodePackedUserOpData` helper ABI-encodes a `PackedUserOperation` whose only meaningful fields are `sender`, `nonce`, and `callData` - the others are not validated on-chain.
-The `buildInstructionHeader` helper packs the opcode (`0xFE` for the custom instruction, `0xFF` for the memo field variant), the one-byte `walletId`, and the 8-byte big-endian `executorFeeUBA` into the 10-byte instruction header.
+The `UserOpCustomInstruction` class from [`@flarenetwork/smart-accounts-encoder`](https://www.npmjs.com/package/@flarenetwork/smart-accounts-encoder) owns the byte layout: it packs the `0xFE` opcode, the one-byte `walletId`, and the 8-byte big-endian `executorFeeUBA` into the 10-byte header, then appends the 32-byte `userOperationHash`, and `.encode()` returns the full 42-byte memo.
 
 ## Computing the XRPL Payment Amount
 
@@ -353,13 +354,13 @@ export type HashInstructionUserSide = {
 };
 
 export async function sendHashInstruction({
-  calls,
+  customInstruction,
   amountXrp,
   personalAccount,
   xrplClient,
   xrplWallet,
 }: {
-  calls: Call[];
+  customInstruction: Call[];
   amountXrp: number;
   personalAccount: Address;
   xrplClient: Client;
@@ -371,13 +372,16 @@ export async function sendHashInstruction({
   ]);
 
   const { memoData, data } = encodeHashInstructionMemo({
-    calls,
+    customInstruction,
     walletId: 0,
     executorFeeUBA: 0n,
     sender: personalAccount,
     nonce,
   });
-  const totalCallValue = calls.reduce((acc, c) => acc + c.value, 0n);
+  const totalCallValue = customInstruction.reduce(
+    (acc, c) => acc + c.value,
+    0n,
+  );
 
   const transaction = await sendXrplPayment({
     destination: coreVaultXrplAddress,
@@ -512,7 +516,7 @@ The `main` function chains the three steps:
 
 ```typescript
 const userSide = await sendHashInstruction({
-  calls,
+  customInstruction,
   amountXrp: paymentAmountXrp,
   personalAccount,
   xrplClient,
@@ -554,7 +558,7 @@ Payment amount (XRP, net mint + fees): 10.2
 
 XRPL wallet XRP balance: 1000
 
-[hash-instruction-batch] calls: [
+[hash-instruction-batch] customInstruction: [
   {
     target: '0xEE6D54382aA623f4D16e856193f5f8384E487002',
     value: 0n,

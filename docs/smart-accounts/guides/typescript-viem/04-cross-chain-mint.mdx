@@ -205,7 +205,7 @@ export type Call = {
 The fields mirror the `Call` struct the `PersonalAccount` contract takes in `executeUserOp`: the target address, the native value to forward, and the encoded calldata.
 
 ```typescript title="src/cross-chain-mint.ts"
-const approveShimCalls: Call[] = [
+const approveShimCustomInstruction: Call[] = [
   {
     target: fxrpAddress,
     value: 0n,
@@ -217,7 +217,7 @@ const approveShimCalls: Call[] = [
   },
 ];
 
-const bridgeCalls: Call[] = [
+const bridgeCustomInstruction: Call[] = [
   {
     target: shim,
     value: nativeFee,
@@ -244,14 +244,14 @@ The `sendMemoFieldInstruction` helper bundles the four steps required: read the 
 ```typescript title="src/utils/smart-accounts.ts"
 export async function sendMemoFieldInstruction({
   label,
-  calls,
+  customInstruction,
   amountXrp,
   personalAccount,
   xrplClient,
   xrplWallet,
 }: {
   label: string;
-  calls: Call[];
+  customInstruction: Call[];
   amountXrp: number;
   personalAccount: Address;
   xrplClient: Client;
@@ -260,7 +260,7 @@ export async function sendMemoFieldInstruction({
   const nonce = await getNonce(personalAccount);
 
   const memoData = encodeExecuteUserOpMemo({
-    calls,
+    customInstruction,
     walletId: 0,
     executorFeeUBA: 0n,
     sender: personalAccount,
@@ -313,8 +313,8 @@ export async function getNonce(personalAccount: Address): Promise<bigint> {
 ```
 
 The memo is built in `encodeExecuteUserOpMemo`.
-It first encodes the array of `Call` structs as the calldata for `PersonalAccount.executeUserOp`, then wraps that calldata in a `PackedUserOperation` tuple matching ERC-4337's layout (with empty `initCode`, `paymasterAndData`, and `signature` for memo-bridged operations), and finally prepends a 10-byte header.
-The header is `0xFF` (instruction ID for memo-bridged user operations) followed by the wallet identifier byte and an 8-byte executor fee in big-endian UBA.
+It first encodes the array of `Call` structs as the calldata for `PersonalAccount.executeUserOp`, then wraps that calldata in a `PackedUserOperation` tuple matching ERC-4337's layout (with empty `initCode`, `paymasterAndData`, and `signature` for memo-bridged operations), and finally hands it to the `MemoFieldUserOpCustomInstruction` class from [`@flarenetwork/smart-accounts-encoder`](https://www.npmjs.com/package/@flarenetwork/smart-accounts-encoder).
+That class owns the 10-byte header byte layout - `0xFF` (instruction ID for memo-bridged user operations) followed by the wallet identifier byte and an 8-byte executor fee in big-endian UBA - and `.encode()` returns the header concatenated with the full `PackedUserOperation`.
 
 ```typescript title="src/utils/smart-accounts.ts"
 const PACKED_USER_OPERATION_TUPLE = {
@@ -335,13 +335,13 @@ const PACKED_USER_OPERATION_TUPLE = {
 const ZERO_BYTES32 = ("0x" + "00".repeat(32)) as `0x${string}`;
 
 export function encodeExecuteUserOpMemo({
-  calls,
+  customInstruction,
   walletId,
   executorFeeUBA,
   sender,
   nonce,
 }: {
-  calls: Call[];
+  customInstruction: Call[];
   walletId: number;
   executorFeeUBA: bigint;
   sender: Address;
@@ -350,10 +350,10 @@ export function encodeExecuteUserOpMemo({
   const callData = encodeFunctionData({
     abi: coston2.iPersonalAccountAbi,
     functionName: "executeUserOp",
-    args: [calls],
+    args: [customInstruction],
   });
 
-  const encodedUserOp = encodeAbiParameters(
+  const packedUserOperation = encodeAbiParameters(
     [PACKED_USER_OPERATION_TUPLE],
     [
       {
@@ -370,13 +370,11 @@ export function encodeExecuteUserOpMemo({
     ],
   );
 
-  const header = concatHex([
-    "0xff",
-    toHex(walletId, { size: 1 }),
-    toHex(executorFeeUBA, { size: 8 }),
-  ]);
-
-  return concatHex([header, encodedUserOp]);
+  return new MemoFieldUserOpCustomInstruction({
+    walletId,
+    executorFeeUBA,
+    packedUserOperation,
+  }).encode();
 }
 ```
 
@@ -423,7 +421,7 @@ With those helpers in place, the script splits the work into two memo-field inst
 ```typescript title="src/cross-chain-mint.ts"
 await sendMemoFieldInstruction({
   label: "mint-and-approve-shim",
-  calls: approveShimCalls,
+  customInstruction: approveShimCustomInstruction,
   amountXrp: paymentAmountXrp,
   personalAccount,
   xrplClient,
@@ -434,7 +432,7 @@ const startSepoliaBlock = await sepoliaPublicClient.getBlockNumber();
 
 const bridgeEvent = await sendMemoFieldInstruction({
   label: "bridge",
-  calls: bridgeCalls,
+  customInstruction: bridgeCustomInstruction,
   amountXrp: memoOnlyAmountXrp,
   personalAccount,
   xrplClient,
@@ -528,7 +526,7 @@ To (Sepolia): 0xF5488132432118596fa13800B68df4C0fF25131d
 Net FXRP to mint & bridge: 10 FXRP
 XRPL payment amount (mint + fees): 10.2 XRP
 LayerZero native fee: 22.950824887834713257 C2FLR
-[mint-and-approve-shim] calls: [
+[mint-and-approve-shim] customInstruction: [
   {
     target: '0x0b6A3645c240605887a5532109323A3E12273dc7',
     value: 0n,
@@ -561,7 +559,7 @@ LayerZero native fee: 22.950824887834713257 C2FLR
   blockTimestamp: undefined
 }
 
-[bridge] calls: [
+[bridge] customInstruction: [
   {
     target: '0x525CCe1C6d053B0e7f41A2011B536aA992200Be0',
     value: 22950824887834713257n,

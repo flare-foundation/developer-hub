@@ -118,7 +118,7 @@ async function main() {
   // XRPL caps each memo at ~1024 bytes. Even with the thin shim calldata, a
   // combined approve+bridge UserOperation overflows (~1098 bytes), so split
   // into two memo-field instructions.
-  const approveShimCalls: Call[] = [
+  const approveShimCustomInstruction: Call[] = [
     {
       target: fxrpAddress,
       value: 0n,
@@ -130,7 +130,7 @@ async function main() {
     },
   ];
 
-  const bridgeCalls: Call[] = [
+  const bridgeCustomInstruction: Call[] = [
     {
       target: shim,
       value: nativeFee,
@@ -144,7 +144,7 @@ async function main() {
 
   await sendMemoFieldInstruction({
     label: "mint-and-approve-shim",
-    calls: approveShimCalls,
+    customInstruction: approveShimCustomInstruction,
     amountXrp: paymentAmountXrp,
     personalAccount,
     xrplClient,
@@ -155,7 +155,7 @@ async function main() {
 
   const bridgeEvent = await sendMemoFieldInstruction({
     label: "bridge",
-    calls: bridgeCalls,
+    customInstruction: bridgeCustomInstruction,
     amountXrp: memoOnlyAmountXrp,
     personalAccount,
     xrplClient,
