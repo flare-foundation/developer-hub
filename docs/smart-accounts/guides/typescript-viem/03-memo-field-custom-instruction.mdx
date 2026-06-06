@@ -59,7 +59,7 @@ XRPL caps the memo at `1024` bytes.
 The `pinNotice` call carries a string argument that, together with the other two calls, exceeds that limit, so the script splits the work into two user operations:
 
 ```typescript
-const checkpointAndDepositCalls: Call[] = [
+const checkpointAndDepositCustomInstruction: Call[] = [
   {
     target: checkpointAddress,
     value: BigInt(0),
@@ -80,7 +80,7 @@ const checkpointAndDepositCalls: Call[] = [
   },
 ];
 
-const pinNoticeCalls: Call[] = [
+const pinNoticeCustomInstruction: Call[] = [
   {
     target: noticeBoardAddress,
     value: BigInt(pinNoticeAmount),
@@ -109,13 +109,13 @@ The rest can be left empty.
 
 ```typescript
 export function encodeExecuteUserOpMemo({
-  calls,
+  customInstruction,
   walletId,
   executorFeeUBA,
   sender,
   nonce,
 }: {
-  calls: Call[];
+  customInstruction: Call[];
   walletId: number;
   executorFeeUBA: bigint;
   sender: Address;
@@ -124,10 +124,10 @@ export function encodeExecuteUserOpMemo({
   const callData = encodeFunctionData({
     abi: coston2.iPersonalAccountAbi,
     functionName: "executeUserOp",
-    args: [calls],
+    args: [customInstruction],
   });
 
-  const encodedUserOp = encodeAbiParameters(
+  const packedUserOperation = encodeAbiParameters(
     [PACKED_USER_OPERATION_TUPLE],
     [
       {
@@ -144,17 +144,15 @@ export function encodeExecuteUserOpMemo({
     ],
   );
 
-  // 10-byte header: 0xFF | walletId (1B) | executorFee (8B, big-endian)
-  const header = concatHex([
-    "0xff",
-    toHex(walletId, { size: 1 }),
-    toHex(executorFeeUBA, { size: 8 }),
-  ]);
-
-  return concatHex([header, encodedUserOp]);
+  return new MemoFieldUserOpCustomInstruction({
+    walletId,
+    executorFeeUBA,
+    packedUserOperation,
+  }).encode();
 }
 ```
 
+The `MemoFieldUserOpCustomInstruction` class from [`@flarenetwork/smart-accounts-encoder`](https://www.npmjs.com/package/@flarenetwork/smart-accounts-encoder) owns the byte layout `0xFF | walletId(1B) | executorFeeUBA(8B) | packedUserOperation`.
 Unlike the custom instruction, which carries only `keccak256(userOp)` in the memo, this header is followed by the full ABI-encoded `PackedUserOperation` - hence the memo cap problem above.
 
 ## Sending the User Operation
@@ -170,14 +168,14 @@ A destination tag forces the FAssets direct minting flow to credit the tag holde
 ```typescript
 export async function sendMemoFieldInstruction({
   label,
-  calls,
+  customInstruction,
   amountXrp,
   personalAccount,
   xrplClient,
   xrplWallet,
 }: {
   label: string;
-  calls: Call[];
+  customInstruction: Call[];
   amountXrp: number;
   personalAccount: Address;
   xrplClient: Client;
@@ -186,7 +184,7 @@ export async function sendMemoFieldInstruction({
   const nonce = await getNonce(personalAccount);
 
   const memoData = encodeExecuteUserOpMemo({
-    calls,
+    customInstruction,
     walletId: 0,
     executorFeeUBA: 0n,
     sender: personalAccount,
@@ -276,7 +274,7 @@ Memo-only amount (XRP, fees only): 0.0011
 
 XRPL wallet XRP balance: 1000
 
-[checkpoint-and-deposit] calls: [
+[checkpoint-and-deposit] customInstruction: [
   {
     target: '0xEE6D54382aA623f4D16e856193f5f8384E487002',
     value: 0n,
@@ -302,7 +300,7 @@ XRPL wallet XRP balance: 1000
   ...
 }
 
-[pin-notice] calls: [
+[pin-notice] customInstruction: [
   {
     target: '0x59D57652BF4F6d97a6e555800b3920Bd775661Dc',
     value: 1000000000000000000n,

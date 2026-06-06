@@ -27,7 +27,7 @@ async function main() {
 
   // XRPL caps each memo at ~1024 bytes. `pinNotice` has a string arg that pushes
   // the 3-call version over the limit, so it goes in its own batch.
-  const checkpointAndDepositCalls: Call[] = [
+  const checkpointAndDepositCustomInstruction: Call[] = [
     {
       target: checkpointAddress,
       value: BigInt(0),
@@ -47,7 +47,7 @@ async function main() {
       }),
     },
   ];
-  const pinNoticeCalls: Call[] = [
+  const pinNoticeCustomInstruction: Call[] = [
     {
       target: noticeBoardAddress,
       value: BigInt(pinNoticeAmount),
@@ -85,7 +85,7 @@ async function main() {
 
   await sendMemoFieldInstruction({
     label: "checkpoint-and-deposit",
-    calls: checkpointAndDepositCalls,
+    customInstruction: checkpointAndDepositCustomInstruction,
     amountXrp: paymentAmountXrp,
     personalAccount,
     xrplClient,
@@ -94,7 +94,7 @@ async function main() {
 
   await sendMemoFieldInstruction({
     label: "pin-notice",
-    calls: pinNoticeCalls,
+    customInstruction: pinNoticeCustomInstruction,
     amountXrp: memoOnlyAmountXrp,
     personalAccount,
     xrplClient,

@@ -41,7 +41,7 @@ async function main() {
 
   // With 0xFE the XRPL memo is always 42 bytes regardless of call-batch size,
   // so all three calls fit into a single payment.
-  const calls: Call[] = [
+  const customInstruction: Call[] = [
     {
       target: checkpointAddress,
       value: BigInt(0),
@@ -94,7 +94,7 @@ async function main() {
   // full PackedUserOperation bytes (returned as `data`) never go onto XRPL.
   const userSide = await sendHashInstruction({
     label: "hash-instruction-batch",
-    calls,
+    customInstruction,
     amountXrp: paymentAmountXrp,
     personalAccount,
     xrplClient,

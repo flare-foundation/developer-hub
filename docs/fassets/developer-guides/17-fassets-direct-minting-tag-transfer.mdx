@@ -1,0 +1,77 @@
+---
+title: Transfer a Minting Tag
+tags: [intermediate, fassets]
+slug: fassets-direct-minting-tag-transfer
+description: Transfer an existing minting tag NFT to another owner.
+keywords:
+  [
+    fassets,
+    fxrp,
+    direct-minting,
+    minting-tag,
+    minting-tag-transfer,
+    flare-network,
+  ]
+sidebar_position: 17
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import FAssetsTransferMintingTag from "!!raw-loader!/examples/developer-hub-javascript/fassetsTransferMintingTag.ts";
+import FAssetsDemoDapp from "./_fassets_demo_dapp.mdx";
+
+## Overview
+
+This guide walks you through transferring an existing minting tag to another address using `transferFrom` function on [`MintingTagManager`](/fassets/reference/IMintingTagManager).
+
+In direct minting with tag, minting tags are [ERC-721](https://ethereum.org/developers/docs/standards/tokens/erc-721/) NFTs.
+Transferring ownership is useful when buying a tag for a user, rotating custody, migrating operational wallets, or handing over a reserved tag to another account.
+
+The complete runnable example is based on the `transfer-minting-tag.ts` script from [Flare Viem starter](https://github.com/flare-foundation/flare-viem-starter).
+
+## Prerequisites
+
+- A previously reserved minting tag.
+  Check the [Direct Mint FXRP with Tag](/fassets/developer-guides/fassets-direct-minting-tag) guide to reserve a minting tag.
+- The sender wallet must be the current owner of the tag and must have a native token for gas.
+  To get the test tokens, use the [Flare testnet faucet](https://faucet.flare.network/).
+- The target recipient EVM address that should become the new tag owner.
+
+## Minting Tag Transfer Script
+
+<CodeBlock language="typescript" title="src/fassets/transfer-minting-tag.ts">
+  {FAssetsTransferMintingTag}
+</CodeBlock>
+
+## Code Breakdown
+
+Let's break down the code:
+
+1. Set `MINTING_TAG` to the tag ID you want to transfer and `MINTING_TAG_RECIPIENT` to the new owner address.
+2. Get the `MintingTagManager` address.
+3. Read the owner and recipient before the transfer.
+4. Validate that the script sender is not the current owner.
+5. Simulate the `transferFrom` function call to build a safe write request.
+6. Submit the transaction to the network and wait for the receipt confirmation.
+7. Read the owner and recipient after the transfer and verify the transfer.
+
+:::warning[Important]
+After transferring the tag, the recipient is reset to the new owner, and the allowed executor is cleared.
+The tag ID does not change.
+Transfer only changes ownership and related routing configuration for that existing destination tag.
+:::
+
+## Why this matters for direct minting
+
+Every XRPL payment using this destination tag is routed by the tag's current on-chain configuration.
+Transferring a tag changes who controls that routing, so transfer operations should be treated as operational security actions.
+
+:::tip[What's next]
+
+To continue your FAssets development journey, you can:
+
+- Reserve and use tags with [Direct Mint FXRP with Tag](/fassets/developer-guides/fassets-direct-minting-tag).
+- Redeem FAssets with [Redeem FAssets](/fassets/developer-guides/fassets-redeem-amount) or [Redeem FAssets with Tag](/fassets/developer-guides/fassets-redeem-with-tag).
+
+:::
+
+<FAssetsDemoDapp />
