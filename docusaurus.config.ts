@@ -272,6 +272,8 @@ const config: Config = {
     [
       "docusaurus-plugin-llms",
       {
+        title: "Flare Developer Hub",
+        description: "Official documentation for Flare.",
         // scope
         docsDir: "docs",
         // URLs: we use routeBasePath "/" so docs are at root, not /docs
