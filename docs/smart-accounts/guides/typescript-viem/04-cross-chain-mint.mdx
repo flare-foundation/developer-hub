@@ -239,7 +239,7 @@ The encoded calls are dispatched by issuing an XRPL **direct mint payment** to t
 The XRP amount in that payment is what mints FXRP on Flare; the memo is what tells the personal account what to do with it.
 The FAssets executor picks the payment up off the XRPL, proves it via the [Flare Data Connector](https://dev.flare.network/fdc/attestation-types/xrp-payment), and delivers the memo to the `MasterAccountController` contract — which in turn dispatches the `UserOperation` to the personal account on Flare.
 
-The `sendMemoFieldInstruction` helper bundles the four steps required: read the current nonce, encode the memo, submit the XRPL payment, and wait for the on-chain event that confirms execution.
+The `sendMemoFieldInstruction` helper bundles the steps required: read the current nonce and the core-vault payment address, encode the memo, submit the XRPL payment, and wait for the on-chain event that confirms execution.
 
 ```typescript title="src/utils/smart-accounts.ts"
 export async function sendMemoFieldInstruction({
@@ -257,7 +257,13 @@ export async function sendMemoFieldInstruction({
   xrplClient: Client;
   xrplWallet: Wallet;
 }) {
-  const nonce = await getNonce(personalAccount);
+  console.log(`[${label}] customInstruction:`, customInstruction, "\n");
+
+  const [nonce, coreVaultXrplAddress] = await Promise.all([
+    getNonce(personalAccount),
+    getDirectMintingPaymentAddress(),
+  ]);
+  console.log(`[${label}] current nonce:`, nonce, "\n");
 
   const memoData = encodeExecuteUserOpMemo({
     customInstruction,
@@ -267,8 +273,6 @@ export async function sendMemoFieldInstruction({
     nonce,
   });
 
-  const coreVaultXrplAddress = await getDirectMintingPaymentAddress();
-
   const transaction = await sendXrplPayment({
     destination: coreVaultXrplAddress,
     amount: amountXrp,
@@ -276,8 +280,14 @@ export async function sendMemoFieldInstruction({
     wallet: xrplWallet,
     client: xrplClient,
   });
+  console.log(
+    `[${label}] XRPL transaction hash:`,
+    transaction.result.hash,
+    "\n",
+  );
 
   const event = await waitForUserOperationExecuted({ personalAccount, nonce });
+  console.log(`[${label}] UserOperationExecuted event:`, event, "\n");
   return event;
 }
 ```
@@ -313,7 +323,8 @@ export async function getNonce(personalAccount: Address): Promise<bigint> {
 ```
 
 The memo is built in `encodeExecuteUserOpMemo`.
-It first encodes the array of `Call` structs as the calldata for `PersonalAccount.executeUserOp`, then wraps that calldata in a `PackedUserOperation` tuple matching ERC-4337's layout (with empty `initCode`, `paymasterAndData`, and `signature` for memo-bridged operations), and finally hands it to the `MemoFieldUserOpCustomInstruction` class from [`@flarenetwork/smart-accounts-encoder`](https://www.npmjs.com/package/@flarenetwork/smart-accounts-encoder).
+It delegates the `PackedUserOperation` encoding to `encodePackedUserOpData` (a helper function shared with the `0xFE` hash-instruction flow), which encodes the array of `Call` structs as the calldata for `PersonalAccount.executeUserOp`, then wraps that calldata in a `PackedUserOperation` tuple matching ERC-4337's layout (with empty `initCode`, `paymasterAndData`, and `signature` for memo-bridged operations).
+The `encodeExecuteUserOpMemo` function then hands the encoded operation to the `MemoFieldUserOpCustomInstruction` class from [`@flarenetwork/smart-accounts-encoder`](https://www.npmjs.com/package/@flarenetwork/smart-accounts-encoder).
 That class owns the 10-byte header byte layout - `0xFF` (instruction ID for memo-bridged user operations) followed by the wallet identifier byte and an 8-byte executor fee in big-endian UBA - and `.encode()` returns the header concatenated with the full `PackedUserOperation`.
 
 ```typescript title="src/utils/smart-accounts.ts"
@@ -334,16 +345,12 @@ const PACKED_USER_OPERATION_TUPLE = {
 
 const ZERO_BYTES32 = ("0x" + "00".repeat(32)) as `0x${string}`;
 
-export function encodeExecuteUserOpMemo({
+function encodePackedUserOpData({
   customInstruction,
-  walletId,
-  executorFeeUBA,
   sender,
   nonce,
 }: {
   customInstruction: Call[];
-  walletId: number;
-  executorFeeUBA: bigint;
   sender: Address;
   nonce: bigint;
 }): `0x${string}` {
@@ -353,7 +360,7 @@ export function encodeExecuteUserOpMemo({
     args: [customInstruction],
   });
 
-  const packedUserOperation = encodeAbiParameters(
+  return encodeAbiParameters(
     [PACKED_USER_OPERATION_TUPLE],
     [
       {
@@ -369,7 +376,26 @@ export function encodeExecuteUserOpMemo({
       },
     ],
   );
+}
 
+export function encodeExecuteUserOpMemo({
+  customInstruction,
+  walletId,
+  executorFeeUBA,
+  sender,
+  nonce,
+}: {
+  customInstruction: Call[];
+  walletId: number;
+  executorFeeUBA: bigint;
+  sender: Address;
+  nonce: bigint;
+}): `0x${string}` {
+  const packedUserOperation = encodePackedUserOpData({
+    customInstruction,
+    sender,
+    nonce,
+  });
   return new MemoFieldUserOpCustomInstruction({
     walletId,
     executorFeeUBA,
@@ -445,7 +471,7 @@ The second payment carries no mint value (`memoOnlyAmountXrp` only covers the pr
 
 :::info
 The split exists because the XRPL memo field is capped at roughly 1024 bytes.
-A combined approve + bridge `UserOperation` encodes to about 1066 bytes — 42 bytes over the cap — so the two calls must be sent independently.
+A combined approve + bridge `UserOperation` encodes to about 1098 bytes, over the cap, so the two calls must be sent independently.
 :::
 
 The Sepolia block number is captured between the two instructions, so the subsequent event poll has a tight lower bound.

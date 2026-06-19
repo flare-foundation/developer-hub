@@ -1,4 +1,10 @@
-import { encodeAbiParameters, formatUnits, pad, type Address } from "viem";
+import {
+  encodeAbiParameters,
+  formatUnits,
+  pad,
+  zeroAddress,
+  type Address,
+} from "viem";
 import { Options } from "@layerzerolabs/lz-v2-utilities";
 import { EndpointId } from "@layerzerolabs/lz-definitions";
 import { coston2 } from "@flarenetwork/flare-wagmi-periphery-package";
@@ -10,7 +16,6 @@ import {
 } from "./utils/client";
 import { abi as fxrpOftAbi } from "./abis/FXRPOFT";
 import { calculateAmountToSend } from "./utils/fassets";
-import { getAssetManagerFXRPAddress } from "./utils/flare-contract-registry";
 import type { SendParam } from "./types";
 
 const CONFIG = {
@@ -29,15 +34,35 @@ const REDEMPTION_POLL_INTERVAL_MS = 10_000;
 // Coston2 RPC caps eth_getLogs to a 30-block range; chunk lookups to stay under it.
 const MAX_BLOCK_RANGE = 25n;
 
+// Mirrors `IFAssetRedeemComposer.RedeemComposeMessage`.
+const redeemComposeMessageAbi = [
+  {
+    type: "tuple",
+    components: [
+      { name: "redeemer", type: "address" },
+      { name: "redeemerUnderlyingAddress", type: "string" },
+      { name: "redeemWithTag", type: "bool" },
+      { name: "destinationTag", type: "uint256" },
+      { name: "executor", type: "address" },
+      { name: "executorFee", type: "uint256" },
+    ],
+  },
+] as const;
+
 function encodeComposeMessage(
-  amountToSend: bigint,
-  underlyingAddress: string,
   redeemer: Address,
+  underlyingAddress: string,
 ): `0x${string}` {
-  return encodeAbiParameters(
-    [{ type: "uint256" }, { type: "string" }, { type: "address" }],
-    [amountToSend, underlyingAddress, redeemer],
-  );
+  return encodeAbiParameters(redeemComposeMessageAbi, [
+    {
+      redeemer,
+      redeemerUnderlyingAddress: underlyingAddress,
+      redeemWithTag: false,
+      destinationTag: 0n,
+      executor: zeroAddress,
+      executorFee: 0n,
+    },
+  ]);
 }
 
 function buildComposeOptions(): `0x${string}` {
@@ -130,11 +155,13 @@ async function executeSendAndRedeem(
   return txHash;
 }
 
-async function waitForRedemptionOnCoston2(fromBlock: bigint) {
-  const assetManagerAddress = await getAssetManagerFXRPAddress();
+async function waitForFAssetRedeemedOnCoston2(
+  redeemer: Address,
+  fromBlock: bigint,
+) {
   const deadline = Date.now() + REDEMPTION_TIMEOUT_MS;
 
-  console.log("\nWaiting for RedemptionRequested event on Coston2...");
+  console.log("\nWaiting for FAssetRedeemed event on Coston2 composer...");
 
   let cursor = fromBlock;
   while (Date.now() < deadline) {
@@ -143,10 +170,10 @@ async function waitForRedemptionOnCoston2(fromBlock: bigint) {
       const chunkEnd = cursor + MAX_BLOCK_RANGE - 1n;
       const toBlock = chunkEnd > latest ? latest : chunkEnd;
       const logs = await publicClient.getContractEvents({
-        address: assetManagerAddress,
-        abi: coston2.iAssetManagerAbi,
-        eventName: "RedemptionRequested",
-        args: { redeemer: CONFIG.COSTON2_COMPOSER },
+        address: CONFIG.COSTON2_COMPOSER,
+        abi: coston2.ifAssetRedeemComposerAbi,
+        eventName: "FAssetRedeemed",
+        args: { redeemer },
         fromBlock: cursor,
         toBlock,
       });
@@ -161,7 +188,7 @@ async function waitForRedemptionOnCoston2(fromBlock: bigint) {
   }
 
   throw new Error(
-    `RedemptionRequested event not observed within ${REDEMPTION_TIMEOUT_MS}ms`,
+    `FAssetRedeemed event not observed within ${REDEMPTION_TIMEOUT_MS}ms`,
   );
 }
 
@@ -194,11 +221,7 @@ async function main() {
   console.log("XRP Address:", CONFIG.XRP_ADDRESS);
   console.log("Redeemer:", signerAddress);
 
-  const composeMsg = encodeComposeMessage(
-    amountToSend,
-    CONFIG.XRP_ADDRESS,
-    signerAddress,
-  );
+  const composeMsg = encodeComposeMessage(signerAddress, CONFIG.XRP_ADDRESS);
   const extraOptions = buildComposeOptions();
   const sendParam = buildSendParam(amountToSend, composeMsg, extraOptions);
 
@@ -222,8 +245,11 @@ async function main() {
     CONFIG.XRP_ADDRESS,
   );
 
-  const redemptionEvent = await waitForRedemptionOnCoston2(startBlock);
-  console.log("\nRedemptionRequested event observed on Coston2:");
+  const redemptionEvent = await waitForFAssetRedeemedOnCoston2(
+    signerAddress,
+    startBlock,
+  );
+  console.log("\nFAssetRedeemed event observed on Coston2:");
   console.log(redemptionEvent);
 }
 
