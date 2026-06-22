@@ -18,7 +18,7 @@ This guide walks through every step — from writing the smart contract and exte
 The code for this example is available on [GitHub](https://github.com/flare-foundation/fce-weather-insurance).
 
 :::info[New to Flare TEE?]
-A TEE extension is an offchain program that runs inside a Trusted Execution Environment.
+A TEE extension is an off-chain program that runs inside a Trusted Execution Environment.
 It receives **instructions** from on-chain transactions, processes them in a secure enclave, and writes the signed results back to the blockchain.
 The TEE framework handles attestation, key management, and message routing — you only write the business logic.
 :::
@@ -158,7 +158,7 @@ The contract pulls the premium, reserves `_payout` from pool liquidity, and reco
 **Private buy** — coverage terms stay encrypted on-chain:
 
 1. The buyer ECIES-encrypts ABI-encoded `PrivateBuyParams` with the Flare Confidential Compute extension public key.
-2. `buyPolicyPrivate` sends the ciphertext as a `WEATHER` / `BUY` instruction.
+2. The `buyPolicyPrivate` function sends the ciphertext as a `WEATHER` / `BUY` instruction.
 3. After the extension processes the instruction, the buyer calls `relayPrivateBuy` with the signed result.
 4. The contract verifies the TEE signature via `ecrecover` against `teeAddress` and creates the policy.
 
@@ -209,9 +209,9 @@ Only successful results are accepted.
 
 After the extension is registered on-chain, call `setExtensionId()` once to discover and cache the extension ID — same pattern as the [Private Key Extension](/fcc/guides/sign-extension).
 
-## Offchain Handler
+## Off-chain Handler
 
-The offchain handler lives in `internal/extension/`.
+The off-chain handler lives in `internal/extension/`.
 It exposes an HTTP server with two endpoints:
 
 - **`GET /state`** — reports whether the OpenWeatherMap API key is configured.
@@ -230,7 +230,7 @@ const (
 
 ### FETCH Handler
 
-`processWeatherFetch` ABI-decodes a city name, calls the OpenWeatherMap API, and returns a JSON `WeatherReport` in `ActionResult.Data`:
+The `processWeatherFetch` function ABI-decodes a city name, calls the OpenWeatherMap API, and returns a JSON `WeatherReport` in `ActionResult.Data`:
 
 ```go title="internal/extension/extension.go"
 func (e *Extension) processWeatherFetch(action teetypes.Action, df *instruction.DataFixed) teetypes.ActionResult {
@@ -244,7 +244,7 @@ func (e *Extension) processWeatherFetch(action teetypes.Action, df *instruction.
 
 ### SETTLE Handler
 
-`processWeatherSettle` fetches daily precipitation from the OpenWeatherMap API and ABI-encodes the settlement:
+The `processWeatherSettle` function fetches daily precipitation from the OpenWeatherMap API and ABI-encodes the settlement:
 
 ```go title="internal/extension/extension.go"
 encoded, err := types.SettlementResultArgs.Pack(
@@ -262,7 +262,7 @@ For private policies, the handler loads coverage terms from in-enclave memory us
 
 ### BUY Handler
 
-`processWeatherBuy` decrypts ECIES ciphertext via the TEE node's `/decrypt` endpoint, validates `PrivateBuyParams`, stores terms in memory, and returns ABI-encoded parameters for `relayPrivateBuy`:
+Tje `processWeatherBuy` function decrypts ECIES ciphertext via the TEE node's `/decrypt` endpoint, validates `PrivateBuyParams`, stores terms in memory, and returns ABI-encoded parameters for `relayPrivateBuy`:
 
 ```go title="internal/extension/extension.go"
 plaintext, err := decryptViaNode(e.signPort, df.OriginalMessage)
@@ -275,7 +275,7 @@ return buildResult(action, df, encoded, 1, nil)
 
 ## Deploying and Testing on Coston2
 
-This walkthrough deploys a **local simulated TEE** against the real Coston2 chain using Docker and an ngrok tunnel.
+This walkthrough deploys a **local simulated TEE** against the real Coston2 chain using Docker and an `ngrok` tunnel.
 For production deployment on a Google Cloud Platform Confidential Space VM, see `DEPLOYMENT_STEPS.md` in the repository.
 
 ### Step 0: Activate local simulated mode
@@ -297,7 +297,7 @@ OPENWEATHERMAP_API_KEY="<your-openweathermap-api-key>"
 PAY_TOKEN="0x53192e788991AD96bC180249B15AefB94E597dD1"
 ```
 
-`PAY_TOKEN` is a mocked [ERC-20](https://eips.ethereum.org/EIPS/eip-20) token on Coston2 — used for premiums and payouts during testing.
+The `PAY_TOKEN` variable is the address of a mocked [ERC-20](https://eips.ethereum.org/EIPS/eip-20) token on Coston2 — used for premiums and payouts during testing.
 You can use this token for testing purposes or deploy your own ERC-20 token.
 
 Re-activate after editing:
@@ -313,10 +313,10 @@ Re-activate after editing:
 ./scripts/extension-setup.sh
 ```
 
-`pre-build.sh` compiles Solidity, deploys `WeatherInsurance`, and registers the extension on-chain.
+The `pre-build.sh` script compiles Solidity, deploys `WeatherInsurance`, and registers the extension on-chain.
 It writes `EXTENSION_ID` and `INSTRUCTION_SENDER` to `config/extension.env`.
 
-`extension-setup.sh` calls `setPayToken` on the deployed contract.
+The `extension-setup.sh` script calls `setPayToken` on the deployed contract.
 
 :::warning
 Once `config/extension.env` exists, the pre-build step refuses to run again.
@@ -384,9 +384,9 @@ For a simulated TEE, expect the same `codeHash` and `extensionId` pattern as the
 ./scripts/extension-post-setup.sh
 ```
 
-`post-build.sh` allows the TEE version and registers the machine.
+The `post-build.sh` script allows the TEE version and registers the machine.
 
-`extension-post-setup.sh` reads the TEE signing address from the proxy and calls `setTeeAddress` on `WeatherInsurance`.
+The `extension-post-setup.sh` script reads the TEE signing address from the proxy and calls `setTeeAddress` on the `WeatherInsurance` contract.
 
 ### Step 8: Run the end-to-end test
 
@@ -394,7 +394,7 @@ For a simulated TEE, expect the same `codeHash` and `extensionId` pattern as the
 ./scripts/test.sh
 ```
 
-The test performs:
+The test does the following:
 
 1. Funds the payout pool with WPT.
 2. Buys a private policy (ECIES-encrypted terms).
