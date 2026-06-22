@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import Link from "@docusaurus/Link";
+import CopyButton from "@site/src/components/CopyButton";
 import tableDataRaw from "./solidity_reference.generated.json";
 import styles from "../tableStyles.module.css";
 
@@ -121,15 +122,18 @@ const SolidityReference: React.FC<SolidityReferenceProps> = ({
               </td>
 
               <td className={styles.monoFont}>
-                {row.addressHref ? (
-                  <Link
-                    href={row.addressHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title={`Open in explorer`}
-                  >
-                    <code>{row.address}</code>
-                  </Link>
+                {row.addressHref && row.address ? (
+                  <div className={styles.feedIdContainer}>
+                    <Link
+                      href={row.addressHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Open in explorer"
+                    >
+                      <code>{row.address}</code>
+                    </Link>
+                    <CopyButton textToCopy={row.address} />
+                  </div>
                 ) : (
                   <span title="No valid address found for this contract">
                     —
