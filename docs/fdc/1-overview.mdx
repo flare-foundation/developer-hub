@@ -23,7 +23,8 @@ It allows users to submit attested data that smart contracts can trust, eliminat
 - **Easy Offchain Accessibility**: Data providers serve attestation responses and Merkle proofs offchain through a Data Availability (DA) Layer, ensuring efficient data retrieval.
 - **Proof-Based Verification**: Smart contracts validate Merkle proofs against the stored Merkle root, ensuring only authentic data triggers contract actions.
 - **Extensible Attestation Types**: New attestation types and data sources can be added through provider consensus, ensuring adaptability.
-- **Current State**: A proof can only be constructed for current states (transactions, API responses...), where a current state is a state no older than 14 days.
+- **Current State**: A proof can only be constructed for sufficiently recent states (transactions, API responses, ...).
+  The maximum allowed age of the underlying data is set per attestation type and data source; for most chain-data types it is 14 days, while some types (such as `AddressValidity` and `Web2Json`) place no practical limit.
 - **Proof Availability**: Once the proof is constructed it remains available indefinitely.
 - **Security**: Although bitvoting information is public, it is insufficient to construct the Merkle proof without doing the verification work.
 
@@ -103,6 +104,9 @@ Due to the waiting period between steps **2** and **3**, where the round is fina
 1. **Identify Data Needs**: Determine the required attestation type and data source.
 2. **Prepare Request**: Format the request with the expected response hash (MIC).
 3. **Submit Request**: Use [`requestAttestation`](/fdc/reference/IFdcHub#requestattestation) from `FdcHub` and pay the required fee.
+   The fee must be at least the minimum configured for the attestation type and source; otherwise the request is rejected.
+   Larger fees increase the chance that a request is confirmed in its round.
+   The fee of a confirmed request is awarded to the data providers, while the fee of an unconfirmed request is burnt.
 4. **Track Submission**: Record the block timestamp and calculate the voting round.
 5. **Wait for Finalization**: The voting round concludes, and a relay contract event signals finalization.
 6. **Fetch Data**: Retrieve responses and proofs from the DA Layer.
@@ -121,7 +125,7 @@ Due to the waiting period between steps **2** and **3**, where the round is fina
 2. **Retrieve Data**: Fetch responses from verifier servers.
 3. **Validate Responses**: Ensure data validity using MIC and LUT checks.
 4. **Submit BitVectors**: Indicate valid requests using BitVectors during the "choose phase" (90-135 seconds into the round).
-5. **Achieve Consensus**: Aggregate BitVectors to form a consensus BitVector.
+5. **Achieve Consensus**: Aggregate BitVectors to form a consensus BitVector that is supported by more than 50% of the total weight of data providers.
 6. **Create Merkle Tree**: Construct a Merkle tree from validated responses.
 7. **Sign and Submit**: Collect signatures representing 50%+ weight and submit the Merkle root to the [`Relay`](/network/fsp/solidity-reference/IRelay) contract.
 8. **Serve Data**: Provide attestation responses and proofs via the DA Layer.

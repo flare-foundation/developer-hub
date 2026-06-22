@@ -19,7 +19,7 @@ Information about an Ethereum Virtual Machine (EVM) transaction, including detai
 | Field                   | Solidity Type | Description                                                                                                                                                                                                                                                     |
 | ----------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `transactionHash`       | `bytes32`     | The hash of the transaction.                                                                                                                                                                                                                                    |
-| `requiredConfirmations` | `uint16`      | The number of confirmations required for the block containing the transaction to be considered final by the requestor.                                                                                                                                          |
+| `requiredConfirmations` | `uint16`      | The number of confirmations required for the block containing the transaction to be considered confirmed by the requestor.                                                                                                                                      |
 | `provideInput`          | `bool`        | If set to `true`, the `input` data field of the transaction will be included in the response.                                                                                                                                                                   |
 | `listEvents`            | `bool`        | If `true`, events specified by `logIndices` will be included in the response. If `false`, no events are included.                                                                                                                                               |
 | `logIndices`            | `uint32[]`    | A list of event indices (`logIndex`) to be relayed if `listEvents` is `true`. Should be sorted by the requestor. Maximum of 50 indices allowed. An empty list indicates all events up to a maximum of 50. If `listEvents` is `false`, this field must be empty. |
@@ -62,6 +62,7 @@ Each `Event` struct represents a log entry similar to EVM event logs:
 ## Verification process
 
 1. The function checks if the transaction with the given `transactionHash` is included in a block on the **main chain** with at least the specified `requiredConfirmations`.
+   The block at the tip has `1` confirmation.
 2. If the block has insufficient confirmations or if the transaction is not found, the request is rejected.
 3. If `listEvents` is enabled and an event specified by `logIndices` does not exist, the request is also rejected.
 4. The specified data (transaction details, input data, and events) is retrieved and relayed based on the request parameters.
@@ -71,6 +72,20 @@ Each `Event` struct represents a log entry similar to EVM event logs:
 - Ensure `logIndices` are sorted as required by the consuming contract.
 - If `logIndices` is not empty while `listEvents` is set to `false`, the request will be rejected.
 - Events are capped at a maximum of **50 entries** to optimize performance.
+
+:::
+
+:::note[Lowest used timestamp]
+
+For the `lowestUsedTimestamp` parameter, the block `timestamp` is used.
+
+The `lowestUsedTimestamp` limit depends on the usual node configuration for each chain:
+
+| Source | `lowestUsedTimestamp` limit                                                        |
+| ------ | ---------------------------------------------------------------------------------- |
+| `ETH`  | `26400000` (2,200,000 blocks \* 12 sec, since nodes usually keep 2,300,000 blocks) |
+| `SGB`  | unlimited                                                                          |
+| `FLR`  | unlimited                                                                          |
 
 :::
 

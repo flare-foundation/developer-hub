@@ -75,7 +75,7 @@ For a detailed explanation of the FTSOv2 mechanism, read the [FTSOv2 whitepaper]
 
 Every block on Flare, generated approximately every 1.8 seconds, initiates the selection of a sample of data providers to deliver the next feed update.
 This selection process leverages a stake-weighted verifiable randomness function (VRF), where the likelihood of each data provider being chosen is proportional to their stake.
-The expected sample size (average) is `1.5`, and data providers have no control over, nor knowledge of, when they will be selected.
+The expected sample size (average) is `1` by default, and data providers have no control over, nor knowledge of, when they will be selected.
 
 In detail, each block has a unique seed value, used by FTSOv2 data providers to generate a personal random score.
 This score, coupled with a cryptographic proof, ensures its authenticity and verifiability.
@@ -144,7 +144,7 @@ Importantly, only the expected sample size increases, not the actual sample size
 FTSOv2's block-latency feeds are designed to be statistically self-correcting.
 To further ensure their long-term accuracy, FTSOv2 uses the anchor feeds from [Scaling](/ftso/scaling/overview).
 Anchor feeds utilize a full commit-reveal process across all data providers with an inter-quartile range (IQR) band calculation, and update once every voting epoch (i.e. 90 seconds).
-Data providers are rewarded when the block-latency feeds remain within `±0.25%` of the anchor feeds every voting epoch.
+Data providers are rewarded when the block-latency feeds remain within the primary reward band (the interquartile range band) of the anchor feed selected to determine rewards for that voting epoch.
 
 ## Watch the video
 

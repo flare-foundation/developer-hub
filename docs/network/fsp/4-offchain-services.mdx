@@ -23,7 +23,7 @@ Each data provider runs an independent instance of the [Flare Systems Client](ht
 
 The **Protocol Manager Service** sends the following transactions within each voting epoch:
 
-- `submit1`, `submit2`, `submit3`: Data submission at fix scheduled times during the voting epoch.
+- `submit1`, `submit2`: Data submission at fixed scheduled times during the voting epoch (`submit3` exists but is currently reserved for future use).
 - `submitSignatures`: Submits signatures only once all required data is collected.
 
 **Data Flow**:
@@ -115,7 +115,7 @@ Data for `submitSignatures` is structured as follows:
 - `message` (38 bytes):
   - `protocolId` (1 byte)
   - `votingRoundId` (4 bytes)
-  - `randomQualityScore` (1 byte)
+  - `secureRandom` (1 byte): boolean flag (`1` = true, `0` = false) indicating whether the round's random number is secure
   - `merkleRoot` (32 bytes)
 - `signature` (65 bytes): ECDSA signature components of the message (`v`, `r`, `s`).
 - `unsignedMessage` (optional): Additional data (e.g., revealed random number).

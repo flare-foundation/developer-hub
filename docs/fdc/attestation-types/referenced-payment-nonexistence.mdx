@@ -9,9 +9,9 @@ import StandardPaymentReference from "./_standard_payment_reference.mdx";
 import Finality from "./_finality.mdx";
 
 Assertion that a specific payment, agreed upon to be completed by a certain deadline, has **not been made**.
-If confirmed, it shows that no transaction meeting the specified criteria (address, amount, reference) was found within the given block range.
+If confirmed, it shows that no transaction meeting the specified criteria (address, amount, reference, source addresses root) was found within the given block range.
 
-This Information can be used, for example, to justify the liquidation of funds locked in a smart contract on Songbird if a payment is missed.
+This Information can be used, for example, to justify the liquidation of funds locked in a smart contract on [Flare networks](/network/overview) if a payment is missed.
 
 ## Supported chains
 
@@ -41,11 +41,11 @@ This Information can be used, for example, to justify the liquidation of funds l
 
 ## Response
 
-| Field                         | Solidity Type | Description                                                   |
-| ----------------------------- | ------------- | ------------------------------------------------------------- |
-| `minimalBlockTimestamp`       | `uint64`      | The timestamp of the block at `minimalBlockNumber`.           |
-| `firstOverflowBlockNumber`    | `uint64`      | The block number immediately after the `deadlineBlockNumber`. |
-| `firstOverflowBlockTimestamp` | `uint64`      | The timestamp of the `firstOverflowBlockNumber`.              |
+| Field                         | Solidity Type | Description                                         |
+| ----------------------------- | ------------- | --------------------------------------------------- |
+| `minimalBlockTimestamp`       | `uint64`      | The timestamp of the block at `minimalBlockNumber`. |
+| `firstOverflowBlockNumber`    | `uint64`      | The block number of the `firstOverflowBlock`.       |
+| `firstOverflowBlockTimestamp` | `uint64`      | The timestamp of the `firstOverflowBlockNumber`.    |
 
 - **`firstOverflowBlockNumber`**: This is the first block with a height greater than `deadlineBlockNumber` and a timestamp later than `deadlineTimestamp`.
 - The search range includes blocks from `minimalBlockNumber` (inclusive) to `firstOverflowBlockNumber` (exclusive).
@@ -84,12 +84,12 @@ The verification process is chain-specific, with details described below.
 
 #### Transaction Criteria
 
-- The transaction must be of type **Payment**.
+- The transaction must be of type **Payment** and be a Direct XRP payment (sending and receiving XRP).
 - The transaction must include the specified [standard payment reference](#standard-payment-reference).
 - If `checkSourceAddresses` is set to true, the `sourceAddressesRoot` of the transaction must match the specified `sourceAddressesRoot`.
 - One of the following conditions must hold:
-  - The transaction status is `SUCCESS` and the amount received by the specified address is greater or equal to the specified `amount`.
-  - The transaction status is `RECEIVER_FAILURE` and the specified address would have received an amount greater or equal to the specified `amount` if the transaction had succeeded.
+  - The transaction status is `SUCCESS` (`TransactionResult` is `tesSUCCESS`) and the amount received by the specified address is greater or equal to the specified `amount`.
+  - The transaction status is `RECEIVER_FAILURE` (`TransactionResult` is one of `tecDST_TAG_NEEDED`, `tecNO_DST`, or `tecNO_DST_INSUF_XRP`, or is `tecNO_PERMISSION` while the transaction has no `DomainID`) and the specified address would have received an amount greater or equal to the specified `amount` if the transaction had succeeded.
 
 #### Timestamp
 

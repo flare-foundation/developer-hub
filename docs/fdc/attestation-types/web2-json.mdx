@@ -8,19 +8,26 @@ unlisted: false
 
 An attestation type that fetches JSON data from the given URL, applies a jq filter to transform the returned result, and finally returns the structured data as ABI encoded data.
 
-**Supported sources:** WEB2
+**Supported sources:** [Mainnet](https://github.com/flare-foundation/verifier-indexer-api/blob/main/src/config/web2/web2-json-sources.ts), [Testnet](https://github.com/flare-foundation/verifier-indexer-api/blob/main/src/config/web2/web2-json-test-sources.ts)
 
 ## Request body
 
-| Field           | Solidity type | Description                                                                                                                                       |
-| --------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `url`           | `string`      | URL of the data source.                                                                                                                           |
-| `httpMethod`    | `string`      | HTTP method to be used for the request. Supported methods: GET, POST, PUT, PATCH, DELETE.                                                         |
-| `headers`       | `string`      | Stringified key-value pairs representing headers to be used in the request. Use `{}` if no headers are required.                                  |
-| `queryParams`   | `string`      | Stringified key-value pairs representing query parameters to be appended to the URL of the request. Use `{}` if no query parameters are required. |
-| `body`          | `string`      | Stringified key-value pairs representing the body to be used in the request. Use `{}` if the body is not required.                                |
-| `postProcessJq` | `string`      | jq filter used to post-process the JSON response from the URL.                                                                                    |
-| `abiSignature`  | `string`      | ABI signature of the struct used to encode the data after jq post-processing.                                                                     |
+| Field           | Solidity type | Description                                                                                                                                         |
+| --------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `url`           | `string`      | URL of the data source.                                                                                                                             |
+| `httpMethod`    | `string`      | HTTP method to be used for the request. Supported methods: GET, POST, PUT, PATCH, DELETE.                                                           |
+| `headers`       | `string`      | Stringified key-value pairs representing headers to be used in the request. Use `{}` if no headers are required.                                    |
+| `queryParams`   | `string`      | Stringified key-value pairs representing query parameters to be appended to the URL of the request. Use `{}` if no query parameters are required.   |
+| `body`          | `string`      | Stringified key-value pairs representing the body to be used in the request. Use `{}` if the body is not required.                                  |
+| `postProcessJq` | `string`      | [jq](https://jqlang.org/manual/) filter used to post-process the JSON response from the URL.                                                        |
+| `abiSignature`  | `string`      | ABI signature specifier: either a primitive type string (e.g., "uint256") or a JSON tuple descriptor with named `components` describing the fields. |
+
+:::warning
+
+The `Web2Json` attestation consumers should validate all request fields.
+Since `postProcessJq` and `abiSignature` parameters can modify and rearrange the fetched JSON data, a malicious request could completely change the API endpoint response.
+
+:::
 
 ## Response body
 
@@ -28,22 +35,175 @@ An attestation type that fetches JSON data from the given URL, applies a jq filt
 | ---------------- | ------------- | ---------------------------------------------------------------- |
 | `abiEncodedData` | `bytes`       | Raw binary data encoded to match the function parameters in ABI. |
 
+## Supported jq features
+
+Only a restricted subset of `jq` is supported for the `postProcessJq` filter to ensure security and performance:
+
+|              Feature | Allowed syntax / examples                                                                                                                                                                                                                                                                                                   |
+| -------------------: | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|      Builtin filters | `map`, `select`, `flatten`, `length`, `keys`, `to_entries`, `from_entries`, `has`, `contains`, `add`, `join`, `tonumber`, `tostring`, `split`, `gsub`, `match`, `type`, `startswith`, `endswith`, `test`, `explode`, `implode`, `ascii_upcase`, `ascii_downcase`, `sort`, `sort_by`, `reverse`, `first`, `last`, `not`, `.` |
+|            Operators | `\|`, `,`, `//`, `and`, `or`, `==`, `!=`, `<`, `>`, `<=`, `>=`, `+`, `-`, `*`, `/`, `%`                                                                                                                                                                                                                                     |
+|             Identity | `.` or `.field`                                                                                                                                                                                                                                                                                                             |
+|         Conditionals | `if <cond> then <expr> elif <cond2> then <expr2> else <expr3> end`                                                                                                                                                                                                                                                          |
+|            Try/catch | `try <expr> catch <handler>`                                                                                                                                                                                                                                                                                                |
+|     Indexing/slicing | `.arr[0]`, `.posts[0:10]`, `.obj["key"]`                                                                                                                                                                                                                                                                                    |
+|            Iteration | `.items[] \| .id`                                                                                                                                                                                                                                                                                                           |
+|       Arrays/objects | `[expr, expr]`, `{id: .id, name: .name}`                                                                                                                                                                                                                                                                                    |
+| Strings with interp. | `"Hello \(.name)"`                                                                                                                                                                                                                                                                                                          |
+|   Variables (scoped) | `(.a as $x \| $x + 1)`                                                                                                                                                                                                                                                                                                      |
+
+### Allowed jq filter examples
+
+```jq
+.
+.items | map(.id)
+map(select(.active == true)) | length
+.to_entries | from_entries
+.text | gsub("foo"; "bar") | ascii_upcase
+```
+
+### Disallowed jq filter examples
+
+```jq
+def add(a; b): a + b;         # user function definitions
+.foo = 1                      # assignment/update operators (e.g. =, |=)
+recurse(.)                    # unbounded recursion
+reduce .[] as $x (0; . + $x)  # reduce
+inputs                        # streaming side-effect
+```
+
+## Request examples
+
+### 1. Retrieve `id` & `title` of the last Todo item
+
+Request body:
+
+```json
+{
+  "url": "https://jsonplaceholder.typicode.com/todos",
+  "httpMethod": "GET",
+  "headers": "{}",
+  "queryParams": "{}",
+  "body": "{}",
+  "postProcessJq": ".[-1] | { id: .id, title: .title }",
+  "abiSignature": {
+    "type": "tuple",
+    "components": [
+      {
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "name": "title",
+        "type": "string"
+      }
+    ]
+  }
+}
+```
+
+Response body:
+
+```json
+{
+  "abiEncodedData": "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000c80000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000001c697073616d206170657269616d20766f6c757074617465732071756900000000"
+}
+```
+
+### 2. Verify the first Todo item is `completed`
+
+Request body:
+
+```json
+{
+  "url": "https://jsonplaceholder.typicode.com/todos/1",
+  "httpMethod": "GET",
+  "headers": "{}",
+  "queryParams": "{}",
+  "body": "{}",
+  "postProcessJq": ".completed",
+  "abiSignature": "bool"
+}
+```
+
+Response body:
+
+```json
+{
+  "abiEncodedData": "0x0000000000000000000000000000000000000000000000000000000000000000"
+}
+```
+
 ## Lowest Used Timestamp
 
 For `lowestUsedTimestamp`, `0xffffffffffffffff` ($2^{64}-1$ in hex) is used.
 
 ## Verification
 
-The JSON response is queried from the provided URL source using the specified HTTP method, headers, query parameters, and body.
-If the query is unsuccessful (e.g., attempts to access a disallowed IP or hostname, attempts to redirect, takes longer than 1 second, returns a JSON response with more than 5000 keys or a depth greater than 10, returns a content-type other than "application/json", or does not return a valid JSON response), the request is rejected.
+The request is accepted only if all the following checks pass:
 
-The provided jq filter is applied to the valid JSON response.
-If the jq filter exceeds 5000 characters, if jq filtering fails, or if jq filtering takes longer than 500 milliseconds, the request is rejected.
+1. Request validation:
+   - `url` is a non-empty absolute HTTPS URL.
+   - `httpMethod` is one of: GET, POST, PUT, PATCH, DELETE.
+   - `headers`, `queryParams`, and `body` are valid JSON objects when parsed from their string form.
+2. Network fetch constraints:
+   - Target host must be whitelisted.
+   - Any attempt to redirect results in rejection.
+   - End-to-end HTTP request completes within 5 seconds.
+   - HTTP response status indicates success (e.g., 2xx).
+3. Response JSON constraints:
+   - `Content-Type` is `application/json`.
+   - Body parses as valid JSON.
+   - Structural limits: total keys ≤ 5000 and maximum JSON nesting depth ≤ 10.
+4. jq post-processing:
+   - `postProcessJq` length ≤ 5000 characters.
+   - jq evaluation finishes within 500 milliseconds.
+   - Shape/type compatibility:
+     - If `abiSignature` is a primitive type string, the jq result MUST be a single scalar compatible with that type.
+     - If `abiSignature` is a tuple JSON with named `components`, the jq result MUST be a JSON object containing all component names as keys.
+5. ABI signature constraints:
+   - `abiSignature` length ≤ 5000 characters.
+   - `abiSignature` is either:
+     - a primitive Solidity type string (e.g., `"uint256"`, `"bool"`, `"string"`, etc.), or
+     - a JSON-encoded tuple descriptor with named `components` (no arrays or nested tuples supported).
+   - Any other shape (arrays, nested tuples, or invalid descriptors) is rejected.
+6. ABI encoding:
+   - The jq output is encoded strictly according to the provided `abiSignature` using standard Ethereum ABI rules.
+   - If encoding fails (e.g., type mismatch, missing fields, invalid string/bytes), the request is rejected.
 
-The provided ABI signature is used to encode the jq-filtered JSON data.
-If encoding fails, the request is rejected.
+The checks run in order, and failing any single check rejects the request.
 
-`LowestUsedTimestamp` is unlimited.
+```mermaid
+flowchart TD
+    Start(["Attestation request"]) --> V1
+
+    V1{"1. Request validation<br/>- url: non-empty absolute HTTPS URL<br/>- httpMethod in GET/POST/PUT/PATCH/DELETE<br/>- headers, queryParams, body parse as JSON objects"}
+    V1 -- fail --> Reject
+    V1 -- pass --> V2
+
+    V2{"2. Network fetch<br/>- host is whitelisted<br/>- no redirects allowed<br/>- completes within 5 s<br/>- response status is success (2xx)"}
+    V2 -- fail --> Reject
+    V2 -- pass --> V3
+
+    V3{"3. Response JSON<br/>- Content-Type is application/json<br/>- body parses as valid JSON<br/>- keys ≤ 5000 and nesting depth ≤ 10"}
+    V3 -- fail --> Reject
+    V3 -- pass --> V4
+
+    V4{"4. jq post-processing<br/>- postProcessJq length ≤ 5000<br/>- jq finishes within 500 ms<br/>- result shape matches abiSignature"}
+    V4 -- fail --> Reject
+    V4 -- pass --> V5
+
+    V5{"5. abiSignature validation<br/>- length ≤ 5000<br/>- primitive type string or named-component tuple<br/>- arrays / nested tuples / invalid shapes rejected"}
+    V5 -- fail --> Reject
+    V5 -- pass --> V6
+
+    V6{"6. ABI encoding<br/>- encode jq output per abiSignature<br/>- reject if encoding fails"}
+    V6 -- fail --> Reject
+    V6 -- pass --> Accept
+
+    Accept(["Request accepted: abiEncodedData returned"])
+    Reject(["Request rejected"])
+```
 
 ## Whitelisted URLs
 
