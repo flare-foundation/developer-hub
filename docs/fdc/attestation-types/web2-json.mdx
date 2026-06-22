@@ -171,6 +171,40 @@ The request is accepted only if all the following checks pass:
    - The jq output is encoded strictly according to the provided `abiSignature` using standard Ethereum ABI rules.
    - If encoding fails (e.g., type mismatch, missing fields, invalid string/bytes), the request is rejected.
 
+The checks run in order, and failing any single check rejects the request.
+
+```mermaid
+flowchart TD
+    Start(["Attestation request"]) --> V1
+
+    V1{"1. Request validation<br/>- url: non-empty absolute HTTPS URL<br/>- httpMethod in GET/POST/PUT/PATCH/DELETE<br/>- headers, queryParams, body parse as JSON objects"}
+    V1 -- fail --> Reject
+    V1 -- pass --> V2
+
+    V2{"2. Network fetch<br/>- host is whitelisted<br/>- no redirects allowed<br/>- completes within 5 s<br/>- response status is success (2xx)"}
+    V2 -- fail --> Reject
+    V2 -- pass --> V3
+
+    V3{"3. Response JSON<br/>- Content-Type is application/json<br/>- body parses as valid JSON<br/>- keys ≤ 5000 and nesting depth ≤ 10"}
+    V3 -- fail --> Reject
+    V3 -- pass --> V4
+
+    V4{"4. jq post-processing<br/>- postProcessJq length ≤ 5000<br/>- jq finishes within 500 ms<br/>- result shape matches abiSignature"}
+    V4 -- fail --> Reject
+    V4 -- pass --> V5
+
+    V5{"5. abiSignature validation<br/>- length ≤ 5000<br/>- primitive type string or named-component tuple<br/>- arrays / nested tuples / invalid shapes rejected"}
+    V5 -- fail --> Reject
+    V5 -- pass --> V6
+
+    V6{"6. ABI encoding<br/>- encode jq output per abiSignature<br/>- reject if encoding fails"}
+    V6 -- fail --> Reject
+    V6 -- pass --> Accept
+
+    Accept(["Request accepted: abiEncodedData returned"])
+    Reject(["Request rejected"])
+```
+
 ## Whitelisted URLs
 
 Before a request to the FDC for data at an endpoint can be made, the specific URL must be whitelisted.
