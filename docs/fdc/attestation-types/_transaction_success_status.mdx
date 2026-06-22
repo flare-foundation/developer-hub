@@ -15,9 +15,17 @@ Hence, if a transaction is included on a confirmed block, its status is "SUCCESS
 **XRPL**
 
 On XRPL, some transactions that failed (based on the reason for failure) can be included in a confirmed block.
+The success of a transaction included in a confirmed block is described by the `TransactionResult` field.
 
-- **`tesSUCCESS`**: Transaction successful.
-- **`tec`-class codes**: Indicate reasons for failure, such as:
-  - `tecDST_TAG_NEEDED`: Missing required destination tag.
-  - `tecNO_DST`: Nonexistent or unfunded destination address.
-  - `tecNO_PERMISSION`: Source address lacks permission to send funds.
+- **`tesSUCCESS`**: Transaction successful, `status` is `SUCCESS` (0).
+- **`tec`-class codes**: Indicate reasons for failure.
+  The following codes indicate a failure that is the receiver's fault (`status` `RECEIVER_FAILURE`, 2):
+  - `tecDST_TAG_NEEDED`: A destination tag is required by the target address but is not provided.
+    Tagging this as the receiver's fault means the Payment attestation type does not fully support transactions that require a destination tag.
+  - `tecNO_DST`: Considered the receiver's fault if the specified address does not exist or is unfunded.
+  - `tecNO_DST_INSUF_XRP`: Considered the receiver's fault if the specified address does not exist or is unfunded.
+  - `tecNO_PERMISSION`: Considered the receiver's fault only if the transaction has no `DomainID`.
+    Tagging this as the receiver's fault means the Payment attestation type does not fully support transactions to accounts that require `DepositAuth`.
+    If the transaction failed with `tecNO_PERMISSION` and has a `DomainID`, it is considered the sender's fault.
+
+  All other codes indicate a failure that is the sender's fault (`status` `SENDER_FAILURE`, 1).
