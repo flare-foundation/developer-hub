@@ -208,7 +208,7 @@ function rewritePaths(content, replacements) {
  *     unlistedPaths)
  *   - append `.md` to the URL when the target is a documentation route
  */
-function pruneAndMarkdownify(content, canonicalRoutes) {
+function pruneAndMarkdownify(content, canonicalRoutes, unlistedPaths) {
   const linkRe = /\[([^\]]+)\]\((https:\/\/dev\.flare\.network\/[^)]+)\)/g;
 
   // Process line-by-line so we can drop entire bullet lines whose URL is stale.
@@ -228,6 +228,10 @@ function pruneAndMarkdownify(content, canonicalRoutes) {
       const route = url.slice(SITE_BASE.length).replace(/\.md$/i, "");
       if (!canonicalRoutes.has(route)) {
         // Dropped — stale or unlisted.
+        continue;
+      }
+      if (unlistedPaths.has(route)) {
+        // Dropped — explicitly unlisted in frontmatter.
         continue;
       }
     }
@@ -332,12 +336,13 @@ function processLlmsTxt(
   filePath,
   replacements,
   canonicalRoutes,
+  unlistedPaths,
   titleByRoute,
   isIndex,
 ) {
   const original = fs.readFileSync(filePath, "utf8");
   let content = rewritePaths(original, replacements);
-  content = pruneAndMarkdownify(content, canonicalRoutes);
+  content = pruneAndMarkdownify(content, canonicalRoutes, unlistedPaths);
   if (isIndex) {
     content = appendMissingRoutes(content, canonicalRoutes, titleByRoute);
   }
@@ -352,7 +357,7 @@ function main() {
     console.warn("[fix-llms-urls] build/ not found, skipping.");
     return;
   }
-  const { replacements } = buildReplacementsAndUnlisted();
+  const { replacements, unlistedPaths } = buildReplacementsAndUnlisted();
   const canonicalRoutes = loadCanonicalRoutes();
   // Always allow the home route (`/` -> `https://dev.flare.network` with no
   // trailing slash). Add it explicitly so links to root pass.
@@ -379,6 +384,7 @@ function main() {
       path.join(buildDir, e.name),
       replacements,
       canonicalRoutes,
+      unlistedPaths,
       titleByRoute,
       isIndex,
     );
