@@ -199,8 +199,8 @@ const sidebars: SidebarsConfig = {
               label: "TypeScript + Viem",
               collapsed: true,
               link: {
-                slug: "/smart-accounts/guides/typescript-viem",
-                type: "generated-index",
+                type: "doc",
+                id: "smart-accounts/guides/typescript-viem",
               },
               items: [
                 {

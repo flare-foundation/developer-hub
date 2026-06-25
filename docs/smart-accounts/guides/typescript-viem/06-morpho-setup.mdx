@@ -1,0 +1,152 @@
+---
+sidebar_position: 6
+slug: morpho-setup-ts
+title: Morpho Setup
+authors: [nikerzetic]
+description: Fund a smart account and authorize Morpho Blue lending via the MorphoMarketShim on Coston2.
+tags: [intermediate, ethereum, flare-smart-accounts]
+keywords:
+  [
+    ethereum,
+    flare-smart-accounts,
+    evm,
+    flare-network,
+    account-abstraction,
+    morpho,
+    defi,
+  ]
+unlisted: false
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import MorphoSetupScript from "!!raw-loader!/examples/developer-hub-javascript/smart-accounts/morpho/setup.ts";
+
+This guide walks through the one-shot setup script for [Morpho Blue](https://docs.morpho.org/), leveraging a Flare smart account.
+The smart account is the borrower's end-to-end: it holds tokens, supplies collateral, borrows, and later repays via the XRPL memo field [custom instructions](/smart-accounts/custom-instruction).
+
+The setup script does two kinds of work:
+
+1. **Flare EOA transactions** — mint mock ERC-20 collateral and loan tokens to the personal account via permissionless `setBalance`.
+2. **XRPL memo instructions** — up to three payments that approve the `MorphoMarketShim` for both tokens and call `setAuthorization` on Morpho Blue.
+
+:::warning
+Run this script once before the [Morpho Borrow](/smart-accounts/guides/typescript-viem/morpho-borrow-ts) and [Morpho Repay](/smart-accounts/guides/typescript-viem/morpho-repay-ts) guides.
+Each step is idempotent, and skips work that has already been done on the chain.
+:::
+
+The full Morpho cycle lives in the [flare-viem-starter](https://github.com/flare-foundation/flare-viem-starter) repository under `src/morpho/`.
+
+## Prerequisites
+
+- An XRPL testnet wallet (`XRPL_SEED`) registered with the Flare smart-accounts operator and funded with testnet XRP.
+- A Flare-side EOA (`PRIVATE_KEY`) used only to call permissionless mock-token `setBalance` — not to sign Morpho operations on behalf of the smart account.
+- `XRPL_TESTNET_RPC_URL` pointing at an XRPL testnet node.
+- Familiarity with [State Lookup](/smart-accounts/guides/typescript-viem/state-lookup-ts) and [Custom Instruction](/smart-accounts/guides/typescript-viem/custom-instruction-ts).
+
+## Architecture
+
+Morpho Blue markets are identified by a five-field [`MarketParams`](https://docs.morpho.org/get-started/resources/contracts/morpho#market-parameters) tuple (loan token, collateral token, oracle, IRM, LLTV).
+Opening a position normally requires multiple Morpho calls (`supplyCollateral`, `borrow`, and so on).
+Each call encoded in an XRPL memo must stay under the roughly 1024-byte memo cap.
+
+The `MorphoMarketShim` contract pins the market parameters in immutable storage at deploy time.
+That shrinks each memo payload so a bundled operation fits in one payment:
+
+- `supplyAndBorrow` — used in the [Morpho Borrow](/smart-accounts/guides/typescript-viem/morpho-borrow-ts) guide.
+- `repayAndWithdrawCollateral` — used in the [Morpho Repay](/smart-accounts/guides/typescript-viem/morpho-repay-ts) guide.
+
+The smart account remains `onBehalf` for the position; borrowed assets are returned to the smart account, so the position remains self-contained.
+
+### Coston2 Deployment Addresses
+
+| Contract                | Address                                                                                                                                   |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Morpho Blue             | [`0x8aE0b3CE90F16E88063516f2d88C8ac2ab552d95`](https://coston2-explorer.flare.network/address/0x8aE0b3CE90F16E88063516f2d88C8ac2ab552d95) |
+| Loan token (mock)       | [`0x4984B127c3065f4348858fAFdBa020f2c8633905`](https://coston2-explorer.flare.network/address/0x4984B127c3065f4348858fAFdBa020f2c8633905) |
+| Collateral token (mock) | [`0x98bf2F2fF322d5eb61D6aE04Df50856525a85D16`](https://coston2-explorer.flare.network/address/0x98bf2F2fF322d5eb61D6aE04Df50856525a85D16) |
+| Oracle (mock)           | [`0x1e80830e9903c839Db803442c976DD2360D47FE0`](https://coston2-explorer.flare.network/address/0x1e80830e9903c839Db803442c976DD2360D47FE0) |
+| IRM (mock)              | [`0xDC275701300865D882D44ffe7cb1153535636d1a`](https://coston2-explorer.flare.network/address/0xDC275701300865D882D44ffe7cb1153535636d1a) |
+| MorphoMarketShim        | [`0x33d81a1d7986bB3AbAB4F67Ad6117233ADd6F87A`](https://coston2-explorer.flare.network/address/0x33d81a1d7986bB3AbAB4F67Ad6117233ADd6F87A) |
+
+The market uses an LLTV of `86%` (`860000000000000000` in WAD).
+The market ID is `keccak256(abi.encode(marketParams))`, matching Morpho Blue's `MarketParamsLib.id()`.
+
+## Full Script
+
+The script below is sets up the Morpho Blue position by funding the smart account with mock tokens, approving the shim smart contract, and authorizing the shim smart contract on Morpho Blue.
+
+<CodeBlock language="typescript" title="src/morpho/setup.ts">
+  {MorphoSetupScript}
+</CodeBlock>
+
+## Code Breakdown
+
+The numbered comments in the script above map to these steps.
+
+**1., 2. Configure and connect.**
+Set funding sizes in whole token units (`100` collateral, `1000` loan token), then open an XRPL client and wallet.
+The XRPL wallet controls the personal account; the Flare EOA is only used for mock minting in step 6.
+
+| Token      | Units  | Purpose                                        |
+| ---------- | ------ | ---------------------------------------------- |
+| Collateral | `100`  | Matches the supply size in the borrow script   |
+| Loan       | `1000` | Buffer for interest across borrow/repay cycles |
+
+**3., 4. Resolve addresses and log them.**
+In parallel, the script looks up the personal account, the memo-only XRP fee, and market decimals.
+It then prints the personal account, operator EOA, market ID, and shim address.
+
+**5. Snapshot before setup.**
+It logs the Morpho position and wallet balances.
+On a first run, borrow shares and position collateral should be zero.
+
+**6. Fund mock tokens on Flare.**
+The `mintMock` function calls permissionless `setBalance` on the Coston2 mock ERC-20s, crediting the personal account.
+This is a normal Flare transaction from the operator EOA without interacting with the smart account.
+
+**7. Approve and authorize the shim.**
+It sends up to 3 XRPL memos: unlimited `approve` for collateral and loan tokens, then `setAuthorization` for Morpho Blue.
+Each action uses its own memo because two calls do not fit under the 1024-byte cap.
+
+**8. Snapshot after setup.**
+Wallet balances should reflect the mint; Morpho position fields stay zero until [Morpho Borrow](/smart-accounts/guides/typescript-viem/morpho-borrow-ts).
+
+## Expected Output
+
+When you run the script, you should see the following output.
+
+```bash
+Personal account: 0x...
+Operator EOA:     0x...
+Morpho market id: 0x...
+Shim address:     0x33d81a1d7986bB3AbAB4F67Ad6117233ADd6F87A
+
+=== Before setup ===
+  position supply (≈loan tokens):   0
+  position borrow (≈loan tokens):   0
+  position collateral:              0
+  ...
+
+Funded smart account with collateral and loan tokens.
+
+[approve-collateral] XRPL transaction hash: ...
+[approve-loan] XRPL transaction hash: ...
+[set-authorization] XRPL transaction hash: ...
+
+=== After setup ===
+  smart-account collateral balance: 100
+  smart-account loan-token balance: 1000
+  ...
+```
+
+You can repeat borrow and repay without re-running the setup, as the loan-token buffer covers interest.
+Re-run setup if allowances are revoked or the loan-token balance is exhausted.
+
+:::tip[What's next]
+
+After you have completed the setup, you can:
+
+- Open a position by running the [Morpho Borrow](/smart-accounts/guides/typescript-viem/morpho-borrow-ts) guide.
+- Close a position by running the [Morpho Repay](/smart-accounts/guides/typescript-viem/morpho-repay-ts) guide.
+
+:::
