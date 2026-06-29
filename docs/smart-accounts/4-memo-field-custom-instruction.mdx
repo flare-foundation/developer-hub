@@ -58,15 +58,16 @@ The XRPL transaction ID is also recorded in the controller to prevent the same p
 
 ## Failure Handling
 
-The whole pipeline is atomic with respect to the user operation:
+When [`executeDirectMinting`](/fassets/reference/IAssetManager#executedirectminting) reverts inside [`handleMintedFAssets`](/smart-accounts/reference/IMasterAccountController#handlemintedfassets), the entire Flare transaction rolls back atomically — no FXRP is minted, no user operation runs, and the underlying XRP remains at the [Core Vault](/fassets/core-vault) until a successful direct mint finalizes it.
+
+Common revert reasons:
 
 - If `sender` does not match the personal account, the call reverts with [`InvalidSender`](/smart-accounts/reference/IMasterAccountController#invalidsender).
 - If `nonce` is not the expected value, it reverts with [`InvalidNonce`](/smart-accounts/reference/IMasterAccountController#invalidnonce).
 - If the memo body has the wrong length for its instruction ID, it reverts with [`InvalidMemoData`](/smart-accounts/reference/IMasterAccountController#invalidmemodata); an unrecognized instruction byte reverts with [`InvalidInstructionId`](/smart-accounts/reference/IMasterAccountController#invalidinstructionid).
-- If any inner call reverts, the personal account surfaces it as [`CallFailed`](/smart-accounts/reference/IPersonalAccount#callfailed) and the entire user operation reverts.
+- If any inner call reverts, the personal account surfaces it as [`CallFailed`](/smart-accounts/reference/IPersonalAccount#callfailed) and the entire transaction reverts.
 
-Because the FXRP transfer is performed before the memo is decoded, **the mint succeeds even if the user operation reverts** - see [`DirectMintingExecuted`](/smart-accounts/reference/IMasterAccountController#directmintingexecuted).
-The freshly minted FXRP remains in the personal account, and the user can either re-submit a fixed user operation or transfer the FXRP to another address via standard [FAssets instructions](/smart-accounts/fasset-instructions).
+For recovery after a failed mint — including the `0xE0` skip-memo flow and duplicate-nonce pitfalls — see [Failure Handling](/smart-accounts/custom-instruction#failure-handling) on the Custom Instruction page.
 
 ## Next Steps
 

@@ -176,7 +176,8 @@ This is the key difference from the proof-based dispatch: there is no separate c
 ## Hash Mismatch
 
 If the bytes the executor submits do not hash to the commitment in the memo, `handleMintedFAssets` reverts with `CustomInstructionHashMismatch(expected, actual)`.
-The FAsset transfer is performed before the memo is decoded, however, so even on a mismatch the FXRP credited by direct minting remains in the personal account, and the user can recover by issuing a new user operation (see [Failure Handling](#failure-handling)).
+Because `executeDirectMintingWithData` is fully atomic, the entire Flare transaction reverts — no FXRP is minted.
+The underlying XRP remains at the [Core Vault](/fassets/core-vault) until a successful direct mint finalizes it (see [Failure Handling](#failure-handling) and [Recovery after a failed mint](#recovery-after-a-failed-mint)).
 
 ## Call Value Accounting
 
@@ -195,18 +196,56 @@ The on-chain hash check additionally pins the executor's `_data` to the exact by
 
 ## Failure Handling
 
-The whole pipeline is atomic with respect to the user operation:
+When [`executeDirectMintingWithData`](/fassets/reference/IAssetManager#executedirectmintingwithdata) reverts, the entire Flare transaction rolls back atomically:
+
+- **No FXRP is minted** on Flare.
+- **No user operation runs** — there is no [`UserOperationExecuted`](/smart-accounts/reference/IMasterAccountController#useroperationexecuted) event.
+- The XRPL payment is **not reversed** — the underlying XRP remains at the [Core Vault](/fassets/core-vault) until a successful direct mint finalizes it.
+  It is not automatically refunded to the user's XRPL wallet.
+
+This failure path should be rare.
+The intended UX is **mint plus user operation in one atomic Flare transaction** — for example, minting FXRP and withdrawing it to an EOA in a single `executeDirectMintingWithData` call.
+
+### Common revert reasons
+
+Any validation or execution failure inside [`handleMintedFAssets`](/smart-accounts/reference/IMasterAccountController#handlemintedfassets) reverts the whole call:
 
 - If `sender` does not match the personal account, the call reverts with [`InvalidSender`](/smart-accounts/reference/IMasterAccountController#invalidsender).
 - If `nonce` is not the expected value, it reverts with [`InvalidNonce`](/smart-accounts/reference/IMasterAccountController#invalidnonce).
 - If the memo length is not exactly `42` bytes, `handleMintedFAssets` reverts with [`InvalidMemoData`](/smart-accounts/reference/IMasterAccountController#invalidmemodata); an unrecognized instruction byte reverts with [`InvalidInstructionId`](/smart-accounts/reference/IMasterAccountController#invalidinstructionid).
 - If `keccak256(_data)` does not match the hash in the memo, the call reverts with `CustomInstructionHashMismatch(expected, actual)`.
-- If the executor's `msg.value` is less than the sum of `call.value` across the inner calls, the inner call reverts with [`CallFailed`](/smart-accounts/reference/IPersonalAccount#callfailed) and the whole user operation reverts.
+- If the executor's `msg.value` is less than the sum of `call.value` across the inner calls, the inner call reverts with [`CallFailed`](/smart-accounts/reference/IPersonalAccount#callfailed) and the whole transaction reverts.
 - If the personal account has pinned an executor via [`getExecutor`](/smart-accounts/reference/IMasterAccountController#getexecutor) and the caller of `executeDirectMintingWithData` is not that executor, the call reverts with [`WrongExecutor`](/smart-accounts/reference/IMasterAccountController#wrongexecutor).
-- If any inner call reverts, the personal account surfaces it as [`CallFailed`](/smart-accounts/reference/IPersonalAccount#callfailed) and the entire user operation reverts.
+- If any inner call reverts, the personal account surfaces it as [`CallFailed`](/smart-accounts/reference/IPersonalAccount#callfailed) and the entire transaction reverts.
 
-Because the FAsset transfer happens before the memo is decoded, **the FXRP mint succeeds even if the user operation reverts** - see [`DirectMintingExecuted`](/smart-accounts/reference/IMasterAccountController#directmintingexecuted).
-The minted FXRP remains in the personal account and the user can recover by either re-submitting a fixed user operation (with the next nonce) or moving the FXRP through standard [FAssets instructions](/smart-accounts/fasset-instructions).
+### Recovery after a failed mint
+
+If `executeDirectMintingWithData` reverts and the XRPL payment is still unminted, the user can recover FXRP without executing the original custom instruction:
+
+1. Send an XRPL [`Payment`](https://xrpl.org/docs/references/protocol/transactions/types/payment) with memo opcode **`0xE0` (Skip memo)** targeting the stuck payment's transaction ID.
+   This emits [`IgnoreMemoSet`](/smart-accounts/reference/IMasterAccountController#ignorememoset) on the personal account.
+2. The executor re-submits [`executeDirectMintingWithData`](/fassets/reference/IAssetManager#executedirectmintingwithdata) with the original FDC `XRPPayment` proof.
+   The skip flag causes the controller to mint FXRP to the personal account **without** dispatching the original user operation.
+3. The user can then move the FXRP through standard [FAssets instructions](/smart-accounts/fasset-instructions) or submit a new user operation with the **current** [`getNonce`](/smart-accounts/reference/IMasterAccountController#getnonce) value.
+
+Related recovery opcodes:
+
+- **`0xE1` (Fast-forward nonce)** — advance the memo-instruction nonce when it is stuck after a partial or abandoned flow.
+- **`0xE2` (Replace executor fee)** — set a replacement executor fee for a stuck XRPL payment.
+
+### Avoiding duplicate-nonce failures
+
+A common cause of reverts is submitting **two XRPL payments in short succession**, each embedding a different `PackedUserOperation` but both using the **same** [`getNonce`](/smart-accounts/reference/IMasterAccountController#getnonce) value — for example, two withdraw attempts built before either mint finalizes.
+
+Only one payment can consume a given nonce.
+Whichever mint executes first succeeds and increments the nonce; the other reverts with [`InvalidNonce`](/smart-accounts/reference/IMasterAccountController#invalidnonce), leaving its XRP at the Core Vault until recovered.
+
+To avoid this:
+
+- Read [`getNonce`](/smart-accounts/reference/IMasterAccountController#getnonce) once per XRPL payment and do not reuse it across concurrent flows.
+- Wait for the first mint to finalize — or confirm that it reverted — before building another payment with a new user operation.
+- **Executors:** if the `AssetManager` emits [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed), wait until `executionAllowedAt` and re-call `executeDirectMintingWithData`.
+  Do not treat a delayed mint as a hard failure and prompt the user to send a duplicate XRPL payment with the same nonce.
 
 ## Next steps
 

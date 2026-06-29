@@ -70,8 +70,9 @@ The two flows share more than they differ:
 - The `Call[]` struct is identical.
 - The personal account's `executeUserOp` runs identically: each call is dispatched in order with the personal account as `msg.sender`, and any inner revert surfaces as `CallFailed`.
 - The XRPL `Payment` must be **untagged** in both flows; a destination tag forces the FAssets minting to credit the tag holder instead of the smart account.
-- Both flows pay the FAssets minting fee and executor fee out of the XRPL `Payment` amount; the rest is minted as FXRP to the personal account.
-- The mint succeeds even if the user operation reverts, because the FAsset transfer runs before the memo is decoded ([`DirectMintingExecuted`](/smart-accounts/reference/IMasterAccountController#directmintingexecuted)).
+- Both flows pay the FAssets minting fee and executor fee out of the XRPL `Payment` amount; the rest is minted as FXRP to the personal account on success.
+- If [`handleMintedFAssets`](/smart-accounts/reference/IMasterAccountController#handlemintedfassets) reverts, the entire direct-mint transaction rolls back — no FXRP is minted and the underlying XRP remains at the [Core Vault](/fassets/core-vault).
+  See [Failure Handling](/smart-accounts/custom-instruction#failure-handling).
 
 ## Choosing in TypeScript
 

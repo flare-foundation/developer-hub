@@ -252,7 +252,8 @@ export async function waitForUserOperationExecuted({
 The bridging is handled by the [Flare Data Connector](/fdc/overview), which caps the round trip at 180 seconds.
 
 If any inner call reverts, the whole user operation reverts with [`CallFailed`](/smart-accounts/reference/IPersonalAccount#callfailed) and the nonce does not increment.
-The FXRP transfer, however, is performed before the memo is decoded, so the mint succeeds even when the user operation reverts - see [`DirectMintingExecuted`](/smart-accounts/reference/IMasterAccountController#directmintingexecuted).
+Because `executeDirectMinting` is fully atomic, a revert in [`handleMintedFAssets`](/smart-accounts/reference/IMasterAccountController#handlemintedfassets) also rolls back the FXRP mint — the underlying XRP remains at the [Core Vault](/fassets/core-vault).
+See [Failure Handling](/smart-accounts/custom-instruction#failure-handling) for recovery steps.
 
 ## Full Script
 
