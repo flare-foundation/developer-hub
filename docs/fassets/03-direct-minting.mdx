@@ -14,8 +14,12 @@ This feature is currently available only for XRP.
 The minter creates a payment transaction on the underlying chain (XRPL) to the [Core Vault](/fassets/core-vault) address, not to an individual agent's address.
 The transaction identifies the minting parameters (recipient and executor) through either a **destination tag** or a **memo field**.
 
-An **executor** then calls `executeDirectMinting` on the Flare side to finalize the mint.
+An **executor** then calls [`executeDirectMinting`](/fassets/reference/IAssetManager#executedirectminting) on the Flare side to finalize the mint.
 The executor is paid a fee upon successful completion.
+
+When the recipient is a [Flare Smart Account](/smart-accounts/overview) personal account and the XRPL memo carries a custom instruction (`0xFE` or `0xFF`), the executor instead calls [`executeDirectMintingWithData`](/fassets/reference/IAssetManager#executedirectmintingwithdata) (for hash-commitment memos) or [`executeDirectMinting`](/fassets/reference/IAssetManager#executedirectminting) (for inline memos) to mint FXRP and dispatch the user operation atomically.
+If that call reverts, no FXRP is minted, and the underlying XRP remains at the Core Vault until recovered — see [Failure Handling](/smart-accounts/custom-instruction#failure-handling).
+See [Finalizing on Flare](/fassets/direct-minting#finalizing-on-flare) for when to use each entry point.
 
 ## Fees
 
@@ -89,6 +93,43 @@ Executors can be restricted in three ways depending on the minting method:
    The asset manager passes every request through.
 
 If the preferred executor does not act within `othersCanExecuteAfterSeconds`, anyone can execute the minting.
+
+## Finalizing on Flare
+
+After the XRPL payment confirms, an executor finalizes the mint by calling one of two `AssetManager` entry points with an FDC [`XRPPayment`](/fdc/attestation-types/xrp-payment) proof.
+
+### `executeDirectMinting`
+
+The standard finalization path for direct minting.
+It mints FAssets to the recipient encoded in the XRPL destination tag or memo — no prior collateral reservation is required.
+
+```solidity
+function executeDirectMinting(IXRPPayment.Proof calldata _payment)
+    external payable;
+```
+
+Use this function for:
+
+- Plain direct mints to an EOA or contract address (32-byte or 48-byte memo, or destination tag).
+- Smart-account flows where the full `PackedUserOperation` is carried inline in the XRPL memo ([`0xFF` memo field custom instruction](/smart-accounts/memo-field-custom-instruction)).
+
+On success, the executor receives the executor fee, and the contract emits the [`DirectMintingExecuted`](/fassets/reference/IAssetManagerEvents#directmintingexecuted) event.
+See the full reference in [`executeDirectMinting`](/fassets/reference/IAssetManager#executedirectminting).
+
+### `executeDirectMintingWithData`
+
+Used when the XRPL memo commits to a user operation by hash only ([`0xFE` custom instruction](/smart-accounts/custom-instruction)).
+The executor supplies the ABI-encoded `PackedUserOperation` in the `_data` parameter alongside the proof.
+
+```solidity
+function executeDirectMintingWithData(
+    IXRPPayment.Proof calldata _payment,
+    bytes calldata _data
+)
+    external payable;
+```
+
+See [`executeDirectMintingWithData`](/fassets/reference/IAssetManager#executedirectmintingwithdata) and [Failure Handling](/smart-accounts/custom-instruction#failure-handling).
 
 ## Rate Limits
 

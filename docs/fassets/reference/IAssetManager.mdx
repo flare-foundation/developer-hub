@@ -5,7 +5,7 @@ keywords: [fassets, xrp, bitcoin, dogecoin, flare-network]
 sidebar_position: 1
 ---
 
-Command line reference for interacting with FAssets `AssetManager` contract.
+Command line reference for interacting with the FAssets `AssetManager` contract.
 
 Sourced from `IAssetManager.sol` on [GitHub](https://github.com/flare-foundation/fassets/blob/main/contracts/userInterfaces/IAssetManager.sol).
 
@@ -61,7 +61,7 @@ Parameters:
 
 Returns:
 
-- `_reservationFeeNATWei`: The amount of reservation fee in NAT wei.
+- `_reservationFeeNATWei`: The amount of the reservation fee in NAT wei.
 
 ```solidity
 function collateralReservationFee(
@@ -72,7 +72,7 @@ function collateralReservationFee(
 ### `collateralReservationInfo`
 
 Returns the data about the collateral reservation for an ongoing minting.
-Note: once the minting is executed or defaulted, the collateral reservation is deleted and this method fails.
+Note: once the minting is executed or defaulted, the collateral reservation is deleted, and this method fails.
 
 Parameters:
 
@@ -216,7 +216,7 @@ function getDirectMintingDailyLimiterState()
 
 Returns the Unix timestamp until which the direct-minting [rate limiter](/fassets/direct-minting#rate-limits) is bypassed.
 
-While `block.timestamp` is below this value, the hourly and daily caps are not enforced and queued mintings can execute without delay.
+While `block.timestamp` is below this value, the hourly and daily caps are not enforced, and queued mintings can execute without delay.
 Governance sets this via `unblockDirectMintingsUntil` to drain a backlog after manual review; the value is `0` when the limiter is active.
 
 ```solidity
@@ -272,7 +272,7 @@ function getDirectMintingFeeReceiver()
 
 ### `getMintingTagManager`
 
-Returns the minting tag manager contract address.
+Returns the address of the minting tag manager contract.
 To interact with it, use the [IMintingTagManager](/fassets/reference/IMintingTagManager) reference.
 
 ```solidity
@@ -290,12 +290,12 @@ Returns the list of all agents.
 Parameters:
 
 - `_start`: First index to return from the available agent's list.
-- `_end`: End index (one above last) to return from the available agent's list.
+- `_end`: End index (one above the last) to return from the available agent's list.
 
 Returns:
 
 - `_agents`: The list of agents between the `_start` and `_end` indexes.
-- `_totalLength`: The total length of the all agents list.
+- `_totalLength`: The total length of the list of all agents.
 
 ```solidity
 function getAllAgents(uint256 _start, uint256 _end)
@@ -325,7 +325,7 @@ function getAvailableAgentsList(uint256 _start, uint256 _end)
 
 ### `getAvailableAgentsDetailedList`
 
-Returns the list of available agents with extra information about agents like fee, minimum collateral ratio and available collateral (in lots).
+Returns the list of available agents with extra information about agents like fee, minimum collateral ratio, and available collateral (in lots).
 
 Parameters:
 
@@ -369,7 +369,7 @@ function redemptionQueue(
 
 ### `agentRedemptionQueue`
 
-Returns the redemption queue for specific agent in the form of an array of [`RedemptionTicketInfo`](https://github.com/flare-foundation/fassets/blob/main/contracts/userInterfaces/data/RedemptionTicketInfo.sol) structs.
+Returns the redemption queue for a specific agent in the form of an array of [`RedemptionTicketInfo`](https://github.com/flare-foundation/fassets/blob/main/contracts/userInterfaces/data/RedemptionTicketInfo.sol) structs.
 
 Parameters:
 
@@ -396,13 +396,13 @@ function agentRedemptionQueue(
 ### `reserveCollateral`
 
 Reserves collateral for minting FAssets.
-Before paying underlying assets for minting, the minter must reserve collateral and pay a collateral reservation fee.
+Before paying for underlying assets for minting, the minter must reserve collateral and pay a collateral reservation fee.
 
 Parameters:
 
 - `_agentVault`: Agent vault address.
 - `_lots`: Number of lots for which to reserve collateral.
-- `_maxMintingFeeBIPS`: Maximum minting fee (BIPS) that can be charged by the agent - best practice is to copy the current agent's published fee; used to prevent agent from front-running reservation request and increasing fee.
+- `_maxMintingFeeBIPS`: Maximum minting fee (BIPS) that can be charged by the agent - best practice is to copy the current agent's published fee; used to prevent the agent from front-running a reservation request and increasing the fee.
 - `_executor`: Account that is allowed to execute minting (besides minter and agent).
 
 ```solidity
@@ -442,16 +442,64 @@ function executeMinting(
 
 ### `executeDirectMinting`
 
-Finalizes [direct minting](/fassets/direct-minting): mints FAssets to the recipient encoded in the XRPL payment (destination tag or memo), using an attestation that the underlying was paid to the FAsset Core Vault.
+Executes minting directly, without a [collateral reservation](/fassets/minting#minting-process).
+The underlying XRP payment must already have been sent to the FAsset [Core Vault](/fassets/core-vault) XRPL address returned by [`directMintingPaymentAddress`](#directmintingpaymentaddress).
 
-Who may call, executor preference and timeouts, fees, and rate limits are described in [Direct minting](/fassets/direct-minting) and in [`getDirectMintingOthersCanExecuteAfterSeconds`](#getdirectmintingotherscanexecuteafterseconds).
+An **executor** submits an FDC [`XRPPayment`](/fdc/attestation-types/xrp-payment) proof to finalize the mint on Flare.
+The contract verifies the proof, decodes the recipient (and optional preferred executor) from the XRPL destination tag or memo, deducts the [minting and executor fees](/fassets/direct-minting#fees), and credits the remaining FAssets to the target address.
+On success, the executor receives the executor fee, and the contract emits the [`DirectMintingExecuted`](/fassets/reference/IAssetManagerEvents#directmintingexecuted) event.
+
+**Who may call:** Any address, subject to [executor restrictions](/fassets/direct-minting#executor-restrictions).
+A preferred executor has an exclusive window defined by [`getDirectMintingOthersCanExecuteAfterSeconds`](#getdirectmintingotherscanexecuteafterseconds); after it expires, anyone may call.
+
+**Smart-account recipients:** When the target is a [Flare Smart Account](/smart-accounts/overview) personal account, `executeDirectMinting` mints FXRP and calls [`handleMintedFAssets`](/smart-accounts/reference/IMasterAccountController#handlemintedfassets) on the `MasterAccountController` to decode and dispatch any XRPL memo instruction — for example, the [`0xFF` memo field custom instruction](/smart-accounts/memo-field-custom-instruction).
+For hash-commitment memos (`0xFE`), use [`executeDirectMintingWithData`](#executedirectmintingwithdata) instead.
+
+**Rate limits:** When hourly, daily, or large-minting thresholds are hit, the call emits [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) instead of minting immediately.
+The executor must wait until `executionAllowedAt` and call again with the same proof.
+
+**Reverts:** If validation or downstream execution fails — including a revert inside `handleMintedFAssets` for smart-account memos — the entire transaction rolls back.
+No FAssets are minted, and the underlying XRP remains at the Core Vault until a successful direct mint finalizes it.
+See [Failure Handling](/smart-accounts/custom-instruction#failure-handling).
 
 Parameters:
 
-- `_payment`: XRP payment proof data (`IXRPPayment.Proof`) for the FDC-verified payment that satisfies the direct-minting rules.
+- `_payment`: The [`IXRPPayment.Proof`](/fdc/reference/IXRPPayment#proof) for the FDC-verified payment that satisfies the direct-minting rules.
+  The proof must attest to a successful `Payment` to [`directMintingPaymentAddress`](#directmintingpaymentaddress) with a valid destination tag or a memo that encodes the minting parameters.
 
 ```solidity
+/**
+ * Executes minting directly, without a collateral reservation.
+ * The payment must be made to the fAsset Core Vault's XRP address.
+ * @param _payment the XRP payment proof data
+ */
 function executeDirectMinting(IXRPPayment.Proof calldata _payment)
+    external payable;
+```
+
+### `executeDirectMintingWithData`
+
+Finalizes [direct minting](/fassets/direct-minting) for a **smart-account recipient** and delivers the user-operation bytes that an off-chain executor supplies alongside the FDC proof.
+
+Used by the [`0xFE` custom instruction](/smart-accounts/custom-instruction) flow: the XRPL memo commits to `keccak256(PackedUserOperation)` and `_data` carries the ABI-encoded `PackedUserOperation` for [`handleMintedFAssets`](/smart-accounts/reference/IMasterAccountController#handlemintedfassets) to verify and dispatch.
+
+Who may call, executor preference, and timeouts, fees, and rate limits are the same as for [`executeDirectMinting`](#executedirectminting).
+
+If the call reverts, the entire transaction rolls back — no FXRP is minted, and the underlying XRP remains at the Core Vault.
+See [Failure Handling](/smart-accounts/custom-instruction#failure-handling) and [Recovery after a failed mint](/smart-accounts/custom-instruction#recovery-after-a-failed-mint).
+
+Parameters:
+
+- `_payment`: The [`IXRPPayment.Proof`](/fdc/reference/IXRPPayment#proof) for the FDC-verified payment that satisfies the direct-minting rules.
+- `_data`: ABI-encoded `PackedUserOperation` for `0xFE` memos; ignored for other memo types.
+
+`msg.value` must equal the sum of `call.value` across the user operation's inner calls; the `AssetManager` forwards it to `handleMintedFAssets`, which then forwards it to `PersonalAccount.executeUserOp`.
+
+```solidity
+function executeDirectMintingWithData(
+    IXRPPayment.Proof calldata _payment,
+    bytes calldata _data
+)
     external payable;
 ```
 
@@ -459,15 +507,15 @@ function executeDirectMinting(IXRPPayment.Proof calldata _payment)
 
 ### `redeem`
 
-Redeem number of lots of FAssets.
+Redeem a number of lots of FAssets.
 
 Returns the actual redeemed amount.
 
 Parameters:
 
 - `_lots`: Number of lots to redeem.
-- `_redeemerUnderlyingAddressString`: The address to which the agent must transfer underlying amount.
-- `_executor`: The account that is allowed to execute redemption default (besides redeemer and agent).
+- `_redeemerUnderlyingAddressString`: The address to which the agent must transfer the underlying amount.
+- `_executor`: The account that is allowed to execute redemption default (besides the redeemer and the agent).
 
 ```solidity
 function redeem(
@@ -482,7 +530,7 @@ function redeem(
 
 Redeem up to `_amountUBA` FAssets, like [`redeem`](/fassets/reference/IAssetManager#redeem), but accepts an arbitrary amount in UBA instead of whole lots and does not require a destination tag.
 
-The `redeemAmount` function enforces a minimum redemption size `minimumRedeemAmount`.
+The `redeemAmount` function enforces a minimum redemption size, `minimumRedeemAmount`.
 
 In some cases, not all sent FAssets can be redeemed (for example, if there are insufficient tickets or the maximum ticket limit has been reached).
 In that case, only part of the approved assets are burned and redeemed, and the redeemer can call this method again for the remaining amount.
@@ -490,7 +538,7 @@ The [`RedemptionAmountIncomplete`](/fassets/reference/IAssetManagerEvents#redemp
 
 Parameters:
 
-- `_amountUBA`: Amount of redeemer's FAssets that will be burned (this is not the received amount; redemption fee is subtracted).
+- `_amountUBA`: Amount of redeemer's FAssets that will be burned (this is not the received amount; the redemption fee is subtracted).
 - `_redeemerUnderlyingAddressString`: Address to which the agent must transfer the underlying amount.
 - `_executor`: Account that can execute redemption default (besides redeemer and agent).
 
@@ -517,7 +565,7 @@ The [`RedemptionAmountIncomplete`](/fassets/reference/IAssetManagerEvents#redemp
 
 Parameters:
 
-- `_amountUBA`: Amount of redeemer's FAssets that will be burned (this is not the received amount; redemption fee is subtracted).
+- `_amountUBA`: Amount of redeemer's FAssets that will be burned (this is not the received amount; the redemption fee is subtracted).
 - `_redeemerUnderlyingAddressString`: Address to which the agent must transfer the underlying amount.
 - `_executor`: Account that can execute redemption default (besides redeemer and agent).
 - `_destinationTag`: Destination tag required in redemption payment (XRP only; must fit in 32 bits for now).
@@ -550,13 +598,13 @@ function minimumRedeemAmountUBA()
 
 ### `redemptionPaymentDefault`
 
-If the agent fails to transfer the redeemed underlying assets in a timely manner, the redeemer or appointed executor can invoke this method and receive payment in collateral.
+If the agent fails to promptly transfer the redeemed underlying assets, the redeemer or appointed executor can invoke this method and receive payment in collateral.
 The agent can also call default if the redeemer is unresponsive to payout the redeemer and free the remaining collateral.
 
 Parameters:
 
-- `_proof`: Proof that the agent did not pay with correct payment reference on the underlying chain.
-- `_redemptionRequestId`: ID of an existing redemption request.
+- `_proof`: Proof that the agent did not pay with the correct payment reference on the underlying chain.
+- `_redemptionRequestId`: Id of an existing redemption request.
 
 ```solidity
 function redemptionPaymentDefault(
@@ -567,7 +615,7 @@ function redemptionPaymentDefault(
 
 ## Core Vault Settings
 
-Reference for managing and interacting with FAssets `ICoreVaultSettings` contract which is inherited by the `IAssetManager` contract.
+Reference for managing and interacting with the FAssets `ICoreVaultSettings` contract, which is inherited by the `IAssetManager` contract.
 
 Sourced from `ICoreVaultSettings.sol` on [GitHub](https://github.com/flare-foundation/fassets/blob/main/contracts/userInterfaces/ICoreVaultClientSettings.sol).
 
@@ -576,7 +624,7 @@ Sourced from `ICoreVaultSettings.sol` on [GitHub](https://github.com/flare-found
 ### `getCoreVaultManager`
 
 Returns the core vault manager address.
-To interact with the Core Vault manager reference the [Core Vault Manager](/fassets/reference/ICoreVaultManager) contract.
+To interact with the Core Vault manager, reference the [Core Vault Manager](/fassets/reference/ICoreVaultManager) contract.
 
 ```solidity
 function getCoreVaultManager()
@@ -596,7 +644,7 @@ function getCoreVaultDonationTag()
 
 ### `getCoreVaultMinimumAmountLeftBIPS`
 
-Returns the minimum amount of minting left on agent's address after transfer to core vault.
+Returns the minimum amount of minting left on the agent's address after transfer to the core vault.
 
 ```solidity
 function getCoreVaultMinimumAmountLeftBIPS()
@@ -616,7 +664,7 @@ function getCoreVaultTransferTimeExtensionSeconds()
 
 ### `getCoreVaultTransferFeeBIPS`
 
-Returns the fee paid by agent for transfer to the core vault.
+Returns the fee paid by the agent for transfer to the core vault.
 
 ```solidity
 function getCoreVaultTransferFeeBIPS()
@@ -626,7 +674,7 @@ function getCoreVaultTransferFeeBIPS()
 
 ### `getCoreVaultMinimumRedeemLots`
 
-Returns the minimum number of lots that a direct redemption from core vault can take.
+Returns the minimum number of lots that a direct redemption from the Core Vault can take.
 
 ```solidity
 function getCoreVaultMinimumRedeemLots()

@@ -540,6 +540,40 @@ const event = findUserOperationExecuted(
 On mainnet, `sendHashInstruction` would run on the user's machine, the `(data, totalCallValue, xrplTransactionHash)` triple would be POST-ed to the executor service, and `executeDirectMintingWithData` would run there.
 `findUserOperationExecuted` can run on either side once the executor publishes the resulting receipt.
 
+## Troubleshooting
+
+### Executor transaction reverted
+
+If `executeDirectMintingWithData` reverts on Flare, inspect the transaction receipt for the revert reason (`InvalidNonce`, `CallFailed`, `CustomInstructionHashMismatch`, and so on).
+The entire call is atomic — **no FXRP is minted** and **no user operation runs**.
+The underlying XRP remains at the [Core Vault](/fassets/core-vault); it is not automatically refunded to the user's XRPL wallet.
+
+See [Failure Handling](/smart-accounts/custom-instruction#failure-handling) for the full list of revert reasons and [Recovery after a failed mint](/smart-accounts/custom-instruction#recovery-after-a-failed-mint) for how to recover via the `0xE0` skip-memo flow.
+
+### `UserOperationExecuted`
+
+If `findUserOperationExecuted` throws but the Flare transaction did not revert, check whether the `AssetManager` emitted [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) instead of completing synchronously.
+When rate limits apply, the executor must wait until `executionAllowedAt` and re-call `executeDirectMintingWithData` — do not send a second XRPL payment with the same nonce.
+
+### Duplicate XRPL payments with the same nonce
+
+A common failure pattern is two XRPL payments submitted in short succession, each embedding a different user operation but both built with the same [`getNonce`](/smart-accounts/reference/IMasterAccountController#getnonce) value — for example, two withdraw attempts before the first mint finalizes.
+Whichever mint executes first consumes the nonce; the other reverts with [`InvalidNonce`](/smart-accounts/reference/IMasterAccountController#invalidnonce), leaving its XRP at the Core Vault.
+
+Wait for the first payment to finalize or confirm failure before building another payment.
+Read a fresh nonce for each new user operation.
+See [Avoiding duplicate-nonce failures](/smart-accounts/custom-instruction#avoiding-duplicate-nonce-failures).
+
+### Recovering FXRP after a failed mint
+
+When `executeDirectMintingWithData` reverts and the XRPL payment is still unminted:
+
+1. Send an XRPL `Payment` with memo opcode **`0xE0` (Skip memo)** targeting the stuck payment's transaction ID.
+2. Have the executor resubmit `executeDirectMintingWithData` with the original FDC proof.
+3. FXRP is minted to the personal account without running the original user operation; the user can then move funds via [FAssets instructions](/smart-accounts/fasset-instructions) or submit a new user operation.
+
+Full protocol details are in [Recovery after a failed mint](/smart-accounts/custom-instruction#recovery-after-a-failed-mint).
+
 ## Full Script
 
 The repository with the example is available on [GitHub](https://github.com/flare-foundation/flare-viem-starter).
