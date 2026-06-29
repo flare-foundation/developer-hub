@@ -10,7 +10,10 @@ import {
   normalizeXrplTransactionId,
   sendSkipMemoInstruction,
 } from "./utils/smart-accounts";
-import { computeDirectMintingPaymentAmountXrp, getFxrpBalance } from "./utils/fassets";
+import {
+  computeDirectMintingPaymentAmountXrp,
+  getFxrpBalance,
+} from "./utils/fassets";
 import { getXrpBalance } from "./utils/xrpl";
 
 // Recovery after a failed direct mint using the 0xE0 (skip memo) opcode.
@@ -42,18 +45,22 @@ async function main({
   const stuckXrplTxHash = process.env.STUCK_XRPL_TX_HASH?.trim();
   if (!stuckXrplTxHash) {
     throw new Error(
-      "STUCK_XRPL_TX_HASH is required — set it to the XRPL transaction hash of the unminted direct-mint payment."
+      "STUCK_XRPL_TX_HASH is required — set it to the XRPL transaction hash of the unminted direct-mint payment.",
     );
   }
 
-  const stuckUserOpData = process.env.STUCK_USER_OP_DATA?.trim() as `0x${string}` | undefined;
+  const stuckUserOpData = process.env.STUCK_USER_OP_DATA?.trim() as
+    | `0x${string}`
+    | undefined;
 
   const xrplClient = new Client(process.env.XRPL_TESTNET_RPC_URL!);
   const xrplWallet = Wallet.fromSeed(xrplSeed);
 
   const [personalAccount, recoveryPaymentAmountXrp] = await Promise.all([
     getPersonalAccountAddress(xrplWallet.address),
-    computeDirectMintingPaymentAmountXrp({ netMintAmountXrp: recoveryNetMintAmountXrp }),
+    computeDirectMintingPaymentAmountXrp({
+      netMintAmountXrp: recoveryNetMintAmountXrp,
+    }),
   ]);
   console.log("Personal account address:", personalAccount, "\n");
   console.log("Stuck XRPL transaction hash:", stuckXrplTxHash, "\n");
@@ -61,7 +68,7 @@ async function main({
   if (!stuckUserOpData) {
     console.warn(
       "STUCK_USER_OP_DATA not set — assuming 0xFF stuck flow or memo already skipped. " +
-        "For 0xFE stuck payments, set STUCK_USER_OP_DATA to the original PackedUserOperation bytes.\n"
+        "For 0xFE stuck payments, set STUCK_USER_OP_DATA to the original PackedUserOperation bytes.\n",
     );
   }
 
@@ -75,7 +82,7 @@ async function main({
   });
   if (diagnosis.transactionIdUsed) {
     throw new Error(
-      `Stuck transaction ${diagnosis.targetTxId} is already minted on Flare — 0xE0 recovery does not apply.`
+      `Stuck transaction ${diagnosis.targetTxId} is already minted on Flare — 0xE0 recovery does not apply.`,
     );
   }
 
@@ -85,7 +92,7 @@ async function main({
   if (!existingRecoveryXrplTxHash && xrpBalance < recoveryPaymentAmountXrp) {
     throw new Error(
       `Insufficient XRP for recovery payment on ${xrplWallet.address}: ` +
-        `have ${xrpBalance} XRP, need ${recoveryPaymentAmountXrp} XRP`
+        `have ${xrpBalance} XRP, need ${recoveryPaymentAmountXrp} XRP`,
     );
   }
 
@@ -95,7 +102,11 @@ async function main({
   let skipMemo: { xrplTransactionHash: string; targetTxId: `0x${string}` };
 
   if (existingRecoveryXrplTxHash) {
-    console.log("Using existing recovery XRPL payment from RECOVERY_XRPL_TX_HASH:", existingRecoveryXrplTxHash, "\n");
+    console.log(
+      "Using existing recovery XRPL payment from RECOVERY_XRPL_TX_HASH:",
+      existingRecoveryXrplTxHash,
+      "\n",
+    );
     skipMemo = {
       xrplTransactionHash: existingRecoveryXrplTxHash,
       targetTxId: normalizeXrplTransactionId(stuckXrplTxHash),
@@ -113,17 +124,22 @@ async function main({
 
   // --- Step 2: EXECUTOR SIDE — finalize recovery payment --------------------
   const targetTxId = skipMemo.targetTxId;
-  const recoveryPaymentTxId = normalizeXrplTransactionId(skipMemo.xrplTransactionHash);
+  const recoveryPaymentTxId = normalizeXrplTransactionId(
+    skipMemo.xrplTransactionHash,
+  );
   const skipMemoExecutorLabel = "skip-memo-executor";
   let recoveryReceipt;
 
   if (await isStuckTransactionIdUsed(recoveryPaymentTxId)) {
     console.log(
-      "Recovery XRPL payment already minted on Flare (likely by a relayer) — loading existing receipt.\n"
+      "Recovery XRPL payment already minted on Flare (likely by a relayer) — loading existing receipt.\n",
     );
-    recoveryReceipt = await findDirectMintingReceiptForTransactionId(recoveryPaymentTxId, {
-      label: skipMemoExecutorLabel,
-    });
+    recoveryReceipt = await findDirectMintingReceiptForTransactionId(
+      recoveryPaymentTxId,
+      {
+        label: skipMemoExecutorLabel,
+      },
+    );
   } else {
     ({ receipt: recoveryReceipt } = await executeDirectMintingWithData({
       xrplTransactionHash: skipMemo.xrplTransactionHash,
@@ -135,7 +151,11 @@ async function main({
     }));
   }
 
-  const ignoreMemoSet = findIgnoreMemoSet(recoveryReceipt, personalAccount, targetTxId);
+  const ignoreMemoSet = findIgnoreMemoSet(
+    recoveryReceipt,
+    personalAccount,
+    targetTxId,
+  );
   console.log("IgnoreMemoSet event:", ignoreMemoSet, "\n");
 
   logPersonalAccountFxrpCredit({
@@ -150,11 +170,14 @@ async function main({
   if (!stillStuck) {
     console.log(
       "Stuck transaction was minted on Flare during recovery (likely by a relayer). " +
-        "Loading mint receipt instead of re-submitting.\n"
+        "Loading mint receipt instead of re-submitting.\n",
     );
-    const stuckReceipt = await findDirectMintingReceiptForTransactionId(diagnosis.targetTxId, {
-      label: "stuck-retry",
-    });
+    const stuckReceipt = await findDirectMintingReceiptForTransactionId(
+      diagnosis.targetTxId,
+      {
+        label: "stuck-retry",
+      },
+    );
     logPersonalAccountFxrpCredit({
       label: "stuck-retry",
       receipt: stuckReceipt,
