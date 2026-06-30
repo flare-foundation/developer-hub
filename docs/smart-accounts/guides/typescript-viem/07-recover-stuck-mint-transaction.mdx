@@ -1,7 +1,7 @@
 ---
 sidebar_position: 7
-slug: recover-stuck-direct-mint-ts
-title: Recover Stuck Direct Mint
+slug: recover-stuck-mint-transaction-ts
+title: Recover Stuck Mint Transaction
 authors: [fassko]
 description: Recover FXRP when a smart-account direct mint reverted or was never finalized, using the 0xE0 skip-memo flow with Viem.
 tags: [intermediate, ethereum, flare-smart-accounts]
@@ -20,7 +20,7 @@ unlisted: false
 ---
 
 import CodeBlock from "@theme/CodeBlock";
-import RecoverStuckDirectMintScript from "!!raw-loader!/examples/developer-hub-javascript/smart-accounts/recover-stuck-direct-mint.ts";
+import RecoverDirectMintTransactionScript from "!!raw-loader!/examples/developer-hub-javascript/smart-accounts/recover-direct-mint-transaction.ts";
 
 This guide walks through recovering FXRP when a smart-account [direct mint](/fassets/direct-minting) payment is stuck at the [Core Vault](/fassets/core-vault) — typically because [`executeDirectMintingWithData`](/fassets/reference/IAssetManager#executedirectmintingwithdata) reverted on Flare or the executor never submitted the [FDC](/fdc/overview) proof.
 
@@ -28,7 +28,7 @@ The recovery path uses the memo opcode **`0xE0` (Skip memo)** to mark the stuck 
 
 Read the [Custom Instruction TypeScript guide](/smart-accounts/guides/typescript-viem/custom-instruction-ts) first if you are not familiar with the `0xFE` hash-commitment flow.
 
-The full code is available on [GitHub](https://github.com/flare-foundation/flare-viem-starter/blob/main/src/recover-stuck-direct-mint.ts).
+The full code is available on [GitHub](https://github.com/flare-foundation/flare-viem-starter/blob/main/src/recover-direct-mint-transaction.ts).
 
 :::info
 The code in this guide is set up for the Coston2 testnet.
@@ -168,7 +168,7 @@ Both paths use `reuseExistingMint: true` so `PaymentAlreadyConfirmed` errors fro
 Clone [flare-viem-starter](https://github.com/flare-foundation/flare-viem-starter), configure `.env`, and run:
 
 ```bash
-STUCK_XRPL_TX_HASH=<your-stuck-tx-hash> pnpm run script src/recover-stuck-direct-mint.ts
+STUCK_XRPL_TX_HASH=<your-stuck-tx-hash> pnpm run script src/recover-direct-mint-transaction.ts
 ```
 
 For a `0xFE` stuck payment, also pass the original user-operation bytes:
@@ -176,7 +176,7 @@ For a `0xFE` stuck payment, also pass the original user-operation bytes:
 ```bash
 STUCK_XRPL_TX_HASH=<hash> \
 STUCK_USER_OP_DATA=<packed-user-op-hex> \
-pnpm run script src/recover-stuck-direct-mint.ts
+pnpm run script src/recover-direct-mint-transaction.ts
 ```
 
 If you already sent the `0xE0` recovery payment, resume from step 2:
@@ -184,7 +184,7 @@ If you already sent the `0xE0` recovery payment, resume from step 2:
 ```bash
 STUCK_XRPL_TX_HASH=<stuck-hash> \
 RECOVERY_XRPL_TX_HASH=<recovery-hash> \
-pnpm run script src/recover-stuck-direct-mint.ts
+pnpm run script src/recover-direct-mint-transaction.ts
 ```
 
 ## Full Script
@@ -193,9 +193,9 @@ The repository with the example is available on [GitHub](https://github.com/flar
 Helper functions live in the `src/utils` directory.
 
 <details>
-  <summary>src/recover-stuck-direct-mint.ts</summary>
-  <CodeBlock language="typescript" title="src/recover-stuck-direct-mint.ts">
-    {RecoverStuckDirectMintScript}
+  <summary>src/recover-direct-mint-transaction.ts</summary>
+  <CodeBlock language="typescript" title="src/recover-direct-mint-transaction.ts">
+    {RecoverDirectMintTransactionScript}
   </CodeBlock>
 </details>
 
