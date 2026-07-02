@@ -148,10 +148,41 @@ Rate limits **throttle** rather than reject.
 When limits are hit, further mintings are delayed proportionally to the accumulated backlog.
 Large mintings above the threshold are delayed independently by a fixed duration.
 
+### Large minting delay
+
+A direct mint is **large** when its underlying amount is **strictly greater than** [`directMintingLargeMintingThresholdUBA`](/fassets/reference/IAssetManager#getdirectmintinglargemintingthresholduba).
+On Flare mainnet, that threshold is currently **4M XRP** with a **2 hour** fixed delay ([`directMintingLargeMintingDelaySeconds`](/fassets/reference/IAssetManager#getdirectmintinglargemintingdelayseconds)).
+
+Large-mint delay is **independent** of the hourly and daily windows.
+Even with full window headroom, a 5M XRP payment is delayed — it does not revert, and the underlying XRP stays at the [Core Vault](/fassets/core-vault) until an executor successfully finalizes the mint.
+
+When an executor first calls [`executeDirectMinting`](/fassets/reference/IAssetManager#executedirectminting) for a large mint:
+
+1. The contract emits [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) with `executionAllowedAt = block.timestamp + directMintingLargeMintingDelaySeconds`.
+2. No FXRP is minted yet.
+3. After `executionAllowedAt`, the executor calls `executeDirectMinting` again with the **same FDC proof**.
+4. The contract emits [`DirectMintingExecuted`](/fassets/reference/IAssetManagerEvents#directmintingexecuted) and FXRP is credited to the recipient.
+
+If hourly or daily limits also apply, the contract uses whichever rule pushes `executionAllowedAt` furthest into the future.
+See the [Check Direct Minting Limits guide](/fassets/developer-guides/fassets-direct-minting-limits) for off-chain pre-flight logic.
+
+### Delayed minting flow
+
 Delayed mintings emit the `DirectMintingDelayed` event instead of `DirectMintingExecuted`, with an `executionAllowedAt` timestamp.
-Governance can unblock delayed mintings via `unblockDirectMintingsUntil`, but only for past timestamps and after manual review.
+
+Governance can temporarily bypass the **hourly and daily** limiter via [`unblockDirectMintingsUntil`](/fassets/reference/IAssetManager#getdirectmintingsunblockuntiltimestamp) to drain a backlog after manual review.
+That bypass does **not** skip the large-mint delay — amounts above the threshold are still held for `directMintingLargeMintingDelaySeconds`.
 
 If a preferred executor's minting is delayed, their exclusive execution window restarts from `executionAllowedAt`.
+
+Integrators should use a helper such as `waitForDirectMintingOutcome` (provided in [flare-viem-starter](https://github.com/flare-foundation/flare-viem-starter)) that:
+
+1. Watches for [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) and logs `executionAllowedAt` when rate limits bind.
+2. Keeps polling until [`DirectMintingExecuted`](/fassets/reference/IAssetManagerEvents#directmintingexecuted) confirms FXRP was minted.
+
+:::caution[Important]
+Do not treat [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) event as a failure or send a second XRPL payment for the same mint.
+:::
 
 ## Video Tutorial
 
