@@ -38,7 +38,7 @@ Compared to the [memo-based direct minting](/fassets/developer-guides/fassets-di
   - `XRPL_TESTNET_RPC_URL` — XRPL Testnet RPC endpoint.
   - `XRPL_SEED` — seed for the XRPL wallet that will send the payment.
   - `MINTING_TAG` — _optional_.
-    If set, the script reuses this tag instead of reserving a new one.
+    If set, the script reuses this tag rather than creating a new one.
 
 ## Direct Minting Tag Script
 
@@ -48,14 +48,14 @@ Compared to the [memo-based direct minting](/fassets/developer-guides/fassets-di
 
 ## Code Breakdown
 
-1. `reserveTag` function reads the [`reservationFee`](/fassets/reference/IMintingTagManager#reservationfee) from [`MintingTagManager`](/fassets/reference/IMintingTagManager) contract and calls [`reserve`](/fassets/reference/IMintingTagManager#reserve) with the fee.
+1. The `reserveTag` function reads the [`reservationFee`](/fassets/reference/IMintingTagManager#reservationfee) from the [`MintingTagManager`](/fassets/reference/IMintingTagManager) contract and calls [`reserve`](/fassets/reference/IMintingTagManager#reserve) with the fee.
    The contract assigns the next available tag and returns it.
-2. `setMintingRecipient` function binds the tag to a recipient address via [`setMintingRecipient`](/fassets/reference/IMintingTagManager#setmintingrecipient).
+2. The `setMintingRecipient` function binds the tag to a recipient address via [`setMintingRecipient`](/fassets/reference/IMintingTagManager#setmintingrecipient).
    Payments arriving at the [Core Vault](/fassets/core-vault) with this destination tag will mint FXRP to that recipient.
-3. `getMintingRecipient` reads the [`mintingRecipient`](/fassets/reference/IMintingTagManager#mintingrecipient) currently configured for a tag.
-4. `getOrReserveTag` reuses `MINTING_TAG` from the `.env` variables if set; otherwise, it reserves a new tag and binds it to the recipient.
+3. The `getMintingRecipient` function reads the [`mintingRecipient`](/fassets/reference/IMintingTagManager#mintingrecipient) currently configured for a tag.
+4. The `getOrReserveTag` function reuses `MINTING_TAG` from the `.env` variables if set; otherwise, it reserves a new tag and binds it to the recipient.
 5. Set the net FXRP amount to mint in XRP.
-   Minting and executor fees are added to the the XRPL payment amount.
+   Minting and executor fees are added to the XRPL payment amount.
 6. Connect to the XRPL Testnet using `XRPL_TESTNET_RPC_URL` and load the sender wallet from `XRPL_SEED`.
 7. Resolve the recipient — the Flare [`PersonalAccount`](/smart-accounts/reference/IPersonalAccount) for the XRPL wallet — via [`getPersonalAccountAddress`](/smart-accounts/reference/IPersonalAccount), and look up `AssetManagerFXRP` through the [Flare Contract Registry](/network/guides/flare-contracts-registry) using [`getContractAddressByName`](/network/guides/flare-contracts-registry).
 8. Resolve the [`MintingTagManager`](/fassets/reference/IMintingTagManager) contract address from the `AssetManager` using [`getMintingTagManager`](/fassets/reference/IAssetManager#getmintingtagmanager).
@@ -68,7 +68,7 @@ Compared to the [memo-based direct minting](/fassets/developer-guides/fassets-di
 12. Wait for direct minting to complete via `waitForDirectMintingOutcome`.
     This helper watches for both [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) and [`DirectMintingExecuted`](/fassets/reference/IAssetManagerEvents#directmintingexecuted):
     - If rate limits apply (hourly, daily, or [large-mint threshold](/fassets/direct-minting#large-minting-delay)), an executor's first `executeDirectMinting` call emits `DirectMintingDelayed` with `executionAllowedAt`.
-      The underlying XRP stays at the Core Vault; no FXRP is minted yet.
+      The underlying XRP remains in the Core Vault; no FXRP has been minted yet.
     - After `executionAllowedAt`, the executor retries with the same FDC proof.
     - `waitForDirectMintingOutcome` logs any delay and keeps polling until `DirectMintingExecuted`.
 
@@ -80,8 +80,8 @@ Compared to the [memo-based direct minting](/fassets/developer-guides/fassets-di
 
 ## Important Notes
 
-- **Reservations cost native currency.**
-  Tag reservation pays a fee in native token.
+- **Reservations cost in native currency.**
+  Tag reservation pays a fee in the native token.
   Tags are assigned sequentially.
 - **Executor changes are not immediate.** After calling the [`setAllowedExecutor`](/fassets/reference/IMintingTagManager#setallowedexecutor) function, the new executor only becomes active after a 10-minute cooldown to protect in-flight FDC proofs.
   See [Executor Restrictions](/fassets/direct-minting#executor-restrictions).
