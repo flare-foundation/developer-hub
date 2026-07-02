@@ -9,7 +9,7 @@ import {
 import {
   computeDirectMintingPaymentAmountXrp,
   getFxrpBalance,
-  waitForDirectMintingExecuted,
+  waitForDirectMintingOutcome,
 } from "./utils/fassets";
 
 // 1. Direct minting prefix
@@ -96,8 +96,10 @@ async function main() {
     xrplWallet,
   });
 
-  // 9. Wait for the DirectMintingExecuted event from AssetManagerFXRP.
-  const mintEvent = await waitForDirectMintingExecuted({
+  // 9. Wait for direct minting to finish. Rate limits may emit DirectMintingDelayed
+  //    first; waitForDirectMintingOutcome logs executionAllowedAt and keeps polling
+  //    until DirectMintingExecuted.
+  const mintEvent = await waitForDirectMintingOutcome({
     assetManagerAddress,
     targetAddress: personalAccountAddress,
   });

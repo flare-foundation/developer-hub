@@ -11,7 +11,7 @@ import {
 import {
   computeDirectMintingPaymentAmountXrp,
   getFxrpBalance,
-  waitForDirectMintingExecuted,
+  waitForDirectMintingOutcome,
 } from "./utils/fassets";
 import { coston2 } from "@flarenetwork/flare-wagmi-periphery-package";
 
@@ -156,8 +156,10 @@ async function main() {
     "\n",
   );
 
-  // 12. Wait for the DirectMintingExecuted event from AssetManagerFXRP.
-  const mintEvent = await waitForDirectMintingExecuted({
+  // 12. Wait for direct minting to finish. Rate limits may emit DirectMintingDelayed
+  //    first; waitForDirectMintingOutcome logs executionAllowedAt and keeps polling
+  //    until DirectMintingExecuted.
+  const mintEvent = await waitForDirectMintingOutcome({
     assetManagerAddress,
     targetAddress: personalAccountAddress,
   });
