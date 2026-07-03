@@ -214,10 +214,13 @@ function getDirectMintingDailyLimiterState()
 
 ### `getDirectMintingsUnblockUntilTimestamp`
 
-Returns the Unix timestamp until which the direct-minting [rate limiter](/fassets/direct-minting#rate-limits) is bypassed.
+Returns the Unix timestamp until which the direct-minting **hourly and daily** [rate limiter](/fassets/direct-minting#rate-limits) is bypassed.
 
-While `block.timestamp` is below this value, the hourly and daily caps are not enforced, and queued mintings can execute without delay.
+While `block.timestamp` is below this value, the hourly and daily caps are not enforced, and mintings queued by those windows can execute without delay.
 Governance sets this via `unblockDirectMintingsUntil` to drain a backlog after manual review; the value is `0` when the limiter is active.
+
+This bypass does **not** apply to the [large-minting delay](/fassets/direct-minting#large-minting-delay).
+Amounts strictly above [`directMintingLargeMintingThresholdUBA`](#getdirectmintinglargemintingthresholduba) are still held for [`directMintingLargeMintingDelaySeconds`](#getdirectmintinglargemintingdelayseconds).
 
 ```solidity
 function getDirectMintingsUnblockUntilTimestamp()
@@ -228,6 +231,10 @@ function getDirectMintingsUnblockUntilTimestamp()
 ### `getDirectMintingLargeMintingThresholdUBA`
 
 Returns the threshold above which direct minting is considered large, in UBA.
+A mint is large when its underlying amount is **strictly greater than** this value.
+
+Large mints are delayed by [`getDirectMintingLargeMintingDelaySeconds`](#getdirectmintinglargemintingdelayseconds) independently of the hourly and daily windows.
+See [Large minting delay](/fassets/direct-minting#large-minting-delay).
 
 ```solidity
 function getDirectMintingLargeMintingThresholdUBA()
@@ -237,7 +244,10 @@ function getDirectMintingLargeMintingThresholdUBA()
 
 ### `getDirectMintingLargeMintingDelaySeconds`
 
-Returns the delay in seconds applied to large direct mintings.
+Returns the fixed delay in seconds applied when a direct minting amount is strictly greater than [`getDirectMintingLargeMintingThresholdUBA`](#getdirectmintinglargemintingthresholduba).
+
+The delay is measured from the block timestamp of the first `executeDirectMinting` attempt and is **not** bypassed by [`getDirectMintingsUnblockUntilTimestamp`](#getdirectmintingsunblockuntiltimestamp).
+See [Large minting delay](/fassets/direct-minting#large-minting-delay).
 
 ```solidity
 function getDirectMintingLargeMintingDelaySeconds()

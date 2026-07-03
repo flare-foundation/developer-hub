@@ -145,6 +145,10 @@ event DirectMintingExecuted(
 ### `DirectMintingDelayed`
 
 Emitted when a direct minting is throttled by rate limits and its execution is postponed.
+This includes delays from the hourly/daily windows **and** the [large-minting rule](/fassets/direct-minting#large-minting-delay).
+
+The executor must wait until `executionAllowedAt` and call [`executeDirectMinting`](/fassets/reference/IAssetManager#executedirectminting) again with the same FDC proof.
+The underlying asset remains at the Core Vault until a successful finalization.
 
 Parameters:
 
