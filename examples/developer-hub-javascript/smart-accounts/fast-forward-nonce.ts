@@ -75,13 +75,16 @@ const RECOVERY_NET_MINT_XRP = 1;
 const NET_MINT_XRP = 1;
 const XRPL_SEED = process.env.XRPL_SEED!;
 
-function parseTargetNewNonce(envValue: string | undefined, currentNonce: bigint): bigint {
+function parseTargetNewNonce(
+  envValue: string | undefined,
+  currentNonce: bigint,
+): bigint {
   if (envValue?.trim()) {
     return BigInt(envValue.trim());
   }
   console.warn(
     "TARGET_NEW_NONCE not set — using current nonce + 1. " +
-      "This costs a small XRP direct mint plus executor gas on Flare.\n"
+      "This costs a small XRP direct mint plus executor gas on Flare.\n",
   );
   return currentNonce + 1n;
 }
@@ -101,10 +104,13 @@ async function runE0Recovery({
   xrplWallet: Wallet;
   recoveryNetMintAmountXrp: number;
 }): Promise<void> {
-  const diagnosis = await diagnoseStuckDirectMint({ stuckXrplTxHash, personalAccount });
+  const diagnosis = await diagnoseStuckDirectMint({
+    stuckXrplTxHash,
+    personalAccount,
+  });
   if (diagnosis.transactionIdUsed) {
     console.log(
-      "Stuck transaction already minted on Flare — skipping 0xE0 (nonce may already be recoverable via 0xE1).\n"
+      "Stuck transaction already minted on Flare — skipping 0xE0 (nonce may already be recoverable via 0xE1).\n",
     );
     return;
   }
@@ -117,7 +123,7 @@ async function runE0Recovery({
   if (!existingRecoveryXrplTxHash && xrpBalance < recoveryPaymentAmountXrp) {
     throw new Error(
       `Insufficient XRP for 0xE0 recovery payment on ${xrplWallet.address}: ` +
-        `have ${xrpBalance} XRP, need ${recoveryPaymentAmountXrp} XRP`
+        `have ${xrpBalance} XRP, need ${recoveryPaymentAmountXrp} XRP`,
     );
   }
 
@@ -126,13 +132,17 @@ async function runE0Recovery({
     "0xE0 recovers FXRP from the stuck payment but does not run the UserOp — " +
       "the memo nonce stays at",
     diagnosis.nonce,
-    "\n"
+    "\n",
   );
 
   let skipMemo: { xrplTransactionHash: string; targetTxId: `0x${string}` };
 
   if (existingRecoveryXrplTxHash) {
-    console.log("Using existing recovery XRPL payment from RECOVERY_XRPL_TX_HASH:", existingRecoveryXrplTxHash, "\n");
+    console.log(
+      "Using existing recovery XRPL payment from RECOVERY_XRPL_TX_HASH:",
+      existingRecoveryXrplTxHash,
+      "\n",
+    );
     skipMemo = {
       xrplTransactionHash: existingRecoveryXrplTxHash,
       targetTxId: normalizeXrplTransactionId(stuckXrplTxHash),
@@ -149,15 +159,22 @@ async function runE0Recovery({
   }
 
   const targetTxId = skipMemo.targetTxId;
-  const recoveryPaymentTxId = normalizeXrplTransactionId(skipMemo.xrplTransactionHash);
+  const recoveryPaymentTxId = normalizeXrplTransactionId(
+    skipMemo.xrplTransactionHash,
+  );
   const skipMemoExecutorLabel = "skip-memo-executor";
   let recoveryReceipt;
 
   if (await isStuckTransactionIdUsed(recoveryPaymentTxId)) {
-    console.log("Recovery XRPL payment already minted on Flare — loading existing receipt.\n");
-    recoveryReceipt = await findDirectMintingReceiptForTransactionId(recoveryPaymentTxId, {
-      label: skipMemoExecutorLabel,
-    });
+    console.log(
+      "Recovery XRPL payment already minted on Flare — loading existing receipt.\n",
+    );
+    recoveryReceipt = await findDirectMintingReceiptForTransactionId(
+      recoveryPaymentTxId,
+      {
+        label: skipMemoExecutorLabel,
+      },
+    );
   } else {
     ({ receipt: recoveryReceipt } = await executeDirectMintingWithData({
       xrplTransactionHash: skipMemo.xrplTransactionHash,
@@ -169,7 +186,11 @@ async function runE0Recovery({
     }));
   }
 
-  const ignoreMemoSet = findIgnoreMemoSet(recoveryReceipt, personalAccount, targetTxId);
+  const ignoreMemoSet = findIgnoreMemoSet(
+    recoveryReceipt,
+    personalAccount,
+    targetTxId,
+  );
   console.log("IgnoreMemoSet event:", ignoreMemoSet, "\n");
 
   logPersonalAccountFxrpCredit({
@@ -181,10 +202,15 @@ async function runE0Recovery({
 
   const stillStuck = !(await isStuckTransactionIdUsed(diagnosis.targetTxId));
   if (!stillStuck) {
-    console.log("Stuck transaction was minted during recovery — loading existing receipt.\n");
-    const stuckReceipt = await findDirectMintingReceiptForTransactionId(diagnosis.targetTxId, {
-      label: "stuck-retry",
-    });
+    console.log(
+      "Stuck transaction was minted during recovery — loading existing receipt.\n",
+    );
+    const stuckReceipt = await findDirectMintingReceiptForTransactionId(
+      diagnosis.targetTxId,
+      {
+        label: "stuck-retry",
+      },
+    );
     logPersonalAccountFxrpCredit({
       label: "stuck-retry",
       receipt: stuckReceipt,
@@ -210,7 +236,11 @@ async function runE0Recovery({
   }
 
   const nonceAfterE0 = await getNonce(personalAccount);
-  console.log("Memo nonce after 0xE0 recovery (unchanged — UserOp was skipped):", nonceAfterE0, "\n");
+  console.log(
+    "Memo nonce after 0xE0 recovery (unchanged — UserOp was skipped):",
+    nonceAfterE0,
+    "\n",
+  );
 }
 
 async function runE1FastForward({
@@ -231,15 +261,18 @@ async function runE1FastForward({
   console.log("Target new nonce:", targetNewNonce, "\n");
   assertValidNonceIncrease(currentNonce, targetNewNonce);
 
-  const paymentAmountXrp = await computeDirectMintingPaymentAmountXrp({ netMintAmountXrp });
+  const paymentAmountXrp = await computeDirectMintingPaymentAmountXrp({
+    netMintAmountXrp,
+  });
   const xrpBalance = await getXrpBalance(xrplWallet.address, xrplClient);
   console.log("XRPL wallet XRP balance:", xrpBalance, "\n");
 
-  const existingFastForwardXrplTxHash = process.env.FAST_FORWARD_XRPL_TX_HASH?.trim();
+  const existingFastForwardXrplTxHash =
+    process.env.FAST_FORWARD_XRPL_TX_HASH?.trim();
   if (!existingFastForwardXrplTxHash && xrpBalance < paymentAmountXrp) {
     throw new Error(
       `Insufficient XRP for 0xE1 payment on ${xrplWallet.address}: ` +
-        `have ${xrpBalance} XRP, need ${paymentAmountXrp} XRP`
+        `have ${xrpBalance} XRP, need ${paymentAmountXrp} XRP`,
     );
   }
 
@@ -251,7 +284,7 @@ async function runE1FastForward({
     console.log(
       "Using existing XRPL payment from FAST_FORWARD_XRPL_TX_HASH:",
       existingFastForwardXrplTxHash,
-      "\n"
+      "\n",
     );
     fastForward = {
       xrplTransactionHash: existingFastForwardXrplTxHash,
@@ -268,12 +301,16 @@ async function runE1FastForward({
     });
   }
 
-  const fastForwardTxId = normalizeXrplTransactionId(fastForward.xrplTransactionHash);
+  const fastForwardTxId = normalizeXrplTransactionId(
+    fastForward.xrplTransactionHash,
+  );
   const executorLabel = "fast-forward-executor";
   let receipt;
 
   if (await isStuckTransactionIdUsed(fastForwardTxId)) {
-    console.log("0xE1 XRPL payment already minted on Flare — loading existing receipt.\n");
+    console.log(
+      "0xE1 XRPL payment already minted on Flare — loading existing receipt.\n",
+    );
     receipt = await findDirectMintingReceiptForTransactionId(fastForwardTxId, {
       label: executorLabel,
     });
@@ -288,20 +325,26 @@ async function runE1FastForward({
     }));
   }
 
-  const nonceIncreased = findNonceIncreased(receipt, personalAccount, targetNewNonce);
+  const nonceIncreased = findNonceIncreased(
+    receipt,
+    personalAccount,
+    targetNewNonce,
+  );
   console.log("NonceIncreased event:", nonceIncreased, "\n");
 
   const nonceAfter = await getNonce(personalAccount);
   console.log("Memo nonce after fast-forward:", nonceAfter, "\n");
 
   if (nonceAfter !== targetNewNonce) {
-    throw new Error(`Expected nonce ${targetNewNonce} after 0xE1, but getNonce returned ${nonceAfter}`);
+    throw new Error(
+      `Expected nonce ${targetNewNonce} after 0xE1, but getNonce returned ${nonceAfter}`,
+    );
   }
 
   console.log(
     "Nonce fast-forward complete. Build your next 0xFE or 0xFF UserOp with nonce:",
     nonceAfter,
-    "\n"
+    "\n",
   );
 }
 
@@ -329,7 +372,10 @@ async function main({
   // --- Step 2: 0xE1-only shortcut (E1_ONLY or FAST_FORWARD_XRPL_TX_HASH) ---
   if (fastForwardResume || e1Only) {
     const currentNonce = await getNonce(personalAccount);
-    const targetNewNonce = parseTargetNewNonce(process.env.TARGET_NEW_NONCE, currentNonce);
+    const targetNewNonce = parseTargetNewNonce(
+      process.env.TARGET_NEW_NONCE,
+      currentNonce,
+    );
     await runE1FastForward({
       targetNewNonce,
       personalAccount,
@@ -342,7 +388,9 @@ async function main({
 
   // --- Step 3: Resolve stuck payment (demo or STUCK_XRPL_TX_HASH) ------------
   let stuckXrplTxHash = process.env.STUCK_XRPL_TX_HASH?.trim();
-  let stuckUserOpData = process.env.STUCK_USER_OP_DATA?.trim() as `0x${string}` | undefined;
+  let stuckUserOpData = process.env.STUCK_USER_OP_DATA?.trim() as
+    | `0x${string}`
+    | undefined;
   const nonceBeforeDemo = await getNonce(personalAccount);
   console.log("Memo nonce before demo:", nonceBeforeDemo, "\n");
 
@@ -351,7 +399,7 @@ async function main({
     console.log(
       "Sending a 0xFE direct-mint payment with UserOp nonce",
       nonceBeforeDemo,
-      "but deliberately not calling the executor — XRP sits at the Core Vault.\n"
+      "but deliberately not calling the executor — XRP sits at the Core Vault.\n",
     );
 
     const checkpointAddress = "0xEE6D54382aA623f4D16e856193f5f8384E487002";
@@ -370,11 +418,16 @@ async function main({
     const stuckPaymentAmountXrp = await computeDirectMintingPaymentAmountXrp({
       netMintAmountXrp: demoStuckMintAmountXrp,
     });
-    const recoveryPaymentAmountXrp = await computeDirectMintingPaymentAmountXrp({
-      netMintAmountXrp: recoveryNetMintAmountXrp,
+    const recoveryPaymentAmountXrp = await computeDirectMintingPaymentAmountXrp(
+      {
+        netMintAmountXrp: recoveryNetMintAmountXrp,
+      },
+    );
+    const e1PaymentAmountXrp = await computeDirectMintingPaymentAmountXrp({
+      netMintAmountXrp,
     });
-    const e1PaymentAmountXrp = await computeDirectMintingPaymentAmountXrp({ netMintAmountXrp });
-    const totalXrpNeeded = stuckPaymentAmountXrp + recoveryPaymentAmountXrp + e1PaymentAmountXrp;
+    const totalXrpNeeded =
+      stuckPaymentAmountXrp + recoveryPaymentAmountXrp + e1PaymentAmountXrp;
 
     const xrpBalance = await getXrpBalance(xrplWallet.address, xrplClient);
     console.log("XRPL wallet XRP balance:", xrpBalance, "\n");
@@ -382,7 +435,7 @@ async function main({
       throw new Error(
         `Insufficient XRP for full demo on ${xrplWallet.address}: ` +
           `have ${xrpBalance} XRP, need ${totalXrpNeeded} XRP ` +
-          `(stuck ${stuckPaymentAmountXrp} + recovery ${recoveryPaymentAmountXrp} + 0xE1 ${e1PaymentAmountXrp})`
+          `(stuck ${stuckPaymentAmountXrp} + recovery ${recoveryPaymentAmountXrp} + 0xE1 ${e1PaymentAmountXrp})`,
       );
     }
 
@@ -397,18 +450,26 @@ async function main({
     stuckXrplTxHash = userSide.xrplTransactionHash;
     stuckUserOpData = userSide.data;
 
-    console.log("Abandoned XRPL transaction hash (save for resume):", stuckXrplTxHash, "\n");
+    console.log(
+      "Abandoned XRPL transaction hash (save for resume):",
+      stuckXrplTxHash,
+      "\n",
+    );
     console.log("UserOp nonce embedded in that payment:", userSide.nonce, "\n");
     if (userSide.nonce !== nonceBeforeDemo) {
-      throw new Error(`Demo UserOp nonce ${userSide.nonce} does not match pre-demo nonce ${nonceBeforeDemo}`);
+      throw new Error(
+        `Demo UserOp nonce ${userSide.nonce} does not match pre-demo nonce ${nonceBeforeDemo}`,
+      );
     }
   } else {
-    console.log("=== Using existing stuck payment from STUCK_XRPL_TX_HASH ===\n");
+    console.log(
+      "=== Using existing stuck payment from STUCK_XRPL_TX_HASH ===\n",
+    );
     console.log("Stuck XRPL transaction hash:", stuckXrplTxHash, "\n");
     if (!stuckUserOpData) {
       console.warn(
         "STUCK_USER_OP_DATA not set — assuming 0xFF stuck flow. " +
-          "For 0xFE stuck payments, set STUCK_USER_OP_DATA to the original PackedUserOperation bytes.\n"
+          "For 0xFE stuck payments, set STUCK_USER_OP_DATA to the original PackedUserOperation bytes.\n",
       );
     }
   }
@@ -437,7 +498,7 @@ async function main({
     "was never executed.",
     "Fast-forwarding to",
     targetNewNonce,
-    "with 0xE1.\n"
+    "with 0xE1.\n",
   );
 
   // --- Step 6: 0xE1 fast-forward nonce ---------------------------------------
