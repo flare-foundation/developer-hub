@@ -270,6 +270,11 @@ const sidebars: SidebarsConfig = {
           ],
         },
         {
+          type: "doc",
+          id: "fassets/troubleshooting/direct-minting-troubleshooting",
+          label: "Troubleshooting",
+        },
+        {
           type: "category",
           label: "FAssets Reference",
           collapsed: true,

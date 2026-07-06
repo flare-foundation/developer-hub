@@ -70,7 +70,8 @@ For executor-restricted minting, use the 48-byte memo format described in [Memo 
 8. Send the XRPL payment to the Core Vault with the recipient memo via the `sendDirectMintPayment` function.
 9. Wait for direct minting to complete via `waitForDirectMintingOutcome`.
    This helper watches for both [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) and [`DirectMintingExecuted`](/fassets/reference/IAssetManagerEvents#directmintingexecuted):
-   - If rate limits apply (hourly, daily, or [large-mint threshold](/fassets/direct-minting#large-minting-delay)), an executor's first `executeDirectMinting` call emits `DirectMintingDelayed` with `executionAllowedAt`.
+   - If hourly or daily rate limits apply, an executor's first `executeDirectMinting` call emits [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) with `executionAllowedAt`.
+   - If the amount is strictly above the [large-mint threshold](/fassets/direct-minting#large-minting-delay), it emits [`LargeDirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#largedirectmintingdelayed) instead.
      The underlying XRP stays at the Core Vault; no FXRP is minted yet.
    - After `executionAllowedAt`, the executor retries with the same FDC proof.
    - `waitForDirectMintingOutcome` logs any delay and keeps polling until `DirectMintingExecuted`.
@@ -85,10 +86,18 @@ For executor-restricted minting, use the 48-byte memo format described in [Memo 
 
 - **Fees are deducted from the underlying payment.** The XRP sent to the [Core Vault](/fassets/core-vault) must cover the net mint amount plus the minting fee and the executor fee.
 - **If the payment is below the minimum minting fee**, no FXRP is minted, and the entire payment is forfeited to the fee receiver.
-- **Rate limits delay execution; they do not revert.** When hourly, daily, or [large-mint](/fassets/direct-minting#large-minting-delay) rules apply, the first finalization attempt emits [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) with `executionAllowedAt`.
+- **Rate limits delay execution; they do not revert.** When hourly or daily limits apply, the first finalization attempt emits [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) with `executionAllowedAt`.
+  When the amount is strictly above the [large-mint](/fassets/direct-minting#large-minting-delay) threshold, it emits [`LargeDirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#largedirectmintingdelayed) instead.
   Your XRP remains at the Core Vault until an executor successfully retries.
   Use `waitForDirectMintingOutcome` (see [Delayed minting flow](/fassets/direct-minting#delayed-minting-flow)) rather than waiting only for `DirectMintingExecuted`.
 - **For repeat minters**, prefer the destination-tag flow via `IMintingTagManager` — it avoids constructing a memo per payment and lets you set a preferred executor.
+
+## Common mistakes
+
+Before sending XRP, validate the Core Vault address, minimum fee, and recipient encoding.
+The most costly errors — payment below the minimum fee, wrong recipient, or payment to the wrong XRPL address — do not revert and cannot be recovered on-chain.
+
+- [Direct Minting Troubleshooting](/fassets/troubleshooting/direct-minting-troubleshooting) — pre-flight checks, errors, delays, and recovery
 
 :::tip[What's next]
 
