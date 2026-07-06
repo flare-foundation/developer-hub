@@ -28,6 +28,7 @@ Direct minting charges two fees, both deducted from the underlying payment amoun
 - **Minting fee**: A percentage of the received amount (in BIPS), with a minimum floor.
   This fee is paid to a governance-configured fee receiver.
   If the payment is smaller than the minimum minting fee, no FAssets are minted and the entire payment goes to the fee receiver.
+  See [Direct Minting Troubleshooting](/fassets/troubleshooting/direct-minting-troubleshooting#irreversible-failures) for prevention steps.
 - **Executor fee**: A flat fee in the underlying asset, paid to the executor who finalizes the minting.
   The minting fee takes priority: if the payment only covers the minting fee, the executor receives nothing.
 
@@ -158,7 +159,7 @@ Even with full window headroom, a 5M XRP payment is delayed — it does not reve
 
 When an executor first calls [`executeDirectMinting`](/fassets/reference/IAssetManager#executedirectminting) for a large mint:
 
-1. The contract emits [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) with `executionAllowedAt = block.timestamp + directMintingLargeMintingDelaySeconds`.
+1. The contract emits [`LargeDirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#largedirectmintingdelayed) with `executionAllowedAt = block.timestamp + directMintingLargeMintingDelaySeconds`.
 2. No FXRP is minted yet.
 3. After `executionAllowedAt`, the executor calls `executeDirectMinting` again with the **same FDC proof**.
 4. The contract emits [`DirectMintingExecuted`](/fassets/reference/IAssetManagerEvents#directmintingexecuted) and FXRP is credited to the recipient.
@@ -168,7 +169,7 @@ See the [Check Direct Minting Limits guide](/fassets/developer-guides/fassets-di
 
 ### Delayed minting flow
 
-Delayed mintings emit the `DirectMintingDelayed` event instead of `DirectMintingExecuted`, with an `executionAllowedAt` timestamp.
+Delayed mintings emit [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) or [`LargeDirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#largedirectmintingdelayed) instead of `DirectMintingExecuted`, with an `executionAllowedAt` timestamp.
 
 Governance can temporarily bypass the **hourly and daily** limiter via [`unblockDirectMintingsUntil`](/fassets/reference/IAssetManager#getdirectmintingsunblockuntiltimestamp) to drain a backlog after manual review.
 That bypass does **not** skip the large-mint delay — amounts above the threshold are still held for `directMintingLargeMintingDelaySeconds`.
@@ -182,6 +183,7 @@ Integrators should use a helper such as `waitForDirectMintingOutcome` (provided 
 
 :::caution[Important]
 Do not treat [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) event as a failure or send a second XRPL payment for the same mint.
+For delay retry steps and cap failures, see [Direct Minting Troubleshooting — Delays](/fassets/troubleshooting/direct-minting-troubleshooting#delays).
 :::
 
 ## Video Tutorial
@@ -195,5 +197,6 @@ To continue your FAssets development journey, you can:
 - Read the protocol details in [Direct Minting](/fassets/direct-minting).
 - Mint without a reserved tag using [memo-based direct minting](/fassets/developer-guides/fassets-direct-minting).
 - Check current limits and fees in [Operational Parameters](/fassets/operational-parameters).
+- Troubleshoot common direct minting failures in [Direct Minting Troubleshooting](/fassets/troubleshooting/direct-minting-troubleshooting).
 
 :::

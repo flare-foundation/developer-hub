@@ -7,7 +7,7 @@ sidebar_position: 3
 
 `IAssetManagerEvents` is an interface that defines the events emitted by the [`IAssetManager`](/fassets/reference/IAssetManager) contract.
 
-Sourced from `IAssetManagerEvents.sol` on [GitHub](https://github.com/flare-foundation/fassets/blob/main/contracts/userInterfaces/IAssetManagerEvents.sol).
+Sourced from `IAssetManagerEvents.sol` and `IDirectMinting.sol` on [GitHub](https://github.com/flare-foundation/fassets/tree/main/contracts/userInterfaces).
 
 ## Event Categories
 
@@ -142,10 +142,78 @@ event DirectMintingExecuted(
 );
 ```
 
+### `DirectMintingExecutedToSmartAccount`
+
+Emitted when [`executeDirectMinting`](/fassets/reference/IAssetManager#executedirectminting) finalizes an XRPL payment that does **not** resolve to a direct recipient through a registered destination tag or a valid `DIRECT_MINTING` / `DIRECT_MINTING_EX` memo.
+
+FAssets are minted to the smart account manager instead of a target EVM address.
+The manager is then notified via `mintedFAssets` so it can route FXRP to the appropriate [smart account](/smart-accounts/overview) based on the XRPL `sourceAddress` and `memoData`.
+
+**When it triggers:** In `_decodeTarget`, the payment has no registered tag recipient and no valid 32-byte or 48-byte direct-minting memo.
+This includes payments with no memo, an unrecognized memo, or an unregistered destination tag.
+
+**Differences from [`DirectMintingExecuted`](#directmintingexecuted):**
+
+- FAssets go to the smart account manager, not directly to the minter's wallet.
+- The executor fee is **not** set by the AssetManager — the smart account manager pays the executor.
+- Optional `msg.value` on `executeDirectMinting` is forwarded to the smart account manager (for example, composed redeem flows).
+- `mintedAmountUBA = receivedAmount - mintingFeeUBA` (no executor fee deducted on-chain by the AssetManager).
+
+See [Direct Minting Troubleshooting — smart account path](/fassets/troubleshooting/direct-minting-troubleshooting#smart-account-path) and [unrecognized memo routes to smart accounts](/fassets/troubleshooting/direct-minting-troubleshooting#4-unrecognized-memo-routes-to-smart-accounts).
+
+Parameters:
+
+- `transactionId`: Identifier of the underlying XRPL payment
+- `sourceAddress`: XRPL address that sent the payment
+- `executor`: Address of the executor that submitted the FDC proof
+- `mintedAmountUBA`: FAssets minted to the smart account manager in underlying base amount (`receivedAmount - mintingFee`)
+- `mintingFeeUBA`: Minting fee in underlying base amount
+- `memoData`: XRPL memo bytes from the payment (empty if the payment had no memo)
+
+```solidity
+event DirectMintingExecutedToSmartAccount(
+    bytes32 transactionId,
+    string sourceAddress,
+    address executor,
+    uint256 mintedAmountUBA,
+    uint256 mintingFeeUBA,
+    bytes memoData);
+```
+
+### `DirectMintingPaymentTooSmallForFee`
+
+Emitted when [`executeDirectMinting`](/fassets/reference/IAssetManager#executedirectminting) finalizes an XRPL payment whose `receivedAmount` is **strictly less than** [`getDirectMintingMinimumFeeUBA()`](/fassets/reference/IAssetManager#getdirectmintingminimumfeeuba).
+
+The call does **not** revert.
+Execution succeeds, but the full payment is minted as FAssets to the minting fee receiver ([`getDirectMintingFeeReceiver()`](/fassets/reference/IAssetManager#getdirectmintingfeereceiver)).
+The minter, executor, and smart account manager receive nothing — neither `DirectMintingExecuted` nor `DirectMintingExecutedToSmartAccount` is emitted.
+
+This path prevents users from sending very small payments (especially without a direct-minting memo or tag) to avoid the minimum minting fee.
+The system minting fee takes priority over the executor fee.
+
+**Threshold:** `receivedAmountUBA < minimumMintingFeeUBA`, where `minimumMintingFeeUBA` comes from [`getDirectMintingMinimumFeeUBA()`](/fassets/reference/IAssetManager#getdirectmintingminimumfeeuba).
+Payments **equal to** the minimum fee do not emit this event.
+
+See [Direct Minting Troubleshooting — payment below minimum fee](/fassets/troubleshooting/direct-minting-troubleshooting#1-payment-below-the-minimum-minting-fee) for prevention guidance.
+
+Parameters:
+
+- `transactionId`: Identifier of the underlying XRPL payment
+- `receivedAmountUBA`: Amount received on XRPL in underlying base amount
+- `minimumMintingFeeUBA`: Minimum direct minting fee at execution time (from [`getDirectMintingMinimumFeeUBA()`](/fassets/reference/IAssetManager#getdirectmintingminimumfeeuba))
+
+```solidity
+event DirectMintingPaymentTooSmallForFee(
+    bytes32 transactionId,
+    uint256 receivedAmountUBA,
+    uint256 minimumMintingFeeUBA);
+```
+
 ### `DirectMintingDelayed`
 
-Emitted when a direct minting is throttled by rate limits and its execution is postponed.
-This includes delays from the hourly/daily windows **and** the [large-minting rule](/fassets/direct-minting#large-minting-delay).
+Emitted when a direct minting is throttled by the **hourly or daily** [rate limiter](/fassets/direct-minting#rate-limits) and its execution is postponed.
+
+For amounts strictly above [`getDirectMintingLargeMintingThresholdUBA()`](/fassets/reference/IAssetManager#getdirectmintinglargemintingthresholduba), see [`LargeDirectMintingDelayed`](#largedirectmintingdelayed) instead.
 
 The executor must wait until `executionAllowedAt` and call [`executeDirectMinting`](/fassets/reference/IAssetManager#executedirectminting) again with the same FDC proof.
 The underlying asset remains at the Core Vault until a successful finalization.
@@ -161,6 +229,56 @@ event DirectMintingDelayed(
     bytes32 transactionId,
     uint256 amount,
     uint256 executionAllowedAt
+);
+```
+
+### `LargeDirectMintingDelayed`
+
+Emitted when [`executeDirectMinting`](/fassets/reference/IAssetManager#executedirectminting) is called for a payment whose underlying amount is **strictly greater than** [`getDirectMintingLargeMintingThresholdUBA()`](/fassets/reference/IAssetManager#getdirectmintinglargemintingthresholduba).
+
+Unlike [`DirectMintingDelayed`](#directmintingdelayed), the hold is a **fixed duration** from [`getDirectMintingLargeMintingDelaySeconds()`](/fassets/reference/IAssetManager#getdirectmintinglargemintingdelayseconds), independent of how far the hourly or daily windows are exceeded.
+Large mints are **not** counted toward those rate-limiter windows.
+
+The executor must wait until `executionAllowedAt` and call `executeDirectMinting` again with the same FDC proof.
+This delay is **not** bypassed by governance [`unblockDirectMintingsUntil`](/fassets/reference/IAssetManager#getdirectmintingsunblockuntiltimestamp).
+
+See [Large minting delay](/fassets/direct-minting#large-minting-delay) and [Direct Minting Troubleshooting — delays](/fassets/troubleshooting/direct-minting-troubleshooting#delays).
+
+Parameters:
+
+- `transactionId`: Identifier of the direct minting transaction
+- `amount`: Amount being minted in the underlying base amount
+- `executionAllowedAt`: Earliest timestamp at which the minting can be executed (`block.timestamp + directMintingLargeMintingDelaySeconds` on the first attempt)
+
+```solidity
+event LargeDirectMintingDelayed(
+    bytes32 transactionId,
+    uint256 amount,
+    uint256 executionAllowedAt
+);
+```
+
+### `DirectMintingsUnblocked`
+
+Emitted when governance calls `unblockDirectMintingsUntil` to temporarily bypass the **hourly and daily** direct-minting rate limiter.
+
+The parameter `startedUntilTimestamp` is the timestamp passed to `unblockDirectMintingsUntil` (it must be in the past).
+Delayed mintings that started — that is, emitted [`DirectMintingDelayed`](#directmintingdelayed) — **before** this timestamp can execute without waiting for their original `executionAllowedAt`.
+
+While `block.timestamp <` [`getDirectMintingsUnblockUntilTimestamp()`](/fassets/reference/IAssetManager#getdirectmintingsunblockuntiltimestamp), the hourly and daily caps are not enforced.
+This bypass does **not** apply to [`LargeDirectMintingDelayed`](#largedirectmintingdelayed) mintings.
+
+After unblocking, integrators can call [`markUnblockedDirectMintingAllowed(transactionId)`](/fassets/reference/IAssetManager#markunblockeddirectmintingallowed) to reset a preferred executor's exclusive window from the unblock time.
+
+See [Direct Minting Troubleshooting — delays](/fassets/troubleshooting/direct-minting-troubleshooting#delays).
+
+Parameters:
+
+- `startedUntilTimestamp`: Cutoff timestamp — mintings delayed before this time are eligible for immediate execution
+
+```solidity
+event DirectMintingsUnblocked(
+    uint256 startedUntilTimestamp
 );
 ```
 

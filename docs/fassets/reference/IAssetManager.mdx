@@ -268,6 +268,38 @@ function assetMintingGranularityUBA()
     returns (uint256);
 ```
 
+### `directMintingDelayState`
+
+Returns the delay state for a direct minting transaction identified by its XRPL transaction hash.
+
+Parameters:
+
+- `_transactionId`: Identifier of the direct minting transaction (typically the XRPL transaction hash as `bytes32`).
+
+Returns:
+
+- `allowedAt`: Earliest timestamp at which the minting can be executed after a rate-limit or large-mint delay.
+
+```solidity
+function directMintingDelayState(bytes32 _transactionId)
+    external view
+    returns (uint256 allowedAt);
+```
+
+### `markUnblockedDirectMintingAllowed`
+
+Marks a delayed direct minting as allowed after governance has unblocked mints via [`getDirectMintingsUnblockUntilTimestamp`](#getdirectmintingsunblockuntiltimestamp).
+Resets the executor exclusive window for the given transaction.
+
+Parameters:
+
+- `_transactionId`: Identifier of the direct minting transaction.
+
+```solidity
+function markUnblockedDirectMintingAllowed(bytes32 _transactionId)
+    external;
+```
+
 ### `getDirectMintingFeeReceiver`
 
 Returns the address that receives direct minting fees.
@@ -465,8 +497,9 @@ A preferred executor has an exclusive window defined by [`getDirectMintingOthers
 **Smart-account recipients:** When the target is a [Flare Smart Account](/smart-accounts/overview) personal account, `executeDirectMinting` mints FXRP and calls [`handleMintedFAssets`](/smart-accounts/reference/IMasterAccountController#handlemintedfassets) on the `MasterAccountController` to decode and dispatch any XRPL memo instruction — for example, the [`0xFF` memo field custom instruction](/smart-accounts/memo-field-custom-instruction).
 For hash-commitment memos (`0xFE`), use [`executeDirectMintingWithData`](#executedirectmintingwithdata) instead.
 
-**Rate limits:** When hourly, daily, or large-minting thresholds are hit, the call emits [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) instead of minting immediately.
-The executor must wait until `executionAllowedAt` and call again with the same proof.
+**Rate limits:** When hourly or daily thresholds are hit, the call emits [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed).
+When the amount is strictly above the large-minting threshold, it emits [`LargeDirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#largedirectmintingdelayed) instead.
+In both cases, the executor must wait until `executionAllowedAt` and call again with the same proof.
 
 **Reverts:** If validation or downstream execution fails — including a revert inside `handleMintedFAssets` for smart-account memos — the entire transaction rolls back.
 No FAssets are minted, and the underlying XRP remains at the Core Vault until a successful direct mint finalizes it.

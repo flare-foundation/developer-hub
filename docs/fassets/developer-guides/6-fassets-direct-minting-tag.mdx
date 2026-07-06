@@ -67,7 +67,8 @@ Compared to the [memo-based direct minting](/fassets/developer-guides/fassets-di
 11. Send the XRPL payment to the [Core Vault](/fassets/core-vault) with `destinationTag: Number(tag)` — no memo required.
 12. Wait for direct minting to complete via `waitForDirectMintingOutcome`.
     This helper watches for both [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) and [`DirectMintingExecuted`](/fassets/reference/IAssetManagerEvents#directmintingexecuted):
-    - If rate limits apply (hourly, daily, or [large-mint threshold](/fassets/direct-minting#large-minting-delay)), an executor's first `executeDirectMinting` call emits `DirectMintingDelayed` with `executionAllowedAt`.
+    - If hourly or daily rate limits apply, an executor's first `executeDirectMinting` call emits [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) with `executionAllowedAt`.
+    - If the amount is strictly above the [large-mint threshold](/fassets/direct-minting#large-minting-delay), it emits [`LargeDirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#largedirectmintingdelayed) instead.
       The underlying XRP remains in the Core Vault; no FXRP has been minted yet.
     - After `executionAllowedAt`, the executor retries with the same FDC proof.
     - `waitForDirectMintingOutcome` logs any delay and keeps polling until `DirectMintingExecuted`.
@@ -88,9 +89,14 @@ Compared to the [memo-based direct minting](/fassets/developer-guides/fassets-di
 - **Transferring a tag resets it.**
   When ownership changes, the recipient is reset to the new owner, and the executor is reset to the zero address.
 - **Rate limits delay execution; they do not revert.**
-  If the minting hits hourly, daily, or [large-mint](/fassets/direct-minting#large-minting-delay) rules, the first finalization attempt emits [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) with `executionAllowedAt`.
+  If the minting hits hourly or daily rate limits, the first finalization attempt emits [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) with `executionAllowedAt`.
+  If the amount is strictly above the [large-mint](/fassets/direct-minting#large-minting-delay) threshold, it emits [`LargeDirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#largedirectmintingdelayed) instead.
   Your XRP remains at the Core Vault until an executor retries.
   Use `waitForDirectMintingOutcome` (see [Delayed minting flow](/fassets/direct-minting#delayed-minting-flow)) rather than waiting only for `DirectMintingExecuted`.
+
+## Common Pitfalls
+
+Tag-specific mistakes — wrong reservation fee, non-owner recipient changes, executor cooldowns, and recipient reset on transfer — are covered in [Minting Tag Manager Pitfalls](/fassets/troubleshooting/direct-minting-troubleshooting#minting-tag-manager-pitfalls).
 
 ## Video Tutorial
 
