@@ -91,16 +91,16 @@ After the extension is registered on-chain, call `setExtensionId()` once to disc
 
 ```solidity title="contracts/InstructionSender.sol"
 function setExtensionId() external {
- require(_extensionId == 0, "Extension ID already set.");
+    require(_extensionId == 0, "Extension ID already set.");
 
- uint256 c = TEE_EXTENSION_REGISTRY.extensionsCounter();
- for (uint256 i = 0; i < c; ++i) {
- if (TEE_EXTENSION_REGISTRY.getTeeExtensionInstructionsSender(i) == address(this)) {
- _extensionId = i;
- return;
- }
- }
- revert("Extension ID not found.");
+    uint256 c = TEE_EXTENSION_REGISTRY.extensionsCounter();
+    for (uint256 i = 0; i < c; ++i) {
+        if (TEE_EXTENSION_REGISTRY.getTeeExtensionInstructionsSender(i) == address(this)) {
+            _extensionId = i;
+            return;
+        }
+    }
+    revert("Extension ID not found.");
 }
 ```
 
@@ -112,12 +112,12 @@ Every instruction sent to a TEE extension uses the `TeeInstructionParams` struct
 
 ```solidity
 struct TeeInstructionParams {
- bytes32 opType;
- bytes32 opCommand;
- bytes message;
- address[] cosigners;
- uint64 cosignersThreshold;
- address claimBackAddress;
+    bytes32 opType;
+    bytes32 opCommand;
+    bytes message;
+    address[] cosigners;
+    uint64 cosignersThreshold;
+    address claimBackAddress;
 }
 ```
 
@@ -135,18 +135,18 @@ The `updateKey` function sends an encrypted private key to the TEE:
 
 ```solidity title="contracts/InstructionSender.sol"
 function updateKey(bytes calldata _encryptedKey) external payable {
- address[] memory teeIds = TEE_MACHINE_REGISTRY.getRandomTeeIds(_getExtensionId(), 1);
+    address[] memory teeIds = TEE_MACHINE_REGISTRY.getRandomTeeIds(_getExtensionId(), 1);
 
- ITeeExtensionRegistry.TeeInstructionParams memory params = ITeeExtensionRegistry.TeeInstructionParams({
- opType: OP_TYPE_KEY,
- opCommand: OP_COMMAND_UPDATE,
- message: _encryptedKey,
- cosigners: new address[](0),
- cosignersThreshold: 0,
- claimBackAddress: msg.sender
- });
+    ITeeExtensionRegistry.TeeInstructionParams memory params = ITeeExtensionRegistry.TeeInstructionParams({
+        opType: OP_TYPE_KEY,
+        opCommand: OP_COMMAND_UPDATE,
+        message: _encryptedKey,
+        cosigners: new address[](0),
+        cosignersThreshold: 0,
+        claimBackAddress: msg.sender
+    });
 
- TEE_EXTENSION_REGISTRY.sendInstructions{value: msg.value}(teeIds, params);
+    TEE_EXTENSION_REGISTRY.sendInstructions{value: msg.value}(teeIds, params);
 }
 ```
 
@@ -160,18 +160,18 @@ The `sign` function follows the same pattern with `opCommand = "SIGN"`:
 
 ```solidity title="contracts/InstructionSender.sol"
 function sign(bytes calldata _message) external payable {
- address[] memory teeIds = TEE_MACHINE_REGISTRY.getRandomTeeIds(_getExtensionId(), 1);
+    address[] memory teeIds = TEE_MACHINE_REGISTRY.getRandomTeeIds(_getExtensionId(), 1);
 
- ITeeExtensionRegistry.TeeInstructionParams memory params = ITeeExtensionRegistry.TeeInstructionParams({
- opType: OP_TYPE_KEY,
- opCommand: OP_COMMAND_SIGN,
- message: _message,
- cosigners: new address[](0),
- cosignersThreshold: 0,
- claimBackAddress: msg.sender
- });
+    ITeeExtensionRegistry.TeeInstructionParams memory params = ITeeExtensionRegistry.TeeInstructionParams({
+        opType: OP_TYPE_KEY,
+        opCommand: OP_COMMAND_SIGN,
+        message: _message,
+        cosigners: new address[](0),
+        cosignersThreshold: 0,
+        claimBackAddress: msg.sender
+    });
 
- TEE_EXTENSION_REGISTRY.sendInstructions{value: msg.value}(teeIds, params);
+    TEE_EXTENSION_REGISTRY.sendInstructions{value: msg.value}(teeIds, params);
 }
 ```
 
@@ -215,12 +215,12 @@ func (e *Extension) processKeyUpdate(action teetypes.Action, df *instruction.Dat
     keyBytes, err := decryptViaNode(e.signPort, df.OriginalMessage)
     if err != nil {
         return buildResult(action, df, nil, 0, fmt.Errorf("decryption failed: %v", err))
- }
+    }
 
     privKey, err := parseSecp256k1PrivateKey(keyBytes)
     if err != nil {
         return buildResult(action, df, nil, 0, fmt.Errorf("invalid private key: %v", err))
- }
+    }
 
     e.mu.Lock()
     e.privateKey = privKey
@@ -237,12 +237,12 @@ func (e *Extension) processKeySign(action teetypes.Action, df *instruction.DataF
     sig, err := signECDSA(key, df.OriginalMessage)
     if err != nil {
         return buildResult(action, df, nil, 0, fmt.Errorf("signing failed: %v", err))
- }
+    }
 
     encoded, err := abiEncodeTwo(df.OriginalMessage, sig)
     if err != nil {
         return buildResult(action, df, nil, 0, fmt.Errorf("ABI encoding failed: %v", err))
- }
+    }
 
     return buildResult(action, df, encoded, 1, nil)
 }
@@ -257,8 +257,8 @@ Python and TypeScript use a `Framework` that registers handlers by `opType`/`opC
 
 ```python title="python/app/handlers.py"
 def register(framework: Framework) -> None:
- framework.handle(OP_TYPE_KEY, OP_COMMAND_UPDATE, handle_key_update)
- framework.handle(OP_TYPE_KEY, OP_COMMAND_SIGN, handle_key_sign)
+    framework.handle(OP_TYPE_KEY, OP_COMMAND_UPDATE, handle_key_update)
+    framework.handle(OP_TYPE_KEY, OP_COMMAND_SIGN, handle_key_sign)
 ```
 
 Each handler receives a hex-encoded `originalMessage` and returns `(data, status, error)`:
