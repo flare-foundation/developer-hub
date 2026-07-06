@@ -3,7 +3,8 @@ title: Direct Minting Troubleshooting
 tags: [intermediate, fassets]
 slug: direct-minting-troubleshooting
 description: Quick reference and full troubleshooting guide for FXRP direct minting — pre-flight checks, errors, delays, and recovery.
-keywords: [fassets, fxrp, direct-minting, troubleshooting, flare-network, xrpl, errors]
+keywords:
+  [fassets, fxrp, direct-minting, troubleshooting, flare-network, xrpl, errors]
 sidebar_position: 1
 ---
 
@@ -15,14 +16,14 @@ The tables below are a one-screen summary; later sections add prevention steps, 
 Validate these **before** submitting an XRPL payment.
 Mistakes here are often irreversible.
 
-| Check | How to verify | If wrong |
-| :---- | :------------ | :------- |
-| **Core Vault address** | [`directMintingPaymentAddress()`](/fassets/reference/IAssetManager#directmintingpaymentaddress) | Payment not recognized; mint reverts with `InvalidReceivingAddress` |
-| **Amount ≥ minimum fee** | [`getDirectMintingMinimumFeeUBA()`](/fassets/reference/IAssetManager#getdirectmintingminimumfeeuba) | Entire payment goes to fee receiver; minter receives **0 FXRP** ([`DirectMintingPaymentTooSmallForFee`](/fassets/reference/IAssetManagerEvents#directmintingpaymenttoosmallforfee)) |
-| **Recipient encoding** | Tag via [`MintingTagManager`](/fassets/reference/IMintingTagManager), or 32-byte / 48-byte memo (see [memo field](/fassets/direct-minting#memo-field)) | FXRP may mint to the **wrong address** or route via smart accounts |
-| **Memo format** | 32-byte: `DIRECT_MINTING` prefix + recipient. 48-byte: `DIRECT_MINTING_EX` + recipient + executor (see [Direct Mint FXRP](/fassets/developer-guides/fassets-direct-minting) guide) | Unrecognized memo → smart account path |
-| **Not a donation** | Do not use the [Core Vault](/fassets/core-vault) donation destination tag | Reverts with `PaymentIsCoreVaultDonation` |
-| **Not a redemption reference** | Do not reuse agent redemption memos | Reverts with `ForbiddenPaymentReference` |
+| Check                          | How to verify                                                                                                                                                                      | If wrong                                                                                                                                                                            |
+| :----------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Core Vault address**         | [`directMintingPaymentAddress()`](/fassets/reference/IAssetManager#directmintingpaymentaddress)                                                                                    | Payment not recognized; mint reverts with `InvalidReceivingAddress`                                                                                                                 |
+| **Amount ≥ minimum fee**       | [`getDirectMintingMinimumFeeUBA()`](/fassets/reference/IAssetManager#getdirectmintingminimumfeeuba)                                                                                | Entire payment goes to fee receiver; minter receives **0 FXRP** ([`DirectMintingPaymentTooSmallForFee`](/fassets/reference/IAssetManagerEvents#directmintingpaymenttoosmallforfee)) |
+| **Recipient encoding**         | Tag via [`MintingTagManager`](/fassets/reference/IMintingTagManager), or 32-byte / 48-byte memo (see [memo field](/fassets/direct-minting#memo-field))                             | FXRP may mint to the **wrong address** or route via smart accounts                                                                                                                  |
+| **Memo format**                | 32-byte: `DIRECT_MINTING` prefix + recipient. 48-byte: `DIRECT_MINTING_EX` + recipient + executor (see [Direct Mint FXRP](/fassets/developer-guides/fassets-direct-minting) guide) | Unrecognized memo → smart account path                                                                                                                                              |
+| **Not a donation**             | Do not use the [Core Vault](/fassets/core-vault) donation destination tag                                                                                                          | Reverts with `PaymentIsCoreVaultDonation`                                                                                                                                           |
+| **Not a redemption reference** | Do not reuse agent redemption memos                                                                                                                                                | Reverts with `ForbiddenPaymentReference`                                                                                                                                            |
 
 ## Irreversible Failures
 
@@ -39,7 +40,7 @@ Prevention is the only remedy.
 
 - **Cause:** `receivedAmount < getDirectMintingMinimumFeeUBA()`
 - **Result:** Full XRP amount minted as fee to [`getDirectMintingFeeReceiver()`](/fassets/reference/IAssetManager#getdirectmintingfeereceiver).
- Minter and executor receive nothing.
+  Minter and executor receive nothing.
 - **Event:** [`DirectMintingPaymentTooSmallForFee`](/fassets/reference/IAssetManagerEvents#directmintingpaymenttoosmallforfee)
 - **Prevention:** Always send `amount ≥ getDirectMintingMinimumFeeUBA()` plus your intended mint amount.
 
@@ -47,16 +48,16 @@ Prevention is the only remedy.
 
 - **Cause:** Incorrect EVM address in 32-byte memo, 48-byte `DIRECT_MINTING_EX` memo, or [`setMintingRecipient()`](/fassets/reference/IMintingTagManager#setmintingrecipient)
 - **Result:** FXRP mints to the encoded address.
- No recovery on-chain.
+  No recovery on-chain.
 - **Prevention:** Double-check recipient address.
- Prefer destination tags with a registered recipient over raw memo encoding.
+  Prefer destination tags with a registered recipient over raw memo encoding.
 
 ### 3. Payment sent to the wrong XRPL address
 
 - **Cause:** User sends XRP to an address other than [`directMintingPaymentAddress()`](/fassets/reference/IAssetManager#directmintingpaymentaddress)
 - **Result:** `InvalidReceivingAddress` on execution; XRP is outside the FAssets system.
 - **Prevention:** Always fetch the address from the contract at runtime.
- Do not hardcode.
+  Do not hardcode.
 
 ### 4. Unrecognized memo routes to smart accounts
 
@@ -64,30 +65,30 @@ Prevention is the only remedy.
 - **Result:** FXRP is minted to `SmartAccountManager`, not directly to your wallet.
 - **Event:** [`DirectMintingExecutedToSmartAccount`](/fassets/reference/IAssetManagerEvents#directmintingexecutedtosmartaccount)
 - **Prevention:** Use a supported encoding path, or confirm smart account routing is intended.
- See [Smart Account Path](#smart-account-path) below.
+  See [Smart Account Path](#smart-account-path) below.
 
 ## Execution Reverts
 
 Call [`executeDirectMinting`](/fassets/reference/IAssetManager#executedirectminting) or [`executeDirectMintingWithData`](/fassets/reference/IAssetManager#executedirectmintingwithdata) only after the XRPL payment is finalized and attested.
 
-| Error | Cause | Resolution |
-| :---- | :---- | :--------- |
-| `InvalidReceivingAddress` | Proof shows payment not to Core Vault | Verify XRPL destination address |
-| `AmountNotPositive` | Zero-amount payment | Send a positive amount |
-| `PaymentFailed` | Underlying transaction failed on XRPL | Retry payment on XRPL |
-| `MissingMintingTagManager` | Tag manager not configured | Wait for governance setup; direct minting unavailable |
-| `MissingSmartAccountManager` | Smart account manager not configured | Same as above |
-| `InvalidExecutor` | Caller is not the allowed executor, and exclusive window not expired | Use allowed executor, or wait [`getDirectMintingOthersCanExecuteAfterSeconds()`](/fassets/reference/IAssetManager#getdirectmintingotherscanexecuteafterseconds) |
-| `OnlyProofOwner` | FDC proof `proofOwner` ≠ `msg.sender` | Executor who paid for attestation must submit the proof, or request proof with `proofOwner = address(0)` |
-| `DirectMintingStillDelayed` | Rate limit or large-mint delay not elapsed | Wait until `executionAllowedAt` from [`directMintingDelayState(txId)`](/fassets/reference/IAssetManager#directmintingdelaystate) |
-| `PaymentAlreadyConfirmed` | Same payment executed twice | Normal — mint already completed |
-| `MintingCapExceeded` | Global FAsset supply cap reached | Retry later or wait for cap increase |
-| `PaymentIsCoreVaultDonation` | Core Vault donation tag used | Use `confirmCoreVaultDonation` instead |
-| `ForbiddenPaymentReference` | Redemption-style memo detected | Use a valid direct-minting memo or tag |
-| `NoDataExpectedForDirectMinting` | `executeDirectMintingWithData` used for tag/memo/direct path | Use `executeDirectMinting` instead |
-| `NoValueExpected` | Non-zero `msg.value` on direct-recipient path | Send native tokens only on smart-account path |
-| `EmergencyPauseActive` | [System emergency pause](/fassets/emergency-pause) | Wait for unpause |
-| `LegalPaymentNotProven` / `TransactionNotProven` | Invalid or unverifiable FDC proof | Regenerate proof after finalization |
+| Error                                            | Cause                                                                | Resolution                                                                                                                                                      |
+| :----------------------------------------------- | :------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `InvalidReceivingAddress`                        | Proof shows payment not to Core Vault                                | Verify XRPL destination address                                                                                                                                 |
+| `AmountNotPositive`                              | Zero-amount payment                                                  | Send a positive amount                                                                                                                                          |
+| `PaymentFailed`                                  | Underlying transaction failed on XRPL                                | Retry payment on XRPL                                                                                                                                           |
+| `MissingMintingTagManager`                       | Tag manager not configured                                           | Wait for governance setup; direct minting unavailable                                                                                                           |
+| `MissingSmartAccountManager`                     | Smart account manager not configured                                 | Same as above                                                                                                                                                   |
+| `InvalidExecutor`                                | Caller is not the allowed executor, and exclusive window not expired | Use allowed executor, or wait [`getDirectMintingOthersCanExecuteAfterSeconds()`](/fassets/reference/IAssetManager#getdirectmintingotherscanexecuteafterseconds) |
+| `OnlyProofOwner`                                 | FDC proof `proofOwner` ≠ `msg.sender`                                | Executor who paid for attestation must submit the proof, or request proof with `proofOwner = address(0)`                                                        |
+| `DirectMintingStillDelayed`                      | Rate limit or large-mint delay not elapsed                           | Wait until `executionAllowedAt` from [`directMintingDelayState(txId)`](/fassets/reference/IAssetManager#directmintingdelaystate)                                |
+| `PaymentAlreadyConfirmed`                        | Same payment executed twice                                          | Normal — mint already completed                                                                                                                                 |
+| `MintingCapExceeded`                             | Global FAsset supply cap reached                                     | Retry later or wait for cap increase                                                                                                                            |
+| `PaymentIsCoreVaultDonation`                     | Core Vault donation tag used                                         | Use `confirmCoreVaultDonation` instead                                                                                                                          |
+| `ForbiddenPaymentReference`                      | Redemption-style memo detected                                       | Use a valid direct-minting memo or tag                                                                                                                          |
+| `NoDataExpectedForDirectMinting`                 | `executeDirectMintingWithData` used for tag/memo/direct path         | Use `executeDirectMinting` instead                                                                                                                              |
+| `NoValueExpected`                                | Non-zero `msg.value` on direct-recipient path                        | Send native tokens only on smart-account path                                                                                                                   |
+| `EmergencyPauseActive`                           | [System emergency pause](/fassets/emergency-pause)                   | Wait for unpause                                                                                                                                                |
+| `LegalPaymentNotProven` / `TransactionNotProven` | Invalid or unverifiable FDC proof                                    | Regenerate proof after finalization                                                                                                                             |
 
 ## Delays
 
@@ -96,11 +97,11 @@ Call [`executeDirectMinting`](/fassets/reference/IAssetManager#executedirectmint
 Rate limits **delay** minting; they do not permanently reject it.
 :::
 
-| Trigger | Setting | Event |
-| :------ | :------ | :---- |
-| Hourly cap exceeded | [`getDirectMintingHourlyLimitUBA()`](/fassets/reference/IAssetManager#getdirectmintinghourlylimituba) | [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) |
-| Daily cap exceeded | [`getDirectMintingDailyLimitUBA()`](/fassets/reference/IAssetManager#getdirectmintingdailylimituba) | [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) |
-| Large mint | [`getDirectMintingLargeMintingThresholdUBA()`](/fassets/reference/IAssetManager#getdirectmintinglargemintingthresholduba) + [`getDirectMintingLargeMintingDelaySeconds()`](/fassets/reference/IAssetManager#getdirectmintinglargemintingdelayseconds) | [`LargeDirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#largedirectmintingdelayed) |
+| Trigger             | Setting                                                                                                                                                                                                                                               | Event                                                                                           |
+| :------------------ | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------- |
+| Hourly cap exceeded | [`getDirectMintingHourlyLimitUBA()`](/fassets/reference/IAssetManager#getdirectmintinghourlylimituba)                                                                                                                                                 | [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed)           |
+| Daily cap exceeded  | [`getDirectMintingDailyLimitUBA()`](/fassets/reference/IAssetManager#getdirectmintingdailylimituba)                                                                                                                                                   | [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed)           |
+| Large mint          | [`getDirectMintingLargeMintingThresholdUBA()`](/fassets/reference/IAssetManager#getdirectmintinglargemintingthresholduba) + [`getDirectMintingLargeMintingDelaySeconds()`](/fassets/reference/IAssetManager#getdirectmintinglargemintingdelayseconds) | [`LargeDirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#largedirectmintingdelayed) |
 
 **Retry steps:**
 
@@ -108,12 +109,12 @@ Rate limits **delay** minting; they do not permanently reject it.
 2. Read [`directMintingDelayState(transactionId)`](/fassets/reference/IAssetManager#directmintingdelaystate) → `allowedAt`.
 3. Re-submit the **same** FDC proof with `executeDirectMinting` after `allowedAt`.
 4. If governance unblocks mints, watch for [`DirectMintingsUnblocked`](/fassets/reference/IAssetManagerEvents#directmintingsunblocked) and check [`getDirectMintingsUnblockUntilTimestamp()`](/fassets/reference/IAssetManager#getdirectmintingsunblockuntiltimestamp).
- Optionally call [`markUnblockedDirectMintingAllowed(transactionId)`](/fassets/reference/IAssetManager#markunblockeddirectmintingallowed) to reset the executor exclusive window.
+   Optionally call [`markUnblockedDirectMintingAllowed(transactionId)`](/fassets/reference/IAssetManager#markunblockeddirectmintingallowed) to reset the executor exclusive window.
 
 **Notes**
 
 - Recipient and executor are **frozen at delay creation**.
- Tag transfers during a delay cannot redirect funds.
+  Tag transfers during a delay cannot redirect funds.
 - Attached native value (`msg.value`) is **returned** to the executor if minting is delayed.
 - Minting capacity is reserved during a delay and counts toward `MintingCapExceeded`.
 
@@ -140,13 +141,13 @@ Use `proofOwner = address(0)` for open execution.
 
 ## Minting Tag Manager Pitfalls
 
-| Mistake | Error / behavior |
-| :------ | :--------------- |
-| Wrong fee on [`reserve()`](/fassets/reference/IMintingTagManager#reserve) | `WrongReservationPaymentAmount` |
-| Non-owner sets recipient | `OnlyTagOwner` |
-| Recipient set to `address(0)` | `ZeroAddress` |
-| Tag transferred | Recipient resets to new owner; executor cleared immediately |
-| Executor changed | Cooldown before new executor is active — query `pendingAllowedExecutorChange(tagId)` |
+| Mistake                                                                   | Error / behavior                                                                     |
+| :------------------------------------------------------------------------ | :----------------------------------------------------------------------------------- |
+| Wrong fee on [`reserve()`](/fassets/reference/IMintingTagManager#reserve) | `WrongReservationPaymentAmount`                                                      |
+| Non-owner sets recipient                                                  | `OnlyTagOwner`                                                                       |
+| Recipient set to `address(0)`                                             | `ZeroAddress`                                                                        |
+| Tag transferred                                                           | Recipient resets to new owner; executor cleared immediately                          |
+| Executor changed                                                          | Cooldown before new executor is active — query `pendingAllowedExecutorChange(tagId)` |
 
 See [Minting Tag Manager](/fassets/direct-minting#minting-tag-manager) and [Transfer a Minting Tag](/fassets/developer-guides/fassets-direct-minting-tag-transfer).
 
@@ -154,23 +155,23 @@ See [Minting Tag Manager](/fassets/direct-minting#minting-tag-manager) and [Tran
 
 Use this path only when intentional.
 
-| Rule | Detail |
-| :--- | :----- |
-| **When used** | No memo, unrecognized memo, or unregistered destination tag |
-| **Execution** | [`executeDirectMintingWithData(proof, data)`](/fassets/reference/IAssetManager#executedirectmintingwithdata) — `data` verified by smart account manager |
-| **Native value** | `msg.value` forwarded to smart account manager (e.g., for composed redeem flows) |
-| **Executor fee** | Set by smart account manager, not AssetManager |
-| **Direct path** | Do not use `WithData` or attach `msg.value` for tag/memo/direct mints |
+| Rule             | Detail                                                                                                                                                  |
+| :--------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **When used**    | No memo, unrecognized memo, or unregistered destination tag                                                                                             |
+| **Execution**    | [`executeDirectMintingWithData(proof, data)`](/fassets/reference/IAssetManager#executedirectmintingwithdata) — `data` verified by smart account manager |
+| **Native value** | `msg.value` forwarded to smart account manager (e.g., for composed redeem flows)                                                                        |
+| **Executor fee** | Set by smart account manager, not AssetManager                                                                                                          |
+| **Direct path**  | Do not use `WithData` or attach `msg.value` for tag/memo/direct mints                                                                                   |
 
 If smart-account execution reverts, FXRP is not minted and XRP remains at the Core Vault.
 See [Failure Handling](/smart-accounts/custom-instruction#failure-handling) and [Recover Stuck Mint Transaction](/smart-accounts/guides/typescript-viem/recover-stuck-mint-transaction-ts).
 
 ## Fee Reference
 
-| Fee | Getter |
-| :-- | :----- |
-| Minimum minting fee | [`getDirectMintingMinimumFeeUBA()`](/fassets/reference/IAssetManager#getdirectmintingminimumfeeuba) |
-| Percentage minting fee | [`getDirectMintingFeeBIPS()`](/fassets/reference/IAssetManager#getdirectmintingfeebips) |
+| Fee                        | Getter                                                                                                |
+| :------------------------- | :---------------------------------------------------------------------------------------------------- |
+| Minimum minting fee        | [`getDirectMintingMinimumFeeUBA()`](/fassets/reference/IAssetManager#getdirectmintingminimumfeeuba)   |
+| Percentage minting fee     | [`getDirectMintingFeeBIPS()`](/fassets/reference/IAssetManager#getdirectmintingfeebips)               |
 | Executor fee (direct path) | [`getDirectMintingExecutorFeeUBA()`](/fassets/reference/IAssetManager#getdirectmintingexecutorfeeuba) |
 
 **Minted amount (direct path):**
@@ -195,14 +196,14 @@ The executor fee is taken from the remainder.
 
 ## Monitoring Events
 
-| Event | Meaning |
-| :---- | :------ |
-| [`DirectMintingExecuted`](/fassets/reference/IAssetManagerEvents#directmintingexecuted) | Success — mint to recipient |
-| [`DirectMintingExecutedToSmartAccount`](/fassets/reference/IAssetManagerEvents#directmintingexecutedtosmartaccount) | Success — mint via smart accounts |
-| [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) | Hourly/daily rate limit; retry after `executionAllowedAt` |
-| [`LargeDirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#largedirectmintingdelayed) | Large mint above threshold; retry after `executionAllowedAt` |
-| [`DirectMintingPaymentTooSmallForFee`](/fassets/reference/IAssetManagerEvents#directmintingpaymenttoosmallforfee) | Payment consumed as fee; no user mint |
-| [`DirectMintingsUnblocked`](/fassets/reference/IAssetManagerEvents#directmintingsunblocked) | Governance bypassed hourly/daily limiter until `startedUntilTimestamp` |
+| Event                                                                                                               | Meaning                                                                |
+| :------------------------------------------------------------------------------------------------------------------ | :--------------------------------------------------------------------- |
+| [`DirectMintingExecuted`](/fassets/reference/IAssetManagerEvents#directmintingexecuted)                             | Success — mint to recipient                                            |
+| [`DirectMintingExecutedToSmartAccount`](/fassets/reference/IAssetManagerEvents#directmintingexecutedtosmartaccount) | Success — mint via smart accounts                                      |
+| [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed)                               | Hourly/daily rate limit; retry after `executionAllowedAt`              |
+| [`LargeDirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#largedirectmintingdelayed)                     | Large mint above threshold; retry after `executionAllowedAt`           |
+| [`DirectMintingPaymentTooSmallForFee`](/fassets/reference/IAssetManagerEvents#directmintingpaymenttoosmallforfee)   | Payment consumed as fee; no user mint                                  |
+| [`DirectMintingsUnblocked`](/fassets/reference/IAssetManagerEvents#directmintingsunblocked)                         | Governance bypassed hourly/daily limiter until `startedUntilTimestamp` |
 
 :::tip[What's next]
 
