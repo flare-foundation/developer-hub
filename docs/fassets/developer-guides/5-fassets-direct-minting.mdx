@@ -27,12 +27,17 @@ Compared to the standard [collateral reservation flow](/fassets/developer-guides
 - The recipient (and optionally the executor) is encoded in the XRPL memo or destination tag.
 - An executor calls [`executeDirectMinting`](/fassets/reference/IAssetManager#executedirectminting) on Flare to finalize and receives a flat fee.
 
-This guide demonstrates the **32-byte memo format**, where the recipient is a Flare address and any executor can finalize.
+This guide demonstrates the **32-byte memo format**, where the recipient is any Flare EVM address and any executor can finalize.
+
+Direct minting does not require a [Flare Smart Account](/smart-accounts/overview).
+The recipient can be any Flare address — an EOA, a contract, or a Personal Account.
+This guide uses a Personal Account linked to the XRPL sender wallet as the example recipient.
 
 ## Prerequisites
 
-- [Flare smart account](/smart-accounts/overview) controlled by your XRPL wallet.
-- Testnet XRP on the XRP Ledger Testnet usage.
+- A Flare EVM recipient address.
+  This example resolves a [`PersonalAccount`](/smart-accounts/reference/IPersonalAccount) from the XRPL sender wallet; you can substitute any Flare address in the memo.
+- Testnet XRP on the XRP Ledger Testnet.
   Get testnet XRP from the [XRP Testnet Faucet](https://xrpl.org/resources/dev-tools/xrp-faucets).
 
 ## Direct Minting Memo
@@ -43,7 +48,7 @@ The memo is a packed 32-byte [`PaymentReference`](/fassets/direct-minting#memo-f
 | :---- | :----------------- | :------------------------------------------------------------ |
 | 0-7   | `4642505266410018` | Direct minting prefix.                                        |
 | 8-11  | `00000000`         | Zero padding to fill the 32-byte memo.                        |
-| 12-31 | 20-byte recipient  | EVM address of the Flare smart account receiving FXRP tokens. |
+| 12-31 | 20-byte recipient  | Flare EVM address that receives the minted FXRP.                |
 
 Because no executor is encoded, anyone can finalize this minting on Flare.
 For executor-restricted minting, use the 48-byte memo format described in [Memo Field](/fassets/direct-minting#memo-field).
@@ -62,7 +67,9 @@ For executor-restricted minting, use the 48-byte memo format described in [Memo 
 4. Set the net FXRP amount to mint in XRP.
    Minting and executor fees are added to the net amount to form the XRPL payment amount.
 5. Connect to the XRPL Testnet using `XRPL_TESTNET_RPC_URL` and load the sender wallet from `XRPL_SEED`.
-6. Resolve the recipient — the Flare [`PersonalAccount`](/smart-accounts/reference/IPersonalAccount) for the XRPL wallet — via [`getPersonalAccountAddress`](/smart-accounts/reference/IPersonalAccount), and look up `AssetManagerFXRP` through the [Flare Contract Registry](/network/guides/flare-contracts-registry) using [`getContractAddressByName`](/network/guides/flare-contracts-registry).
+6. Resolve the example recipient — the Flare [`PersonalAccount`](/smart-accounts/reference/IPersonalAccount) for the XRPL wallet — via [`getPersonalAccountAddress`](/smart-accounts/reference/IPersonalAccount).
+   Replace this with any Flare recipient address when minting to an EOA or contract.
+   Look up `AssetManagerFXRP` through the [Flare Contract Registry](/network/guides/flare-contracts-registry) using [`getContractAddressByName`](/network/guides/flare-contracts-registry).
 7. Read three values in parallel:
    - `getDirectMintingPaymentAddress` — the Core Vault XRPL address that receives the payment.
    - `getFxrpBalance` — the recipient's FXRP balance before minting.
@@ -91,6 +98,8 @@ For executor-restricted minting, use the 48-byte memo format described in [Memo 
   Your XRP remains at the Core Vault until an executor successfully retries.
   Use `waitForDirectMintingOutcome` (see [Delayed minting flow](/fassets/direct-minting#delayed-minting-flow)) rather than waiting only for `DirectMintingExecuted`.
 - **For repeat minters**, prefer the destination-tag flow via `IMintingTagManager` — it avoids constructing a memo per payment and lets you set a preferred executor.
+- **Smart-account custom instructions are a separate path.** To mint FXRP and dispatch a user operation atomically from an XRPL payment, use the [`0xFE`](/smart-accounts/custom-instruction) or [`0xFF`](/smart-accounts/memo-field-custom-instruction) memo opcodes and finalize with [`executeDirectMintingWithData`](/fassets/reference/IAssetManager#executedirectmintingwithdata).
+  Plain 32-byte and 48-byte memos mint directly to the encoded address via [`executeDirectMinting`](/fassets/reference/IAssetManager#executedirectminting).
 
 ## Common mistakes
 
