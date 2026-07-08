@@ -29,9 +29,14 @@ Compared to the [memo-based direct minting](/fassets/developer-guides/fassets-di
 - **Optional preferred executor**: the tag owner may restrict execution via [`setAllowedExecutor`](/fassets/reference/IMintingTagManager#setallowedexecutor).
   After [`othersCanExecuteAfterSeconds`](/fassets/reference/IAssetManager#getdirectmintingotherscanexecuteafterseconds), anyone can finalize.
 
+Direct minting does not require a [Flare Smart Account](/smart-accounts/overview).
+The tag's bound recipient can be any Flare EVM address.
+This guide uses a Personal Account linked to the XRPL sender wallet as the example recipient.
+
 ## Prerequisites
 
-- [Flare smart account](/smart-accounts/overview) controlled by your XRPL wallet.
+- A Flare EVM recipient address to bind with [`setMintingRecipient`](/fassets/reference/IMintingTagManager#setmintingrecipient).
+  This example resolves a [`PersonalAccount`](/smart-accounts/reference/IPersonalAccount) from the XRPL sender wallet; you can bind any Flare address instead.
 - Native FLR (or C2FLR on Coston2) on the Flare wallet to cover the tag reservation fee.
 - Testnet XRP on the XRP Ledger Testnet — get it from the [XRP Testnet Faucet](https://xrpl.org/resources/dev-tools/xrp-faucets).
 - Environment variables:
@@ -57,7 +62,9 @@ Compared to the [memo-based direct minting](/fassets/developer-guides/fassets-di
 5. Set the net FXRP amount to mint in XRP.
    Minting and executor fees are added to the XRPL payment amount.
 6. Connect to the XRPL Testnet using `XRPL_TESTNET_RPC_URL` and load the sender wallet from `XRPL_SEED`.
-7. Resolve the recipient — the Flare [`PersonalAccount`](/smart-accounts/reference/IPersonalAccount) for the XRPL wallet — via [`getPersonalAccountAddress`](/smart-accounts/reference/IPersonalAccount), and look up `AssetManagerFXRP` through the [Flare Contract Registry](/network/guides/flare-contracts-registry) using [`getContractAddressByName`](/network/guides/flare-contracts-registry).
+7. Resolve the example recipient — the Flare [`PersonalAccount`](/smart-accounts/reference/IPersonalAccount) for the XRPL wallet — via [`getPersonalAccountAddress`](/smart-accounts/reference/IPersonalAccount).
+   Replace this with any Flare recipient address when binding an EOA or contract.
+   Look up `AssetManagerFXRP` through the [Flare Contract Registry](/network/guides/flare-contracts-registry) using [`getContractAddressByName`](/network/guides/flare-contracts-registry).
 8. Resolve the [`MintingTagManager`](/fassets/reference/IMintingTagManager) contract address from the `AssetManager` using [`getMintingTagManager`](/fassets/reference/IAssetManager#getmintingtagmanager).
 9. Reserve a new tag (or reuse one from `MINTING_TAG`) and confirm the configured recipient.
 10. Read three values in parallel:
@@ -93,6 +100,8 @@ Compared to the [memo-based direct minting](/fassets/developer-guides/fassets-di
   If the amount is strictly above the [large-mint](/fassets/direct-minting#large-minting-delay) threshold, it emits [`LargeDirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#largedirectmintingdelayed) instead.
   Your XRP remains at the Core Vault until an executor retries.
   Use `waitForDirectMintingOutcome` (see [Delayed minting flow](/fassets/direct-minting#delayed-minting-flow)) rather than waiting only for `DirectMintingExecuted`.
+- **Smart-account custom instructions are a separate path.** To mint FXRP and dispatch a user operation atomically from an XRPL payment, use the [`0xFE`](/smart-accounts/custom-instruction) or [`0xFF`](/smart-accounts/memo-field-custom-instruction) memo opcodes and finalize with [`executeDirectMintingWithData`](/fassets/reference/IAssetManager#executedirectmintingwithdata).
+  Tag-based and plain memo mints credit FXRP directly to the bound or encoded recipient via [`executeDirectMinting`](/fassets/reference/IAssetManager#executedirectminting).
 
 ## Common Pitfalls
 
