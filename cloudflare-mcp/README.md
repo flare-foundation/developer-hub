@@ -16,19 +16,19 @@ The server exposes the Flare Developer Hub documentation tools used by MCP clien
 Always deploy from the **repo root** using the dedicated script, which passes the correct config path explicitly. Running `wrangler deploy` directly from the repo root without `--config` will pick up any `wrangler.toml` it finds first and may deploy the wrong thing.
 
 ```bash
-npm run deploy:mcp
+pnpm run deploy:mcp
 ```
 
 This runs:
 
 ```bash
-npx wrangler deploy --config cloudflare-mcp/wrangler.toml
+pnpm dlx wrangler deploy --config cloudflare-mcp/wrangler.toml
 ```
 
 ## Local development
 
 ```bash
-npx wrangler dev --config cloudflare-mcp/wrangler.toml
+pnpm dlx wrangler dev --config cloudflare-mcp/wrangler.toml
 ```
 
 This runs the Worker locally and serves the MCP endpoint at `http://127.0.0.1:8787/mcp`.
@@ -41,7 +41,7 @@ Use it when you want to test the MCP server behavior without running the Cloudfl
 From the repo root:
 
 ```bash
-npm run build
+pnpm run build
 node mcp-server.mjs
 ```
 
@@ -53,8 +53,8 @@ It uses `build/mcp/*` artifacts when available and falls back to `build/search-i
 Run a full site build before deploying:
 
 ```bash
-npm run build
-npm run deploy:mcp
+pnpm run build
+pnpm run deploy:mcp
 ```
 
 The worker uses the generated build artifacts as follows:

@@ -86,15 +86,15 @@ Run these locally before submitting a PR.
 1. **Build (includes internal link validation)**
 
    ```bash
-   npm run build
+   pnpm run build
    ```
 
 2. **Format, lint, and type-check**
 
    ```bash
-   npm run format
-   npm run lint
-   npm run typecheck
+   pnpm run format:fix
+   pnpm run lint:check
+   pnpm run typecheck
    ```
 
 3. **External link checking (optional but recommended)**

@@ -15,21 +15,18 @@ jobs:
   test:
     name: Test JavaScript Examples
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./examples/developer-hub-javascript
     steps:
       - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v6
         with:
-          node-version: 22
-          cache: "npm"
-          cache-dependency-path: "examples/developer-hub-javascript/package-lock.json"
+          node-version: 24
+          cache: "pnpm"
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
       - name: Format with prettier
-        run: npm run format:diff
+        run: pnpm --filter ./examples/developer-hub-javascript run format:check
       - name: Lint with ESLint
-        run: npm run lint
+        run: pnpm --filter ./examples/developer-hub-javascript run lint:check
       - name: Test with jest
-        run: npm run test
+        run: pnpm --filter ./examples/developer-hub-javascript run test

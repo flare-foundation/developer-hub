@@ -47,7 +47,7 @@ RUST_SUCCESS=false
 if [ -d "examples/developer-hub-javascript" ]; then
   echo -e "\n${GREEN}Updating JavaScript dependencies...${NC}"
   if goto_dir "examples/developer-hub-javascript"; then
-    if npm update --save && npm install; then
+    if pnpm update; then
       JS_SUCCESS=true
       log_success "JavaScript dependencies updated"
     else
@@ -111,10 +111,10 @@ echo -e "\n${GREEN}All dependency updates completed!${NC}"
 
 # Print summary of what was updated
 echo -e "\n${GREEN}===== Update Summary =====${NC}"
-if [ "$JS_SUCCESS" = true ] && [ -f "examples/developer-hub-javascript/package-lock.json" ]; then
-  log_success "JavaScript: package-lock.json updated"
+if [ "$JS_SUCCESS" = true ] && [ -f "pnpm-lock.yaml" ]; then
+  log_success "JavaScript: pnpm-lock.yaml updated"
 else
-  log_error "JavaScript: update incomplete or package-lock.json not found"
+  log_error "JavaScript: update incomplete or pnpm-lock.yaml not found"
 fi
 
 if [ "$GO_SUCCESS" = true ] && [ -f "examples/developer-hub-go/go.sum" ]; then
