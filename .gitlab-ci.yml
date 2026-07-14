@@ -1,0 +1,273 @@
+# GitLab CI/CD — merge request checks
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+variables:
+  GIT_DEPTH: "0"
+  NODE_VERSION: "22"
+
+stages:
+  - validate
+  - lint
+  - test
+  - links
+
+default:
+  interruptible: true
+
+.mr-only:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+.node:
+  image: node:${NODE_VERSION}
+  extends: .mr-only
+  cache:
+    key: npm-root-${CI_COMMIT_REF_SLUG}
+    paths:
+      - node_modules/
+  before_script:
+    - npm ci
+
+validate:mr-title:
+  stage: validate
+  image: alpine:3.20
+  extends: .mr-only
+  script:
+    - apk add --no-cache grep
+    - |
+      title="$CI_MERGE_REQUEST_TITLE"
+      echo "Checking MR title: $title"
+
+      # Allow work-in-progress titles (matches amannn/action-semantic-pull-request wip: true)
+      if echo "$title" | grep -qiE '^(wip:|\[wip\])'; then
+        echo "WIP title — skipping validation"
+        exit 0
+      fi
+
+      if ! echo "$title" | grep -qiE '^(feat|fix|docs|chore|test|refactor|ci)(\([^)]+\))?: .+'; then
+        echo "Title must use Conventional Commits format:"
+        echo "  feat|fix|docs|chore|test|refactor|ci: description"
+        echo "  feat(scope): description"
+        exit 1
+      fi
+
+      subject=$(echo "$title" | sed -E 's/^[^:]+: //')
+      if echo "$subject" | grep -qE '^[A-Z]'; then
+        echo "Subject must not start with an uppercase letter"
+        exit 1
+      fi
+
+lint:eslint:
+  stage: lint
+  extends: .node
+  script:
+    - npm run lint -- --max-warnings=0
+
+lint:typecheck:
+  stage: lint
+  extends: .node
+  script:
+    - npm run typecheck
+
+lint:format:
+  stage: lint
+  extends: .node
+  script:
+    - npm run format:check
+
+lint:build:
+  stage: lint
+  extends: .node
+  script:
+    - npm run build
+
+lint:sentence-newline:
+  stage: lint
+  extends: .node
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - docs/**/*.md
+        - docs/**/*.mdx
+        - .gitlab-ci.yml
+  script:
+    - |
+      CHANGED=$(git diff --name-only --diff-filter=ACMR \
+        "${CI_MERGE_REQUEST_DIFF_BASE_SHA}" "${CI_COMMIT_SHA}" \
+        -- 'docs/**/*.md' 'docs/**/*.mdx' || true)
+
+      if [ -z "$CHANGED" ]; then
+        echo "No changed markdown files under docs/"
+        exit 0
+      fi
+
+      echo "Linting changed files:"
+      echo "$CHANGED"
+      npx textlint --config .textlintrc.json $CHANGED
+
+spell-check:
+  stage: lint
+  image: alpine:3.20
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - "**/*.md"
+        - "**/*.mdx"
+        - .gitlab-ci.yml
+  before_script:
+    - apk add --no-cache curl git
+    - |
+      ARCH=$(uname -m)
+      case "$ARCH" in
+        x86_64) TYPOS_ARCH=x86_64 ;;
+        aarch64) TYPOS_ARCH=aarch64 ;;
+        *)
+          echo "Unsupported architecture: $ARCH"
+          exit 1
+          ;;
+      esac
+      curl -fsSL "https://github.com/crate-ci/typos/releases/latest/download/typos-${TYPOS_ARCH}-unknown-linux-musl.tar.gz" \
+        | tar -xz -C /usr/local/bin
+  script:
+    - |
+      CHANGED=$(git diff --name-only --diff-filter=ACMR \
+        "${CI_MERGE_REQUEST_DIFF_BASE_SHA}" "${CI_COMMIT_SHA}" \
+        -- '**/*.md' '**/*.mdx' || true)
+
+      if [ -z "$CHANGED" ]; then
+        echo "No changed markdown files"
+        exit 0
+      fi
+
+      echo "Spell-checking changed files:"
+      echo "$CHANGED"
+      typos --config ./.github/config/typos.toml $CHANGED
+
+check:external-links:
+  stage: links
+  image: alpine:3.20
+  extends: .mr-only
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - docs/**/*
+        - .gitlab-ci.yml
+  cache:
+    key: lychee-${CI_COMMIT_REF_SLUG}
+    paths:
+      - .lycheecache
+  before_script:
+    - apk add --no-cache curl git
+    - |
+      ARCH=$(uname -m)
+      case "$ARCH" in
+        x86_64) LYCHEE_ARCH=x86_64 ;;
+        aarch64) LYCHEE_ARCH=aarch64 ;;
+        *)
+          echo "Unsupported architecture: $ARCH"
+          exit 1
+          ;;
+      esac
+      curl -fsSL "https://github.com/lycheeverse/lychee/releases/latest/download/lychee-${LYCHEE_ARCH}-unknown-linux-gnu.tar.gz" \
+        | tar -xz -C /usr/local/bin
+  script:
+    - |
+      set +e
+      lychee --config lychee.toml docs
+      status=$?
+      set -e
+
+      if [ "$status" -ne 0 ]; then
+        if [ -f lychee/out.md ]; then
+          echo "Broken links:"
+          cat lychee/out.md
+        else
+          echo "Lychee detected broken links but no report file was generated"
+        fi
+        exit "$status"
+      fi
+
+test:python-examples:
+  stage: test
+  image: python:3.12
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - examples/developer-hub-python/**/*
+        - .gitlab-ci.yml
+  cache:
+    key: uv-python-${CI_COMMIT_REF_SLUG}
+    paths:
+      - examples/developer-hub-python/.venv/
+  before_script:
+    - pip install uv
+    - cd examples/developer-hub-python
+    - uv sync --frozen --all-extras --dev
+  script:
+    - uv run ruff format --diff
+    - uv run ruff check --diff
+    - uv run pytest -v
+
+test:javascript-examples:
+  stage: test
+  image: node:${NODE_VERSION}
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - examples/developer-hub-javascript/**/*
+        - .gitlab-ci.yml
+  cache:
+    key: npm-js-${CI_COMMIT_REF_SLUG}
+    paths:
+      - examples/developer-hub-javascript/node_modules/
+  before_script:
+    - cd examples/developer-hub-javascript
+    - npm ci
+  script:
+    - npm run format:diff
+    - npm run lint
+    - npm run test
+
+test:go-examples:
+  stage: test
+  image: golang:stable
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - examples/developer-hub-go/**/*
+        - .gitlab-ci.yml
+  cache:
+    key: go-${CI_COMMIT_REF_SLUG}
+    paths:
+      - /go/pkg/mod/
+  before_script:
+    - cd examples/developer-hub-go
+    - go mod download
+  script:
+    - go vet ./...
+    - go test ./coston2 -v
+    - go test ./flare -v
+
+test:rust-examples:
+  stage: test
+  image: rust:stable
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - examples/developer-hub-rust/**/*
+        - .gitlab-ci.yml
+  cache:
+    key: rust-${CI_COMMIT_REF_SLUG}
+    paths:
+      - examples/developer-hub-rust/target/
+  before_script:
+    - rustup component add rustfmt clippy
+    - cd examples/developer-hub-rust
+  script:
+    - cargo fmt -- --check
+    - cargo clippy --bins -- -D warnings
+    - cargo build --bins --locked
+    - ./test.sh
