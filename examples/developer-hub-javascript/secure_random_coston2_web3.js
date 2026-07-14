@@ -23,4 +23,6 @@ export async function main() {
   return res;
 }
 
-main();
+if (!process.env.JEST_WORKER_ID) {
+  main();
+}
