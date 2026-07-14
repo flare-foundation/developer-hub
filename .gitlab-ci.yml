@@ -118,7 +118,7 @@ spell-check:
         - "**/*.mdx"
         - .gitlab-ci.yml
   before_script:
-    - apk add --no-cache curl git
+    - apk add --no-cache curl git jq
     - |
       ARCH=$(uname -m)
       case "$ARCH" in
@@ -129,8 +129,15 @@ spell-check:
           exit 1
           ;;
       esac
-      curl -fsSL "https://github.com/crate-ci/typos/releases/latest/download/typos-${TYPOS_ARCH}-unknown-linux-musl.tar.gz" \
-        | tar -xz -C /usr/local/bin
+      TAG=$(curl -fsSL https://api.github.com/repos/crate-ci/typos/releases/latest | jq -r .tag_name)
+      ASSET="typos-${TAG}-${TYPOS_ARCH}-unknown-linux-musl.tar.gz"
+      URL=$(curl -fsSL https://api.github.com/repos/crate-ci/typos/releases/latest \
+        | jq -r --arg asset "$ASSET" '.assets[] | select(.name == $asset) | .browser_download_url')
+      if [ -z "$URL" ] || [ "$URL" = "null" ]; then
+        echo "Could not find typos release asset: $ASSET"
+        exit 1
+      fi
+      curl -fsSL "$URL" | tar -xz -C /usr/local/bin
   script:
     - |
       CHANGED=$(git diff --name-only --diff-filter=ACMR \
@@ -171,7 +178,7 @@ check:external-links:
           exit 1
           ;;
       esac
-      curl -fsSL "https://github.com/lycheeverse/lychee/releases/latest/download/lychee-${LYCHEE_ARCH}-unknown-linux-gnu.tar.gz" \
+      curl -fsSL "https://github.com/lycheeverse/lychee/releases/latest/download/lychee-${LYCHEE_ARCH}-unknown-linux-musl.tar.gz" \
         | tar -xz -C /usr/local/bin
   script:
     - |
