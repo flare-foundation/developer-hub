@@ -12,7 +12,7 @@ Built with [Docusaurus](https://docusaurus.io/), a modern static site generator.
 
 ### Prerequisites
 
-- [Node.js v22](https://nodejs.org/en/) and npm
+- [Node.js v24 LTS](https://nodejs.org/en/) and [pnpm](https://pnpm.io/) (enable with `corepack enable pnpm`)
   - Recommended: [nvm](https://github.com/nvm-sh/nvm) to manage Node versions
 - (Optional) For language-specific code in [examples](examples/):
   - Python: [uv](https://docs.astral.sh/uv/)
@@ -24,8 +24,9 @@ Built with [Docusaurus](https://docusaurus.io/), a modern static site generator.
 ```bash
 git clone https://github.com/flare-foundation/developer-hub.git
 cd developer-hub
-npm ci
-npm run start
+corepack enable pnpm
+pnpm install
+pnpm start
 ```
 
 This starts a local development server with hot reloading and opens the site in your browser.
@@ -53,7 +54,7 @@ flare-foundation/developer-hub/
 Some features (for example, search and production-only behavior) only work correctly against a production build.
 
 ```bash
-npm run build && npm run serve
+pnpm run build && pnpm run serve
 ```
 
 - `build` outputs the static site to `build/`
@@ -64,7 +65,7 @@ npm run build && npm run serve
 Run [Prettier](https://prettier.io/) for docs and site code:
 
 ```bash
-npm run format
+pnpm run format:fix
 ```
 
 Language-specific examples use their native tooling:
@@ -99,13 +100,13 @@ Automations update generated content used by tables/components (for example, con
 This will update `ftso_feeds.json` and `solidity_reference.json` in `src/features/DataTables/*`.
 
 ```bash
-npm run automations
+pnpm run automations
 ```
 
 To update dependencies across the language example projects:
 
 ```bash
-npm run update-deps
+pnpm run update-deps
 ```
 
 > **Caution:**
@@ -123,7 +124,7 @@ chmod +x generate-solidity-docs.sh
 
 # Return to the main site toolchain
 cd ..
-nvm use 22
+nvm use 24
 ```
 
 This pulls the latest smart contracts and regenerates the Solidity reference docs.

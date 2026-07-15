@@ -2,6 +2,7 @@
   "name": "developer-hub",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "pnpm@10.28.0+sha512.05df71d1421f21399e053fde567cea34d446fa02c76571441bfc1c7956e98e363088982d940465fd34480d4d90a0668bc12362f8aa88000a64e83d0b0e47be48",
   "scripts": {
     "docusaurus": "docusaurus",
     "start": "docusaurus start",
@@ -10,16 +11,17 @@
     "build": "docusaurus build && node scripts/mark-html-parity-exclusions.mjs && node scripts/generate-md-routes.mjs && node scripts/fix-llms-urls.mjs && node scripts/inject-html-llms-tags.mjs",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
-    "deploy:mcp": "npx wrangler deploy --config cloudflare-mcp/wrangler.toml",
+    "deploy:mcp": "pnpm dlx wrangler deploy --config cloudflare-mcp/wrangler.toml",
     "clear": "docusaurus clear",
     "serve": "docusaurus serve",
     "write-translations": "docusaurus write-translations",
     "write-heading-ids": "docusaurus write-heading-ids",
     "typecheck": "tsc",
-    "format": "prettier --write . && prettier --write --plugin=prettier-plugin-solidity 'examples/developer-hub-solidity/**/*.sol' && npm run format --prefix examples/developer-hub-javascript",
-    "format:diff": "prettier --list-different .",
+    "test": "pnpm run typecheck",
+    "format:fix": "prettier --write . && prettier --write --plugin=prettier-plugin-solidity 'examples/developer-hub-solidity/**/*.sol' && pnpm --filter ./examples/developer-hub-javascript run format:fix",
     "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,md,mdx}\"",
-    "lint": "npx eslint . --cache --cache-location .eslintcache",
+    "lint:check": "eslint . --cache --cache-location .eslintcache",
+    "lint:fix": "eslint . --fix --cache --cache-location .eslintcache",
     "lint:md": "textlint \"docs/**/*.{md,mdx}\"",
     "lint:md:fix": "textlint --fix \"docs/**/*.{md,mdx}\""
   },
@@ -51,7 +53,9 @@
     "@types/react": "^19.2.10",
     "@types/react-dom": "^19.2.3",
     "@typescript-eslint/eslint-plugin": "^8.54.0",
+    "@typescript-eslint/parser": "^8.54.0",
     "docusaurus-plugin-llms": "^0.3.0",
+    "eslint": "^8.57.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",
     "prettier": "^3.8.1",
@@ -75,6 +79,11 @@
     ]
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
+  },
+  "pnpm": {
+    "overrides": {
+      "@types/minimatch": "5.1.2"
+    }
   }
 }

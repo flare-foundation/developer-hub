@@ -30,15 +30,20 @@ jobs:
 
       - name: Setup Node.js
         if: steps.changed-files.outputs.any_changed == 'true'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 22
-          cache: "npm"
+          node-version-file: ".nvmrc"
+
+      - name: Setup pnpm
+        if: steps.changed-files.outputs.any_changed == 'true'
+        uses: pnpm/action-setup@v4
+        with:
+          cache: "true"
 
       - name: Install dependencies
         if: steps.changed-files.outputs.any_changed == 'true'
-        run: npm ci --include=dev
+        run: pnpm install --frozen-lockfile
 
       - name: Run sentence newline lint
         if: steps.changed-files.outputs.any_changed == 'true'
-        run: npx textlint --config .textlintrc.json ${{ steps.changed-files.outputs.all_changed_files }}
+        run: pnpm exec textlint --config .textlintrc.json ${{ steps.changed-files.outputs.all_changed_files }}

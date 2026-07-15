@@ -307,7 +307,7 @@ function createFallbackServer() {
           content: [
             {
               type: "text",
-              text: "docs_search is unavailable locally because no search index was found. Run `npm run build` first.",
+              text: "docs_search is unavailable locally because no search index was found. Run `pnpm run build` first.",
             },
           ],
           isError: true,
