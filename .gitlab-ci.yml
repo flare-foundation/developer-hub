@@ -6,7 +6,7 @@ workflow:
 
 variables:
   GIT_DEPTH: "0"
-  NODE_VERSION: "22"
+  NODE_VERSION: "24"
 
 stages:
   - validate
@@ -25,11 +25,14 @@ default:
   image: node:${NODE_VERSION}
   extends: .mr-only
   cache:
-    key: npm-root-${CI_COMMIT_REF_SLUG}
+    key: pnpm-root-${CI_COMMIT_REF_SLUG}
     paths:
       - node_modules/
+      - .pnpm-store/
   before_script:
-    - npm ci
+    - corepack enable
+    - pnpm config set store-dir .pnpm-store
+    - pnpm install --frozen-lockfile
 
 validate:mr-title:
   stage: validate
@@ -64,25 +67,25 @@ lint:eslint:
   stage: lint
   extends: .node
   script:
-    - npm run lint -- --max-warnings=0
+    - pnpm run lint:check --max-warnings=0
 
 lint:typecheck:
   stage: lint
   extends: .node
   script:
-    - npm run typecheck
+    - pnpm run typecheck
 
 lint:format:
   stage: lint
   extends: .node
   script:
-    - npm run format:check
+    - pnpm run format:check
 
 lint:build:
   stage: lint
   extends: .node
   script:
-    - npm run build
+    - pnpm run build
 
 lint:sentence-newline:
   stage: lint
@@ -106,7 +109,7 @@ lint:sentence-newline:
 
       echo "Linting changed files:"
       echo "$CHANGED"
-      npx textlint --config .textlintrc.json $CHANGED
+      pnpm exec textlint --config .textlintrc.json $CHANGED
 
 spell-check:
   stage: lint
@@ -228,16 +231,18 @@ test:javascript-examples:
         - examples/developer-hub-javascript/**/*
         - .gitlab-ci.yml
   cache:
-    key: npm-js-${CI_COMMIT_REF_SLUG}
+    key: pnpm-js-${CI_COMMIT_REF_SLUG}
     paths:
-      - examples/developer-hub-javascript/node_modules/
+      - node_modules/
+      - .pnpm-store/
   before_script:
-    - cd examples/developer-hub-javascript
-    - npm ci
+    - corepack enable
+    - pnpm config set store-dir .pnpm-store
+    - pnpm install --frozen-lockfile
   script:
-    - npm run format:diff
-    - npm run lint
-    - npm run test
+    - pnpm --filter ./examples/developer-hub-javascript run format:check
+    - pnpm --filter ./examples/developer-hub-javascript run lint:check
+    - pnpm --filter ./examples/developer-hub-javascript run test
 
 test:go-examples:
   stage: test
