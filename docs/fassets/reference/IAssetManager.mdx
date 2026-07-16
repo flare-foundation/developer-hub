@@ -145,10 +145,10 @@ function getDirectMintingExecutorFeeUBA()
 
 Returns the length of the preferred-executor exclusivity window for direct minting, in seconds.
 
-When a direct minting specifies a preferred executor — either through a tag bound on the [`IMintingTagManager`](/fassets/reference/IMintingTagManager) or through the 48-byte [memo format](/fassets/direct-minting#memo-field) — only that executor may finalize the minting until this number of seconds has elapsed since the underlying payment.
+When a direct minting specifies a preferred executor — either through a tag bound on the [`IMintingTagManager`](/fassets/reference/IMintingTagManager) or through the 48-byte [memo format](/fassets/minting#memo-field) — only that executor may finalize the minting until this number of seconds has elapsed since the underlying payment.
 After the window expires, anyone can call [`executeDirectMinting`](/fassets/reference/IAssetManager#executedirectminting) to finalize the request.
 
-If the minting is delayed by [rate limits](/fassets/direct-minting#rate-limits), the exclusivity window restarts from the [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) event's `executionAllowedAt` timestamp.
+If the minting is delayed by [rate limits](/fassets/minting#rate-limits), the exclusivity window restarts from the [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) event's `executionAllowedAt` timestamp.
 
 ```solidity
 function getDirectMintingOthersCanExecuteAfterSeconds()
@@ -178,7 +178,7 @@ function getDirectMintingDailyLimitUBA()
 
 ### `getDirectMintingHourlyLimiterState`
 
-Returns the raw state of the hourly direct-minting [rate limiter](/fassets/direct-minting#rate-limits).
+Returns the raw state of the hourly direct-minting [rate limiter](/fassets/minting#rate-limits).
 
 Returns:
 
@@ -186,7 +186,7 @@ Returns:
 - `_mintedInCurrentWindow`: Amount minted in the current window, denominated in AMG.
   Multiply by [`assetMintingGranularityUBA`](#assetmintinggranularityuba) to convert to UBA.
 
-The value is only updated on the next limiter write, so consumers that need a live view should advance the window off-chain — see the [Check Direct Minting Limits guide](/fassets/developer-guides/fassets-direct-minting-limits).
+The value is only updated on the next limiter write, so consumers that need a live view should advance the window off-chain — see the [Check Minting Limits guide](/fassets/developer-guides/fassets-mint-limits).
 
 ```solidity
 function getDirectMintingHourlyLimiterState()
@@ -196,7 +196,7 @@ function getDirectMintingHourlyLimiterState()
 
 ### `getDirectMintingDailyLimiterState`
 
-Returns the raw state of the daily direct-minting [rate limiter](/fassets/direct-minting#rate-limits).
+Returns the raw state of the daily direct-minting [rate limiter](/fassets/minting#rate-limits).
 
 Returns:
 
@@ -204,7 +204,7 @@ Returns:
 - `_mintedInCurrentWindow`: Amount minted in the current window, denominated in AMG.
   Multiply by [`assetMintingGranularityUBA`](#assetmintinggranularityuba) to convert to UBA.
 
-The value is only updated on the next limiter write, so consumers that need a live view should advance the window off-chain — see the [Check Direct Minting Limits guide](/fassets/developer-guides/fassets-direct-minting-limits).
+The value is only updated on the next limiter write, so consumers that need a live view should advance the window off-chain — see the [Check Minting Limits guide](/fassets/developer-guides/fassets-mint-limits).
 
 ```solidity
 function getDirectMintingDailyLimiterState()
@@ -214,12 +214,12 @@ function getDirectMintingDailyLimiterState()
 
 ### `getDirectMintingsUnblockUntilTimestamp`
 
-Returns the Unix timestamp until which the direct-minting **hourly and daily** [rate limiter](/fassets/direct-minting#rate-limits) is bypassed.
+Returns the Unix timestamp until which the direct-minting **hourly and daily** [rate limiter](/fassets/minting#rate-limits) is bypassed.
 
 While `block.timestamp` is below this value, the hourly and daily caps are not enforced, and mintings queued by those windows can execute without delay.
 Governance sets this via `unblockDirectMintingsUntil` to drain a backlog after manual review; the value is `0` when the limiter is active.
 
-This bypass does **not** apply to the [large-minting delay](/fassets/direct-minting#large-minting-delay).
+This bypass does **not** apply to the [large-minting delay](/fassets/minting#large-minting-delay).
 Amounts strictly above [`directMintingLargeMintingThresholdUBA`](#getdirectmintinglargemintingthresholduba) are still held for [`directMintingLargeMintingDelaySeconds`](#getdirectmintinglargemintingdelayseconds).
 
 ```solidity
@@ -234,7 +234,7 @@ Returns the threshold above which direct minting is considered large, in UBA.
 A mint is large when its underlying amount is **strictly greater than** this value.
 
 Large mints are delayed by [`getDirectMintingLargeMintingDelaySeconds`](#getdirectmintinglargemintingdelayseconds) independently of the hourly and daily windows.
-See [Large minting delay](/fassets/direct-minting#large-minting-delay).
+See [Large minting delay](/fassets/minting#large-minting-delay).
 
 ```solidity
 function getDirectMintingLargeMintingThresholdUBA()
@@ -247,7 +247,7 @@ function getDirectMintingLargeMintingThresholdUBA()
 Returns the fixed delay in seconds applied when a direct minting amount is strictly greater than [`getDirectMintingLargeMintingThresholdUBA`](#getdirectmintinglargemintingthresholduba).
 
 The delay is measured from the block timestamp of the first `executeDirectMinting` attempt and is **not** bypassed by [`getDirectMintingsUnblockUntilTimestamp`](#getdirectmintingsunblockuntiltimestamp).
-See [Large minting delay](/fassets/direct-minting#large-minting-delay).
+See [Large minting delay](/fassets/minting#large-minting-delay).
 
 ```solidity
 function getDirectMintingLargeMintingDelaySeconds()
@@ -259,7 +259,7 @@ function getDirectMintingLargeMintingDelaySeconds()
 
 Returns the asset minting granularity — the smallest unit of FAsset stored internally within this asset manager instance.
 
-The direct-minting [rate limiter](/fassets/direct-minting#rate-limits) stores `mintedInCurrentWindow` as `uint64` AMG (asset minting granularity) for cheap on-chain storage.
+The direct-minting [rate limiter](/fassets/minting#rate-limits) stores `mintedInCurrentWindow` as `uint64` AMG (asset minting granularity) for cheap on-chain storage.
 Multiplying the limiter state by `assetMintingGranularityUBA` rebases it into UBA so it can be compared against the UBA-denominated hourly and daily caps.
 
 ```solidity
@@ -484,14 +484,14 @@ function executeMinting(
 
 ### `executeDirectMinting`
 
-Executes minting directly, without a [collateral reservation](/fassets/minting#minting-process).
+Executes minting directly, without a prior collateral reservation.
 The underlying XRP payment must already have been sent to the FAsset [Core Vault](/fassets/core-vault) XRPL address returned by [`directMintingPaymentAddress`](#directmintingpaymentaddress).
 
 An **executor** submits an FDC [`XRPPayment`](/fdc/attestation-types/xrp-payment) proof to finalize the mint on Flare.
-The contract verifies the proof, decodes the recipient (and optional preferred executor) from the XRPL destination tag or memo, deducts the [minting and executor fees](/fassets/direct-minting#fees), and credits the remaining FAssets to the target address.
+The contract verifies the proof, decodes the recipient (and optional preferred executor) from the XRPL destination tag or memo, deducts the [minting and executor fees](/fassets/minting#fees), and credits the remaining FAssets to the target address.
 On success, the executor receives the executor fee, and the contract emits the [`DirectMintingExecuted`](/fassets/reference/IAssetManagerEvents#directmintingexecuted) event.
 
-**Who may call:** Any address, subject to [executor restrictions](/fassets/direct-minting#executor-restrictions).
+**Who may call:** Any address, subject to [executor restrictions](/fassets/minting#executor-restrictions).
 A preferred executor has an exclusive window defined by [`getDirectMintingOthersCanExecuteAfterSeconds`](#getdirectmintingotherscanexecuteafterseconds); after it expires, anyone may call.
 
 **Smart-account recipients:** When the target is a [Flare Smart Account](/smart-accounts/overview) personal account, `executeDirectMinting` mints FXRP and calls [`handleMintedFAssets`](/smart-accounts/reference/IMasterAccountController#handlemintedfassets) on the `MasterAccountController` to decode and dispatch any XRPL memo instruction — for example, the [`0xFF` memo field custom instruction](/smart-accounts/memo-field-custom-instruction).
@@ -522,7 +522,7 @@ function executeDirectMinting(IXRPPayment.Proof calldata _payment)
 
 ### `executeDirectMintingWithData`
 
-Finalizes [direct minting](/fassets/direct-minting) for a **smart-account recipient** and delivers the user-operation bytes that an off-chain executor supplies alongside the FDC proof.
+Finalizes [direct minting](/fassets/minting) for a **smart-account recipient** and delivers the user-operation bytes that an off-chain executor supplies alongside the FDC proof.
 
 Used by the [`0xFE` custom instruction](/smart-accounts/custom-instruction) flow: the XRPL memo commits to `keccak256(PackedUserOperation)` and `_data` carries the ABI-encoded `PackedUserOperation` for [`handleMintedFAssets`](/smart-accounts/reference/IMasterAccountController#handlemintedfassets) to verify and dispatch.
 

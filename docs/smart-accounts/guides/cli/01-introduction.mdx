@@ -55,24 +55,31 @@ The script is run in the terminal with a command of the following shape.
 Here is a list of available commands and their positional arguments:
 
 - `encode`
-  - `fxrp-cr`: encode FXRP collateral reservation instruction
+  - `fxrp-cr`: _(legacy)_ encode FXRP collateral reservation instruction — not the recommended mint path
   - `fxrp-transfer`: encode FXRP transfer instruction
   - `fxrp-redeem`: encode FXRP redeem instruction
-  - `firelight-cr-deposit`: encode Firelight collateral reservation and deposit instruction
+  - `firelight-cr-deposit`: _(legacy)_ encode Firelight collateral reservation and deposit — not the recommended mint path
   - `firelight-deposit`: encode Firelight deposit instruction
   - `firelight-redeem`: encode Firelight redeem instruction
   - `firelight-claim-withdraw`: encode Firelight claim withdraw instruction
-  - `upshift-cr-deposit`: encode Upshift collateral reservation and deposit instruction
+  - `upshift-cr-deposit`: _(legacy)_ encode Upshift collateral reservation and deposit — not the recommended mint path
   - `upshift-deposit`: encode Upshift deposit instruction
   - `upshift-request-redeem`: encode Upshift request redeem instruction
   - `upshift-claim`: encode Upshift claim instruction
 - `decode`
 - `bridge`
   - `instruction`: send imputed instruction as a transaction on XRPL
-  - `mint-tx`: make a deposit to an agent's vault
+  - `mint-tx`: _(legacy)_ make a deposit to an agent's vault after CRT — not the recommended mint path
+
+:::tip[Minting FXRP]
+User minting uses [FAssets minting](/fassets/minting): an XRPL payment to the Core Vault with a memo or destination tag.
+For mint-and-action in one payment, use a [memo-field custom instruction](/smart-accounts/memo-field-custom-instruction).
+See [Mint FXRP](/fassets/developer-guides/fassets-mint) and the [Cross-Chain Mint](/smart-accounts/guides/typescript-viem/cross-chain-mint-ts) guide.
+The CLI `fxrp-cr`, `*-cr-deposit`, and `bridge mint-tx` commands encode the legacy collateral-reservation (CRT) path; they may still exist in `smart_accounts.py` but are not the recommended user mint path.
+:::
 
 The positional arguments of the `encode` command correspond to type-command instruction pairs, described in the [FAsset instructions guide](/smart-accounts/fasset-instructions).
-The `bridge` command either makes an XRPL Payment transaction with the imputed instruction as payment reference, or transfers funds to an agent's XRPL vault as part of the minting process.
+The `bridge instruction` command makes an XRPL Payment transaction with the imputed instruction as payment reference.
 
 ## Using the CLI
 
@@ -84,11 +91,10 @@ Commands can be piped in the following way.
 <encode_command> | ./smart_accounts.py bridge instruction -
 ```
 
-If the instruction includes a minting step (`fxrp-cr`, `firelight-cr-deposit` and `upshift-cr-deposit`), we can also order the script to make a mint transaction that matches the output of the `bridge instruction`.
-
-```sh
-<encode_command> | ./smart_accounts.py bridge instruction - | ./smart_accounts.py bridge mint-tx --wait -
-```
+:::caution[Legacy CRT mint piping]
+Piping `fxrp-cr` / `*-cr-deposit` into `bridge instruction` and then `bridge mint-tx` is the legacy collateral-reservation mint path.
+Prefer [FAssets minting](/fassets/minting) for minting, then use CLI encode + `bridge instruction` only for transfer, deposit, redeem, and claim.
+:::
 
 This is described in more detail in the [Bridge section](/smart-accounts/guides/cli/introduction#bridge) of this guide.
 
@@ -111,17 +117,13 @@ If no number has been provided to you, set the `walletId` to `0`.
 Smart account instructions for interacting with the base FAsset system.
 Each of these commands starts with the `fxrp` keyword.
 
-#### Collateral reservation
+#### Collateral reservation (legacy)
 
-Reserve `value` lots of collateral with the
-
-Reserve `value` lots of FXRP to the user's smart account.
-The script first reserves collateral with the agent with the `address`, by sending a `reserveCollateral` instruction.
-It then sends a `lots` amount of XRP to the agent's underlying address.
-An executor, determined by the `MasterAccountController`, will complete the minting process, and `lots` of FXRP will be minted to the user's smart account.
-
-The list of all the available agents and their IDs can be obtained from the `MasterAccountController` contract.
-{/* TODO:(Nik) Write a separate guide in which you explain how to do this, and link to it here. */}
+:::caution[Legacy]
+`fxrp-cr` encodes the deprecated collateral-reservation (CRT) mint path.
+Mint FXRP via [FAssets minting](/fassets/minting) instead.
+This command may still exist in `smart_accounts.py` but is not the recommended user mint path.
+:::
 
 ```markup
 ./smart_accounts.py encode fxrp-cr --wallet-id <walletId> --value <value> --agent-vault-id <agentVaultId>
@@ -206,20 +208,13 @@ The above command produces the following output:
 Smart account instructions for interacting with a Firelight-type vault.
 Each of these commands starts with the `firelight` keyword.
 
-#### Collateral reservation and deposit
+#### Collateral reservation and deposit (legacy)
 
-The collateral reservation and deposit instruction signals two intents at once.
-First, to reserve collateral in an agent's vault, registered with the `MasterAccountController` contract with the `agentVaultId`, the necessary collateral to mint `value` lots of FXRP.
-And second, to deposit the newly minted FXRP into a Firelight-type vault, registered with the `MasterAccountController` contract with the `vaultId`.
-
-The purpose of this instruction is to streamline the minting and deposit process by cutting out an instruction XRPL transaction and the wait that that incurs.
-In essence, it combines the FXRP collateral reservation instruction and the Firelight deposit instruction.
-
-{/* TODO:(Nik) prepare as separate in-depth guide for cr-and-deposit, that goes through all the steps. Link to that guide here. */}
-
-The `walletId` is a Flare-designated parameter, intended for wallet identification by the operator.
-It has no impact on the result of the action performed.
-If no number has been provided to you, set the `walletId` to `0`.
+:::caution[Legacy]
+`firelight-cr-deposit` encodes the deprecated CRT mint-and-deposit path.
+Mint via [FAssets minting](/fassets/minting), then use `firelight-deposit`.
+For mint-and-deposit in one XRPL payment, use a [memo-field custom instruction](/smart-accounts/memo-field-custom-instruction).
+:::
 
 ```markdown
 ./smart_accounts.py encode firelight-cr-deposit \
@@ -350,20 +345,13 @@ The above command produces the following output:
 Smart account instructions for interacting with an Upshift-type vault.
 Each of these commands starts with the `upshift` keyword.
 
-#### Collateral reservation and deposit
+#### Collateral reservation and deposit (legacy)
 
-The collateral reservation and deposit instruction signals two intents at once.
-First, to reserve collateral in an agent's vault, registered with the `MasterAccountController` contract with the `agentVaultId`, the necessary collateral to mint `value` lots of FXRP.
-And second, to deposit the newly minted FXRP into an Upshift-type vault, registered with the `MasterAccountController` contract with the `vaultId`.
-
-The purpose of this instruction is to streamline the minting and deposit process by cutting out an instruction XRPL transaction and the wait that that incurs.
-In essence, it combines the FXRP collateral reservation instruction and the Upshift deposit instruction.
-
-{/* TODO:(Nik) prepare as separate in-depth guide for cr-and-deposit, that goes through all the steps. Link to that guide here. */}
-
-The `walletId` is a Flare-designated parameter, intended for wallet identification by the operator.
-It has no impact on the result of the action performed.
-If no number has been provided to you, set the `walletId` to `0`.
+:::caution[Legacy]
+`upshift-cr-deposit` encodes the deprecated CRT mint-and-deposit path.
+Mint via [FAssets minting](/fassets/minting), then use `upshift-deposit`.
+For mint-and-deposit in one XRPL payment, use a [memo-field custom instruction](/smart-accounts/memo-field-custom-instruction).
+:::
 
 ```markdown
 ./smart_accounts.py encode upshift-cr-deposit \
@@ -493,7 +481,8 @@ The above command produces the following output:
 The bridge command makes an XRPL Payment transaction on behalf of the user, with the given input as the transaction memo field.
 There are two positional arguments, `instruction` and `mint-tx`.
 The `instruction` positional argument signals the user's intent by making an XRPL Payment transaction to the operator's XRPL address, with the instruction attached as the memo field.
-The `mint-tx` argument performs the second step of the minting process, sending the XRPL to the agent's vault address on XRPL (you can learn more about the minting process in [the minting guide](/fassets/minting)).
+The `mint-tx` argument is a **legacy** helper for the CRT mint path (sending XRP to an agent's vault after collateral reservation).
+Prefer [FAssets minting](/fassets/minting) for minting instead.
 
 ### Instruction
 
@@ -535,10 +524,15 @@ The instruction only works if the user's personal account has sufficient FXRP ba
 
 </details>
 
-### Mint tx
+### Mint tx (legacy)
+
+:::caution[Legacy]
+`bridge mint-tx` completes the deprecated collateral-reservation mint path.
+Mint FXRP via [FAssets minting](/fassets/minting) (Core Vault payment with memo or tag) instead.
+:::
 
 When the `bridge` command is used with the `mint-tx` positional argument, it accepts an XRPL `transactionHash` as input.
-It then observes the `MasterAccountController` contract for a `CollateralReserved` event that belongs to the transaction with the `transactionHash`
+It then observes the `MasterAccountController` contract for a `CollateralReserved` event that belongs to the transaction with the `transactionHash`.
 A payment reference is read from the `CollateralReserved` event, and a mint transaction to the agent vault's address is performed.
 
 The transaction must contain a collateral reservation (and deposit) instruction, otherwise the process fails, since no such event is emitted for other instructions.
@@ -559,7 +553,7 @@ Additionally, the `--wait` flag must be provided.
 ```
 
 <details>
-<summary>Example values and expected output</summary>
+<summary>Example values and expected output (legacy)</summary>
 
 ```sh
 ./smart_accounts.py encode fxrp-cr --wallet-id 0 --value 1 --agent-vault-id 1 \
@@ -567,8 +561,8 @@ Additionally, the `--wait` flag must be provided.
   | ./smart_accounts.py bridge mint-tx --wait -
 ```
 
-The above command encodes an FXRP collateral reservation instruction for `1` lot of FXRP, using the agent vault with ID `1`, and sends that instruction as an XRPL Payment transaction.
-It then waits
+The above command encodes a legacy FXRP collateral reservation instruction for `1` lot of FXRP, using the agent vault with ID `1`, and sends that instruction as an XRPL Payment transaction.
+It then waits for the CRT mint leg.
 It produces the following output.
 
 ```sh
@@ -576,8 +570,6 @@ sent bridge instruction transaction: 659364520199DED473635A9ABFB1C15B945B216A120
 sent mint tx: 8401244DD1FA4C295ABC16A0B05CC12F7DBCE34756F12C2F5C3DC1840A5F3316
 8401244DD1FA4C295ABC16A0B05CC12F7DBCE34756F12C2F5C3DC1840A5F3316
 ```
-
-The instruction only works if the user's personal account has sufficient FXRP balance.
 
 </details>
 

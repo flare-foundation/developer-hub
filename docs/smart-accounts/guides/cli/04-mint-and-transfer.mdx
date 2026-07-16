@@ -17,58 +17,31 @@ keywords:
 unlisted: false
 ---
 
-In this guide we will take a look at how we can use the [Flare smart accounts CLI](/smart-accounts/guides/cli/introduction) to perform a mint action, followed by the transfer of freshly minted FXRP.
+In this guide we will take a look at how we can mint FXRP and transfer it to a Flare address.
 What this allows us to do is to, effectively, **mint FXRP onto someone else's Flare address**.
-This guide is aimed primarily at Web3 developers who desire to engage with the FAssets system but want to sidestep the base minting process.
+This guide is aimed primarily at Web3 developers who desire to engage with the FAssets system but want to sidestep holding FLR for gas.
 
-Let us suppose that we want to mint `1` lot of FXRP, and transfer it to the address `0xf5488132432118596fa13800b68df4c0ff25131d`.
-First, we need to prepare a collateral reservation instruction.
-We do that with the following CLI command.
+:::tip[Preferred TypeScript path]
+For a full programmatic mint (and optional follow-on action), use the [Cross-Chain Mint](/smart-accounts/guides/typescript-viem/cross-chain-mint-ts) guide or the [Mint FXRP](/fassets/developer-guides/fassets-mint) developer guide.
+:::
 
-```sh
-./smart_accounts.py encode fxrp-cr --wallet-id 0 --value 1 --agent-vault-id 1
-```
+Let us suppose that we want to mint `1` lot of FXRP (10 FXRP), and transfer it to the address `0xf5488132432118596fa13800b68df4c0ff25131d`.
 
-The `--wallet-id` flag expects a Flare-designated parameter, intended for wallet identification by the operator.
-It has no impact on the result of the action performed.
-Because no number has been provided to us, we set it to `0`.
-We chose the agent vault with ID `1` from the list of available agents.
-{/* TODO:(Nik) Link to the guide about getting agent vault addresses. */}
+## Step 1: Mint FXRP
 
-<details>
-<summary>Expected output</summary>
+Minting is done via [FAssets minting](/fassets/minting): send an XRPL `Payment` to the Core Vault with a memo (or destination tag) that credits your personal account.
+The Smart Accounts CLI does **not** encode that payment; follow [Mint FXRP](/fassets/developer-guides/fassets-mint) (or mint-and-action via a [memo-field custom instruction](/smart-accounts/memo-field-custom-instruction)).
 
-```sh
-0x0000000000000000000000010001000000000000000000000000000000000000
-```
+:::caution[Legacy]
+Do not use `fxrp-cr` + `bridge mint-tx` as the primary mint path.
+Those encode the deprecated collateral-reservation (CRT) flow and may still exist in `smart_accounts.py`, but they are not the recommended user mint path.
+:::
 
-</details>
+After minting completes, your personal account holds the FXRP.
 
-Then, we need to actually send the instruction as an XRPL Payment transaction to the operator's XRPL address.
-We pipe the output of the first command into a `bridge` command.
+## Step 2: Transfer FXRP
 
-But that is not, by itself, sufficient.
-To complete the minting step, we need to also transfer `1` lot worth of FXRP to the agent's vault we specified.
-We do that by piping the output of the second command - the hash of the transaction that carried our collateral reservation instruction - into the second `bridge` command, with the `mint-tx` positional argument.
-
-```sh
-./smart_accounts.py encode fxrp-cr --wallet-id 0 --value 1 --agent-vault-id 1 \
-  | ./smart_accounts.py bridge instruction - \
-  | ./smart_accounts.py bridge mint-tx --wait -
-```
-
-<details>
-<summary>Expected output</summary>
-
-```sh
-sent bridge instruction transaction: 08C2DD9EF3C0BB0A29D70F7E495EB3D96E1AA443B9100052FCCB44A176A9FBB8
-sent mint tx: CD15241A6F0D2AFE5441C4FE3A2A9360109164CDCDC9EF3BC6A652D3C257DEA2
-CD15241A6F0D2AFE5441C4FE3A2A9360109164CDCDC9EF3BC6A652D3C257DEA2
-```
-
-</details>
-
-Next, we prepare the transfer instruction.
+Next, prepare the transfer instruction.
 We will send `10` FXRP (which equals `1` lot) to the address `0xf5488132432118596fa13800b68df4c0ff25131d`.
 The encode CLI command that does this is:
 
@@ -88,8 +61,8 @@ The encode CLI command that does this is:
 
 </details>
 
-Lastly, we send the instruction as an XRPL Payment transaction to the operator's XRPL address.
-We do this, again, by piping the output of the above `encode` command into a `bridge` command.
+Lastly, send the instruction as an XRPL Payment transaction to the operator's XRPL address.
+Pipe the output of the above `encode` command into a `bridge` command.
 
 ```sh
 ./smart_accounts.py encode fxrp-transfer \
@@ -109,4 +82,4 @@ sent bridge instruction transaction: 9D5420C689DE7E0189BA15C4F874E491E4A08610A79
 
 </details>
 
-With that, we have successfully minted `1` lot of FXRP, and transferred it to the Flare address `0xf5488132432118596fa13800b68df4c0ff25131d`.
+With that, we have successfully minted FXRP via FAssets minting and transferred it to the Flare address `0xf5488132432118596fa13800b68df4c0ff25131d`.

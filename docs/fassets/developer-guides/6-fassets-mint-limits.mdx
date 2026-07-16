@@ -1,10 +1,10 @@
 ---
-title: Check Direct Minting Limits
+title: Check Minting Limits
 tags: [intermediate, fassets]
-slug: fassets-direct-minting-limits
-description: Read live direct-minting rate limits and pre-flight a mint against hourly, daily, and large-mint delays.
-keywords: [fassets, fxrp, direct-minting, rate-limits, flare-network, xrpl]
-sidebar_position: 16
+slug: fassets-mint-limits
+description: Read live minting rate limits and pre-flight a mint against hourly, daily, and large-mint delays.
+keywords: [fassets, fxrp, minting, rate-limits, flare-network, xrpl]
+sidebar_position: 6
 ---
 
 import CodeBlock from "@theme/CodeBlock";
@@ -12,7 +12,7 @@ import FAssetsDirectMintingLimits from "!!raw-loader!/examples/developer-hub-jav
 
 ## Overview
 
-This guide reads the on-chain [direct minting](/fassets/direct-minting#rate-limits) rate limits, replays the tumbling-window state off-chain, and pre-flights a proposed mint against **three independent delay mechanisms**:
+This guide reads the on-chain [minting](/fassets/minting#rate-limits) rate limits, replays the tumbling-window state off-chain, and pre-flights a proposed mint against **three independent delay mechanisms**:
 
 1. **Hourly window** — [`directMintingHourlyLimitUBA`](/fassets/reference/IAssetManager#getdirectmintinghourlylimituba) via the `MintingRateLimiter` library
 2. **Daily window** — [`directMintingDailyLimitUBA`](/fassets/reference/IAssetManager#getdirectmintingdailylimituba) via the same library
@@ -21,7 +21,7 @@ This guide reads the on-chain [direct minting](/fassets/direct-minting#rate-limi
 All three throttle rather than reject: over-limit mints emit [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) with an `executionAllowedAt` timestamp.
 The binding delay is whichever rule pushes `executionAllowedAt` furthest into the future.
 
-The complete runnable example is available in the [flare-viem-starter](https://github.com/flare-foundation/flare-viem-starter/blob/main/src/fassets/direct-minting-limits.ts) repository.
+The complete runnable example is available in the [flare-viem-starter](https://github.com/flare-foundation/flare-viem-starter/blob/main/src/fassets/minting-limits.ts) repository.
 
 ## How the windows work
 
@@ -72,9 +72,9 @@ On Flare mainnet, the threshold and delay are currently **4M XRP** and **2 hours
 - The [flare-viem-starter](https://github.com/flare-foundation/flare-viem-starter) cloned locally with dependencies installed.
 - A configured `publicClient` pointing at the [Flare network](/network/overview) you want to query (Coston2 by default in the starter).
 
-## Direct Minting Limits Script
+## Minting Limits Script
 
-<CodeBlock language="typescript" title="src/fassets/direct-minting-limits.ts">
+<CodeBlock language="typescript" title="src/fassets/minting-limits.ts">
   {FAssetsDirectMintingLimits}
 </CodeBlock>
 
@@ -121,14 +121,14 @@ On Flare mainnet, the threshold and delay are currently **4M XRP** and **2 hours
 - **Reads are stale between writes.**
   Always advance the window off-chain when displaying live limiter state.
 - **Plan UI flows around [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed)** so users are not surprised by a deferred execution.
-- **Delay and cap failures** — see [Delays](/fassets/troubleshooting/direct-minting-troubleshooting#delays) in the Direct Minting Troubleshooting guide for retry steps when rate limits bind.
+- **Delay and cap failures** — see [Delays](/fassets/troubleshooting/minting-troubleshooting#delays) in the Minting Troubleshooting guide for retry steps when rate limits bind.
 
 :::tip[What's next]
 
 To continue your FAssets development journey, you can:
 
-- Mint with the 32-byte memo flow in [Direct Mint FXRP](/fassets/developer-guides/fassets-direct-minting).
-- Mint with a reserved tag in [Direct Mint FXRP with Tag](/fassets/developer-guides/fassets-direct-minting-tag).
-- Read the protocol details in [Direct Minting](/fassets/direct-minting).
+- Mint with the 32-byte memo flow in [Mint FXRP](/fassets/developer-guides/fassets-mint).
+- Mint with a reserved tag in [Mint FXRP with Tag](/fassets/developer-guides/fassets-mint-tag).
+- Read the protocol details in [Minting](/fassets/minting).
 
 :::

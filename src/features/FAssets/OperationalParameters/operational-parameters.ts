@@ -28,7 +28,7 @@ export const operationalParameters = [
         name: "Lot size",
         settingName: "lotSizeAMG",
         description: "Minimum quantity required for minting FAssets.",
-        link: "/fassets/minting#lots",
+        link: "/fassets/redemption#lots",
         values: {
           flare: {
             xrp: "10 XRP",
@@ -50,7 +50,6 @@ export const operationalParameters = [
         name: "Collateral reservation fee (CRF)",
         settingName: "collateralReservationFee",
         description: "Fee applied when reserving collateral for minting..",
-        link: "/fassets/minting#collateral-reservation-fee",
         values: {
           flare: {
             xrp: "0.01%",
@@ -917,7 +916,7 @@ export const operationalParameters = [
         settingName: "feeBIPS",
         description:
           "The minting fee is when users (minters) mint FAssets by depositing underlying assets with an agent.",
-        link: "/fassets/minting#minting-fee",
+        link: "/fassets/minting#fees",
         values: {
           flare: {
             xrp: "0.1%",
@@ -940,7 +939,7 @@ export const operationalParameters = [
         settingName: "poolFeeShareBIPS",
         description:
           "The pool share fee is the portion of the minting and redemption fees allocated to pool collateral providers.",
-        link: "/fassets/minting#pool-share",
+        link: "/fassets/collateral#minting-fees-and-debt",
         values: {
           flare: {
             xrp: "30%",
@@ -1301,15 +1300,15 @@ export const operationalParameters = [
     ],
   },
   {
-    title: "Direct Minting",
+    title: "Minting",
     parameters: [
       {
-        name: "Direct Minting Minimum Fee",
+        name: "Minting Minimum Fee",
         functionName: "getDirectMintingMinimumFeeUBA",
         interfaceLink:
           "/fassets/reference/IAssetManager#getdirectmintingminimumfeeuba",
         description:
-          "Minimum fee charged for direct minting, in base unit of the underlying asset (UBA).",
+          "Minimum fee charged for minting, in base unit of the underlying asset (UBA).",
         values: {
           flare: {
             xrp: "0.1 XRP",
@@ -1323,12 +1322,12 @@ export const operationalParameters = [
         },
       },
       {
-        name: "Direct Minting Fee",
+        name: "Minting Fee",
         functionName: "getDirectMintingFeeBIPS",
         interfaceLink:
           "/fassets/reference/IAssetManager#getdirectmintingfeebips",
         description:
-          "Direct minting fee as a percentage of the minting amount, in BIPS.",
+          "Minting fee as a percentage of the minting amount, in BIPS.",
         values: {
           flare: {
             xrp: "0.1%",
@@ -1342,12 +1341,12 @@ export const operationalParameters = [
         },
       },
       {
-        name: "Direct Minting Executor Fee",
+        name: "Minting Executor Fee",
         functionName: "getDirectMintingExecutorFeeUBA",
         interfaceLink:
           "/fassets/reference/IAssetManager#getdirectmintingexecutorfeeuba",
         description:
-          "Fee paid to the executor of a direct minting request, in base unit of the underlying asset (UBA). This only applies to direct mintings to address, for direct minting to smart account the executor fee is calculated and paid by the smart account manager.",
+          "Fee paid to the executor of a minting request, in base unit of the underlying asset (UBA). This only applies to mintings to address, for minting to smart account the executor fee is calculated and paid by the smart account manager.",
         values: {
           flare: {
             xrp: "0.2 XRP",
@@ -1361,12 +1360,12 @@ export const operationalParameters = [
         },
       },
       {
-        name: "Direct Minting Others Can Execute After",
+        name: "Minting Others Can Execute After",
         functionName: "getDirectMintingOthersCanExecuteAfterSeconds",
         interfaceLink:
           "/fassets/reference/IAssetManager#getdirectmintingotherscanexecuteafterseconds",
         description:
-          "Time in seconds after which anyone can execute a direct minting request (not just the executor set by the minter).",
+          "Time in seconds after which anyone can execute a minting request (not just the executor set by the minter).",
         values: {
           flare: {
             xrp: "2 hours",
@@ -1380,7 +1379,7 @@ export const operationalParameters = [
         },
       },
       {
-        name: "Direct Minting Hourly Limit",
+        name: "Minting Hourly Limit",
         functionName: "getDirectMintingHourlyLimitUBA",
         interfaceLink:
           "/fassets/reference/IAssetManager#getdirectmintinghourlylimituba",
@@ -1399,7 +1398,7 @@ export const operationalParameters = [
         },
       },
       {
-        name: "Direct Minting Daily Limit",
+        name: "Minting Daily Limit",
         functionName: "getDirectMintingDailyLimitUBA",
         interfaceLink:
           "/fassets/reference/IAssetManager#getdirectmintingdailylimituba",
@@ -1418,12 +1417,12 @@ export const operationalParameters = [
         },
       },
       {
-        name: "Direct Minting Large Minting Threshold",
+        name: "Minting Large Minting Threshold",
         functionName: "getDirectMintingLargeMintingThresholdUBA",
         interfaceLink:
           "/fassets/reference/IAssetManager#getdirectmintinglargemintingthresholduba",
         description:
-          "Threshold above which a direct minting is considered large, in base unit of the underlying asset (UBA). Amounts strictly greater than this value are always delayed by Direct Minting Large Minting Delay, even when governance has bypassed the hourly/daily limiter.",
+          "Threshold above which a minting is considered large, in base unit of the underlying asset (UBA). Amounts strictly greater than this value are always delayed by Minting Large Minting Delay, even when governance has bypassed the hourly/daily limiter.",
         values: {
           flare: {
             xrp: "4M XRP",
@@ -1437,12 +1436,12 @@ export const operationalParameters = [
         },
       },
       {
-        name: "Direct Minting Large Minting Delay",
+        name: "Minting Large Minting Delay",
         functionName: "getDirectMintingLargeMintingDelaySeconds",
         interfaceLink:
           "/fassets/reference/IAssetManager#getdirectmintinglargemintingdelayseconds",
         description:
-          "Fixed delay in seconds before a large direct minting (amount strictly above Direct Minting Large Minting Threshold) can execute. Not bypassed by governance unblock of the hourly/daily limiter.",
+          "Fixed delay in seconds before a large minting (amount strictly above Minting Large Minting Threshold) can execute. Not bypassed by governance unblock of the hourly/daily limiter.",
         values: {
           flare: {
             xrp: "2 hours",
@@ -1456,11 +1455,11 @@ export const operationalParameters = [
         },
       },
       {
-        name: "Direct Minting Fee Receiver",
+        name: "Minting Fee Receiver",
         functionName: "getDirectMintingFeeReceiver",
         interfaceLink:
           "/fassets/reference/IAssetManager#getdirectmintingfeereceiver",
-        description: "Address that receives the direct minting fee.",
+        description: "Address that receives the minting fee.",
         valueType: "address",
         values: {
           flare: {

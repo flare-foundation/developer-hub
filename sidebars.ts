@@ -249,7 +249,6 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       link: { type: "doc", id: "fassets/overview" },
       items: [
-        "fassets/direct-minting",
         "fassets/minting",
         "fassets/redemption",
         "fassets/collateral",
@@ -271,7 +270,7 @@ const sidebars: SidebarsConfig = {
         },
         {
           type: "doc",
-          id: "fassets/troubleshooting/direct-minting-troubleshooting",
+          id: "fassets/troubleshooting/minting-troubleshooting",
           label: "Troubleshooting",
         },
         {

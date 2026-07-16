@@ -131,7 +131,7 @@ export async function getFxrpDecimals() {
 }
 ```
 
-The `computeDirectMintingPaymentAmountXrp` function is a helper that computes the XRP amount required for a [direct minting](/fassets/direct-minting) payment.
+The `computeDirectMintingPaymentAmountXrp` function is a helper that computes the XRP amount required for a [direct minting](/fassets/minting) payment.
 It reads three values from the FXRP `AssetManager` — the per-operation executor fee, the proportional minting fee (in BIPS), and the minimum minting fee — and adds them on top of the requested net mint amount.
 
 ```typescript title="src/utils/fassets.ts"
@@ -466,7 +466,7 @@ const bridgeEvent = await sendMemoFieldInstruction({
 });
 ```
 
-The first payment is the one that actually mints FXRP: the XRP arrives at the [Core Vault](/fassets/core-vault) on XRPL, the FAssets executor proves the [direct mint](/fassets/direct-minting) payment to Flare, and the `MasterAccountController` mints FXRP into the personal account and executes the embedded approve in the same on-chain transaction.
+The first payment is the one that actually mints FXRP: the XRP arrives at the [Core Vault](/fassets/core-vault) on XRPL, the FAssets executor proves the [direct mint](/fassets/minting) payment to Flare, and the `MasterAccountController` mints FXRP into the personal account and executes the embedded approve in the same on-chain transaction.
 The second payment carries no mint value (`memoOnlyAmountXrp` only covers the protocol fee for the memo) and triggers the bridge call that hands the FXRP to LayerZero.
 
 :::info
@@ -633,4 +633,4 @@ FXRP arrived on Sepolia:
 
 - [Cross-Chain Redeem guide](/smart-accounts/guides/typescript-viem/cross-chain-redeem-ts)
 - [Cross-Chain Redeem to Tag guide](/smart-accounts/guides/typescript-viem/cross-chain-redeem-to-tag-ts)
-- [Direct Minting overview](/fassets/direct-minting)
+- [Minting overview](/fassets/minting)

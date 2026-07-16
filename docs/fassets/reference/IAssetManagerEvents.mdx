@@ -159,7 +159,7 @@ This includes payments with no memo, an unrecognized memo, or an unregistered de
 - Optional `msg.value` on `executeDirectMinting` is forwarded to the smart account manager (for example, composed redeem flows).
 - `mintedAmountUBA = receivedAmount - mintingFeeUBA` (no executor fee deducted on-chain by the AssetManager).
 
-See [Direct Minting Troubleshooting — smart account path](/fassets/troubleshooting/direct-minting-troubleshooting#smart-account-path) and [unrecognized memo routes to smart accounts](/fassets/troubleshooting/direct-minting-troubleshooting#4-unrecognized-memo-routes-to-smart-accounts).
+See [Minting Troubleshooting — smart account path](/fassets/troubleshooting/minting-troubleshooting#smart-account-path) and [unrecognized memo routes to smart accounts](/fassets/troubleshooting/minting-troubleshooting#4-unrecognized-memo-routes-to-smart-accounts).
 
 Parameters:
 
@@ -194,7 +194,7 @@ The system minting fee takes priority over the executor fee.
 **Threshold:** `receivedAmountUBA < minimumMintingFeeUBA`, where `minimumMintingFeeUBA` comes from [`getDirectMintingMinimumFeeUBA()`](/fassets/reference/IAssetManager#getdirectmintingminimumfeeuba).
 Payments **equal to** the minimum fee do not emit this event.
 
-See [Direct Minting Troubleshooting — payment below minimum fee](/fassets/troubleshooting/direct-minting-troubleshooting#1-payment-below-the-minimum-minting-fee) for prevention guidance.
+See [Minting Troubleshooting — payment below minimum fee](/fassets/troubleshooting/minting-troubleshooting#1-payment-below-the-minimum-minting-fee) for prevention guidance.
 
 Parameters:
 
@@ -211,7 +211,7 @@ event DirectMintingPaymentTooSmallForFee(
 
 ### `DirectMintingDelayed`
 
-Emitted when a direct minting is throttled by the **hourly or daily** [rate limiter](/fassets/direct-minting#rate-limits) and its execution is postponed.
+Emitted when a direct minting is throttled by the **hourly or daily** [rate limiter](/fassets/minting#rate-limits) and its execution is postponed.
 
 For amounts strictly above [`getDirectMintingLargeMintingThresholdUBA()`](/fassets/reference/IAssetManager#getdirectmintinglargemintingthresholduba), see [`LargeDirectMintingDelayed`](#largedirectmintingdelayed) instead.
 
@@ -242,7 +242,7 @@ Large mints are **not** counted toward those rate-limiter windows.
 The executor must wait until `executionAllowedAt` and call `executeDirectMinting` again with the same FDC proof.
 This delay is **not** bypassed by governance [`unblockDirectMintingsUntil`](/fassets/reference/IAssetManager#getdirectmintingsunblockuntiltimestamp).
 
-See [Large minting delay](/fassets/direct-minting#large-minting-delay) and [Direct Minting Troubleshooting — delays](/fassets/troubleshooting/direct-minting-troubleshooting#delays).
+See [Large minting delay](/fassets/minting#large-minting-delay) and [Minting Troubleshooting — delays](/fassets/troubleshooting/minting-troubleshooting#delays).
 
 Parameters:
 
@@ -270,7 +270,7 @@ This bypass does **not** apply to [`LargeDirectMintingDelayed`](#largedirectmint
 
 After unblocking, integrators can call [`markUnblockedDirectMintingAllowed(transactionId)`](/fassets/reference/IAssetManager#markunblockeddirectmintingallowed) to reset a preferred executor's exclusive window from the unblock time.
 
-See [Direct Minting Troubleshooting — delays](/fassets/troubleshooting/direct-minting-troubleshooting#delays).
+See [Minting Troubleshooting — delays](/fassets/troubleshooting/minting-troubleshooting#delays).
 
 Parameters:
 

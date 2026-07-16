@@ -24,12 +24,12 @@ In this guide, we will walk you through all aspects of the [FAssets](/fassets/ov
 We will start with an account on XRPL, convert some of the XRP to FXRP on Flare, deposit it into an Upshift-type vault, redeem it from the vault, and then redeem FXRP back to XRP.
 The steps we will take will be as follows:
 
-1. **mint and deposit:** convert XRP to FXRP and deposit it to an Upshift-type vault
-2. **request redeem:** start the withdrawal process of the deposited FXRP the Upshift-type vault
+1. **mint and deposit:** convert XRP to FXRP via [FAssets minting](/fassets/minting), then deposit to an Upshift-type vault
+2. **request redeem:** start the withdrawal process of the deposited FXRP from the Upshift-type vault
 3. **claim:** finish the withdrawal process of FXRP from the Upshift-type vault
 4. **redeem:** convert FXRP back to XRP
 
-We will do all of that through the [Flare Smart Accounts CLI](/smart-accounts/guides/cli/introduction).
+We will do the deposit, withdraw, and redeem steps through the [Flare Smart Accounts CLI](/smart-accounts/guides/cli/introduction).
 The CLI allows us to make XRPL transactions through terminal commands.
 
 :::note
@@ -40,61 +40,24 @@ The same process can be repeated for a Firelight-type vault, but in this guide, 
 
 ## Mint and deposit
 
-First, we mint FXRP by reserving the necessary collateral and then sending XRP to the agent's underlying address.
-We will mint `1` lot of FXRP, with the agent at the address whose vault has the ID `1`.
-Then, we deposit `10` FXRP into the Upshift-type vault, registered with the `MasterAccountController` with the ID `2`.
+First, mint FXRP via [FAssets minting](/fassets/minting): send an XRPL `Payment` to the Core Vault with a memo or destination tag that credits your personal account.
+Follow the [Mint FXRP](/fassets/developer-guides/fassets-mint) guide (or mint-and-action via a [memo-field custom instruction](/smart-accounts/memo-field-custom-instruction)).
 
-The CLI command that does this is:
+:::caution[Legacy]
+Do not use `upshift-cr-deposit` or `fxrp-cr` with `bridge mint-tx` as the primary mint path.
+Those encode the deprecated collateral-reservation (CRT) flow.
+External CLI encode commands for CRT may still exist in `smart_accounts.py`, but they are not the recommended user mint path.
+:::
 
-```sh
-./smart_accounts.py encode upshift-cr-deposit --wallet-id 0 --value 1 --agent-vault-id 1 --vault-id 2 \
-  | ./smart_accounts.py bridge instruction - \
-  | ./smart_accounts.py bridge mint-tx --wait -
-```
-
-<details>
-<summary>Expected output</summary>
-```
-sent bridge instruction transaction: 77539CDED3BD58E151CD0000EEC611A43A5539620B7CE4198BB3D63B031E9818
-sent mint tx: 3C65E10D609AB3CC1DBD03C96E401704123C0630D8AE5622B651A1E0159C1D38
-3C65E10D609AB3CC1DBD03C96E401704123C0630D8AE5622B651A1E0159C1D38
-```
-
-</details>
-
-The CLI sends both the Upshift collateral reservation and deposit instruction, and the `Payment` transaction to the agent's underlying address.
-
-We could perform the minting and deposit steps separately.
-To do so, we would do so with the following commands.
-But that would take an additional transaction and twice as long, so it is recommended that we avoid it unless we have a very specific reason why the first command is not suitable.
-
-```sh
-./smart_accounts.py encode fxrp-cr --wallet-id 0 --value 1 --agent-vault-id 1 \
-  | ./smart_accounts.py bridge instruction - \
-  | ./smart_accounts.py bridge mint-tx --wait -
-```
-
-The first command reserves `1` lot of collateral with the agent's vault with ID `1`, and makes a mint payment to its address.
+After FXRP is in the personal account, deposit `10` FXRP into the Upshift-type vault registered with the `MasterAccountController` with the ID `2`:
 
 ```sh
 ./smart_accounts.py encode upshift-deposit --wallet-id 0 --value 10 --vault-id 2 \
   | ./smart_accounts.py bridge instruction -
 ```
 
-The second command deposits `10` FXRP into an Upshift-type vault registered with the ID `2`.
-
 <details>
-<summary>Expected outputs</summary>
-
-Mint:
-
-```sh
-sent bridge instruction transaction: 75FB3ED006417FC1537432DA2D7180BD5BED93F23B988F77E32ED0804CD1A332
-sent mint tx: 4BF8F3B32E234335F9EC6FE503E33B9EDF4E3E37D1E952DF28D260AC909609F1
-4BF8F3B32E234335F9EC6FE503E33B9EDF4E3E37D1E952DF28D260AC909609F1
-```
-
-Deposit:
+<summary>Expected output</summary>
 
 ```sh
 sent bridge instruction transaction: 404EE0470152513277B10E5ADB6388175010634CDAF1815979ED418CDBAD0C45
@@ -110,9 +73,6 @@ The same flow applies to both Upshift-type and Firelight-type vaults.
 The process involves two steps.
 Before we can withdraw the tokens, we need to request their withdrawal.
 In a production build, the tokens stay locked for a specified time.
-
-The CLI first sends the `withdraw` instruction, and afterwards, the `claimWithdraw`.
-The first instruction starts the withdrawal process, and the second claims the FXRP once it is released.
 
 To request the withdrawal of `10` FXRP from the Upshift-type vault with ID `2`, we use the command:
 

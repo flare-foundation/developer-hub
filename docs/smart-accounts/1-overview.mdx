@@ -51,7 +51,7 @@ Flare Smart Accounts support two complementary flows for turning an XRPL `Paymen
 
 ### Direct-minting (memo) flow
 
-1. The XRPL user sends a `Payment` to an FAssets agent's XRPL address that mints FXRP directly to the smart account, with the [memo field](/smart-accounts/custom-instruction-comparison) carrying the instruction.
+1. The XRPL user sends a `Payment` to the FAssets [Core Vault](/fassets/core-vault) XRPL address that mints FXRP to the smart account (or with a [memo instruction](/smart-accounts/custom-instruction-comparison)), as described in [FAssets minting](/fassets/minting).
 2. The FAssets `AssetManager` mints FXRP to the `MasterAccountController` and calls back into [`handleMintedFAssets`](/smart-accounts/reference/IMasterAccountController#handlemintedfassets).
 3. The `MasterAccountController` routes the FAssets to the user's `PersonalAccount`, optionally pays an executor fee, and dispatches any [memo instruction](#memo-opcodes-direct-minting-flow).
 
@@ -59,7 +59,7 @@ Flare Smart Accounts support two complementary flows for turning an XRPL `Paymen
 graph TB
  subgraph XRPL["XRPL"]
  User(["<b>user account</b>"])
- Agent(["<b>FAssets agent</b><br/><i>XRPL address</i>"])
+ CoreVault(["<b>Core Vault</b><br/><i>XRPL address</i>"])
  end
 
  subgraph Flare["Flare"]
@@ -69,8 +69,8 @@ graph TB
  PersonalAccount["<b>PersonalAccount</b><br/><i>contract</i>"]
  end
 
- User -- "1 - Payment + memo" --> Agent
- Agent -. "2 - observe payment" .-> Executor
+ User -- "1 - Payment + memo" --> CoreVault
+ CoreVault -. "2 - observe payment" .-> Executor
  Executor -- "3 - executeDirectMinting" --> AssetManager
  AssetManager == "4 - mint FXRP +<br/>handleMintedFAssets callback" ==> MasterAccountController
  MasterAccountController -- "5 - forward FXRP +<br/>dispatch memo instruction" --> PersonalAccount
@@ -81,10 +81,11 @@ graph TB
 ```
 
 <p style={{ textAlign: "center", fontStyle: "italic" }}>
-  Direct-minting flow: XRPL `Payment` carrying a memo (1) → FAssets agent (2) →
-  executor calls `AssetManager.executeDirectMinting` (3) → `AssetManager` mints
-  FXRP and calls back into `handleMintedFAssets` (4) → `MasterAccountController`
-  forwards FXRP and dispatches the memo to the user's `PersonalAccount` (5).
+  Direct-minting flow: XRPL `Payment` to the Core Vault carrying a memo (1) →
+  executor observes and calls `AssetManager.executeDirectMinting` (2, 3) →
+  `AssetManager` mints FXRP and calls back into `handleMintedFAssets` (4) →
+  `MasterAccountController` forwards FXRP and dispatches the memo to the user's
+  `PersonalAccount` (5).
 </p>
 
 ## Instructions on XRPL
@@ -117,11 +118,11 @@ Instructions for interacting with the `FXRP` token.
 
 **Type ID:** `00`.
 
-| Command ID | Action                  | Description                                                                                                                                 |
-| ---------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `00`       | `collateralReservation` | Reserve a `value` of lots of collateral in the agent vault, registered with the `agentVaultId` with the `MasterAccountController` contract. |
-| `01`       | `transfer`              | Transfer a `value` (in drops) of FXRP to the `recipientAddress`.                                                                            |
-| `02`       | `redeem`                | Redeem a `value` of lots of FXRP.                                                                                                           |
+| Command ID | Action                  | Description                                                                                                                                                                                            |
+| ---------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `00`       | `collateralReservation` | _(Legacy CRT)_ Prefer [FAssets minting](/fassets/minting). Reserve a `value` of lots of collateral in the agent vault, registered with the `agentVaultId` with the `MasterAccountController` contract. |
+| `01`       | `transfer`              | Transfer a `value` (in drops) of FXRP to the `recipientAddress`.                                                                                                                                       |
+| `02`       | `redeem`                | Redeem a `value` of lots of FXRP.                                                                                                                                                                      |
 
 ### Firelight
 
@@ -129,12 +130,12 @@ Instructions for interacting with a Firelight-type vault.
 
 **Type ID:** `01`.
 
-| Command ID | Action                            | Description                                                                                                                                                                                                                                                                                                                                                                                         |
-| ---------- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `00`       | `collateralReservationAndDeposit` | Reserve a `value` of lots of collateral in the agent vault, registered with the `agentVaultId` with the `MasterAccountController` contract. After successful minting, deposit the FXRP into the Firelight type vault, registered with the `vaultId` with the `MasterAccountController` contract. Equivalent to sending a `collateralReservation` instruction and a Firelight `deposit` instruction. |
-| `01`       | `deposit`                         | Deposit a `value` of FXRP into the Firelight type vault, registered with the `vaultId` with the `MasterAccountController` contract.                                                                                                                                                                                                                                                                 |
-| `02`       | `redeem`                          | Start the withdrawal process for a `value` of vault shares (in drops) from the Firelight type vault, registered with the `vaultId`, with the `MasterAccountController` contract.                                                                                                                                                                                                                    |
-| `03`       | `claimWithdraw`                   | Withdraw the `FXRP`, requested in the `value` period, from the Firelight type vault, registered with the `vaultId`, with the `MasterAccountController` contract.                                                                                                                                                                                                                                    |
+| Command ID | Action                            | Description                                                                                                                                                                                                                                                                                                                                                                |
+| ---------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `00`       | `collateralReservationAndDeposit` | _(Legacy CRT)_ Prefer [FAssets minting](/fassets/minting) then `deposit`. Reserve a `value` of lots of collateral in the agent vault, registered with the `agentVaultId` with the `MasterAccountController` contract. After successful minting, deposit the FXRP into the Firelight type vault, registered with the `vaultId` with the `MasterAccountController` contract. |
+| `01`       | `deposit`                         | Deposit a `value` of FXRP into the Firelight type vault, registered with the `vaultId` with the `MasterAccountController` contract.                                                                                                                                                                                                                                        |
+| `02`       | `redeem`                          | Start the withdrawal process for a `value` of vault shares (in drops) from the Firelight type vault, registered with the `vaultId`, with the `MasterAccountController` contract.                                                                                                                                                                                           |
+| `03`       | `claimWithdraw`                   | Withdraw the `FXRP`, requested in the `value` period, from the Firelight type vault, registered with the `vaultId`, with the `MasterAccountController` contract.                                                                                                                                                                                                           |
 
 ### Upshift
 
@@ -142,12 +143,12 @@ Instructions for interacting with an Upshift-type vault.
 
 **Type ID:** `02`.
 
-| Command ID | Action                            | Description                                                                                                                                                                                                                                                                                                                                                                                      |
-| ---------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `00`       | `collateralReservationAndDeposit` | Reserve a `value` of lots of collateral in the agent vault, registered with the `agentVaultId` with the `MasterAccountController` contract. After successful minting, deposit the FXRP into the Upshift type vault, registered with the `vaultId`, with the `MasterAccountController` contract. Equivalent to sending a `collateralReservation` instruction and a Upshift `deposit` instruction. |
-| `01`       | `deposit`                         | Deposit a `value` of FXRP into the Upshift type vault, registered with the `vaultId` with the `MasterAccountController` contract.                                                                                                                                                                                                                                                                |
-| `02`       | `requestRedeem`                   | Start the withdrawal process for a `value` of vault shares (in drops) from the Upshift type vault, registered with the `vaultId` with the `MasterAccountController` contract.                                                                                                                                                                                                                    |
-| `03`       | `claim`                           | Withdraw the `FXRP` requested for the `value` date (encoded as `yyyymmdd`) from the Upshift type vault, registered with the `vaultId` with the `MasterAccountController` contract.                                                                                                                                                                                                               |
+| Command ID | Action                            | Description                                                                                                                                                                                                                                                                                                                                                               |
+| ---------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `00`       | `collateralReservationAndDeposit` | _(Legacy CRT)_ Prefer [FAssets minting](/fassets/minting) then `deposit`. Reserve a `value` of lots of collateral in the agent vault, registered with the `agentVaultId` with the `MasterAccountController` contract. After successful minting, deposit the FXRP into the Upshift type vault, registered with the `vaultId`, with the `MasterAccountController` contract. |
+| `01`       | `deposit`                         | Deposit a `value` of FXRP into the Upshift type vault, registered with the `vaultId` with the `MasterAccountController` contract.                                                                                                                                                                                                                                         |
+| `02`       | `requestRedeem`                   | Start the withdrawal process for a `value` of vault shares (in drops) from the Upshift type vault, registered with the `vaultId` with the `MasterAccountController` contract.                                                                                                                                                                                             |
+| `03`       | `claim`                           | Withdraw the `FXRP` requested for the `value` date (encoded as `yyyymmdd`) from the Upshift type vault, registered with the `vaultId` with the `MasterAccountController` contract.                                                                                                                                                                                        |
 
 </details>
 
@@ -189,13 +190,14 @@ The contract then resolves the XRPL user's `PersonalAccount` from the address ma
 
 ### Direct-minting flow
 
-When the user mints FXRP directly to their smart account via [FAssets direct minting](/fassets/direct-minting), the FAssets `AssetManager` calls back into [`handleMintedFAssets`](/smart-accounts/reference/IMasterAccountController#handlemintedfassets) on the `MasterAccountController`.
+When the user mints FXRP directly to their smart account via [FAssets minting](/fassets/minting), the FAssets `AssetManager` calls back into [`handleMintedFAssets`](/smart-accounts/reference/IMasterAccountController#handlemintedfassets) on the `MasterAccountController`.
 It enforces that the caller is the `AssetManager`, resolves (or deploys) the user's `PersonalAccount`, pays an executor fee out of the minted FAssets, forwards the remainder to the personal account, and dispatches any [memo instruction](#memo-opcodes-direct-minting-flow).
 
 ## Actions on Flare
 
 The XRPL user's smart account performs the actions in the instructions.
-This can be any of the instructions listed above, reserving collateral for minting FXRP, transferring FXRP to another address, redeeming FXRP, depositing it into a vault ...
+This can be any of the instructions listed above — transferring FXRP to another address, redeeming FXRP, depositing it into a vault, and so on.
+Minting FXRP itself uses [FAssets minting](/fassets/minting) (Core Vault payment), not a CRT Smart Accounts instruction.
 Furthermore, custom instructions can be executed - arbitrary function calls on Flare, encoded as an [EIP-4337](https://eips.ethereum.org/EIPS/eip-4337) `PackedUserOperation` and replayed on-chain by the personal account.
 The user operation can be committed to as a 32-byte hash with the bytes delivered to Flare by an off-chain executor (opcode `0xFE`, see the [Custom Instruction guide](/smart-accounts/custom-instruction)), or carried in the XRPL memo in full (opcode `0xFF`, see the [Memo Field Custom Instruction guide](/smart-accounts/memo-field-custom-instruction)).
 Authorization comes from the XRPL `Payment` signature itself; the on-chain check only validates the `sender` and `nonce` fields of the `PackedUserOperation`.

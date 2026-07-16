@@ -48,49 +48,18 @@ This value is assigned individually by the Flare, and is intended for wallet ide
 The commands of the `FXRP` type give access to base FAsset actions.
 The ID of the `FXRP` type is `0`.
 
-### `00` Collateral reservation
+### Minting FXRP (not a Smart Accounts instruction)
 
-Collateral reservation is the first step in the FAssets minting process.
-In anticipation of the transfer of XRP to the agent's underlying address on XRPL, a portion of its collateral is locked to prevent accidental under-collateralization.
-Since this action happens on the Flare chain, the gas fees need to be paid in the native FLR token.
+User minting does **not** use a Smart Accounts collateral-reservation (CRT) instruction.
+To mint FXRP, send an XRPL `Payment` to the [Core Vault](/fassets/core-vault) with a memo or destination tag that encodes the Flare recipient, as described in [FAssets minting](/fassets/minting).
 
-The collateral reservation action reserves a `value` of lots of collateral in the agent vault with the `agentVaultId`.
-The `MasterAccountController` keeps a registry of agent vault addresses, and the `agentVaultId` corresponds to one of the keys of that registry.
+- Programmatic walkthrough: [Mint FXRP](/fassets/developer-guides/fassets-mint)
+- Mint and run an action in one flow: [Memo Field Custom Instruction](/smart-accounts/memo-field-custom-instruction) (or [Custom Instruction](/smart-accounts/custom-instruction) for the hash-commitment variant)
 
-The process is performed by an `executor` with `executorFee` (explained in the [minting guide](/fassets/minting#executor-role));
-it is defined by the `MasterAccountController` contract.
-
-A collateral reservation payment reference is a 32-byte value:
-
-- byte representation of the instruction ID in the first byte:
-  - type ID `00` in the first nibble,
-  - command ID `00` in the second nibble,
-- byte representation of `walletId` in the second byte
-- byte representation of `value` in the next 10 bytes
-- byte representation of `agentVaultId` in the next two bytes
-- the remaining 18 bytes are ignored and can have an arbitrary value
-
-<div
-  style={{
-    width: "100%",
-    margin: "0 auto",
-    display: "flex",
-    justifyContent: "center",
-  }}
->
-  <ThemedImage
-    alt="Breakdown of bytes in payment reference for the collateral reservation action."
-    style={{ width: "100%" }}
-    sources={{
-      light: useBaseUrl(
-        "/img/docs/smart-accounts/bytes-fxrp-collateral-reservation-light.png",
-      ),
-      dark: useBaseUrl(
-        "/img/docs/smart-accounts/bytes-fxrp-collateral-reservation-dark.png",
-      ),
-    }}
-  />
-</div>
+:::caution[Legacy]
+The legacy `00` collateral-reservation instruction (`fxrp-cr`) may still exist in older CLI tooling.
+It is not the recommended user mint path.
+:::
 
 ### `01` Transfer
 
@@ -132,7 +101,7 @@ Redemption is the process of converting FXRP back to XRP.
 A `value` of lots of FXRP are burned from the personal account belonging to the XRPL address that sent the instruction;
 and the same `value` of lots of XRP is returned to the user's XRPL account.
 
-The process is performed by an `executor` with `executorFee` (explained in the [minting guide](/fassets/minting#executor-role));
+The process is performed by an `executor` with `executorFee` (see [fees](/fassets/minting#fees) and [executor restrictions](/fassets/minting#executor-restrictions));
 both of these are defined by the `MasterAccountController` contract.
 
 A redeem payment reference is the 32-byte value:
@@ -167,50 +136,21 @@ A redeem payment reference is the 32-byte value:
 The commands of the `Firelight` type allow interaction with Firelight-type vaults.
 The ID of the `Firelight` type is `1`.
 
-### `00` Collateral reservation and deposit
+### Mint then deposit
 
-Reserve the collateral for `value` lots of FXRP with the agent's vault, registered with the `agentVaultId` with the `MasterAccountController` contract.
-When minting is completed, deposit `value` lots of FXRP into a Firelight-type vault at the address registered with the `MasterAccountController` contract with the `vaultId`.
-Essentially, this allows an XRPL user to signal intent for two actions at once;
-it is equivalent to sending a collateral reservation instruction first, and afterwards a deposit instruction.
-This cuts the total waiting time in half and reduces the total number of transactions by one.
+To mint FXRP and deposit into Firelight, use [FAssets minting](/fassets/minting) first (XRPL payment to the Core Vault with memo or tag), then the deposit-only instruction (`01`) below once FXRP is in the personal account.
 
-A collateral reservation and deposit instruction payment reference is the 32-byte value:
+For mint-and-deposit in a single XRPL payment, use a [memo-field custom instruction](/smart-accounts/memo-field-custom-instruction) that calls the Firelight vault after minting.
 
-- byte representation of the instruction ID in the first byte:
-  - type ID `01` in the first nibble,
-  - command ID `00` in the second nibble,
-- byte representation of `walletId` in the second byte
-- byte representation of `value` in the next 10 bytes
-- byte representation of `agentVaultId` in the next 2 bytes
-- byte representation of `vaultId` in the next 2 bytes
-- the remaining 16 bytes are ignored and can have an arbitrary value
-
-<div
-  style={{
-    width: "100%",
-    margin: "0 auto",
-    display: "flex",
-    justifyContent: "center",
-  }}
->
-  <ThemedImage
-    alt="Breakdown of bytes in payment reference for the collateral reservation and deposit action."
-    style={{ width: "100%" }}
-    sources={{
-      light: useBaseUrl(
-        "/img/docs/smart-accounts/bytes-firelight-collateral-reservation-and-deposit-light.png",
-      ),
-      dark: useBaseUrl(
-        "/img/docs/smart-accounts/bytes-firelight-collateral-reservation-and-deposit-dark.png",
-      ),
-    }}
-  />
-</div>
+:::caution[Legacy]
+The combined `00` collateral-reservation-and-deposit instruction (`firelight-cr-deposit`) is a legacy CRT path.
+Prefer mint via [FAssets minting](/fassets/minting), then `01` Deposit.
+:::
 
 ### `01` Deposit
 
 Deposit `value` lots of FXRP into a Firelight-type vault at the address registered with the `MasterAccountController` contract with the `vaultId`.
+Use this after minting FXRP via [FAssets minting](/fassets/minting), or whenever the personal account already holds FXRP.
 
 A deposit instruction payment reference is the 32-byte value:
 
@@ -331,50 +271,21 @@ A claim withdrawal payment reference is a 32-byte value:
 The commands of the `Upshift` type allow interaction with Upshift-type vaults.
 The ID of the `Upshift` type is `2`.
 
-### `00` Collateral reservation and deposit
+### Mint then deposit
 
-Reserve the collateral for `value` lots of FXRP with the agent's vault, registered with the `agentVaultId` with the `MasterAccountController` contract.
-When minting is completed, deposit `value` lots of FXRP into an Upshift-type vault at the address registered with the `MasterAccountController` contract with the `vaultId`.
-Essentially, this allows an XRPL user to signal intent for two actions at once;
-it is equivalent to sending a collateral reservation instruction first, and afterwards a deposit instruction.
-This cuts the total waiting time in half and reduces the total number of transactions by one.
+To mint FXRP and deposit into Upshift, use [FAssets minting](/fassets/minting) first (XRPL payment to the Core Vault with memo or tag), then the deposit-only instruction (`01`) below once FXRP is in the personal account.
 
-A collateral reservation and deposit instruction payment reference is the 32-byte value:
+For mint-and-deposit in a single XRPL payment, use a [memo-field custom instruction](/smart-accounts/memo-field-custom-instruction) that calls the Upshift vault after minting.
 
-- byte representation of the instruction ID in the first byte:
-  - type ID `02` in the first nibble,
-  - command ID `00` in the second nibble,
-- byte representation of `walletId` in the second byte
-- byte representation of `value` in the next 10 bytes
-- byte representation of `agentVaultId` in the next 2 bytes
-- byte representation of `vaultId` in the next 2 bytes
-- the remaining 16 bytes are ignored and can have an arbitrary value
-
-<div
-  style={{
-    width: "100%",
-    margin: "0 auto",
-    display: "flex",
-    justifyContent: "center",
-  }}
->
-  <ThemedImage
-    alt="Breakdown of bytes in payment reference for the collateral reservation and deposit action."
-    style={{ width: "100%" }}
-    sources={{
-      light: useBaseUrl(
-        "img/docs/smart-accounts/bytes-upshift-collateral-reservation-and-deposit-light.png",
-      ),
-      dark: useBaseUrl(
-        "img/docs/smart-accounts/bytes-upshift-collateral-reservation-and-deposit-dark.png",
-      ),
-    }}
-  />
-</div>
+:::caution[Legacy]
+The combined `00` collateral-reservation-and-deposit instruction (`upshift-cr-deposit`) is a legacy CRT path.
+Prefer mint via [FAssets minting](/fassets/minting), then `01` Deposit.
+:::
 
 ### `01` Deposit
 
 Deposit `value` lots of FXRP into an Upshift type vault at the address registered with the `MasterAccountController` contract with the `vaultId`.
+Use this after minting FXRP via [FAssets minting](/fassets/minting), or whenever the personal account already holds FXRP.
 
 A deposit instruction payment reference is the 32-byte value:
 

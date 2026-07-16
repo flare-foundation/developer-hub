@@ -1,10 +1,10 @@
 ---
-title: Direct Mint FXRP with Tag
+title: Mint FXRP with Tag
 tags: [intermediate, fassets]
-slug: fassets-direct-minting-tag
+slug: fassets-mint-tag
 description: Mint FXRP using a reserved XRPL destination tag.
-keywords: [fassets, fxrp, direct-minting, minting-tag, flare-network, xrpl]
-sidebar_position: 6
+keywords: [fassets, fxrp, minting, minting-tag, flare-network, xrpl]
+sidebar_position: 5
 ---
 
 import CodeBlock from "@theme/CodeBlock";
@@ -14,14 +14,14 @@ import FAssetsDemoDapp from "./_fassets_demo_dapp.mdx";
 
 ## Overview
 
-This guide walks you through minting FXRP using [direct minting](/fassets/direct-minting) with an **XRPL destination tag** reserved on Flare that maps to a recipient (and optionally an executor).
+This guide walks you through minting FXRP using [minting](/fassets/minting) with an **XRPL destination tag** reserved on Flare that maps to a recipient (and optionally an executor).
 Once a tag is reserved and bound, every XRPL payment to the [Core Vault](/fassets/core-vault) carrying that destination tag mints FXRP to the configured recipient — no per-payment memo required.
 
 The complete runnable example is available in the [flare-viem-starter](https://github.com/flare-foundation/flare-viem-starter/blob/main/src/fassets/direct-mint-tag.ts) repository.
 
 ## Tag vs. memo
 
-Compared to the [memo-based direct minting](/fassets/developer-guides/fassets-direct-minting), the tag flow is better suited for repeat minters:
+Compared to the [memo-based minting](/fassets/developer-guides/fassets-mint), the tag flow is better suited for repeat minters:
 
 - **One-time setup**: reserve a tag once via [`MintingTagManager`](/fassets/reference/IMintingTagManager) — pay the [`reservationFee`](/fassets/reference/IMintingTagManager#reservationfee) in native token and bind the recipient with [`setMintingRecipient`](/fassets/reference/IMintingTagManager#setmintingrecipient).
 - **Reusable**: every subsequent XRPL payment with the same destination tag routes to the bound recipient without rebuilding a memo.
@@ -40,7 +40,7 @@ Compared to the [memo-based direct minting](/fassets/developer-guides/fassets-di
   - `MINTING_TAG` — _optional_.
     If set, the script reuses this tag rather than creating a new one.
 
-## Direct Minting Tag Script
+## Minting Tag Script
 
 <CodeBlock language="typescript" title="src/fassets/direct-mint-tag.ts">
   {FAssetsDirectMintingTag}
@@ -65,15 +65,15 @@ Compared to the [memo-based direct minting](/fassets/developer-guides/fassets-di
     - `getFxrpBalance` — the recipient's FXRP balance before minting.
     - `computeDirectMintingPaymentAmountXrp` — the gross XRP amount equal to the net mint amount plus the minting fee and the executor fee, as quoted by the `AssetManagerFXRP` contract.
 11. Send the XRPL payment to the [Core Vault](/fassets/core-vault) with `destinationTag: Number(tag)` — no memo required.
-12. Wait for direct minting to complete via `waitForDirectMintingOutcome`.
+12. Wait for minting to complete via `waitForDirectMintingOutcome`.
     This helper watches for both [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) and [`DirectMintingExecuted`](/fassets/reference/IAssetManagerEvents#directmintingexecuted):
     - If hourly or daily rate limits apply, an executor's first `executeDirectMinting` call emits [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) with `executionAllowedAt`.
-    - If the amount is strictly above the [large-mint threshold](/fassets/direct-minting#large-minting-delay), it emits [`LargeDirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#largedirectmintingdelayed) instead.
+    - If the amount is strictly above the [large-mint threshold](/fassets/minting#large-minting-delay), it emits [`LargeDirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#largedirectmintingdelayed) instead.
       The underlying XRP remains in the Core Vault; no FXRP has been minted yet.
     - After `executionAllowedAt`, the executor retries with the same FDC proof.
     - `waitForDirectMintingOutcome` logs any delay and keeps polling until `DirectMintingExecuted`.
 
-    Pre-flight a mint amount with the [Check Direct Minting Limits guide](/fassets/developer-guides/fassets-direct-minting-limits).
+    Pre-flight a mint amount with the [Check Minting Limits guide](/fassets/developer-guides/fassets-mint-limits).
 
     The executed event's `mintedAmountUBA`, `mintingFeeUBA`, and `executorFeeUBA` describe how the underlying payment was split.
 
@@ -85,18 +85,18 @@ Compared to the [memo-based direct minting](/fassets/developer-guides/fassets-di
   Tag reservation pays a fee in the native token.
   Tags are assigned sequentially.
 - **Executor changes are not immediate.** After calling the [`setAllowedExecutor`](/fassets/reference/IMintingTagManager#setallowedexecutor) function, the new executor only becomes active after a 10-minute cooldown to protect in-flight FDC proofs.
-  See [Executor Restrictions](/fassets/direct-minting#executor-restrictions).
+  See [Executor Restrictions](/fassets/minting#executor-restrictions).
 - **Transferring a tag resets it.**
   When ownership changes, the recipient is reset to the new owner, and the executor is reset to the zero address.
 - **Rate limits delay execution; they do not revert.**
   If the minting hits hourly or daily rate limits, the first finalization attempt emits [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) with `executionAllowedAt`.
-  If the amount is strictly above the [large-mint](/fassets/direct-minting#large-minting-delay) threshold, it emits [`LargeDirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#largedirectmintingdelayed) instead.
+  If the amount is strictly above the [large-mint](/fassets/minting#large-minting-delay) threshold, it emits [`LargeDirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#largedirectmintingdelayed) instead.
   Your XRP remains at the Core Vault until an executor retries.
-  Use `waitForDirectMintingOutcome` (see [Delayed minting flow](/fassets/direct-minting#delayed-minting-flow)) rather than waiting only for `DirectMintingExecuted`.
+  Use `waitForDirectMintingOutcome` (see [Delayed minting flow](/fassets/minting#delayed-minting-flow)) rather than waiting only for `DirectMintingExecuted`.
 
 ## Common Pitfalls
 
-Tag-specific mistakes — wrong reservation fee, non-owner recipient changes, executor cooldowns, and recipient reset on transfer — are covered in [Minting Tag Manager Pitfalls](/fassets/troubleshooting/direct-minting-troubleshooting#minting-tag-manager-pitfalls).
+Tag-specific mistakes — wrong reservation fee, non-owner recipient changes, executor cooldowns, and recipient reset on transfer — are covered in [Minting Tag Manager Pitfalls](/fassets/troubleshooting/minting-troubleshooting#minting-tag-manager-pitfalls).
 
 ## Video Tutorial
 
@@ -106,9 +106,9 @@ Tag-specific mistakes — wrong reservation fee, non-owner recipient changes, ex
 
 To continue your FAssets development journey, you can:
 
-- Mint without a tag using [memo-based direct minting](/fassets/developer-guides/fassets-direct-minting).
-- Transfer an existing tag to a new owner using [Transfer a Minting Tag](/fassets/developer-guides/fassets-direct-minting-tag-transfer).
-- Read the protocol details in [Direct Minting](/fassets/direct-minting).
+- Mint without a tag using [memo-based minting](/fassets/developer-guides/fassets-mint).
+- Transfer an existing tag to a new owner using [Transfer a Minting Tag](/fassets/developer-guides/fassets-mint-tag-transfer).
+- Read the protocol details in [Minting](/fassets/minting).
 - Redeem FAssets with [`redeemAmount`](/fassets/developer-guides/fassets-redeem-amount) or [`redeemWithTag`](/fassets/developer-guides/fassets-redeem-with-tag).
 
 :::

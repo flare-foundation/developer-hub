@@ -1,10 +1,10 @@
 ---
-title: Direct Mint FXRP
+title: Mint FXRP
 tags: [intermediate, fassets]
-slug: fassets-direct-minting
-description: Mint FXRP in a single XRPL payment using direct minting.
-keywords: [fassets, fxrp, direct-minting, flare-network, xrpl]
-sidebar_position: 5
+slug: fassets-mint
+description: Mint FXRP in a single XRPL payment.
+keywords: [fassets, fxrp, minting, flare-network, xrpl]
+sidebar_position: 4
 ---
 
 import CodeBlock from "@theme/CodeBlock";
@@ -13,17 +13,16 @@ import FAssetsDemoDapp from "./_fassets_demo_dapp.mdx";
 
 ## Overview
 
-This guide walks you through minting FAssets FXRP using [direct minting](/fassets/direct-minting): a single XRPL payment to the FXRP [Core Vault](/fassets/core-vault) with a memo that encodes the Flare-side recipient.
+This guide walks you through minting FAssets FXRP using [minting](/fassets/minting): a single XRPL payment to the FXRP [Core Vault](/fassets/core-vault) with a memo that encodes the Flare-side recipient.
 An executor then finalizes the mint on Flare, and the recipient receives FXRP.
 
 The complete runnable example is available in the [flare-viem-starter](https://github.com/flare-foundation/flare-viem-starter/blob/main/src/fassets/direct-mint.ts) repository.
 
-## How it differs from standard minting
+## How it works
 
-Compared to the standard [collateral reservation flow](/fassets/developer-guides/fassets-mint), direct minting is a single-step XRPL payment:
+Minting FXRP is a single-step XRPL payment:
 
-- No collateral reservation — the minter does not call [`reserveCollateral`](/fassets/developer-guides/fassets-mint#reserve-collateral) and there is no agent selection.
-- A single XRPL payment to the Core Vault address replaces the agent payment.
+- A single XRPL payment to the Core Vault address.
 - The recipient (and optionally the executor) is encoded in the XRPL memo or destination tag.
 - An executor calls [`executeDirectMinting`](/fassets/reference/IAssetManager#executedirectminting) on Flare to finalize and receives a flat fee.
 
@@ -35,20 +34,20 @@ This guide demonstrates the **32-byte memo format**, where the recipient is a Fl
 - Testnet XRP on the XRP Ledger Testnet usage.
   Get testnet XRP from the [XRP Testnet Faucet](https://xrpl.org/resources/dev-tools/xrp-faucets).
 
-## Direct Minting Memo
+## Minting Memo
 
-The memo is a packed 32-byte [`PaymentReference`](/fassets/direct-minting#memo-field):
+The memo is a packed 32-byte [`PaymentReference`](/fassets/minting#memo-field):
 
 | Bytes | Value              | Meaning                                                       |
 | :---- | :----------------- | :------------------------------------------------------------ |
-| 0-7   | `4642505266410018` | Direct minting prefix.                                        |
+| 0-7   | `4642505266410018` | Minting prefix (`DIRECT_MINTING`).                            |
 | 8-11  | `00000000`         | Zero padding to fill the 32-byte memo.                        |
 | 12-31 | 20-byte recipient  | EVM address of the Flare smart account receiving FXRP tokens. |
 
 Because no executor is encoded, anyone can finalize this minting on Flare.
-For executor-restricted minting, use the 48-byte memo format described in [Memo Field](/fassets/direct-minting#memo-field).
+For executor-restricted minting, use the 48-byte memo format described in [Memo Field](/fassets/minting#memo-field).
 
-## Direct Minting Script
+## Minting Script
 
 <CodeBlock language="typescript" title="src/fassets/direct-mint.ts">
   {FAssetsDirectMinting}
@@ -56,7 +55,7 @@ For executor-restricted minting, use the 48-byte memo format described in [Memo 
 
 ## Code Breakdown
 
-1. Define the direct minting prefix constant `DIRECT_MINTING_PREFIX`.
+1. Define the minting prefix constant `DIRECT_MINTING_PREFIX`.
 2. `buildDirectMintingMemo` concatenates the prefix, four zero bytes, and the recipient address (without the `0x` prefix, lowercased) into a 32-byte hex string ready to be passed as [`MemoData`](https://xrpl.org/docs/references/protocol/transactions/common-fields#memos-field) on the XRPL payment.
 3. `sendDirectMintPayment` builds the memo for the recipient and submits an XRPL `Payment` transaction to the [Core Vault](/fassets/core-vault) address with `memos: [{ Memo: { MemoData } }]`, returning the resulting transaction.
 4. Set the net FXRP amount to mint in XRP.
@@ -68,15 +67,15 @@ For executor-restricted minting, use the 48-byte memo format described in [Memo 
    - `getFxrpBalance` — the recipient's FXRP balance before minting.
    - `computeDirectMintingPaymentAmountXrp` — the gross XRP amount equal to the net mint amount plus the minting fee and the executor fee, as quoted by the `AssetManagerFXRP` contract.
 8. Send the XRPL payment to the Core Vault with the recipient memo via the `sendDirectMintPayment` function.
-9. Wait for direct minting to complete via `waitForDirectMintingOutcome`.
+9. Wait for minting to complete via `waitForDirectMintingOutcome`.
    This helper watches for both [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) and [`DirectMintingExecuted`](/fassets/reference/IAssetManagerEvents#directmintingexecuted):
    - If hourly or daily rate limits apply, an executor's first `executeDirectMinting` call emits [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) with `executionAllowedAt`.
-   - If the amount is strictly above the [large-mint threshold](/fassets/direct-minting#large-minting-delay), it emits [`LargeDirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#largedirectmintingdelayed) instead.
+   - If the amount is strictly above the [large-mint threshold](/fassets/minting#large-minting-delay), it emits [`LargeDirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#largedirectmintingdelayed) instead.
      The underlying XRP stays at the Core Vault; no FXRP is minted yet.
    - After `executionAllowedAt`, the executor retries with the same FDC proof.
    - `waitForDirectMintingOutcome` logs any delay and keeps polling until `DirectMintingExecuted`.
 
-   Pre-flight a mint amount with the [Check Direct Minting Limits guide](/fassets/developer-guides/fassets-direct-minting-limits).
+   Pre-flight a mint amount with the [Check Minting Limits guide](/fassets/developer-guides/fassets-mint-limits).
 
    The executed event's `mintedAmountUBA`, `mintingFeeUBA`, and `executorFeeUBA` describe how the underlying payment was split.
 
@@ -87,9 +86,9 @@ For executor-restricted minting, use the 48-byte memo format described in [Memo 
 - **Fees are deducted from the underlying payment.** The XRP sent to the [Core Vault](/fassets/core-vault) must cover the net mint amount plus the minting fee and the executor fee.
 - **If the payment is below the minimum minting fee**, no FXRP is minted, and the entire payment is forfeited to the fee receiver.
 - **Rate limits delay execution; they do not revert.** When hourly or daily limits apply, the first finalization attempt emits [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) with `executionAllowedAt`.
-  When the amount is strictly above the [large-mint](/fassets/direct-minting#large-minting-delay) threshold, it emits [`LargeDirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#largedirectmintingdelayed) instead.
+  When the amount is strictly above the [large-mint](/fassets/minting#large-minting-delay) threshold, it emits [`LargeDirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#largedirectmintingdelayed) instead.
   Your XRP remains at the Core Vault until an executor successfully retries.
-  Use `waitForDirectMintingOutcome` (see [Delayed minting flow](/fassets/direct-minting#delayed-minting-flow)) rather than waiting only for `DirectMintingExecuted`.
+  Use `waitForDirectMintingOutcome` (see [Delayed minting flow](/fassets/minting#delayed-minting-flow)) rather than waiting only for `DirectMintingExecuted`.
 - **For repeat minters**, prefer the destination-tag flow via `IMintingTagManager` — it avoids constructing a memo per payment and lets you set a preferred executor.
 
 ## Common mistakes
@@ -97,14 +96,14 @@ For executor-restricted minting, use the 48-byte memo format described in [Memo 
 Before sending XRP, validate the Core Vault address, minimum fee, and recipient encoding.
 The most costly errors — payment below the minimum fee, wrong recipient, or payment to the wrong XRPL address — do not revert and cannot be recovered on-chain.
 
-- [Direct Minting Troubleshooting](/fassets/troubleshooting/direct-minting-troubleshooting) — pre-flight checks, errors, delays, and recovery
+- [Minting Troubleshooting](/fassets/troubleshooting/minting-troubleshooting) — pre-flight checks, errors, delays, and recovery
 
 :::tip[What's next]
 
 To continue your FAssets development journey, you can:
 
-- Mint with tag with [`mintWithTag`](/fassets/developer-guides/fassets-direct-minting-tag).
-- Read the protocol details in [Direct Minting](/fassets/direct-minting).
+- Mint with tag with [Mint FXRP with Tag](/fassets/developer-guides/fassets-mint-tag).
+- Read the protocol details in [Minting](/fassets/minting).
 - Redeem FAssets with [`redeemAmount`](/fassets/developer-guides/fassets-redeem-amount) or [`redeemWithTag`](/fassets/developer-guides/fassets-redeem-with-tag).
 
 :::
