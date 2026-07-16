@@ -9,8 +9,8 @@ Interface for wrapping and unwrapping the native Flare token (FLR/SGB/C2FLR/CFLR
 Sourced from `IWNat.sol` in [`@flarenetwork/flare-periphery-contracts`](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts) (v0.1.41+).
 
 The published `IWNat` interface only declares the four functions below.
-The ERC-20 surface area (`balanceOf`, `transfer`, `approve`, `allowance`, ...) is inherited via the WNat implementation contract, not the `IWNat` interface; if you need those methods, import [`IVPToken`](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/IVPToken.sol) (which extends `IERC20`) instead.
-Vote-power and delegation methods (`delegate`, `governanceVotePower`, ...) come from `IVPToken` + [`IGovernanceVotePower`](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/IGovernanceVotePower.sol).
+The ERC-20 surface area (`balanceOf`, `transfer`, `approve`, `allowance`, ...) is inherited via the WNat implementation contract, not the `IWNat` interface; if you need those methods, import [`IVPToken`](https://github.com/flare-foundation/flare-solidity-periphery-package-mirror/blob/master/flare/IVPToken.sol) (which extends `IERC20`) instead.
+Vote-power and delegation methods (`delegate`, `governanceVotePower`, ...) come from `IVPToken` + [`IGovernanceVotePower`](https://github.com/flare-foundation/flare-solidity-periphery-package-mirror/blob/master/flare/IGovernanceVotePower.sol).
 
 ## Functions
 
@@ -66,6 +66,6 @@ Requirements:
 
 ## Related interfaces
 
-- [`IVPToken`](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/IVPToken.sol) — ERC-20 + vote-power view methods inherited by the WNat implementation.
-- [`IGovernanceVotePower`](https://github.com/flare-foundation/flare-smart-contracts-v2/blob/main/contracts/userInterfaces/IGovernanceVotePower.sol) — governance vote-power delegation methods.
+- [`IVPToken`](https://github.com/flare-foundation/flare-solidity-periphery-package-mirror/blob/master/flare/IVPToken.sol) — ERC-20 + vote-power view methods inherited by the WNat implementation.
+- [`IGovernanceVotePower`](https://github.com/flare-foundation/flare-solidity-periphery-package-mirror/blob/master/flare/IGovernanceVotePower.sol) — governance vote-power delegation methods.
 - [`IClaimSetupManager`](/network/solidity-reference/IClaimSetupManager) — claim executor configuration that builds on top of WNAT.
