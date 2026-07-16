@@ -97,9 +97,7 @@ function getMasterController() {
  */
 function buildDirectMintingMemo(recipientAddress: string): string {
   return (
-    DIRECT_MINTING_PREFIX +
-    "00000000" +
-    recipientAddress.slice(2).toLowerCase()
+    DIRECT_MINTING_PREFIX + "00000000" + recipientAddress.slice(2).toLowerCase()
   );
 }
 
@@ -436,12 +434,7 @@ async function main() {
     const personalAccountAddr = await getMasterController()
       .methods.getPersonalAccount(xrplWallet.address)
       .call();
-    await mintFXRP(
-      xrplWallet,
-      CONFIG.MINT_LOTS,
-      lotSize,
-      personalAccountAddr,
-    );
+    await mintFXRP(xrplWallet, CONFIG.MINT_LOTS, lotSize, personalAccountAddr);
   } else {
     console.log("✅ Sufficient FXRP balance found. Skipping mint.");
   }
