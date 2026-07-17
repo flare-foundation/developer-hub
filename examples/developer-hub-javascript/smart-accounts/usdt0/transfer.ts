@@ -9,7 +9,11 @@ import {
   sendHashInstruction,
   type Call,
 } from "../utils/smart-accounts";
-import { DEFAULT_AMOUNT_IN_UNITS, DEFAULT_TRANSFER_RECIPIENT, USDT0_ADDRESS } from "./config";
+import {
+  DEFAULT_AMOUNT_IN_UNITS,
+  DEFAULT_TRANSFER_RECIPIENT,
+  USDT0_ADDRESS,
+} from "./config";
 import { readUsdt0Balance, readUsdt0Decimals, toTokenAmount } from "./utils";
 
 // NOTE: For this example to work, faucet C2FLR and USDT0 to your personal
@@ -43,12 +47,20 @@ async function main() {
     readUsdt0Balance(personalAccount),
     readUsdt0Balance(recipient),
   ]);
-  console.log("Personal USDT0 before:", formatUnits(usdt0Before, decimals), "\n");
-  console.log("Recipient USDT0 before:", formatUnits(recipientBefore, decimals), "\n");
+  console.log(
+    "Personal USDT0 before:",
+    formatUnits(usdt0Before, decimals),
+    "\n",
+  );
+  console.log(
+    "Recipient USDT0 before:",
+    formatUnits(recipientBefore, decimals),
+    "\n",
+  );
 
   if (usdt0Before < amount) {
     throw new Error(
-      `Insufficient USDT0 on ${personalAccount}: have ${formatUnits(usdt0Before, decimals)}, need ${formatUnits(amount, decimals)}`
+      `Insufficient USDT0 on ${personalAccount}: have ${formatUnits(usdt0Before, decimals)}, need ${formatUnits(amount, decimals)}`,
     );
   }
 
@@ -84,7 +96,11 @@ async function main() {
   });
 
   // --- 3. CONFIRMATION ----------------------------------------------------
-  const event = findUserOperationExecuted(receipt, personalAccount, userSide.nonce);
+  const event = findUserOperationExecuted(
+    receipt,
+    personalAccount,
+    userSide.nonce,
+  );
   console.log("UserOperationExecuted:", event, "\n");
 
   const [usdt0After, recipientAfter] = await Promise.all([
@@ -92,8 +108,16 @@ async function main() {
     readUsdt0Balance(recipient),
   ]);
   console.log("Personal USDT0 after:", formatUnits(usdt0After, decimals), "\n");
-  console.log("Recipient USDT0 after:", formatUnits(recipientAfter, decimals), "\n");
-  console.log("USDT0 sent:", formatUnits(usdt0Before - usdt0After, decimals), "\n");
+  console.log(
+    "Recipient USDT0 after:",
+    formatUnits(recipientAfter, decimals),
+    "\n",
+  );
+  console.log(
+    "USDT0 sent:",
+    formatUnits(usdt0Before - usdt0After, decimals),
+    "\n",
+  );
 }
 
 void main()

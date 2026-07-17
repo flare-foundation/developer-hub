@@ -1,10 +1,12 @@
 import type { Address } from "viem";
 
 /** USDT0 on Coston2. Mainnet: 0xe7cd86e13AC4309349F30B3435a9d337750fC82D */
-export const USDT0_ADDRESS = "0xC1A5B41512496B80903D1f32d6dEa3a73212E71F" as Address;
+export const USDT0_ADDRESS =
+  "0xC1A5B41512496B80903D1f32d6dEa3a73212E71F" as Address;
 
 /** SparkDEX Uniswap V3 SwapRouter. See https://dev.flare.network/fxrp/token-interactions/usdt0-fxrp-swap */
-export const SWAP_ROUTER_ADDRESS = "0x8a1E35F5c98C4E85B36B7B253222eE17773b2781" as Address;
+export const SWAP_ROUTER_ADDRESS =
+  "0x8a1E35F5c98C4E85B36B7B253222eE17773b2781" as Address;
 
 /** USDT0/FXRP pool fee tier (0.05%). */
 export const POOL_FEE = 500;

@@ -36,21 +36,31 @@ import { readUsdt0Balance, readUsdt0Decimals, toTokenAmount } from "./utils";
 //
 // 0xFE is a three-step protocol; this script runs all three steps inline.
 async function main() {
-  const deadline = BigInt(Math.floor(Date.now() / 1000) + SWAP_DEADLINE_SECONDS);
+  const deadline = BigInt(
+    Math.floor(Date.now() / 1000) + SWAP_DEADLINE_SECONDS,
+  );
 
   const xrplClient = new Client(process.env.XRPL_TESTNET_RPC_URL!);
   const xrplWallet = Wallet.fromSeed(process.env.XRPL_SEED!);
 
-  const [personalAccount, fxrpAddress, memoOnlyAmountXrp, usdt0Decimals, fxrpDecimals] =
-    await Promise.all([
-      getPersonalAccountAddress(xrplWallet.address),
-      getFxrpAddress(),
-      computeDirectMintingPaymentAmountXrp({ netMintAmountXrp: 0 }),
-      readUsdt0Decimals(),
-      getFxrpDecimals(),
-    ]);
+  const [
+    personalAccount,
+    fxrpAddress,
+    memoOnlyAmountXrp,
+    usdt0Decimals,
+    fxrpDecimals,
+  ] = await Promise.all([
+    getPersonalAccountAddress(xrplWallet.address),
+    getFxrpAddress(),
+    computeDirectMintingPaymentAmountXrp({ netMintAmountXrp: 0 }),
+    readUsdt0Decimals(),
+    getFxrpDecimals(),
+  ]);
   const amountIn = toTokenAmount(DEFAULT_AMOUNT_IN_UNITS, usdt0Decimals);
-  const amountOutMinimum = toTokenAmount(DEFAULT_AMOUNT_OUT_MINIMUM_UNITS, fxrpDecimals);
+  const amountOutMinimum = toTokenAmount(
+    DEFAULT_AMOUNT_OUT_MINIMUM_UNITS,
+    fxrpDecimals,
+  );
 
   console.log("Personal account address:", personalAccount, "\n");
   console.log("FXRP address:", fxrpAddress, "\n");
@@ -60,7 +70,11 @@ async function main() {
   console.log("Swap router:", SWAP_ROUTER_ADDRESS, "\n");
   console.log("Memo-only amount (XRP, fees only):", memoOnlyAmountXrp, "\n");
   console.log("Amount in:", formatUnits(amountIn, usdt0Decimals), "USDT0");
-  console.log("Amount out minimum:", formatUnits(amountOutMinimum, fxrpDecimals), "FXRP\n");
+  console.log(
+    "Amount out minimum:",
+    formatUnits(amountOutMinimum, fxrpDecimals),
+    "FXRP\n",
+  );
 
   const [usdt0Before, fxrpBefore] = await Promise.all([
     readUsdt0Balance(personalAccount),
@@ -71,7 +85,7 @@ async function main() {
 
   if (usdt0Before < amountIn) {
     throw new Error(
-      `Insufficient USDT0 on ${personalAccount}: have ${formatUnits(usdt0Before, usdt0Decimals)}, need ${formatUnits(amountIn, usdt0Decimals)}`
+      `Insufficient USDT0 on ${personalAccount}: have ${formatUnits(usdt0Before, usdt0Decimals)}, need ${formatUnits(amountIn, usdt0Decimals)}`,
     );
   }
 
@@ -127,7 +141,11 @@ async function main() {
   });
 
   // --- 3. CONFIRMATION ----------------------------------------------------
-  const event = findUserOperationExecuted(receipt, personalAccount, userSide.nonce);
+  const event = findUserOperationExecuted(
+    receipt,
+    personalAccount,
+    userSide.nonce,
+  );
   console.log("UserOperationExecuted:", event, "\n");
 
   const [usdt0After, fxrpAfter] = await Promise.all([
@@ -136,8 +154,16 @@ async function main() {
   ]);
   console.log("USDT0 after:", formatUnits(usdt0After, usdt0Decimals), "\n");
   console.log("FXRP after:", formatUnits(fxrpAfter, fxrpDecimals), "\n");
-  console.log("USDT0 spent:", formatUnits(usdt0Before - usdt0After, usdt0Decimals), "\n");
-  console.log("FXRP received:", formatUnits(fxrpAfter - fxrpBefore, fxrpDecimals), "\n");
+  console.log(
+    "USDT0 spent:",
+    formatUnits(usdt0Before - usdt0After, usdt0Decimals),
+    "\n",
+  );
+  console.log(
+    "FXRP received:",
+    formatUnits(fxrpAfter - fxrpBefore, fxrpDecimals),
+    "\n",
+  );
 }
 
 void main()
