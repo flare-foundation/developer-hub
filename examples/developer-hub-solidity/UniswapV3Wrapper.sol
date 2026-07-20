@@ -112,7 +112,7 @@ contract UniswapV3Wrapper {
     }
 
     // 10. Swap exact input single function
-    // https://docs.uniswap.org/contracts/v3/reference/periphery/interfaces/ISwapRouter#exactinputsingle
+    // https://github.com/Uniswap/v3-periphery/blob/main/contracts/interfaces/ISwapRouter.sol
     function swapExactInputSingle(
         address tokenIn,
         address tokenOut,
