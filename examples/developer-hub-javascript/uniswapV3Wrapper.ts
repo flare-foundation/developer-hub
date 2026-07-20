@@ -165,7 +165,7 @@ async function executeSparkDexSwap(uniswapV3Wrapper: UniswapV3WrapperInstance) {
     AMOUNT_OUT_MIN.toString(),
     deadline,
     0, // sqrtPriceLimitX96 = 0 (no limit for the price)
-    // https://docs.uniswap.org/contracts/v3/guides/swaps/single-swaps#swap-input-parameters
+    // https://developers.uniswap.org/docs/protocols/v3/guides/swapping/single-hop-swapping
   );
 
   console.log("Transaction submitted:", swapTx);
