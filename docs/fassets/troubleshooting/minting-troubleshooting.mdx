@@ -1,14 +1,13 @@
 ---
-title: Direct Minting Troubleshooting
+title: Minting Troubleshooting
 tags: [intermediate, fassets]
-slug: direct-minting-troubleshooting
-description: Quick reference and full troubleshooting guide for FXRP direct minting — pre-flight checks, errors, delays, and recovery.
-keywords:
-  [fassets, fxrp, direct-minting, troubleshooting, flare-network, xrpl, errors]
+slug: minting-troubleshooting
+description: Quick reference and full troubleshooting guide for FXRP minting — pre-flight checks, errors, delays, and recovery.
+keywords: [fassets, fxrp, minting, troubleshooting, flare-network, xrpl, errors]
 sidebar_position: 1
 ---
 
-Use this page as a Developer Hub reference for FXRP [direct minting](/fassets/direct-minting).
+Use this page as a Developer Hub reference for FXRP [minting](/fassets/minting).
 The tables below are a one-screen summary; later sections add prevention steps, tag and executor edge cases, and smart-account routing.
 
 ## Before You Send XRP
@@ -16,14 +15,14 @@ The tables below are a one-screen summary; later sections add prevention steps, 
 Validate these **before** submitting an XRPL payment.
 Mistakes here are often irreversible.
 
-| Check                          | How to verify                                                                                                                                                                      | If wrong                                                                                                                                                                            |
-| :----------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Core Vault address**         | [`directMintingPaymentAddress()`](/fassets/reference/IAssetManager#directmintingpaymentaddress)                                                                                    | Payment not recognized; mint reverts with `InvalidReceivingAddress`                                                                                                                 |
-| **Amount ≥ minimum fee**       | [`getDirectMintingMinimumFeeUBA()`](/fassets/reference/IAssetManager#getdirectmintingminimumfeeuba)                                                                                | Entire payment goes to fee receiver; minter receives **0 FXRP** ([`DirectMintingPaymentTooSmallForFee`](/fassets/reference/IAssetManagerEvents#directmintingpaymenttoosmallforfee)) |
-| **Recipient encoding**         | Tag via [`MintingTagManager`](/fassets/reference/IMintingTagManager), or 32-byte / 48-byte memo (see [memo field](/fassets/direct-minting#memo-field))                             | FXRP may mint to the **wrong address** or route via smart accounts                                                                                                                  |
-| **Memo format**                | 32-byte: `DIRECT_MINTING` prefix + recipient. 48-byte: `DIRECT_MINTING_EX` + recipient + executor (see [Direct Mint FXRP](/fassets/developer-guides/fassets-direct-minting) guide) | Unrecognized memo → smart account path                                                                                                                                              |
-| **Not a donation**             | Do not use the [Core Vault](/fassets/core-vault) donation destination tag                                                                                                          | Reverts with `PaymentIsCoreVaultDonation`                                                                                                                                           |
-| **Not a redemption reference** | Do not reuse agent redemption memos                                                                                                                                                | Reverts with `ForbiddenPaymentReference`                                                                                                                                            |
+| Check                          | How to verify                                                                                                                                                     | If wrong                                                                                                                                                                            |
+| :----------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Core Vault address**         | [`directMintingPaymentAddress()`](/fassets/reference/IAssetManager#directmintingpaymentaddress)                                                                   | Payment not recognized; mint reverts with `InvalidReceivingAddress`                                                                                                                 |
+| **Amount ≥ minimum fee**       | [`getDirectMintingMinimumFeeUBA()`](/fassets/reference/IAssetManager#getdirectmintingminimumfeeuba)                                                               | Entire payment goes to fee receiver; minter receives **0 FXRP** ([`DirectMintingPaymentTooSmallForFee`](/fassets/reference/IAssetManagerEvents#directmintingpaymenttoosmallforfee)) |
+| **Recipient encoding**         | Tag via [`MintingTagManager`](/fassets/reference/IMintingTagManager), or 32-byte / 48-byte memo (see [memo field](/fassets/minting#memo-field))                   | FXRP may mint to the **wrong address** or route via smart accounts                                                                                                                  |
+| **Memo format**                | 32-byte: `DIRECT_MINTING` prefix + recipient. 48-byte: `DIRECT_MINTING_EX` + recipient + executor (see [Mint FXRP](/fassets/developer-guides/fassets-mint) guide) | Unrecognized memo → smart account path                                                                                                                                              |
+| **Not a donation**             | Do not use the [Core Vault](/fassets/core-vault) donation destination tag                                                                                         | Reverts with `PaymentIsCoreVaultDonation`                                                                                                                                           |
+| **Not a redemption reference** | Do not reuse agent redemption memos                                                                                                                               | Reverts with `ForbiddenPaymentReference`                                                                                                                                            |
 
 ## Irreversible Failures
 
@@ -84,7 +83,7 @@ Call [`executeDirectMinting`](/fassets/reference/IAssetManager#executedirectmint
 | `PaymentAlreadyConfirmed`                        | Same payment executed twice                                          | Normal — mint already completed                                                                                                                                 |
 | `MintingCapExceeded`                             | Global FAsset supply cap reached                                     | Retry later or wait for cap increase                                                                                                                            |
 | `PaymentIsCoreVaultDonation`                     | Core Vault donation tag used                                         | Use `confirmCoreVaultDonation` instead                                                                                                                          |
-| `ForbiddenPaymentReference`                      | Redemption-style memo detected                                       | Use a valid direct-minting memo or tag                                                                                                                          |
+| `ForbiddenPaymentReference`                      | Redemption-style memo detected                                       | Use a valid minting memo or tag                                                                                                                                 |
 | `NoDataExpectedForDirectMinting`                 | `executeDirectMintingWithData` used for tag/memo/direct path         | Use `executeDirectMinting` instead                                                                                                                              |
 | `NoValueExpected`                                | Non-zero `msg.value` on direct-recipient path                        | Send native tokens only on smart-account path                                                                                                                   |
 | `EmergencyPauseActive`                           | [System emergency pause](/fassets/emergency-pause)                   | Wait for unpause                                                                                                                                                |
@@ -118,7 +117,7 @@ Rate limits **delay** minting; they do not permanently reject it.
 - Attached native value (`msg.value`) is **returned** to the executor if minting is delayed.
 - Minting capacity is reserved during a delay and counts toward `MintingCapExceeded`.
 
-For off-chain pre-flight logic, see [Check Direct Minting Limits](/fassets/developer-guides/fassets-direct-minting-limits) and [rate limits](/fassets/direct-minting#rate-limits).
+For off-chain pre-flight logic, see [Check Minting Limits](/fassets/developer-guides/fassets-mint-limits) and [rate limits](/fassets/minting#rate-limits).
 
 ## Executor and Proof of Ownership
 
@@ -149,7 +148,7 @@ Use `proofOwner = address(0)` for open execution.
 | Tag transferred                                                           | Recipient resets to new owner; executor cleared immediately                          |
 | Executor changed                                                          | Cooldown before new executor is active — query `pendingAllowedExecutorChange(tagId)` |
 
-See [Minting Tag Manager](/fassets/direct-minting#minting-tag-manager) and [Transfer a Minting Tag](/fassets/developer-guides/fassets-direct-minting-tag-transfer).
+See [Minting Tag Manager](/fassets/minting#minting-tag-manager) and [Transfer a Minting Tag](/fassets/developer-guides/fassets-mint-tag-transfer).
 
 ## Smart Account Path
 
@@ -207,7 +206,7 @@ The executor fee is taken from the remainder.
 
 :::tip[What's next]
 
-- [Direct Mint FXRP](/fassets/developer-guides/fassets-direct-minting) · [Direct Mint with Tag](/fassets/developer-guides/fassets-direct-minting-tag) · [Check Direct Minting Limits](/fassets/developer-guides/fassets-direct-minting-limits)
-- Protocol overview: [Direct Minting](/fassets/direct-minting) · [Minting](/fassets/minting) · [Redemption](/fassets/redemption)
+- [Mint FXRP](/fassets/developer-guides/fassets-mint) · [Mint with Tag](/fassets/developer-guides/fassets-mint-tag) · [Check Minting Limits](/fassets/developer-guides/fassets-mint-limits)
+- Protocol overview: [Minting](/fassets/minting) · [Redemption](/fassets/redemption)
 
 :::

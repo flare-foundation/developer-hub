@@ -14,7 +14,7 @@ This is the summary of the redemption process:
 1. The redeemer starts the redemption by issuing a request to the Asset Manager smart contract.
    The standard `redeem` method requires a whole number of lots, while `redeemAmount` and `redeemWithTag` allow redeeming any amount.
 
-   The FAssets system chooses one or more redemption tickets from the front of the [FIFO redemption queue](/fassets/minting#redemption-tickets-and-the-redemption-queue).
+   The FAssets system chooses one or more redemption tickets from the front of the [FIFO redemption queue](#redemption-tickets-and-the-redemption-queue).
    The number of chosen redemption tickets is capped to avoid high gas consumption.
    If the redemption amount requires too many tickets, only a partial redemption is done.
 
@@ -29,7 +29,7 @@ This is the summary of the redemption process:
      Otherwise, malicious redeemers could provide an address that systematically blocks payments and exploits the redeeming process to their advantage.
 
    - Amount to pay minus the fee that was already subtracted.
-   - [A payment reference](/fassets/minting#minting-payment-reference).
+   - [A payment reference](#payment-reference).
      This payment reference is different for each agent and each redemption.
    - The last underlying block and the last underlying timestamp to complete the payment.
 
@@ -163,7 +163,103 @@ After enough time for the agent to present the proof has elapsed, anyone, includ
 Proofs provided by the [Flare Data Connector](/fdc/overview) can be created for 14 days and remain valid indefinitely once created.
 If neither the redeemer, the agent, nor the executor presents proof of payment or evidence of non-payment within the 14-day window, the regular redemption process cannot continue, and the agent's collateral could be locked indefinitely.
 
-The procedure to recover this collateral is the same as the procedure in the minting case.
+In this case, the agent can still recover the collateral by buying it back with native tokens:
+
+1. Request the proof from the time when the payment should have happened.
+   The Flare Data Connector's answer will indicate that payment proofs are no longer available for that time.
+2. Provide the amount of FLR collateral equivalent to the price of the underlying assets that should have been paid.
+3. Present the proof.
+
+Because a successful payment cannot be proven, the FAssets system burns the amount of collateral in native tokens provided by the agent.
+After the burn is complete, the rest of the agent's collateral is released, both from the vault and the collateral pool.
+
+:::warning
+Note that this procedure should be used only in rare cases because providing timely payment or nonpayment proofs is always more advantageous for agents.
+:::
+
+## Redemption Tickets and the Redemption Queue
+
+For every minting operation, a redemption ticket is created.
+This ticket references the minted amount and the agent that is backing the minting.
+
+The redemption tickets are ordered in a queue that determines the next agent to be redeemed against according to the first in, first out method (FIFO).
+In other words, the first redemption ticket created will be the first redemption ticket processed.
+The FIFO queue impartially ensures that all agents have the opportunity to fulfill the duties of their role.
+
+The following example shows how the redemption queue works.
+
+<details>
+<summary>Redemption queue example.</summary>
+
+1.  Alice mints 10 FXRP with Agent 1.
+2.  Bob mints 20 FXRP with Agent 2.
+3.  Charlie mints 5 FXRP with Agent 1.
+
+    After Alice, Bob, and Charlie have minted their FAssets, the redemption queue according to the FIFO method is:
+    1. Agent 1 with 10 FXRP.
+    2. Agent 2 with 20 FXRP.
+    3. Agent 1 with 5 FXRP.
+
+4.  Dana redeems 25 FXRP.
+    To redeem 25 FXRP:
+    1. Agent 1 pays 10 FXRP.
+    2. Agent 2 pays 15 FXRP.
+
+    Now, the redemption queue according to the FIFO method is:
+    1. Agent 2 with 5 FXRP.
+    2. Agent 1 with 5 FXRP.
+
+</details>
+
+## Payment Reference
+
+The system generates a unique payment reference for each agent participating in a redemption.
+The agent must include the payment reference in a memo field when the underlying payment transaction is made.
+
+The payment reference ensures the payment transaction cannot be used by another entity that might claim to have made the payment on the underlying chain.
+Additionally, if the payment time expires before payment is done, the redeemer can prove that no payment with that reference was made.
+
+## Lots
+
+Every redemption through the standard `redeem` method must be made in a positive integer of lots.
+Lots serve the following purposes:
+
+- They prevent underlying transaction fees from exceeding minting or redemption fees.
+- They restrict large numbers of very small redemption tickets from being submitted, which would increase gas costs.
+
+Therefore, the amount of tokens in a lot (the _lot size_) varies for each underlying chain.
+For example, on the XRPL chain, a lot can be as small as 10 XRP because transaction fees are low.
+On the other hand, on the Bitcoin chain, lots might need to be as big as 0.25 BTC or more because transactions are far more expensive.
+
+Over time, the lot size can be updated to reflect price fluctuations of the underlying asset.
+Only a governance call can update the lot size, and it can be updated only by a limited amount per day.
+
+Methods such as `redeemAmount` and `redeemWithTag` allow redeeming amounts that are not whole lots; see [Redeem Any Amount](#redeem-any-amount).
+
+## Dust
+
+Some processes generate a fractional number of lots:
+
+- On minting, part of the minting fee may be minted as the FAsset fee to the collateral pool.
+  This value is usually less than 1 lot.
+- When the lot size is changed, redemptions close only a positive integer of lots of each redemption ticket, which leaves the remainder unredeemed.
+
+These amounts, known as dust, cannot be redeemed through the standard `redeem` method because it requires a positive integer of lots.
+
+In such cases, the generated dust is not included in any redemption ticket.
+Instead, each agent's dust is accumulated until the dust amounts to a whole lot.
+When that happens, another redemption ticket is automatically created.
+
+Therefore, the dust can be recovered or destroyed in the following ways:
+
+- If the dust exceeds 1 lot during minting, the part that is a whole multiple of a lot is automatically added to the created redemption ticket.
+- If an agent does not mint any FAssets for a while but the lot size changes and several redemptions occur, enough dust might accumulate to more than 1 lot.
+
+  In this case, the part that is a whole multiple of a lot can be converted to a redemption ticket by request.
+  To prevent an inactive agent making FAssets less fungible, this request can be made by any address.
+
+- Self-closing can work with fractional lots, so it can be used to remove dust.
+- Liquidation can work with fractional lots too, so it can also be used to remove dust.
 
 ## Self-redemption
 
@@ -183,6 +279,6 @@ The self-redeemed amount is not limited to a positive integer of lots and can be
 
 Learn more about the different components and processes involved in FAssets - [collateral](/fassets/collateral), [minting](/fassets/minting), [liquidations](/fassets/liquidation), and [Core Vault](/fassets/core-vault).
 
-For developer resources, explore our [FXRP address](/fxrp/token-interactions/fxrp-address), [minting](/fassets/developer-guides/fassets-direct-minting), and [redemption](/fassets/developer-guides/fassets-redeem) guides to get started with FAssets integration.
+For developer resources, explore our [FXRP address](/fxrp/token-interactions/fxrp-address), [minting](/fassets/developer-guides/fassets-mint), and [redemption](/fassets/developer-guides/fassets-redeem) guides to get started with FAssets integration.
 
 :::

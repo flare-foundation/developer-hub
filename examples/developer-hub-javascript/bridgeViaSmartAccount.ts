@@ -9,7 +9,6 @@ import { Options } from "@layerzerolabs/lz-v2-utilities";
 import { EndpointId } from "@layerzerolabs/lz-definitions";
 import { Client, Wallet as XrplWallet, xrpToDrops } from "xrpl";
 import type { Payment } from "xrpl";
-import { FXRPCollateralReservationInstruction } from "@flarenetwork/smart-accounts-encoder";
 import { getAssetManagerFXRP } from "../utils/getters";
 import { sleep } from "../utils/core";
 import type {
@@ -21,7 +20,9 @@ import * as path from "path";
 
 const IERC20 = artifacts.require("IERC20");
 
-// ABIs
+// 32-byte DIRECT_MINTING PaymentReference prefix
+const DIRECT_MINTING_PREFIX = "4642505266410018";
+
 const MASTER_ACCOUNT_CONTROLLER_ABI = JSON.parse(
   fs.readFileSync(
     path.join(__dirname, "../abi/MasterAccountController.json"),
@@ -42,7 +43,6 @@ type CustomInstruction = {
   data: string;
 };
 
-// Configuration
 const CONFIG = {
   MASTER_ACCOUNT_CONTROLLER: "0xa7bc2aC84DB618fde9fa4892D1166fFf75D36FA6",
   COSTON2_OFT_ADAPTER: "0xCd3d2127935Ae82Af54Fc31cCD9D3440dbF46639",
@@ -68,6 +68,7 @@ async function getAssetManagerInfo(lots: number) {
   return {
     fxrpAddress,
     amountToBridge,
+    lotSize,
   };
 }
 
@@ -88,6 +89,42 @@ function getMasterController() {
     MASTER_ACCOUNT_CONTROLLER_ABI,
     CONFIG.MASTER_ACCOUNT_CONTROLLER,
   );
+}
+
+/**
+ * Build the 32-byte DIRECT_MINTING memo:
+ * [8-byte prefix][4-byte zero padding][20-byte recipient address]
+ */
+function buildDirectMintingMemo(recipientAddress: string): string {
+  return (
+    DIRECT_MINTING_PREFIX + "00000000" + recipientAddress.slice(2).toLowerCase()
+  );
+}
+
+/**
+ * Gross XRP payment = net mint + minting fee + executor fee.
+ * @see https://dev.flare.network/fassets/minting#fees
+ */
+async function computeDirectMintingPaymentAmountXrp(
+  assetManager: IAssetManagerInstance,
+  netMintAmountXrp: number,
+): Promise<number> {
+  const [executorFeeUBA, feeBIPS, minimumFeeUBA] = await Promise.all([
+    assetManager.getDirectMintingExecutorFeeUBA(),
+    assetManager.getDirectMintingFeeBIPS(),
+    assetManager.getDirectMintingMinimumFeeUBA(),
+  ]);
+
+  const netMintUBA = BigInt(xrpToDrops(netMintAmountXrp));
+  const proportionalFeeUBA =
+    (netMintUBA * BigInt(feeBIPS.toString())) / 10_000n;
+  const minFee = BigInt(minimumFeeUBA.toString());
+  const mintingFeeUBA =
+    proportionalFeeUBA > minFee ? proportionalFeeUBA : minFee;
+  const totalUBA =
+    netMintUBA + mintingFeeUBA + BigInt(executorFeeUBA.toString());
+
+  return Number(totalUBA) / 1_000_000;
 }
 
 /**
@@ -257,12 +294,12 @@ async function checkPersonalAccount(
   };
 }
 
-async function waitForReservationEvent(
+async function waitForDirectMintingExecuted(
   assetManager: IAssetManagerInstance,
-  agentVault: string,
+  targetAddress: string,
   startBlock: number,
 ) {
-  console.log("⏳ Waiting for Operator to Execute Reservation...");
+  console.log("⏳ Waiting for DirectMintingExecuted...");
   let currentFrom = startBlock;
   const MAX_BLOCK_RANGE = 25;
   const MAX_DURATION = 15 * 60 * 1000;
@@ -272,79 +309,68 @@ async function waitForReservationEvent(
     const latest = await web3.eth.getBlockNumber();
     while (currentFrom <= latest) {
       const currentTo = Math.min(currentFrom + MAX_BLOCK_RANGE, latest);
-      const events = await assetManager.getPastEvents("CollateralReserved", {
+      const events = await assetManager.getPastEvents("DirectMintingExecuted", {
         fromBlock: currentFrom,
         toBlock: currentTo,
-        filter: { agentVault: agentVault },
+        filter: { targetAddress },
       });
 
       if (events.length > 0) {
         const evt = events[events.length - 1];
-        console.log("\n✅ Event Detected in block", evt.blockNumber);
-        return {
-          valueUBA: BigInt(evt.returnValues.valueUBA),
-          paymentReference: evt.returnValues.paymentReference,
-        };
+        console.log("\n✅ DirectMintingExecuted in block", evt.blockNumber);
+        return evt;
       }
       currentFrom = currentTo + 1;
     }
     process.stdout.write(".");
     await sleep(5000);
   }
-  throw new Error("Timeout waiting for reservation event.");
+  throw new Error("Timeout waiting for DirectMintingExecuted.");
 }
 
-async function mintFXRP(xrplWallet: XrplWallet, lots: number) {
+/**
+ * Mint FXRP via FAssets minting: pay the Core Vault with a DIRECT_MINTING memo
+ * that credits the personal account.
+ * @see https://dev.flare.network/fassets/developer-guides/fassets-mint
+ */
+async function mintFXRP(
+  xrplWallet: XrplWallet,
+  lots: number,
+  lotSize: bigint,
+  personalAccountAddr: string,
+) {
   console.log(`\n=== Starting Mint for ${lots} Lot(s) ===`);
   const assetManager = await getAssetManagerFXRP();
-  const masterController = getMasterController();
-  const operatorAddress = await masterController.methods
-    .xrplProviderWallet()
-    .call();
 
-  const agents = await assetManager.getAvailableAgentsDetailedList(0, 20);
-  // Note: This is a proof of concept. In production, you can select your own agent.
-  const agentIndex = agents._agents.findIndex(
-    (a) => BigInt(a.freeCollateralLots) >= BigInt(lots),
+  const coreVaultXrplAddress = await assetManager.directMintingPaymentAddress();
+  const netMintAmountXrp = Number(lotSize * BigInt(lots)) / 1_000_000;
+  const paymentAmountXrp = await computeDirectMintingPaymentAmountXrp(
+    assetManager,
+    netMintAmountXrp,
   );
-  if (agentIndex === -1) throw new Error("No agents available");
-  const agent = agents._agents[agentIndex];
-  console.log(`Selected Agent: ${agent.agentVault} (index: ${agentIndex})`);
+  const memoHex = buildDirectMintingMemo(personalAccountAddr);
 
-  const agentInfo = await assetManager.getAgentInfo(agent.agentVault);
-  const agentXrplAddress = agentInfo.underlyingAddressString;
-
-  // Encode mint instruction using smart-accounts-encoder library
-  const reservationInstruction = new FXRPCollateralReservationInstruction({
-    walletId: 0,
-    value: lots,
-    agentVaultId: agentIndex,
-  });
-  const instructionMemo = reservationInstruction.encode().slice(2); // Remove '0x' prefix for XRPL memo
+  console.log(`Core Vault XRPL address: ${coreVaultXrplAddress}`);
+  console.log(`Personal account recipient: ${personalAccountAddr}`);
+  console.log(`Net mint: ${netMintAmountXrp} XRP`);
+  console.log(`Payment amount (net + fees): ${paymentAmountXrp} XRP`);
+  console.log(`DIRECT_MINTING memo: ${memoHex}`);
 
   const currentBlock = await web3.eth.getBlockNumber();
-  console.log(`1. Sending Reservation Trigger...`);
-  await sendXrplMemoPayment(xrplWallet, operatorAddress, "1", instructionMemo);
-
-  const { valueUBA, paymentReference } = await waitForReservationEvent(
-    assetManager,
-    agent.agentVault,
-    currentBlock,
-  );
-  const xrpAmount = Number(valueUBA) / 1_000_000;
-
-  console.log(`\n✅ Reservation Confirmed.`);
-  console.log(`2. Sending Underlying Collateral to Agent...`);
-  const refClean = paymentReference.replace("0x", "");
+  console.log("Sending XRPL payment to Core Vault...");
   await sendXrplMemoPayment(
     xrplWallet,
-    agentXrplAddress,
-    xrpAmount.toString(),
-    refClean,
+    coreVaultXrplAddress,
+    paymentAmountXrp.toString(),
+    memoHex,
   );
 
-  console.log("⏳ Waiting for FXRP Mint Execution (60s)...");
-  await sleep(60000);
+  await waitForDirectMintingExecuted(
+    assetManager,
+    personalAccountAddr,
+    currentBlock,
+  );
+  console.log("✅ FXRP minted to personal account.");
 }
 
 async function executeBridge(xrplWallet: XrplWallet, bridgeMemo: string) {
@@ -368,7 +394,7 @@ async function main() {
   const { signerAddress, xrplWallet } = await getWallets();
 
   // Get FXRP address and calculate bridge amount from lots
-  const { fxrpAddress, amountToBridge } = await getAssetManagerInfo(
+  const { fxrpAddress, amountToBridge, lotSize } = await getAssetManagerInfo(
     CONFIG.BRIDGE_LOTS,
   );
   console.log(
@@ -402,10 +428,13 @@ async function main() {
     console.log("Gas funded.");
   }
 
-  // 4. Mint (Skipped if balance exists!)
+  // 4. Mint via FAssets minting if balance is insufficient
   if (status.needsMint) {
     if (!CONFIG.AUTO_MINT_IF_NEEDED) throw new Error("Insufficient Funds");
-    await mintFXRP(xrplWallet, CONFIG.MINT_LOTS);
+    const personalAccountAddr = await getMasterController()
+      .methods.getPersonalAccount(xrplWallet.address)
+      .call();
+    await mintFXRP(xrplWallet, CONFIG.MINT_LOTS, lotSize, personalAccountAddr);
   } else {
     console.log("✅ Sufficient FXRP balance found. Skipping mint.");
   }

@@ -261,6 +261,37 @@ const config: Config = {
   plugins: [
     require.resolve("./webpack.config.js"),
     [
+      "@docusaurus/plugin-client-redirects",
+      {
+        redirects: [
+          {
+            from: "/fassets/direct-minting",
+            to: "/fassets/minting",
+          },
+          {
+            from: "/fassets/troubleshooting/direct-minting-troubleshooting",
+            to: "/fassets/troubleshooting/minting-troubleshooting",
+          },
+          {
+            from: "/fassets/developer-guides/fassets-direct-minting",
+            to: "/fassets/developer-guides/fassets-mint",
+          },
+          {
+            from: "/fassets/developer-guides/fassets-direct-minting-tag",
+            to: "/fassets/developer-guides/fassets-mint-tag",
+          },
+          {
+            from: "/fassets/developer-guides/fassets-direct-minting-limits",
+            to: "/fassets/developer-guides/fassets-mint-limits",
+          },
+          {
+            from: "/fassets/developer-guides/fassets-direct-minting-tag-transfer",
+            to: "/fassets/developer-guides/fassets-mint-tag-transfer",
+          },
+        ],
+      },
+    ],
+    [
       "docusaurus-plugin-copy-page-button",
       {
         mcpServer: {

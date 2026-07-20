@@ -15,36 +15,42 @@ In this guide, you will learn how to mint FXRP and bridge it cross-chain from Fl
 
 This guide demonstrates an end-to-end workflow that allows XRPL users to:
 
-1. **Mint FXRP** - Convert native XRP from the XRP Ledger into FXRP tokens on Flare, controlled entirely via XRPL transactions.
-2. **Bridge FXRP cross-chain** - Transfer the minted FXRP to another EVM chain (Sepolia) using LayerZero, triggered by a single XRPL payment.
+1. **Mint FXRP** — Convert native XRP from the XRP Ledger into FXRP on Flare via [FAssets minting](/fassets/minting) (payment to the Core Vault with a memo that credits the personal account).
+2. **Bridge FXRP cross-chain** — Transfer the minted FXRP to another EVM chain (Sepolia) using LayerZero, triggered by a Smart Accounts custom instruction.
+
+:::tip[Preferred TypeScript path]
+For the modern mint-and-bridge flow with Viem (mint via Core Vault + memo-field custom instructions), follow the [Cross-Chain Mint](/smart-accounts/guides/typescript-viem/cross-chain-mint-ts) guide.
+The Hardhat script below is an alternate illustration that registers a proof-based custom instruction for the bridge leg.
+:::
 
 **Key technologies:**
 
-- [Flare Smart Accounts](/smart-accounts/overview) - Account abstraction enabling XRPL users to execute actions on Flare without holding FLR tokens.
-- **Custom Instructions** - Register arbitrary contract calls that can be triggered via XRPL payments.
-- [FAsset System](/fassets/overview) for tokenizing non-smart contract assets (XRP to FXRP).
+- [Flare Smart Accounts](/smart-accounts/overview) — Account abstraction enabling XRPL users to execute actions on Flare without holding FLR tokens.
+- **Custom Instructions** — Register arbitrary contract calls that can be triggered via XRPL payments.
+- [FAssets minting](/fassets/minting) for tokenizing XRP to FXRP.
 - [LayerZero OFT](https://docs.layerzero.network/v2/developers/evm/oft/quickstart) for cross-chain token transfers.
-- [@flarenetwork/smart-accounts-encoder](https://www.npmjs.com/package/@flarenetwork/smart-accounts-encoder) library for encoding FAsset instructions.
 
-Clone the [Flare Hardhat Starter](https://github.com/flare-foundation/flare-hardhat-starter) to follow along.
+Clone the [Flare Hardhat Starter](https://github.com/flare-foundation/flare-hardhat-starter) to follow along with the script below.
 
 ## How Smart Accounts Enable This Workflow
 
 [Flare Smart Accounts](/smart-accounts/overview) allow XRPL users to perform actions on the Flare chain without owning any FLR tokens.
 Each XRPL address is assigned a unique **personal account** (smart contract wallet) on Flare, which only that XRPL address can control through `Payment` transactions on the XRP Ledger.
 
-This script leverages two types of Smart Account instructions:
+This script uses two complementary pieces:
 
-### 1. FAsset Collateral Reservation Instruction
+### 1. FAssets minting to the personal account
 
-The [`FXRPCollateralReservationInstruction`](/smart-accounts/fasset-instructions#00-collateral-reservation) is a predefined instruction type that initiates the FAsset minting process.
-When sent via an XRPL payment memo:
+When the personal account needs FXRP, the script mints via [FAssets minting](/fassets/minting):
 
-1. The operator monitors the XRPL payment and relays it to Flare.
-2. The `MasterAccountController` contract reserves collateral from the selected agent.
-3. After the user sends XRP to the agent's underlying address, FXRP is minted to their personal account.
+1. Resolve the Core Vault XRPL address from [`directMintingPaymentAddress()`](/fassets/reference/IAssetManager#directmintingpaymentaddress).
+2. Build a 32-byte `DIRECT_MINTING` memo that encodes the personal account as recipient.
+3. Send an XRPL `Payment` to the Core Vault for the net mint amount plus [fees](/fassets/minting#fees).
+4. An executor calls [`executeDirectMinting`](/fassets/reference/IAssetManager#executedirectminting); FXRP is credited to the personal account.
 
-### 2. Custom Instruction for Atomic Bridging
+See the [Mint FXRP](/fassets/developer-guides/fassets-mint) developer guide for the full memo layout and fee helpers.
+
+### 2. Custom instruction for atomic bridging
 
 Custom instructions allow registering arbitrary contract calls that execute atomically.
 This script registers an **atomic batch** containing:
@@ -82,7 +88,8 @@ Both actions execute in a single transaction when triggered by the XRPL payment,
          v                          v                           |
 +-------------------+     +-------------------+                 |
 |  3a. Mint FXRP    |     |  3b. Skip Mint    |                 |
-|  (If needed)      |     |  (Has balance)    |                 |
+|  (Core Vault +    |     |  (Has balance)    |                 |
+|   DIRECT_MINTING) |     |                   |                 |
 +--------+----------+     +--------+----------+                 |
          |                         |                            |
          +-----------+-------------+                            |
@@ -101,8 +108,12 @@ Both actions execute in a single transaction when triggered by the XRPL payment,
 +-------------------+          +-------------------+          +-------------------+
 |    XRP Ledger     |          |   Flare Coston2   |          |     Sepolia       |
 |                   |          |                   |          |                   |
-|  XRPL Payment     |--------->|  MasterAccount    |          |                   |
-|  with Memo        |  FDC     |  Controller       |          |                   |
+|  Payment to Core  |--------->|  AssetManager     |          |                   |
+|  Vault + memo     |  FDC     |  executeDirect-   |          |                   |
+|                   |  Proof   |  Minting          |          |                   |
+|                   |          |       |           |          |                   |
+|  Bridge trigger   |--------->|  MasterAccount    |          |                   |
+|  (custom instr.)  |  FDC     |  Controller       |          |                   |
 |                   |  Proof   |       |           |          |                   |
 |                   |          |       v           |          |                   |
 |                   |          |  Personal Account |          |                   |
@@ -245,29 +256,39 @@ if (status.needsGas && status.hasAccount) {
 
 ### Step 4: Mint FXRP (If Needed)
 
-If the personal account has insufficient FXRP, the script initiates the [FAsset minting process](/fassets/minting) using the Smart Accounts system:
+If the personal account has insufficient FXRP, the script mints via [FAssets minting](/fassets/minting):
 
 ```typescript
-import { FXRPCollateralReservationInstruction } from "@flarenetwork/smart-accounts-encoder";
+const DIRECT_MINTING_PREFIX = "4642505266410018";
 
-// Encode the collateral reservation instruction
-const reservationInstruction = new FXRPCollateralReservationInstruction({
-  walletId: 0,
-  value: lots, // Number of lots to mint
-  agentVaultId: agentIndex, // Selected agent's index
-});
+function buildDirectMintingMemo(recipientAddress: string): string {
+  return (
+    DIRECT_MINTING_PREFIX + "00000000" + recipientAddress.slice(2).toLowerCase()
+  );
+}
 
-// Send XRPL payment with the instruction memo
-const instructionMemo = reservationInstruction.encode().slice(2);
-await sendXrplMemoPayment(xrplWallet, operatorAddress, "1", instructionMemo);
+const coreVaultXrplAddress = await assetManager.directMintingPaymentAddress();
+const paymentAmountXrp = await computeDirectMintingPaymentAmountXrp(
+  assetManager,
+  netMintAmountXrp,
+);
+const memoHex = buildDirectMintingMemo(personalAccountAddr);
+
+await sendXrplMemoPayment(
+  xrplWallet,
+  coreVaultXrplAddress,
+  paymentAmountXrp.toString(),
+  memoHex,
+);
 ```
 
 The minting process involves:
 
-1. **Reservation Trigger**: Send an XRPL payment to the operator with the encoded instruction.
-2. **Wait for Reservation**: The operator processes the payment and reserves collateral on Flare.
-3. **Send Underlying Collateral**: Send XRP to the agent's underlying address with the payment reference.
-4. **Mint Execution**: The operator executes the mint, depositing FXRP to the personal account.
+1. **Core Vault payment**: Send XRP to the Core Vault with a `DIRECT_MINTING` memo encoding the personal account.
+2. **Fee coverage**: Payment amount includes the net mint plus minting and executor fees (see [fees](/fassets/minting#fees)).
+3. **Finalization**: An executor calls `executeDirectMinting`; FXRP is credited to the personal account.
+
+For a mint that also runs an on-chain action in the same flow, prefer [memo-field custom instructions](/smart-accounts/memo-field-custom-instruction) as in the [Cross-Chain Mint](/smart-accounts/guides/typescript-viem/cross-chain-mint-ts) guide.
 
 ### Step 5: Execute the Bridge
 
@@ -364,30 +385,26 @@ const payment: Payment = {
 };
 ```
 
-#### `mintFXRP(xrplWallet, lots)`
+#### `mintFXRP(xrplWallet, lots, lotSize, personalAccountAddr)`
 
-Executes the full FAsset minting flow:
+Executes [FAssets minting](/fassets/minting) to the personal account:
 
-1. Selects an available agent with sufficient free collateral.
-2. Encodes and sends the collateral reservation instruction.
-3. Waits for the `CollateralReserved` event.
-4. Sends XRP collateral to the agent's underlying address.
-5. Waits for the mint to complete.
+1. Reads `directMintingPaymentAddress()` and fee settings from the AssetManager.
+2. Builds a 32-byte `DIRECT_MINTING` memo for the personal account recipient.
+3. Sends XRP to the Core Vault covering net mint plus fees.
+4. Waits for the `DirectMintingExecuted` event.
 
 ## Understanding the Instruction Encoding
 
-### FAsset Instructions
+### FAssets minting memo
 
-The `@flarenetwork/smart-accounts-encoder` library provides typed instruction builders.
-The collateral reservation instruction encodes to a 32-byte value:
+The minting payment uses the 32-byte [`PaymentReference`](/fassets/minting#memo-field) layout:
 
-| Bytes | Content                                                              |
-| ----- | -------------------------------------------------------------------- |
-| 0     | Instruction ID (`00` for FXRP type, `00` for collateral reservation) |
-| 1     | Wallet ID (typically `0`)                                            |
-| 2-11  | Value (number of lots)                                               |
-| 12-13 | Agent Vault ID                                                       |
-| 14-31 | Reserved                                                             |
+| Bytes | Content                                          |
+| ----- | ------------------------------------------------ |
+| 0-7   | `4642505266410018` (`DIRECT_MINTING` prefix)     |
+| 8-11  | Zero padding                                     |
+| 12-31 | Personal account recipient (20-byte EVM address) |
 
 ### Custom Instructions
 
@@ -401,10 +418,11 @@ uint256(keccak256(abi.encode(_customInstruction))) >> 8;
 ## FAQ
 
 **Q: What's the minimum amount I can bridge?**
-A: Minimum is 1 [lot](/fassets/minting#lots) (10 FXRP for XRP).
+A: Minimum is 1 [lot](/fassets/redemption#lots) (10 FXRP for XRP).
 
 **Q: How long does the minting process take?**
-A: Minting typically takes 1-2 minutes for the reservation, plus time for the underlying XRP payment to be confirmed and processed by the operator.
+A: After the XRPL payment to the Core Vault confirms, an executor finalizes with `executeDirectMinting`.
+Rate limits may emit `DirectMintingDelayed` before `DirectMintingExecuted` — see [delayed minting](/fassets/minting#delayed-minting-flow).
 
 **Q: What if the bridge execution fails?**
 A: If the atomic instruction fails (e.g., insufficient balance), the entire transaction reverts.
@@ -423,8 +441,8 @@ A: You need C2FLR (testnet FLR) to:
 The actual bridging is triggered via XRPL payments and executed by the operator.
 
 **Q: What is the operator's role?**
-A: The operator monitors XRPL payments to a designated address, obtains FDC proofs, and relays transactions to the `MasterAccountController` on Flare.
-This service enables XRPL users to trigger Flare actions without holding FLR.
+A: For the bridge custom instruction, the operator monitors XRPL payments to a designated address, obtains FDC proofs, and relays transactions to the `MasterAccountController` on Flare.
+Mint finalization is performed by an FAssets executor calling `executeDirectMinting`.
 
 **Q: Can I use this on mainnet?**
 A: This guide is for testnet.
@@ -436,19 +454,14 @@ For mainnet deployment, update contract addresses, thoroughly test, and audit al
 
 - Solution: Add your XRPL testnet wallet secret to the `.env` file.
 
-**Error: No agents available**
+**Error: Timeout waiting for DirectMintingExecuted**
 
-- Solution: No FAsset agents have sufficient free collateral.
-  Try with fewer lots or wait for agents to free up capacity.
-
-**Error: Timeout waiting for reservation event**
-
-- Solution: The operator may be delayed.
-  Check that the XRPL payment was successful and retry.
+- Solution: Confirm the XRPL payment to the Core Vault succeeded and that an executor has finalized the mint.
+  Check for [rate-limit delays](/fassets/minting#rate-limits).
 
 **Error: Insufficient balance for bridging**
 
-- Solution: Ensure `AUTO_MINT_IF_NEEDED` is `true`, or manually mint FXRP to the personal account first.
+- Solution: Ensure `AUTO_MINT_IF_NEEDED` is `true`, or manually mint FXRP to the personal account first via [Mint FXRP](/fassets/developer-guides/fassets-mint).
 
 **Error: LayerZero fee insufficient**
 
@@ -457,7 +470,8 @@ For mainnet deployment, update contract addresses, thoroughly test, and audit al
 :::tip[Next Steps]
 To continue your FAssets development journey, you can:
 
-- Learn how to [mint FXRP manually](/fassets/developer-guides/fassets-direct-minting)
+- Follow the preferred [Cross-Chain Mint](/smart-accounts/guides/typescript-viem/cross-chain-mint-ts) TypeScript + Viem guide
+- Learn how to [mint FXRP](/fassets/developer-guides/fassets-mint)
 - Understand how to [redeem FXRP](/fassets/developer-guides/fassets-redeem)
 - Explore [auto-redemption from Hyperliquid](/fxrp/oft/fxrp-autoredeem)
 - Read more about [Flare Smart Accounts](/smart-accounts/overview)
