@@ -85,7 +85,11 @@ lint:build:
   stage: lint
   extends: .node
   variables:
-    NODE_OPTIONS: "--max-old-space-size=4096"
+    # GitLab runners are memory-constrained. A large heap plus parallel webpack/SSG
+    # workers can trigger kernel OOM (exit 137) instead of a Node heap error.
+    NODE_OPTIONS: "--max-old-space-size=2048"
+    DOCUSAURUS_SSG_WORKER_THREAD_COUNT: "1"
+    GENERATE_SOURCEMAP: "false"
   script:
     - pnpm run build
 
