@@ -26,8 +26,8 @@ import Usdt0TransferScript from "!!raw-loader!/examples/developer-hub-javascript
 import Usdt0SwapScript from "!!raw-loader!/examples/developer-hub-javascript/smart-accounts/usdt0/swap-usdt0-to-fxrp.ts";
 import Usdt0ConfigScript from "!!raw-loader!/examples/developer-hub-javascript/smart-accounts/usdt0/config.ts";
 
-This guide shows how to control [USDT0](https://docs.usdt0.to/) held by a Flare [personal account](/smart-accounts/overview) from an XRPL wallet.
-You will read the account's USDT0 balance, transfer USDT0 to another EVM address, and swap USDT0 for FXRP on [SparkDEX](https://sparkdex.ai/) — all through fee-only [`0xFE` custom instructions](/smart-accounts/custom-instruction).
+This guide shows how to control [USDT0](https://docs.usdt0.to/) held by a Flare [personal account](/smart-accounts/overview) through an XRPL wallet.
+We will read the account's USDT0 balance, transfer USDT0 to another EVM address, and swap USDT0 for FXRP on [SparkDEX](https://sparkdex.ai/) — all through fee-only [`0xFE` custom instructions](/smart-accounts/custom-instruction).
 
 Unlike the minting demos in the [Custom Instruction TypeScript guide](/smart-accounts/guides/typescript-viem/custom-instruction-ts), these flows set `netMintAmountXrp: 0`.
 The XRPL payment covers only direct minting and executor fees; no FXRP is minted.
@@ -131,7 +131,7 @@ If the balance is zero, faucet USDT0 to the printed personal account address bef
 
 ## Transfer USDT0
 
-`transfer.ts` builds a single-call UserOp that invokes `USDT0.transfer(recipient, amount)` from the personal account.
+The `transfer.ts` script builds a single-call UserOp that invokes `USDT0.transfer(recipient, amount)` from the personal account.
 
 The payment amount is fee-only:
 
@@ -187,7 +187,7 @@ const event = findUserOperationExecuted(
 );
 ```
 
-`DEFAULT_TRANSFER_RECIPIENT` in `config.ts` is a hardcoded demo address — change it before sending real funds.
+The `DEFAULT_TRANSFER_RECIPIENT` constant in `config.ts` is a hardcoded demo address — change it before sending real funds.
 
 :::warning No destination tags
 XRPL payments targeting smart accounts must not use a destination tag.
@@ -201,7 +201,7 @@ pnpm run script src/usdt0/transfer.ts
 
 ## Swap USDT0 to FXRP
 
-`swap-usdt0-to-fxrp.ts` swaps USDT0 for FXRP on SparkDEX from the personal account.
+The `swap-usdt0-to-fxrp.ts` script swaps USDT0 for FXRP on SparkDEX from the personal account.
 The XRPL payment is again fee-only; the FXRP received comes from the DEX pool, not from an FAssets mint.
 
 The UserOp batches two calls atomically:
@@ -243,7 +243,7 @@ const customInstruction: Call[] = [
 ];
 ```
 
-`amountOutMinimum` is derived from `DEFAULT_AMOUNT_OUT_MINIMUM_UNITS` (`0.3` FXRP in the demo).
+The `amountOutMinimum` value is derived from `DEFAULT_AMOUNT_OUT_MINIMUM_UNITS` (`0.3` FXRP in the demo).
 Treat it as a conservative floor for testnet demos; adjust it against the current pool price for larger amounts.
 
 After execution, the script logs USDT0 spent and FXRP received by comparing balances before and after.
