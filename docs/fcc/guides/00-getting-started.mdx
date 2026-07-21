@@ -331,7 +331,7 @@ This compiles Solidity, deploys the `HelloWorldInstructionSender` smart contract
 On success, it writes the `EXTENSION_ID` and `INSTRUCTION_SENDER` to the `config/extension.env` file.
 
 :::warning
-Once the `config/extension.env` file exists, pre-build refuses to run again.
+Once the `config/extension.env` file exists, pre-build reuses it and skips minting a new extension.
 Use `./scripts/pre-build.sh --force` only when you intentionally want a new extension.
 Forcing a new pre-build deploys a new sender and registers a new extension ID, while your existing TEE machine may still be tied to the old ID - end-to-end tests then fail with mismatches such as `MachineManager.TooMany()`.
 :::
@@ -379,7 +379,7 @@ For a simulated TEE, expect:
 ./scripts/post-build.sh
 ```
 
-This allows your TEE code version for the extension, then registers the TEE machine onchain (using `EXT_PROXY_URL` and `NORMAL_PROXY_URL` from `.env`).
+This allows your TEE code version for the extension, registers TEE governance (defaults to the deployer as sole signer), then registers the TEE machine onchain (using `EXT_PROXY_URL` and `NORMAL_PROXY_URL` from `.env`).
 
 ### Step 8: Run the end-to-end test
 
@@ -408,7 +408,8 @@ Hooks `scripts/extension-setup.sh` and `scripts/extension-post-setup.sh` are no-
 | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
 | `unsupported op type` / `unsupported op command` | Solidity `bytes32("...")` strings must match Go config constants exactly.                                         |
 | Proxy never becomes ready                        | Tunnel to **6674**, indexer `[db]` credentials, and `docker compose` logs for `ext-proxy`.                        |
-| Pre-build refuses to run                         | `config/extension.env` already exists — use `--force` only if you intend a new extension ID.                      |
+| Pre-build skips minting                          | `config/extension.env` already exists — reused by default; use `--force` only if you intend a new extension ID.   |
+| `InvalidGovernanceHash`                          | `GOVERNANCE_SIGNERS` / `GOVERNANCE_THRESHOLD` must match between `.env` and the TEE node (or leave both unset).   |
 | `MachineManager.TooMany()` or wrong extension    | Extension ID in `config/extension.env` does not match the TEE registered by post-build — avoid casual `--force`.  |
 | Attestation / registration failures              | Confirm `LOCAL_MODE=false`, `SIMULATED_TEE=true`, and `NORMAL_PROXY_URL=https://tee-proxy-coston2-1.flare.rocks`. |
 | Docker build cannot find `tee-node`              | Confirm the sibling clone layout under `tee/` described in [Clone the Scaffold](#clone-the-scaffold-example).     |

@@ -94,11 +94,13 @@ On release, both addresses will be available through the [`FlareContractRegistry
 After the extension is registered on-chain, call `setExtensionId()` once to discover and cache the extension ID:
 
 ```solidity title="contracts/InstructionSender.sol"
+uint256 private constant FIRST_PUBLIC_EXTENSION_ID = 0x10000; // 65536
+
 function setExtensionId() external {
     require(_extensionId == 0, "Extension ID already set.");
 
-    uint256 c = TEE_EXTENSION_REGISTRY.extensionsCounter();
-    for (uint256 i = 0; i < c; ++i) {
+    uint256 c = TEE_EXTENSION_REGISTRY.nextPublicExtensionId();
+    for (uint256 i = FIRST_PUBLIC_EXTENSION_ID; i < c; ++i) {
         if (TEE_EXTENSION_REGISTRY.getTeeExtensionInstructionsSender(i) == address(this)) {
             _extensionId = i;
             return;
@@ -108,7 +110,9 @@ function setExtensionId() external {
 }
 ```
 
-The end-to-end test calls this automatically before sending instructions.
+Public extension IDs start at `0x10000` (65536).
+IDs below are reserved for system extensions.
+The end-to-end test calls `setExtensionId()` automatically before sending instructions.
 
 ### Instruction Parameters
 
@@ -361,6 +365,15 @@ DEPLOYMENT_PRIVATE_KEY="<your-funded-coston2-private-key-hex-no-0x>"
 INITIAL_OWNER="0x<your-address>"
 ```
 
+Optional TEE governance overrides (if unset, `post-build` defaults to the deployer as the sole signer with threshold 1):
+
+```bash title=".env.local.coston2"
+# GOVERNANCE_SIGNERS="0xAbc...,0xDef..."
+# GOVERNANCE_THRESHOLD=2
+```
+
+These must match the values passed to the TEE node container, or registration fails with `InvalidGovernanceHash`.
+
 Re-activate after editing so `.env` picks up the changes:
 
 ```bash
@@ -412,7 +425,7 @@ This compiles Solidity, deploys `InstructionSender`, and registers the extension
 On success, it writes `EXTENSION_ID` and `INSTRUCTION_SENDER` to `config/extension.env`.
 
 :::warning
-Once `config/extension.env` exists, the pre-build step refuses to run again.
+Once `config/extension.env` exists, the pre-build step reuses it and skips minting a new extension.
 Use `./scripts/pre-build.sh --force` only when you intentionally want a new extension.
 Forcing a new pre-build deploys a new `InstructionSender` and registers a new extension ID on-chain.
 The TEE machine you already registered stays on-chain under the previous extension ID, but your local config now points to the new one.
@@ -497,10 +510,11 @@ For a simulated TEE, expect:
 ./scripts/post-build.sh
 ```
 
-This runs two onchain steps:
+This runs three onchain steps:
 
 1. **`allow-tee-version`:** allows the code hash and platform for your extension.
-2. **`register-tee -command rRap`:** pre-registers the TEE, requests fresh attestation, runs the FTDC availability check, and promotes to production.
+2. **`set-governance`:** registers the TEE governance signer set and threshold for the extension (defaults to `INITIAL_OWNER` with threshold 1 unless you set `GOVERNANCE_SIGNERS` / `GOVERNANCE_THRESHOLD`).
+3. **`register-tee -command rRap`:** pre-registers the TEE, requests fresh attestation, runs the FTDC availability check, and promotes to production.
 
 The capital `R` in `rRap` issues a fresh attestation challenge on re-runs, avoiding `Verification.ChallengeExpired`.
 Set `SIMULATED_TEE=true` in your `.env` — it pairs with `MODE=1` injected by Docker Compose for simulated attestation.
@@ -576,6 +590,11 @@ Run a [full reset](#cleanup) and start again from step 0, or keep the existing `
 **`Verification.ChallengeExpired`**
 
 Re-run `post-build.sh`.
+
+**`InvalidGovernanceHash`**
+
+The governance signer set used by `set-governance` does not match the `governanceHash` signed by the TEE node.
+Leave `GOVERNANCE_SIGNERS` / `GOVERNANCE_THRESHOLD` unset for the default deployer-only setup, or ensure both `.env` and the node container receive the same values, then re-run `post-build.sh`.
 
 **`code hashes do not match`**
 
