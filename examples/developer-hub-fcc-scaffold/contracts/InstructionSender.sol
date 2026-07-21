@@ -28,6 +28,10 @@ contract HelloWorldInstructionSender {
     /// @notice Reference to the TEE machine registry contract.
     ITeeMachineRegistry public immutable TEE_MACHINE_REGISTRY;
 
+    /// @notice First public extension ID. The registry reserves IDs below this
+    /// for system/reserved extensions; public extensions are assigned from here up.
+    uint256 private constant FIRST_PUBLIC_EXTENSION_ID = 0x10000; // 65536
+
     uint256 private _extensionId;
 
     /// @notice Payload for the SAY_GOODBYE instruction.
@@ -56,8 +60,8 @@ contract HelloWorldInstructionSender {
     function setExtensionId() external {
         require(_extensionId == 0, "Extension ID already set.");
 
-        uint256 c = TEE_EXTENSION_REGISTRY.extensionsCounter();
-        for (uint256 i = 0; i < c; ++i) {
+        uint256 c = TEE_EXTENSION_REGISTRY.nextPublicExtensionId();
+        for (uint256 i = FIRST_PUBLIC_EXTENSION_ID; i < c; ++i) {
             if (TEE_EXTENSION_REGISTRY.getTeeExtensionInstructionsSender(i) == address(this)) {
                 _extensionId = i;
                 return;

@@ -52,12 +52,23 @@ contract WeatherInsurance {
     // forge-lint: disable-next-line(unsafe-typecast)
     bytes32 public constant OP_COMMAND_BUY = bytes32("BUY");
 
+    /// @notice Domain-separation prefix the TEE node signs ActionResult hashes
+    /// under: keccak256(abi.encode(TEE_ACTION_RESULT_PREFIX, chainId, ActionResult.Hash())),
+    /// wrapped with the EIP-191 personal-sign prefix. Must match go-flare-common's
+    /// `signing.TEEActionResult` (github.com/flare-foundation/go-flare-common/pkg/signing).
+    // forge-lint: disable-next-line(unsafe-typecast)
+    bytes32 private constant TEE_ACTION_RESULT_PREFIX = bytes32("TEE_ACTION_RESULT");
+
     // --- Registries ---
 
     /// @notice Reference to the TEE extension registry contract.
     ITeeExtensionRegistry public immutable TEE_EXTENSION_REGISTRY;
     /// @notice Reference to the TEE machine registry contract.
     ITeeMachineRegistry public immutable TEE_MACHINE_REGISTRY;
+
+    /// @notice First public extension ID. The registry reserves IDs below this
+    /// for system/reserved extensions; public extensions are assigned from here up.
+    uint256 private constant FIRST_PUBLIC_EXTENSION_ID = 0x10000; // 65536
 
     uint256 private _extensionId;
 
@@ -157,8 +168,8 @@ contract WeatherInsurance {
     function setExtensionId() external {
         require(_extensionId == 0, "Extension ID already set.");
 
-        uint256 c = TEE_EXTENSION_REGISTRY.extensionsCounter();
-        for (uint256 i = 0; i < c; ++i) {
+        uint256 c = TEE_EXTENSION_REGISTRY.nextPublicExtensionId();
+        for (uint256 i = FIRST_PUBLIC_EXTENSION_ID; i < c; ++i) {
             if (TEE_EXTENSION_REGISTRY.getTeeExtensionInstructionsSender(i) == address(this)) {
                 _extensionId = i;
                 return;
@@ -243,11 +254,11 @@ contract WeatherInsurance {
     }
 
     /// @notice Finalize a private buy with a TEE-signed result from the BUY instruction.
-    /// @dev The TEE node signs `ActionResult.Hash()` with its registered key using the
-    ///      EIP-191 personal-sign prefix. We reconstruct that hash from the result
-    ///      fields the proxy returned and recover the signer, requiring it to equal
-    ///      `teeAddress`. `_resultData` is the exact bytes the TEE returned in
-    ///      ActionResult.Data:
+    /// @dev The TEE node signs `keccak256(abi.encode(TEE_ACTION_RESULT_PREFIX, chainId,
+    ///      ActionResult.Hash()))` with its registered key using the EIP-191 personal-sign
+    ///      prefix. We reconstruct that hash from the result fields the proxy returned and
+    ///      recover the signer, requiring it to equal `teeAddress`. `_resultData` is the
+    ///      exact bytes the TEE returned in ActionResult.Data:
     ///      abi.encode(address holder, address contractAddr, string date,
     ///      uint256 rainThresholdMmE2, uint256 payout, uint256 premium, string lat,
     ///      string lon).
@@ -281,7 +292,8 @@ contract WeatherInsurance {
     ///                        any other value reverts with `"TEE reported failure"`. Part of
     ///                        the signed hash so a failed TEE result cannot be relayed.
     /// @param _signature      ECDSA signature from the registered TEE node over
-    ///                        `ActionResult.Hash()` = `keccak256(abi.encodePacked(
+    ///                        `keccak256(abi.encode(TEE_ACTION_RESULT_PREFIX, chainId, resultHash))`
+    ///                        where `resultHash` = `ActionResult.Hash()` = `keccak256(abi.encodePacked(
     ///                        keccak256(_resultData), _actionId,
     ///                        keccak256(bytes(_submissionTag)), _status))`, wrapped with the
     ///                        EIP-191 `"\x19Ethereum Signed Message:\n32"` prefix. Recovered
@@ -307,8 +319,12 @@ contract WeatherInsurance {
             )
         );
 
+        // The TEE node signs a domain-separated payload over resultHash, not resultHash
+        // directly — see TEE_ACTION_RESULT_PREFIX above.
+        bytes32 payloadHash = keccak256(abi.encode(TEE_ACTION_RESULT_PREFIX, block.chainid, resultHash));
+
         // Recover the signer from the signature and verify it matches the TEE address.
-        address signer = _recover(_ethSigned(resultHash), _signature);
+        address signer = _recover(_ethSigned(payloadHash), _signature);
         // Verify the signer matches the registered TEE address.
         require(signer == teeAddress, "bad TEE signature");
 
@@ -374,11 +390,11 @@ contract WeatherInsurance {
     }
 
     /// @notice Finalize a policy with a TEE-signed settlement and pay out if triggered.
-    /// @dev The TEE node signs `ActionResult.Hash()` with its registered key using the
-    ///      EIP-191 personal-sign prefix. We reconstruct that hash from the result
-    ///      fields the proxy returned and recover the signer, requiring it to equal
-    ///      `teeAddress`. `_resultData` is the exact bytes the TEE returned in
-    ///      ActionResult.Data: abi.encode(address contractAddr, uint256 policyId,
+    /// @dev The TEE node signs `keccak256(abi.encode(TEE_ACTION_RESULT_PREFIX, chainId,
+    ///      ActionResult.Hash()))` with its registered key using the EIP-191 personal-sign
+    ///      prefix. We reconstruct that hash from the result fields the proxy returned and
+    ///      recover the signer, requiring it to equal `teeAddress`. `_resultData` is the
+    ///      exact bytes the TEE returned in ActionResult.Data: abi.encode(address contractAddr, uint256 policyId,
     ///      uint256 precipitationMmE2, string date, uint256 rainThresholdMmE2, bool triggered).
     ///      For private policies, rainThresholdMmE2 is verified against
     ///      termsCommitment and written on-chain; isPrivate is cleared before payout.
@@ -406,7 +422,12 @@ contract WeatherInsurance {
                 _status
             )
         );
-        address signer = _recover(_ethSigned(resultHash), _signature);
+
+        // The TEE node signs a domain-separated payload over resultHash, not resultHash
+        // directly — see TEE_ACTION_RESULT_PREFIX above.
+        bytes32 payloadHash = keccak256(abi.encode(TEE_ACTION_RESULT_PREFIX, block.chainid, resultHash));
+
+        address signer = _recover(_ethSigned(payloadHash), _signature);
         require(signer == teeAddress, "bad TEE signature");
 
         // ActionResult.Data from the TEE SETTLE instruction (see @dev above for field meanings).

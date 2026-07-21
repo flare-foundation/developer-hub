@@ -34,7 +34,7 @@ The Weather Insurance extension demonstrates a full [Flare Confidential Compute 
 1. A policyholder buys rainfall cover for a specific date and location, paying a premium in an ERC-20 token.
 2. After midnight on the day following the coverage date, a keeper sends a `SETTLE` instruction to the extension.
 3. The extension fetches that day's precipitation from the OpenWeatherMap API inside the enclave.
-4. The extension signs the settlement result; anyone calls `settle()` on-chain to verify the TEE signature and pay out if the rainfall threshold was met.
+4. The extension signs the settlement result; anyone can call `settle()` on-chain to verify the TEE signature and pay out if the rainfall threshold was met.
 
 The extension also supports:
 
@@ -149,7 +149,7 @@ struct Policy {
 }
 ```
 
-Settlement unlock time is computed by the `SettlementTime` library — the earliest `requestSettlement` / `settle` call is midnight on the day after the coverage date.
+Settlement unlock time is computed by the `SettlementTime` library — the earliest `requestSettlement` / `settle` call is at midnight on the day after the coverage date.
 
 ### Buying a Policy
 
@@ -174,7 +174,7 @@ The contract pulls the premium, reserves `_payout` from pool liquidity, and reco
 1. The buyer ECIES-encrypts ABI-encoded `PrivateBuyParams` with the Flare Confidential Compute extension public key.
 2. The `buyPolicyPrivate` function sends the ciphertext as a `WEATHER` / `BUY` instruction.
 3. After the extension processes the instruction, the buyer calls `relayPrivateBuy` with the signed result.
-4. The contract verifies the TEE signature via `ecrecover` against `teeAddress` and creates the policy.
+4. The contract verifies the domain-separated TEE signature via `ecrecover` against `teeAddress` and creates the policy.
 
 ### Settlement Flow
 
@@ -196,7 +196,7 @@ function requestSettlement(uint256 _policyId) external payable {
 ```
 
 Anyone can then call `settle()` with the TEE-signed `ActionResult` that is returned by the extension.
-The contract reconstructs `ActionResult.Hash()`, recovers the signer, and requires that the signer equal the registered `teeAddress`.
+The contract reconstructs `ActionResult.Hash()`, wraps it in a chain-scoped domain-separated payload, recovers the signer, and requires that the signer equal the registered `teeAddress`.
 If measured precipitation meets the threshold, `payToken` is transferred to the policyholder.
 
 ### TEE Signature Verification
@@ -212,16 +212,21 @@ bytes32 resultHash = keccak256(
         _status
     )
 );
-address signer = _recover(_ethSigned(resultHash), _signature);
+// Domain-separated payload — must match go-flare-common signing.TEEActionResult
+bytes32 payloadHash = keccak256(
+    abi.encode(bytes32("TEE_ACTION_RESULT"), block.chainid, resultHash)
+);
+address signer = _recover(_ethSigned(payloadHash), _signature);
 require(signer == teeAddress, "bad TEE signature");
 ```
 
-The TEE node signs `ActionResult.Hash()` with the [EIP-191 personal-sign](https://eips.ethereum.org/EIPS/eip-191) prefix.
-Only successful results are accepted.
+The TEE node signs `keccak256(abi.encode(TEE_ACTION_RESULT_PREFIX, chainId, ActionResult.Hash()))` with the [EIP-191 personal-sign](https://eips.ethereum.org/EIPS/eip-191) prefix — not `ActionResult.Hash()` alone.
+Only successful results (`status == 1`) are accepted.
 
 ### Extension ID Discovery
 
 After the extension is registered on-chain, call `setExtensionId()` once to discover and cache the extension ID — same pattern as the [Private Key Extension](/fcc/guides/sign-extension).
+Public extension IDs start at `0x10000`; discovery uses `nextPublicExtensionId()` rather than scanning from zero.
 
 ## Offchain Handler
 
@@ -326,6 +331,15 @@ PAY_TOKEN="0x53192e788991AD96bC180249B15AefB94E597dD1"
 The `PAY_TOKEN` variable is the address of a mocked [ERC-20](https://eips.ethereum.org/EIPS/eip-20) token on Coston2 — used for premiums and payouts during testing.
 You can use this token for testing purposes or deploy your own ERC-20 token.
 
+Optional TEE governance overrides (if unset, `post-build` defaults to the deployer as the sole signer with threshold 1):
+
+```bash title=".env.local.coston2"
+# GOVERNANCE_SIGNERS="0xAbc...,0xDef..."
+# GOVERNANCE_THRESHOLD=2
+```
+
+These must match the values passed to the TEE node container, or registration fails with `InvalidGovernanceHash`.
+
 Reactivate after editing so `.env` picks up the changes:
 
 ```bash
@@ -391,11 +405,10 @@ On success, it writes `EXTENSION_ID` and `INSTRUCTION_SENDER` to `config/extensi
 The `extension-setup.sh` script calls `setPayToken` on the deployed contract.
 
 :::warning
-Once `config/extension.env` exists, the pre-build step refuses to run again.
-Use `./scripts/pre-build.sh --force` only when you intentionally want a new extension.
-Forcing a new pre-build deploys a new `WeatherInsurance` contract and registers a new extension ID on-chain.
-The TEE machine you already registered stays on-chain under the previous extension ID, but your local config now points to the new one.
+Re-running `pre-build.sh` deploys a new `WeatherInsurance` contract, registers a new extension ID, and overwrites `config/extension.env`.
+Any TEE machine already registered under the previous extension ID stays on-chain, but your local config now points to the new one.
 That mismatch causes the end-to-end test to fail with `MachineManager.TooMany()`.
+Keep the existing `config/extension.env` unless you intentionally want a fresh extension.
 :::
 
 ### Step 4: Configure the indexer database
@@ -470,7 +483,13 @@ For a simulated TEE, expect:
 ./scripts/extension-post-setup.sh
 ```
 
-The `extension-post-setup.sh` script reads the TEE signing address from the proxy and calls `setTeeAddress` on the `WeatherInsurance` contract.
+`post-build.sh` runs three onchain steps:
+
+1. **`allow-tee-version`:** allows the code hash and platform for your extension.
+2. **`set-governance`:** registers the TEE governance signer set and threshold (defaults to `INITIAL_OWNER` with threshold 1 unless you set `GOVERNANCE_SIGNERS` / `GOVERNANCE_THRESHOLD`).
+3. **`register-tee -command rRap`:** pre-registers the TEE, requests fresh attestation, runs the FTDC availability check, and promotes to production.
+
+Then `extension-post-setup.sh` reads the TEE signing address from the proxy and calls `setTeeAddress` on the `WeatherInsurance` contract.
 
 ### Step 8: Run the end-to-end test
 
@@ -528,17 +547,22 @@ Fund it with the [Coston2 faucet](https://faucet.flare.network/coston2).
 
 **`MachineManager.TooMany()` during test**
 
-The extension ID in `config/extension.env` does not match the on-chain TEE record — usually because `pre-build.sh --force` registered a new extension.
-In contrast, an older TEE machine is still registered under the previous extension ID.
+The extension ID in `config/extension.env` does not match the on-chain TEE record — usually because `pre-build.sh` was re-run and minted a new extension while an older TEE machine is still registered under the previous extension ID.
 Run a [full reset](#cleanup) and start again from step 0, or keep the existing `config/extension.env` and re-run only `post-build.sh`, `extension-post-setup.sh`, and `test.sh`.
 
 **`bad TEE signature` on settle or relay**
 
-Confirm `extension-post-setup.sh` ran successfully and `teeAddress` on the contract matches the registered TEE machine.
+Confirm `extension-post-setup.sh` ran successfully and the `teeAddress` on the contract matches the registered TEE machine.
+Also confirm the contract uses domain-separated verification (`TEE_ACTION_RESULT_PREFIX` + `block.chainid` over `ActionResult.Hash()`) — recovering against the raw `resultHash` alone will fail against current TEE node signatures.
 
 **`Verification.ChallengeExpired`**
 
 Re-run `post-build.sh`.
+
+**`InvalidGovernanceHash`**
+
+The governance signer set used by `set-governance` does not match the `governanceHash` signed by the TEE node.
+Leave `GOVERNANCE_SIGNERS` / `GOVERNANCE_THRESHOLD` unset for the default deployer-only setup, or ensure both `.env` and the node container receive the same values, then re-run `post-build.sh`.
 
 **`code hashes do not match`**
 
