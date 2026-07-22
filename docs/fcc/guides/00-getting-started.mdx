@@ -46,7 +46,7 @@ The scaffold ships a working **GREETING** extension with two commands:
 
 In this guide, you will:
 
-1. Clone the scaffold and its build dependencies (`tee-node`, `tee-proxy`).
+1. Clone the scaffold.
 2. Learn the instruction lifecycle and which files you own.
 3. Deploy the Hello World smart contract and TEE stack against the Coston2 testnet.
 4. Customize the OPType and OPCommand handlers and the onchain entry point for your own extension.
@@ -89,38 +89,11 @@ The extension stack runs as three Docker services:
 
 ## Clone the Scaffold Example
 
-This example's Docker build scripts expect `tee-node`, `tee-proxy`, and the scaffold as sibling directories under a common parent — the extension module uses a `replace` directive for [`tee-node`](https://github.com/flare-foundation/tee-node), and `start-services.sh` builds [`tee-proxy`](https://github.com/flare-foundation/tee-proxy) unless you set `REGISTRY` to a remote image registry.
-Clone the repositories in the layout below before you build.
-
-:::warning[Use the `develop` branch]
-FCC extension work currently requires the **`develop`** branches of `tee-node` and `tee-proxy` (not `main` or older release tags).
-Check out `develop` after cloning, as shown below.
-:::
+Clone the scaffold example from GitHub:
 
 ```bash
-mkdir -p tee/extension-examples
-cd tee
-
-git clone https://github.com/flare-foundation/tee-node.git
-git -C tee-node checkout develop
-
-git clone https://github.com/flare-foundation/tee-proxy.git
-git -C tee-proxy checkout develop
-
-git clone https://github.com/flare-foundation/fce-extension-scaffold.git \
-  extension-examples/extension-scaffold
-
-cd extension-examples/extension-scaffold
-```
-
-Your tree should look like this:
-
-```text
-tee/
-├── tee-node/              # develop branch
-├── tee-proxy/             # develop branch
-└── extension-examples/
-    └── extension-scaffold/   # working directory for the rest of this guide
+git clone https://github.com/flare-foundation/fce-extension-scaffold.git
+cd fce-extension-scaffold
 ```
 
 ## Hello World Onchain Smart Contract
@@ -246,6 +219,12 @@ After configuring the `.env` file, the indexer TOML, and ngrok, the core script 
 ./scripts/test.sh
 ```
 
+Or run the same lifecycle in one shot:
+
+```bash
+./scripts/full-setup.sh --chain coston2 --test
+```
+
 :::
 
 ### Step 1: Configure `.env`
@@ -363,8 +342,6 @@ Forcing a new pre-build deploys a new sender and registers a new extension ID, w
 ./scripts/start-services.sh --chain coston2
 ```
 
-This builds `local/tee-proxy` if needed (from the sibling `tee-proxy` clone), builds `extension-tee` from your scaffold plus the sibling `tee-node` module, and starts the Redis database, the ext-proxy proxy server, and the extension-tee TEE node with the Coston2 compose overlay.
-
 Wait until the proxy is healthy locally:
 
 ```bash
@@ -425,24 +402,12 @@ Hooks `scripts/extension-setup.sh` and `scripts/extension-post-setup.sh` are no-
 
 ## Troubleshooting
 
-| Symptom                                          | What to check                                                                                                                                                        |
-| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `unsupported op type` / `unsupported op command` | Solidity `bytes32("...")` strings must match Go config constants exactly.                                                                                            |
-| Proxy never becomes ready                        | Tunnel to **6674**, indexer `[db]` credentials, and `docker compose` logs for `ext-proxy`.                                                                           |
-| Pre-build refuses to run                         | `config/extension.env` already exists — use `--force` only if you intend a new extension ID.                                                                         |
-| `MachineManager.TooMany()` or wrong extension    | Extension ID in `config/extension.env` does not match the TEE registered by post-build — avoid casual `--force`.                                                     |
-| `InvalidGovernanceHash`                          | `GOVERNANCE_SIGNERS` / `GOVERNANCE_THRESHOLD` in `.env` must match what the `extension-tee` container received; rebuild/restart after changing them.                 |
-| Attestation / registration failures              | Confirm `LOCAL_MODE=false`, `SIMULATED_TEE=true`, and `NORMAL_PROXY_URL=https://tee-proxy-coston2-1.flare.rocks`.                                                    |
-| Docker build cannot find `tee-node`              | Confirm the sibling clone layout under `tee/` and that `tee-node` / `tee-proxy` are on the `develop` branch — see [Clone the Scaffold](#clone-the-scaffold-example). |
-
-Stop the Coston2 stack when you are done:
-
-```bash
-docker compose -f docker-compose.yaml -f docker-compose.coston2.yaml down
-```
-
-:::info What's next?
-
-When you are ready for richer examples, see the [Private Key Extension](/fcc/guides/sign-extension) and [Weather Insurance Extension](/fcc/guides/weather-insurance-extension) guides.
-Or read the [FCC overview](/fcc/overview) and the [FCC whitepaper](/pdf/whitepapers/20260706-FlareConfidentialCompute.pdf).
-:::
+| Symptom                                              | What to check                                                                                                                                        |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `unsupported op type` / `unsupported op command`     | Solidity `bytes32("...")` strings must match Go config constants exactly.                                                                            |
+| Proxy never becomes ready                            | Tunnel to **6674**, indexer `[db]` credentials, and `docker compose` logs for `ext-proxy`.                                                           |
+| Pre-build refuses to run                             | `config/extension.env` already exists — use `--force` only if you intend a new extension ID.                                                         |
+| `MachineManager.TooMany()` or wrong extension        | Extension ID in `config/extension.env` does not match the TEE registered by post-build — avoid casual `--force`.                                     |
+| `InvalidGovernanceHash`                              | `GOVERNANCE_SIGNERS` / `GOVERNANCE_THRESHOLD` in `.env` must match what the `extension-tee` container received; rebuild/restart after changing them. |
+| Attestation / registration failures                  | Confirm `LOCAL_MODE=false`, `SIMULATED_TEE=true`, and `NORMAL_PROXY_URL=https://tee-proxy-coston2-1.flare.rocks`.                                    |
+| Docker build fails fetching `tee-node` / `tee-proxy` | Confirm network access so Go can fetch the pinned `tee-node` module and Docker can build from `proxy/Dockerfile`.                                    |
