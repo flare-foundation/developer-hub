@@ -182,17 +182,18 @@ Here the weights are based on the validators' stake.
 
 ## Snowman++
 
-Snowman++ introduces a soft proposer mechanism, with a single proposer with the power to issue a block initially.
+Snowman++ introduces a soft proposer mechanism, where at any time a single proposer has the power to issue a block, in its assigned slot.
 The proposer selection is deterministic, based on the validator set and the chain height.
-Validators are selected using a weighted sampling without replacement, with the weight system based on stake.
+Validators are selected in slots using a weighted sampling without replacement, with the weight system based on stake.
 
-At each block height, a fixed number of validators is selected, given by the protocol parameter `maxWindows`.
-Based on the position in the sampled set, the selected validators are then assigned a delay dictated by `WindowDuration`: the amount of time the validator must wait before being eligible to propose a block.
-These two parameters are part of the `proposerVM`, being configured as follows:
+A validator that is not the current slot's proposer does not build a block.
+Instead, it waits for its next assigned slot, and verification rejects any block signed by someone else.
+Authority therefore passes from one validator to the next as slots elapse.
+The key `proposerVM` parameters are:
 
-- `maxWindows`: currently set to 6.
-
-- `WindowDuration`: currently set at 5 seconds.
+- `WindowDuration`: 5 seconds — the slot length.
+- `MaxBuildWindows`: 60 (5 minutes) — how far ahead a node schedules its own build attempt.
+  Note that a node searches up to `MaxLookAheadSlots` (720 slots) for its next slot.
 
 <div style={{ textAlign: "center", margin: "30px 0" }}>
   <ThemedImage
@@ -204,3 +205,7 @@ These two parameters are part of the `proposerVM`, being configured as follows:
     }}
   />
 </div>
+
+This per-slot mechanism was introduced with the **Durango** upgrade (v1.11.0, live on mainnet since 5 August 2025), replacing an earlier scheme in which a window of validators was sampled up front with cumulative delays.
+Since the **Granite** upgrade (v1.14.0, live on mainnet since 14 July 2026), the referenced P-chain height is grouped into 5-minute epochs, but these are used only for execution context.
+Proposer selection still uses the "live" P-chain height instead of the epoch P-chain height.
