@@ -8,7 +8,16 @@ unlisted: false
 
 An attestation type that fetches JSON data from the given URL, applies a jq filter to transform the returned result, and finally returns the structured data as ABI encoded data.
 
-**Supported sources:** [Mainnet](https://github.com/flare-foundation/verifier-indexer-api/blob/main/src/config/web2/web2-json-sources.ts), [Testnet](https://github.com/flare-foundation/verifier-indexer-api/blob/main/src/config/web2/web2-json-test-sources.ts)
+:::danger[Not available on Flare Mainnet or Songbird]
+
+[`FdcHub.requestAttestation`](/fdc/reference/IFdcHub#requestattestation) reverts for `Web2Json` on Flare Mainnet and Songbird.
+No Web2Json sources remain on those networks.
+Any future mainnet Web2 source would be proposed separately under [FIP.14](https://proposals.flare.network/FIP/FIP_14.html#31-process-of-adding-updating-or-removing-an-api-endpoint).
+
+:::
+
+**Supported sources:** `PublicWeb2` on Coston and Coston2.
+Flare Mainnet and Songbird currently have no Web2Json source.
 
 ## Request body
 
@@ -147,7 +156,9 @@ The request is accepted only if all the following checks pass:
    - `httpMethod` is one of: GET, POST, PUT, PATCH, DELETE.
    - `headers`, `queryParams`, and `body` are valid JSON objects when parsed from their string form.
 2. Network fetch constraints:
-   - Target host must be whitelisted.
+   - Target host must be allowed for the selected source.
+     The `PublicWeb2` source on Coston and Coston2 does not restrict hosts.
+     Flare Mainnet and Songbird have no configured source.
    - Any attempt to redirect results in rejection.
    - End-to-end HTTP request completes within 5 seconds.
    - HTTP response status indicates success (e.g., 2xx).
@@ -181,7 +192,7 @@ flowchart TD
     V1 -- fail --> Reject
     V1 -- pass --> V2
 
-    V2{"2. Network fetch<br/>- host is whitelisted<br/>- no redirects allowed<br/>- completes within 5 s<br/>- response status is success (2xx)"}
+    V2{"2. Network fetch<br/>- host is allowed for the source<br/>- no redirects allowed<br/>- completes within 5 s<br/>- response status is success (2xx)"}
     V2 -- fail --> Reject
     V2 -- pass --> V3
 
@@ -205,8 +216,13 @@ flowchart TD
     Reject(["Request rejected"])
 ```
 
-## Whitelisted URLs
+## Supported networks and sources
 
-Before a request to the FDC for data at an endpoint can be made, the specific URL must be whitelisted.
-On mainnets, this is done through government proposals (details in the [FIP.14](https://proposals.flare.network/FIP/FIP_14.html#31-process-of-adding-updating-or-removing-an-api-endpoint) proposal).
-On testnets whitelisting is **not required**, any endpoint can be used by selecting the `PublicWeb2` source.
+`Web2Json` currently has one active source:
+
+| Network                 | Source       | Host whitelist                                                                  |
+| ----------------------- | ------------ | ------------------------------------------------------------------------------- |
+| Coston2, Coston         | `PublicWeb2` | None — any public HTTPS JSON endpoint                                           |
+| Flare Mainnet, Songbird | —            | No source configured. The `requestAttestation` function reverts for `Web2Json`. |
+
+A new source on Flare Mainnet or Songbird would require a separate proposal under [FIP.14](https://proposals.flare.network/FIP/FIP_14.html#31-process-of-adding-updating-or-removing-an-api-endpoint).
