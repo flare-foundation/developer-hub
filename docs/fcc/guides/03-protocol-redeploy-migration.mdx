@@ -1,0 +1,373 @@
+---
+title: Migrate After a Protocol Redeploy
+slug: protocol-redeploy-migration
+authors: [nikerzetic]
+description: Point a running extension stack at redeployed Relay, FlareSystemsManager, and VoterRegistry contracts.
+tags: [intermediate, tee, fcc]
+keywords:
+  [
+    tee,
+    trusted-execution-environment,
+    extension,
+    flare-network,
+    coston2,
+    fcc,
+    relay,
+    signing-policy,
+    migration,
+  ]
+sidebar_position: 4
+unlisted: false
+---
+
+Flare Confidential Compute is still in development, and the Coston2 deployment moves with it.
+When Flare redeploys `Relay`, `FlareSystemsManager`, or `VoterRegistry`, an extension stack that has not changed at all stops working: your `ext-proxy` reads signing policies from those addresses, and a stale copy silently talks to a contract that no longer receives signing policies.
+
+This guide is for anyone running their own extension stack locally on **Coston2** (chain id 114), where you own the proxy, the TEE node, and the config.
+Commands say `coston2`; swap the chain name in compose files and scripts for `coston`, `songbird`, or `flare` if you are on one of those.
+The RPC URL and `--chain 114` in the snippets below are Coston2 — use that network's RPC and chain id if you swapped.
+"The scaffold" is the [`fce-extension-scaffold`](https://github.com/flare-foundation/fce-extension-scaffold) repository your extension came from — its paths and service names are examples, and [`docker compose config --services`](#step-4-wait-then-restart-both-services) prints yours.
+
+:::info[Verified against pinned versions]
+Verified 2026-09-09 against `tee-proxy v0.0.18` and `tee-node v0.0.24`, the scaffold's pins in `proxy/Dockerfile` and `tools/go.mod`.
+If you have bumped either, the log strings below may differ.
+:::
+
+## When You Need This Guide
+
+You are in the right place if your extension worked, nothing on your side changed, and now one of these is true:
+
+- The proxy reports a `lastSigningPolicyId` behind the chain's reward epoch.
+- `ext-proxy` panics at startup with `initializing signing policy`.
+- Availability checks come back `404`.
+
+No rebuild and no new code hash is involved.
+Your registration lives in [`FlareTeeManager`](/fcc/reference/IFlareTeeManager), which has not moved.
+
+There is also no rolling back.
+The old `Relay` keeps its code and its history, but it stops receiving new signing policies, so reverting the config only returns you to the broken state.
+
+:::warning[Budget for the full path, not the happy one]
+Expect a TEE node restart ([step 4](#step-4-wait-then-restart-both-services) explains why), and with it a new TEE identity, a registration transaction, and a `pause` ([step 5](#step-5-retire-the-old-tee-machine)).
+Until the new `Relay` has emitted its first `SigningPolicyInitialized` event the proxy cannot start at all.
+On Coston2 that wait can reach a full reward epoch, about 6 hours.
+[Step 4](#step-4-wait-then-restart-both-services) has the check to run before you restart.
+:::
+
+## Before You Start
+
+Have these ready:
+
+- **Nothing to download up front.**
+  The trusted `deployed-addresses.json` is the scaffold's committed [`config/coston2/deployed-addresses.json`](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/config/coston2/deployed-addresses.json), and `$NEW` below is its raw URL.
+  [Step 1](#step-1-check-the-change-is-in-scope) reads it over HTTP, and [step 2](#step-2-put-the-new-deployed-addressesjson-in-place) writes it straight over your copy.
+  That file is the source of truth for the addresses this stack runs against, and [step 3](#step-3-update-the-changed-addresses) copies them into the proxy config.
+- **Your current proxy config, copied outside the repository.**
+  It is gitignored, so git cannot get it back for you.
+  `deployed-addresses.json` is tracked, so `git show HEAD:config/coston2/deployed-addresses.json` recovers that one.
+- **The proxy's logs**, the only way to tell a policy panic from bad TOML.
+- **`jq`, `diff`, `sort`, `sed`, `column`, `curl`, and `cast`** (Foundry), run from `bash`.
+  [Step 1](#step-1-check-the-change-is-in-scope) uses process substitution, which `sh` and PowerShell do not have.
+- **The machine owner's key**, `DEPLOYMENT_PRIVATE_KEY` in `.env`, the key `post-build.sh` signs with.
+  `INITIAL_OWNER` is that key's address, and `getTeeMachineOwner` must return it.
+  `pause` from any other key works only once the machine's availability check has expired, and sets `SUSPENDED`, not `PAUSED`.
+
+Every command below runs from your repository root and assumes `ADDR`, `NEW`, `RPC`, `REGISTRY`, `EXT_PROXY_URL`, `addr()`, and `reg()`.
+`ADDR` is your own `ADDRESSES_FILE`: the scaffold default is below, and this prints the path if your extension keeps the dump elsewhere.
+
+```bash
+sed -n 's|^ADDRESSES_FILE=\(\./\)\{0,1\}||p' .env.coston2
+```
+
+`NEW` is not a file but a URL, pointing at the scaffold's publicly available addresses:
+
+```bash
+ADDR=config/coston2/deployed-addresses.json
+NEW=https://raw.githubusercontent.com/flare-foundation/fce-extension-scaffold/main/config/coston2/deployed-addresses.json
+RPC=https://coston2-api.flare.network/ext/C/rpc
+REGISTRY=0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019   # FlareContractRegistry, same address on every Flare network
+EXT_PROXY_URL=<your public proxy URL>   # same value as EXT_PROXY_URL in .env
+
+addr() { jq -r --arg n "$1" '.[]|select(.name==$n).address' "$ADDR"; }
+reg()  { cast call "$REGISTRY" 'getContractAddressByName(string)(address)' "$1" --rpc-url "$RPC" --chain 114; }
+```
+
+## What Each Step Costs
+
+| Action                                                                           | Costs you                                                                                                                                        |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Editing the proxy config                                                         | Nothing — it is read at startup only                                                                                                             |
+| Replacing `deployed-addresses.json`                                              | Nothing — tooling picks it up on its next invocation, no restart involved                                                                        |
+| Restarting `ext-proxy` alone ([step 4](#step-4-wait-then-restart-both-services)) | It panics on the new `Relay` and stays exited — the scaffold sets no `restart:` policy — so plan on restarting it together with the node         |
+| Restarting the TEE node ([step 5](#step-5-retire-the-old-tee-machine))           | A new TEE identity: the key is never persisted, so a registration transaction, and the old machine stays **active** onchain until you `pause` it |
+
+## Step 1: Check the Change Is in Scope
+
+The old is the copy still in your repository (`$ADDR`), the new is the scaffold's (`$NEW`).
+Compare them **by contract name**: they run to 100-odd entries, and a line diff tells you nothing.
+
+```bash
+names() { jq -r '.[]|"\(.name) \(.address)"' | sort; }
+
+diff <(names < "$ADDR") <(curl -fsS "$NEW" | names) \
+  | sed -E 's/^< /OLD /; s/^> /NEW /; /^[0-9]/d'
+```
+
+A `Relay`-only redeploy looks like this, and nothing else:
+
+```text
+OLD Relay 0xa10B…
+---
+NEW Relay 0x9f3c…
+```
+
+Expect `Relay`, usually with `FlareSystemsManager` and `VoterRegistry`.
+They deploy together, so all three moving is normal.
+
+:::danger[Stop if anything else appears]
+Especially `FlareTeeManager` or any `Tee*` contract.
+That is where your extension and TEE machine are registered, and a new address means re-registering, which this guide does not cover.
+Start from [Build Your First Extension](/fcc/guides/getting-started) instead.
+:::
+
+## Step 2: Put the New `deployed-addresses.json` in Place
+
+```bash
+curl -fsS -o "$ADDR" "$NEW"
+```
+
+`-f` makes `curl` exit non-zero rather than write an error page over your dump, and [step 1](#step-1-check-the-change-is-in-scope) already compared the same URL name by name, so a truncated or wrong-chain file cannot get this far.
+
+The file is also `ADDRESSES_FILE`.
+Registration and verification tooling read `FlareSystemsManager` from here, not from the proxy config, so a stale copy leaves them calling dead addresses even after the proxy recovers.
+
+## Step 3: Update the Changed Addresses
+
+Your proxy config is whichever host file `docker-compose.coston2.yaml` mounts into `ext-proxy` as `config.toml`, and the per-chain override wins:
+
+```bash
+grep -rn config.toml docker-compose*.yaml
+```
+
+In the scaffold it is `config/proxy/extension_proxy.coston2.docker.toml`, gitignored, and generated once by `use-chain.sh` from the committed [`extension_proxy.coston2.docker.toml.example`](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/config/proxy/extension_proxy.coston2.docker.toml.example) with the addresses substituted from `$ADDR`.
+`use-chain.sh` keeps the generated file if it already exists, so it will not pick up the new addresses on its own.
+Edit it in place rather than deleting it to force a regenerate, which rebuilds `[db]` from another chain's toml or from placeholders.
+
+Update only the keys [step 1](#step-1-check-the-change-is-in-scope) flagged: a `Relay`-only diff means `relay` alone, and the other two lines stay as they are.
+
+```toml
+[addresses]
+flare_systems_manager = "0x…"
+relay                 = "0x…"
+voter_registry        = "0x…"
+```
+
+The values come from the scaffold's published file.
+This prints all three copies of each address side by side — GitHub's, your `$ADDR`, and the `.toml` — and flags any that disagree:
+
+```bash
+TOML=config/proxy/extension_proxy.coston2.docker.toml
+scaffold=$(curl -fsS "$NEW")
+for n in flare_systems_manager:FlareSystemsManager relay:Relay voter_registry:VoterRegistry; do
+  key=${n%%:*}; name=${n##*:}
+  want=$(jq -r --arg n "$name" '.[]|select(.name==$n).address' <<<"$scaffold")
+  file=$(jq -r --arg n "$name" '.[]|select(.name==$n).address' "$ADDR")
+  toml=$(sed -n "s/^$key[[:space:]]*=[[:space:]]*\"\(0x[0-9a-fA-F]*\)\".*/\1/p" "$TOML")
+  ft=""; tt=""; st=OK
+  [ "${file,,}" = "${want,,}" ] || { ft="  <- change to $want"; st=MISMATCH; }
+  [ "${toml,,}" = "${want,,}" ] || { tt="  <- change to $want"; st=MISMATCH; }
+  printf '%-21s %s\n  github  %s\n  json    %s%s\n  toml    %s%s\n' "$key" "$st" "$want" "${file:-none}" "$ft" "${toml:-none}" "$tt"
+done
+```
+
+Run it before editing, when the `.toml` still holds the old address and a `MISMATCH` is expected, and again afterwards, when every key should read `OK`:
+
+```text
+flare_systems_manager OK
+  github  0xA90D…1e52
+  json    0xA90D…1e52
+  toml    0xA90D…1e52
+relay                 MISMATCH
+  github  0xa10B…d7dE
+  json    0xa10B…d7d0  <- change to 0xa10B…d7dE
+  toml    0xa10B…d70E  <- change to 0xa10B…d7dE
+voter_registry        OK
+  github  0x6a0A…e914
+  json    0x6a0A…e914
+  toml    0x6a0A…e914
+```
+
+Addresses are elided here; the real run prints them in full.
+Every wrong line names the address to put there, and `github` is always the correct value, fetched fresh from the scaffold's published file.
+A wrong `json` line means `$ADDR` did not get overwritten in [step 2](#step-2-put-the-new-deployed-addressesjson-in-place); a wrong `toml` line is the key you still have to edit.
+`none` means the name is missing from that file altogether — for `toml`, check that `$TOML` is the file `docker-compose.coston2.yaml` actually mounts.
+Comparison ignores letter case, so only the hex digits matter.
+
+:::warning[Leave `[db]` untouched]
+Those are your indexer credentials, and changing them is the most common way to turn this into a broken proxy.
+Diff against your backup before restarting: only the address lines should differ.
+:::
+
+## Step 4: Wait, Then Restart Both Services
+
+**Check that the new `Relay` has a signing policy before you restart anything.**
+Until it has emitted its first `SigningPolicyInitialized` event there is nothing for the proxy to load, and it panics with `no signing policy logs` instead of starting:
+
+```bash
+RELAY=$(reg Relay)
+
+cast call "$RELAY" "lastInitializedRewardEpochData()(uint32,uint32)" --rpc-url "$RPC" --chain 114
+cast call "$RELAY" "initialRewardEpochId()(uint32)" --rpc-url "$RPC" --chain 114
+```
+
+At least one policy exists when the first value of `lastInitializedRewardEpochData` is above `initialRewardEpochId`, and that is when the restart below will work.
+Until then, only waiting helps, up to the full reward epoch the warning above describes.
+
+**Expect to restart both services.**
+The node still holds the old `Relay`'s policy ids in memory, and the proxy looks those ids up as _logs at the configured `Relay` address_.
+A freshly deployed `Relay` has none, so the proxy panics with `initializing signing policy: loading last policy <n>`.
+A proxy-only restart therefore fails in the normal case.
+The line `restart: loaded policies <n-1> and <n>` is the steady-state one you see on later proxy restarts, not after a redeploy.
+
+Config is read at startup only and bind-mounted, so neither service needs a rebuild or a recreate.
+Service names below are the scaffold's (`redis`, `ext-proxy`, `extension-tee`); this prints yours:
+
+```bash
+docker compose config --services
+```
+
+Swap in whichever `-f` files you start the stack with:
+
+```bash
+docker compose -f docker-compose.yaml -f docker-compose.coston2.yaml restart extension-tee ext-proxy
+
+docker compose -f docker-compose.yaml -f docker-compose.coston2.yaml logs -f ext-proxy
+```
+
+A fresh node logs `initialized for policy <n>`, and mints a new identity doing it, so [step 5](#step-5-retire-the-old-tee-machine) is now mandatory.
+
+Redis needs no restart: nothing it stores is keyed by contract address.
+Do not bring the Cloudflare or ngrok tunnel down either.
+A new tunnel URL is a new public proxy URL, which then needs updating onchain too.
+
+## Step 5: Retire the Old TEE Machine
+
+In a new shell, re-run the setup block from [Before you start](#before-you-start) first, because the commands here need it.
+
+The new identity is not registered, and the old machine is still active, so finish both before anything else.
+Until you do, `getRandomTeeIds` keeps picking the stale machine for roughly half the instructions, and those never complete — intermittent failure, not a clean stop.
+
+```bash
+bash ./scripts/post-build.sh coston2   # registers the new identity, prints its teeId
+```
+
+:::tip[The scaffold automates the rest of this step]
+The `scripts/check-tee-machines.sh` script lists every registered machine, asks each one's proxy which key it actually holds, flags the stale ones, and prints the `pause` command without running it.
+If your extension came from the scaffold, you already have it.
+It is not a single-file copy though: it also needs `scripts/chain-env.sh` and the `tools/cmd/query-tee` helper.
+Everything below is that script, done by hand.
+:::
+
+Then retire the old machine.
+List what is still active for your extension id:
+
+```bash
+DIAMOND=$(addr FlareTeeManager)
+source config/coston2/extension.env    # sets EXTENSION_ID
+
+cast call "$DIAMOND" "getActiveTeeMachines(uint256)(address[],string[])" "$EXTENSION_ID" --rpc-url "$RPC" --chain 114
+```
+
+If your extension keeps `EXTENSION_ID` elsewhere, this finds it:
+
+```bash
+grep -rn EXTENSION_ID config/ .env*
+```
+
+Two parallel arrays, matched by position: machine ids, then their URLs.
+
+```text
+[0x8826…C8F]
+["https://cloudflare-tunnel-url.trycloudflare.com"]
+```
+
+One entry means nothing to retire, because the node did not restart or you already paused the old machine.
+Empty arrays mean nothing is registered under this `EXTENSION_ID`, so the extension id or the chain is wrong.
+After a restart there are two, carrying the same URL, and every entry is `active` onchain: nothing in the output marks one of them stale.
+
+The live one is the id `post-build.sh` printed (`Registered TEE node with id …`).
+Lost that line?
+Ask the proxy which key it actually holds — `keccak256(pubkey.x ‖ pubkey.y)[12:]` is the running node's id, the same check `check-tee-machines.sh` makes:
+
+```bash
+xy=$(curl -fsS "$EXT_PROXY_URL/info" | jq -r '.teeInfo.publicKey|(.x+.y)' | sed 's/0x//g')
+echo "0x$(cast keccak "0x$xy" | sed 's/^0x//' | tail -c 41)"
+```
+
+Every other entry is the stale one.
+A derived id that matches **no** listed entry is the common post-restart state:
+
+```text
+[0x8826…C8F]          <- registered, but not the key the proxy serves: stale
+0x2ea9…360            <- the running node, never registered
+```
+
+Both halves matter.
+The listed machine is stale, so it has to be paused eventually, but the live node has no registration yet, and pausing first leaves your extension with zero active machines.
+Re-run `post-build.sh` to register `0x2ea9…360`, confirm it shows up in the list, then pause the old id.
+
+Check the URLs too: a tunnel URL changes on every tunnel restart, and a stale one onchain fails availability checks even while the machine is active.
+
+Confirm the id, and that you hold its owner key, before sending:
+
+```bash
+cast call "$DIAMOND" "getTeeMachineOwner(address)(address)" <staleTeeId> --rpc-url "$RPC" --chain 114
+
+cast send "$DIAMOND" "pause(address)" <staleTeeId> --rpc-url "$RPC" --chain 114 --private-key <machineOwnerKey>
+```
+
+:::danger[There is no `unpause`]
+Getting a machine you paused by mistake back to `PRODUCTION` means `toProduction` with a fresh availability-check proof, signed by the owner.
+That is recoverable, but not quick.
+Pause the live one, and your extension is down until you do exactly that.
+:::
+
+## Step 6: Verify
+
+The policy id the proxy reports should end up matching the chain's current reward epoch, or be one ahead:
+
+```bash
+curl -fsS "$EXT_PROXY_URL/info" | jq '.teeInfo.lastSigningPolicyId'
+
+cast call "$(addr FlareSystemsManager)" "getCurrentRewardEpochId()(uint256)" --rpc-url "$RPC" --chain 114
+```
+
+**Right after a node restart it starts behind and climbs.**
+A fresh node initializes `initial_signing_policy_offset` events back — `2` in the scaffold, `3` if your config omits the key, so `current - 2` or `current - 3` — then advances one id per `signing_policy_fetch_interval` (`20s` in the scaffold, `10m` if your config omits the key).
+Re-check that the number is _rising_; only a number that stays put is a failure.
+
+The `--chain 114` flag matters from the scaffold root, where Foundry auto-loads `.env` and reads `CHAIN` as its own `--chain`.
+Without it, the call fails with `invalid value 'coston2'`.
+
+If you went through [step 5](#step-5-retire-the-old-tee-machine), run `getActiveTeeMachines` on your extension id again.
+It must list exactly one machine at the URL you expect.
+
+## Troubleshooting
+
+| Symptom                                                                          | Cause                                                                                                                                                                                                                                                                                                             |
+| -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Policy id stays behind the reward epoch                                          | Wrong `relay` address, or the proxy was not restarted. A number that is behind but _rising_ right after a node restart is expected ([step 6](#step-6-verify))                                                                                                                                                     |
+| Panic: `initializing signing policy: loading last policy` or `… previous policy` | The TEE node still holds the old `Relay`'s policies — restart both services ([step 4](#step-4-wait-then-restart-both-services))                                                                                                                                                                                   |
+| Panic: `no signing policy logs`                                                  | The new `Relay` has emitted no policy event yet, or the indexer has not reached it. A `lastInitializedRewardEpochData()(uint32,uint32)` above `initialRewardEpochId()(uint32)` on the new `Relay` means at least one exists; otherwise only waiting helps, and `initial_signing_policy_offset` does not change it |
+| Panic: `reading config:`                                                         | Invalid TOML — check the quotes around the new addresses                                                                                                                                                                                                                                                          |
+| Panic: `connecting to database:` or `c-chain indexer:`                           | The `[db]` block was changed; restore it from the backup                                                                                                                                                                                                                                                          |
+| Registration tooling still hits a dead address                                   | The `deployed-addresses.json` dump was not replaced ([step 2](#step-2-put-the-new-deployed-addressesjson-in-place))                                                                                                                                                                                               |
+| Availability check `404`, `response not in storage`                              | Policy out of sync, **or** the FTDC machine that took the request is stale — not necessarily this migration                                                                                                                                                                                                       |
+| Instructions fail intermittently after the restart                               | [Step 5](#step-5-retire-the-old-tee-machine) was skipped, so the new identity is unregistered, or the stale machine is still active; failing that, the public proxy URL no longer matches the one registered onchain                                                                                              |
+
+For failures that are not caused by a redeploy, such as a TEE machine that never reaches production or a version skew between `tee-node` and `tee-proxy`, see [FCC Troubleshooting](/fcc/troubleshooting).
+
+## Also Update Committed Config Examples
+
+If your fork keeps committed `.example` copies of the proxy config, refresh the `[addresses]` in **all** of them, usually a host and a Docker variant per chain, so a fresh clone starts current.
+Nothing running is affected.
