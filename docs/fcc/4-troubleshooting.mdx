@@ -38,10 +38,16 @@ Before reporting an infrastructure problem, read back what you actually register
 The scaffold ships a `query-tee` tool for this:
 
 ```bash
-go run ./tools/cmd/query-tee -reg <FlareTeeManager address> <your TEE id>
+source .env
+source config/coston2/extension.env
+REG=$(jq -r '.[]|select(.name=="FlareTeeManager").address' config/coston2/deployed-addresses.json)
+cd tools
+go run ./cmd/query-tee -ext "$((EXTENSION_ID))" -reg "$REG" -rpc "$CHAIN_URL"
 ```
 
+The `-ext` flag takes the **decimal** extension ID — `$((EXTENSION_ID))` converts the hex value from `config/coston2/extension.env`.
 Take the `FlareTeeManager` address from `config/coston2/deployed-addresses.json` rather than relying on the tool's built-in default, which can lag behind a redeploy.
+You can also pass a TEE machine address as a positional argument to inspect that machine.
 
 Two things in the output matter most:
 
@@ -148,11 +154,11 @@ A custom operation type that does not start with `F_` passes local pair validati
 Choose operation type and command strings that are specific to your extension, and do not reuse a system command name even with a custom type.
 Descriptive names also make instructions easier to identify onchain.
 
-### Related: Name Mismatch Between Solidity And Go
+### Related: Name Mismatch Between Solidity And The Extension
 
 If the extension responds with `unsupported op type` or `unsupported op command`, the instruction reached you, and the names do not match.
 The `bytes32("...")` strings in your Solidity contract must match the `OPType` and `OPCommand` constants in your extension config exactly, including case.
-In the Hello World scaffold that file is `go/internal/config/config.go`.
+In the Hello World scaffold those files are `go/internal/config/config.go`, `python/app/config.py`, and `typescript/src/app/config.ts`.
 
 ## Indexer Database Connection Fails
 
