@@ -183,6 +183,22 @@ You do not need Confidential Space hardware, a paid cloud account, or any specia
 A production deployment is the opposite case.
 It runs on a real Confidential Space VM with `MODE=0`, because production attestation verification rejects simulated attestations.
 
+## New Reward Epoch Signed Before It Is Live Onchain
+
+### Symptoms
+
+- You restart your local extension proxy and it picks up a new reward epoch, but the proxy does not work correctly afterward.
+- The epoch the proxy picked up was initialized and signed on Flare, but is not actually active on chain yet.
+
+### Root Cause: Chain Lags The Signing Policy By One Epoch
+
+A new reward epoch can be initialized and signed roughly two hours before it actually starts on chain.
+If you restart the proxy inside that window, it picks up the new epoch even though the chain is still one epoch behind, and the proxy fails because that epoch isn't live yet.
+
+### Solution
+
+Set `initial_signing_policy_offset=1` in the proxy config file (on the scaffold this is `/config/proxy/extension_proxy.coston2.docker.toml`), then restart the proxy.
+
 ## Getting Further Help
 
 The guides carry their own symptom tables for problems specific to a single walkthrough, including [Build Your First Extension](/fcc/guides/getting-started#troubleshooting).
