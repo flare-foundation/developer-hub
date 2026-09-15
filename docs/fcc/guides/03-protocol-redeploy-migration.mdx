@@ -28,9 +28,15 @@ Commands say `coston2`; swap the chain name in compose files and scripts for `co
 The RPC URL and `--chain 114` in the snippets below are Coston2 — use that network's RPC and chain id if you swapped.
 "The scaffold" is the [`fce-extension-scaffold`](https://github.com/flare-foundation/fce-extension-scaffold) repository your extension came from — its paths and service names are examples, and [`docker compose config --services`](#step-4-wait-then-restart-both-services) prints yours.
 
-:::info[Verified against pinned versions]
-Verified 2026-09-09 against `tee-proxy v0.0.18` and `tee-node v0.0.24`, the scaffold's pins in `proxy/Dockerfile` and `tools/go.mod`.
-If you have bumped either, the log strings below may differ.
+:::info[Version floor for a redeployed Relay]
+This guide's commands and log strings come from `tee-proxy v0.0.24` and `tee-node v0.0.26`, the scaffold's current pins in [`proxy/Dockerfile`](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/proxy/Dockerfile) and [`tools/go.mod`](https://github.com/flare-foundation/fce-extension-scaffold/blob/main/tools/go.mod).
+That pair is also the floor for running against a redeployed `Relay` at all.
+Versions `v0.0.18` and earlier of `tee-proxy` cannot advance signing policies, and a `tee-node` below `v0.0.26` does not follow the current `Relay`.
+Below that floor a policy id that never catches up is a version problem and not an address problem, so bump both pins and rebuild before working through the steps here.
+
+Passing the scaffold's `scripts/check-versions.sh` is not enough on its own.
+It fails only below `tee-node v0.0.24` and `tee-proxy v0.0.19`, so pins that are still too old for the current `Relay` go through it.
+Compare your own two pins against the scaffold's, linked above.
 :::
 
 ## When You Need This Guide
@@ -356,7 +362,7 @@ It must list exactly one machine at the URL you expect.
 
 | Symptom                                                                          | Cause                                                                                                                                                                                                                                                                                                             |
 | -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Policy id stays behind the reward epoch                                          | Wrong `relay` address, or the proxy was not restarted. A number that is behind but _rising_ right after a node restart is expected ([step 6](#step-6-verify))                                                                                                                                                     |
+| Policy id stays behind the reward epoch                                          | Wrong `relay` address, or the proxy was not restarted. A number that is behind but _rising_ right after a node restart is expected ([step 6](#step-6-verify)). A number that never moves at all points at the version floor rather than the addresses — check both pins first                                     |
 | Panic: `initializing signing policy: loading last policy` or `… previous policy` | The TEE node still holds the old `Relay`'s policies — restart both services ([step 4](#step-4-wait-then-restart-both-services))                                                                                                                                                                                   |
 | Panic: `no signing policy logs`                                                  | The new `Relay` has emitted no policy event yet, or the indexer has not reached it. A `lastInitializedRewardEpochData()(uint32,uint32)` above `initialRewardEpochId()(uint32)` on the new `Relay` means at least one exists; otherwise only waiting helps, and `initial_signing_policy_offset` does not change it |
 | Panic: `reading config:`                                                         | Invalid TOML — check the quotes around the new addresses                                                                                                                                                                                                                                                          |
