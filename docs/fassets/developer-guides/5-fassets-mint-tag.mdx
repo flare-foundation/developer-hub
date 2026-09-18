@@ -68,7 +68,7 @@ Compared to the [memo-based minting](/fassets/developer-guides/fassets-mint), th
 12. Wait for minting to complete via `waitForDirectMintingOutcome`.
     This helper watches for both [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) and [`DirectMintingExecuted`](/fassets/reference/IAssetManagerEvents#directmintingexecuted):
     - If hourly or daily rate limits apply, an executor's first `executeDirectMinting` call emits [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) with `executionAllowedAt`.
-    - If the amount is strictly above the [large-mint threshold](/fassets/minting#large-minting-delay), it emits [`LargeDirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#largedirectmintingdelayed) instead.
+    - If the amount is at or above the [large-mint threshold](/fassets/minting#large-minting-delay), it emits [`LargeDirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#largedirectmintingdelayed) instead.
       The underlying XRP remains in the Core Vault; no FXRP has been minted yet.
     - After `executionAllowedAt`, the executor retries with the same FDC proof.
     - `waitForDirectMintingOutcome` logs any delay and keeps polling until `DirectMintingExecuted`.
@@ -90,7 +90,7 @@ Compared to the [memo-based minting](/fassets/developer-guides/fassets-mint), th
   When ownership changes, the recipient is reset to the new owner, and the executor is reset to the zero address.
 - **Rate limits delay execution; they do not revert.**
   If the minting hits hourly or daily rate limits, the first finalization attempt emits [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed) with `executionAllowedAt`.
-  If the amount is strictly above the [large-mint](/fassets/minting#large-minting-delay) threshold, it emits [`LargeDirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#largedirectmintingdelayed) instead.
+  If the amount is at or above the [large-mint](/fassets/minting#large-minting-delay) threshold, it emits [`LargeDirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#largedirectmintingdelayed) instead.
   Your XRP remains at the Core Vault until an executor retries.
   Use `waitForDirectMintingOutcome` (see [Delayed minting flow](/fassets/minting#delayed-minting-flow)) rather than waiting only for `DirectMintingExecuted`.
 

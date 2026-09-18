@@ -214,13 +214,13 @@ function getDirectMintingDailyLimiterState()
 
 ### `getDirectMintingsUnblockUntilTimestamp`
 
-Returns the Unix timestamp until which the direct-minting **hourly and daily** [rate limiter](/fassets/minting#rate-limits) is bypassed.
+Returns the Unix timestamp set by the last `unblockDirectMintingsUntil` call, or `0` if governance never used it.
 
-While `block.timestamp` is below this value, the hourly and daily caps are not enforced, and mintings queued by those windows can execute without delay.
-Governance sets this via `unblockDirectMintingsUntil` to drain a backlog after manual review; the value is `0` when the limiter is active.
+The value is always in the **past** — `unblockDirectMintingsUntil` rejects future timestamps, because the mintings it releases are assumed to have been manually validated.
+Every [delayed minting](/fassets/minting#delayed-minting-flow) that started before this timestamp can execute immediately, whatever caused its delay: the [large-minting delay](/fassets/minting#large-minting-delay) is released too.
 
-This bypass does **not** apply to the [large-minting delay](/fassets/minting#large-minting-delay).
-Amounts strictly above [`directMintingLargeMintingThresholdUBA`](#getdirectmintinglargemintingthresholduba) are still held for [`directMintingLargeMintingDelaySeconds`](#getdirectmintinglargemintingdelayseconds).
+This is retroactive only.
+New mintings are still checked against the hourly and daily caps, so this value must not be read as "the limiter is currently off".
 
 ```solidity
 function getDirectMintingsUnblockUntilTimestamp()
@@ -230,10 +230,10 @@ function getDirectMintingsUnblockUntilTimestamp()
 
 ### `getDirectMintingLargeMintingThresholdUBA`
 
-Returns the threshold above which direct minting is considered large, in UBA.
-A mint is large when its underlying amount is **strictly greater than** this value.
+Returns the threshold at or above which direct minting is considered large, in UBA.
+A mint is large when its underlying amount is **greater than or equal to** this value.
 
-Large mints are delayed by [`getDirectMintingLargeMintingDelaySeconds`](#getdirectmintinglargemintingdelayseconds) independently of the hourly and daily windows.
+Large mints are delayed by [`getDirectMintingLargeMintingDelaySeconds`](#getdirectmintinglargemintingdelayseconds) on a branch that skips the hourly and daily windows, so they are never additionally delayed by a window and consume no window capacity.
 See [Large minting delay](/fassets/minting#large-minting-delay).
 
 ```solidity
@@ -244,7 +244,7 @@ function getDirectMintingLargeMintingThresholdUBA()
 
 ### `getDirectMintingLargeMintingDelaySeconds`
 
-Returns the fixed delay in seconds applied when a direct minting amount is strictly greater than [`getDirectMintingLargeMintingThresholdUBA`](#getdirectmintinglargemintingthresholduba).
+Returns the fixed delay in seconds applied when a direct minting amount is greater than or equal to [`getDirectMintingLargeMintingThresholdUBA`](#getdirectmintinglargemintingthresholduba).
 
 The delay is measured from the block timestamp of the first `executeDirectMinting` attempt and is **not** bypassed by [`getDirectMintingsUnblockUntilTimestamp`](#getdirectmintingsunblockuntiltimestamp).
 See [Large minting delay](/fassets/minting#large-minting-delay).
@@ -498,7 +498,7 @@ A preferred executor has an exclusive window defined by [`getDirectMintingOthers
 For hash-commitment memos (`0xFE`), use [`executeDirectMintingWithData`](#executedirectmintingwithdata) instead.
 
 **Rate limits:** When hourly or daily thresholds are hit, the call emits [`DirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#directmintingdelayed).
-When the amount is strictly above the large-minting threshold, it emits [`LargeDirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#largedirectmintingdelayed) instead.
+When the amount is at or above the large-minting threshold, it emits [`LargeDirectMintingDelayed`](/fassets/reference/IAssetManagerEvents#largedirectmintingdelayed) instead.
 In both cases, the executor must wait until `executionAllowedAt` and call again with the same proof.
 
 **Reverts:** If validation or downstream execution fails — including a revert inside `handleMintedFAssets` for smart-account memos — the entire transaction rolls back.

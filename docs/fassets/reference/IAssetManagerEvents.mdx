@@ -213,7 +213,7 @@ event DirectMintingPaymentTooSmallForFee(
 
 Emitted when a direct minting is throttled by the **hourly or daily** [rate limiter](/fassets/minting#rate-limits) and its execution is postponed.
 
-For amounts strictly above [`getDirectMintingLargeMintingThresholdUBA()`](/fassets/reference/IAssetManager#getdirectmintinglargemintingthresholduba), see [`LargeDirectMintingDelayed`](#largedirectmintingdelayed) instead.
+For amounts at or above [`getDirectMintingLargeMintingThresholdUBA()`](/fassets/reference/IAssetManager#getdirectmintinglargemintingthresholduba), see [`LargeDirectMintingDelayed`](#largedirectmintingdelayed) instead.
 
 The executor must wait until `executionAllowedAt` and call [`executeDirectMinting`](/fassets/reference/IAssetManager#executedirectminting) again with the same FDC proof.
 The underlying asset remains at the Core Vault until a successful finalization.
@@ -234,7 +234,7 @@ event DirectMintingDelayed(
 
 ### `LargeDirectMintingDelayed`
 
-Emitted when [`executeDirectMinting`](/fassets/reference/IAssetManager#executedirectminting) is called for a payment whose underlying amount is **strictly greater than** [`getDirectMintingLargeMintingThresholdUBA()`](/fassets/reference/IAssetManager#getdirectmintinglargemintingthresholduba).
+Emitted when [`executeDirectMinting`](/fassets/reference/IAssetManager#executedirectminting) is called for a payment whose underlying amount is **greater than or equal to** [`getDirectMintingLargeMintingThresholdUBA()`](/fassets/reference/IAssetManager#getdirectmintinglargemintingthresholduba).
 
 Unlike [`DirectMintingDelayed`](#directmintingdelayed), the hold is a **fixed duration** from [`getDirectMintingLargeMintingDelaySeconds()`](/fassets/reference/IAssetManager#getdirectmintinglargemintingdelayseconds), independent of how far the hourly or daily windows are exceeded.
 Large mints are **not** counted toward those rate-limiter windows.
