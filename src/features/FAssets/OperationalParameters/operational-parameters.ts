@@ -1422,7 +1422,7 @@ export const operationalParameters = [
         interfaceLink:
           "/fassets/reference/IAssetManager#getdirectmintinglargemintingthresholduba",
         description:
-          "Threshold above which a minting is considered large, in base unit of the underlying asset (UBA). Amounts strictly greater than this value are always delayed by Minting Large Minting Delay, even when governance has bypassed the hourly/daily limiter.",
+          "Threshold at or above which a minting is considered large, in base unit of the underlying asset (UBA). Amounts greater than or equal to this value are delayed by Minting Large Minting Delay on a separate branch that skips the hourly and daily limiter entirely.",
         values: {
           flare: {
             xrp: "4M XRP",
@@ -1441,7 +1441,7 @@ export const operationalParameters = [
         interfaceLink:
           "/fassets/reference/IAssetManager#getdirectmintinglargemintingdelayseconds",
         description:
-          "Fixed delay in seconds before a large minting (amount strictly above Minting Large Minting Threshold) can execute. Not bypassed by governance unblock of the hourly/daily limiter.",
+          "Fixed delay in seconds before a large minting (amount at or above Minting Large Minting Threshold) can execute. A large minting never consumes hourly or daily window capacity.",
         values: {
           flare: {
             xrp: "2 hours",

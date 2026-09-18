@@ -346,6 +346,7 @@ const config: Config = {
   ],
   plugins: [
     require.resolve("./webpack.config.js"),
+    "docusaurus-plugin-mermaid-pan-zoom",
     [
       "@docusaurus/plugin-client-redirects",
       {

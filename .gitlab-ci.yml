@@ -44,6 +44,9 @@ validate:mr-title:
       title="$CI_MERGE_REQUEST_TITLE"
       echo "Checking MR title: $title"
 
+      # GitLab prefixes draft MR titles with "Draft: " — validate the title underneath
+      title=$(echo "$title" | sed -E 's/^[Dd][Rr][Aa][Ff][Tt]:[[:space:]]*//')
+
       # Allow work-in-progress titles (matches amannn/action-semantic-pull-request wip: true)
       if echo "$title" | grep -qiE '^(wip:|\[wip\])'; then
         echo "WIP title — skipping validation"
