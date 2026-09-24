@@ -28,7 +28,7 @@ This is the summary of the redemption process:
      Agents can use the Flare Data Connector to ensure the validity of this address.
      Otherwise, malicious redeemers could provide an address that systematically blocks payments and exploits the redeeming process to their advantage.
 
-   - Amount to pay minus the fee that was already subtracted.
+   - Amount the agent must pay on the underlying chain, after the [system fee and the agent fee](#fees).
    - [A payment reference](#payment-reference).
      This payment reference is different for each agent and each redemption.
    - The last underlying block and the last underlying timestamp to complete the payment.
@@ -73,22 +73,60 @@ If the agent fails to pay, the redeemer calls `xrpRedemptionPaymentDefault` to t
 
 ## Fees
 
-These fees are charged when a user redeems FAssets for the underlying asset:
+A redemption request charges two fees, one after the other, plus an optional executor fee.
+Both rates are in BIPS (10,000 BIPS = 100%) and each one is rounded down.
+Live rates are in the [operational parameters](/fassets/operational-parameters).
 
-| Fee Name           | Charged In                            | Status     | Purpose                                                                                                                       |
-| :----------------- | :------------------------------------ | :--------- | :---------------------------------------------------------------------------------------------------------------------------- |
-| **Redemption Fee** | Underlying Asset (e.g., XRP for FXRP) | Obligatory | Compensates the agent and collateral pool for providing the redemption service.                                               |
-| **Executor Fee**   | FLR                                   | Optional   | Compensates an optional executor who triggers redemption defaults when agents fail to pay, saving redeemers extra operations. |
+| Fee              | Charged in                                                           | When it applies                                                        | Who receives it                                                                |
+| :--------------- | :------------------------------------------------------------------- | :--------------------------------------------------------------------- | :----------------------------------------------------------------------------- |
+| **System fee**   | FAssets minted to the fee receiver; taken out of the redeemed amount | A receiver is set, and the request is not a transfer to the core vault | [`systemRedemptionFeeReceiver`](#system-fee), the address set by governance    |
+| **Agent fee**    | Underlying asset, deducted from the payout                           | Every redemption request except a transfer to the core vault           | The agent. A share is then minted as FAssets into that agent's collateral pool |
+| **Executor fee** | FLR                                                                  | Only when the redeemer names an executor                               | The executor, for calling redemption default if the agent does not pay         |
 
-### Redemption Fee
+### Redemption fee
 
-The redemption fee is deducted from the amount of the underlying asset sent to the redeemer.
-The fee is split between the agent and the collateral pool:
+On a redemption of amount \(x\), the redeemer is paid this much underlying:
 
-- **Agent**: Receives a portion of the fee as profit for providing the redemption service.
-- **Collateral Pool**: Receives the remaining portion of the fee, which is minted as new FAssets and deposited into the pool, increasing value for pool token holders.
+$$
+x \cdot \left(1 - \frac{\text{systemRedemptionFeeBIPS}}{10000}\right) \cdot \left(1 - \frac{\text{redemptionFeeBIPS}}{10000}\right)
+$$
 
-The fee percentage is defined in the operational parameters by governance and is the same for all agents, while the split ratio between the agent and the collateral pool is configured in each agent's settings.
+The redeemer calls `redeem`, `redeemAmount`, or `redeemWithTag`.
+Inside that call the Asset Manager creates one request per agent and applies the fees below.
+A transfer to the core vault creates a request too, and skips both fees.
+
+#### System fee
+
+Taken first, in `RedemptionRequests.createRedemptionRequest`.
+
+`systemRedemptionFeeBIPS` is subtracted from the redeemed amount.
+The backing for that slice is released, and the same amount of FAssets is minted to `systemRedemptionFeeReceiver`.
+[`SystemRedemptionFeePaid`](/fassets/reference/IAssetManagerEvents#systemredemptionfeepaid) records the mint.
+The redeemed FAssets, including this slice, are burned from the redeemer, so the receiver's new tokens are the system fee.
+
+Governance sets the rate and the receiver on `RedeemExtendedSettingsFacet` (`setSystemRedemptionFeeBIPS`, `setSystemRedemptionFeeReceiver`).
+Read the rate with [`systemRedemptionFeeBIPS`](/fassets/reference/IAssetManager#systemredemptionfeebips) and the receiver with [`systemRedemptionFeeReceiver`](/fassets/reference/IAssetManager#systemredemptionfeereceiver).
+The charged rate is the stored rate when the receiver is nonzero, and 0 when the receiver is the zero address.
+[`effectiveSystemRedemptionFeeBIPS`](/fassets/reference/IAssetManager#effectivesystemredemptionfeebips) returns that charged rate on networks where the getter is deployed.
+The fee is also skipped on a transfer to the core vault.
+
+#### Agent fee
+
+Taken next, on what remains after the system fee.
+The global [`redemptionFeeBIPS`](/fassets/operational-parameters) is the same for every agent and is stored on the request as `underlyingFeeUBA`.
+The agent pays `underlyingValueUBA - underlyingFeeUBA` on the underlying chain and keeps the difference.
+On `RedemptionRequested`, `valueUBA` is the amount after the system fee, and `feeUBA` is this agent fee.
+
+That agent fee is split again when the payment is confirmed, in `RedemptionConfirmationsFacet._mintPoolFee`:
+
+- The agent's own `redemptionPoolFeeShareBIPS` of the fee is minted as new FAssets into that agent's collateral pool (`fAssetFeeDeposited`).
+  [`RedemptionPoolFeeMinted`](/fassets/reference/IAssetManagerEvents#redemptionpoolfeeminted) records it.
+- The rest stays with the agent as underlying that was never paid out.
+
+The pool share is copied from the agent onto the request when the request is created.
+It is charged when the agent (or, after the confirmation window, anyone) proves the underlying payment.
+Each agent sets its own share.
+The [default agent settings](/fassets/operational-parameters) list the starting value.
 
 ### Executor Fee
 

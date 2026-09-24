@@ -581,7 +581,8 @@ The [`RedemptionAmountIncomplete`](/fassets/reference/IAssetManagerEvents#redemp
 
 Parameters:
 
-- `_amountUBA`: Amount of redeemer's FAssets that will be burned (this is not the received amount; the redemption fee is subtracted).
+- `_amountUBA`: Amount of the redeemer's FAssets that will be burned.
+  The [system fee and the agent fee](/fassets/redemption#fees) are subtracted before the agent pays the underlying.
 - `_redeemerUnderlyingAddressString`: Address to which the agent must transfer the underlying amount.
 - `_executor`: Account that can execute redemption default (besides redeemer and agent).
 
@@ -608,7 +609,8 @@ The [`RedemptionAmountIncomplete`](/fassets/reference/IAssetManagerEvents#redemp
 
 Parameters:
 
-- `_amountUBA`: Amount of redeemer's FAssets that will be burned (this is not the received amount; the redemption fee is subtracted).
+- `_amountUBA`: Amount of the redeemer's FAssets that will be burned.
+  The [system fee and the agent fee](/fassets/redemption#fees) are subtracted before the agent pays the underlying.
 - `_redeemerUnderlyingAddressString`: Address to which the agent must transfer the underlying amount.
 - `_executor`: Account that can execute redemption default (besides redeemer and agent).
 - `_destinationTag`: Destination tag required in redemption payment (XRP only; must fit in 32 bits for now).
@@ -635,6 +637,46 @@ This governance-configured minimum applies to both [`redeemAmount`](/fassets/ref
 
 ```solidity
 function minimumRedeemAmountUBA()
+    external view
+    returns (uint256);
+```
+
+### `systemRedemptionFeeBIPS`
+
+The system redemption fee in BIPS, charged first on every redemption request except a transfer to the core vault.
+The fee is subtracted from the redeemed amount and minted as FAssets to [`systemRedemptionFeeReceiver`](#systemredemptionfeereceiver).
+A stored rate of zero charges nothing.
+See [Fees](/fassets/redemption#system-fee).
+
+Defined on [`IRedeemExtendedSettings`](https://github.com/flare-foundation/fassets/blob/main/contracts/userInterfaces/IRedeemExtendedSettings.sol) and called on the Asset Manager.
+
+```solidity
+function systemRedemptionFeeBIPS()
+    external view
+    returns (uint256);
+```
+
+### `systemRedemptionFeeReceiver`
+
+The address that receives the system redemption fee.
+The zero address disables the fee, even when [`systemRedemptionFeeBIPS`](#systemredemptionfeebips) is nonzero.
+
+```solidity
+function systemRedemptionFeeReceiver()
+    external view
+    returns (address);
+```
+
+### `effectiveSystemRedemptionFeeBIPS`
+
+The system redemption fee in BIPS that is actually charged.
+Equals `systemRedemptionFeeBIPS()` when a receiver is set, and zero when the receiver is the zero address.
+
+Coston2's Asset Manager does not implement this function, so the call reverts.
+On Coston2, read [`systemRedemptionFeeBIPS`](#systemredemptionfeebips) and [`systemRedemptionFeeReceiver`](#systemredemptionfeereceiver) instead.
+
+```solidity
+function effectiveSystemRedemptionFeeBIPS()
     external view
     returns (uint256);
 ```
