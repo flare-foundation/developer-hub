@@ -74,7 +74,7 @@ export const operationalParameters = [
         link: "/fassets/redemption#redemption-fee",
         values: {
           flare: {
-            xrp: "0.2%",
+            xrp: "0.18%",
           },
           coston2: {
             xrp: "0.5%",
