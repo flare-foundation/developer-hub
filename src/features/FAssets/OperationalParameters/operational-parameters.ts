@@ -70,8 +70,9 @@ export const operationalParameters = [
       {
         name: "Redemption fee",
         settingName: "redemptionFee",
-        description: "Fee charged during redemption of FAssets.",
-        link: "/fassets/redemption#redemption-fee",
+        description:
+          "Agent fee on the amount left after the system redemption fee. The agent pays the redeemer what remains and keeps this fee, then shares part of it with that agent's collateral pool.",
+        link: "/fassets/redemption#agent-fee",
         values: {
           flare: {
             xrp: "0.18%",
@@ -86,6 +87,49 @@ export const operationalParameters = [
             xrp: "0.1%",
             btc: "0.1%",
             doge: "0.1%",
+          },
+        },
+      },
+      {
+        name: "System redemption fee",
+        settingName: "systemRedemptionFeeBIPS",
+        description:
+          "Taken first from the redeemed amount and minted as FAssets to the system redemption fee receiver. A zero receiver disables the fee. Skipped on a transfer to the core vault.",
+        link: "/fassets/redemption#system-fee",
+        values: {
+          flare: {
+            xrp: "0.02%",
+          },
+          coston2: {
+            xrp: "0.02%",
+          },
+          songbird: {
+            xrp: "0%",
+          },
+          coston: {
+            xrp: "0%",
+          },
+        },
+      },
+      {
+        name: "System redemption fee receiver",
+        settingName: "systemRedemptionFeeReceiver",
+        description:
+          "Address that receives the system redemption fee. The zero address disables the fee.",
+        link: "/fassets/redemption#system-fee",
+        valueType: "address",
+        values: {
+          flare: {
+            xrp: "0x6E815bB968e32f91C7e273b9e1CDAE2825Bf8F3a",
+          },
+          coston2: {
+            xrp: "0x6E815bB968e32f91C7e273b9e1CDAE2825Bf8F3a",
+          },
+          songbird: {
+            xrp: "0x0000000000000000000000000000000000000000",
+          },
+          coston: {
+            xrp: "0x0000000000000000000000000000000000000000",
           },
         },
       },
@@ -1053,7 +1097,8 @@ export const operationalParameters = [
         name: "Redemption Pool Fee Share",
         settingName: "redemptionPoolFeeShare",
         description:
-          "Percentage of redemption fees paid to the pool to sustain it during high redemption periods.",
+          "Default share of the agent redemption fee minted as FAssets into the agent's collateral pool. Each agent sets its own share.",
+        link: "/fassets/redemption#agent-fee",
         values: {
           flare: {
             xrp: "30%",

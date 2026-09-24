@@ -337,8 +337,9 @@ Parameters:
 - `redeemer`: Address of the redeemer.
 - `requestId`: Unique identifier for the redemption request.
 - `paymentAddress`: Address to which the agent must transfer the redeemed amount on the underlying chain.
-- `valueUBA`: Amount of FAssets to redeem.
-- `feeUBA`: Fee for the redemption.
+- `valueUBA`: Redeemed amount after the [system fee](/fassets/redemption#system-fee).
+  The agent pays `valueUBA` minus `feeUBA`.
+- `feeUBA`: The [agent fee](/fassets/redemption#agent-fee) (`underlyingFeeUBA`), taken from `valueUBA`.
 - `firstUnderlyingBlock`: First underlying block to submit payment.
 - `lastUnderlyingBlock`: Last underlying block to submit payment.
 - `lastUnderlyingTimestamp`: Deadline on the underlying chain for submitting the redemption payment.
@@ -376,8 +377,9 @@ Parameters:
 - `redeemer`: Address of the redeemer.
 - `requestId`: Unique identifier for the redemption request.
 - `paymentAddress`: Address on the underlying chain to which the agent must transfer the payment.
-- `valueUBA`: Amount redeemed in underlying base units.
-- `feeUBA`: Redemption fee in underlying base units.
+- `valueUBA`: Redeemed amount after the [system fee](/fassets/redemption#system-fee).
+  The agent pays `valueUBA` minus `feeUBA`.
+- `feeUBA`: The [agent fee](/fassets/redemption#agent-fee) (`underlyingFeeUBA`), taken from `valueUBA`.
 - `firstUnderlyingBlock`: First underlying block in the valid payment window.
 - `lastUnderlyingBlock`: Last underlying block in the valid payment window.
 - `lastUnderlyingTimestamp`: Last underlying timestamp in the valid payment window.
@@ -572,9 +574,30 @@ event RedemptionPaymentFailed(
 );
 ```
 
+### `SystemRedemptionFeePaid`
+
+Emitted when a redemption request is created and the system fee is minted to `systemRedemptionFeeReceiver`.
+The redeemed amount on the request is lowered by this fee.
+See [System fee](/fassets/redemption#system-fee).
+
+Parameters:
+
+- `agentVault`: Address of the agent vault for this redemption request.
+- `requestId`: Unique identifier for the redemption request.
+- `feeUBA`: System fee minted to the receiver, in underlying base units.
+
+```solidity
+event SystemRedemptionFeePaid(
+    address indexed agentVault,
+    uint256 indexed requestId,
+    uint256 feeUBA
+);
+```
+
 ### `RedemptionPoolFeeMinted`
 
-Emitted when part of the redemption fee is re-minted as FAssets and paid to the agent's collateral pool.
+Emitted when the agent's share of the [agent fee](/fassets/redemption#agent-fee) is minted as FAssets and paid to that agent's collateral pool.
+This happens when the underlying payment is confirmed, after the system fee was already taken.
 
 Parameters:
 
