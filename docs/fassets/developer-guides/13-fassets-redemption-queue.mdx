@@ -2,118 +2,112 @@
 title: Get Redemption Queue
 tags: [intermediate, fassets]
 slug: fassets-redemption-queue
-description: Learn how to get the redemption queue
-keywords: [fassets, flare-network]
+description: Read the FXRP redemption queue and total the tickets, value, and lots waiting to be redeemed.
+keywords: [fassets, fxrp, redemption, redemption-queue, flare-network]
 sidebar_position: 13
 ---
 
 import CodeBlock from "@theme/CodeBlock";
-import FAssetsGetRedemptionQueue from "!!raw-loader!/examples/developer-hub-javascript/fassets_get_redemption_queue.ts";
-import GetFXRPAssetManager from "./_get_fxrp_asset_manager.mdx";
+import FAssetsRedemptionQueue from "!!raw-loader!/examples/developer-hub-javascript/fassetsRedemptionQueue.ts";
 
 ## Overview
 
-In this guide, you will learn about the redemption queue and how it functions.
-You will also learn how to get redemption tickets using the [AssetManager](/fassets/reference/IAssetManager) smart contract.
-Finally, you will learn how to calculate the total value and the number of lots to redeem.
+This guide reads the global FXRP [redemption queue](/fassets/redemption#redemption-tickets-and-the-redemption-queue) with [`redemptionQueue`](/fassets/reference/IAssetManager#redemptionqueue) on `AssetManagerFXRP`.
+The script is read-only.
+It walks the FIFO from the head, prints each ticket, and totals the queued value and lots, with a summary per agent vault.
+
+The complete runnable example is available in the [flare-viem-starter](https://github.com/flare-foundation/flare-viem-starter/blob/main/src/fassets/redemption-queue.ts) repository.
+From that repository, run:
+
+```bash
+pnpm run script src/fassets/redemption-queue.ts
+```
+
+## How the queue works
+
+Every mint creates a [redemption ticket](/fassets/reference/IAssetManagerEvents#redemptionticketcreated) and appends it to one FIFO queue shared by all agents.
+Agent self-minting adds a ticket the same way.
+A redemption takes tickets from the front until it covers the requested amount.
+A single redemption request can consume at most `maxRedeemedTickets` tickets.
+That cap comes from [`getSettings`](/fassets/reference/IAssetManager#getsettings) and keeps the gas of one call bounded.
+A request that needs more tickets than that cap is only partly filled, and the contract emits [`RedemptionAmountIncomplete`](/fassets/reference/IAssetManagerEvents#redemptionamountincomplete).
+
+Each [`RedemptionTicketInfo`](https://github.com/flare-foundation/fassets/blob/main/contracts/userInterfaces/data/RedemptionTicketInfo.sol) contains:
+
+| Field                | Meaning                                                                                                  |
+| :------------------- | :------------------------------------------------------------------------------------------------------- |
+| `redemptionTicketId` | Ticket id. The redemption-ticket events emit the same value.                                             |
+| `agentVault`         | Vault of the agent backing that ticket. The agent pays the underlying asset when the ticket is redeemed. |
+| `ticketValueUBA`     | Ticket amount in underlying base units (UBA). For XRP, 1 XRP = 1,000,000 UBA.                            |
+
+The ticket stores value in UBA.
+One [lot](/fassets/redemption#lots) in UBA is `lotSizeAMG * assetMintingGranularityUBA`, both fields of [`getSettings`](/fassets/reference/IAssetManager#getsettings).
+The size of one AMG in UBA is [`assetMintingGranularityUBA`](/fassets/reference/IAssetManager#assetmintinggranularityuba), so the product converts the lot size out of AMG.
+
+A call to [`redemptionQueue`](/fassets/reference/IAssetManager#redemptionqueue) returns one page of tickets plus a cursor:
+
+- `_firstRedemptionTicketId` of `0` starts at the head of the FIFO.
+- `_pageSize` is the maximum number of tickets in that page.
+  This script passes `maxRedeemedTickets`.
+- `_queue` is the page of `RedemptionTicketInfo` structs, in FIFO order.
+- `_nextRedemptionTicketId` is the id to pass on the next call.
+  It is `0` when the page has reached the end of the queue.
+
+The [`agentRedemptionQueue`](/fassets/reference/IAssetManager#agentredemptionqueue) function returns the same ticket shape for one agent vault.
+This script walks the global queue and groups the result by `agentVault` off-chain.
 
 ## Prerequisites
 
-- Basic understanding of the [FAssets system](/fassets/overview).
-- [Flare Network Periphery Contracts](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts) package.
+- The [flare-viem-starter](https://github.com/flare-foundation/flare-viem-starter) cloned locally with dependencies installed.
+- A configured `publicClient` pointing to the [Flare network](/network/overview) you want to query (Coston2 by default in the starter).
+- No signing key.
+  The script only calls view functions.
 
-## Redemption Queue
+## Redemption Queue Script
 
-When a user mints FAssets, a [redemption ticket](/fassets/reference/IAssetManagerEvents#redemptionticketcreated) is created and added to the **redemption queue**.
-This queue determines the order in which redemptions are fulfilled and assigns the corresponding agents to return the underlying asset (e.g., XRP) to the redeemers.
-
-The redemption queue is a **FIFO (First-In-First-Out)** queue that is shared globally across all agents.
-It consists of ticket entries, where each ticket represents lots minted with a particular agent.
-
-## `maxRedeemedTickets` System Setting
-
-The `maxRedeemedTickets` system setting defines the maximum number of tickets that can be redeemed in a single request.
-This setting is used to prevent high gas consumption and ensure the fairness of the redemption process.
-
-To get the `maxRedeemedTickets` setting, you can use the [getSettings](/fassets/reference/IAssetManager#getsettings) function from the [AssetManager](/fassets/reference/IAssetManager) smart contract.
-
-## Fetch Redemption Queue Data
-
-### Global Redemption Queue
-
-The [`redemptionQueue`](/fassets/reference/IAssetManager#redemptionqueue) function returns the redemption queue in the form of an array of [`RedemptionTicketInfo`](https://github.com/flare-foundation/fassets/blob/main/contracts/userInterfaces/data/RedemptionTicketInfo.sol) structs.
-
-Each `RedemptionTicketInfo` includes:
-
-- `agentVault`: address of the backing agent.
-- `ticketValueUBA`: value of the ticket in underlying base amount (UBA).
-- `lots`: number of lots.
-- `createdAt`: creation timestamp.
-
-### Agent's Redemption Queue
-
-The [`agentRedemptionQueue`](/fassets/reference/IAssetManager#agentredemptionqueue) function returns the redemption queue for a specific agent in the form of an array of [`RedemptionTicketInfo`](https://github.com/flare-foundation/fassets/blob/main/contracts/userInterfaces/data/RedemptionTicketInfo.sol) structs.
-
-## How It Ties Together
-
-The `redemptionQueue` function provides the **global** ticket order, where each ticket is linked to a **specific agent**.
-The agent associated with each ticket must fulfill their part of the redemption.
-Once a ticket is consumed, it is removed from the queue, and the queue is updated accordingly.
-
-## Example
-
-The following example demonstrates how to get `maxRedeemedTickets`, the global redemption queue, and calculate the number of lots to redeem.
-
-<CodeBlock language="typescript" title="scripts/fassets/getRedemptionQueue.ts">
-  {FAssetsGetRedemptionQueue}
+<CodeBlock language="typescript" title="src/fassets/redemption-queue.ts">
+  {FAssetsRedemptionQueue}
 </CodeBlock>
 
-### Code Explanation
+## Code Breakdown
 
-The script:
+1. `MAX_REDEMPTION_QUEUE_PAGES` stops the walk after 100 pages.
+   A cursor that never returns `0` cannot loop.
+2. `formatUba` prints the raw UBA amount beside the XRP equivalent from `dropsToXrp`.
+3. `lotsFromTicketValue` divides a UBA amount by the lot size.
+   Integer division leaves a remainder smaller than one lot in the UBA total.
+4. `readRedemptionQueueParameters` resolves `AssetManagerFXRP` with `getContractAddressByName` through the [Flare Contract Registry](/network/guides/flare-contracts-registry).
+   `getBlockNumber` pins the snapshot to one block.
+   `getAssetManagerSettings` reads [`getSettings`](/fassets/reference/IAssetManager#getsettings) at that block.
+   The page size is `maxRedeemedTickets`.
+   A zero page size cannot advance the cursor, so the script throws.
+   Lot size in UBA is `lotSizeAMG * assetMintingGranularityUBA`.
+   A zero lot size cannot convert ticket values, so the script throws.
+5. `fetchRedemptionTickets` calls [`redemptionQueue`](/fassets/reference/IAssetManager#redemptionqueue), starting at ticket id `0`.
+   Each page is appended, and the next call starts at `_nextRedemptionTicketId`.
+   A cursor of `0` returns the tickets collected so far.
+   After 100 pages with a non-zero cursor, the script throws.
+6. `totalTicketValueUBA` sums `ticketValueUBA` across the snapshot.
+7. `groupTicketsByAgent` counts tickets and sums value for each `agentVault`.
+8. `printRedemptionQueueHeader` logs the asset manager address, block, page size, and lot size.
+9. `printRedemptionQueue` logs `Redemption queue is empty.` when the snapshot has no tickets.
+   Otherwise it prints each ticket, the queue totals, and the per-agent summary.
+10. `main` reads the parameters, prints the header, fetches the tickets, and prints the queue.
 
-1. Import the function that gets the AssetManager XRP contract.
-2. Get the `AssetManager` contract instance by calling the `getAssetManagerFXRP` function.
-3. Get the settings from the AssetManager contract.
-4. Get the `maxRedeemedTickets` value from the system settings (maximum number of tickets that can be redeemed in a single request).
-   The actual number of tickets returned may be less than `maxRedeemedTickets` if the queue is shorter.
-5. Get the lot size value from the settings (minimum quantity required for minting FAssets).
-6. Get the redemption queue by calling the contract method `redemptionQueue(_firstRedemptionTicketId, _pageSize)` — passing `0` as the first id starts at the **beginning of the queue** (it does not refer to ticket index `0`).
-   The method returns `(_queue, _nextRedemptionTicketId)`; use `_nextRedemptionTicketId` to paginate.
-7. Sum all ticket values in the redemption queue to calculate the total value in UBA (Underlying Asset Base Amount)
-8. Calculate the total lots in the redemption queue by dividing the total value by the lot size.
+## Important Notes
 
-<GetFXRPAssetManager />
+- **View calls only.** Every contract call in the script is a read against `AssetManagerFXRP`.
+- **One block for the whole walk.** `getAssetManagerSettings` and every `redemptionQueue` call use the same `blockNumber`.
+- **`maxRedeemedTickets` is both the page size and the per-request ticket cap.** A redemption that needs more tickets emits [`RedemptionAmountIncomplete`](/fassets/reference/IAssetManagerEvents#redemptionamountincomplete) and leaves the rest of the queue in place.
+- **Lot counts use integer division.** Value that is not a whole lot still appears in the UBA total.
+- **The 100-page cap is a safety stop.** A queue longer than `100 * maxRedeemedTickets` tickets makes the script throw, so the printed total is complete whenever the script exits successfully.
 
-### Run the Script
+:::tip[What's next]
 
-To run the script, use the following command:
-
-```bash
-yarn hardhat run scripts/fassets/getRedemptionQueue.ts --network coston2
-```
-
-The script will output the redemption queue data for the FAssets system on the [Coston2](/network/overview) network:
-
-```bash
-Total value in redemption queue (UBA): 4190000000
-
-Total lots in redemption queue: 419
-```
-
-## Summary
-
-The guide covers:
-
-- **Redemption Queue Mechanics**: How the queue works as a shared global system tracking redemption tickets.
-- `maxRedeemedTickets` **Setting**: Maximum number of tickets that can be redeemed in a single request.
-- **Queue Access Methods**: How to retrieve global and agent-specific queues using contract functions.
-- **Practical Implementation**: A TypeScript example showing how to get settings, retrieve the queue, and calculate total value and lots to redeem.
-
-:::tip Next Steps
 To continue your FAssets development journey, you can:
 
-- Learn how to [mint FXRP](/fassets/developer-guides/fassets-mint)
-- Understand how to [redeem FXRP](/fassets/developer-guides/fassets-redeem)
-- Explore [FAssets system settings](/fassets/operational-parameters)
-  :::
+- Redeem any amount with [Redeem FXRP by Amount](/fassets/developer-guides/fassets-redeem-amount).
+- Redeem to an exchange address with [Redeem FXRP with Tag](/fassets/developer-guides/fassets-redeem-with-tag).
+- Read the protocol flow in [Redemption](/fassets/redemption).
+
+:::
