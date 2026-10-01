@@ -362,6 +362,30 @@ export default {
       return new Response("Not found", { status: 404 });
     }
 
+    // Stateless JSON-only MCP: no standalone GET SSE stream and no DELETE sessions.
+    // Per the Streamable HTTP transport, return 405 when SSE listening is unsupported
+    // so clients do not open / reconnect empty event streams.
+    if (request.method === "GET" || request.method === "DELETE") {
+      return new Response(
+        JSON.stringify({
+          jsonrpc: "2.0",
+          error: {
+            code: -32600,
+            message:
+              "Method Not Allowed. This server does not offer a standalone SSE stream; use POST.",
+          },
+          id: null,
+        }),
+        {
+          status: 405,
+          headers: {
+            Allow: "POST",
+            "Content-Type": "application/json",
+          },
+        },
+      );
+    }
+
     const docsBaseUrl = getDocsBaseUrl(env);
     const newRequest = await rewriteMcpRequest(request, docsBaseUrl);
     const { handler } = createHandler(env);
