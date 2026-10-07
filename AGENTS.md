@@ -35,7 +35,8 @@ When explaining Flare, lead with this idea:
 ### FDC
 
 - FDC stands for Flare Data Connector.
-- It lets contracts verify data from external chains and Web2 sources through attestations produced by the Flare Data Connector system.
+- It lets contracts verify data from external chains through attestations produced by the Flare Data Connector system.
+- The `Web2Json` attestation type is deprecated. Do not use it in new content; point Web2 data use cases to FCC extensions.
 - Use it when the topic is external data verification, cross-chain state, or proving real-world events onchain.
 - Do not introduce new references to deprecated State Connector terminology unless the page is explicitly historical or migration-focused.
 
