@@ -24,7 +24,7 @@ It allows users to submit attested data that smart contracts can trust, eliminat
 - **Proof-Based Verification**: Smart contracts validate Merkle proofs against the stored Merkle root, ensuring only authentic data triggers contract actions.
 - **Extensible Attestation Types**: New attestation types and data sources can be added through provider consensus, ensuring adaptability.
 - **Current State**: A proof can only be constructed for sufficiently recent states (transactions, API responses, ...).
-  The maximum allowed age of the underlying data is set per attestation type and data source; for most chain-data types it is 14 days, while some types (such as `AddressValidity` and `Web2Json`) place no practical limit.
+  The maximum allowed age of the underlying data is set per attestation type and data source; for most chain-data types it is 14 days, while some types (such as `AddressValidity`) place no practical limit.
 - **Proof Availability**: Once the proof is constructed it remains available indefinitely.
 - **Security**: Although bitvoting information is public, it is insufficient to construct the Merkle proof without doing the verification work.
 
@@ -63,14 +63,11 @@ Operating a DA Layer is permissionless—anyone can run a DA Layer service by so
 
 ## Attestation Types
 
-FDC currently supports seven attestation types, each serving specific verification needs.
+FDC currently supports six attestation types, each serving specific verification needs.
 Below is an overview of these types, with detailed explanations available in their respective sections:
 
 - **AddressValidity**: Validates the format and checksum of addresses on specified chains.
 - **EVMTransaction**: Verifies and retrieves transaction details from EVM-compatible chains (`ETH`, `FLR`, `SGB`).
-- **Web2Json**: Fetches and processes Web2 JSON using a JQ transformation, then returns it as ABI-encoded output.
-  Available on **Coston and Coston2** with the `PublicWeb2` source.
-  Not available on Flare Mainnet or Songbird.
 - **Payment**: Confirms and fetches payment transaction details from non-EVM chains (`BTC`, `DOGE`, `XRP`).
 - **ConfirmedBlockHeightExists**: Verifies block existence and confirmation status.
 - **BalanceDecreasingTransaction**: Validates if a transaction reduces an address's balance.
@@ -78,7 +75,6 @@ Below is an overview of these types, with detailed explanations available in the
 
 AddressValidity, EVMTransaction, and Payment are the attestation types most used in production applications.
 The last three types are primarily used in **FAssets**.
-Web2Json is available on Coston and Coston2 only.
 
 ## Workflow Overview
 
