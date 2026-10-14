@@ -28,10 +28,12 @@ jobs:
             refactor
             ci
           requireScope: false
-          subjectPattern: ^(?![A-Z]).+$
+          # Reject sentence case ("Add fees") but allow a leading acronym ("OFT fees").
+          subjectPattern: ^(?![A-Z][a-z]).+$
           subjectPatternError: |
             The subject "{subject}" found in the pull request title "{title}"
             didn't match the configured pattern. Please ensure that the subject
-            doesn't start with an uppercase character.
+            does not use sentence case. Start with a lowercase letter, or an
+            acronym such as OFT or FTSO.
           wip: true
           validateSingleCommit: false

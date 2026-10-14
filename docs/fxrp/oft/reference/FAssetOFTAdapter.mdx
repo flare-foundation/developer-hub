@@ -1,0 +1,192 @@
+---
+title: FAssetOFTAdapter
+sidebar_position: 1
+description: Function reference for FAssetOFTAdapter on Flare and the shared OFT surface on FXRPOFT.
+keywords: [fassets, flare-network, fxrp, layerzero, oft, adapter]
+---
+
+`FAssetOFTAdapter` is the home-chain OFT adapter on Flare and Coston2.
+`FXRPOFT` on other EVM chains shares this surface, except [`token`](#token), which returns the OFT itself.
+
+See [FXRP OFT Adapter](/fxrp/oft/fxrp-oft-adapter) for how lock, release, mint, and burn fit together.
+This page is the call surface used by the bridging guides, plus the Flare fee, pause, and recipient overrides.
+It is not the full LayerZero OFT ABI.
+For the generic standard, see the [LayerZero OFT documentation](https://docs.layerzero.network/v2/home/token-standards/oft-standard).
+
+Addresses are on the [OFT deployments](/fxrp/oft#deployments) table.
+
+## Functions
+
+### token
+
+The underlying FXRP ERC-20 on the adapter (the inner token that `send` locks).
+On `FXRPOFT` this returns the OFT contract itself.
+
+```solidity
+function token() external view returns (address);
+```
+
+### quoteSend
+
+Quotes the LayerZero messaging fee for a send.
+Pass `payInLzToken = false` to pay the fee in the source chain's native token (C2FLR on Coston2, FLR on Flare).
+
+```solidity
+function quoteSend(
+    SendParam calldata _sendParam,
+    bool _payInLzToken
+) external view returns (MessagingFee memory);
+```
+
+### send
+
+Dispatches the cross-chain transfer.
+The caller pays `_fee.nativeFee` as `msg.value`.
+`_refundAddress` receives unused messaging fee.
+
+On the adapter this also pulls `_sendParam.amountLD` of inner FXRP from the sender, so the sender must have approved the adapter first.
+
+```solidity
+function send(
+    SendParam calldata _sendParam,
+    MessagingFee calldata _fee,
+    address _refundAddress
+) external payable returns (MessagingReceipt memory, OFTReceipt memory);
+```
+
+### quoteOFT
+
+Flare override of LayerZero's quote.
+`oftLimit.maxAmountLD` is the remaining outgoing transfer-limit capacity for `_sendParam.dstEid`, capped by token supply.
+`oftFeeDetails` is empty when sent and received amounts match; otherwise it has one `"Flare system fee"` entry.
+
+```solidity
+function quoteOFT(
+    SendParam calldata _sendParam
+)
+    external
+    view
+    returns (
+        OFTLimit memory oftLimit,
+        OFTFeeDetail[] memory oftFeeDetails,
+        OFTReceipt memory oftReceipt
+    );
+```
+
+### BPS_DENOMINATOR
+
+`10_000`.
+A rate of `100` is 1%.
+[`getFee`](#getfee) computes `(amount * feeBps) / BPS_DENOMINATOR`, so a fee smaller than one token unit rounds to `0`.
+
+```solidity
+uint16 public constant BPS_DENOMINATOR = 10_000;
+```
+
+### defaultFeeBps
+
+Token-fee rate, in basis points, for every destination that does not have an enabled [`feeBps`](#feebps) override.
+The owner sets it with [`setDefaultFeeBps`](#setdefaultfeebps).
+
+```solidity
+function defaultFeeBps() external view returns (uint16);
+```
+
+### setDefaultFeeBps
+
+Owner only.
+Sets [`defaultFeeBps`](#defaultfeebps) and emits `DefaultFeeBpsSet`.
+Reverts with `InvalidBps` when `_feeBps` is greater than [`BPS_DENOMINATOR`](#bps_denominator).
+
+```solidity
+function setDefaultFeeBps(uint16 _feeBps) external;
+```
+
+### feeBps
+
+Per-destination override for one LayerZero endpoint ID.
+
+```solidity
+struct FeeConfig {
+    uint16 feeBps;
+    bool enabled;
+}
+
+function feeBps(uint32 _dstEid) external view returns (FeeConfig memory);
+```
+
+When `enabled` is true, [`getFee`](#getfee) uses this `feeBps` for that endpoint.
+A stored `feeBps` of `0` with `enabled == true` charges no token fee on that route.
+When `enabled` is false, the destination uses [`defaultFeeBps`](#defaultfeebps).
+
+The owner writes the override with [`setFeeBps`](#setfeebps).
+
+### setFeeBps
+
+Owner only.
+Writes the [`feeBps`](#feebps) override for one endpoint ID and emits `FeeBpsSet`.
+Reverts with `InvalidBps` when `_feeBps` is greater than [`BPS_DENOMINATOR`](#bps_denominator).
+
+```solidity
+function setFeeBps(uint32 _dstEid, uint16 _feeBps, bool _enabled) external;
+```
+
+### getFee
+
+Token fee for `_amount` on `_dstEid`, in local token units.
+FXRP uses 6 decimals, so pass the same units as `SendParam.amountLD`.
+The rate is the enabled per-destination [`feeBps`](#feebps), or [`defaultFeeBps`](#defaultfeebps) when that destination is not enabled.
+Returns `0` when the rate is `0`.
+
+```solidity
+function getFee(uint32 _dstEid, uint256 _amount) external view returns (uint256);
+```
+
+### feeBalance
+
+Token fees already taken on this contract, in local token units.
+Each send adds `amountSentLD - amountReceivedLD`: the basis-point fee plus any remainder removed when the outbound amount is de-dusted.
+The owner withdraws the full balance with [`withdrawFees`](#withdrawfees).
+
+```solidity
+function feeBalance() external view returns (uint256);
+```
+
+### withdrawFees
+
+Owner only.
+Transfers [`feeBalance`](#feebalance) of the inner token to `_to`, then sets the balance to `0`.
+Reverts with `NoFeesToWithdraw` when the balance is `0`.
+The transfer is limited to the accounted fee balance, so FXRP locked for inbound credits stays in the contract.
+
+```solidity
+function withdrawFees(address _to) external;
+```
+
+### peers
+
+The configured OFT peer for a LayerZero endpoint ID, or `bytes32(0)` if that route is not wired.
+Use this to discover destinations; see the peer scan in [FAsset Auto-Redemption](/fxrp/oft/fxrp-autoredeem).
+
+```solidity
+function peers(uint32 eid) external view returns (bytes32);
+```
+
+### paused
+
+Whether debit and credit are currently blocked.
+
+```solidity
+function paused() external view returns (bool);
+```
+
+### pauseSenders
+
+Extra addresses that may call `pause` and `unpause`.
+The list does not include the owner, who is always authorized.
+
+```solidity
+function pauseSenders() external view returns (address[] memory);
+```
+
+Transfer-limit getters (`getAmountCanBeSent`, `getAmountCanBeReceived`, and the raw per-eid / default config reads) and the [`RateLimitExceeded`](/fxrp/oft/fxrp-oft-transfer-limits#ratelimitexceeded) error are documented in [Check OFT Transfer Limits](/fxrp/oft/fxrp-oft-transfer-limits).
