@@ -5,9 +5,12 @@ cache = true
 max_cache_age = "2d"
 cache_exclude_status = ["403", "429", "500.."]
 timeout = 30
-retry_wait_time = 2
-max_retries = 3
+retry_wait_time = 3
+max_retries = 5
 max_concurrency = 8
+# Pace each host so a cold crawl does not burst GitHub into HTML 503s.
+host_concurrency = 4
+host_request_interval = "100ms"
 accept = ["200..=399", "429"]
 exclude_all_private = true
 exclude = [
@@ -32,3 +35,7 @@ exclude = [
     '^https://docs\.eigencloud\.xyz/',
     '^https://console\.cloud\.google\.com/',
 ]
+
+[hosts."github.com"]
+concurrency = 2
+request_interval = "200ms"

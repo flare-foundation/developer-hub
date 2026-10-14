@@ -1,0 +1,223 @@
+---
+title: OFT Fees
+tags: [intermediate, fassets]
+slug: fxrp-oft-fees
+description: Read the FXRP OFT token fee and the LayerZero message fee, including the DVN portion.
+keywords: [fassets, flare-network, fxrp, layerzero, oft, fees, dvn, quoteSend]
+---
+
+import CopyButton from "@site/src/components/CopyButton";
+
+## Overview
+
+A bridge out of Flare or Coston2 charges two separate fees.
+See [FXRP OFT Adapter](/fxrp/oft/fxrp-oft-adapter) for the contracts, and [OFT deployments](/fxrp/oft#deployments) for deployment addresses.
+
+| Fee         | Paid in                                             | What it pays for                              | How it is set                                      |
+| ----------- | --------------------------------------------------- | --------------------------------------------- | -------------------------------------------------- |
+| Token fee   | FXRP, taken from the amount you send                | The Flare system fee on the bridged tokens    | Stored on the OFT contract, in basis points        |
+| Message fee | Native gas token of the source chain (FLR or C2FLR) | LayerZero delivery of the cross-chain message | Quoted at send time from the executor and the DVNs |
+
+The token fee reduces the amount of FXRP that arrives at the destination.
+The message fee is attached as `msg.value` on `send` and does not reduce the FXRP amount.
+
+Both fees are read from the **OFT Adapter** on the source chain.
+
+| Chain   | Adapter                                                                                                                                                                                                          |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Flare   | [`0xd70659a6396285BF7214d7Ea9673184e7C72E07E`](https://flare-explorer.flare.network/address/0xd70659a6396285BF7214d7Ea9673184e7C72E07E) <CopyButton textToCopy="0xd70659a6396285BF7214d7Ea9673184e7C72E07E" />   |
+| Coston2 | [`0xCd3d2127935Ae82Af54Fc31cCD9D3440dbF46639`](https://coston2-explorer.flare.network/address/0xCd3d2127935Ae82Af54Fc31cCD9D3440dbF46639) <CopyButton textToCopy="0xCd3d2127935Ae82Af54Fc31cCD9D3440dbF46639" /> |
+
+The message fee below is for a **plain transfer**: no compose message, and `extraOptions` left empty so the adapter uses its on-chain enforced options.
+A compose path, such as a send that continues to HyperCore, asks for more destination gas and quotes a higher message fee.
+
+:::info Quote again before sending
+The token fee is a stored rate.
+The message fee and the DVN fee move with destination gas prices and DVN price feeds.
+Call [`quoteSend`](/fxrp/oft/reference/FAssetOFTAdapter#quotesend) in the same transaction flow as [`send`](/fxrp/oft/reference/FAssetOFTAdapter#send), and pass the returned `nativeFee` as `msg.value`.
+:::
+
+## Token Fee
+
+The token fee is a basis-point cut of the amount debited on the source chain.
+[`BPS_DENOMINATOR`](/fxrp/oft/reference/FAssetOFTAdapter#bps_denominator) is `10_000`, so `100` is 1%.
+
+The adapter stores two rates:
+
+- [`defaultFeeBps()`](/fxrp/oft/reference/FAssetOFTAdapter#defaultfeebps) is the rate used for every destination.
+- [`feeBps(dstEid)`](/fxrp/oft/reference/FAssetOFTAdapter#feebps) returns `FeeConfig { uint16 feeBps; bool enabled; }`.
+  When `enabled` is true, that destination uses `feeBps` instead of the default.
+  A stored `feeBps` of `0` with `enabled == true` is an explicit zero for that destination.
+
+[`getFee(dstEid, amountLD)`](/fxrp/oft/reference/FAssetOFTAdapter#getfee) returns the token fee for an amount, in token units (FXRP has 6 decimals).
+[`quoteOFT`](/fxrp/oft/reference/FAssetOFTAdapter#quoteoft) applies the same calculation and reports the difference between amount sent and amount received as one line item, `Flare system fee`.
+
+## Message Fee
+
+`quoteSend(sendParam, payInLzToken)` returns `MessagingFee { uint256 nativeFee; uint256 lzTokenFee; }`.
+
+Pass `payInLzToken = false`.
+These pathways quote `lzTokenFee = 0`, and `nativeFee` is the value to send with `send`.
+
+`nativeFee` is the sum of three worker quotes inside the LayerZero send library (`SendUln302`):
+
+| Component    | Who is paid                                                        | How it is quoted               |
+| ------------ | ------------------------------------------------------------------ | ------------------------------ |
+| Executor fee | The LayerZero executor, which calls `lzReceive` on the destination | `ILayerZeroExecutor.getFee`    |
+| DVN fee      | Each required DVN, which verifies the message                      | `ILayerZeroDVN.getFee`, summed |
+| Treasury fee | The LayerZero treasury                                             | `ILayerZeroTreasury.getFee`    |
+
+On the pathways quoted below, the treasury fee was `0`, so `nativeFee = executor fee + DVN fee`.
+
+A plain OFT payload is 40 bytes: a 32-byte recipient and an 8-byte amount in shared decimals.
+FXRP uses 6 decimals on every chain, matching the shared decimals, so the payload size doesn't change with the amount.
+Quoting 1 FXRP and quoting 1,000 FXRP returns the same message fee for a plain transfer.
+
+### Flare Mainnet
+
+Every wired route uses **20** source confirmations and **130,000** gas for `lzReceive`.
+The required DVNs are LayerZero Labs, Nethermind, Canary, and Horizen.
+Amounts are in FLR, rounded to 0.01.
+
+| Destination     |   EID | Executor |   DVN | Message fee |
+| --------------- | ----: | -------: | ----: | ----------: |
+| HyperEVM        | 30367 |   104.29 |  0.52 |      104.81 |
+| Ethereum        | 30101 |   218.62 | 16.44 |      235.06 |
+| Base            | 30184 |   208.53 |  0.93 |      209.47 |
+| BNB Smart Chain | 30102 |   174.52 |  2.20 |      176.73 |
+| Monad           | 30390 |   208.13 |  0.16 |      208.28 |
+| Katana          | 30375 |    34.81 |  0.27 |       35.08 |
+
+[HyperCore](/fxrp/oft#deployments) is not a LayerZero endpoint.
+A send there is a compose message on the HyperEVM route above, so this plain-transfer quote does not include it.
+
+DVN fee by provider, in FLR:
+
+| Destination     | LayerZero Labs | Nethermind | Canary | Horizen |
+| --------------- | -------------: | ---------: | -----: | ------: |
+| HyperEVM        |           0.13 |       0.13 |   0.13 |    0.13 |
+| Ethereum        |           4.10 |       4.06 |   4.19 |    4.10 |
+| Base            |           0.23 |       0.23 |   0.24 |    0.23 |
+| BNB Smart Chain |           0.55 |       0.54 |   0.56 |    0.55 |
+| Monad           |           0.04 |       0.04 |   0.04 |    0.04 |
+| Katana          |           0.07 |       0.07 |   0.07 |    0.07 |
+
+Flare DVN addresses, also listed on the [OFT overview](/fxrp/oft#dvn-security-stack):
+
+| DVN            | Address                                                                                                                                                                                                        |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| LayerZero Labs | [`0x9c061c9a4782294eef65ef28cb88233a987f4bdd`](https://flare-explorer.flare.network/address/0x9c061c9a4782294eef65ef28cb88233a987f4bdd) <CopyButton textToCopy="0x9c061c9a4782294eef65ef28cb88233a987f4bdd" /> |
+| Nethermind     | [`0x9bcd17a654bffaa6f8fea38d19661a7210e22196`](https://flare-explorer.flare.network/address/0x9bcd17a654bffaa6f8fea38d19661a7210e22196) <CopyButton textToCopy="0x9bcd17a654bffaa6f8fea38d19661a7210e22196" /> |
+| Canary         | [`0xd791948db16ab4373fa394b74c727ddb7fb02520`](https://flare-explorer.flare.network/address/0xd791948db16ab4373fa394b74c727ddb7fb02520) <CopyButton textToCopy="0xd791948db16ab4373fa394b74c727ddb7fb02520" /> |
+| Horizen        | [`0xeaa5a170d2588f84773f965281f8611d61312832`](https://flare-explorer.flare.network/address/0xeaa5a170d2588f84773f965281f8611d61312832) <CopyButton textToCopy="0xeaa5a170d2588f84773f965281f8611d61312832" /> |
+
+### Coston2 Testnet
+
+Every quoted route uses **2** source confirmations and **100,000** gas for `lzReceive`.
+One DVN is required: LayerZero Labs at [`0x12523de19dc41c91f7d2093e0cfbb76b17012c8d`](https://coston2-explorer.flare.network/address/0x12523de19dc41c91f7d2093e0cfbb76b17012c8d) <CopyButton textToCopy="0x12523de19dc41c91f7d2093e0cfbb76b17012c8d" />.
+Amounts are in C2FLR, rounded to 0.01.
+
+| Destination         |   EID | Executor |  DVN | Message fee |
+| ------------------- | ----: | -------: | ---: | ----------: |
+| Ethereum Sepolia    | 40161 |    21.86 | 1.09 |       22.95 |
+| Hyperliquid Testnet | 40362 |    21.92 | 1.13 |       23.05 |
+
+## Retrieve the Token Fee
+
+`quoteOFT` is the call to use in an integration.
+It returns the rate limit, the fee line items, and the amount that will arrive.
+Use the verified `FAssetOFTAdapter` ABI.
+
+```typescript
+import { createPublicClient, http, pad, parseUnits } from "viem";
+import { flare } from "viem/chains";
+
+const OFT_ADAPTER = "0xd70659a6396285BF7214d7Ea9673184e7C72E07E";
+const ETHEREUM_EID = 30101;
+
+const publicClient = createPublicClient({
+  chain: flare,
+  transport: http("https://flare-api.flare.network/ext/C/rpc"),
+});
+
+const amountLD = parseUnits("1", 6); // FXRP has 6 decimals
+
+const sendParam = {
+  dstEid: ETHEREUM_EID,
+  to: pad("0x1111111111111111111111111111111111111111", { size: 32 }),
+  amountLD,
+  minAmountLD: amountLD,
+  extraOptions: "0x",
+  composeMsg: "0x",
+  oftCmd: "0x",
+} as const;
+
+const [oftLimit, oftFeeDetails, oftReceipt] = await publicClient.readContract({
+  address: OFT_ADAPTER,
+  abi: oftAbi,
+  functionName: "quoteOFT",
+  args: [sendParam],
+});
+
+// oftReceipt.amountSentLD     tokens debited on Flare
+// oftReceipt.amountReceivedLD tokens minted on the destination
+// oftFeeDetails[0].description === "Flare system fee" when a fee is charged
+// oftFeeDetails[0].feeAmountLD is the token fee, in 6-decimal units
+```
+
+To read the configured rate without an amount:
+
+```typescript
+const defaultFeeBps = await publicClient.readContract({
+  address: OFT_ADAPTER,
+  abi: oftAbi,
+  functionName: "defaultFeeBps",
+});
+
+const feeConfig = await publicClient.readContract({
+  address: OFT_ADAPTER,
+  abi: oftAbi,
+  functionName: "feeBps",
+  args: [ETHEREUM_EID],
+});
+// feeConfig.feeBps is used only when feeConfig.enabled is true.
+// Otherwise, the destination uses defaultFeeBps.
+
+const tokenFee = await publicClient.readContract({
+  address: OFT_ADAPTER,
+  abi: oftAbi,
+  functionName: "getFee",
+  args: [ETHEREUM_EID, amountLD],
+});
+```
+
+The same calls on Coston2 use adapter `0xCd3d2127935Ae82Af54Fc31cCD9D3440dbF46639` and RPC `https://coston2-api.flare.network/ext/C/rpc`.
+
+## Retrieve the message fee
+
+`quoteSend` is the call to use before `send`.
+An empty `extraOptions` is valid on a route that enforces options: the adapter merges those options into the quote.
+
+```typescript
+const { nativeFee, lzTokenFee } = await publicClient.readContract({
+  address: OFT_ADAPTER,
+  abi: oftAbi,
+  functionName: "quoteSend",
+  args: [sendParam, false], // false = pay in native gas, not lzToken
+});
+
+// Pass nativeFee as msg.value:
+// oft.send(sendParam, { nativeFee, lzTokenFee }, refundAddress, { value: nativeFee })
+```
+
+`nativeFee` is the full message fee for that `sendParam`, including the DVN fee.
+You pay that value once.
+The DVN fee is already inside it.
+
+:::tip[What's next]
+
+- [FAssetOFTAdapter reference](/fxrp/oft/reference/FAssetOFTAdapter#defaultfeebps) for `defaultFeeBps`, `feeBps`, `getFee`, `quoteOFT`, `quoteSend`, and `send`.
+- [Bridge FXRP to Ethereum](/fxrp/oft/fxrp-bridge-ethereum) for `quoteSend` followed by `send`.
+- [OFT overview](/fxrp/oft) for deployments and the DVN security stack.
+
+:::

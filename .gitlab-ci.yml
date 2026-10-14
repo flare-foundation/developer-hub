@@ -61,8 +61,10 @@ validate:mr-title:
       fi
 
       subject=$(echo "$title" | sed -E 's/^[^:]+: //')
-      if echo "$subject" | grep -qE '^[A-Z]'; then
-        echo "Subject must not start with an uppercase letter"
+      # Reject sentence case ("Add fees") but allow a leading acronym ("OFT fees").
+      if echo "$subject" | grep -qE '^[A-Z][a-z]'; then
+        echo "Subject must not use sentence case"
+        echo "Start with a lowercase letter, or an acronym such as OFT or FTSO"
         exit 1
       fi
 
@@ -179,9 +181,13 @@ check:external-links:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes:
         - docs/**/*
+        - lychee.toml
         - .gitlab-ci.yml
   cache:
-    key: lychee-${CI_COMMIT_REF_SLUG}
+    key: lychee-external-links
+    fallback_keys:
+      - lychee-${CI_COMMIT_REF_SLUG}
+    when: always
     paths:
       - .lycheecache
   before_script:
@@ -196,13 +202,16 @@ check:external-links:
           exit 1
           ;;
       esac
+      LYCHEE_VERSION="lychee-v0.24.2"
       LYCHEE_ASSET_DIR="lychee-${LYCHEE_ARCH}-unknown-linux-musl"
-      curl -fsSL "https://github.com/lycheeverse/lychee/releases/latest/download/${LYCHEE_ASSET_DIR}.tar.gz" \
+      curl -fsSL "https://github.com/lycheeverse/lychee/releases/download/${LYCHEE_VERSION}/${LYCHEE_ASSET_DIR}.tar.gz" \
         | tar -xz -C /usr/local/bin --strip-components=1 "${LYCHEE_ASSET_DIR}/lychee"
+      lychee --version
   script:
     - |
       set +e
-      lychee --config lychee.toml docs
+      mkdir -p lychee
+      lychee --config lychee.toml --format markdown --output lychee/out.md docs
       status=$?
       set -e
 
