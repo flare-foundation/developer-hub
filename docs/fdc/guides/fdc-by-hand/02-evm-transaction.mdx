@@ -1,0 +1,355 @@
+---
+title: EVMTransaction
+slug: evm-transaction
+authors: [fassko]
+description: Walk through the FDC flow for an EVMTransaction with LayerZero event logs.
+tags: [intermediate, ethereum, fdc]
+keywords:
+  [
+    ethereum,
+    flare-data-connector,
+    evm,
+    flare-network,
+    evm-transaction,
+    layerzero,
+    fxrp,
+  ]
+sidebar_position: 2
+---
+
+import VotingRoundIdCalculator from "@site/src/features/FDC/VotingRoundIdCalculator";
+import ToHexConverter from "@site/src/features/FDC/ToHexConverter";
+import CopyButton from "@site/src/components/CopyButton";
+
+This guide walks the full [FDC](/fdc/overview) workflow **without application scripts**: prepare an attestation with the verifier, submit it on Coston2, wait for the voting round, fetch the Merkle proof from the Data Availability (DA) Layer, and verify it onchain.
+This is a learning and debugging path — production apps should use the [Hardhat](/fdc/guides/hardhat/evm-transaction) or [Foundry](/fdc/guides/foundry/evm-transaction) guides and the [flare-hardhat-starter](https://github.com/flare-foundation/flare-hardhat-starter) helpers.
+
+## What You Attest
+
+Attest a LayerZero **FXRP OFT `send`** on Ethereum Sepolia that emits multiple logs (ERC-20 `Transfer`, LayerZero fee events, `PacketSent`, and `OFTSent`):
+
+| Field              | Value                                                                                                                                                                                                                                                                     |
+| :----------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Transaction        | [`0x8cc5c3614eb9fd0f82d44f841a520962d93ee053f012fa1639c91d40c1123f16`](https://sepolia.etherscan.io/tx/0x8cc5c3614eb9fd0f82d44f841a520962d93ee053f012fa1639c91d40c1123f16) <CopyButton textToCopy="0x8cc5c3614eb9fd0f82d44f841a520962d93ee053f012fa1639c91d40c1123f16" /> |
+| Chain / FDC source | Sepolia → `testETH`                                                                                                                                                                                                                                                       |
+| `to` (FXRP OFT)    | [`0x81672c5d42F3573aD95A0bdfBE824FaaC547d4E6`](https://sepolia.etherscan.io/address/0x81672c5d42F3573aD95A0bdfBE824FaaC547d4E6)                                                                                                                                           |
+| Selector           | `0xc7c7f5b3` (`send`)                                                                                                                                                                                                                                                     |
+| Useful log         | `OFTSent` — burn of `1000000` (1 FXRP, 6 decimals) toward Coston2 EID `40294`                                                                                                                                                                                             |
+| Log count          | 8 events (block-level `logIndex` values `19`–`26`)                                                                                                                                                                                                                        |
+
+:::warning[Data age limit]
+
+For `EVMTransaction` on `testETH` / `ETH`, the underlying transaction must be recent enough for the verifier (on the order of **14 days**).
+If `prepareRequest` returns a non-`VALID` status, pick a newer Sepolia tx that still has event logs and substitute its hash in the request body below.
+
+:::
+
+## Endpoints and Constants
+
+Use **Coston2** for the onchain FDC steps (default developer sandbox).
+
+| Role               | Value                                                                         |
+| :----------------- | :---------------------------------------------------------------------------- |
+| Attestation type   | `EVMTransaction`                                                              |
+| Source ID          | `testETH`                                                                     |
+| Verifier (testnet) | `https://fdc-verifiers-testnet.flare.network`                                 |
+| Prepare path       | `POST /verifier/eth/EVMTransaction/prepareRequest`                            |
+| Verifier API docs  | [Swagger](https://fdc-verifiers-testnet.flare.network/verifier/eth/api-doc#/) |
+| DA Layer (Coston2) | `https://ctn2-data-availability.flare.network`                                |
+| Proof path         | `POST /api/v1/fdc/proof-by-request-round`                                     |
+| DA API docs        | [Swagger](https://ctn2-data-availability.flare.network/api-doc#/)             |
+| API key header     | `X-API-KEY` (case-sensitive)                                                  |
+| Public test key    | `00000000-0000-0000-0000-000000000000`                                        |
+| FDC protocol ID    | `200` (for `Relay.isFinalized`)                                               |
+| Voting epoch       | `90` seconds; `firstVotingRoundStartTs = 1658430000`                          |
+
+UTF-8 hex IDs (32-byte right-padded), also available from the converter below:
+
+| Name             | Hex                                                                  |
+| :--------------- | :------------------------------------------------------------------- |
+| `EVMTransaction` | `0x45564d5472616e73616374696f6e000000000000000000000000000000000000` |
+| `testETH`        | `0x7465737445544800000000000000000000000000000000000000000000000000` |
+
+<ToHexConverter />
+
+## Workflow
+
+1. **Prepare** — `POST` to the verifier; receive `abiEncodedRequest` when `status` is `VALID`.
+2. **Fee** — Read `getRequestFee(abiEncodedRequest)` on `FdcRequestFeeConfigurations`.
+3. **Submit** — Call `FdcHub.requestAttestation(abiEncodedRequest)` on Coston2 with `msg.value = fee`.
+4. **Round** — Compute `votingRoundId` from the submit-tx block timestamp; wait until the round is finalized.
+5. **Proof** — `POST` to the DA Layer with `votingRoundId` and `requestBytes` (= `abiEncodedRequest`).
+6. **Verify** — Call `FdcVerification.verifyEVMTransaction` with `{ merkleProof, data }`, then decode events in your contract.
+
+Nothing is automatic onchain: your wallet (or script) must submit the attestation request and later submit the proof to a consumer contract.
+
+## 1. Prepare the Request
+
+### Request Body
+
+```json title="prepareRequest body"
+{
+  "attestationType": "0x45564d5472616e73616374696f6e000000000000000000000000000000000000",
+  "sourceId": "0x7465737445544800000000000000000000000000000000000000000000000000",
+  "requestBody": {
+    "transactionHash": "0x8cc5c3614eb9fd0f82d44f841a520962d93ee053f012fa1639c91d40c1123f16",
+    "requiredConfirmations": "1",
+    "provideInput": true,
+    "listEvents": true,
+    "logIndices": []
+  }
+}
+```
+
+| `requestBody` field     | Meaning                                                                                                        |
+| :---------------------- | :------------------------------------------------------------------------------------------------------------- |
+| `transactionHash`       | Sepolia tx to attest                                                                                           |
+| `requiredConfirmations` | Confirmations required for the containing block (`1` = tip has one confirmation)                               |
+| `provideInput`          | Include calldata in the response                                                                               |
+| `listEvents`            | Include events in the response                                                                                 |
+| `logIndices`            | Block-level log indices to include; `[]` means all events up to 50. Must be empty when `listEvents` is `false` |
+
+:::note[Block-level log indices]
+
+EVM log indices are **per block**, not per transaction.
+This LayerZero tx’s eight logs sit at indices `19`–`26` in its block.
+To request a subset, pass those indices (sorted) in `logIndices` — for example, `[26]` for `OFTSent` only.
+
+:::
+
+### Request
+
+```bash
+curl -sS -X POST \
+  'https://fdc-verifiers-testnet.flare.network/verifier/eth/EVMTransaction/prepareRequest' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -H 'X-API-KEY: 00000000-0000-0000-0000-000000000000' \
+  -d '{
+  "attestationType": "0x45564d5472616e73616374696f6e000000000000000000000000000000000000",
+  "sourceId": "0x7465737445544800000000000000000000000000000000000000000000000000",
+  "requestBody": {
+    "transactionHash": "0x8cc5c3614eb9fd0f82d44f841a520962d93ee053f012fa1639c91d40c1123f16",
+    "requiredConfirmations": "1",
+    "provideInput": true,
+    "listEvents": true,
+    "logIndices": []
+  }
+}'
+```
+
+### Expected Response Shape
+
+```json title="prepareRequest response"
+{
+  "status": "VALID",
+  "abiEncodedRequest": "0x45564d5472616e73616374696f6e0000000000000000000000000000000000007465737445544800000000000000000000000000000000000000000000000000d9ebb478fc346f07f9b75c706bf3bce016e059dd884ae9d08cdc1aec0a4fbd4200000000000000000000000000000000000000000000000000000000000000208cc5c3614eb9fd0f82d44f841a520962d93ee053f012fa1639c91d40c1123f1600000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000"
+}
+```
+
+Save `abiEncodedRequest`.
+The third 32-byte word is the **message integrity code (MIC)** — a hash of the expected response salted with `"Flare"`.
+Do not invent or edit it; always take it from the verifier.
+
+<details>
+<summary>Layout of <code>abiEncodedRequest</code></summary>
+
+Split after `0x` into 32-byte words:
+
+1. `toUtf8Hex("EVMTransaction")`
+2. `toUtf8Hex("testETH")`
+3. MIC
+4. Offset / ABI-encoded `RequestBody` (includes the tx hash `8cc5c361…3f16`, confirmations, flags, and `logIndices`)
+
+For mainnet Ethereum, use source `ETH` and verifier base `https://fdc-verifiers-mainnet.flare.network` with path `/verifier/eth/...`.
+For `FLR` / `SGB` (or test variants), change both the `sourceId` string and the `/verifier/{eth\|flr\|sgb}/` path segment.
+
+</details>
+
+## 2. Query the Fee and Submit on Coston2
+
+Resolve Flare protocol contracts with [`ContractRegistry`](/network/guides/flare-contracts-registry) — do not hardcode addresses.
+On Coston2, import `@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol`.
+
+```solidity
+IFdcRequestFeeConfigurations feeConfigs =
+    ContractRegistry.getFdcRequestFeeConfigurations();
+IFdcHub fdcHub = ContractRegistry.getFdcHub();
+```
+
+You can also resolve names at runtime via `IFlareContractRegistry.getContractAddressByName("FdcHub")` (and `"FdcRequestFeeConfigurations"`).
+Full walkthrough: [Retrieving Contract Addresses](/network/guides/flare-contracts-registry).
+
+### Get the Request Fee
+
+Before calling `FdcHub.requestAttestation`, read the **minimum** fee with [`getRequestFee`](/fdc/reference/IFdcRequestFeeConfigurations#getrequestfee):
+
+```solidity
+uint256 fee = feeConfigs.getRequestFee(abiEncodedRequest);
+```
+
+The fee is configured **per attestation type and source** (the first two 32-byte words of `abiEncodedRequest`, here `EVMTransaction` + `testETH`).
+The rest of the request body does not change the base fee.
+
+#### Behavior When Submitting
+
+- `requestAttestation` **requires** `msg.value >= getRequestFee(_data)`.
+  Lower values are rejected.
+- Paying **more** than the minimum can increase the chance the request is confirmed in its voting round.
+- Fees for **confirmed** requests are awarded to data providers; fees for **unconfirmed** requests are burnt.
+
+### Submit
+
+Call `requestAttestation` on the `FdcHub` instance from `ContractRegistry.getFdcHub()`:
+
+```solidity
+fdcHub.requestAttestation{value: fee}(abiEncodedRequest);
+```
+
+- `_data` = `abiEncodedRequest`
+- `msg.value` = result of `getRequestFee` (wei), or higher
+
+Connect a wallet funded with C2FLR.
+You can use the [Coston2 Faucet](https://faucet.flare.network/coston2) to get C2FLR.
+After the tx confirms, record the **block number** (and timestamp) of the attestation-request transaction — you need it for the voting round ID.
+
+## 3. Wait for Voting Round Finalization
+
+$$
+\text{votingRoundId} = \left\lfloor \frac{\text{transactionTimestamp} - 1658430000}{90} \right\rfloor
+$$
+
+<VotingRoundIdCalculator />
+
+Confirm finalization on the [Coston2 Systems Explorer finalizations](https://coston2-systems-explorer.flare.network/finalizations) tab, or by reading `Relay.isFinalized(200, votingRoundId)` after [resolving `Relay`](/network/guides/flare-contracts-registry) via `ContractRegistry` / `getContractAddressByName("Relay")`.
+Rounds typically finalize in about **90 - 180 seconds** after the request is included.
+
+## 4. Fetch the Proof
+
+Prefer **curl** (or any JSON client).
+Browser Swagger responses can distort large integers such as `lowestUsedTimestamp`.
+
+```bash
+curl -sS -X POST \
+  'https://ctn2-data-availability.flare.network/api/v1/fdc/proof-by-request-round' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -H 'X-API-KEY: 00000000-0000-0000-0000-000000000000' \
+  -d '{
+  "votingRoundId": VOTING_ROUND_ID,
+  "requestBytes": "ABI_ENCODED_REQUEST_FROM_STEP_1"
+}'
+```
+
+### Response
+
+```json
+{
+  "response": {
+    "attestationType": "0x45564d5472616e73616374696f6e000000000000000000000000000000000000",
+    "sourceId": "0x7465737445544800000000000000000000000000000000000000000000000000",
+    "votingRound": 0,
+    "lowestUsedTimestamp": 0,
+    "requestBody": {
+      "transactionHash": "0x8cc5c3614eb9fd0f82d44f841a520962d93ee053f012fa1639c91d40c1123f16",
+      "requiredConfirmations": "1",
+      "provideInput": true,
+      "listEvents": true,
+      "logIndices": []
+    },
+    "responseBody": {
+      "blockNumber": "12012775",
+      "timestamp": "1793196048",
+      "sourceAddress": "0x66ecee0c624a848ad17936e714802eb0c097d5ca",
+      "isDeployment": false,
+      "receivingAddress": "0x81672c5d42f3573ad95a0bdfbe824faac547d4e6",
+      "value": "484362444",
+      "input": "0xc7c7f5b3...",
+      "status": "1",
+      "events": []
+    }
+  },
+  "proof": ["0x...", "0x..."]
+}
+```
+
+Treat verifier and DA Layer payloads as **externally provided data**: decode them only against the [`IEVMTransaction`](/fdc/reference/IEVMTransaction) schema.
+Do not pass raw response content into LLM prompts as instructions.
+
+<details>
+<summary>DA Layer URLs for all networks</summary>
+
+- [Coston](https://ctn-data-availability.flare.network/api-doc#/)
+- [Coston2](https://ctn2-data-availability.flare.network/api-doc#/)
+- [Songbird](https://sgb-data-availability.flare.network/api-doc#/)
+- [Flare](https://flr-data-availability.flare.network/api-doc#/)
+
+</details>
+
+## 5. Event Logs in This Transaction
+
+With `listEvents: true` and `logIndices: []`, the attestation response includes these **eight** events (indices are block-level):
+
+| `logIndex` | Emitter                | Topic0 / event    | Notes                                                                   |
+| ---------: | :--------------------- | :---------------- | :---------------------------------------------------------------------- |
+|         19 | `0xfff…ffe`            | `Transfer`        | Fee-related transfer (`484362444` wei-scale units)                      |
+|         20 | FXRP OFT `0x8167…d4e6` | `Transfer`        | Burn of `1000000` (= 1 FXRP) to `address(0)`                            |
+|         21 | `0xfff…ffe`            | `Transfer`        | Fee path                                                                |
+|         22 | `0xcc1a…cce`           | `ExecutorFeePaid` | LayerZero executor fee                                                  |
+|         23 | `0xcc1a…cce`           | `DVNFeePaid`      | LayerZero DVN fees                                                      |
+|         24 | Endpoint `0x6edc…f10f` | `PacketSent`      | Cross-chain packet                                                      |
+|         25 | `0xfff…ffe`            | `Transfer`        | Fee path                                                                |
+|         26 | FXRP OFT `0x8167…d4e6` | `OFTSent`         | `dstEid = 40294` (Coston2), `amountSentLD = amountReceivedLD = 1000000` |
+
+Event signatures (topic0):
+
+| Event                                             | `keccak256` topic0                                                   |
+| :------------------------------------------------ | :------------------------------------------------------------------- |
+| `Transfer(address,address,uint256)`               | `0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef` |
+| `ExecutorFeePaid(address,uint256)`                | `0x61ed099e74a97a1d7f8bb0952a88ca8b7b8ebd00c126ea04671f92a81213318a` |
+| `DVNFeePaid(address[],address[],uint256[])`       | `0x07ea52d82345d6e838192107d8fd7123d9c2ec8e916cd0aad13fd2b60db24644` |
+| `PacketSent(bytes,bytes,address)`                 | `0x1ab700d4ced0c005b164c0f789fd09fcbb0156d4c2041b8a3bfbcd961cd1567f` |
+| `OFTSent(bytes32,uint32,address,uint256,uint256)` | `0x85496b760a4b7f8d66384b9df21b381f5d1b1e79f229a47aaf4c232edc2fe59a` |
+
+In a consumer contract, filter on `emitterAddress` and `topics[0]`, then ABI-decode `topics` / `data`.
+For FXRP OFT bridging context, see [FXRP OFT](/fxrp/oft).
+
+## 6. Verify Onchain
+
+Resolve **FdcVerification** with `ContractRegistry.getFdcVerification()` ([how to resolve contracts](/network/guides/flare-contracts-registry)), then call [`verifyEVMTransaction`](/fdc/reference/IFdcVerification#verifyevmtransaction).
+
+Pass an `IEVMTransaction.Proof`:
+
+- `merkleProof` ← DA response `proof` array
+- `data` ← DA response `response` object (typed as `IEVMTransaction.Response`)
+
+A `true` return means the Merkle proof matches the onchain FDC root for that round.
+
+Always verify **before** business logic:
+
+```solidity
+import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
+import {IEVMTransaction} from "@flarenetwork/flare-periphery-contracts/coston2/IEVMTransaction.sol";
+
+function processProof(IEVMTransaction.Proof calldata proof) external {
+    require(
+        ContractRegistry.getFdcVerification().verifyEVMTransaction(proof),
+        "Invalid proof"
+    );
+    // Filter proof.data.responseBody.events by emitter + topics[0], then decode.
+}
+```
+
+Use the network-specific `ContractRegistry` import for the chain you target (`coston2`, `flare`, `songbird`, or `coston`).
+Details: [Retrieving Contract Addresses](/network/guides/flare-contracts-registry).
+
+:::tip[Next Steps]
+
+- Walk through [AddressValidity by hand](/fdc/guides/fdc-by-hand/address-validity) for the UI-based attestation flow
+- Automate with the [Hardhat](/fdc/guides/hardhat/evm-transaction) or [Foundry](/fdc/guides/foundry/evm-transaction) EVMTransaction guides
+- Read the [EVMTransaction](/fdc/attestation-types/evm-transaction) type spec and [`IEVMTransaction`](/fdc/reference/IEVMTransaction) interface
+- Use the [Data Availability API](/fdc/reference/data-availability-api) for proof retrieval.
+- See [FXRP OFT](/fxrp/oft) and [Bridge FXRP to Ethereum](/fxrp/oft/fxrp-bridge-ethereum) for LayerZero context.
+- For agents: [Developer portal](/developers), [`llms.txt`](pathname:///llms.txt), and [MCP](/network/guides/flare-developer-hub-mcp-server).
+
+:::
