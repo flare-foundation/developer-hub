@@ -632,3 +632,62 @@ event RedeemedInCollateral(
     uint256 paidVaultCollateralWei
 );
 ```
+
+## Emergency Pause
+
+:::note[`EmergencyPauseActive` is an error, not an event]
+
+Blocked calls revert with the custom error [`EmergencyPauseActive`](/fassets/reference/IAssetManager#emergencypauseactive).
+It does not emit a log.
+Use the events below (or poll [`emergencyPaused()`](/fassets/reference/IAssetManager#emergencypaused)) to detect pause status before you submit a transaction.
+:::
+
+### `EmergencyPauseTriggered`
+
+Emitted when an emergency pause is activated or its level/end time changes.
+External and governance pause paths are reported separately; the effective level is the higher of the two while each end time is still in the future.
+See [Emergency Pause System](/fassets/emergency-pause).
+
+Parameters:
+
+- `externalLevel`: External (non-governance) pause level.
+- `externalPausedUntil`: Unix timestamp when the external pause ends.
+- `governanceLevel`: Governance pause level.
+- `governancePausedUntil`: Unix timestamp when the governance pause ends.
+
+```solidity
+event EmergencyPauseTriggered(
+    EmergencyPause.Level externalLevel,
+    uint256 externalPausedUntil,
+    EmergencyPause.Level governanceLevel,
+    uint256 governancePausedUntil
+);
+```
+
+### `EmergencyPauseCanceled`
+
+Emitted when both external and governance emergency pauses are cleared (`NONE`).
+
+```solidity
+event EmergencyPauseCanceled();
+```
+
+### `EmergencyPauseTotalDurationReset`
+
+Emitted when governance resets the accumulated external emergency-pause duration counter.
+
+```solidity
+event EmergencyPauseTotalDurationReset();
+```
+
+### `MintingPaused`
+
+Emitted when governance pauses or unpauses minting via the minting-only pause flag ([`mintingPaused()`](/fassets/reference/IAssetManager#mintingpaused)).
+
+Parameters:
+
+- `paused`: `true` when minting was paused; `false` when it was unpaused.
+
+```solidity
+event MintingPaused(bool paused);
+```

@@ -1,7 +1,16 @@
 ---
 title: Emergency Pause System
-description: FAssets emergency pause system
-keywords: [fassets, emergency, pause, security, system-control, maintenance]
+description: FAssets emergency pause system — levels, effects, and how to check pause status onchain before minting or redeeming.
+keywords:
+  [
+    fassets,
+    emergency,
+    pause,
+    security,
+    system-control,
+    maintenance,
+    emergencyPaused,
+  ]
 ---
 
 ## Overview
@@ -9,9 +18,19 @@ keywords: [fassets, emergency, pause, security, system-control, maintenance]
 The FAssets system includes a structured **three-level emergency pause mechanism** that allows governance to selectively restrict operations in response to planned upgrades, critical failures, or security threats.
 Each level defines a different scope of restrictions, ensuring a balance between **security, system availability, and user protection**.
 
+Paused calls (for example [`executeDirectMinting`](/fassets/reference/IAssetManager#executedirectminting)) revert with the custom error [`EmergencyPauseActive`](/fassets/reference/IAssetManager#emergencypauseactive) — this is a **revert reason**, not an event.
+Check pause status **before** sending underlying assets or submitting an execute transaction — see [Check pause status](#check-pause-status).
+
 ## Emergency Pause Levels
 
-### Start Operations
+Levels match the onchain `EmergencyPause.Level` enum returned by [`emergencyPauseLevel()`](/fassets/reference/IAssetManager#emergencypauselevel):
+
+- `NONE` (0),
+- `START_OPERATIONS` (1),
+- `FULL` (2),
+- `FULL_AND_TRANSFER` (3).
+
+### Start Operations (`START_OPERATIONS`)
 
 This level is intended for scenarios like network upgrades or planned maintenance.
 The goal is to prevent anyone from initiating new actions while allowing operations already in progress to complete before proceeding with maintenance.
@@ -22,13 +41,15 @@ The goal is to prevent anyone from initiating new actions while allowing operati
 - **One-Step Operations**: self mint, self close, enter, create agent.
 - **Collateral Pool Operations**: enter, exit, withdraw fees, [pay fee debt](/fassets/collateral#minting-fees-and-debt), delegate pool collateral.
 
+Mint execution (`executeDirectMinting` / `executeDirectMintingWithData`) uses the `notEmergencyPaused` guard, so it reverts at this level and above.
+
 #### Use Cases
 
 - Scheduled network upgrades.
 - System configuration or parameter changes.
 - Non-critical security patches.
 
-### Full
+### Full (`FULL`)
 
 This level is designed for critical emergencies.
 It halts practically all activity while preserving essential system functions.
@@ -48,7 +69,7 @@ Stops almost everything, except:
 - Critical system failures.
 - Regulatory compliance requirements.
 
-### Full and Transfer
+### Full and Transfer (`FULL_AND_TRANSFER`)
 
 The most restrictive level that freezes all transactional activity, including asset transfers.
 
@@ -64,6 +85,40 @@ It completely freezes all movement of the FAssets.
 - Emergency asset protection.
 - Extreme market conditions.
 
+## Check Pause Status
+
+:::info[Pause status preflight]
+Integrations that mint or redeem FXRP should read these view methods on the FXRP [`AssetManager`](/fassets/reference/IAssetManager) **before** sending XRP or calling execute.
+:::
+
+You can check the pause status using the following methods from the [`AssetManager`](/fassets/reference/IAssetManager):
+
+| Method                                                                            | Returns                          | Use                                                                                                                                             |
+| :-------------------------------------------------------------------------------- | :------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`emergencyPaused()`](/fassets/reference/IAssetManager#emergencypaused)           | `bool`                           | Fast preflight: `true` means an emergency pause is active (`level != NONE`). Mint/redeem execute paths will revert with `EmergencyPauseActive`. |
+| [`emergencyPauseLevel()`](/fassets/reference/IAssetManager#emergencypauselevel)   | `uint8` (`EmergencyPause.Level`) | Which operations are blocked: `0` NONE, `1` START_OPERATIONS, `2` FULL, `3` FULL_AND_TRANSFER.                                                  |
+| [`emergencyPausedUntil()`](/fassets/reference/IAssetManager#emergencypauseduntil) | `uint256` (unix seconds)         | When the effective pause ends automatically. `0` if no pause is active.                                                                         |
+| [`mintingPaused()`](/fassets/reference/IAssetManager#mintingpaused)               | `bool`                           | Separate **minting-only** pause (legacy/self-mint paths). Does **not** replace the emergency-pause check for Core Vault / direct minting.       |
+
+Recommended preflight for Core Vault minting:
+
+1. Call [`emergencyPaused()`](/fassets/reference/IAssetManager#emergencypaused).
+2. If `true`, do **not** send XRP and do **not** call [`executeDirectMinting`](/fassets/reference/IAssetManager#executedirectminting) — wait until it returns `false` (or until `block.timestamp >= [`emergencyPausedUntil()`](/fassets/reference/IAssetManager#emergencypauseduntil)` and re-check).
+3. Optionally read [`emergencyPauseLevel()`](/fassets/reference/IAssetManager#emergencypauselevel) for operator UI or alerting.
+
+### `EmergencyPauseActive` error
+
+Raised by [`AssetManager`](/fassets/reference/IAssetManager) pause modifiers when the effective pause level blocks the call.
+Argument-less custom error — wallets and clients surface it as the revert selector / name only.
+
+Monitor [`EmergencyPauseTriggered`](/fassets/reference/IAssetManagerEvents#emergencypausetriggered) and [`EmergencyPauseCanceled`](/fassets/reference/IAssetManagerEvents#emergencypausecanceled) if you prefer event-driven status instead of polling.
+
+:::info[Minting pause vs emergency pause]
+
+[`mintingPaused()`](/fassets/reference/IAssetManager#mintingpaused) is a separate governance flag that disables new minting on paths that check it (for example collateral reservation / self-mint).
+Core Vault [`executeDirectMinting`](/fassets/reference/IAssetManager#executedirectminting) is gated by the **emergency pause** modifiers and reverts with `EmergencyPauseActive`.
+:::
+
 ## Conclusion
 
 The FAssets emergency pause system provides a robust framework for maintaining system security and stability during critical situations.
@@ -73,6 +128,7 @@ The system can respond appropriately to various types of threats while maintaini
 
 Learn more about the different components and processes involved in FAssets - [collateral](/fassets/collateral), [minting](/fassets/minting), [redemptions](/fassets/redemption), [liquidations](/fassets/liquidation) and [Core Vault](/fassets/core-vault).
 
+For minting failures related to pause, see [Minting Troubleshooting](/fassets/troubleshooting/minting-troubleshooting#execution-reverts).
 For developer resources, explore our [FXRP address](/fxrp/token-interactions/fxrp-address), [minting](/fassets/developer-guides/fassets-mint), and [redemption](/fassets/developer-guides/fassets-redeem) guides to get started with FAssets integration.
 
 :::
