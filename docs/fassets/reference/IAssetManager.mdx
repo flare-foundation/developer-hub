@@ -98,6 +98,74 @@ function fAsset()
     returns (IERC20);
 ```
 
+## Emergency Pause And System State
+
+Read these values before minting or redeeming so you can detect a pause without waiting for an `EmergencyPauseActive` revert.
+See [Emergency Pause System](/fassets/emergency-pause#check-pause-status).
+
+### `EmergencyPauseActive`
+
+Custom error (not an event) thrown when a call is blocked by the emergency pause.
+
+```solidity
+error EmergencyPauseActive();
+```
+
+**Preflight:** call [`emergencyPaused()`](#emergencypaused) (or read [`emergencyPauseLevel()`](#emergencypauselevel) / [`emergencyPausedUntil()`](#emergencypauseduntil)) before sending underlying assets or submitting execute.
+**Recovery:** wait until `emergencyPaused()` is `false`, then retry.
+See [Minting Troubleshooting](/fassets/troubleshooting/minting-troubleshooting#execution-reverts) and [Check pause status](/fassets/emergency-pause#check-pause-status).
+
+Status changes emit [`EmergencyPauseTriggered`](/fassets/reference/IAssetManagerEvents#emergencypausetriggered) / [`EmergencyPauseCanceled`](/fassets/reference/IAssetManagerEvents#emergencypausecanceled) — those are the events to monitor; `EmergencyPauseActive` only appears as a transaction revert reason.
+
+### `emergencyPaused`
+
+Returns `true` when an emergency pause is active (`emergencyPauseLevel() != NONE`).
+Most mint, redeem, and liquidation entry points revert with [`EmergencyPauseActive`](#emergencypauseactive) while this is `true`.
+
+```solidity
+function emergencyPaused()
+    external view
+    returns (bool);
+```
+
+### `emergencyPauseLevel`
+
+Returns the effective emergency pause level:
+
+- `0` / `NONE` — pause is not active
+- `1` / `START_OPERATIONS` — prevent starting mint, redeem, liquidation, and Core Vault transfer/return
+- `2` / `FULL` — everything from `START_OPERATIONS`, plus prevent finishing or defaulting already started mints and redeems
+- `3` / `FULL_AND_TRANSFER` — everything from `FULL`, plus prevent FAsset transfers
+
+```solidity
+function emergencyPauseLevel()
+    external view
+    returns (EmergencyPause.Level);
+```
+
+### `emergencyPausedUntil`
+
+Returns the unix timestamp when the effective emergency pause ends automatically.
+Returns `0` when no pause is active.
+
+```solidity
+function emergencyPausedUntil()
+    external view
+    returns (uint256);
+```
+
+### `mintingPaused`
+
+Returns `true` when governance has paused minting specifically.
+In that state, minting paths that check this flag are disabled, while other operations (for example redemptions and liquidation) can still work.
+This is separate from the emergency pause — Core Vault `executeDirectMinting` is gated by [`emergencyPaused()`](#emergencypaused).
+
+```solidity
+function mintingPaused()
+    external view
+    returns (bool);
+```
+
 ## Direct Minting Settings
 
 ### `directMintingPaymentAddress`
