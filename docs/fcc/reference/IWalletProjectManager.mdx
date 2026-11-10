@@ -1,0 +1,317 @@
+---
+title: IWalletProjectManager
+description: Create and own Protocol Managed Wallet projects on an extension.
+keywords:
+  [
+    fcc,
+    tee,
+    solidity,
+    flare-confidential-compute,
+    protocol-managed-wallets,
+    flare-network,
+  ]
+sidebar_position: 8
+---
+
+Public interface for `WalletProjectManagerFacet` on the [`FlareTeeManager`](/fcc/reference/IFlareTeeManager) diamond.
+
+A **wallet project** is the ownership container for one or more [Protocol Managed Wallets](/fcc/overview#protocol-managed-wallets-pmw) on a single Flare Compute Extension.
+It fixes the extension id, key type (for example `EVM` or `XRP`), and signing algorithm for every wallet created under it.
+
+Typical setup (as in the FCC wallets scaffold example):
+
+1. The extension owner allowlists project owners with [`IOwnerAllowlist.addAllowedTeeWalletProjectOwners`](/fcc/reference/IOwnerAllowlist).
+2. An allowlisted address calls `createProject(extensionId, keyType, signingAlgo)`.
+3. The project owner creates wallets with [`IWalletManager.createWallet`](/fcc/reference/IWalletManager), then keys with [`IWalletKeyManager`](/fcc/reference/IWalletKeyManager).
+
+Ownership transfer is two-step (`proposeNewOwner` / `confirmOwnership`).
+The proposed owner must also be on the wallet-project-owner allowlist for that extension.
+A project may name an optional `backupManager` who can help with key restore confirmation (see [`IWalletKeyManager.confirmKey`](/fcc/reference/IWalletKeyManager)).
+
+Inherits shared [`ITeeCommonErrors`](/fcc/reference/ITeeCommonErrors).
+
+:::info
+FCC and Protocol Managed Wallets are in the final stages of development.
+Prefer **Coston2** for examples and treat interfaces as subject to change.
+:::
+
+## Functions
+
+### `createProject`
+
+Creates a project that can hold wallets on the specified extension.
+Emits `ProjectCreated` event.
+Can only be called by an allowlisted wallet project owner ([`IOwnerAllowlist`](/fcc/reference/IOwnerAllowlist)).
+The key type must be supported on the extension ([`IExtensionManager.addSupportedKeyTypes`](/fcc/reference/IExtensionManager)); an unsupported signing algorithm reverts with `SigningAlgoNotSupported`.
+
+```solidity
+function createProject(
+        uint256 _extensionId,
+        bytes32 _keyType,
+        bytes32 _signingAlgo
+    )
+        external
+        returns (bytes32 _projectId)
+```
+
+**Parameters**
+
+- `_extensionId`: The id of the extension.
+- `_keyType`: The key type (for example `bytes32("EVM")` or `bytes32("XRP")`).
+- `_signingAlgo`: The signing algorithm (for example `bytes32("keccak256-secp256k1-ecdsa")`).
+
+**Returns**
+
+- `_projectId`: The project id.
+
+### `setBackupManager`
+
+Sets the project backup manager.
+Emits `BackupManagerSet` event.
+Can only be called by the project owner.
+Pass `address(0)` to clear.
+
+```solidity
+function setBackupManager(
+        bytes32 _projectId,
+        address _backupManager
+    )
+        external
+```
+
+**Parameters**
+
+- `_projectId`: The project id.
+- `_backupManager`: The backup manager address (may be `address(0)`).
+
+### `proposeNewOwner`
+
+Proposes a new owner for the project.
+The new owner must be on the per-extension wallet-project-owner allowlist.
+It is a two-step process; the new owner must call `confirmOwnership`.
+Emits `NewOwnerProposed` event.
+Can only be called by the current project owner.
+
+```solidity
+function proposeNewOwner(
+        bytes32 _projectId,
+        address _newOwner
+    )
+        external
+```
+
+**Parameters**
+
+- `_projectId`: The project id.
+- `_newOwner`: The proposed new owner.
+
+### `confirmOwnership`
+
+Confirms project ownership.
+Backup manager, pausers, and unpausers remain unchanged.
+Emits `OwnershipConfirmed` event.
+Can only be called by the proposed new owner.
+
+```solidity
+function confirmOwnership(
+        bytes32 _projectId
+    )
+        external
+```
+
+**Parameters**
+
+- `_projectId`: The project id.
+
+### `getOwner`
+
+Returns the project owner.
+
+```solidity
+function getOwner(
+        bytes32 _projectId
+    )
+        external view
+        returns (address _owner)
+```
+
+**Parameters**
+
+- `_projectId`: The project id.
+
+**Returns**
+
+- `_owner`: The owner.
+
+### `getExtensionId`
+
+Returns the project extension id.
+
+```solidity
+function getExtensionId(
+        bytes32 _projectId
+    )
+        external view
+        returns (uint256 _extensionId)
+```
+
+**Parameters**
+
+- `_projectId`: The project id.
+
+**Returns**
+
+- `_extensionId`: The extension id.
+
+### `getKeyType`
+
+Returns the project key type.
+
+```solidity
+function getKeyType(
+        bytes32 _projectId
+    )
+        external view
+        returns (bytes32 _keyType)
+```
+
+**Parameters**
+
+- `_projectId`: The project id.
+
+**Returns**
+
+- `_keyType`: The key type.
+
+### `getSigningAlgo`
+
+Returns the project signing algorithm.
+
+```solidity
+function getSigningAlgo(
+        bytes32 _projectId
+    )
+        external view
+        returns (bytes32 _signingAlgo)
+```
+
+**Parameters**
+
+- `_projectId`: The project id.
+
+**Returns**
+
+- `_signingAlgo`: The signing algorithm.
+
+### `getBackupManager`
+
+Returns the project backup manager.
+
+```solidity
+function getBackupManager(
+        bytes32 _projectId
+    )
+        external view
+        returns (address _backupManager)
+```
+
+**Parameters**
+
+- `_projectId`: The project id.
+
+**Returns**
+
+- `_backupManager`: The backup manager address.
+
+## Events
+
+### `ProjectCreated`
+
+```solidity
+event ProjectCreated(
+        bytes32 indexed projectId,
+        address indexed owner,
+        uint256 extensionId,
+        bytes32 keyType,
+        bytes32 signingAlgo
+    )
+```
+
+**Parameters**
+
+- `projectId` (`bytes32 indexed projectId`)
+- `owner` (`address indexed owner`)
+- `extensionId` (`uint256 extensionId`)
+- `keyType` (`bytes32 keyType`)
+- `signingAlgo` (`bytes32 signingAlgo`)
+
+### `BackupManagerSet`
+
+```solidity
+event BackupManagerSet(
+        bytes32 indexed projectId,
+        address indexed backupManager
+    )
+```
+
+**Parameters**
+
+- `projectId` (`bytes32 indexed projectId`)
+- `backupManager` (`address indexed backupManager`)
+
+### `NewOwnerProposed`
+
+```solidity
+event NewOwnerProposed(
+        bytes32 indexed projectId,
+        address indexed newOwner
+    )
+```
+
+**Parameters**
+
+- `projectId` (`bytes32 indexed projectId`)
+- `newOwner` (`address indexed newOwner`)
+
+### `OwnershipConfirmed`
+
+```solidity
+event OwnershipConfirmed(
+        bytes32 indexed projectId,
+        address indexed newOwner
+    )
+```
+
+**Parameters**
+
+- `projectId` (`bytes32 indexed projectId`)
+- `newOwner` (`address indexed newOwner`)
+
+## Errors
+
+Facet-specific errors are listed here.
+The interface also inherits shared [`ITeeCommonErrors`](/fcc/reference/ITeeCommonErrors), including `OnlyOwner`, `OwnerNotAllowed`, and `KeyTypeNotSupported` on the create path.
+
+### `SigningAlgoNotSupported`
+
+The signing algorithm is not accepted for the chosen key type / extension.
+
+```solidity
+error SigningAlgoNotSupported()
+```
+
+### `WalletNotPartOfProject`
+
+A wallet id passed to a project-scoped helper does not belong to that project.
+
+```solidity
+error WalletNotPartOfProject()
+```
+
+### `WalletNotProductionReady`
+
+A project-level check required a wallet that is not ready for production use.
+
+```solidity
+error WalletNotProductionReady()
+```

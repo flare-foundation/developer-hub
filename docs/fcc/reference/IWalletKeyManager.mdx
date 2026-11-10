@@ -1,0 +1,595 @@
+---
+title: IWalletKeyManager
+description: Protocol Managed Wallet key generation, confirmation, and TEE routing.
+keywords:
+  [
+    fcc,
+    tee,
+    solidity,
+    flare-confidential-compute,
+    protocol-managed-wallets,
+    flare-network,
+  ]
+sidebar_position: 10
+---
+
+Public interface for `WalletKeyManagerFacet` on the [`FlareTeeManager`](/fcc/reference/IFlareTeeManager) diamond.
+
+This facet manages the **keys** of a [Protocol Managed Wallet (PMW)](/fcc/overview#protocol-managed-wallets-pmw): which TEE machines hold each key, the wallet's multisig threshold, and how payment flows pick receiving machines.
+Create the project and wallet first with [`IWalletProjectManager`](/fcc/reference/IWalletProjectManager) and [`IWalletManager`](/fcc/reference/IWalletManager).
+Only setup mutations require wallet status `INITIALIZED`: `setMultisigThreshold`, `addKey`, and the first `confirmKey` for a new key.
+`deleteKey`, `cleanUpTeeIds`, restore confirmations, and receiving-TEE helpers do not gate on `INITIALIZED`.
+
+Key material never appears onchain.
+`addKey` and `deleteKey` only emit instructions; the private key is generated and stored inside the TEE.
+Someone must later call `confirmKey` with a TEE-signed existence proof before the public key is recorded on the diamond.
+
+Typical lifecycle:
+
+1. The wallet project owner calls `addKey` on a `PRODUCTION` TEE that belongs to the wallet's extension.
+   The facet sends an `F_WALLET` / `KEY_GENERATE` instruction and emits `WalletKeyAdded`.
+2. The TEE generates the key and returns a signed `KeyExistence` proof (domain prefix `TEE_KEY_EXISTENCE`).
+3. The owner (or backup manager, for restores) calls `confirmKey`.
+   On success the diamond stores the public key and TEE id and emits `WalletKeyConfirmed`.
+4. Payment and reissue paths call `receivingTeesAndKeys` (or its read-only twin `getReceivingTeeIds`) to pick PRODUCTION machines that currently hold enough keys to meet `multisigThreshold`.
+
+Nothing here is automatic: each step is an explicit call, and instructions still need data-provider weight (and any wallet cosigners) before the TEE executes them.
+See [Data providers and cosigners](/fcc/data-providers).
+
+Inherits shared [`ITeeCommonErrors`](/fcc/reference/ITeeCommonErrors).
+
+:::info
+FCC and Protocol Managed Wallets are in the final stages of development.
+Prefer **Coston2** for examples and treat interfaces as subject to change.
+:::
+
+## Constants
+
+### `TEE_KEY_EXISTENCE`
+
+Domain prefix for the TEE-attested wallet-key-existence signed payload.
+The TEE identity key signs `ethSignedHash(TEE_KEY_EXISTENCE, keccak256(abi.encode(KeyExistence)))`.
+`confirmKey` recovers the signer and requires it equal `KeyExistence.teeId`.
+
+```solidity
+bytes32 constant TEE_KEY_EXISTENCE = bytes32("TEE_KEY_EXISTENCE");
+```
+
+## Types
+
+### `KeyConfigConstants`
+
+Admin public keys and cosigner set copied into generate/existence payloads so the TEE and onchain config stay aligned.
+
+```solidity
+struct KeyConfigConstants {
+        PublicKey[] adminsPublicKeys;
+        uint64 adminsThreshold;
+        address[] cosigners;
+        uint64 cosignersThreshold;
+    }
+```
+
+### `KeyGenerate`
+
+ABI-encoded body of the `KEY_GENERATE` instruction sent by `addKey`.
+
+```solidity
+struct KeyGenerate {
+        address teeId;
+        bytes32 walletId;
+        uint64 keyId;
+        bytes32 keyType;
+        bytes32 signingAlgo;
+        KeyConfigConstants configConstants;
+    }
+```
+
+### `KeyExistence`
+
+TEE-signed proof that a machine holds (or restored) a wallet key.
+Passed to `confirmKey`.
+
+```solidity
+struct KeyExistence {
+        address teeId;
+        bytes32 walletId;
+        uint64 keyId;
+        bytes32 keyType;
+        bytes32 signingAlgo;
+        bytes publicKey;
+        uint256 nonce;
+        bool restored;
+        KeyConfigConstants configConstants;
+        bytes32 settingsVersion;
+        bytes settings;
+    }
+```
+
+### `KeyDelete`
+
+ABI-encoded body of the `KEY_DELETE` instruction sent by `deleteKey`.
+
+```solidity
+struct KeyDelete {
+        address teeId;
+        bytes32 walletId;
+        uint64 keyId;
+        uint256 nonce;
+    }
+```
+
+### `TeeIdKeyIdPair`
+
+Pair returned by `receivingTeesAndKeys` for each PRODUCTION machine that currently holds a wallet key.
+
+```solidity
+struct TeeIdKeyIdPair {
+        address teeId;
+        uint64 keyId;
+    }
+```
+
+### `PublicKey` / `Signature`
+
+Shared FCC structs (not facet-specific):
+
+```solidity
+struct PublicKey {
+        bytes32 x;
+        bytes32 y;
+    }
+
+struct Signature {
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
+    }
+```
+
+## Functions
+
+### `setMultisigThreshold`
+
+Sets the multisig threshold for the wallet.
+Emits `WalletMultisigThresholdSet` event.
+Can only be called by the wallet project owner.
+The wallet must be `INITIALIZED`; `_multisigThreshold` must be greater than zero.
+
+```solidity
+function setMultisigThreshold(
+        bytes32 _walletId,
+        uint64 _multisigThreshold
+    )
+        external
+```
+
+**Parameters**
+
+- `_walletId`: The wallet id.
+- `_multisigThreshold`: The multisig threshold (number of available keys required by `receivingTeesAndKeys`).
+
+### `addKey`
+
+Adds a key to the wallet and triggers key generation on the target TEE.
+Emits `WalletKeyAdded`, then sends an `F_WALLET` / `KEY_GENERATE` instruction (payable; fee follows [`IOperationFees`](/fcc/reference/IOperationFees)).
+Can only be called by the wallet project owner.
+The wallet must be `INITIALIZED`, `_teeId` must be `PRODUCTION`, and the TEE's extension must match the wallet project's extension.
+
+```solidity
+function addKey(
+        address _teeId,
+        bytes32 _walletId,
+        address _claimBackAddress
+    )
+        external payable
+        returns (uint64 _keyId)
+```
+
+**Parameters**
+
+- `_teeId`: The TEE machine that should generate and hold the key.
+- `_walletId`: The wallet id.
+- `_claimBackAddress`: An address that can claim back the fee if the instructions are not executed (optional).
+
+**Returns**
+
+- `_keyId`: The newly assigned key id (from the wallet's `addKey` counter).
+
+### `confirmKey`
+
+Confirms key generation (or restore) with a TEE-signed `KeyExistence` proof.
+Emits `WalletKeyConfirmed` event.
+Callable by the wallet project owner, or by the project backup manager on restore confirmations.
+
+First confirmation (`nonce == 0`, `restored == false`) stores the public key and TEE id and requires wallet status `INITIALIZED`.
+Later re-introduction of the same key on another TEE requires `restored == true`, a matching public key, and a nonce greater than zero; that restore path does **not** require `INITIALIZED`.
+
+```solidity
+function confirmKey(
+        KeyExistence calldata _proof,
+        Signature calldata _teeSignature
+    )
+        external
+```
+
+**Parameters**
+
+- `_proof`: The key existence proof.
+- `_teeSignature`: The TEE machine signature of the key existence proof (`TEE_KEY_EXISTENCE` domain).
+
+### `deleteKey`
+
+Deletes a key from a TEE machine and triggers a key deletion instruction.
+Emits `WalletKeyDeleted`, then sends an `F_WALLET` / `KEY_DELETE` instruction (payable).
+Can only be called by the wallet project owner.
+Does **not** require wallet status `INITIALIZED` (unlike `addKey`), so it remains available after `enableWallet`.
+Removes `_teeId` from the key's holder list if present, increments that TEE's per-key nonce, and instructs the enclave to delete the material.
+
+```solidity
+function deleteKey(
+        address _teeId,
+        bytes32 _walletId,
+        uint64 _keyId,
+        address _claimBackAddress
+    )
+        external payable
+```
+
+**Parameters**
+
+- `_teeId`: The TEE machine that should delete the key.
+- `_walletId`: The wallet id.
+- `_keyId`: The key id.
+- `_claimBackAddress`: An address that can claim back the fee if the instructions are not executed (optional).
+
+### `cleanUpTeeIds`
+
+For a given wallet id and key id, removes every holder TEE that is **not** in `PRODUCTION`.
+Note: the key nonce is not incremented, so the key can be re-added to the same TEE later.
+Emits `WalletKeyDeleted` for each removed TEE id.
+Callable by the wallet project owner or backup manager.
+
+```solidity
+function cleanUpTeeIds(
+        bytes32 _walletId,
+        uint64 _keyId
+    )
+        external
+```
+
+**Parameters**
+
+- `_walletId`: The wallet id.
+- `_keyId`: The key id.
+
+### `receivingTeesAndKeys`
+
+Returns the wallet's receiving TEE and key pairs for dispatch (used by payment / reissue paths).
+Reverts with `ThresholdNotMet` if fewer than `multisigThreshold` keys have at least one `PRODUCTION` holder.
+If some keys have no PRODUCTION holder, emits `WalletKeysNotAvailable` for those key ids (the call still succeeds when the threshold is met).
+
+```solidity
+function receivingTeesAndKeys(
+        bytes32 _walletId
+    )
+        external
+        returns (TeeIdKeyIdPair[] memory _teeIdKeyIdPairs)
+```
+
+**Parameters**
+
+- `_walletId`: The wallet id.
+
+**Returns**
+
+- `_teeIdKeyIdPairs`: The `(teeId, keyId)` pairs for PRODUCTION holders.
+
+### `getReceivingTeeIds`
+
+Read-only twin of `receivingTeesAndKeys`: the deduplicated list of TEE ids that would receive instructions for the wallet.
+Matches the TEE ids the dispatch path feeds into fee calculation, so [`IOperationFees.calculateFeeByTeeIds`](/fcc/reference/IOperationFees) (or `calculateFeeByWalletId`) applied to it yields the same fee a real `pay` / `reissue` charges.
+Reverts with `ThresholdNotMet` if not enough receiving TEEs are available, and emits no event (safe to call via `eth_call`).
+
+```solidity
+function getReceivingTeeIds(
+        bytes32 _walletId
+    )
+        external view
+        returns (address[] memory _teeIds)
+```
+
+**Parameters**
+
+- `_walletId`: The wallet id.
+
+**Returns**
+
+- `_teeIds`: The deduplicated list of receiving TEE ids.
+
+### `getWalletKeyTeeIds`
+
+Returns the list of TEE ids that currently hold the wallet key.
+
+```solidity
+function getWalletKeyTeeIds(
+        bytes32 _walletId,
+        uint64 _keyId
+    )
+        external view
+        returns (address[] memory _teeIds)
+```
+
+**Parameters**
+
+- `_walletId`: The wallet id.
+- `_keyId`: The key id.
+
+**Returns**
+
+- `_teeIds`: The list of TEE ids.
+
+### `getWalletKeyPublicKey`
+
+Returns the public key of the wallet key (empty until the first successful `confirmKey`).
+
+```solidity
+function getWalletKeyPublicKey(
+        bytes32 _walletId,
+        uint64 _keyId
+    )
+        external view
+        returns (bytes memory _publicKey)
+```
+
+**Parameters**
+
+- `_walletId`: The wallet id.
+- `_keyId`: The key id.
+
+**Returns**
+
+- `_publicKey`: The public key.
+
+### `getKeyNonce`
+
+Returns the current per-`(teeId, walletId, keyId)` nonce and whether the TEE currently holds the key.
+Reverts with `InvalidKeyId` if the wallet has no such key.
+Reverts with `TeeNotFound` if `_teeId` is not a registered TEE machine.
+Reverts with `ExtensionIdMismatch` if `_teeId` belongs to a different extension than the wallet.
+
+Interpretation of the return tuple:
+
+| Return       | Meaning                                                                                                                  |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| `(N, true)`  | TEE currently holds the key; the next delete/restore operation will use nonce `N+1`.                                     |
+| `(0, false)` | TEE in the wallet's extension that has never held this key.                                                              |
+| `(N, false)` | TEE previously held the key (nonce `N`) but it was deleted from this TEE; a future re-introduction continues from `N+1`. |
+
+Callers must use `_teeHoldsKey` rather than treating nonce `0` as "key present" — nonce `0` alone is ambiguous.
+
+```solidity
+function getKeyNonce(
+        address _teeId,
+        bytes32 _walletId,
+        uint64 _keyId
+    )
+        external view
+        returns (
+            uint256 _nonce,
+            bool _teeHoldsKey
+        )
+```
+
+**Parameters**
+
+- `_teeId`: The TEE id.
+- `_walletId`: The wallet id.
+- `_keyId`: The key id.
+
+**Returns**
+
+- `_nonce`: The current per-TEE nonce for this key.
+- `_teeHoldsKey`: True if the TEE is currently registered as holding this key.
+
+### `getWalletKeysInfo`
+
+Returns information about the wallet keys.
+
+```solidity
+function getWalletKeysInfo(
+        bytes32 _walletId
+    )
+        external view
+        returns (
+            uint64 _multisigThreshold,
+            uint64[] memory _keyIds,
+            uint64 _counter
+        )
+```
+
+**Parameters**
+
+- `_walletId`: The wallet id.
+
+**Returns**
+
+- `_multisigThreshold`: The multisig threshold.
+- `_keyIds`: The confirmed key ids.
+- `_counter`: The number of `addKey` calls (next key id).
+
+### `getWalletPublicKeys`
+
+Returns the wallet's multisig threshold and public keys (ordered by key id) in a single call.
+
+```solidity
+function getWalletPublicKeys(
+        bytes32 _walletId
+    )
+        external view
+        returns (
+            uint64 _multisigThreshold,
+            bytes[] memory _publicKeys
+        )
+```
+
+**Parameters**
+
+- `_walletId`: The wallet id.
+
+**Returns**
+
+- `_multisigThreshold`: The multisig threshold.
+- `_publicKeys`: The public keys, ordered by key id.
+
+## Events
+
+### `WalletMultisigThresholdSet`
+
+```solidity
+event WalletMultisigThresholdSet(
+        bytes32 indexed walletId,
+        uint64 multisigThreshold
+    )
+```
+
+**Parameters**
+
+- `walletId` (`bytes32 indexed walletId`)
+- `multisigThreshold` (`uint64 multisigThreshold`)
+
+### `WalletKeyAdded`
+
+Emitted when `addKey` assigns a key id and queues `KEY_GENERATE` (before confirmation).
+
+```solidity
+event WalletKeyAdded(
+        address indexed teeId,
+        bytes32 indexed walletId,
+        uint64 indexed keyId
+    )
+```
+
+**Parameters**
+
+- `teeId` (`address indexed teeId`)
+- `walletId` (`bytes32 indexed walletId`)
+- `keyId` (`uint64 indexed keyId`)
+
+### `WalletKeyConfirmed`
+
+Emitted when `confirmKey` accepts a TEE-signed existence proof and records the public key / holder.
+
+```solidity
+event WalletKeyConfirmed(
+        address indexed teeId,
+        bytes32 indexed walletId,
+        uint64 indexed keyId,
+        bytes publicKey
+    )
+```
+
+**Parameters**
+
+- `teeId` (`address indexed teeId`)
+- `walletId` (`bytes32 indexed walletId`)
+- `keyId` (`uint64 indexed keyId`)
+- `publicKey` (`bytes publicKey`)
+
+### `WalletKeyDeleted`
+
+Emitted by `deleteKey` (before the `KEY_DELETE` instruction) and by `cleanUpTeeIds` for each removed non-PRODUCTION holder.
+
+```solidity
+event WalletKeyDeleted(
+        address indexed teeId,
+        bytes32 indexed walletId,
+        uint64 indexed keyId
+    )
+```
+
+**Parameters**
+
+- `teeId` (`address indexed teeId`)
+- `walletId` (`bytes32 indexed walletId`)
+- `keyId` (`uint64 indexed keyId`)
+
+### `WalletKeysNotAvailable`
+
+Emitted by `receivingTeesAndKeys` when some key ids have no PRODUCTION holder, while the multisig threshold is still met.
+
+```solidity
+event WalletKeysNotAvailable(
+        bytes32 indexed walletId,
+        uint64[] keyIds
+    )
+```
+
+**Parameters**
+
+- `walletId` (`bytes32 indexed walletId`)
+- `keyIds` (`uint64[] keyIds`)
+
+## Errors
+
+Facet-specific errors are listed here.
+The interface also inherits shared [`ITeeCommonErrors`](/fcc/reference/ITeeCommonErrors).
+This facet uses those for ownership, extension matching, wallet status, key type / signing algo checks, and config-constant validation, including `OnlyOwner`, `OnlyOwnerOrBackupManager`, `ExtensionIdMismatch`, `InvalidWalletStatus`, `InvalidKeyType`, `InvalidSigningAlgo`, `InvalidPublicKey`, `InvalidNonce`, `InvalidThreshold`, `LengthsMismatch`, and `InvalidAddress`.
+
+### `InvalidKeyId`
+
+The wallet has no confirmed key at `_keyId`, or `confirmKey` references a key id that was never assigned by `addKey`.
+
+```solidity
+error InvalidKeyId()
+```
+
+### `InvalidSettings`
+
+`KeyExistence.settingsVersion` is not zero or `settings` is non-empty.
+Current `confirmKey` requires both empty / zero.
+
+```solidity
+error InvalidSettings()
+```
+
+### `InvalidTeeSignature`
+
+The recovered signer of the `TEE_KEY_EXISTENCE` payload is not `KeyExistence.teeId`.
+
+```solidity
+error InvalidTeeSignature()
+```
+
+### `KeyNotRestoredOnTeeMachine`
+
+A re-introduction `confirmKey` (public key already stored) did not set `restored == true` with a nonce greater than zero.
+
+```solidity
+error KeyNotRestoredOnTeeMachine()
+```
+
+### `TeeIdAlreadyAdded`
+
+`confirmKey` tried to add a TEE that is already listed as holding this key.
+
+```solidity
+error TeeIdAlreadyAdded()
+```
+
+### `KeyNotGeneratedOnTeeMachine`
+
+A first-time `confirmKey` (`nonce == 0`) set `restored == true`.
+First generation must use `restored == false`.
+
+```solidity
+error KeyNotGeneratedOnTeeMachine()
+```
+
+### `ThresholdNotMet`
+
+`receivingTeesAndKeys` / `getReceivingTeeIds` found fewer available keys (keys with at least one PRODUCTION holder) than the wallet's `multisigThreshold`.
+
+```solidity
+error ThresholdNotMet()
+```

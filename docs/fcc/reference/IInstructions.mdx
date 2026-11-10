@@ -1,0 +1,279 @@
+---
+title: IInstructions
+description: Send instructions from an extension's InstructionSender to TEE machines.
+keywords: [fcc, tee, solidity, flare-confidential-compute, flare-network]
+sidebar_position: 5
+---
+
+Public interface for `InstructionsFacet` on the [`FlareTeeManager`](/fcc/reference/IFlareTeeManager) diamond.
+
+This is the **only public path** for an extension to ask TEE machines to do work.
+Your InstructionSender (registered on [`IExtensionManager`](/fcc/reference/IExtensionManager)) calls `sendInstructions` with one or more `teeId`s and a `TeeInstructionParams` payload.
+The facet emits `TeeInstructionsSent`; data providers relay the instruction only after enough signing weight, then each TEE runs it.
+See [Data providers and cosigners](/fcc/data-providers).
+
+Nothing is automatic: someone must call `sendInstructions`, attach enough `msg.value` for the fee from [`IOperationFees`](/fcc/reference/IOperationFees), and use the extension's registered instructions-sender address as `msg.sender`.
+EOAs and other contracts are rejected with `OnlyInstructionsSender`.
+
+Typical developer flow (as in the FCC extension scaffold):
+
+1. Bind the InstructionSender with `setExtensionId` after registration.
+2. Pick PRODUCTION machines with [`IMachineManager.getRandomTeeIds`](/fcc/reference/IMachineManager) (or wallet receiving TEEs via [`IWalletKeyManager`](/fcc/reference/IWalletKeyManager)).
+3. Quote the fee with `IOperationFees.calculateFeeByTeeIds`, then call `sendInstructions{value: fee}`.
+4. Offchain, poll the TEE proxy for `instructionId` / action results.
+
+Inherits shared [`ITeeCommonErrors`](/fcc/reference/ITeeCommonErrors).
+
+:::info
+FCC is in the final stages of development.
+Prefer **Coston2** for examples and treat interfaces as subject to change.
+:::
+
+## Types
+
+### `TeeInstructionParams`
+
+Parameters for one instruction batch.
+
+| Field                | Meaning                                                                                                                              |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `opType`             | Operation group (`bytes32` string, max 31 bytes). Must not use the reserved `F_` prefix unless you are a system instructions sender. |
+| `opCommand`          | Sub-route within the op type.                                                                                                        |
+| `message`            | Non-empty payload the extension handler decodes.                                                                                     |
+| `cosigners`          | Optional extra authorization addresses the TEE checks.                                                                               |
+| `cosignersThreshold` | How many of `cosigners` must approve; must be `≤ cosigners.length`.                                                                  |
+| `claimBackAddress`   | Optional address recorded for fee claim-back if instructions are not executed.                                                       |
+
+```solidity
+struct TeeInstructionParams {
+        bytes32 opType;
+        bytes32 opCommand;
+        bytes message;
+        address[] cosigners;
+        uint64 cosignersThreshold;
+        address claimBackAddress;
+    }
+```
+
+## Functions
+
+### `sendInstructions`
+
+Send instructions to the listed TEE machines.
+The facet generates and returns `instructionId`, deduplicates `_teeIds`, and emits `TeeInstructionsSent`.
+Payable: `msg.value` must cover [`IOperationFees.calculateFeeByTeeIds`](/fcc/reference/IOperationFees) for the `(opType, opCommand, teeIds)` triple or the call reverts with `FeeTooLow`.
+
+Access:
+
+- Normal callers must be the extension's registered instructions sender for the TEEs' extension.
+- They must not use a system `opType` (values whose first two bytes are `F_`); that reverts with `SystemOpTypeNotAllowed`.
+- System instructions senders (governance-registered) may send system op types; that path is not part of typical extension development.
+
+All `_teeIds` must belong to the same extension.
+For non-system op types, each machine must be `PRODUCTION` or the call reverts with `TeeMachineNotAvailable`.
+If the extension is emergency-paused, dispatch reverts with `EmergencyPauseActive` from the machine emergency-pause facet (not listed on this interface).
+
+```solidity
+function sendInstructions(
+        address[] calldata _teeIds,
+        TeeInstructionParams calldata _instructionParams
+    )
+        external payable
+        returns (bytes32 _instructionId)
+```
+
+**Parameters**
+
+- `_teeIds`: TEE machine ids that receive the instruction (same extension; duplicates are removed).
+- `_instructionParams`: The instruction parameters.
+
+**Returns**
+
+- `_instructionId`: The generated instruction id.
+
+### `getSystemInstructionsSenders`
+
+Returns the governance-registered system instructions senders.
+Extension InstructionSenders are **not** on this list; they are bound per extension on [`IExtensionManager`](/fcc/reference/IExtensionManager).
+
+```solidity
+function getSystemInstructionsSenders()
+        external view
+        returns (address[] memory)
+```
+
+**Returns**
+
+- The list of system instructions senders.
+
+## Events
+
+### `TeeInstructionsSent`
+
+Emitted when `sendInstructions` accepts a batch.
+Offchain indexers and TEE proxies watch this event to relay work.
+
+```solidity
+event TeeInstructionsSent(
+        uint256 indexed extensionId,
+        bytes32 indexed instructionId,
+        uint32 indexed rewardEpochId,
+        IMachineManager.TeeMachine[] teeMachines,
+        bytes32 opType,
+        bytes32 opCommand,
+        bytes message,
+        address[] cosigners,
+        uint64 cosignersThreshold,
+        address claimBackAddress,
+        uint256 fee
+    )
+```
+
+**Parameters**
+
+- `extensionId` (`uint256 indexed extensionId`)
+- `instructionId` (`bytes32 indexed instructionId`)
+- `rewardEpochId` (`uint32 indexed rewardEpochId`)
+- `teeMachines` (`IMachineManager.TeeMachine[] teeMachines`)
+- `opType` (`bytes32 opType`)
+- `opCommand` (`bytes32 opCommand`)
+- `message` (`bytes message`)
+- `cosigners` (`address[] cosigners`)
+- `cosignersThreshold` (`uint64 cosignersThreshold`)
+- `claimBackAddress` (`address claimBackAddress`)
+- `fee` (`uint256 fee`)
+
+### `SystemInstructionsSendersRegistered`
+
+Emitted when governance registers system instructions senders (internal facet API; not callable through this public interface alone).
+
+```solidity
+event SystemInstructionsSendersRegistered(
+        address[] instructionsSenders
+    )
+```
+
+**Parameters**
+
+- `instructionsSenders` (`address[] instructionsSenders`)
+
+### `SystemInstructionsSendersUnregistered`
+
+Emitted when governance removes system instructions senders.
+
+```solidity
+event SystemInstructionsSendersUnregistered(
+        address[] instructionsSenders
+    )
+```
+
+**Parameters**
+
+- `instructionsSenders` (`address[] instructionsSenders`)
+
+## Errors
+
+Facet-specific errors are listed here.
+The interface also inherits shared [`ITeeCommonErrors`](/fcc/reference/ITeeCommonErrors).
+Dispatch also uses `ExtensionIdMismatch` and `TeeMachineNotAvailable` from that set, and may surface `EmergencyPauseActive` from the emergency-pause facet.
+
+### `NoTeeMachinesSpecified`
+
+`_teeIds` is empty after validation.
+
+```solidity
+error NoTeeMachinesSpecified()
+```
+
+### `OperationTypeEmpty`
+
+`opType` is `bytes32(0)`.
+
+```solidity
+error OperationTypeEmpty()
+```
+
+### `OperationCommandEmpty`
+
+`opCommand` is `bytes32(0)`.
+
+```solidity
+error OperationCommandEmpty()
+```
+
+### `MessageEmpty`
+
+`message` has length zero.
+
+```solidity
+error MessageEmpty()
+```
+
+### `OnlyInstructionsSender`
+
+`msg.sender` is neither the extension's registered instructions sender nor a system instructions sender.
+
+```solidity
+error OnlyInstructionsSender()
+```
+
+### `OnlySystemInstructionsSender`
+
+Declared for the system-only send path.
+Public `sendInstructions` uses `OnlyInstructionsSender` / `SystemOpTypeNotAllowed` for ordinary callers instead.
+
+```solidity
+error OnlySystemInstructionsSender()
+```
+
+### `SystemOpTypeNotAllowed`
+
+A non-system caller used an `opType` reserved for Flare system operations (`F_` prefix).
+
+```solidity
+error SystemOpTypeNotAllowed(bytes32 opType)
+```
+
+**Parameters**
+
+- `opType`: The rejected operation type.
+
+### `FeeTooLow`
+
+`msg.value` is less than the fee for this `(opType, opCommand, teeIds)` combination.
+
+```solidity
+error FeeTooLow()
+```
+
+### `CosignersThresholdTooHigh`
+
+`cosignersThreshold` is greater than `cosigners.length`.
+
+```solidity
+error CosignersThresholdTooHigh()
+```
+
+### `SystemInstructionsSenderAlreadyExists`
+
+Governance tried to register a system instructions sender that is already listed.
+
+```solidity
+error SystemInstructionsSenderAlreadyExists(address instructionsSender)
+```
+
+**Parameters**
+
+- `instructionsSender`: The address already present.
+
+### `SystemInstructionsSenderNotFound`
+
+Governance tried to unregister a system instructions sender that is not listed.
+
+```solidity
+error SystemInstructionsSenderNotFound(address instructionsSender)
+```
+
+**Parameters**
+
+- `instructionsSender`: The address that was not found.
