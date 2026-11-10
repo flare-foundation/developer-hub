@@ -1,0 +1,593 @@
+---
+title: IWalletManager
+description: Create, initialize, and enable Protocol Managed Wallets.
+keywords:
+  [
+    fcc,
+    tee,
+    solidity,
+    flare-confidential-compute,
+    protocol-managed-wallets,
+    flare-network,
+  ]
+sidebar_position: 9
+---
+
+Public interface for `WalletManagerFacet` on the [`FlareTeeManager`](/fcc/reference/IFlareTeeManager) diamond.
+
+This facet owns the **wallet lifecycle** for [Protocol Managed Wallets (PMW)](/fcc/overview#protocol-managed-wallets-pmw): create under a project, set admins and optional cosigners, freeze that config, then enable production use after keys exist.
+
+Status is not automatic.
+Each transition is an explicit call by the project owner (or an admin/cosigner confirming membership):
+
+```
+NONE → CREATED → INITIALIZED → PRODUCTION ⇄ PAUSED
+```
+
+`PAUSED` is reached only from `PRODUCTION` via the wallet project pause facet (`pauseWallets` / `unpauseWallets`), not from `INITIALIZED`.
+
+Typical setup (FCC wallets scaffold):
+
+1. [`IWalletProjectManager.createProject`](/fcc/reference/IWalletProjectManager)
+2. `createWallet(projectId)` → status `CREATED`
+3. `setAdmins` / `confirmAdmin` (and optionally `setCosigners` / `confirmCosigner`)
+4. `closeWalletInitialization` → status `INITIALIZED` (admins/cosigners locked)
+5. [`IWalletKeyManager.setMultisigThreshold`](/fcc/reference/IWalletKeyManager) and `addKey` / `confirmKey`
+6. `enableWallet` → status `PRODUCTION` (no more keys can be added)
+
+`WALLET_OP_TYPE` (`F_WALLET`) is the reserved system op type used when key facets send generate/delete instructions to TEEs.
+Do not reuse `F_`-prefixed op types in your own extension handlers.
+
+Inherits shared [`ITeeCommonErrors`](/fcc/reference/ITeeCommonErrors).
+
+:::info
+FCC and Protocol Managed Wallets are in the final stages of development.
+Prefer **Coston2** for examples and treat interfaces as subject to change.
+:::
+
+## Constants
+
+### `WALLET_OP_TYPE`
+
+System instruction `opType` for wallet key operations (`F_WALLET`).
+[`IWalletKeyManager.addKey`](/fcc/reference/IWalletKeyManager) / `deleteKey` send instructions with this type and commands such as `KEY_GENERATE` / `KEY_DELETE`.
+
+```solidity
+bytes32 constant WALLET_OP_TYPE = bytes32("F_WALLET");
+```
+
+### `MAX_WALLET_ADMINS` / `MAX_WALLET_COSIGNERS`
+
+Upper bounds for `setAdmins` and `setCosigners`.
+
+```solidity
+uint256 constant MAX_WALLET_ADMINS = 50;
+uint256 constant MAX_WALLET_COSIGNERS = 50;
+```
+
+## Types
+
+### `WalletStatus`
+
+```solidity
+enum WalletStatus {
+        NONE,
+        CREATED,
+        INITIALIZED,
+        PRODUCTION,
+        PAUSED
+    }
+```
+
+### `PublicKey`
+
+Shared FCC struct for admin public keys (uncompressed secp256k1 coordinates):
+
+```solidity
+struct PublicKey {
+        bytes32 x;
+        bytes32 y;
+    }
+```
+
+## Functions
+
+### `createWallet`
+
+Creates a wallet for the project.
+Emits `WalletCreated` event.
+Status becomes `CREATED`.
+Can only be called by the project owner.
+
+```solidity
+function createWallet(
+        bytes32 _projectId
+    )
+        external
+        returns (bytes32 _walletId)
+```
+
+**Parameters**
+
+- `_projectId`: The project id.
+
+**Returns**
+
+- `_walletId`: The wallet id.
+
+### `setAdmins`
+
+Sets the wallet admins (at most `MAX_WALLET_ADMINS`).
+Emits `WalletAdminsSet` event.
+Can only be called by the wallet (project) owner while the wallet is still `CREATED`.
+Each listed admin must later call `confirmAdmin`.
+
+```solidity
+function setAdmins(
+        bytes32 _walletId,
+        PublicKey[] calldata _adminsPublicKeys,
+        uint64 _adminsThreshold
+    )
+        external
+```
+
+**Parameters**
+
+- `_walletId`: The wallet id.
+- `_adminsPublicKeys`: The wallet admins' public keys.
+- `_adminsThreshold`: The admins threshold.
+
+### `confirmAdmin`
+
+Confirms admin membership for `msg.sender` on this wallet.
+Confirmation is per-wallet membership consent, independent of set composition and threshold.
+Emits `WalletAdminConfirmed` event.
+
+```solidity
+function confirmAdmin(
+        bytes32 _walletId
+    )
+        external
+```
+
+**Parameters**
+
+- `_walletId`: The wallet id.
+
+### `setCosigners`
+
+Sets the wallet cosigners (at most `MAX_WALLET_COSIGNERS`).
+Emits `WalletCosignersSet` event.
+Can only be called by the wallet owner while the wallet is still `CREATED`.
+Optional: skip cosigners if the wallet does not need the extra authorization gate.
+See [Data providers and cosigners](/fcc/data-providers).
+
+```solidity
+function setCosigners(
+        bytes32 _walletId,
+        address[] calldata _cosigners,
+        uint64 _cosignersThreshold
+    )
+        external
+```
+
+**Parameters**
+
+- `_walletId`: The wallet id.
+- `_cosigners`: The wallet cosigners.
+- `_cosignersThreshold`: The cosigners threshold.
+
+### `confirmCosigner`
+
+Confirms cosigner membership for `msg.sender` on this wallet.
+Emits `WalletCosignerConfirmed` event.
+
+```solidity
+function confirmCosigner(
+        bytes32 _walletId
+    )
+        external
+```
+
+**Parameters**
+
+- `_walletId`: The wallet id.
+
+### `closeWalletInitialization`
+
+Closes wallet initialization and enables adding keys.
+All admins (and any configured cosigners) must be set and confirmed.
+They cannot be changed after this call.
+Moves status `CREATED → INITIALIZED` and emits `WalletInitialized`.
+Can only be called by the wallet owner.
+
+```solidity
+function closeWalletInitialization(
+        bytes32 _walletId
+    )
+        external
+```
+
+**Parameters**
+
+- `_walletId`: The wallet id.
+
+### `enableWallet`
+
+Enables a wallet for the first time: `INITIALIZED → PRODUCTION`.
+Requires the wallet's multisig threshold to be set and at least that many keys to be confirmed ([`IWalletKeyManager`](/fcc/reference/IWalletKeyManager)).
+Does **not** handle `PAUSED → PRODUCTION`; that path is on the wallet project pause facet (`unpauseWallets`).
+Emits `WalletEnabled` event.
+Can only be called by the wallet owner.
+
+```solidity
+function enableWallet(
+        bytes32 _walletId
+    )
+        external
+```
+
+**Parameters**
+
+- `_walletId`: The wallet id.
+
+### `getProjectWalletIds`
+
+Returns the list of wallet ids for the project.
+
+```solidity
+function getProjectWalletIds(
+        bytes32 _projectId
+    )
+        external view
+        returns (bytes32[] memory _walletIds)
+```
+
+**Parameters**
+
+- `_projectId`: The project id.
+
+**Returns**
+
+- `_walletIds`: The list of wallet ids.
+
+### `getWalletProjectId`
+
+Returns the wallet's project id.
+
+```solidity
+function getWalletProjectId(
+        bytes32 _walletId
+    )
+        external view
+        returns (bytes32 _projectId)
+```
+
+**Parameters**
+
+- `_walletId`: The wallet id.
+
+**Returns**
+
+- `_projectId`: The project id.
+
+### `getWalletAdminsPublicKeysAndThreshold`
+
+Returns the wallet's admin public keys and threshold.
+
+```solidity
+function getWalletAdminsPublicKeysAndThreshold(
+        bytes32 _walletId
+    )
+        external view
+        returns (
+            PublicKey[] memory _adminsPublicKeys,
+            uint64 _adminsThreshold
+        )
+```
+
+**Parameters**
+
+- `_walletId`: The wallet id.
+
+**Returns**
+
+- `_adminsPublicKeys`: The wallet admins' public keys.
+- `_adminsThreshold`: The admins threshold.
+
+### `getWalletAdminsAndThreshold`
+
+Returns the wallet's admin addresses (derived from public keys) and threshold.
+
+```solidity
+function getWalletAdminsAndThreshold(
+        bytes32 _walletId
+    )
+        external view
+        returns (
+            address[] memory _admins,
+            uint64 _adminsThreshold
+        )
+```
+
+**Parameters**
+
+- `_walletId`: The wallet id.
+
+**Returns**
+
+- `_admins`: The wallet admin addresses.
+- `_adminsThreshold`: The admins threshold.
+
+### `getWalletCosignersAndThreshold`
+
+Returns the wallet's cosigners and threshold.
+
+```solidity
+function getWalletCosignersAndThreshold(
+        bytes32 _walletId
+    )
+        external view
+        returns (
+            address[] memory _cosigners,
+            uint64 _cosignersThreshold
+        )
+```
+
+**Parameters**
+
+- `_walletId`: The wallet id.
+
+**Returns**
+
+- `_cosigners`: The wallet cosigners.
+- `_cosignersThreshold`: The cosigners threshold.
+
+### `getWalletStatus`
+
+Returns the wallet's status.
+
+```solidity
+function getWalletStatus(
+        bytes32 _walletId
+    )
+        external view
+        returns (WalletStatus _status)
+```
+
+**Parameters**
+
+- `_walletId`: The wallet id.
+
+**Returns**
+
+- `_status`: The status.
+
+## Events
+
+### `WalletCreated`
+
+```solidity
+event WalletCreated(
+        bytes32 indexed projectId,
+        bytes32 indexed walletId
+    )
+```
+
+**Parameters**
+
+- `projectId` (`bytes32 indexed projectId`)
+- `walletId` (`bytes32 indexed walletId`)
+
+### `WalletAdminsSet`
+
+```solidity
+event WalletAdminsSet(
+        bytes32 indexed walletId,
+        PublicKey[] adminsPublicKeys,
+        uint64 adminsThreshold
+    )
+```
+
+**Parameters**
+
+- `walletId` (`bytes32 indexed walletId`)
+- `adminsPublicKeys` (`PublicKey[] adminsPublicKeys`)
+- `adminsThreshold` (`uint64 adminsThreshold`)
+
+### `WalletAdminConfirmed`
+
+```solidity
+event WalletAdminConfirmed(
+        bytes32 indexed walletId,
+        address indexed admin
+    )
+```
+
+**Parameters**
+
+- `walletId` (`bytes32 indexed walletId`)
+- `admin` (`address indexed admin`)
+
+### `WalletCosignersSet`
+
+```solidity
+event WalletCosignersSet(
+        bytes32 indexed walletId,
+        address[] cosigners,
+        uint64 cosignersThreshold
+    )
+```
+
+**Parameters**
+
+- `walletId` (`bytes32 indexed walletId`)
+- `cosigners` (`address[] cosigners`)
+- `cosignersThreshold` (`uint64 cosignersThreshold`)
+
+### `WalletCosignerConfirmed`
+
+```solidity
+event WalletCosignerConfirmed(
+        bytes32 indexed walletId,
+        address indexed cosigner
+    )
+```
+
+**Parameters**
+
+- `walletId` (`bytes32 indexed walletId`)
+- `cosigner` (`address indexed cosigner`)
+
+### `WalletInitialized`
+
+Emitted when `closeWalletInitialization` moves the wallet to `INITIALIZED`.
+
+```solidity
+event WalletInitialized(
+        bytes32 indexed walletId
+    )
+```
+
+**Parameters**
+
+- `walletId` (`bytes32 indexed walletId`)
+
+### `WalletEnabled`
+
+Emitted when `enableWallet` moves the wallet to `PRODUCTION`.
+
+```solidity
+event WalletEnabled(
+        bytes32 indexed walletId
+    )
+```
+
+**Parameters**
+
+- `walletId` (`bytes32 indexed walletId`)
+
+## Errors
+
+Facet-specific errors are listed here.
+The interface also inherits shared [`ITeeCommonErrors`](/fcc/reference/ITeeCommonErrors), including `OnlyOwner`, `InvalidWalletStatus`, `InvalidThreshold`, `InvalidCosigner`, `DuplicatedCosigner`, and `InvalidAddress`.
+
+### `NotEnoughAdmins`
+
+The admins list is empty or below the required minimum for the threshold rules.
+
+```solidity
+error NotEnoughAdmins()
+```
+
+### `InvalidAdminsThreshold`
+
+The admins threshold is zero or larger than the admins set.
+
+```solidity
+error InvalidAdminsThreshold()
+```
+
+### `DuplicatedPublicKey`
+
+The same admin public key appears more than once.
+
+```solidity
+error DuplicatedPublicKey(PublicKey publicKey)
+```
+
+**Parameters**
+
+- `publicKey`: The duplicated key.
+
+### `InvalidCosignersThreshold`
+
+The cosigners threshold is zero (when cosigners are set) or larger than the cosigners set.
+
+```solidity
+error InvalidCosignersThreshold()
+```
+
+### `AdminsNotSet`
+
+`closeWalletInitialization` was called before any admins were set.
+
+```solidity
+error AdminsNotSet()
+```
+
+### `NotAllAdminsConfirmed`
+
+An admin has not called `confirmAdmin` yet.
+
+```solidity
+error NotAllAdminsConfirmed(address admin)
+```
+
+**Parameters**
+
+- `admin`: The admin address still missing confirmation.
+
+### `NotAllCosignersConfirmed`
+
+A cosigner has not called `confirmCosigner` yet.
+
+```solidity
+error NotAllCosignersConfirmed(address cosigner)
+```
+
+**Parameters**
+
+- `cosigner`: The cosigner address still missing confirmation.
+
+### `MultisigThresholdNotSet`
+
+`enableWallet` requires a positive multisig threshold on [`IWalletKeyManager`](/fcc/reference/IWalletKeyManager).
+
+```solidity
+error MultisigThresholdNotSet()
+```
+
+### `NotEnoughKeys`
+
+`enableWallet` requires at least `multisigThreshold` confirmed keys.
+
+```solidity
+error NotEnoughKeys()
+```
+
+### `InvalidAdminPublicKey`
+
+An admin public key is not a valid key for this wallet.
+
+```solidity
+error InvalidAdminPublicKey(PublicKey publicKey)
+```
+
+**Parameters**
+
+- `publicKey`: The invalid key.
+
+### `InvalidAdmin`
+
+`msg.sender` is not a listed admin for `confirmAdmin`.
+
+```solidity
+error InvalidAdmin()
+```
+
+### `TooManyAdmins`
+
+More than `MAX_WALLET_ADMINS` admins were supplied.
+
+```solidity
+error TooManyAdmins()
+```
+
+### `TooManyCosigners`
+
+More than `MAX_WALLET_COSIGNERS` cosigners were supplied.
+
+```solidity
+error TooManyCosigners()
+```
