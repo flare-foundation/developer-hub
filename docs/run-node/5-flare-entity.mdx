@@ -660,9 +660,15 @@ With prerequisites met, registrations complete, and FDC/FTSO components configur
    COMPOSE_PROFILES=fsp,fast-updates
    ```
 
-5. (Optional) By default, the `c-chain-indexer` requires 10 million blocks (≈20 days) of node history.
-   - To shorten this window, edit [`template-configs/c-chain-indexer.template.toml`](https://github.com/flare-foundation/flare-systems-deployment/blob/main/template-configs/c-chain-indexer.template.toml) to a value closer to the head of your node.
-   - **Do not** go below 350,000 blocks (≈7 days / 2 reward epochs), or the FTSO client may fail.
+5. Check the node history.
+   The `c-chain-indexer` indexes only the recent data the FSP needs, but filling an empty database needs a node with block history reaching back about 14 days on Flare and Songbird (1 day on Coston and Coston2).
+   - Since go-flare v1.15.1, a new node state syncs by default.
+     A state-synced node can serve an empty indexer once it has accumulated the required block history.
+     If a required block is missing, the indexer exits at startup naming the block it needs.
+   - Alternatively, let the indexer fully catch up using a node with the required history, then switch it to a state-synced node.
+     The replacement node must have all blocks from the point where indexing resumes so there is no gap.
+   - Retention is set by `history_epochs` in [`template-configs/c-chain-indexer.template.toml`](https://github.com/flare-foundation/flare-systems-deployment/blob/main/template-configs/c-chain-indexer.template.toml).
+     Keep the default `0` unless you need more history.
 
 6. Run the helper script to apply your `.env` settings to each Docker service:
 
@@ -763,7 +769,8 @@ It should then start submitting data successfully in the **following** reward ep
 T2.
 `system-client` fails to fetch sub-protocol data
 
-The `c-chain-indexer` may still be indexing data, once it's finished you should see `Indexer at block x` in the logs.
+The `c-chain-indexer` may still be indexing data.
+Once it's finished, you should see `Startup catchup complete` in the logs.
 If it's still processing blocks you will see various errors across all services.
 
 </details>
@@ -956,7 +963,7 @@ Here are primary areas and methods:
 **1. Validator node health:**
 
 - Monitor the `/ext/health` endpoint for validator status
-- Check validator connectivity using this [API endpoint](https://build.avax.network/docs/rpcs/p-chain#platformgetcurrentvalidators) to verify uptime/connected values
+- Check validator connectivity using the P-chain API method [`platform.getCurrentValidators`](https://github.com/flare-foundation/go-flare/blob/main/avalanchego/vms/platformvm/service.md#platformgetcurrentvalidators) to verify uptime/connected values
 - For advanced monitoring, use Avalanche's [Grafana dashboards](https://support.avax.network/en/articles/6159074-grafana-dashboards) which are compatible with Flare
 
 **2. FDC health monitoring:**

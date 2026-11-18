@@ -108,35 +108,34 @@ Mounting these allows you to manage them directly without entering the container
 
 2. **Create configuration file:** Create a `config.json` file.
    This example provides a standard configuration for a public RPC node.
-   Most of the C-Chain configuration options can be found in the [Avalanche C-Chain Configuration docs](https://build.avax.network/docs/nodes/chain-configs/avalanche-l1s/subnet-evm).
+   All C-Chain configuration options are listed in the [go-flare C-Chain config reference](https://github.com/flare-foundation/go-flare/blob/main/avalanchego/vms/saevm/cchain/config.md).
+   The C-Chain ignores options that are not listed there and logs a warning for each of them.
    Note that the default values are overridden only if specified in the given config file.
    Only provide values which differ from the defaults to avoid issues with future updates.
 
    ```json title="/opt/flare/conf/config.json"
    {
-     "snowman-api-enabled": false,
-     "coreth-admin-api-enabled": false,
-     "eth-apis": [
-       "eth",
-       "eth-filter",
+     "apis": [
+       "avalanche",
+       "chain",
        "net",
-       "web3",
-       "internal-eth",
-       "internal-blockchain",
-       "internal-transaction"
+       "price",
+       "subscription",
+       "tx",
+       "web3"
      ],
-     "rpc-gas-cap": 50000000,
-     "rpc-tx-fee-cap": 100,
      "pruning-enabled": true,
      "local-txs-enabled": false,
-     "api-max-duration": 0,
-     "api-max-blocks-per-request": 0,
-     "allow-unfinalized-queries": false,
-     "allow-unprotected-txs": false,
-     "remote-tx-gossip-only-enabled": false,
-     "log-level": "info"
+     "api-max-duration": "0s",
+     "allow-unprotected-txs": false
    }
    ```
+
+   The `apis` list above leaves out `trace`, which the C-Chain serves by default.
+   Its methods replay historical blocks and read and write files on the node, so a node whose API is reachable by others should not serve it.
+   `api-max-duration` takes a duration string such as `"30s"`.
+   The node rejects a number and fails to start.
+   For an archival node, set `"pruning-enabled": false` and `"state-sync-enabled": false`.
 
 ## Run the node
 
@@ -150,7 +149,7 @@ You can run your node using either the [Docker CLI](#using-docker-cli) directly 
    # 1. Find the latest stable release tag from:
    #    https://hub.docker.com/r/flarefoundation/go-flare/tags
    # 2. Set the tag name in the variable below (only use versioned tags):
-   LATEST_TAG="vX.Y.Z" # <-- REPLACE vX.Y.Z WITH THE ACTUAL LATEST TAG e.g. v1.12.0
+   LATEST_TAG="vX.Y.Z" # <-- REPLACE vX.Y.Z WITH THE ACTUAL LATEST TAG e.g. v1.15.1
    ```
 
 2. **Start the container:**
@@ -322,6 +321,8 @@ You can run your node using either the [Docker CLI](#using-docker-cli) directly 
 **Volumes Mounts**
 
 - `-v /mnt/db:/app/db`: Mount the local database directory to the default database directory of the container.
+  The C-Chain keeps its execution results in the chain data directory, which defaults to `/app/db/chainData` inside this mount.
+  A node that loses this directory cannot start and has to be resynced, so keep it on the same persistent volume.
 - `-v /opt/flare/conf:/app/conf/C`: Mount the local configuration directory to the default location of `config.json`.
 - `-v /opt/flare/logs:/app/logs`: Mount the local logs directory to the workloads default logs directory.
 
@@ -369,7 +370,7 @@ Docker Compose simplifies node management by defining the entire configuration i
         # 1. Find the latest stable release tag from:
         #    https://hub.docker.com/r/flarefoundation/go-flare/tags
         # 2. Set the tag name in the variable below (only use versioned tags):
-        image: flarefoundation/go-flare:vX.Y.Z # <-- REPLACE vX.Y.Z WITH THE ACTUAL LATEST TAG e.g. v1.12.0
+        image: flarefoundation/go-flare:vX.Y.Z # <-- REPLACE vX.Y.Z WITH THE ACTUAL LATEST TAG e.g. v1.15.1
         restart: on-failure
         environment:
           - NETWORK_ID=flare
@@ -396,7 +397,7 @@ Docker Compose simplifies node management by defining the entire configuration i
         # 1. Find the latest stable release tag from:
         #    https://hub.docker.com/r/flarefoundation/go-flare/tags
         # 2. Set the tag name in the variable below (only use versioned tags):
-        image: flarefoundation/go-flare:vX.Y.Z # <-- REPLACE vX.Y.Z WITH THE ACTUAL LATEST TAG e.g. v1.12.0
+        image: flarefoundation/go-flare:vX.Y.Z # <-- REPLACE vX.Y.Z WITH THE ACTUAL LATEST TAG e.g. v1.15.1
         restart: on-failure
         environment:
           - NETWORK_ID=costwo
@@ -423,7 +424,7 @@ Docker Compose simplifies node management by defining the entire configuration i
         # 1. Find the latest stable release tag from:
         #    https://hub.docker.com/r/flarefoundation/go-flare/tags
         # 2. Set the tag name in the variable below (only use versioned tags):
-        image: flarefoundation/go-flare:vX.Y.Z # <-- REPLACE vX.Y.Z WITH THE ACTUAL LATEST TAG e.g. v1.12.0
+        image: flarefoundation/go-flare:vX.Y.Z # <-- REPLACE vX.Y.Z WITH THE ACTUAL LATEST TAG e.g. v1.15.1
         restart: on-failure
         environment:
           - NETWORK_ID=songbird
@@ -450,7 +451,7 @@ Docker Compose simplifies node management by defining the entire configuration i
         # 1. Find the latest stable release tag from:
         #    https://hub.docker.com/r/flarefoundation/go-flare/tags
         # 2. Set the tag name in the variable below (only use versioned tags):
-        image: flarefoundation/go-flare:vX.Y.Z # <-- REPLACE vX.Y.Z WITH THE ACTUAL LATEST TAG e.g. v1.12.0
+        image: flarefoundation/go-flare:vX.Y.Z # <-- REPLACE vX.Y.Z WITH THE ACTUAL LATEST TAG e.g. v1.15.1
         restart: on-failure
         environment:
           - NETWORK_ID=coston
@@ -553,25 +554,28 @@ There are several environment variables to adjust your workload at runtime.
 The example Docker and Docker Compose guides above assumed some defaults and utilized built-in automation scripts for most of the configuration.
 Outlined below are all options available:
 
-|                  **Variable Name** | **Default**                                        | **Description**                                                          |
-| ---------------------------------: | :------------------------------------------------- | :----------------------------------------------------------------------- |
-|                       `NETWORK_ID` | `costwo`                                           | The network ID to connect to                                             |
-|                        `HTTP_HOST` | `0.0.0.0`                                          | HTTP host binding address                                                |
-|                        `HTTP_PORT` | `9650`                                             | The listening port for the HTTP host                                     |
-|                     `STAKING_PORT` | `9651`                                             | The staking port for bootstrapping nodes                                 |
-|                        `PUBLIC_IP` | (empty)                                            | Public facing IP. Must be set if `AUTOCONFIGURE_PUBLIC_IP=0`             |
-|                           `DB_DIR` | `/app/db`                                          | The database directory location                                          |
-|                          `DB_TYPE` | `leveldb`                                          | The database type to be used                                             |
-|                    `BOOTSTRAP_IPS` | (empty)                                            | A list of bootstrap server IPs                                           |
-|                    `BOOTSTRAP_IDS` | (empty)                                            | A list of bootstrap server IDs                                           |
-|                 `CHAIN_CONFIG_DIR` | `/app/conf`                                        | Configuration folder where you should mount your configuration file      |
-|                          `LOG_DIR` | `/app/logs`                                        | Logging directory                                                        |
-|                        `LOG_LEVEL` | `info`                                             | Logging verbosity level that is logged into the file                     |
-|          `AUTOCONFIGURE_PUBLIC_IP` | `0`                                                | Set to 1 to autoconfigure `PUBLIC_IP`, skipped if `PUBLIC_IP` is set     |
-|          `AUTOCONFIGURE_BOOTSTRAP` | `0`                                                | Set to 1 to autoconfigure `BOOTSTRAP_IPS` and `BOOTSTRAP_IDS`            |
-| `AUTOCONFIGURE_BOOTSTRAP_ENDPOINT` | `https://coston2-bootstrap.flare.network/ext/info` | Endpoint used for bootstrapping when `AUTOCONFIGURE_BOOTSTRAP=1`         |
-| `AUTOCONFIGURE_FALLBACK_ENDPOINTS` | (empty)                                            | Comma-divided fallback bootstrap endpoints if the primary endpoint fails |
-|                  `EXTRA_ARGUMENTS` | (empty)                                            | Extra arguments passed to flare binary                                   |
+|                     **Variable Name** | **Default**                                        | **Description**                                                          |
+| ------------------------------------: | :------------------------------------------------- | :----------------------------------------------------------------------- |
+|                          `NETWORK_ID` | `costwo`                                           | The network ID to connect to                                             |
+|                           `HTTP_HOST` | `0.0.0.0`                                          | HTTP host binding address                                                |
+|                           `HTTP_PORT` | `9650`                                             | The listening port for the HTTP host                                     |
+|                        `STAKING_PORT` | `9651`                                             | The staking port for bootstrapping nodes                                 |
+|                           `PUBLIC_IP` | (empty)                                            | Public facing IP. Must be set if `AUTOCONFIGURE_PUBLIC_IP=0`             |
+|                              `DB_DIR` | `/app/db`                                          | The database directory location                                          |
+|                             `DB_TYPE` | `leveldb`                                          | The database type to be used                                             |
+|                      `CHAIN_DATA_DIR` | `/app/db/chainData`                                | The chain data directory, must be persisted together with `DB_DIR`       |
+|                       `BOOTSTRAP_IPS` | (empty)                                            | A list of bootstrap server IPs                                           |
+|                       `BOOTSTRAP_IDS` | (empty)                                            | A list of bootstrap server IDs                                           |
+|                    `CHAIN_CONFIG_DIR` | `/app/conf`                                        | Configuration folder where you should mount your configuration file      |
+|                             `LOG_DIR` | `/app/logs`                                        | Logging directory                                                        |
+|                           `LOG_LEVEL` | `info`                                             | Logging verbosity level that is logged into the file                     |
+|             `AUTOCONFIGURE_PUBLIC_IP` | `1`                                                | Set to 1 to autoconfigure `PUBLIC_IP`, skipped if `PUBLIC_IP` is set     |
+|             `AUTOCONFIGURE_BOOTSTRAP` | `1`                                                | Set to 1 to autoconfigure `BOOTSTRAP_IPS` and `BOOTSTRAP_IDS`            |
+|    `AUTOCONFIGURE_BOOTSTRAP_ENDPOINT` | `https://coston2-bootstrap.flare.network/ext/info` | Endpoint used for bootstrapping when `AUTOCONFIGURE_BOOTSTRAP=1`         |
+|    `AUTOCONFIGURE_FALLBACK_ENDPOINTS` | (empty)                                            | Comma-divided fallback bootstrap endpoints if the primary endpoint fails |
+| `BOOTSTRAP_BEACON_CONNECTION_TIMEOUT` | `1m`                                               | Timeout for connecting to the bootstrap nodes                            |
+|                  `HTTP_ALLOWED_HOSTS` | `*`                                                | Allowed HTTP `Host` header values, with `*` allowing all values          |
+|                     `EXTRA_ARGUMENTS` | (empty)                                            | Extra arguments passed to flare binary                                   |
 
 </details>
 
@@ -608,7 +612,7 @@ Keep your node up-to-date with the latest stable release of `go-flare` for secur
     3.  Update the `docker-compose.yaml` file with the new tag and start the new container:
 
         ```bash
-        LATEST_TAG="vX.Y.Z" # <-- Replace with the actual latest tag e.g v1.12.0
+        LATEST_TAG="vX.Y.Z" # <-- Replace with the actual latest tag e.g v1.15.1
         yq -i ".services.node.image = flarefoundation/go-flare:${LATEST_TAG}" /opt/node/docker-compose.yaml
         docker compose -f /opt/node/docker-compose.yaml up -d
         ```
