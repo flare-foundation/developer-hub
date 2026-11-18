@@ -11,7 +11,7 @@ Prioritize conceptual accuracy over marketing shorthand.
 - Flare is an EVM-compatible Layer 1 blockchain.
 - Its key differentiator is enshrined data: core data protocols are built into the network rather than added as third-party infrastructure.
 - Flare is designed for data-intensive and interoperable applications.
-- Flare uses Avalanche Snowman++ consensus and targets roughly 1.8 second block times with single-slot finality.
+- Flare uses Avalanche Snowman++ consensus, averages roughly 1.1 second block times and has single-slot finality.
 
 ## Core Message
 

@@ -16,13 +16,13 @@ Make sure to check the [hardware requirements](/run-node/system-requirements) be
 ## Prerequisites
 
 - A machine meeting the [minimum hardware requirements](/run-node/system-requirements).
-- [Go](https://go.dev/doc/install) (`1.21.8`)
+- [Go](https://go.dev/doc/install) (`1.26.10` or later)
 - [git](https://git-scm.com/install/)
 - [GCC](https://gcc.gnu.org/install/)
 - [jq](https://stedolan.github.io/jq/download/)
 - [rsync](https://github.com/RsyncProject/rsync)
 - [cURL](https://curl.se/download.html)
-- [Ubuntu](https://ubuntu.com) (`>=24.10`)
+- [Ubuntu](https://ubuntu.com) (`24.04`)
 
 ## Build the binary
 
@@ -32,7 +32,7 @@ Make sure to check the [hardware requirements](/run-node/system-requirements) be
    # 1. Find the latest stable release tag from:
    #    https://github.com/flare-foundation/go-flare/releases
    # 2. Set the tag name in the variable below:
-   LATEST_TAG="vX.Y.Z" # <-- REPLACE vX.Y.Z WITH THE ACTUAL LATEST TAG e.g. v1.12.0
+   LATEST_TAG="vX.Y.Z" # <-- REPLACE vX.Y.Z WITH THE ACTUAL LATEST TAG e.g. v1.15.1
    ```
 
 2. Clone and build the binary:
@@ -49,7 +49,7 @@ Make sure to check the [hardware requirements](/run-node/system-requirements) be
 
    ```bash
    go test $(go list ./... | grep -v /tests/) # avalanchego unit tests
-   cd ../coreth
+   cd graft/coreth
    go test ./... # coreth unit tests
    cd -
    ```
@@ -183,63 +183,60 @@ If the node gets stuck during bootstrap (or it takes far longer than the estimat
 ### CLI parameters
 
 These are some of the most relevant CLI parameters you can use.
-Read more about them in the [AvalancheGo configs and flags](https://github.com/ava-labs/avalanchego/blob/master/config/config.md) documentation.
+Read more about them in the [go-flare configs and flags](https://github.com/flare-foundation/go-flare/blob/main/avalanchego/config/config.md) documentation.
 
 {/* prettier-ignore */}
-- [`--bootstrap-ips`](https://github.com/ava-labs/avalanchego/blob/master/config/config.md#bootstrapping),
-  [`--bootstrap-ids`](https://github.com/ava-labs/avalanchego/blob/master/config/config.md#bootstrapping):
+- [`--bootstrap-ips`](https://github.com/flare-foundation/go-flare/blob/main/avalanchego/config/config.md#bootstrapping),
+  [`--bootstrap-ids`](https://github.com/flare-foundation/go-flare/blob/main/avalanchego/config/config.md#bootstrapping):
   IP address and node ID of the peer used to connect to the rest of the network for bootstrapping. In the run command above, the bootstrap details are programmatically retrieved from the Flare bootstrap nodes upon startup. This is the recommended approach as the bootstrap node's IP and ID can rotate.
 
-- [`--http-host`](https://github.com/ava-labs/avalanchego/blob/master/config/config.md#http-server): Use `--http-host=` (empty) to allow connections from other machines.
+- [`--http-host`](https://github.com/flare-foundation/go-flare/blob/main/avalanchego/config/config.md#http-server): Use `--http-host=` (empty) to allow connections from other machines.
 Otherwise, only connections from `localhost` are accepted.
 
-- [`--http-port`](https://github.com/ava-labs/avalanchego/blob/master/config/config.md#http-server): The port through which the node will listen to API requests.
+- [`--http-port`](https://github.com/flare-foundation/go-flare/blob/main/avalanchego/config/config.md#http-server): The port through which the node will listen to API requests.
 The default value is `9650`.
 
-- [`--http-allowed-hosts`](https://github.com/ava-labs/avalanchego/blob/master/config/config.md#http-server): Use `--http-allowed-hosts="*"` to allow connections from any machine.
-Otherwise, only connections from `localhost` are accepted.
+- [`--http-allowed-hosts`](https://github.com/flare-foundation/go-flare/blob/main/avalanchego/config/config.md#http-server): Use `--http-allowed-hosts="*"` to accept any HTTP `Host` header value.
+By default, the only allowed hostname is `localhost`.
+Empty `Host` headers and IP addresses bypass the hostname check.
 
-- [`--staking-port`](https://github.com/ava-labs/avalanchego/blob/master/config/config.md#staking): The port through which the network peers will connect to this node externally.
+- [`--staking-port`](https://github.com/flare-foundation/go-flare/blob/main/avalanchego/config/config.md#staking): The port through which the network peers will connect to this node externally.
 Having this port accessible from the internet is required for correct node operation.
 The default value is `9651`.
 
-- [`--db-dir`](https://github.com/ava-labs/avalanchego/blob/master/config/config.md#database): Directory where the database is stored, defaults to `~/.avalanchego/db`.
+- [`--db-dir`](https://github.com/flare-foundation/go-flare/blob/main/avalanchego/config/config.md#database): Directory where the database is stored, defaults to `~/.avalanchego/db`.
 Make sure to use a disk with enough space as recommended in the [hardware requirements](/run-node/system-requirements) page.
 For example, you can use this option to store the database on an external drive.
 
-- [`--chain-config-dir`](https://github.com/ava-labs/avalanchego/blob/master/config/config.md#chain-configuration): Optional JSON configuration file for using non-default values.
+- [`--chain-data-dir`](https://github.com/flare-foundation/go-flare/blob/main/avalanchego/config/config.md#chain-configuration): Directory where the C-chain keeps its execution results, defaults to `~/.avalanchego/chainData`.
+  It is not part of the database directory, so if you move the database with `--db-dir`, set this option as well.
+  This directory must be on persistent storage together with the database.
+  A node that loses it cannot start and has to be resynced.
+
+- [`--chain-config-dir`](https://github.com/flare-foundation/go-flare/blob/main/avalanchego/config/config.md#chain-configuration): Optional JSON configuration file for using non-default values.
 
 #### Sample JSON configuration:
 
-Most of the C-Chain configuration options can be found in the [Avalanche C-Chain Configuration docs](https://build.avax.network/docs/nodes/chain-configs/avalanche-l1s/subnet-evm).
+All C-Chain configuration options are listed in the [go-flare C-Chain config reference](https://github.com/flare-foundation/go-flare/blob/main/avalanchego/vms/saevm/cchain/config.md).
+The C-Chain ignores options that are not listed there and logs a warning for each of them.
 Note that the default values are overridden only if specified in the given config file.
 Only provide values which differ from the defaults to avoid issues with future updates.
 
 ```json title="<chain-config-dir>/C/config.json"
 {
-  "snowman-api-enabled": false,
-  "coreth-admin-api-enabled": false,
-  "eth-apis": [
-    "eth",
-    "eth-filter",
-    "net",
-    "web3",
-    "internal-eth",
-    "internal-blockchain",
-    "internal-transaction"
-  ],
-  "rpc-gas-cap": 50000000,
-  "rpc-tx-fee-cap": 100,
+  "apis": ["avalanche", "chain", "net", "price", "subscription", "tx", "web3"],
   "pruning-enabled": true, // Set to false for archival nodes, but requires more disk space
+  "state-sync-enabled": true, // Set to false for archival nodes, state sync skips the historical state
   "local-txs-enabled": false,
-  "api-max-duration": 0,
-  "api-max-blocks-per-request": 0,
-  "allow-unfinalized-queries": false,
-  "allow-unprotected-txs": false,
-  "remote-tx-gossip-only-enabled": false,
-  "log-level": "info"
+  "api-max-duration": "0s",
+  "allow-unprotected-txs": false
 }
 ```
+
+The `apis` list above leaves out `trace`, which the C-Chain serves by default.
+Its methods replay historical blocks and read and write files on the node, so a node whose API is reachable by others should not serve it.
+`api-max-duration` takes a duration string such as `"30s"`.
+The node rejects a number and fails to start.
 
 ## Update the node
 
@@ -259,7 +256,7 @@ To update your node to a newer version of go-flare:
     # 1. Find the latest stable release tag from:
     #    https://github.com/flare-foundation/go-flare/releases
     # 2. Set the tag name in the variable below:
-    LATEST_TAG="vX.Y.Z" # <-- REPLACE vX.Y.Z WITH THE ACTUAL LATEST TAG e.g. v1.12.0
+    LATEST_TAG="vX.Y.Z" # <-- REPLACE vX.Y.Z WITH THE ACTUAL LATEST TAG e.g. v1.15.1
     git checkout ${LATEST_TAG}
     ```
 

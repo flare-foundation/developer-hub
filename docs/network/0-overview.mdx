@@ -343,6 +343,8 @@ Discover suitable options for your needs on the [Flare Wallets](https://flare.ne
   - **Type0** (Legacy) - Fee is calculated as `gasUsed * gasPrice`.
   - **Type2** (EIP-1559) - Fee is calculated as `(baseFee + priorityFee) * gas`.
   - In both cases, all transaction fees are burned.
+  - Since the Helicon upgrade (go-flare v1.15.1), a transaction is charged for at least half of its gas limit, even if it uses less.
+    Set the gas limit close to the expected gas use.
 
 ## Smart contracts
 
@@ -362,10 +364,12 @@ Discover suitable options for your needs on the [Flare Wallets](https://flare.ne
 
 - **Delegation:** In-protocol
 
-- **Block time:** ≈1.8 seconds
+- **Block time:** ≈1.1 seconds
 
 - **Finality:** Single-slot finality.
   Once a block is accepted through the consensus process (gossip), it's considered final.
+  Since the Helicon upgrade (go-flare v1.15.1), the C-chain executes accepted blocks asynchronously.
+  The `latest` block tag returns the last executed block, and the `safe` and `finalized` tags return the last settled block, whose results a later block has recorded.
 
 - **Transaction ordering:** Determined by the block proposer (leader), the default behavior is priority gas auction.
 
@@ -383,6 +387,8 @@ Discover suitable options for your needs on the [Flare Wallets](https://flare.ne
 - **Block Body Validation:** [Example Go implementation](https://github.com/flare-foundation/go-flare/blob/main/avalanchego/graft/coreth/core/block_validator.go).
 
 - **Verify transaction in block:** Verified using Merkle Patricia Trie proofs against the receipts root included in the block header.
+  Since the Helicon upgrade (go-flare v1.15.1), a block header's state root and receipts root commit to the results of the earlier blocks it settles (up to its `settledHeight`), not to its own transactions.
+  Verify a transaction's receipt against the header of the block that settles it.
 
 :::note[Adding Flare (FLR) to your exchange]
 

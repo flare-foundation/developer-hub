@@ -27,6 +27,8 @@ The minimum values are:
 | Minimum amount   |    1M FLR |    50K FLR |
 | Minimum duration |   60 days |    14 days |
 
+On Coston2, the minimum durations are 7 days for a self-bond and 24 hours for a delegation.
+
 At the end of every reward epoch (i.e. 3.5 days on Flare Mainnet), participants are rewarded according to how well their chosen validator performed in that period.
 
 **Limits**
@@ -41,7 +43,8 @@ The amount that you can stake and the rewards you can gain by staking are restri
   If you stake your funds on a validator with more than 5% of the total staked amount, you receive less FLR in reward.
   To maximize your reward, delegate your staking funds to a validator with less than 5% of the total staked amount of FLR.
 
-- **Maximum number of validators**: You can stake to any number of validators, but rewards, FlareDrops, and governance vote power only apply for up to 3 different validators.
+- **Maximum number of validators**: Rewards, FlareDrops, and governance vote power only apply for up to 3 different validators at a time.
+  On Flare and Coston2, the stake tool therefore refuses a stake or delegation to a fourth validator while stakes to three others are still active.
 
 Given that the Flare network uses two independent underlying chains, there is one extra step that must be considered.
 Funds must be transferred from the C-chain, where smart contracts run, to the P-chain, where staking happens.
@@ -53,7 +56,7 @@ After the staking period expires and funds are unlocked, they can be transferred
 
 Install the following tools:
 
-- [Node.js 18 LTS or newer](https://nodejs.org/) (which includes [npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm/))
+- [Node.js 24 or newer](https://nodejs.org/) (which includes [npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm/))
 
 ## Setup
 
@@ -63,22 +66,27 @@ Install the following tools:
    npm install @flarenetwork/flare-stake-tool -g
    ```
 
+   :::info[Ledger support]
+
+   Ledger support needs the USB module `node-hid`, whose install script npm runs when it installs the tool.
+   If your npm is configured with `ignore-scripts=true`, run that script afterwards:
+
+   ```bash
+   npm rebuild node-hid --global --ignore-scripts=false
+   ```
+
+   :::
+
 2. Verify installation:
 
    ```bash
-   flare-stake-tool
+   flare-stake-tool --version
    ```
 
-   The tool's banner is displayed:
+   The tool prints its version, which must be 5.x:
 
    ```text
-   _____ _                  ____  _        _           ____ _     ___
-   |  ___| | __ _ _ __ ___  / ___|| |_ __ _| | _____   / ___| |   |_ _|
-   | |_  | |/ _` | '__/ _ \ \___ \| __/ _` | |/ / _ \ | |   | |    | |
-   |  _| | | (_| | | |  __/  ___) | || (_| |   <  __/ | |___| |___ | |
-   |_|   |_|\__,_|_|  \___| |____/ \__\__,_|_|\_\___|  \____|_____|___|
-
-   Version: 4.x
+   5.2.0
    ```
 
 3. You can specify the account from which staking will take place in different ways - [using Ledger](#using-ledger-recommended) or [using a private key](#using-private-key).
@@ -89,18 +97,27 @@ Install the following tools:
 1. Connect your Ledger device to your computer and unlock it.
    Launch the [Ledger Wallet](https://shop.ledger.com/pages/ledger-wallet) (previously called Ledger Live) application and navigate to the **My Ledger** tab and ensure your device firmware is up-to-date.
 
-2. In the **App Catalog** tab, search for **Avalanche**, Click **Install**.
+2. In the **App Catalog** tab, search for **Flare**, Click **Install**.
+   The Flare app shows P-chain transactions decoded on the device.
+   The Avalanche app also works, but it signs P-chain transactions by their hash and needs blind signing enabled in its settings.
+   The Ethereum app signs only C-chain transactions, such as claiming rewards; the tool refuses it for P-chain transactions and for moving funds between the chains.
+
+   :::warning[Blind signing]
+
+   Claiming rewards is a contract call that every app signs blindly, because Ledger has no clear-signing data for Flare's contracts.
+   Enable blind signing in the app's settings before you claim, and check the tool's summary of the transaction before you confirm it.
+   When the tool asks the device to sign a hash, it prints the hash first: approve only if the device shows the same one.
+
+   :::
 
    :::info[App Size]
 
-   The Avalanche app requires 138 KB of space on a **Ledger Nano S**.
-   You may need to remove other apps if space is insufficient.
+   On a **Ledger Nano S**, you may need to remove other apps if space is insufficient.
 
    :::
 
 3. Exit Ledger Wallet and ensure the device is not connected to any other applications like MetaMask.
-   Open the Avalanche app on your Ledger device.
-   The screen should display **Avalanche Ready**.
+   Open the Flare app on your Ledger device.
 
 4. Open a terminal and run the following command to start the staking tool in interactive mode:
 
@@ -113,8 +130,8 @@ Install the following tools:
    ```text
    ? How do you want to connect your wallet? (Use arrow keys)
    > Ledger
-   Public Key
-   Private Key (not recommended)
+   Private Key (not recommended!)
+   Quit
    ```
 
    Select **Ledger** using the arrow keys and press **Enter**.
@@ -123,16 +140,21 @@ Install the following tools:
 
    ```text
    ? Which network do you want to connect to? (Use arrow keys)
-   > Flare (Mainnet)
-   Coston2 (Testnet)
-   LocalHost (for development only)
+   > Flare (mainnet)
+   Songbird (canary)
+   Coston2 (testnet)
+   Coston (testnet)
+   LocalHost (devnet)
    ```
 
-   Select **Flare (Mainnet)** and press **Enter**.
+   Select **Flare (mainnet)** and press **Enter**.
+
+   The tool then asks which derivation path to use: **BIP44 (Default)** (`m/44'/60'/0'/0/n`) or **Ledger Live** (`m/44'/60'/n'/0/0`), the path Ledger Wallet uses for its accounts.
+   Choose the one your account was created with.
    A "Fetching Addresses..." message appears briefly.
-   Select **Ledger Live** on the address derivation screen.
 
 7. The tool will then display a list of addresses linked to your Ledger device, select the desired address and press **Enter**.
+   The Ledger then shows that address: check that it matches the address in the terminal, and approve it on the device.
    Ensure this address has a sufficient `FLR` balance for transaction fees and staking.
    Funds can be transferred later if needed.
 
@@ -142,15 +164,23 @@ Install the following tools:
    ? What do you want to do? (Use arrow keys)
        View chain addresses
    >   Check on-chain balance
-       Get network info
+       View stakes
        Get validator info
        Move assets from C-chain to P-chain
        Move assets from P-chain to C-chain
        Add a validator node
+       Delegate to a validator node
+       Import Funds (exported, not yet imported)
+       Transfer funds to another P-chain address
+       Claim staking rewards
+       Add an auto-renewed validator node
+       Change the auto-renew period of a validator node
+       Quit
    ```
 
    As an example, select **Check on-chain balance** and press **Enter**.
-   The tool displays the C-chain and P-chain balances before exiting.
+   The tool displays the C-chain and P-chain balances and returns to the main menu.
+   Select **Quit** to exit.
 
 :::tip[Account Persistence]
 
@@ -170,12 +200,15 @@ It is highly recommended to [use Ledger](#using-ledger-recommended) instead.
 
 1. Create a text file (e.g. `/home/wallet/pvtKeyFile`) in a **secure folder** accessible only to you.
 
-2. Open the file and insert one of the following lines based on your private key format:
+2. Open the file and insert one of the following lines, with your key between the quotes:
 
    ```plaintext
-   PRIVATE_KEY_CB58="" // Use this if your key is in CB58 format, keep the quotes.
-   PRIVATE_KEY_HEX="" // Use this if your key contains 64 hexadecimal characters, keep the quotes.
+   PRIVATE_KEY_HEX="<64 hexadecimal characters>"
+   PRIVATE_KEY_CB58="<key in CB58 format>"
    ```
+
+   Use `PRIVATE_KEY_HEX` if your key is 64 hexadecimal characters, or `PRIVATE_KEY_CB58` if it's in CB58 format.
+   Don't add anything after the closing quote: the tool reads a comment there as part of the key and refuses it.
 
 3. Open a terminal and run the following command to start the staking tool in interactive mode:
 
@@ -188,16 +221,15 @@ It is highly recommended to [use Ledger](#using-ledger-recommended) instead.
    ```plaintext
    ? How do you want to connect your wallet? (Use arrow keys)
        Ledger
-       Public Key
-   >   Private Key (not recommended)
+   >   Private Key (not recommended!)
+       Quit
    ```
 
    Select **Private Key** using the arrow keys and press **Enter**.
 
-5. You'll see a security warning, enter the full file path where your private key file is stored and press **Enter**.
+5. Enter the full path of your private key file and press **Enter**:
 
    ```text
-   Warning: You are connecting using your private key which is not recommended
    ? Enter Path to Private Key file (E.g. /home/wallet/pvtKeyFile):
    ```
 
@@ -205,26 +237,36 @@ It is highly recommended to [use Ledger](#using-ledger-recommended) instead.
 
    ```plaintext
    ? Which network do you want to connect to? (Use arrow keys)
-   > Flare (Mainnet)
-   Coston2 (Testnet)
-   LocalHost (for development only)
+   > Flare (mainnet)
+   Songbird (canary)
+   Coston2 (testnet)
+   Coston (testnet)
+   LocalHost (devnet)
    ```
 
-   Select **Flare (Mainnet)** and press **Enter**.
+   Select **Flare (mainnet)** and press **Enter**.
 
 7. The main menu will now appear:
    ```text
    ? What do you want to do? (Use arrow keys)
        View chain addresses
    >   Check on-chain balance
-       Get network info
+       View stakes
        Get validator info
        Move assets from C-chain to P-chain
        Move assets from P-chain to C-chain
        Add a validator node
+       Delegate to a validator node
+       Import Funds (exported, not yet imported)
+       Transfer funds to another P-chain address
+       Claim staking rewards
+       Add an auto-renewed validator node
+       Change the auto-renew period of a validator node
+       Quit
    ```
    As an example, select **Check on-chain balance** and press **Enter**.
-   The tool displays the C-chain and P-chain balances before exiting.
+   The tool displays the C-chain and P-chain balances and returns to the main menu.
+   Select **Quit** to exit.
 
 ### Check validator info
 
@@ -244,8 +286,10 @@ It is highly recommended to [use Ledger](#using-ledger-recommended) instead.
      flare-stake-tool info validators
      ```
 
-2. Note down the desired staking **start time** and **end time**: When staking to an existing validator, both these times must be inside the period when the validator is active.
-   If you specify a period when the validator is inactive, your transaction on the P-chain reverts.
+2. Note down the desired staking **end time**: The stake starts when the network accepts the transaction.
+   When staking to an existing validator, the end time must be inside the period when the validator is active.
+   For an auto-renewed validator, it must be inside the validator's current cycle.
+   Otherwise the tool refuses the delegation before anything is signed.
 
 ## Move funds to P-chain
 
@@ -261,18 +305,18 @@ It is highly recommended to [use Ledger](#using-ledger-recommended) instead.
 
    ```plaintext
    ? How do you want to connect your wallet? Ledger
-   You already have an existing Ctx file with the following parameters -
+   You already have a ctx.json with the following parameters:
+   Wallet: ledger
    Public Key: ●●●●●●●●●●●●●●●●
    Network: flare
    Eth Address: 0x●●●●●●●●
-   ? Do you wish to continue with this? yes
+   ? Do you wish to continue with this? Yes
    ? What do you want to do? Check on-chain balance
-   Using network: flare
    Balances on the network "flare"
    // highlight-next-line
-   C-chain 0x●●●●●●●●: 100000.0 FLR
+   C-chain 0x●●●●●●●●: 100000 FLR
    // highlight-next-line
-   P-chain P-flare●●●●●●●●: 50000.0 FLR
+   P-chain P-flare●●●●●●●●: 50000 FLR
    ```
 
    If you already have funds on the P-chain, skip the next step.
@@ -288,31 +332,39 @@ It is highly recommended to [use Ledger](#using-ledger-recommended) instead.
    ```plaintext
    ? What do you want to do? Move assets from C-chain to P-chain
    ? Enter amount (in FLR): 50000
-   ? Enter fees (in FLR): (1)
+   ? Enter fee (in FLR) (Enter accepts 0.011 FLR: twice the current base fee, headroom for a rise before it lands):
    ```
 
    :::warning[Transaction Fees]
 
-   When transferring from the C-chain to the P-chain, transaction fees are wholly paid from the C-chain.
-   Make sure you leave enough funds on the C-chain after the transfer, or it will fail.
+   When transferring from the C-chain to the P-chain, the export's fee is paid from the C-chain, and the import's fee is taken from the funds that arrive on the P-chain.
+   Make sure you leave enough funds on the C-chain for the export's fee, or it will fail.
 
    :::
 
 3. Transfers between chains are made of two operations: an **export** from the C-chain followed by an **import** to the P-chain.
    Therefore, you are asked to confirm two transactions.
+   Before each one, the tool shows what it is about to sign: check the account, the amount and the fee before you confirm.
 
    ```plaintext
    // highlight-next-line
    Please approve export transaction
-   Using network: flare
-   Fetching account from ledger...
-   Creating export transaction...
-   Transaction finalized!
+   About to sign exportCP on flare:
+     Account: 0x●●●●●●●● / P-flare●●●●●●●●
+     Amount: 50000 FLR from the C-chain to the P-chain
+     Fee: 0.011 FLR
+   ? Sign and send this transaction? Yes
+   Transaction with hash ●●●●●●●● built and sent to the network
+   Fee paid: 0.011 FLR
    // highlight-next-line
    Please approve import transaction
-   Using network: flare
-   Fetching account from ledger...
-   Creating import transaction...
+   About to sign importCP on flare:
+     Account: 0x●●●●●●●● / P-flare●●●●●●●●
+     Amount: ●●●●●●●● FLR to the P-chain
+     Fee: ●●●●●●●● FLR
+   ? Sign and send this transaction? Yes
+   Transaction with hash ●●●●●●●● built and sent to the network
+   Fee paid: ●●●●●●●● FLR
    ```
 
 If you encounter any issues during this process, refer to the [Troubleshooting](#troubleshooting) section.
@@ -365,73 +417,78 @@ If you encounter any issues during this process, refer to the [Troubleshooting](
    This is the percentage of all rewards that the node owner keeps.
    The rest is split proportionally between the self-bond and all delegators that contributed stake.
    10 means 10%, so the maximum value is 100.
+   On Flare and Coston2, the minimum is 20%, which is also what the tool uses when you press **Enter**.
 
    ```plaintext
    ? What do you want to do? Add a validator node
-   ? Enter amount (in FLR): 50000
-   ? Enter Node NodeId (E.g. NodeID-FQKTLuZHEsjCxPeFTFgsojsucmdyNDsz1): NodeID-●●●●●●●●
-   ? Enter end time(E.g. 1693185095): ●●●●●●●●
-   ? Enter delegation fee(E.g. 10): 10
+   ? Enter amount (in FLR): 1000000
+   ? Enter NodeId (E.g. NodeID-FQKTLuZHEsjCxPeFTFgsojsucmdyNDsz1): NodeID-●●●●●●●●
+   ? Enter end time (unix seconds, e.g. 1693185095, or a duration from now such as 2d12h): ●●●●●●●●
+   ? Enter delegation fee (E.g. 10; Enter accepts 20%): 20
    ? Please enter the popBLSPublicKey: 0x●●●●●●●●
    ? Please enter the popBLSSignature: 0x●●●●●●●●
    ```
 
-4. You are then asked to confirm the staking transaction on your hardware wallet.
+4. The tool shows a summary of the transaction, including the account, network, amount, node, end time and fee, and asks you to confirm it.
+   After you confirm, approve the transaction on your hardware wallet.
 
    ```plaintext
-   Using network: flare
-   Fetching account from ledger...
-   Creating export transaction...
    // highlight-next-line
-   Please review and sign the transaction on your ledger device...
-   Sending transaction to the node...
-   Transaction with id ●●●●●●●● sent to the node
-   Finished execution
+   ? Sign and send this transaction? Yes
    ```
 
-   Your stake is now locked and will start accruing rewards after the configured start time arrives.
+   Your stake is now locked and starts accruing rewards once the network accepts the transaction.
    When the end time arrives, the funds will be automatically unlocked.
 
 If you encounter any issues, refer to [Troubleshooting](#troubleshooting).
 
+### Auto-renewed validators
+
+Since the Helicon upgrade (go-flare v1.15.1), a validator can be registered without an end time.
+Its stake is renewed automatically every period, as long as the node keeps at least 90% uptime in each cycle, until you stop it.
+If the node misses the uptime requirement, the validator ends with its current cycle and its stake is returned.
+
+1. Select **Add an auto-renewed validator node** when executing `flare-stake-tool interactive`.
+   Instead of an end time, the tool asks for the validation period, in seconds or as a duration such as `60d`.
+   The period must be within the network's minimum and maximum stake duration.
+
+2. To change the period from the next cycle on, select **Change the auto-renew period of a validator node**.
+   A period of `0` stops renewal, and the stake is returned at the end of the current cycle.
+   Only the validator authority, by default the address that registered the validator, can change the period.
+
+The same operations are available as commands:
+
+```bash
+flare-stake-tool addAutoRenewedValidator -n <nodeId> -a <amount> --period 60d --delegation-fee <delegation-fee> --pop-bls-public-key <popBlsPublicKey> --pop-bls-signature <popBlsSignature> --ledger --network flare
+flare-stake-tool setAutoRenewedValidatorConfig -n <nodeId> --period 0 --ledger --network flare
+```
+
 ## Check Stake
 
-1. You can now double-check that the operation has been properly registered by looking at the current list of validators:
+1. To list your own stakes and delegations, run:
 
    ```bash
-   flare-stake-tool info validators > validators.txt
+   flare-stake-tool info stakes
    ```
 
-   This creates a file called `validators.txt`.
-   Open it and search for the line containing the **P-chain address** of your account.
-   If you don't remember your address run:
+   Or select **View stakes** in interactive mode.
+   The command uses the account saved in `ctx.json` by the Ledger setup; for a private-key account, add `--env-path <path to your key file> --network flare`.
+   The tool lists each stake with its node, amount, end time and transaction ID, then the number of different validators you stake to and the total:
 
-   ```bash
-   flare-stake-tool info addresses
+   ```plaintext
+   Stakes on the network "flare"
+   P-flare●●●●●●●●: 2 stakes on 2 nodes (at most 3 nodes at once on flare)
+   delegation NodeID-●●●●●●●● 50000 FLR, ends 2026-12-01T00:00:00.000Z (1796083200), tx ●●●●●●●●
+   validation NodeID-●●●●●●●● 1000000 FLR, ends 2027-01-01T00:00:00.000Z (1798761600), tx ●●●●●●●●
+   Total staked: 1050000 FLR
    ```
 
-2. If your account has stake on any node, you will find a section similar to:
+   Check that the node, amount and end time match the values you configured.
+   For an auto-renewed validator, the line shows the end of its current cycle.
+   Add `--json` to get the same information as JSON, for scripts.
 
-   ```json
-   {
-     "txID": "28Yf5yQ3xt9yaMvfZ1RP5jkCkT4y2pfD86UheZUHFVng2tFcWd",
-     "startTime": "1688569201",
-     "endTime": "1696345201",
-     "stakeAmount": "16750000000000000",
-     "nodeID": "NodeID-C6i8mruq11VdxGQ7tiUBgrRqoLBot86df",
-     "rewardOwner": {
-       "locktime": "0",
-       "threshold": "1",
-       "addresses": [
-         // highlight-next-line
-         "P-flare19c8zfml39x6efnw5j90nl85dmwdqhluwhrxz9g"
-       ]
-     }
-   }
-   ```
-
-   Check that the `stakeAmount` (in wei), `nodeID`, `startTime`, and `endTime` match the values you configured.
-   If you have multiple active stakes, your address will show up multiple times.
+2. For the details of the validators themselves, such as their delegation fee, uptime and delegations, run `flare-stake-tool info validators`.
+   It prints all current validators as JSON, with amounts (`weight`) in nFLR: 1 FLR is 1,000,000,000 nFLR.
 
 ## Move funds back to C-chain
 
@@ -443,7 +500,8 @@ If you encounter any issues, refer to [Troubleshooting](#troubleshooting).
    flare-stake-tool interactive
    ```
 
-2. You are asked the amount of FLR you want to transfer:
+2. You are asked the amount of FLR you want to transfer.
+   The prompt offers your whole spendable P-chain balance, less the export's fee: press **Enter** to move all of it, or type another amount.
 
    ```plaintext
    ? What do you want to do? Move assets from P-chain to C-chain
@@ -452,8 +510,8 @@ If you encounter any issues, refer to [Troubleshooting](#troubleshooting).
 
    :::warning[Transaction Fees]
 
-   When transferring from the P to the C-chain, transaction fees are paid from BOTH chains.
-   Make sure you leave enough funds on both chains after the transfer, or it will fail.
+   When transferring from the P-chain to the C-chain, the export's fee is paid from the P-chain, and the import's fee is taken from the funds that arrive on the C-chain.
+   Make sure you leave enough funds on the P-chain for the export's fee, or it will fail.
 
    :::
 
@@ -462,16 +520,13 @@ If you encounter any issues, refer to [Troubleshooting](#troubleshooting).
    ```plaintext
    // highlight-next-line
    Please approve export transaction
-   Using network: flare
-   Fetching account from ledger...
-   Creating export transaction...
-   ? Enter fees (in FLR): (1)
+   ? Sign and send this transaction? Yes
+   Transaction with hash ●●●●●●●● built and sent to the network
+   ? Enter fee (in FLR) (Enter accepts 0.011 FLR: twice the current base fee, headroom for a rise before it lands):
    // highlight-next-line
    Please approve import transaction
-   Using network: flare
-   Fetching account from ledger...
-   Creating import transaction...
-   Finished execution
+   ? Sign and send this transaction? Yes
+   Transaction with hash ●●●●●●●● built and sent to the network
    ```
 
 If you encounter any issues, refer to [Troubleshooting](#troubleshooting).
@@ -487,14 +542,14 @@ Every 4 reward epochs, rewards are accumulated in a dedicated smart contract and
    flare-stake-tool interactive
    ```
 
-   You are shown the amount of pending rewards (in wei) and are asked how much you want to claim (in FLR):
+   You are shown the amount of pending rewards and are asked how much you want to claim (in FLR):
 
    ```plaintext
    ? What do you want to do? Claim staking rewards
    State of rewards for 0x●●●●●●●●:
-   Total rewards: 2000.0 FLR
-   Claimed rewards: 1010.0 FLR
-   Unclaimed rewards: 990.0 FLR
+   Total rewards: 2000 FLR
+   Claimed rewards: 1010 FLR
+   Unclaimed rewards: 990 FLR
    ```
 
 2. Claim all or a portion of the rewards and optionally choose to wrap them or not:
@@ -504,7 +559,7 @@ Every 4 reward epochs, rewards are accumulated in a dedicated smart contract and
    <TabItem value="all" label="Claim All" default>
 
    ```plaintext
-   ? Do you want to claim all unclaimed rewards? (total unclaimed: 990.0 FLR) Yes
+   ? Do you want to claim all unclaimed rewards? (total unclaimed: 990 FLR) Yes
    ? Should claimed rewards be wrapped? Yes
    ```
 
@@ -513,7 +568,7 @@ Every 4 reward epochs, rewards are accumulated in a dedicated smart contract and
    <TabItem value="partial" label="Claim Partial">
 
    ```plaintext
-   ? Do you want to claim all unclaimed rewards? (total unclaimed: 990.0 FLR) No
+   ? Do you want to claim all unclaimed rewards? (total unclaimed: 990 FLR) No
    ? Please enter the amount to claim: 100
    ? Should claimed rewards be wrapped? Yes
    ```
@@ -528,12 +583,10 @@ Every 4 reward epochs, rewards are accumulated in a dedicated smart contract and
    ? Please enter the recipient address (default address is reward owner): 0x●●●●●●●●
    ```
 
-   You are then asked to confirm the staking transaction on your hardware wallet.
+   You are then asked to confirm the claim transaction and approve it on your hardware wallet.
 
    ```plaintext
-   Using network: flare
-   Creating claim transaction...
-   Signing transaction...
+   ? Sign and send this transaction? Yes
    // highlight-next-line
    Transaction with hash 0x●●●●●●●● built and sent to the network
    ```
@@ -550,17 +603,16 @@ Every 4 reward epochs, rewards are accumulated in a dedicated smart contract and
    ? What do you want to do?
    ❯ Transfer funds to another P-chain address
    Claim staking rewards
-   Quit
+   Add an auto-renewed validator node
    ```
 
 2. Select the amount to transfer and the destination P-chain address:
 
    ```plaintext
    ? Enter amount (in FLR): 100
-   ? Please enter the destination P-chain address: P-flare●●●●●●●●
-   Using network: flare
-   Fetching account from ledger...
-   Creating transfer transaction...
+   ? Enter destination P-chain address: P-flare●●●●●●●●
+   ? Sign and send this transaction? Yes
+   Transaction with hash ●●●●●●●● built and sent to the network
    ```
 
 ## Troubleshooting
@@ -571,7 +623,7 @@ Cannot connect to Ledger device, no Device, cannot retrieve addresses, or simila
 
 Make sure:
 
-- The device is connected, the Avalanche app is opened, and it shows the "Avalanche Ready" message.
+- The device is connected and the Flare (or Avalanche) app is open.
 - No other application like Ledger Wallet or MetaMask is connected to the device.
 - The device is not in stand-by mode.
 - You are not running on Windows from a Linux terminal (WSL).
@@ -608,7 +660,7 @@ Import the funds using the interactive tool:
 
   ```plaintext
   ? What do you want to do?
-    ❯ Import Funds (in case export fails for either P chain or C chain)
+    ❯ Import Funds (exported, not yet imported)
   ```
 
   ```plaintext
@@ -624,7 +676,7 @@ Import the funds using the interactive tool:
 
   ```plaintext
   ? What do you want to do?
-    ❯ Import Funds (in case export fails for either P chain or C chain)
+    ❯ Import Funds (exported, not yet imported)
   ```
 
   ```plaintext
@@ -636,21 +688,24 @@ Import the funds using the interactive tool:
 
 <details>
 T4.
-Unsupported digital routine.
+The Ledger USB module node-hid has no binary.
 
-If you get the following error message:
-
-```text
-E: Error: error:0308010C:digital envelope routines::unsupported
-```
-
-Make sure you are using the correct Node.js version, as advised in the [Prerequisites section](#prerequisites).
-
-You can find out the version of Node.js you are running with the following command:
+npm installed the tool without running the install script of `node-hid`, the module that talks to the Ledger, for example because your npm is configured with `ignore-scripts=true`.
+Every command works except those that use the Ledger.
+Run the script with:
 
 ```bash
-node --version
+npm rebuild node-hid --global --ignore-scripts=false
 ```
+
+</details>
+
+<details>
+T5.
+The Ledger Ethereum app cannot sign P-chain or atomic transactions.
+
+The Ethereum app signs only C-chain transactions.
+Open the Flare app on the device and retry.
 
 </details>
 
@@ -669,10 +724,10 @@ You can register your address manually using the block explorer and the `Address
    flare-stake-tool info addresses
    ```
 
+   As with `info stakes`, add `--env-path <path to your key file> --network flare` for a private-key account.
    Copy the hexadecimal string starting with `0x` in the last line.
 
    ```plaintext
-   Using network: flare
    Addresses on the network "flare"
    P-chain address: P-flare●●●●●●●●
    C-chain address hex: 0x●●●●●●●●

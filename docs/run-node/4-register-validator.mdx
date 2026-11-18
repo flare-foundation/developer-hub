@@ -57,8 +57,8 @@ Failure to implement these measures significantly increases the risk to your nod
 
 ### Recommended hardening
 
-- Configure your node to **enable only** the essential APIs required for validation (often just `["web3"]` within `eth-apis`).
-  Explicitly disable admin APIs (`snowman-api-enabled`, `coreth-admin-api-enabled`).
+- Configure your node to **enable only** the essential APIs required for validation (often just `["web3"]` within `apis`).
+  Keep the node's admin API disabled (`--api-admin-enabled`, off by default).
 - **Firewall Best Practices:**
   - Implement a stateful firewall with a default-deny policy for inbound traffic.
   - Consider blocking unnecessary outbound traffic.
@@ -69,45 +69,19 @@ Failure to implement these measures significantly increases the risk to your nod
 ## Configure the node
 
 As described in [Secure the node](#secure-the-node), a validator node should have minimal APIs enabled.
-Below is a sample `config.json` demonstrating a secure configuration with limited `eth-apis` and disabled admin APIs:
-Most of the C-Chain configuration options can be found in the [Avalanche C-Chain Configuration docs](https://build.avax.network/docs/nodes/chain-configs/avalanche-l1s/subnet-evm).
+Below is a sample `config.json` demonstrating a secure configuration with limited `apis`:
+All C-Chain configuration options are listed in the [go-flare C-Chain config reference](https://github.com/flare-foundation/go-flare/blob/main/avalanchego/vms/saevm/cchain/config.md).
+The C-Chain ignores options that are not listed there and logs a warning for each of them.
 Note that the default values are overridden only if specified in the given config file.
 Only provide values which differ from the defaults to avoid issues with future updates.
 
 ```json title="config.json"
 {
-  "snowman-api-enabled": false,
-  "coreth-admin-api-enabled": false,
-  "coreth-admin-api-dir": "",
-  "eth-apis": ["web3"],
-  "continuous-profiler-dir": "",
-  "continuous-profiler-frequency": 900000000000,
-  "continuous-profiler-max-files": 5,
-  "rpc-gas-cap": 50000000,
-  "rpc-tx-fee-cap": 100,
-  "preimages-enabled": false,
+  "apis": ["web3"],
   "pruning-enabled": true,
-  "snapshot-async": true,
-  "snapshot-verification-enabled": false,
-  "metrics-enabled": true,
-  "metrics-expensive-enabled": false,
   "local-txs-enabled": false,
-  "api-max-duration": 30000000000,
-  "ws-cpu-refill-rate": 0,
-  "ws-cpu-max-stored": 0,
-  "api-max-blocks-per-request": 30,
-  "allow-unfinalized-queries": false,
-  "allow-unprotected-txs": false,
-  "keystore-directory": "",
-  "keystore-external-signer": "",
-  "keystore-insecure-unlock-allowed": false,
-  "remote-tx-gossip-only-enabled": false,
-  "tx-regossip-frequency": 60000000000,
-  "tx-regossip-max-size": 15,
-  "log-level": "info",
-  "offline-pruning-enabled": false,
-  "offline-pruning-bloom-filter-size": 512,
-  "offline-pruning-data-directory": ""
+  "api-max-duration": "30s",
+  "allow-unprotected-txs": false
 }
 ```
 
@@ -188,12 +162,12 @@ This ensures your node always starts with the correct `Node-ID`.
 
    ```bash
    # Find the latest tag at [https://hub.docker.com/r/flarefoundation/go-flare/tags](https://hub.docker.com/r/flarefoundation/go-flare/tags)
-   LATEST_TAG="vX.Y.Z" # e.g., v1.12.0
+   LATEST_TAG="vX.Y.Z" # e.g., v1.15.1
 
    # Mount the staking volume and set the staking path environment variables
    docker run -d --name flare-node \
      -v /mnt/flare-db:/app/db \
-     -v /opt/flare/conf:/app/conf \
+     -v /opt/flare/conf:/app/conf/C \
      # highlight-next-line
      -v /opt/flare/staking:/app/staking \
      -v /opt/flare/logs:/app/logs \
@@ -204,7 +178,7 @@ This ensures your node always starts with the correct `Node-ID`.
      -e AUTOCONFIGURE_BOOTSTRAP="1" \
      -e AUTOCONFIGURE_BOOTSTRAP_ENDPOINT="https://flare-bootstrap.flare.network/ext/info" \
      # highlight-next-line
-     -e EXTRA_ARGUMENTS=--staking-tls-cert-file=/app/staking/staker.crt --staking-tls-key-file=/app/staking/staker.key --staking-signer-key-file=/app/staking/signer.key \
+     -e EXTRA_ARGUMENTS="--staking-tls-cert-file=/app/staking/staker.crt --staking-tls-key-file=/app/staking/staker.key --staking-signer-key-file=/app/staking/signer.key" \
      flarefoundation/go-flare:${LATEST_TAG}
    ```
 
@@ -226,7 +200,7 @@ This ensures your node always starts with the correct `Node-ID`.
          - "0.0.0.0:9651:9651"
        volumes:
          - /mnt/flare-db:/app/db
-         - /opt/flare/conf:/app/conf
+         - /opt/flare/conf:/app/conf/C
          # highlight-next-line
          - /opt/flare/staking:/app/staking
          - /opt/flare/logs:/app/logs
@@ -323,7 +297,8 @@ The goal is for funds staked on the P-chain to have the same rights as wrapped F
 | **Minimum delegation duration** | 2 weeks   | The minimum time delegated funds must be locked.                                                                |
 | **Stake delay**                 | Immediate | The time between submitting a stake and it becoming active.                                                     |
 | **Delegation factor**           | 15x       | A multiplier on the self-bond that sets the maximum total stake (including delegations) a validator can accept. |
-| **Maximum total stake**         | 200M FLR  | The absolute maximum stake a validator can have, including all delegations.                                     |
+| **Maximum total stake**         | 300M FLR  | The absolute maximum stake a validator can have, including all delegations.                                     |
+| **Minimum delegation fee**      | 20%       | The minimum share of rewards a validator can set as its delegation fee.                                         |
 | **Max validators per entity**   | 4         | The maximum number of validators a single entity can operate.                                                   |
 
 See [FIP.05](https://proposals.flare.network/FIP/FIP_5.html) for further details.
@@ -336,6 +311,10 @@ Once you set the self-bond and its expiry, both are locked.
 You can't add to or remove the self-bond until the expiry has passed - choose values carefully.
 
 :::
+
+Since the Helicon upgrade (go-flare v1.15.1), you can also register an auto-renewed validator.
+It has no end time and renews its stake every period until you stop it.
+See [auto-renewed validators](/network/guides/using-flare-stake-tool#auto-renewed-validators).
 
 To perform the actual staking transaction (the self-bond), you will use the Flare Stake Tool.
 To retrieve your `Node-ID`, you need to query your running node:
@@ -392,7 +371,7 @@ You can monitor its status using an API call or a validator monitoring site.
   - `uptime`: Percentage of time the queried node has reported the peer as online and validating.
   - `connected`: If the node is connected and tracks the network.
 
-  See the full P-chain API details in the [Avalanche Documentation](https://build.avax.network/docs/rpcs/p-chain).
+  See the full P-chain API details in the [go-flare P-chain API reference](https://github.com/flare-foundation/go-flare/blob/main/avalanchego/vms/platformvm/service.md).
 
 - **Via Web:**
 
