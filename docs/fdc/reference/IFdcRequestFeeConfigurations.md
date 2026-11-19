@@ -21,8 +21,12 @@ It allows for querying the base fee required for specific attestation requests.
 
 ### getRequestFee
 
-Method to get the base fee for an attestation request.
-It reverts if the request is not supported.
+Returns the **minimum** base fee (in wei of the network’s native token) required to submit an attestation request to [`FdcHub.requestAttestation`](/fdc/reference/IFdcHub#requestattestation).
+
+The fee is looked up from the **attestation type** and **source** encoded in the first two 32-byte words of `_data` (for example `EVMTransaction` + `testETH`).
+The remainder of the ABI-encoded request body does not change the base fee.
+
+Reverts if that type and source pair is not supported (no fee configured).
 
 ```solidity
 function getRequestFee(
@@ -34,11 +38,19 @@ function getRequestFee(
 
 **Parameters**
 
-- `_data`: ABI encoded attestation request
+- `_data`: ABI-encoded attestation request (the same `abiEncodedRequest` bytes returned by a verifier `prepareRequest` and later passed to `requestAttestation`)
 
 **Returns**
 
-- `uint256`: The base fee required for the specified attestation request
+- `uint256`: Minimum fee in wei.
+  Pass at least this amount as `msg.value` when calling `requestAttestation`.
+  Paying more than the minimum can increase the chance the request is confirmed in its voting round.
+  Fees for confirmed requests are awarded to data providers; fees for unconfirmed requests are burnt.
+
+**See also**
+
+- Manual walkthrough: [FDC by hand — EVMTransaction](/fdc/guides/fdc-by-hand/evm-transaction#get-the-request-fee)
+- Resolve the contract via `ContractRegistry.getFdcRequestFeeConfigurations()` or `FdcHub.fdcRequestFeeConfigurations()` rather than hardcoding addresses.
 
 ## Events
 

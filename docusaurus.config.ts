@@ -352,6 +352,10 @@ const config: Config = {
       {
         redirects: [
           {
+            from: "/fdc/guides/fdc-by-hand-evm-transaction",
+            to: "/fdc/guides/fdc-by-hand/evm-transaction",
+          },
+          {
             from: "/fassets/direct-minting",
             to: "/fassets/minting",
           },
