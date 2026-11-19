@@ -375,6 +375,18 @@ const config: Config = {
             from: "/fassets/developer-guides/fassets-direct-minting-tag-transfer",
             to: "/fassets/developer-guides/fassets-mint-tag-transfer",
           },
+          {
+            from: "/fcc/guides/sign-extension",
+            to: "/fcc/guides/wallets-extension",
+          },
+          {
+            from: "/fcc/guides/weather-insurance-extension",
+            to: "/fcc/guides/external-api-extension",
+          },
+          {
+            from: "/fcc/guides/protocol-redeploy-migration",
+            to: "/fcc/troubleshooting",
+          },
         ],
       },
     ],

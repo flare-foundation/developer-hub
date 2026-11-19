@@ -258,71 +258,63 @@ Two things account for most of these.
 ### Is Flare Confidential Compute available to build on?
 
 Yes, on **Coston2**.
-The Flare Confidential Compute (FCC) is [in the final stages of development](/fcc/overview) and not yet a fully public production system, so treat interfaces as subject to change, but the guides run end to end today.
+Flare Confidential Compute (FCC) is [in the final stages of development](/fcc/overview) and not yet a fully public production system, so treat interfaces as subject to change, but the guides run end to end today.
 
-Start with [Build Your First Extension](/fcc/guides/getting-started), then the [Private Key Extension](/fcc/guides/sign-extension) and [Weather Insurance Extension](/fcc/guides/weather-insurance-extension) examples.
+Start with [Build Your First Extension](/fcc/guides/getting-started), which uses the [FCE Go scaffold](https://github.com/flare-foundation/fce-go-scaffold) and the [`fce` CLI](https://github.com/flare-foundation/fce-tooling).
+Then continue with the [External API](/fcc/guides/external-api-extension), [Direct Actions](/fcc/guides/direct-actions-extension), and [Wallets](/fcc/guides/wallets-extension) examples.
 
 ### Do I need a Google Cloud Confidential Space VM?
 
 Not for development.
-Set `SIMULATED_TEE=true` and run the stack locally with Docker against the live Coston2 chain, tunnelling your extension proxy over HTTPS.
-Only the attestation is simulated; everything else is the real network.
+`fce run` starts a test machine locally with Docker, against the live Coston2 chain, and opens a tunnel so data providers can reach its proxy.
+The machine runs `tee-node` in test mode, so only the attestation differs: the contracts, data providers, and instruction flow are real.
 
-Confidential Space hardware belongs to production hosting, and no paid cloud service is needed to work through the guides.
+Confidential Space hardware is only needed for production hosting, and no paid cloud service is needed to work through the guides.
 
-### How do I get Coston2 indexer database credentials?
+### Do I need Coston2 indexer database credentials?
 
-The local `ext-proxy` reads TEE events from Flare's C-chain indexer.
-The host, port, and database name are already in [step 3 of Build Your First Extension](/fcc/guides/getting-started#step-3-configure-the-indexer-database); only the read-only username and password are missing from the guide, since they are issued per requester and rotated periodically.
-Request them through [technical support](https://flare.network/resources/technical-support) or [X](https://x.com/FlareDevs) and say what you are building.
+No.
+By default, `tee-proxy` reads signing policies and voters through the network's public RPC, which is fine for a test machine.
+If you have access to a Flare C-chain indexer database, you can pass `fce run -indexer-db <file>` with a TOML file that contains its `host`, `port`, `database`, `username`, and `password`.
 
-Credentials shared in community chats go stale faster than the guide does.
-Older repository documents may also point at the Coston (not Coston2) indexer, which uses different credentials and needs a VPN; Coston2 does not.
+### Where are the FCC contract addresses for Coston2?
 
-### Where are the FCC registry addresses for Coston2?
+`FlareTeeManager`, the diamond that serves every FCC facet, resolves through the [`FlareContractRegistry`](/network/guides/flare-contracts-registry) contract.
+The scaffold's deploy script and `fce` look it up there, so you don't need to copy any address.
+`fce deploy` records your own extension's addresses in `deployments/coston2.json`.
 
-In the scaffold, at `config/coston2/deployed-addresses.json`, which the deploy tooling reads for you.
-This is temporary while FCC is in development; on release, the addresses will resolve through the [`FlareContractRegistry`](/network/guides/flare-contracts-registry) contract like every other Flare protocol.
+### Why does my TEE machine never reach production?
 
-Take the addresses from that file rather than from a chat message or an older guide, because the Coston2 deployment is still moving.
-
-### Why does my TEE machine stay INITIALIZED with a 404 on the availability check?
-
-First check whether you are running with `SIMULATED_TEE=true`.
-A simulated attestation is not something the real Coston2 data providers can cosign, so the availability check never gets voted on and the machine stays at INITIALIZED forever, with every poll for it returning `404`.
-This is expected for local development and does not mean your extension is broken; it just means this particular machine will never show PRODUCTION onchain.
-
-Beyond that, the availability check and the Coston2 data providers work, so a machine that never reaches production is nearly always a local mismatch: a stale stack pointing at a retired deployment, or a registered URL that no longer resolves because a quick tunnel restarted.
-
-Start by reading your own onchain state with the scaffold's `query-tee` tool, then work through [FCC Troubleshooting](/fcc/troubleshooting#tee-machine-never-reaches-production).
+Run `fce status` first: it compares your deployment record with the chain and lists the machines in production.
+The usual causes are a missing test version or governance, a proxy whose signing policy is still catching up to the current reward epoch, or an account that is not an allowed machine owner.
+See [FCC Troubleshooting](/fcc/troubleshooting#machine-never-reaches-production).
 
 ### Why does my custom instruction emit onchain but never reach my extension?
 
 If other instructions from the same extension relay normally, check the operation names.
-The `F_` prefix and the system command names are reserved, and a custom operation that reuses one is not delivered without reporting an error.
+The `F_` prefix and the system command names are reserved, and a custom operation that reuses a reserved command name is not delivered, and no error is reported.
 
 See [Instructions never reach your extension](/fcc/troubleshooting#instructions-never-reach-your-extension) for the reserved names and the fix.
 
 ### How do I get a private key or API credential into the enclave?
 
-Never store the secret onchain.
-Encrypt it with the TEE's public key and deposit it with the proxy, or for a Web2 credential, set it in the environment so it is loaded into enclave memory at startup and never exposed.
-The [Private Key Extension](/fcc/guides/sign-extension) guide shows both the key generation and the signing flow.
+Never store the secret onchain in plaintext, and never build it into the image.
+Encrypt it to the TEE's public key with `fce encrypt` and send it to the TEE's proxy as a signed direct action.
+The extension then decrypts it inside the TEE through `tee-node`'s sign port.
+The [Direct Actions Extension](/fcc/guides/direct-actions-extension) guide shows the full flow, including replay protection.
 
-Recovery plan.
-A TEE machine can go down, and an extension should be treated as stateless, so decide up front how a key survives the loss of the machine.
+To sign transactions, you don't need to import a key at all: `tee-node` can generate wallet keys inside the TEE, as the [Wallets Extension](/fcc/guides/wallets-extension) shows.
 
-### My Weather Insurance Extension request fails against the OpenWeatherMap URL, why?
-
-Check your OpenWeatherMap plan before assuming the extension is broken.
-The [Weather Insurance Extension](/fcc/guides/weather-insurance-extension) example calls an endpoint that needs a paid OpenWeatherMap plan, so a free-tier key fails there even though the same extension works correctly against other URLs.
+Plan for recovery.
+A TEE machine can restart, which wipes its memory and gives it a new key, so decide up front how secrets and keys survive the loss of a machine.
 
 ### Are Protocol Managed Wallets available yet?
 
 Not yet.
 [Protocol Managed Wallets](/fcc/overview) are still in development.
 
-If you need to control an account on another chain today, do it with a Flare Compute Extension that holds the key inside the TEE, which is the pattern the [Private Key Extension](/fcc/guides/sign-extension) guide demonstrates.
+If you need to control an account on another EVM chain today, use a Flare Compute Extension that signs with a TEE-held wallet key.
+The [Wallets Extension](/fcc/guides/wallets-extension) guide demonstrates this pattern.
 
 ## Community & Support
 

@@ -2,8 +2,8 @@
 title: Build Your First Extension
 slug: getting-started
 authors: [fassko]
-description: Start building Flare Confidential Compute extensions.
-tags: [intermediate, tee, fcc, go, python, typescript, solidity]
+description: Build, deploy, and run a Flare Confidential Compute extension on Coston2 with the Go scaffold and the fce CLI.
+tags: [intermediate, tee, fcc, go, solidity]
 keywords:
   [
     tee,
@@ -14,501 +14,450 @@ keywords:
     fcc,
     flare-confidential-compute,
     scaffold,
+    fce,
   ]
 sidebar_position: 1
 unlisted: false
 ---
 
-import Tabs from "@theme/Tabs";
-import TabItem from "@theme/TabItem";
 import CodeBlock from "@theme/CodeBlock";
-import InstructionSender from "!!raw-loader!/examples/developer-hub-fcc-scaffold/contracts/InstructionSender.sol";
-import ConfigGo from "!!raw-loader!/examples/developer-hub-fcc-scaffold/go/internal/config/config.go";
-import ExtensionGo from "!!raw-loader!/examples/developer-hub-fcc-scaffold/go/internal/extension/extension.go";
-import TypesGo from "!!raw-loader!/examples/developer-hub-fcc-scaffold/go/pkg/types/types.go";
-import ConfigPython from "!!raw-loader!/examples/developer-hub-fcc-scaffold/python/app/config.py";
-import HandlersPython from "!!raw-loader!/examples/developer-hub-fcc-scaffold/python/app/handlers.py";
-import AbiPython from "!!raw-loader!/examples/developer-hub-fcc-scaffold/python/app/abi.py";
-import ConfigTypescript from "!!raw-loader!/examples/developer-hub-fcc-scaffold/typescript/src/app/config.ts";
-import HandlersTypescript from "!!raw-loader!/examples/developer-hub-fcc-scaffold/typescript/src/app/handlers.ts";
-import AbiTypescript from "!!raw-loader!/examples/developer-hub-fcc-scaffold/typescript/src/app/abi.ts";
+import MainGo from "!!raw-loader!/examples/developer-hub-fcc-scaffold/template/cmd/extension/main.go";
+import AppGo from "!!raw-loader!/examples/developer-hub-fcc-scaffold/template/internal/app/app.go";
+import MyCommandGo from "!!raw-loader!/examples/developer-hub-fcc-scaffold/template/internal/app/mycommand.go";
+import MyDirectCommandGo from "!!raw-loader!/examples/developer-hub-fcc-scaffold/template/internal/app/mydirectcommand.go";
+import InstructionSender from "!!raw-loader!/examples/developer-hub-fcc-scaffold/template/contracts/src/InstructionSender.sol";
+import DeployScript from "!!raw-loader!/examples/developer-hub-fcc-scaffold/template/contracts/script/Deploy.s.sol";
+import ExtensionBase from "!!raw-loader!/examples/developer-hub-fcc-scaffold/sol/src/ExtensionBase.sol";
 
-Build your first **Flare Confidential Compute (FCC)** extension from the Hello World scaffold example.
-This guide walks you through the setup and testing flow, how extensions fit into the TEE stack, which files you customize, and how to deploy and test on **Coston2** testnet.
+This guide builds your first **Flare Confidential Compute (FCC)** extension from the template in the [FCE Go scaffold](https://github.com/flare-foundation/fce-go-scaffold).
+You deploy it to **Coston2** with [`fce`](https://github.com/flare-foundation/fce-tooling), the FCC extension CLI, then run a test machine and send it work.
 
-Find the scaffold example on [GitHub](https://github.com/flare-foundation/fce-extension-scaffold).
 For background on FCC and Flare Compute Extensions (FCE), see the [FCC overview](/fcc/overview).
 
 :::info[What you will build]
-An HTTP server that runs inside a Trusted Execution Environment (TEE), in Go, Python, or TypeScript.
-Onchain callers send instructions through your `InstructionSender` smart contract; the TEE infrastructure relays them to your extension's `POST /action` handler, and you return results that callers poll from the extension proxy.
+A Go program that runs inside a Trusted Execution Environment (TEE) image, next to `tee-node`, plus the Solidity contract that sends it instructions.
+The template has one operation on each channel: an **instruction** that a caller sends through your contract onchain, and a **direct action** that a client posts straight to the TEE's proxy.
 :::
 
-## Overview
-
-The scaffold ships a working **GREETING** extension with two commands:
-
-1. **`SAY_HELLO`** — JSON payload `{"name":"..."}`; returns a greeting string and increments a counter.
-2. **`SAY_GOODBYE`** — ABI-encoded `(name, reason)`; returns a farewell string and increments a counter.
-
-In this guide, you will:
-
-1. Clone the scaffold.
-2. Learn the instruction lifecycle and which files you own.
-3. Deploy the Hello World smart contract and TEE stack against the Coston2 testnet.
-4. Customize the OPType and OPCommand handlers and the onchain entry point for your own extension.
+:::warning[Work in progress]
+FCC is in the final stages of development, and the scaffold and `fce` are still evolving.
+Use Coston2 for everything in this guide, and expect interfaces to change.
+:::
 
 ## How an Extension Works
 
-An extension does not communicate directly with the chain.
-A user (or another contract) calls your Solidity `InstructionSender` smart contract, which calls the `TeeExtensionRegistry.sendInstructions()` function.
-Data providers relay the instruction; your local `ext-proxy` queues it; the TEE node delivers it to your extension.
+An extension never talks to the chain directly.
+It runs in one image with `tee-node`, which holds the TEE's key, talks to the outside world, and signs every result.
+`tee-node` pulls work from **`tee-proxy`**, a public server that queues actions and stores results.
+
+Work reaches the extension in one of two ways:
 
 ```mermaid
 sequenceDiagram
-  participant User
+  participant Caller
   participant Sender as InstructionSender
-  participant Registry as TeeExtensionRegistry
-  participant Proxy as ext_proxy
-  participant TEE as extension_tee
-  participant Ext as YourExtension
+  participant Manager as FlareTeeManager
+  participant DP as Data providers
+  participant Proxy as tee-proxy
+  participant Node as tee-node
+  participant Ext as Your extension
 
-  User->>Sender: sendSayHello / custom op
-  Sender->>Registry: sendInstructions
-  Registry-->>Proxy: TeeInstructionsSent
-  Proxy->>TEE: queued action
-  TEE->>Ext: POST /action
-  Ext-->>TEE: ActionResult
-  TEE-->>Proxy: result
-  User->>Proxy: poll result
+  alt Instruction
+    Caller->>Sender: myCommand(message) + fee
+    Sender->>Manager: sendInstructions
+    Manager-->>DP: TeeInstructionsSent event
+    DP->>Proxy: signed instruction
+  else Direct action
+    Caller->>Proxy: POST /direct
+  end
+  Node->>Proxy: fetch the next action
+  Node->>Ext: POST /action
+  Ext-->>Node: result
+  Node->>Proxy: signed result
+  Caller->>Proxy: GET /action/result/<id>
 ```
 
-You control steps that start and end the flow: the onchain `InstructionSender` smart contract and the action handlers in your chosen language.
-The TEE node and proxy handle attestation, signing, and message routing.
+Instructions only reach the TEE after data providers sign them with more than 50% of the signing policy's weight.
+See [Data providers and cosigners](/fcc/data-providers) and [TEE public and private keys](/fcc/tee-keys).
 
-How those signatures work is split into two parts:
+You write two things: the handlers in Go, and the entrypoint contract in Solidity.
+The scaffold's library handles the HTTP wiring to `tee-node`, strict payload decoding, and calls to the TEE key.
+The shared `ExtensionBase` contract handles sending, fees, and checking TEE signatures.
 
-- [TEE public and private keys](/fcc/tee-keys) — how the machine signs results and decrypts secrets.
-- [Data providers and cosigners](/fcc/data-providers) — who may send the TEE work.
+## Prerequisites
 
-## Architecture
+- [Go](https://go.dev/dl/) 1.27.4 or newer, and `gcc` for the tests that run with cgo.
+- [Foundry](https://getfoundry.sh/) 1.7.1 or newer (`forge`, `cast`).
+- [Docker](https://docs.docker.com/get-docker/) with buildx and Compose.
+  The stack runs as `linux/amd64`.
+  On Apple Silicon, Docker emulates it, which is slow but fine for a test machine.
+- A Coston2 account funded from the [Coston2 faucet](https://faucet.flare.network/coston2).
+  It pays for gas, extension registration, and machine registration and availability check fees.
 
-The extension stack runs as three Docker services:
+:::danger[Use a test-only key]
+`fce` signs transactions with the keystore you give it, and the `make` targets build and run code.
+Use a key that holds only test funds.
+Install the scaffold and `fce` only from the [`flare-foundation`](https://github.com/flare-foundation) GitHub organization.
+:::
 
-- **`extension-tee` TEE node:** TEE node plus your extension in Go, Python, or TypeScript (listens for `POST /action` and `GET /state`).
-- **`ext-proxy` proxy server:** Watches Coston2 testnet for instructions targeting your extension, forwards them to the TEE, and exposes results and `/info` on the public proxy URL.
-- **`redis` database:** In-memory store used by the proxy for queue and internal state.
+## Step 1: Install `fce` Tooling
 
-## Clone the Scaffold Example
-
-You need Docker, Foundry (`forge`, `cast`), and Go 1.25+ for the shared deploy tooling.
-Python 3.11+ or Node 22+ is required only if you run those implementations.
-
-Clone the scaffold example from GitHub:
+Clone the tooling repository and install the CLI:
 
 ```bash
-git clone https://github.com/flare-foundation/fce-extension-scaffold.git
-cd fce-extension-scaffold
+git clone https://github.com/flare-foundation/fce-tooling.git
+cd fce-tooling
+go install ./cmd/fce
+fce version
 ```
 
-The scaffold implements the same Hello World extension in Go, Python, and TypeScript.
-This guide uses the Go default (`LANGUAGE=go`).
-Pass `--language python` or `--language typescript` to `use-chain.sh` to switch implementations; the contract, scripts, and Coston2 flow stay the same.
+`go install` puts `fce` in `GOBIN`, or `GOPATH/bin` if `GOBIN` is unset, so keep that directory on your `PATH`.
+A build from a release tag with no local changes reports that version.
+Any other build is a development build, and `fce` prints a warning when it uses one.
 
-## Hello World Onchain Smart Contract
+## Step 2: Fork the Scaffold
 
-The `HelloWorldInstructionSender` smart contract is the only onchain entry point for your operations, and it connects the rest of the flow.
+Fork [`fce-go-scaffold`](https://github.com/flare-foundation/fce-go-scaffold) on GitHub, then clone your fork:
 
-It talks to:
+```bash
+git clone https://github.com/<your-account>/fce-go-scaffold.git
+cd fce-go-scaffold
+```
 
-- **`TeeExtensionRegistry`** — registers extensions and accepts `sendInstructions` calls that require a fee.
-- **`TeeMachineRegistry`** — returns random TEE machine IDs for your extension via `getRandomTeeIds` function.
+Your fork changes only `template/` (and `examples/`, if you build on one).
+Leave the shared parts alone: `pkg/`, `sol/`, `conformance/`, `internal/`, `launcher/`, `docs/`, `fce-version`, the `Makefile`, and the lint and agent files.
+You get fixes to those by merging upstream, and local edits there cause merge conflicts.
+The scaffold's [forking guide](https://github.com/flare-foundation/fce-go-scaffold/blob/main/docs/fork.md) covers optional renames, such as the Go module path.
+
+## Step 3: Import Your Deployer Key
+
+`fce` signs with a key from a Foundry keystore, so the private key never appears in a command argument or an environment variable.
+Import your funded Coston2 key once:
+
+```bash
+cast wallet import coston2-deployer --interactive
+cast wallet address --account coston2-deployer
+```
+
+This guide uses `coston2-deployer` as the account name.
+`fce` asks for the keystore password each time it signs, or reads it from a file passed with `-password-file`.
+
+## Template Layout
+
+| Path                             | What it is                                                       |
+| -------------------------------- | ---------------------------------------------------------------- |
+| `template/cmd/extension/main.go` | The entrypoint: reads the environment, registers ops, serves     |
+| `template/internal/app/`         | Your code: op constants, handlers, state, and their tests        |
+| `template/conformance/`          | Golden fixtures for your ops, generated from the Go tests        |
+| `template/contracts/`            | The entrypoint contract, its deploy scripts, and its forge tests |
+| `template/Dockerfile`            | The reproducible TEE image: launcher, `tee-node`, and extension  |
+
+The template's operations:
+
+| Operation type | Operation command   | Channel     | Payload                                     | Result                     |
+| -------------- | ------------------- | ----------- | ------------------------------------------- | -------------------------- |
+| `MY_EXTENSION` | `MY_COMMAND`        | Instruction | `abi.encode(address sender, bytes message)` | The same pair, ABI-encoded |
+| `MY_EXTENSION` | `MY_DIRECT_COMMAND` | Direct      | JSON `{"message": "…"}`                     | The same JSON              |
+
+### Entrypoint Go Code
+
+`main.go` reads the environment that the launcher passes in, registers the handlers, and serves `tee-node` until it is stopped.
+Read your own environment variables where the `TODO` is.
 
 <details>
-  <summary>View the code</summary>
-  <CodeBlock language="solidity" title="contracts/InstructionSender.sol">
+  <summary>View `main.go`</summary>
+  <CodeBlock language="go" title="template/cmd/extension/main.go">
+    {MainGo}
+  </CodeBlock>
+</details>
+
+### Operations and Registration
+
+An operation is a pair: an **operation type**, which groups commands, and an **operation command**, which is a verb.
+Each pair belongs to exactly one channel, either instruction or direct, never both.
+
+<details>
+  <summary>View `app.go`</summary>
+  <CodeBlock language="go" title="template/internal/app/app.go">
+    {AppGo}
+  </CodeBlock>
+</details>
+
+Registration panics on a mistake: a pair registered twice, an operation type that starts with `F_` (reserved for Flare system operations), or a name longer than 32 bytes.
+
+### Instruction Operation Handler
+
+`tee-node` does not pass the caller's address to the extension.
+If you need it, your contract has to encode `msg.sender` into the payload, which is what the template does.
+
+<details>
+  <summary>View `mycommand.go`</summary>
+  <CodeBlock language="go" title="template/internal/app/mycommand.go">
+    {MyCommandGo}
+  </CodeBlock>
+</details>
+
+A handler returns one of three things:
+
+| It returns       | The action gets                                                          |
+| ---------------- | ------------------------------------------------------------------------ |
+| An error         | `status 0` at once, with `error: <text>` as the public log               |
+| Data             | `status 1` at once                                                       |
+| Data and a `Run` | `status 2` (pending) at once, then the `Run` continues in the background |
+
+A handler has 1.5 seconds to answer; `tee-node` waits 2 seconds in total.
+Anything slower needs the long-running mode, which the [External API guide](/fcc/guides/external-api-extension) shows.
+
+Wrap any error that could carry a secret in `extension.PublicError("...", err)`.
+Only the first argument reaches the public log.
+
+:::warning[Instructions can arrive more than once]
+`tee-node` does not remember instructions.
+An operator can deliver one again, or deliver it after a newer one.
+Make each handler idempotent or reject replays.
+When order matters, number the instructions in the contract, as the [Direct Actions guide](/fcc/guides/direct-actions-extension) does.
+:::
+
+### Direct Action Handler
+
+A direct action reaches the extension only through the proxy.
+There is no fee and no data provider signature, so nothing vouches for the sender.
+
+<details>
+  <summary>View `mydirectcommand.go`</summary>
+  <CodeBlock language="go" title="template/internal/app/mydirectcommand.go">
+    {MyDirectCommandGo}
+  </CodeBlock>
+</details>
+
+Decode payloads with `pkg/payload`.
+`payload.DecodeABI` accepts only the canonical ABI encoding, and `payload.DecodeJSON` rejects unknown fields and trailing data.
+
+### Entrypoint Contract
+
+The `InstructionSender` contract is the only onchain entry point for your instructions.
+It inherits `ExtensionBase`, which binds the extension ID, charges fees, sends instructions through `FlareTeeManager`, and checks TEE signatures.
+
+<details>
+  <summary>View `InstructionSender.sol`</summary>
+  <CodeBlock
+    language="solidity"
+    title="template/contracts/src/InstructionSender.sol"
+  >
     {InstructionSender}
   </CodeBlock>
 </details>
 
-:::note
-Constructor arguments are the two Flare system registry addresses.
-On Coston2, they are already deployed; the deploy tooling reads them from `config/coston2/deployed-addresses.json`.
-This is temporary while FCC is in development.
-On release, addresses will be available through the [`FlareContractRegistry`](/network/guides/flare-contracts-registry) contract.
+- Solidity's `bytes32("MY_EXTENSION")` and Go's `op.Type("MY_EXTENSION").Hash()` produce the same bytes, so the names must match exactly.
+- Write one payable send function per instruction command and add the `chargesFees` modifier to it.
+- Direct commands have no function in the contract.
+  Clients post them to the proxy instead.
+
+<details>
+  <summary>View `ExtensionBase.sol`</summary>
+  <CodeBlock language="solidity" title="sol/src/ExtensionBase.sol">
+    {ExtensionBase}
+  </CodeBlock>
+</details>
+
+The price of an instruction is the **protocol fee**, which governance sets per operation pair and charges per TEE, plus an optional **project fee**, which the contract owner sets with `setProjectFee`.
+[`quoteFee(opType, opCommand)`](/fcc/instruction-fees#quotefee) returns the price for one TEE.
+
+The deploy script finds `FlareTeeManager` in the [Flare contract registry](/network/guides/flare-contracts-registry), so no address is hardcoded:
+
+<details>
+  <summary>View `Deploy.s.sol`</summary>
+  <CodeBlock language="solidity" title="template/contracts/script/Deploy.s.sol">
+    {DeployScript}
+  </CodeBlock>
+</details>
+
+## Step 4: Test Locally
+
+Run the Go handler tests, then check the extension from the outside with `fce conformance` command:
+
+```bash
+go test ./template/...
+fce conformance ./template
+```
+
+`fce conformance` builds the binary as the image does and starts it against a fake sign port.
+It then sends each fixture in `template/conformance/` the way `tee-node` would, and runs the checks every extension must pass.
+`make test` also runs the contract's forge tests.
+The forge tests read the same `my-command.json` fixture, so the contract and the handler cannot drift apart.
+
+`fce image-check ./template` builds the image and checks its Dockerfile, its config, and the binaries it runs, then does a smoke run.
+
+## Step 5: Deploy and Register
+
+```bash
+fce deploy -chain coston2 -account coston2-deployer ./template
+```
+
+`fce deploy` does four things:
+
+1. Deploys `InstructionSender` smart contract with `contracts/script/Deploy.s.sol` script.
+2. Registers it with `FlareTeeManager` (`ExtensionManager.register`), which returns your **extension ID**.
+3. Allows the deployer to own the extension's machines.
+4. Runs `contracts/script/PostRegister.s.sol` script, which calls `setExtensionId` on the contract.
+
+It records the result in `template/deployments/coston2.json`: the chain, `FlareTeeManager`, your contract addresses, the extension ID, and everything later commands add.
+Commit this file, because it publishes your extension's addresses alongside its code.
+If you run `fce deploy` again, it finishes any remaining steps and does nothing once they're all done.
+
+:::note[Who owns what]
+The deployer ends up owning both the contract (project fee, withdrawals) and the extension in the registry.
+Registry ownership matters more: it decides which code hashes the extension's machines can run.
+Before production, secure that key or move both roles to a multisig.
 :::
 
-## Customizing the Extension
+## Step 6: Allow a Test Version and Set Governance
 
-The scaffold is a complete Hello World example.
-The HTTP server and deploy scripts are ready to use.
-Customize one language directory plus the Solidity contract so `OPType` and `OPCommand` strings stay aligned:
+A test machine runs `tee-node` in test mode, so the extension must allow `tee-node`'s fixed test code hash.
+It also needs governance: the signers that govern its machines.
+For a test, use your deployer address as the only signer:
 
-| Role                       | Go                                                              | Python                      | TypeScript                       |
-| -------------------------- | --------------------------------------------------------------- | --------------------------- | -------------------------------- |
-| OPType constants           | `go/internal/config/config.go`                                  | `python/app/config.py`      | `typescript/src/app/config.ts`   |
-| Handlers                   | `go/internal/extension/extension.go`                            | `python/app/handlers.py`    | `typescript/src/app/handlers.ts` |
-| Request and response types | `go/pkg/types/types.go`                                         | declared inline in handlers | declared inline in handlers      |
-| ABI decoding               | `go/pkg/types/types.go`                                         | `python/app/abi.py`         | `typescript/src/app/abi.ts`      |
-| Shared                     | `contracts/InstructionSender.sol`, `tools/cmd/run-test/main.go` | —                           | —                                |
+```bash
+fce add-version -chain coston2 -account coston2-deployer -test ./template
+fce governance -chain coston2 -account coston2-deployer \
+  -signers "$(cast wallet address --account coston2-deployer)" -threshold 1 ./template
+fce status -chain coston2 ./template
+```
 
-:::info[Framework Layer]
-Leave the framework layer intact: `go/internal/extension/utils.go` and `pkg/server/` in Go, `python/base/` in Python, and `typescript/src/base/` in TypeScript.
+`fce status` compares your deployment record with the chain.
+
+:::danger[The test hash is not a TEE]
+Test machines have no TEE, and their operators hold their keys, yet contracts accept their signatures as the extension's.
+Only allow the test version on an extension that real users don't use.
+Otherwise, disable it with `fce disable-version -test` before users arrive.
+Disabling is permanent.
 :::
 
-### OPType and OPCommand Must Match
+## Step 7: Run a Test Machine
 
-Solidity stores commands as `bytes32("...")`.
-Each language hashes the same string constants and compares them with the incoming instruction.
-The strings must be identical in the contract and in every implementation you run:
-
-<Tabs groupId="language">
-  <TabItem value="solidity" label="Solidity" default>
-
-    ```solidity title="contracts/InstructionSender.sol"
-    bytes32 constant OP_TYPE_GREETING       = bytes32("GREETING");
-    bytes32 constant OP_COMMAND_SAY_HELLO   = bytes32("SAY_HELLO");
-    bytes32 constant OP_COMMAND_SAY_GOODBYE = bytes32("SAY_GOODBYE");
-    ```
-
-  </TabItem>
-  <TabItem value="go" label="Go">
-
-    ```go title="go/internal/config/config.go"
-    const (
-        OPTypeGreeting      = "GREETING"
-        OPCommandSayHello   = "SAY_HELLO"
-        OPCommandSayGoodbye = "SAY_GOODBYE"
-    )
-    ```
-
-  </TabItem>
-  <TabItem value="python" label="Python">
-
-    ```python title="python/app/config.py"
-    OP_TYPE_GREETING = "GREETING"
-    OP_COMMAND_SAY_HELLO = "SAY_HELLO"
-    OP_COMMAND_SAY_GOODBYE = "SAY_GOODBYE"
-    ```
-
-  </TabItem>
-  <TabItem value="typescript" label="TypeScript">
-
-    ```ts title="typescript/src/app/config.ts"
-    export const OP_TYPE_GREETING = "GREETING";
-    export const OP_COMMAND_SAY_HELLO = "SAY_HELLO";
-    export const OP_COMMAND_SAY_GOODBYE = "SAY_GOODBYE";
-    ```
-
-  </TabItem>
-</Tabs>
-
-Then the handler in your chosen language should match:
-
-```go title="go/internal/extension/extension.go"
-case dataFixed.OPType == teeutils.ToHash(config.OPTypeGreeting):
-    // then sub-route on OPCommand
+```bash
+fce run -chain coston2 -account coston2-deployer ./template
 ```
 
-:::warning
+`fce run` takes a machine from nothing to production:
 
-Mismatch of the `OPType` or `OPCommand` strings is the most common cause of `unsupported op type` / `unsupported op command` responses.
+1. Checks the chain, builds the image with `make image`, and starts `tee-node`, `tee-proxy`, and Redis with Docker Compose.
+2. Opens a Cloudflare quick tunnel so data providers and the availability check can reach the proxy.
+   Use `-url` to provide your own public URL instead.
+3. Registers the machine, which attests to a challenge from the chain, and waits for the attestation result.
+4. Asks one of the system's machines to check that yours is available.
+5. Moves the machine to production and prints a line like this:
 
-`OPType` strings beginning with `F_` are reserved for Flare system operations, so do not use that prefix for your own extension.
+   ```text
+   machine 0x… of extension <id> is in production at https://….trycloudflare.com
+   ```
 
+Registration and the availability check charge fees, and each step pays gas.
+Each start of `tee-node` generates a new key, so each run registers a new machine.
+
+By default, `tee-proxy` reads signing policies and voters through Coston2's public RPC.
+That is fine for a test machine, but the proxy then trusts the RPC's answers.
+To read them from a Flare C-chain indexer database instead, pass `-indexer-db` with a TOML file containing `host`, `port`, `database`, `username`, and `password`.
+
+`fce run` stays attached and shows the logs.
+Use `-detach` to return once the machine is in production, then stop it later with `fce stop`.
+
+## Step 8: Send an Instruction and a Direct Action
+
+From a second terminal, send `MY_COMMAND` through your contract with the message `hello`:
+
+```bash
+fce send -chain coston2 -account coston2-deployer ./template 'myCommand(bytes)' 0x68656c6c6f
+```
+
+`fce send` finds the fee by simulating the call, sends the transaction, then polls the proxy of each TEE the instruction went to.
+It checks both the TEE's and the proxy's signatures and prints the result:
+
+```text
+instruction 0x…: MY_EXTENSION MY_COMMAND
+      status 1 (ok), … after sending
+      data 0x…
+```
+
+The data is `abi.encode(sender, message)`, which echoes your address and `hello`.
+
+Post `MY_DIRECT_COMMAND` with `{"message":"hello"}` as hex:
+
+```bash
+fce direct -chain coston2 ./template MY_EXTENSION MY_DIRECT_COMMAND 0x7b226d657373616765223a2268656c6c6f227d
+```
+
+`fce direct` uses the proxy API key that `fce run` generated.
+To post a direct action yourself, send `POST /direct` to the proxy with the API key in an `X-Api-Key` header:
+
+```json
+{
+  "opType": "0x4d595f455854454e53494f4e0000000000000000000000000000000000000000",
+  "opCommand": "0x4d595f4449524543545f434f4d4d414e44000000000000000000000000000000",
+  "message": "0x7b226d657373616765223a2268656c6c6f227d"
+}
+```
+
+The op type and command are `bytes32` names, and the message is hex.
+Read the result at `GET /action/result/<id>?submissionTag=submit`.
+
+## Step 9: Stop the Machine
+
+Press **Ctrl-C** in the `fce run` terminal.
+`fce` pauses the machine onchain and then removes the stack.
+Pausing comes first because a machine stays in production after it stops running, and sends would keep going to it.
+
+If pausing fails, `fce` keeps the run's state, and `fce stop` tries again.
+`fce run` refuses to start a new machine until the old one is paused.
+
+## Make It Your Own
+
+1. **Rename the op.**
+   Pick op type and command names for your own domain.
+   Do not use the `F_` prefix or reuse a system command name (see [reserved names](/fcc/troubleshooting#instructions-never-reach-your-extension)).
+   Change the constants in `app.go` and the `bytes32` constants in `InstructionSender.sol` together.
+2. **Write the handler.**
+   Decode strictly, validate everything before the first write, and synchronize shared state yourself.
+   The library does not serialize calls, so an instruction, a direct action, and `GET /state` can all run at once.
+3. **Add a send function** with `chargesFees` for each instruction command.
+4. **Regenerate the fixtures** with `go test ./template/internal/app -update`, then run `make test` and `fce conformance ./template`.
+5. **Name the image.**
+   Set `org.opencontainers.image.title` and `org.opencontainers.image.version` in `template/Dockerfile`.
+   The version label is part of the image hash.
+6. **Redeploy the code.**
+   Each `fce run` builds the image again, so a new run picks up your changes.
+
+The scaffold's [extension guide](https://github.com/flare-foundation/fce-go-scaffold/blob/main/docs/extension-guide.md) covers errors, long-running jobs, state, the TEE key, wallet keys, and your own environment variables in depth.
+The [rules](https://github.com/flare-foundation/fce-go-scaffold/blob/main/docs/rules.md) list every requirement an extension must meet, with what enforces it.
+
+:::tip[Other languages]
+The scaffold's library is Go, but the wire protocol between `tee-node` and the extension is language-agnostic.
+The [extension contract](https://github.com/flare-foundation/fce-go-scaffold/blob/main/docs/extension-contract.md) defines it, and `fce conformance [flags] -- command [args...]` checks any binary against it.
 :::
 
-### Config Constants
+## Going to Production
 
-Increment `Version` when behavior or the onchain interface changes, because the TEE registration path treats code version as part of the extension lifecycle.
-
-<Tabs groupId="language">
-  <TabItem value="go" label="Go" default>
-
-    <CodeBlock language="go" title="go/internal/config/config.go">
-      {ConfigGo}
-    </CodeBlock>
-
-  </TabItem>
-  <TabItem value="python" label="Python">
-
-    <CodeBlock language="python" title="python/app/config.py">
-      {ConfigPython}
-    </CodeBlock>
-
-  </TabItem>
-  <TabItem value="typescript" label="TypeScript">
-
-    <CodeBlock language="ts" title="typescript/src/app/config.ts">
-      {ConfigTypescript}
-    </CodeBlock>
-
-  </TabItem>
-</Tabs>
-
-### Request and Response Types
-
-The `SAY_HELLO` command uses JSON in `OriginalMessage`.
-The `SAY_GOODBYE` command uses ABI encoding so the contract can accept typed `string` arguments and `abi.encode` them for the TEE.
-
-Go keeps those shapes in `pkg/types/types.go`.
-Python and TypeScript declare JSON request and response dicts inline in the handlers, and decode the ABI payload in a dedicated module.
-
-<Tabs groupId="language">
-  <TabItem value="go" label="Go" default>
-
-    <CodeBlock language="go" title="go/pkg/types/types.go">
-      {TypesGo}
-    </CodeBlock>
-
-  </TabItem>
-  <TabItem value="python" label="Python">
-
-    <CodeBlock language="python" title="python/app/abi.py">
-      {AbiPython}
-    </CodeBlock>
-
-  </TabItem>
-  <TabItem value="typescript" label="TypeScript">
-
-    <CodeBlock language="ts" title="typescript/src/app/abi.ts">
-      {AbiTypescript}
-    </CodeBlock>
-
-  </TabItem>
-</Tabs>
-
-### Handlers
-
-Each handler follows the same pattern: decode, validate, execute, then return a result.
-Protect shared state with a mutex in Go; the Python and TypeScript frameworks serialize handler calls, so module-level state is safe.
-
-Status values in `ActionResult`:
-
-- **`0`** — error (message in `Log`)
-- **`1`** — success
-- **`≥ 2`** — pending (async work; later POST final result to the node)
-
-<Tabs groupId="language">
-  <TabItem value="go" label="Go" default>
-
-    <CodeBlock language="go" title="go/internal/extension/extension.go">
-      {ExtensionGo}
-    </CodeBlock>
-
-    Leave `New()` and the HTTP wiring in place.
-    Add your own OPType cases in `processAction`, then implement command handlers next to `processSayHello` / `processSayGoodbye`.
-
-  </TabItem>
-  <TabItem value="python" label="Python">
-
-    <CodeBlock language="python" title="python/app/handlers.py">
-      {HandlersPython}
-    </CodeBlock>
-
-    Wire new commands in `register()`, then implement handlers next to `handle_say_hello` / `handle_say_goodbye`.
-    Do not modify `python/base/`.
-
-  </TabItem>
-  <TabItem value="typescript" label="TypeScript">
-
-    <CodeBlock language="ts" title="typescript/src/app/handlers.ts">
-      {HandlersTypescript}
-    </CodeBlock>
-
-    Wire new commands in `register()`, then implement handlers next to `handleSayHello` / `handleSayGoodbye`.
-    Do not modify `typescript/src/base/`.
-
-  </TabItem>
-</Tabs>
-
-## Deploying and Testing on Coston2
-
-This walkthrough runs a local simulated TEE against the live Coston2 chain (chain ID `114`) using Docker.
-`start-services.sh` starts a Cloudflare tunnel to host port **6674** and writes `EXT_PROXY_URL` for you.
-
-You need a funded Coston2 account for gas and registration fees — use the [Coston2 faucet](https://faucet.flare.network/coston2).
-
-:::tip[Quick start]
-After Steps 1-3 (`use-chain.sh`, deployer keys, and indexer credentials), run the rest of the lifecycle in one shot:
+Test machines are for development.
+A production machine runs the attested image on a Confidential Space VM (`GCP_AMD_SEV` or `GCP_INTEL_TDX`):
 
 ```bash
-./scripts/full-setup.sh --chain coston2 --test
+fce add-version -chain coston2 -account coston2-deployer -platform GCP_AMD_SEV,GCP_INTEL_TDX ./template
 ```
 
-Or run the same phases individually:
+`fce add-version` builds the image reproducibly and allows its config digest, under the image's version label, on the platforms you name.
+Commit your changes first so that anyone can rebuild the same hash from your fork.
+List every platform you will use now: you cannot add a platform to a hash later, so adding one means bumping the version label.
 
-```bash
-./scripts/pre-build.sh
-./scripts/start-services.sh --chain coston2
-./scripts/post-build.sh
-./scripts/test.sh
-```
+`fce` registers test machines.
+[Deploy a TEE on Google Cloud](/fcc/guides/deploy-on-gcp) starts the same image on a Confidential Space VM, with tee-proxy and a C-chain indexer, and registers that machine on `FlareTeeManager`.
 
-:::
+:::tip[What's Next]
 
-### Step 1: Activate simulated Coston2
+Try continue building with Flare Confidential Compute follow these guides:
 
-```bash
-./scripts/use-chain.sh coston2 --simulated
-```
-
-This creates `.env.coston2` and `.env.local.coston2`, generates the Coston2 proxy TOML and Compose overlay, and copies the simulated file to `.env`.
-It sets `CHAIN`, `CHAIN_ID=114`, `CHAIN_URL`, `ADDRESSES_FILE`, `LOCAL_MODE=false`, `SIMULATED_TEE=true`, and `NORMAL_PROXY_URL` for you.
-
-Pass `--language python` or `--language typescript` to select a non-Go image.
-Edit `.env.local.coston2`, never `.env` — `.env` is a disposable copy that `use-chain.sh` overwrites.
-
-### Step 2: Configure deployer keys
-
-Edit `.env.local.coston2` and set your funded Coston2 credentials:
-
-```bash title=".env.local.coston2"
-DEPLOYMENT_PRIVATE_KEY="<your-funded-coston2-private-key-hex-no-0x>"
-INITIAL_OWNER="0x<your-address>"
-```
-
-Optionally set TEE governance (used by the node container and by `post-build`):
-
-```bash title=".env.local.coston2"
-# GOVERNANCE_SIGNERS="0xAbc...,0xDef..."   # comma-separated 0x addresses
-# GOVERNANCE_THRESHOLD=2
-```
-
-If unset, both default to the deployer (`INITIAL_OWNER`) as the sole signer with threshold `1` — fine for Hello World.
-The node and onchain registry must agree on this set, or TEE registration reverts with `InvalidGovernanceHash`.
-
-Re-activate after editing so `.env` picks up the changes:
-
-```bash
-./scripts/use-chain.sh coston2 --simulated
-```
-
-### Step 3: Configure the indexer database
-
-The local `ext-proxy` queries Flare's C-chain indexer for TEE events.
-`use-chain.sh` already generated `config/proxy/extension_proxy.coston2.docker.toml`.
-Edit the `[db]` block with the Coston2 indexer host and the read-only credentials provided to you:
-
-```toml title="config/proxy/extension_proxy.coston2.docker.toml"
-[db]
-host = "34.38.42.208"
-port = 3306
-database = "indexer"
-username = "<your-indexer-db-username>"
-password = "<your-indexer-db-password>"
-log_queries = false
-```
-
-Chain ID `114` and the Coston2 Flare system contract addresses are already set in the generated file.
-
-:::info[Flare Indexer Access]
-To get indexer credentials, contact [support](https://flare.network/resources/technical-support) or [X](https://x.com/FlareDevs) and share what you are building.
-:::
-
-### Step 4: Deploy the contract and register the extension
-
-```bash
-./scripts/pre-build.sh
-```
-
-This compiles Solidity, deploys the `HelloWorldInstructionSender` smart contract, and registers the extension on the `TeeExtensionRegistry` registry contract.
-On success, it writes the `EXTENSION_ID` and `INSTRUCTION_SENDER` to the `config/coston2/extension.env` file.
-
-:::warning
-Once the `config/coston2/extension.env` file exists, pre-build refuses to run again.
-Use `./scripts/pre-build.sh --force` only when you intentionally want a new extension.
-Forcing a new pre-build deploys a new sender and registers a new extension ID, while your existing TEE machine may still be tied to the old ID — end-to-end tests then fail with mismatches such as `MachineManager.TooMany()`.
-:::
-
-### Step 5: Start the extension stack
-
-```bash
-./scripts/start-services.sh --chain coston2
-```
-
-Because `SIMULATED_TEE=true`, this starts a Cloudflare tunnel to host port **6674**, writes `EXT_PROXY_URL` into `.env` and `.env.local.coston2`, then waits until the public proxy answers `/info`.
-
-:::warning[Security — read before exposing port 6674]
-Exposing port **6674** makes your local **ext-proxy** reachable over HTTPS.
-Anyone with the tunnel URL can call the proxy HTTP API.
-
-Use a tunnel **only for Coston2 testnet**, and stop it when finished with `./scripts/stop-services.sh --chain coston2`.
-:::
-
-To use ngrok instead of the bundled tunnel, start `ngrok http 6674` first, set `EXT_PROXY_URL` in `.env.local.coston2`, re-run `use-chain.sh`, then start services.
-
-Confirm the public URL:
-
-```bash
-source .env
-curl -sf "$EXT_PROXY_URL/info" | jq .
-```
-
-Quick tunnels mint a new hostname on each restart.
-If the URL changes after the TEE is registered, run `./scripts/update-tee-url.sh` so the onchain machine record matches.
-
-### Step 6: Verify the proxy
-
-```bash
-source .env
-curl -s "$EXT_PROXY_URL/info" | jq '.machineData'
-```
-
-For a simulated TEE, expect:
-
-| Field          | Expected                                                 |
-| -------------- | -------------------------------------------------------- |
-| `codeHash`     | Simulated hash (`0x194844cf…`)                           |
-| `extensionId`  | Matches `EXTENSION_ID` in `config/coston2/extension.env` |
-| `initialOwner` | Matches your `INITIAL_OWNER`                             |
-
-### Step 7: Register the TEE machine
-
-```bash
-./scripts/post-build.sh
-```
-
-This allows your TEE code version for the extension, registers the extension's TEE **governance** onchain (`set-governance`, using `GOVERNANCE_SIGNERS` / `GOVERNANCE_THRESHOLD` from `.env` or the deployer defaults), then registers the TEE machine (using `EXT_PROXY_URL` and `NORMAL_PROXY_URL` from `.env`).
-
-### Step 8: Run the end-to-end test
-
-```bash
-./scripts/test.sh
-```
-
-The test calls `setExtensionId()` if needed, sends `SAY_HELLO` and `SAY_GOODBYE` instructions through the deployed contract, polls the proxy for `ActionResult`s, and asserts the greeting/farewell payloads.
-
-If it passes, your Hello World extension is live against Coston2.
-
-## Making It Your Own
-
-1. Choose OPType/OPCommand names that describe your operations, avoiding the reserved `F_` OPType prefix.
-2. Update Solidity constants and send functions; regenerate Go bindings if you change the ABI (`./scripts/generate-bindings.sh`).
-3. Implement handlers and types in the language you selected.
-4. Update `tools/cmd/run-test/main.go` and re-run `./scripts/test.sh`.
-5. Rebuild the TEE image after code changes: `./scripts/start-services.sh --chain coston2` (compose uses `--build`).
-
-The scaffold README file covers renaming placeholders (`docs/manual-setup.md`).
-Hooks `scripts/extension-setup.sh` and `scripts/extension-post-setup.sh` are no-ops in Hello World — add deploy-time or post-registration setup there when your extension needs it.
-
-Stop the stack with `./scripts/stop-services.sh --chain coston2`.
-If a quick-tunnel URL rotated after registration, run `./scripts/update-tee-url.sh` instead of re-registering the machine.
-
-## Troubleshooting
-
-| Symptom                                              | What to check                                                                                                                                                      |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `unsupported op type` / `unsupported op command`     | Solidity `bytes32("...")` strings must match the config constants in your language implementation exactly.                                                         |
-| `docker-compose.coston2.yaml not found`              | Run `./scripts/use-chain.sh coston2 --simulated` first.                                                                                                            |
-| Edits in `.env` have no effect                       | Edit `.env.local.coston2`, then re-run `./scripts/use-chain.sh coston2 --simulated`.                                                                               |
-| `signature must be 65 bytes, got 0`                  | `CHAIN_ID` is unset on the node — `use-chain.sh` sets it to `114` for Coston2.                                                                                     |
-| Proxy never becomes ready                            | Tunnel to **6674**, indexer `[db]` credentials, and `docker compose` logs for `ext-proxy`.                                                                         |
-| Pre-build refuses to run                             | `config/coston2/extension.env` already exists — use `--force` only if you intend a new extension ID.                                                               |
-| `MachineManager.TooMany()` or wrong extension        | Extension ID in `config/coston2/extension.env` does not match the TEE registered by post-build — avoid casual `--force`.                                           |
-| `pollAction` timeout / `/action/result` 404          | Stale tunnel URL or extra active TEE machines — run `./scripts/update-tee-url.sh` and `./scripts/check-tee-machines.sh --chain coston2`.                           |
-| `InvalidGovernanceHash`                              | `GOVERNANCE_SIGNERS` / `GOVERNANCE_THRESHOLD` in `.env.local.coston2` must match what the `extension-tee` container received; rebuild/restart after changing them. |
-| Attestation / registration failures                  | Confirm `LOCAL_MODE=false`, `SIMULATED_TEE=true`, and `NORMAL_PROXY_URL=https://tee-proxy-coston2-1.flare.rocks`.                                                  |
-| Docker build fails fetching `tee-node` / `tee-proxy` | Confirm network access so Go can fetch the pinned `tee-node` module and Docker can build from `proxy/Dockerfile`.                                                  |
-
-For issues that are not specific to this walkthrough, such as a TEE machine that never reaches production, a proxy that rejects TEE signatures, or instructions that never reach your extension, see [FCC Troubleshooting](/fcc/troubleshooting).
+- [Deploy a TEE on Google Cloud](/fcc/guides/deploy-on-gcp): run the allowed image on a Confidential Space VM with tee-proxy and a C-chain indexer.
+- [External API Extension](/fcc/guides/external-api-extension): call web APIs over TLS, return partial results past the 2-second limit, and verify a TEE-signed price onchain.
+- [Direct Actions Extension](/fcc/guides/direct-actions-extension): provision secrets encrypted to the TEE, protect against replays, run a sealed-bid auction, and report state that a contract verifies.
+- [Wallets Extension](/fcc/guides/wallets-extension): sign EVM transactions with wallet keys that `tee-node` generates and keeps inside the TEE.
+- [FCC Troubleshooting](/fcc/troubleshooting): common `fce` and machine issues.
+  :::

@@ -1,0 +1,88 @@
+---
+sidebar_position: 4
+slug: instruction-fees
+title: Instruction Fees
+authors: [fassko]
+description: The protocol fee and project fee on an FCC instruction, and how quoteFee prices one instruction to one TEE.
+tags: [intermediate, tee, fcc, solidity]
+keywords:
+  [
+    fcc,
+    flare-confidential-compute,
+    tee,
+    quotefee,
+    instruction-fees,
+    extension,
+    flare-network,
+  ]
+unlisted: false
+---
+
+An instruction sent through your `InstructionSender` pays two fees, both taken from the call's `msg.value`.
+
+- The **protocol fee** is the amount governance sets on `FlareTeeManager` for an operation pair.
+  [`IOperationFees.calculateFeeByTeeIds`](/fcc/reference/IOperationFees) returns that amount times the number of TEEs that receive the instruction.
+  `ExtensionBase` forwards it to [`sendInstructions`](/fcc/reference/IInstructions).
+- The **project fee** is set by the contract owner with `setProjectFee`.
+  `ExtensionBase` keeps it, together with anything the caller paid above the price.
+  The owner withdraws that balance with `withdraw`.
+  A project fee of `0` charges only the protocol fee.
+
+A direct action posted to the proxy carries no protocol fee and no project fee.
+
+The scaffold's [`ExtensionBase`](https://github.com/flare-foundation/fce-go-scaffold/blob/main/sol/src/ExtensionBase.sol) does the charging.
+Each send function is `payable` and uses the `chargesFees` modifier.
+Inside that function, `_send` takes the price out of `msg.value`, forwards the protocol fee, and leaves the rest on the contract.
+
+## quoteFee
+
+`quoteFee` returns the price of one instruction sent to one TEE: the protocol fee for that operation pair and a single TEE, plus `projectFee`.
+
+```solidity
+function quoteFee(bytes32 _opType, bytes32 _opCommand) public view returns (uint256)
+```
+
+**Parameters**
+
+- `_opType`: The operation type.
+  Pass the same `bytes32` the send function uses.
+- `_opCommand`: The operation command.
+
+**Returns**
+
+- `uint256`: The minimum `msg.value` for a send to one TEE.
+  The contract keeps any excess.
+
+Call it on your deployed `InstructionSender` before you send.
+The template's `myCommand` sends to one TEE, so `quoteFee(OP_TYPE_MY_EXTENSION, OP_COMMAND_MY_COMMAND)` is the minimum for that call.
+[`fce send`](/fcc/guides/getting-started) finds the same amount by simulating the transaction.
+
+`quoteFee` builds that price as follows:
+
+1. It reads `extensionId`.
+   Until `setExtensionId` has run, the call reverts with `ExtensionIdNotSet`.
+2. It asks [`IMachineManager.getRandomTeeIds`](/fcc/reference/IMachineManager) for one production TEE of that extension.
+   With no production TEE, the registry reverts with [`TooMany`](/fcc/reference/IMachineManager).
+3. It asks `calculateFeeByTeeIds` for that operation pair and that one TEE.
+   The result is the protocol fee.
+4. It adds `projectFee`.
+
+The protocol fee is the per-operation fee times the number of TEEs, so every production TEE yields the same `quoteFee`.
+The call still needs a production machine, because that is how `ExtensionBase` selects the TEE.
+
+One `_send` to several TEEs pays `calculateFeeByTeeIds` for that list, plus `projectFee` once for the instruction.
+`quoteFee` is the one-TEE price.
+When a command names its own TEE list, quote that list the same way: the protocol fee for those ids, plus `projectFee` once.
+The Wallets example does this in [`quoteSignTransaction`](https://github.com/flare-foundation/fce-go-scaffold/blob/main/examples/wallets/contracts/src/InstructionSender.sol), and the Direct Actions example does it in [`quoteSetAdmin`](https://github.com/flare-foundation/fce-go-scaffold/blob/main/examples/direct/contracts/src/InstructionSender.sol).
+
+## Who moves the fee
+
+| Who             | What they do                                                                            |
+| --------------- | --------------------------------------------------------------------------------------- |
+| Governance      | Sets the protocol fee for each operation pair on `FlareTeeManager`                      |
+| Contract owner  | Sets `projectFee` with `setProjectFee`, and withdraws collected fees with `withdraw`    |
+| Caller          | Sends at least `quoteFee` as `msg.value` on a one-TEE send function                     |
+| `ExtensionBase` | Forwards the protocol fee to `FlareTeeManager` and keeps the project fee and any excess |
+
+A payment below the price reverts with `InsufficientFee(price, available)` from `ExtensionBase`.
+If the value forwarded to `sendInstructions` is below `calculateFeeByTeeIds`, `FlareTeeManager` reverts with `FeeTooLow`.
