@@ -5,6 +5,7 @@ type ToolCardItem = {
   label: string;
   href: string;
   description: string;
+  tag?: string;
 };
 
 type ToolCardGridProps = {
@@ -24,6 +25,7 @@ export default function ToolCardGrid({
           className={`col ${colClassName} margin-bottom--lg`}
         >
           <DocCard
+            tag={item.tag}
             item={{
               type: "link",
               label: item.label,

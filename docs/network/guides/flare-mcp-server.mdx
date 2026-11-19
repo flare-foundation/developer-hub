@@ -1,0 +1,421 @@
+---
+slug: flare-mcp-server
+title: Flare MCP Server
+sidebar_label: Flare MCP Server
+description: Connect the Flare MCP server to Claude, Cursor, and other AI tools to read Flare state, search the docs, and build unsigned transactions.
+keywords:
+  [
+    mcp,
+    model-context-protocol,
+    claude,
+    cursor,
+    ai-tools,
+    ftso,
+    fdc,
+    fassets,
+    fcc,
+    smart-accounts,
+  ]
+sidebar_position: 11
+---
+
+import CopyButton from "@site/src/components/CopyButton";
+
+The Flare MCP server connects an AI client to live Flare data through the [Model Context Protocol](https://modelcontextprotocol.io/).
+It searches this documentation, reads chain and protocol state, and builds unsigned transactions for [FTSO](/ftso/overview), [FDC](/fdc/overview), [FAssets](/fassets/overview), [Smart Accounts](/smart-accounts/overview), and [FCC](/fcc/overview).
+
+The server is hosted at `https://mcp.flare.network` <CopyButton textToCopy="https://mcp.flare.network" />.
+It speaks stateless [Streamable HTTP](https://modelcontextprotocol.io/docs/concepts/transports) and returns JSON.
+No API key is required.
+
+## What you can ask
+
+Ask in plain language.
+Name the [network](/network/overview) when it matters: `flare` is Flare Mainnet, and `coston2` is the testnet.
+When a question needs a transaction, say that you will sign it yourself.
+
+### Prices
+
+- `What is the current FLR/USD price on Flare Mainnet?` <CopyButton textToCopy="What is the current FLR/USD price on Flare Mainnet?" />
+- `On Coston2, show the BTC/USD feed and the BTC/ETH cross rate.` <CopyButton textToCopy="On Coston2, show the BTC/USD feed and the BTC/ETH cross rate." />
+- `List the FTSO feeds and give me the feed id for ETH/USD.` <CopyButton textToCopy="List the FTSO feeds and give me the feed id for ETH/USD." />
+
+### Documentation
+
+- `Search the Flare docs for FDC EVMTransaction attestations and fetch the getting started page.` <CopyButton textToCopy="Search the Flare docs for FDC EVMTransaction attestations and fetch the getting started page." />
+- `Search the Flare docs and explain who sends the XRPL payment in Core Vault minting and who finalizes the mint on Flare.` <CopyButton textToCopy="Search the Flare docs and explain who sends the XRPL payment in Core Vault minting and who finalizes the mint on Flare." />
+
+### Chain and Contracts
+
+- `Is Flare Mainnet synced, and what are the latest block and the current FSP voting round?` <CopyButton textToCopy="Is Flare Mainnet synced, and what are the latest block and the current FSP voting round?" />
+- `Decode this Flare transaction and explain the revert reason if it failed.` <CopyButton textToCopy="Decode this Flare transaction and explain the revert reason if it failed." />
+- `What is the AssetManagerFXRP address on Coston2?` <CopyButton textToCopy="What is the AssetManagerFXRP address on Coston2?" />
+- `Explore the FtsoV2 contract on Flare Mainnet and show its current view values.` <CopyButton textToCopy="Explore the FtsoV2 contract on Flare Mainnet and show its current view values." />
+
+### FAssets
+
+- `How much FXRP can my address redeem on Flare right now? Show redeemableNow, the fee, and maxRedeemedTickets.` <CopyButton textToCopy="How much FXRP can my address redeem on Flare right now? Show redeemableNow, the fee, and maxRedeemedTickets." />
+- `On Coston2, prepare the XRPL payment to mint 10 FXRP to my address and show the memo for me to send.` <CopyButton textToCopy="On Coston2, prepare the XRPL payment to mint 10 FXRP to my address and show the memo for me to send." />
+- `List FXRP agents on Flare that have free collateral, and include their fees.` <CopyButton textToCopy="List FXRP agents on Flare that have free collateral, and include their fees." />
+- `Walk me through redeeming 25 FXRP to my XRPL address and show the unsigned transaction for me to sign.` <CopyButton textToCopy="Walk me through redeeming 25 FXRP to my XRPL address and show the unsigned transaction for me to sign." />
+
+### Flare Data Connector (FDC)
+
+- `What does an XRPPayment attestation prove, and which request fields does it need?` <CopyButton textToCopy="What does an XRPPayment attestation prove, and which request fields does it need?" />
+- `On Coston2, prepare an EVMTransaction attestation for this transaction hash and quote the request fee.` <CopyButton textToCopy="On Coston2, prepare an EVMTransaction attestation for this transaction hash and quote the request fee." />
+
+### Flare Smart Accounts (FSA)
+
+- `Look up the Smart Account for my XRPL address on Coston2 and show the nonce and balances.` <CopyButton textToCopy="Look up the Smart Account for my XRPL address on Coston2 and show the nonce and balances." />
+- `Encode an FXRP transfer instruction and show the XRPL payment I need to sign.` <CopyButton textToCopy="Encode an FXRP transfer instruction and show the XRPL payment I need to sign." />
+
+### Flare Confidential Compute (FCC)
+
+- `On Coston2, list public FCC extensions and the TEE machines that are in production.` <CopyButton textToCopy="On Coston2, list public FCC extensions and the TEE machines that are in production." />
+
+### Delegation, Staking, and Governance
+
+- `Show my WFLR delegation and unclaimed rewards on Flare, then prepare an unsigned claim for me to sign.` <CopyButton textToCopy="Show my WFLR delegation and unclaimed rewards on Flare, then prepare an unsigned claim for me to sign." />
+- `Compare connected P-chain validators for staking 50000 FLR for 14 days, and leave the stake for the Flare Portal.` <CopyButton textToCopy="Compare connected P-chain validators for staking 50000 FLR for 14 days, and leave the stake for the Flare Portal." />
+- `List the newest FIP proposals and summarize the latest one.` <CopyButton textToCopy="List the newest FIP proposals and summarize the latest one." />
+- `What is the latest secure random number on Flare, and is it safe to use?` <CopyButton textToCopy="What is the latest secure random number on Flare, and is it safe to use?" />
+
+The server name is `flare-mcp` (Flare Network).
+Contract addresses come from the [FlareContractRegistry](/network/guides/flare-contracts-registry) at call time.
+Pass a registry name such as `AssetManagerFXRP` or `FdcHub` where a tool accepts a contract.
+ABIs come from `@flarenetwork/flare-wagmi-periphery-package`.
+Verified contracts are also read from the network's Blockscout explorer.
+
+## What the server returns
+
+Read tools return the current chain or protocol state.
+Tools named `*_build_*` return an unsigned transaction (`to`, `data`, `value`), a readable summary of amounts and fees, and an `eth_call` simulation.
+Pass `from` when you want the simulation to use a specific wallet.
+Sign and send that transaction in your own wallet.
+The server does not sign or broadcast.
+
+The same rule applies to XRPL.
+Mint and Smart Account tools return the payment destination, amount, and memo.
+Sign that payment in an XRPL wallet.
+Do not set a destination tag unless the tool tells you to.
+
+The default network is Flare Mainnet (`flare`, chain ID `14`).
+Tell the server which network to use; for example, to use the Coston2 testnet.
+Songbird and Coston networks are also accepted.
+
+## Setup
+
+### Quick Connect
+
+On any page of the Developer Hub, open **Copy page** in the top-right corner:
+
+- **Copy MCP config** copies JSON whose server URL is `https://mcp.flare.network`.
+- **Install in Cursor** opens the Cursor installer for this server.
+- **Install in VS Code** opens the VS Code installer for this server.
+
+### Claude Code
+
+```bash
+claude mcp add --transport http flare https://mcp.flare.network
+```
+
+Check the connection:
+
+```bash
+claude mcp list
+```
+
+### Cursor
+
+Add this to `~/.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "flare": {
+      "type": "http",
+      "url": "https://mcp.flare.network"
+    }
+  }
+}
+```
+
+### Claude Desktop
+
+Claude Desktop starts a local command.
+Connect it to the remote server with [`mcp-remote`](https://www.npmjs.com/package/mcp-remote):
+
+```json
+{
+  "mcpServers": {
+    "flare": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://mcp.flare.network"]
+    }
+  }
+}
+```
+
+On macOS the file is `~/Library/Application Support/Claude/claude_desktop_config.json`.
+On Windows it is `%APPDATA%\Claude\claude_desktop_config.json`.
+Restart Claude Desktop after saving it.
+
+### Other MCP Clients
+
+Any client that supports Streamable HTTP can use:
+
+```
+https://mcp.flare.network
+```
+
+## Tools
+
+The MCP server provides tools to read the chain and protocol state, search the documentation, and build transactions.
+Explore the tools below.
+
+### Networks and Chain
+
+| Tool                    | Purpose                                                                                                                                                            |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `network_get_info`      | Chain ID, native token, C-chain and P-chain RPC, explorer, Data Availability Layer, and FDC verifier URLs                                                          |
+| `chain_get_status`      | RPC health, sync state, latest block and age, average block time, gas, and the current Flare Systems Protocol voting round and reward epoch                        |
+| `chain_get_block`       | Block by number, hash, or tag (`latest`, `finalized`, and the other standard tags). Optional decoded transaction summaries                                         |
+| `chain_get_transaction` | Receipt, fee, decoded method, and decoded logs. A reverted transaction is replayed to recover the revert reason. Omit `network` to search the other Flare networks |
+| `chain_get_logs`        | `eth_getLogs` by address or registry name, event signature, and indexed arguments, decoded. Ranges are split into 30-block chunks, up to 3000 blocks, newest first |
+
+### Registry and contracts
+
+| Tool                            | Purpose                                                                                                                  |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `registry_list_contracts`       | Every name registered in the FlareContractRegistry, with an optional filter                                              |
+| `registry_get_contract_address` | Resolve one name, such as `AssetManagerFXRP`, `FdcHub`, or `FtsoV2`                                                      |
+| `contract_explore`              | Any address or registry name: verification, proxy or diamond facets, token detection, functions, and current view values |
+| `contract_read`                 | `eth_call` a function by name or signature. The call is simulated and is not sent                                        |
+
+### Documentation
+
+`docs_search` ranks pages from the live [`llms.txt`](pathname:///llms.txt) index using the title, URL, and short description.
+`docs_fetch` then reads that page as Markdown from `https://dev.flare.network`.
+A URL without `.md` is fetched as its Markdown twin, for example `/ftso/overview` becomes `/ftso/overview.md`.
+
+| Tool          | Purpose                                  |
+| ------------- | ---------------------------------------- |
+| `docs_search` | Find Developer Hub pages from `llms.txt` |
+| `docs_fetch`  | Read one page as Markdown                |
+
+### FTSO
+
+[FTSOv2](/ftso/overview) feeds are submitted by data providers and aggregated onchain.
+Block-latency values come from `FtsoV2`.
+Anchor values are the Scaling feeds, returned with Merkle proofs from the Data Availability Layer.
+
+| Tool                              | Purpose                                                                                          |
+| --------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `ftso_list_feeds`                 | Block-latency feeds from `FastUpdatesConfiguration`: index, feed ID, name, and category          |
+| `ftso_lookup_feed`                | One feed: ID, category, current block-latency value, latest anchor value, and a Solidity snippet |
+| `ftso_feed_id`                    | Encode a name such as `BTC` to its bytes21 ID (`BTC/USD`), or decode an ID                       |
+| `ftso_get_feeds`                  | Current block-latency values from `FtsoV2.getFeedsById`                                          |
+| `ftso_get_cross_rate`             | A cross pair from two feeds that share a quote, for example BTC/ETH from BTC/USD and ETH/USD     |
+| `ftso_get_anchor_feeds`           | Scaling anchor values with Merkle proofs, checked with `FtsoV2.verifyFeedData`                   |
+| `ftso_get_volatility_incentive`   | `FastUpdateIncentiveManager` sample size, price, range, and recent update counts                 |
+| `ftso_build_volatility_incentive` | Unsigned `offerIncentive` transaction that raises the expected sample size for a period          |
+
+### FDC
+
+[FDC](/fdc/getting-started) verifies external chain data through attestations.
+The caller prepares a request.
+A transaction then calls `FdcHub.requestAttestation` and pays the fee.
+After the voting round finalizes, the proof is read from the Data Availability Layer.
+A contract then calls `FdcVerification`.
+
+| Tool                            | Purpose                                                                                                                |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `fdc_lookup_attestation_type`   | What an attestation type proves, its source chains, request and response fields, and an example request body           |
+| `fdc_prepare_request`           | ABI-encode a request through the verifier (`XRPPayment`, `Payment`, `AddressValidity`, and others) and quote the fee   |
+| `fdc_prepare_evm_transaction`   | An `EVMTransaction` request for Ethereum, Flare, or Songbird. Testnets use Sepolia, Coston2, or Coston                 |
+| `fdc_build_attestation_request` | Unsigned `FdcHub.requestAttestation` transaction. The voting round from that transaction is what `fdc_get_proof` needs |
+| `fdc_get_proof`                 | Wait for finalization, fetch the proof from the Data Availability Layer, and decode it                                 |
+| `fdc_verify_proof`              | Check a proof onchain with `FdcVerification.verify<Type>()`                                                            |
+| `fdc_get_round_status`          | Current voting round, and whether a round is finalized on the Relay                                                    |
+
+`Web2Json` is deprecated.
+For Web2 data, build a [Flare Compute Extension](/fcc/overview) on FCC.
+
+### FAssets
+
+[FAssets](/fassets/overview) represent assets such as XRP on Flare through a collateralized mint and redemption system.
+Agents post collateral.
+Users mint by paying the underlying asset, and redeem by sending FAssets back so an agent pays them on the underlying chain.
+
+Core Vault minting is the current path.
+`fassets_prepare_minting_payment` returns the Core Vault XRPL address, the gross XRP amount, the fee split, and the memo.
+You send that payment from an XRPL wallet.
+An executor usually finalizes the mint on Flare.
+To prepare that transaction yourself, request an `XRPPayment` attestation and then build `executeDirectMinting`.
+The full sequence is in [Mint FXRP](#mint-fxrp-on-coston2).
+
+For redemption, `redeemableNow` is the capacity of redemption queue tickets.
+The Core Vault balance is reported separately.
+One `redeem` call uses at most `maxRedeemedTickets` tickets.
+See [Redemption](/fassets/redemption).
+
+#### FAssets Reads
+
+| Tool                                 | Purpose                                                                                 |
+| ------------------------------------ | --------------------------------------------------------------------------------------- |
+| `fassets_list`                       | All FAssets from `AssetManagerController.getAssetManagers()`                            |
+| `fassets_get_info`                   | AssetManager and token address, lot size, supply, cap, pause state, and fees            |
+| `fassets_get_settings`               | The full `getSettings()` struct                                                         |
+| `fassets_get_collateral_types`       | Vault and pool collateral tokens and ratios                                             |
+| `fassets_list_agents`                | Available agents, with fee, free lots, status, and name                                 |
+| `fassets_get_agent_info`             | Agent state plus the AgentOwnerRegistry name, description, icon, and terms              |
+| `fassets_get_minting_info`           | Core Vault address, fees, hourly and daily rate-limit windows, and minting cap headroom |
+| `fassets_prepare_minting_payment`    | XRPL payment to plan: gross amount, fee split, memo, and a rate-limit check             |
+| `fassets_encode_minting_memo`        | Encode a 32-byte or 48-byte minting memo                                                |
+| `fassets_get_minting_status`         | Whether a mint is delayed, looked up by XRPL transaction ID                             |
+| `fassets_get_minting_tags`           | Destination-tag lookup by ID or owner, and the reservation fee                          |
+| `fassets_get_collateral_reservation` | A legacy collateral reservation and its fee quote                                       |
+| `fassets_get_redemption_info`        | Balance, `redeemableNow` from the redemption queue, fees, and `maxRedeemedTickets`      |
+| `fassets_get_redemption_request`     | Status of one redemption request                                                        |
+| `fassets_get_redemption_queue`       | Redemption ticket queue, global or for one agent                                        |
+| `fassets_get_core_vault_info`        | Core Vault manager, availability, and fees                                              |
+| `fassets_get_balance`                | FAsset and native balance of an address                                                 |
+
+#### Transaction builders
+
+| Tool                                           | Contract call                                                                              |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `fassets_build_execute_minting`                | `executeDirectMinting` with an `XRPPayment` proof                                          |
+| `fassets_build_mark_unblocked_minting_allowed` | `markUnblockedDirectMintingAllowed`                                                        |
+| `fassets_build_reserve_minting_tag`            | `MintingTagManager.reserve`, which pays the reservation fee                                |
+| `fassets_build_set_minting_tag_recipient`      | Set the recipient on a minting tag                                                         |
+| `fassets_build_set_minting_tag_executor`       | Set the executor on a minting tag                                                          |
+| `fassets_build_transfer_minting_tag`           | Transfer a minting tag                                                                     |
+| `fassets_build_redeem`                         | `redeem`, `redeemAmount`, or `redeemWithTag` when the XRPL address needs a destination tag |
+| `fassets_build_redemption_payment_default`     | Payment-default after an agent misses the deadline. Requires a non-payment proof           |
+| `fassets_build_transfer`                       | ERC-20 transfer of the FAsset                                                              |
+| `fassets_build_legacy_reserve_collateral`      | Archived collateral-reservation mint. Selects the cheapest agent                           |
+| `fassets_build_legacy_execute_minting`         | Finalize that archived reservation                                                         |
+
+### Smart Accounts
+
+[Smart Accounts](/smart-accounts/overview) let an XRPL user act on Flare without holding FLR.
+`MasterAccountController` is registered on Flare Mainnet and Coston2.
+`sa_encode_instruction` builds a 32-byte payment reference for an operator XRPL wallet.
+`sa_build_custom_instruction` builds a Core Vault memo for arbitrary calls from the personal account.
+
+| Tool                            | Purpose                                                                                                                      |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `sa_get_info`                   | Operator XRPL wallets, Core Vault address, executor, per-instruction fees, and registered vaults                             |
+| `sa_get_account`                | Personal account for an XRPL address: deployed, nonce, pinned executor, and balances                                         |
+| `sa_encode_instruction`         | Payment-reference instruction (FXRP transfer or redeem, or a Firelight or Upshift vault action) and the XRPL payment to send |
+| `sa_decode_instruction`         | Decode a payment reference or a direct-minting memo                                                                          |
+| `sa_build_custom_instruction`   | Arbitrary calls from the personal account, with the exact Core Vault payment                                                 |
+| `sa_build_recovery_instruction` | Skip-memo and fast-forward-nonce recovery memos, checked against current account state                                       |
+| `sa_build_executor_transaction` | Unsigned `executeDirectMintingWithData(proof, userOpData)`                                                                   |
+| `sa_check_transaction`          | Whether an XRPL payment was already consumed (`isTransactionIdUsed`)                                                         |
+
+### FCC
+
+[FCC](/fcc/overview) runs Flare Compute Extensions inside Trusted Execution Environments.
+Results and signed actions can be verified onchain.
+`FlareTeeManager` is registered on Coston2, Coston, and Songbird.
+FCC is in the final stages of development, so use Coston2 and treat the interfaces as subject to change.
+An extension's own `InstructionSender` submits instructions, after data providers reach sufficient signature weight.
+This server reads FCC state and instruction results.
+Deploy and register an extension with the [fce-extension-scaffold](https://github.com/flare-foundation/fce-extension-scaffold).
+
+| Tool                    | Purpose                                                                                                 |
+| ----------------------- | ------------------------------------------------------------------------------------------------------- |
+| `fcc_get_info`          | Extension count, default fee, platforms, key types, cosigners, and active machines                      |
+| `fcc_list_extensions`   | Public extensions, newest first, with owner, InstructionSender, and active machines                     |
+| `fcc_get_extension`     | One extension: owner, InstructionSender, TEE machines, code hashes, governance, and pause state         |
+| `fcc_list_tee_machines` | TEE machines in production, for one extension or all                                                    |
+| `fcc_get_tee_machine`   | Status, code hash, platform, and public key. Optional `/info` on the machine's public HTTPS proxy       |
+| `fcc_get_operation_fee` | Instruction fee for an OPType and OPCommand pair                                                        |
+| `fcc_get_instruction`   | Decode `TeeInstructionsSent` from an InstructionSender transaction and poll each machine for the result |
+
+### Wrapped native, delegation, rewards, and staking
+
+Wrap the native token (FLR, SGB, or C2FLR) before delegating.
+`delegation_build_delegate` replaces the current delegations and accepts up to two data providers.
+Provider names come from the community list wallets use.
+P-chain staking itself is a P-chain transaction.
+Stake in the [Flare Portal](https://portal.flare.network) or with the [Flare Stake tool](/network/guides/using-flare-stake-tool).
+This server reads the mirrored stakes and can build the reward claim.
+
+| Tool                              | Purpose                                                                                      |
+| --------------------------------- | -------------------------------------------------------------------------------------------- |
+| `wnat_get_balance`                | Native and wrapped balances, and WNat total supply                                           |
+| `wnat_build_wrap`                 | Unsigned `WNat.deposit` or `depositTo`. Warns when no native token is left for gas           |
+| `wnat_build_unwrap`               | Unsigned `WNat.withdraw`. Omit `amount` to unwrap the whole balance                          |
+| `delegation_list_providers`       | Data providers for a reward epoch: delegation address, name, fee, vote power, and node count |
+| `delegation_get_status`           | WNat balance, vote power, current delegations, and mirrored P-chain stakes                   |
+| `delegation_build_delegate`       | Unsigned `WNat.batchDelegate` to up to two providers. Replaces existing delegations          |
+| `delegation_build_undelegate_all` | Unsigned `WNat.undelegateAll`                                                                |
+| `rewards_get_state`               | Unclaimed `RewardManager` rewards by epoch and claim type                                    |
+| `rewards_build_claim`             | Unsigned `RewardManager.claim` for initialized rewards. Optionally receive them wrapped      |
+| `staking_get_stakes`              | P-chain stakes mirrored by `PChainStakeMirror` on Flare and Coston2                          |
+
+### P-chain, governance, and randomness
+
+| Tool                        | Purpose                                                                                                       |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `pchain_get_validators`     | Current validators: own and delegated stake, fee, uptime, and the FTSO data provider registered for each node |
+| `pchain_get_validator`      | One node, including reward owners, BLS key, and delegators                                                    |
+| `pchain_get_balance`        | Unlocked, locked, and staked balance of bech32 P-chain addresses (`P-flare1…`, `P-costwo1…`)                  |
+| `governance_list_proposals` | FIP, SIP, and STP proposals: title, status, voting outcome, and links                                         |
+| `governance_get_proposal`   | One proposal (`FIP.16`, `sip5`, `STP_13`): metadata and description                                           |
+| `rng_get_random_number`     | `RandomNumberV2` value for the latest or a given voting round. Use it when `isSecure` is true                 |
+
+A new random value is produced about every 90 seconds.
+A contract that needs the value should call `getRandomNumber()` itself.
+
+### Resources
+
+Clients that support MCP resources can attach this reference data without a tool call.
+`{network}` is `flare`, `coston2`, `songbird`, or `coston`.
+
+| URI                              | Content                                                                               |
+| -------------------------------- | ------------------------------------------------------------------------------------- |
+| `networks://index`               | Chain IDs, native tokens, RPCs, explorers, Data Availability Layer, and verifier URLs |
+| `contracts://{network}`          | Every FlareContractRegistry name and address                                          |
+| `feeds://{network}`              | FTSO block-latency feeds: index, feed ID, name, and category                          |
+| `fdc://attestation-types`        | Each FDC attestation type, what it proves, and the tool that prepares it              |
+| `fdc://attestation-types/{type}` | Request and response fields for one attestation type, plus an example request         |
+| `proposals://index`              | FIP, SIP, and STP proposals with status and voting outcome                            |
+
+### Prompts
+
+Prompts are guided workflows.
+Most clients show them as slash commands.
+Every argument is optional.
+The assistant asks for anything you leave out.
+Each prompt tells the assistant to show the unsigned transaction so you can sign it yourself.
+
+| Prompt               | Arguments                                     | What it walks through                                                                                              |
+| -------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `mint-fxrp`          | `network`, `recipient`, `amount`              | Minting info, the XRPL payment to the Core Vault, status, then self-execute with an FDC proof if no executor did   |
+| `redeem-fxrp`        | `network`, `address`, `amount`, `xrplAddress` | `redeemableNow`, redeem, follow each redemption request, and payment default if an agent misses the deadline       |
+| `delegate-and-claim` | `network`, `address`                          | Current delegation, unclaimed rewards, up to two data providers, delegate, and claim                               |
+| `choose-validator`   | `network`, `amount`, `days`                   | Compare P-chain validators by end time, uptime, fee, and stake. Staking stays in the Flare Portal or `flare-stake` |
+
+### Mint FXRP on Coston2
+
+Use Coston2 while you are trying the flow.
+On mainnet, omit `network` or set it to `flare`.
+
+1. Call `fassets_prepare_minting_payment` with the Flare recipient and the net FXRP amount, for example `10`, and `network` set to `coston2`.
+   It returns the Core Vault XRPL address, the exact XRP amount, and `memoData`.
+2. Send that payment from your XRPL wallet.
+3. An executor usually finalizes the mint.
+   Check `fassets_get_minting_status` with the XRPL transaction hash.
+4. To prepare the finalizing transaction yourself: `fdc_prepare_request` with attestation type `XRPPayment` and the XRPL transaction ID, then `fdc_build_attestation_request`, `fdc_get_proof`, and `fassets_build_execute_minting` with the proof.
+   Sign each returned Flare transaction in your wallet.
+5. Call `fassets_get_balance` for the recipient.
+
+:::tip[What's next]
+
+Use [Flare AI Skills](/network/guides/flare-ai-skills) when you want the same protocols explained as coding workflows inside Cursor or Claude Code.
+
+:::
