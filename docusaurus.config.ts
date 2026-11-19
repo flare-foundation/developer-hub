@@ -391,6 +391,10 @@ const config: Config = {
             from: "/fcc/guides/protocol-redeploy-migration",
             to: "/fcc/troubleshooting",
           },
+          {
+            from: "/network/guides/flare-developer-hub-mcp-server",
+            to: "/network/guides/flare-mcp-server",
+          },
         ],
       },
     ],
@@ -398,8 +402,8 @@ const config: Config = {
       "docusaurus-plugin-copy-page-button",
       {
         mcpServer: {
-          name: "Flare DevHub MCP Server",
-          url: "https://dev.flare.network/mcp",
+          name: "Flare MCP Server",
+          url: "https://mcp.flare.network",
         },
       },
     ],

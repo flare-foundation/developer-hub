@@ -138,10 +138,7 @@ function CardLink({
   );
 }
 
-export default function DocCard({
-  item,
-  tag,
-}: Props & { tag?: string }): JSX.Element {
+export default function DocCard({ item, tag }: Props): JSX.Element {
   switch (item.type) {
     case "link":
       return <CardLink item={item} tag={tag} />;

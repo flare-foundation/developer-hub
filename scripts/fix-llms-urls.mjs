@@ -386,7 +386,7 @@ function ensureAgentDiscoveryLinks(content) {
 - [Agent instructions](${SITE_BASE}/agent-instructions.md)
 - [AGENTS.md](${SITE_BASE}/AGENTS.md)
 - [MCP discovery](${SITE_BASE}/.well-known/mcp)
-- [MCP server guide](${SITE_BASE}/network/guides/flare-developer-hub-mcp-server.md)
+- [MCP server guide](${SITE_BASE}/network/guides/flare-mcp-server.md)
 - [Authentication](${SITE_BASE}/developers.md#authentication)
 
 `;
