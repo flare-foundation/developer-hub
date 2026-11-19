@@ -9,6 +9,7 @@ retry_wait_time = 3
 max_retries = 5
 max_concurrency = 8
 # Pace each host so a cold crawl does not burst GitHub into HTML 503s.
+# lychee 0.24 retries 429 only, so those 503s are retried in CI instead of accepted here.
 host_concurrency = 4
 host_request_interval = "100ms"
 accept = ["200..=399", "429"]
@@ -24,6 +25,8 @@ exclude = [
     '^https://(www\.)?bscscan\.com/',
     '^https://(www\.)?monadscan\.com/',
     '^https://(www\.)?4byte\.directory/',
+    # Bitcoin Wiki answers non-browser clients with 418. The pages are valid in a browser.
+    '^https://en\.bitcoin\.it/',
     '^https://t\.me/',
     '^https://metamask\.io/',
     '^https://openweathermap\.org/',
