@@ -36,6 +36,10 @@ It also delivers two built-in system applications: **Protocol Managed Wallets (P
   See [TEE public and private keys](/fcc/tee-keys).
 - **Decentralized Consensus:** Instructions are relayed to TEE machines only after reaching a 50%+ signature weight from Flare's data providers, leveraging the same [signing policy](/network/fsp) used across the Flare Systems Protocol.
   See [Data providers and cosigners](/fcc/data-providers).
+- **Direct Actions:** A client posts work to one TEE's proxy, with no transaction and no data-provider signature.
+  The extension checks the payload itself.
+  This is how a secret reaches the enclave without a copy onchain or in the image.
+  See [Direct actions](#direct-actions).
 
 :::tip[Interested in learning more?]
 For a detailed explanation of the FCC mechanism, read the [FCC whitepaper](/pdf/whitepapers/20260706-FlareConfidentialCompute.pdf).
@@ -44,7 +48,7 @@ For a detailed explanation of the FCC mechanism, read the [FCC whitepaper](/pdf/
 :::warning
 Flare Confidential Compute is in the final stages of development.
 It is available on **Coston2**, **Coston**, and **Songbird** today and will be available on other Flare networks soon.
-You can already start building Flare Compute Extensions with the [getting started guide](/fcc/guides/getting-started) and the example extension guides under Developer Guides.
+You can already start building Flare Compute Extensions on Coston2 with the [FCE Go scaffold](https://github.com/flare-foundation/fce-go-scaffold) and the [`fce` CLI](https://github.com/flare-foundation/fce-tooling): see the [getting started guide](/fcc/guides/getting-started) and the example extension guides under Developer Guides.
 :::
 
 ## Architecture
@@ -96,6 +100,9 @@ The system comprises three core components:
    Results include signed payment transactions for external blockchains, signed attestations, or other computation outputs usable within smart contracts.
    Details: [TEE public and private keys](/fcc/tee-keys).
 
+That path is for instructions.
+An extension can also take a [direct action](#direct-actions): the TEE proxy accepts it from the client and queues it for that one machine.
+
 ## Flare Compute Extensions
 
 Applications within FCC are organized as **Flare Compute Extensions (FCE)**.
@@ -110,8 +117,33 @@ The FCC infrastructure provides the following for all compute extensions:
 - **Identity**: Each TEE machine has a unique identity (TEE id) defined by a private key generated at boot.
 - **Onchain Registration**: TEE machines register within a compute extension by proving they run a supported code version, verified through machine attestation and the FDC.
 - **Result Verification**: Data and computation results signed by a registered TEE identity can be trusted and verified onchain.
-- **Instruction Relaying**: Function calls on TEE machines are triggered through instruction events on Flare's smart contracts, securely relayed by data providers.
+- **Instruction Relaying**: Onchain work reaches a TEE as an instruction event, signed and relayed by data providers.
+  Offchain work reaches one TEE as a [direct action](#direct-actions) posted to its proxy.
 - **Private Key Management**: Compute extensions support secure key generation, backup, and restoration across TEE machines.
+
+### Direct Actions
+
+Each extension operation belongs to one channel.
+
+An **instruction** starts as a call to the extension's contract.
+That contract is the only address that can submit the instruction to `FlareTeeManager`.
+Data providers relay and sign it, and the TEE runs it after the signatures exceed 50% of the current signing-policy weight.
+The caller pays the instruction fee, and the contract decides who may send it.
+
+A **direct action** is a post to one TEE's proxy, at `POST /direct`.
+The proxy queues it, and the TEE fetches it.
+There is no transaction, no fee, and no data-provider signature.
+`tee-node` accepts it when the extension registered that operation for this channel, and rejects reserved system types (`F_`).
+The proxy API key, when the operator sets one, only opens the endpoint.
+Everyone who holds it shares it, and the extension never receives the key, so the payload itself has to show who authorized the action.
+
+The usual proof is a signature from a key that an earlier instruction stored.
+The signature binds this TEE's address, this operation, and the body, so a signature made for one machine or one command fails on any other.
+A secret is encrypted to that TEE's public key and opened only inside the enclave.
+The proxy, its operator, and anyone who saw the post can send it again, so the handler is idempotent or refuses an old counter.
+The result is unsigned, because the proxy assigns the action id, and a signature on that id could be presented as an instruction result.
+
+The [Direct Actions](/fcc/guides/direct-actions-extension) guide walks through an admin key, secret provisioning, replay rules, a sealed-bid auction, and a state report the contract checks at each availability check.
 
 ### Deployment
 
@@ -129,8 +161,7 @@ graph TB
         TEEMachine -- "actions & results" --> InternalAPI["Internal API"]
         InternalAPI --> Proxy
         Proxy --> REDIS["REDIS"]
-        Proxy --> Indexer["C-chain indexer"]
-        Indexer --> FlareNode["Flare node"]
+        Proxy --> ChainSource["Flare RPC or C-chain indexer"]
     end
 
     ExternalAPI["External API"] <==> Proxy
@@ -144,8 +175,9 @@ Each TEE deployment consists of two main components:
   The TEE machine pulls actions from the proxy at its own pace, processes them, and pushes results back.
 
 - **TEE Proxy:** A publicly accessible server that acts as the interface between the outside world and the TEE machine.
-  It receives signed instructions from data providers, manages action queues, stores results, and serves them to external users.
-  The proxy also monitors the Flare C-chain for signing policy updates.
+  It receives signed instructions from data providers and, when the operator enables it, direct actions at `POST /direct`.
+  It manages action queues, stores results, and serves them to external users.
+  The proxy also follows signing policy updates on the Flare C-chain, through an RPC node or a C-chain indexer database.
 
 ## System Applications
 
@@ -178,7 +210,8 @@ Learn how FCC signing works:
 - [TEE public and private keys](/fcc/tee-keys) — identity keypair, ECDSA, ECIES, and decrypting inside the enclave.
 - [Data providers and cosigners](/fcc/data-providers) — who may send the TEE work, signing weight, and the extra authorization gate.
 
-Then build an extension with [Build Your First Extension](/fcc/guides/getting-started), or the [Private Key Extension](/fcc/guides/sign-extension) example.
+Then build an extension with [Build Your First Extension](/fcc/guides/getting-started), and continue with the [External API](/fcc/guides/external-api-extension), [Direct Actions](/fcc/guides/direct-actions-extension), and [Wallets](/fcc/guides/wallets-extension) examples.
+[Deploy a TEE on Google Cloud](/fcc/guides/deploy-on-gcp) runs that extension on a Confidential Space VM.
 
 Contract ABIs: [FCC Reference](/fcc/reference) — [`IFlareTeeManager`](/fcc/reference/IFlareTeeManager), [`IExtensionManager`](/fcc/reference/IExtensionManager), [`IMachineManager`](/fcc/reference/IMachineManager), [`IVerification`](/fcc/reference/IVerification), [`IInstructions`](/fcc/reference/IInstructions), [`IOperationFees`](/fcc/reference/IOperationFees), [`IOwnerAllowlist`](/fcc/reference/IOwnerAllowlist), [`IWalletProjectManager`](/fcc/reference/IWalletProjectManager), [`IWalletManager`](/fcc/reference/IWalletManager), [`IWalletKeyManager`](/fcc/reference/IWalletKeyManager), [`ITeeCommonErrors`](/fcc/reference/ITeeCommonErrors).
 

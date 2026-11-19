@@ -250,6 +250,7 @@ const sidebars: SidebarsConfig = {
       items: [
         "fcc/tee-keys",
         "fcc/data-providers",
+        "fcc/instruction-fees",
         {
           type: "category",
           label: "Developer Guides",
