@@ -215,15 +215,64 @@ check:external-links:
       status=$?
       set -e
 
-      if [ "$status" -ne 0 ]; then
-        if [ -f lychee/out.md ]; then
-          echo "Broken links:"
-          cat lychee/out.md
-        else
-          echo "Lychee detected broken links but no report file was generated"
-        fi
+      if [ "$status" -eq 0 ]; then
+        exit 0
+      fi
+
+      if [ ! -f lychee/out.md ]; then
+        echo "Lychee detected broken links but no report file was generated"
         exit "$status"
       fi
+
+      echo "Broken links:"
+      cat lychee/out.md
+
+      # lychee 0.24.2 retries 429 only. GitHub's unauthenticated limiter
+      # answers a cold crawl with HTML 503, including for files that exist.
+      # Retry when every reported error is a 503. Any other status still fails.
+      other=$(grep -E '^\* \[' lychee/out.md | grep -v '^\* \[503\]' || true)
+      if [ -n "$other" ]; then
+        exit "$status"
+      fi
+
+      grep -E '^\* \[503\]' lychee/out.md | grep -oE 'https://[^> ]+' | sort -u > lychee/retry-urls.txt
+      if [ ! -s lychee/retry-urls.txt ]; then
+        exit "$status"
+      fi
+
+      # A URL argument is crawled as a site. Write the failed links into a
+      # markdown file so lychee checks those URLs and does not follow the page.
+      : > lychee/retry-input.md
+      while IFS= read -r url; do
+        printf '[retry](%s)\n' "$url" >> lychee/retry-input.md
+      done < lychee/retry-urls.txt
+
+      attempt=1
+      while [ "$attempt" -le 2 ]; do
+        echo "Retrying $(wc -l < lychee/retry-urls.txt) URLs that returned 503 (attempt ${attempt})..."
+        sleep $((attempt * 15))
+        set +e
+        lychee --config lychee.toml --max-concurrency 1 --format markdown --output lychee/retry.md lychee/retry-input.md
+        retry_status=$?
+        set -e
+        if [ "$retry_status" -eq 0 ]; then
+          echo "503s recovered on retry"
+          exit 0
+        fi
+        echo "Still failing after attempt ${attempt}:"
+        cat lychee/retry.md
+        other=$(grep -E '^\* \[' lychee/retry.md | grep -v '^\* \[503\]' || true)
+        if [ -n "$other" ]; then
+          exit "$retry_status"
+        fi
+        grep -E '^\* \[503\]' lychee/retry.md | grep -oE 'https://[^> ]+' | sort -u > lychee/retry-urls.txt
+        : > lychee/retry-input.md
+        while IFS= read -r url; do
+          printf '[retry](%s)\n' "$url" >> lychee/retry-input.md
+        done < lychee/retry-urls.txt
+        attempt=$((attempt + 1))
+      done
+      exit "$retry_status"
 
 test:python-examples:
   stage: test
