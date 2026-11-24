@@ -4,8 +4,10 @@ description: Understand how redemptions work in FAssets.
 keywords: [fassets, xrp, bitcoin, dogecoin, flare-network]
 ---
 
-Any holder of FAssets can redeem their FAssets for the underlying original asset.
-To do so, these holders, known as redeemers, send FAssets to the Asset Manager smart contract, and the redeemed amount is paid with the underlying asset from an agent's address.
+Any holder of FAssets can redeem them for the underlying asset.
+On the ordinary path, the holder sends FAssets to the Asset Manager, and an agent pays from that agent's underlying address.
+FXRP that was minted by a payment to the Core Vault can also be paid by the vault itself when the destination is approved.
+See [How Core Vault FXRP is redeemed](#how-core-vault-fxrp-is-redeemed).
 
 ## Redemption Process
 
@@ -35,22 +37,22 @@ This is the summary of the redemption process:
 
 4. Every agent pays the redeemer on the underlying chain and includes the payment reference in the memo field of the payment transaction.
 
-   Agents can pay the redemption from their own address, which they control on the underlying chain.
-   It does not need to be the same address where they receive minting payments.
+   The agent pays from an underlying address they control.
+   On self-mint and the archived collateral-reservation mint, that address also receives the underlying payment.
+   Public FXRP minting pays the [Core Vault](/fassets/core-vault) instead.
 
 5. After the payment is finalized, the agent uses the [FDC](/fdc/overview) to prove the payment and obtain a payment proof.
 
-6. The agent (or, in Core Vault and specific flows, the **executor**) presents the payment proof to the FAssets system, which issues a **redemption ticket**.
+6. The agent presents that proof to the Asset Manager.
+   After the agent's confirmation window, anyone, including an executor, can present the same proof.
 
-   The executor role is responsible for ensuring that the system can finalize redemptions even if the agent is unresponsive or if the flow is managed by a central entity (such as the Core Vault executor).
+   The proof closes the redemption request.
+   The contract releases that agent's vault collateral and pool collateral, updates the agent's underlying balance, and emits [`RedemptionPerformed`](/fassets/reference/IAssetManagerEvents#redemptionperformed).
+   Released collateral can back further minting or be withdrawn.
 
-   The redemption ticket is required to:
-   - Prove the payment has occurred.
-   - Trigger burning of the FAssets.
-   - Release the corresponding agent's vault collateral and pool collateral.
-   - Ensure the system tracks the underlying chain balances correctly.
-
-   After the collateral is released, it can either back the minting of more FAssets or be withdrawn.
+   This step does not create a redemption ticket.
+   The ticket was created when the backing was minted, or when the agent confirmed a return from the Core Vault, and the request in step 1 already took it from the queue.
+   The FAssets were burned in step 2.
 
 ## Redeem Any Amount
 
@@ -192,7 +194,7 @@ After this operation, the underlying backing collateral and the remaining local 
 
 ### Unresponsive agent
 
-After a successful payment, the agent might not present the payment proof (redemption ticket).
+After a successful payment, the agent might not present the payment proof.
 
 Because the agent has already paid, the redeemer is not affected.
 However, the system still requires the payment proof to track the agent's balance on the underlying chain correctly.
@@ -219,35 +221,55 @@ Note that this procedure should be used only in rare cases because providing tim
 
 ## Redemption Tickets and the Redemption Queue
 
-For every minting operation, a redemption ticket is created.
-This ticket references the minted amount and the agent that is backing the minting.
+A redemption ticket records an amount of underlying and the agent vault that backs it.
+The ticket is created when that agent self-mints, or when the archived collateral-reservation mint is executed.
+Confirming a return of underlying from the Core Vault also creates a ticket, because the assets are back under the agent.
 
-The redemption tickets are ordered in a queue that determines the next agent to be redeemed against according to the first in, first out method (FIFO).
-In other words, the first redemption ticket created will be the first redemption ticket processed.
-The FIFO queue impartially ensures that all agents have the opportunity to fulfill the duties of their role.
+Public FXRP minting does not create a ticket.
+The XRP stays in the [Core Vault](/fassets/core-vault), and the minted FXRP is not assigned to an agent.
 
-The following example shows how the redemption queue works.
+Tickets sit in one queue, ordered first in, first out (FIFO).
+A redemption takes tickets from the front, so the oldest backing is paid first.
+
+### How Core Vault FXRP is redeemed
+
+A holder of FXRP minted by a payment to the Core Vault receives XRP in one of two ways.
+
+**Agent queue.** The holder calls `redeem`, `redeemAmount`, or `redeemWithTag`.
+The contract burns the FXRP and takes tickets from the front of the queue.
+The agent on each ticket pays the redeemer from that agent's underlying address.
+If that agent's XRP is in the Core Vault, the agent first calls `requestReturnFromCoreVault`, locks collateral, and later confirms the vault's payment with `confirmReturnFromCoreVault`.
+That confirmation creates the ticket that later redemptions consume.
+On this path the minter's original payment stays in the vault until an agent return or a direct vault redemption moves it.
+
+**Direct redeem.** An underlying address that governance has added to the Core Vault manager's allowed destinations can call `redeemFromCoreVault`.
+The contract burns the FXRP, and the Core Vault pays XRP to that address.
+No agent ticket is taken.
+The amount must meet the vault's minimum, and the payment is slower than an agent payout.
+This is the KYC path described in [Direct Redemption](/fassets/core-vault#direct-redemption-users).
+
+The following example shows the queue.
+The tickets come from agent backing, not from a user choosing an agent during a public mint.
 
 <details>
 <summary>Redemption queue example.</summary>
 
-1.  Alice mints 10 FXRP with Agent 1.
-2.  Bob mints 20 FXRP with Agent 2.
-3.  Charlie mints 5 FXRP with Agent 1.
+1. A ticket for 10 FXRP is recorded against Agent 1.
+2. A ticket for 20 FXRP is recorded against Agent 2.
+3. A ticket for 5 FXRP is recorded against Agent 1.
 
-    After Alice, Bob, and Charlie have minted their FAssets, the redemption queue according to the FIFO method is:
-    1. Agent 1 with 10 FXRP.
-    2. Agent 2 with 20 FXRP.
-    3. Agent 1 with 5 FXRP.
+   The queue is then:
+   1. Agent 1 with 10 FXRP.
+   2. Agent 2 with 20 FXRP.
+   3. Agent 1 with 5 FXRP.
 
-4.  Dana redeems 25 FXRP.
-    To redeem 25 FXRP:
-    1. Agent 1 pays 10 FXRP.
-    2. Agent 2 pays 15 FXRP.
+4. A redeemer redeems 25 FXRP.
+   1. Agent 1 pays 10 FXRP.
+   2. Agent 2 pays 15 FXRP.
 
-    Now, the redemption queue according to the FIFO method is:
-    1. Agent 2 with 5 FXRP.
-    2. Agent 1 with 5 FXRP.
+   The queue is then:
+   1. Agent 2 with 5 FXRP.
+   2. Agent 1 with 5 FXRP.
 
 </details>
 
@@ -280,7 +302,7 @@ Methods such as `redeemAmount` and `redeemWithTag` allow redeeming amounts that 
 
 Some processes generate a fractional number of lots:
 
-- On minting, part of the minting fee may be minted as the FAsset fee to the collateral pool.
+- On self-mint and the archived collateral-reservation mint, part of the minting fee may be minted as the FAsset fee to the collateral pool.
   This value is usually less than 1 lot.
 - When the lot size is changed, redemptions close only a positive integer of lots of each redemption ticket, which leaves the remainder unredeemed.
 
@@ -319,6 +341,6 @@ The self-redeemed amount is not limited to a positive integer of lots and can be
 
 Learn more about the different components and processes involved in FAssets - [collateral](/fassets/collateral), [minting](/fassets/minting), [liquidations](/fassets/liquidation), and [Core Vault](/fassets/core-vault).
 
-For developer resources, explore our [FXRP address](/fxrp/token-interactions/fxrp-address), [minting](/fassets/developer-guides/fassets-mint), and [redemption](/fassets/developer-guides/fassets-redeem) guides to get started with FAssets integration.
+For developer resources, explore our [FXRP address](/fxrp/token-interactions/fxrp-address), [minting](/fassets/developer-guides/fassets-mint), and [redemption](/fassets/developer-guides/fassets-redeem-amount) guides to get started with FAssets integration.
 
 :::

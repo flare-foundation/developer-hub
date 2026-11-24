@@ -35,10 +35,14 @@ Governance reserves the right to add new types or deprecate existing types.
 If governance deprecates a type, agents must switch to a supported type.
 
 Each vault is associated with a single, unique address on the underlying chain called the agent's underlying address.
-It receives underlying assets when they are minted into FAssets and sends underlying assets to the redeemer's address when they are redeemed.
+On self-mint and the archived [collateral-reservation mint](/fassets/standard-minting), that address receives the underlying payment.
+When one of the agent's redemption tickets is paid, the agent sends the underlying asset to the redeemer from an address the agent controls.
+That payout address can differ from the address that received the mint payment.
+
+Public FXRP minting pays the [Core Vault](/fassets/core-vault), not the agent's underlying address.
 
 When an agent creates a vault, the underlying address is checked for validity using the Flare Data Connector.
-Otherwise, malicious agents could provide an address that systematically blocks payments and exploit the [minting process](/fassets/minting) to their advantage.
+Otherwise, a malicious agent could register an address that blocks payments and interfere with redemption payouts or with self-mint and archived mint receipts.
 
 ### Pool Collateral
 
@@ -54,7 +58,8 @@ CPTs are ERC-20 tokens specific to both an agent and a pool.
 Providers can redeem their CPTs for FLR, or even transfer or trade them, after a governance-defined time period has elapsed since they entered the pool.
 This **time lock** is necessary to reduce sandwiching attacks.
 
-Additionally, CPT holders are entitled to a share of any fee the agent earns from minting FAssets using this pool as explained in the next section.
+CPT holders are entitled to a share of the minting fee an agent earns on self-mint and on the archived collateral-reservation mint, as explained in the next section.
+Public Core Vault mint fees are minted to the direct-minting fee receiver and do not enter the pool.
 
 <details>
 <summary>CPT conversion formulae and examples.</summary>
@@ -194,10 +199,21 @@ This [top-up mechanism](#top-up) decreases the likelihood of liquidations becaus
 
 ## Minting Fees and Debt
 
-As part of the minting process, users pay a [minting fee](/fassets/minting#fees) on the underlying chain.
-The agent's share of this fee remains on the underlying chain, whereas the pool's share triggers the minting of an equivalent amount of FAssets on the Flare network.
+Who receives the minting fee depends on the mint path.
 
-These FAssets coming from the minting fee are added to the collateral pool, where they are shared between collateral providers in proportion to the amount of CPTs that providers have.
+**Public Core Vault mint (XRP).** The minter pays the [Core Vault](/fassets/core-vault).
+The minting fee is minted as FXRP to [`getDirectMintingFeeReceiver()`](/fassets/reference/IAssetManager#getdirectmintingfeereceiver).
+The executor fee is minted as FXRP to the executor who calls `executeDirectMinting`.
+Both amounts are taken out of the payment, and the underlying XRP stays at the Core Vault.
+The agent and the collateral pool do not receive this fee.
+See [Minting fees](/fassets/minting#fees).
+
+**Self-mint and the archived collateral-reservation mint.** The user pays the fee on the underlying chain to the agent.
+The agent's share stays on the underlying chain.
+The pool's share is minted as FAssets into that agent's collateral pool.
+The rest of this section describes that pool share.
+
+The pool's share is shared between collateral providers in proportion to the amount of CPTs that providers have.
 At any time, providers can claim their due share of the fees in the pool.
 When providers exit the collateral pool, they must first call the [`withdrawFees`](/fassets/reference/ICollateralPool#withdrawfees) to claim their remaining unclaimed fees.
 Only then can they redeem their CPTs to exit the pool.
@@ -460,6 +476,6 @@ To prevent liquidation, agents can add vault collateral any time.
 
 Learn more about the different components and processes involved in FAssets - [minting](/fassets/minting), [redemptions](/fassets/redemption), [liquidations](/fassets/liquidation) and [Core Vault](/fassets/core-vault).
 
-For developer resources, explore our [FXRP address](/fxrp/token-interactions/fxrp-address), [minting](/fassets/developer-guides/fassets-mint), and [redemption](/fassets/developer-guides/fassets-redeem) guides to get started with FAssets integration.
+For developer resources, explore our [FXRP address](/fxrp/token-interactions/fxrp-address), [minting](/fassets/developer-guides/fassets-mint), and [redemption](/fassets/developer-guides/fassets-redeem-amount) guides to get started with FAssets integration.
 
 :::

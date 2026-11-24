@@ -1,8 +1,8 @@
 ---
-title: Get Redemption Queue
+title: FXRP Redemption Queue
 tags: [intermediate, fassets]
 slug: fassets-redemption-queue
-description: Read the FXRP redemption queue and total the tickets, value, and lots waiting to be redeemed.
+description: Read the FXRP redemption queue and total the tickets and value waiting to be redeemed.
 keywords: [fassets, fxrp, redemption, redemption-queue, flare-network]
 sidebar_position: 13
 ---
@@ -14,7 +14,7 @@ import FAssetsRedemptionQueue from "!!raw-loader!/examples/developer-hub-javascr
 
 This guide reads the global FXRP [redemption queue](/fassets/redemption#redemption-tickets-and-the-redemption-queue) with [`redemptionQueue`](/fassets/reference/IAssetManager#redemptionqueue) on `AssetManagerFXRP`.
 The script is read-only.
-It walks the FIFO from the head, prints each ticket, and totals the queued value and lots, with a summary per agent vault.
+It walks the FIFO from the head, prints each ticket, and totals the queued value, with a summary per agent vault.
 
 The complete runnable example is available in the [flare-viem-starter](https://github.com/flare-foundation/flare-viem-starter/blob/main/src/fassets/redemption-queue.ts) repository.
 From that repository, run:
@@ -41,8 +41,7 @@ Each [`RedemptionTicketInfo`](https://github.com/flare-foundation/fassets/blob/m
 | `ticketValueUBA`     | Ticket amount in underlying base units (UBA). For XRP, 1 XRP = 1,000,000 UBA.                            |
 
 The ticket stores value in UBA.
-One [lot](/fassets/redemption#lots) in UBA is `lotSizeAMG * assetMintingGranularityUBA`, both fields of [`getSettings`](/fassets/reference/IAssetManager#getsettings).
-The size of one AMG in UBA is [`assetMintingGranularityUBA`](/fassets/reference/IAssetManager#assetmintinggranularityuba), so the product converts the lot size out of AMG.
+For XRP, `dropsToXrp` prints that amount in XRP.
 
 A call to [`redemptionQueue`](/fassets/reference/IAssetManager#redemptionqueue) returns one page of tickets plus a cursor:
 
@@ -74,40 +73,34 @@ This script walks the global queue and groups the result by `agentVault` off-cha
 1. `MAX_REDEMPTION_QUEUE_PAGES` stops the walk after 100 pages.
    A cursor that never returns `0` cannot loop.
 2. `formatUba` prints the raw UBA amount beside the XRP equivalent from `dropsToXrp`.
-3. `lotsFromTicketValue` divides a UBA amount by the lot size.
-   Integer division leaves a remainder smaller than one lot in the UBA total.
-4. `readRedemptionQueueParameters` resolves `AssetManagerFXRP` with `getContractAddressByName` through the [Flare Contract Registry](/network/guides/flare-contracts-registry).
+3. `readRedemptionQueueParameters` resolves `AssetManagerFXRP` with `getContractAddressByName` through the [Flare Contract Registry](/network/guides/flare-contracts-registry).
    `getBlockNumber` pins the snapshot to one block.
    `getAssetManagerSettings` reads [`getSettings`](/fassets/reference/IAssetManager#getsettings) at that block.
    The page size is `maxRedeemedTickets`.
    A zero page size cannot advance the cursor, so the script throws.
-   Lot size in UBA is `lotSizeAMG * assetMintingGranularityUBA`.
-   A zero lot size cannot convert ticket values, so the script throws.
-5. `fetchRedemptionTickets` calls [`redemptionQueue`](/fassets/reference/IAssetManager#redemptionqueue), starting at ticket id `0`.
+4. `fetchRedemptionTickets` calls [`redemptionQueue`](/fassets/reference/IAssetManager#redemptionqueue), starting at ticket id `0`.
    Each page is appended, and the next call starts at `_nextRedemptionTicketId`.
    A cursor of `0` returns the tickets collected so far.
    After 100 pages with a non-zero cursor, the script throws.
-6. `totalTicketValueUBA` sums `ticketValueUBA` across the snapshot.
-7. `groupTicketsByAgent` counts tickets and sums value for each `agentVault`.
-8. `printRedemptionQueueHeader` logs the asset manager address, block, page size, and lot size.
-9. `printRedemptionQueue` logs `Redemption queue is empty.` when the snapshot has no tickets.
+5. `totalTicketValueUBA` sums `ticketValueUBA` across the snapshot.
+6. `groupTicketsByAgent` counts tickets and sums value for each `agentVault`.
+7. `printRedemptionQueueHeader` logs the asset manager address, block, and page size.
+8. `printRedemptionQueue` logs `Redemption queue is empty.` when the snapshot has no tickets.
    Otherwise it prints each ticket, the queue totals, and the per-agent summary.
-10. `main` reads the parameters, prints the header, fetches the tickets, and prints the queue.
+9. `main` reads the parameters, prints the header, fetches the tickets, and prints the queue.
 
 ## Important Notes
 
 - **View calls only.** Every contract call in the script is a read against `AssetManagerFXRP`.
 - **One block for the whole walk.** `getAssetManagerSettings` and every `redemptionQueue` call use the same `blockNumber`.
 - **`maxRedeemedTickets` is both the page size and the per-request ticket cap.** A redemption that needs more tickets emits [`RedemptionAmountIncomplete`](/fassets/reference/IAssetManagerEvents#redemptionamountincomplete) and leaves the rest of the queue in place.
-- **Lot counts use integer division.** Value that is not a whole lot still appears in the UBA total.
 - **The 100-page cap is a safety stop.** A queue longer than `100 * maxRedeemedTickets` tickets makes the script throw, so the printed total is complete whenever the script exits successfully.
 
 :::tip[What's next]
 
 To continue your FAssets development journey, you can:
 
-- Redeem any amount with [Redeem FXRP by Amount](/fassets/developer-guides/fassets-redeem-amount).
-- Redeem to an exchange address with [Redeem FXRP with Tag](/fassets/developer-guides/fassets-redeem-with-tag).
+- Redeem any amount, or require an XRPL destination tag, in [Redeem FXRP](/fassets/developer-guides/fassets-redeem-amount).
 - Read the protocol flow in [Redemption](/fassets/redemption).
 
 :::

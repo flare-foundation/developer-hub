@@ -1,0 +1,326 @@
+---
+title: Read FAssets Settings
+tags: [intermediate, fassets]
+slug: fassets-settings
+description: Read FXRP Asset Manager settings and the XRP/USD price, in TypeScript or Solidity.
+keywords: [fassets, fxrp, ftso, flare-network, coston2]
+sidebar_position: 2
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import CodeBlock from "@theme/CodeBlock";
+import RemixEmbed from "@site/src/components/RemixEmbed";
+import FAssetsAssetManagerSettings from "!!raw-loader!/examples/developer-hub-solidity/FAssetsAssetManagerSettings.sol";
+import ExploringAdditionalParameters from "./_exploring-additional-parameters.mdx";
+import FAssetsDemoDapp from "./_fassets_demo_dapp.mdx";
+
+Read FXRP settings from [`getSettings`](/fassets/reference/IAssetManager#getsettings) on `AssetManagerFXRP`.
+Examples below use Coston2.
+
+The TypeScript tab calls the Asset Manager with viem and reads the XRP/USD price from the FTSO.
+The Solidity tab deploys a helper that reads the same asset decimals.
+
+Resolve the Asset Manager from the registry first.
+See [Resolve Asset Manager and FXRP](/fassets/developer-guides/fassets-asset-manager-address-contracts-registry).
+
+<Tabs defaultValue="typescript" groupId="fassets-settings">
+<TabItem value="typescript" label="TypeScript">
+
+## TypeScript
+
+This script connects to [Coston2](/network/overview) and:
+
+- Reads [FAssets settings](/fassets/operational-parameters), including FXRP asset decimals.
+- Reads the XRP/USD price from the [FTSO](/ftso/overview).
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/en/download/)
+- [npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm/)
+- [TypeScript](https://www.typescriptlang.org/download/)
+- [Viem](https://viem.sh)
+- [Flare Wagmi Periphery Package](https://www.npmjs.com/package/@flarenetwork/flare-wagmi-periphery-package)
+
+### Project setup
+
+Create a directory and initialize npm:
+
+```bash
+mkdir fassets-settings-ftso
+cd fassets-settings-ftso
+npm init -y
+```
+
+Install the dependencies:
+
+```bash
+npm install --save-dev \
+  typescript \
+  viem \
+  @flarenetwork/flare-wagmi-periphery-package
+```
+
+Create `tsconfig.json`:
+
+```bash
+npx tsc --init
+```
+
+```json title="tsconfig.json"
+{
+  "compilerOptions": {
+    "rootDir": "./scripts",
+    "outDir": "./dist",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "target": "esnext",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "types": ["node"],
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "include": ["scripts/**/*.ts"],
+  "exclude": ["node_modules"]
+}
+```
+
+In `package.json`, use ES modules and add a build script:
+
+```json
+"type": "module",
+"scripts": {
+  "build": "tsc"
+}
+```
+
+### Script
+
+```bash
+mkdir scripts
+touch scripts/fassets-settings.ts
+```
+
+Import viem and the `coston2` namespace from [`@flarenetwork/flare-wagmi-periphery-package`](https://www.npmjs.com/package/@flarenetwork/flare-wagmi-periphery-package):
+
+```typescript
+import { createPublicClient, http } from "viem";
+import { flareTestnet } from "viem/chains";
+import { coston2 } from "@flarenetwork/flare-wagmi-periphery-package";
+```
+
+```typescript
+const FLARE_CONTRACT_REGISTRY_ADDRESS =
+  "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019" as const;
+const XRP_USD_FEED_ID = "0x015852502f55534400000000000000000000000000" as const;
+```
+
+```typescript
+const client = createPublicClient({
+  chain: flareTestnet,
+  transport: http(),
+});
+```
+
+Resolve `AssetManagerFXRP` from the [Flare Contract Registry](/network/guides/flare-contracts-registry):
+
+```typescript
+const assetManagerAddress = await client.readContract({
+  address: FLARE_CONTRACT_REGISTRY_ADDRESS,
+  abi: coston2.iFlareContractRegistryAbi,
+  functionName: "getContractAddressByName",
+  args: ["AssetManagerFXRP"],
+});
+```
+
+Read [`getSettings`](/fassets/reference/IAssetManager#getsettings) and log the asset decimals:
+
+```typescript
+const settings = await client.readContract({
+  address: assetManagerAddress,
+  abi: coston2.iAssetManagerAbi,
+  functionName: "getSettings",
+});
+
+console.log("Asset decimals:", settings.assetDecimals);
+```
+
+The same call returns the rest of the [operational parameters](/fassets/operational-parameters/#asset-manager-operational-parameters).
+
+### Read the XRP/USD price
+
+Read the XRP/USD [anchor feed](/ftso/scaling/anchor-feeds/) from [FTSO](/ftso/overview).
+
+```typescript
+const ftsoAddress = await client.readContract({
+  address: FLARE_CONTRACT_REGISTRY_ADDRESS,
+  abi: coston2.iFlareContractRegistryAbi,
+  functionName: "getContractAddressByName",
+  args: ["FtsoV2"],
+});
+```
+
+`getFeedById` is `payable`, so use `simulateContract`:
+
+```typescript
+const {
+  result: [_value, _decimals, _timestamp],
+} = await client.simulateContract({
+  address: ftsoAddress,
+  abi: coston2.ftsoV2InterfaceAbi,
+  functionName: "getFeedById",
+  args: [XRP_USD_FEED_ID],
+  value: 0n,
+});
+```
+
+```typescript
+const xrpUsdPrice = Number(_value) / Math.pow(10, Number(_decimals));
+
+console.log("XRP/USD Price:", xrpUsdPrice);
+console.log("Timestamp:", _timestamp.toString());
+```
+
+### Full script
+
+```typescript title="scripts/fassets-settings.ts"
+import { createPublicClient, http } from "viem";
+import { flareTestnet } from "viem/chains";
+import { coston2 } from "@flarenetwork/flare-wagmi-periphery-package";
+
+const FLARE_CONTRACT_REGISTRY_ADDRESS =
+  "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019" as const;
+const XRP_USD_FEED_ID = "0x015852502f55534400000000000000000000000000" as const;
+
+const client = createPublicClient({
+  chain: flareTestnet,
+  transport: http(),
+});
+
+const assetManagerAddress = await client.readContract({
+  address: FLARE_CONTRACT_REGISTRY_ADDRESS,
+  abi: coston2.iFlareContractRegistryAbi,
+  functionName: "getContractAddressByName",
+  args: ["AssetManagerFXRP"],
+});
+
+const settings = await client.readContract({
+  address: assetManagerAddress,
+  abi: coston2.iAssetManagerAbi,
+  functionName: "getSettings",
+});
+
+console.log("Asset decimals:", settings.assetDecimals);
+
+const ftsoAddress = await client.readContract({
+  address: FLARE_CONTRACT_REGISTRY_ADDRESS,
+  abi: coston2.iFlareContractRegistryAbi,
+  functionName: "getContractAddressByName",
+  args: ["FtsoV2"],
+});
+
+const {
+  result: [_value, _decimals, _timestamp],
+} = await client.simulateContract({
+  address: ftsoAddress,
+  abi: coston2.ftsoV2InterfaceAbi,
+  functionName: "getFeedById",
+  args: [XRP_USD_FEED_ID],
+  value: 0n,
+});
+
+const xrpUsdPrice = Number(_value) / Math.pow(10, Number(_decimals));
+
+console.log("XRP/USD Price:", xrpUsdPrice);
+console.log("Timestamp:", _timestamp.toString());
+```
+
+### Run
+
+```bash
+npm run build
+node dist/fassets-settings.js
+```
+
+```bash
+Asset decimals: 6
+XRP/USD Price: 2.843861
+Timestamp: 1756977702
+```
+
+</TabItem>
+<TabItem value="solidity" label="Solidity">
+
+## Solidity
+
+Deploy a helper that reads FXRP asset decimals through `ContractRegistry`, then call it from Hardhat on Coston2.
+
+### Prerequisites
+
+- [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit)
+- [Flare Network Periphery Contracts](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts)
+- Node.js, TypeScript, and a Hardhat config with Coston2
+
+### Contract
+
+<CodeBlock language="solidity" title="contracts/FAssetsSettings.sol">
+  {FAssetsAssetManagerSettings}
+</CodeBlock>
+
+{/* prettier-ignore */}
+<RemixEmbed fileName="FAssetsAssetManagerSettings.sol">Open in Remix</RemixEmbed>
+
+1. Import the [ContractRegistry library](/network/guides/flare-contracts-registry#contract-registry-library).
+2. Import `IAssetManager` from [`@flarenetwork/flare-periphery-contracts`](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts).
+3. `FAssetsSettings` resolves the FXRP Asset Manager and calls [`getSettings`](/fassets/reference/IAssetManager#getsettings).
+4. `getAssetDecimals` returns `assetDecimals`.
+   The full settings list is on [FAssets Operational Parameters](/fassets/operational-parameters/#asset-manager-operational-parameters).
+
+### Deploy and read
+
+```typescript title="scripts/fassets/getAssetDecimals.ts"
+// yarn hardhat run scripts/fassets/getAssetDecimals.ts --network coston2
+
+const FAssetsSettings = artifacts.require("FAssetsSettings");
+
+async function main() {
+  const fAssetsSettings = await FAssetsSettings.new();
+  console.log("FAssetsSettings deployed to:", fAssetsSettings.address);
+
+  const assetDecimals = await fAssetsSettings.getAssetDecimals();
+  console.log("Asset decimals:", assetDecimals.toString());
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});
+```
+
+```bash
+yarn hardhat run scripts/fassets/getAssetDecimals.ts --network coston2
+```
+
+```bash
+Compiled 1 Solidity file successfully (evm target: cancun).
+Deploying FAssetsSettings...
+FAssetsSettings deployed to: 0x40deEaA76224Ca9439D4e1c86F827Be829b89D9E
+Asset decimals: 6
+```
+
+</TabItem>
+</Tabs>
+
+<ExploringAdditionalParameters />
+
+:::tip[What's next]
+
+- [Mint FXRP](/fassets/developer-guides/fassets-mint).
+- [Redeem FXRP](/fassets/developer-guides/fassets-redeem-amount).
+- Browse [FAssets operational parameters](/fassets/operational-parameters).
+
+:::
+
+<FAssetsDemoDapp />

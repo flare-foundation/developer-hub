@@ -1,25 +1,21 @@
 ---
-title: Get FXRP Asset Manager Address
+title: Resolve Asset Manager and FXRP
 tags: [intermediate, fassets]
 slug: fassets-asset-manager-address-contracts-registry
-description: Get FXRP asset manager address from registry
+description: Resolve the FXRP Asset Manager and the FXRP token from the Flare Contract Registry.
 keywords: [fassets, flare-network, fxrp, asset-manager]
 sidebar_position: 1
 ---
 
-import ExploringAdditionalParameters from "./_exploring-additional-parameters.mdx";
 import MainnetNote from "./_mainnet-note.mdx";
 
 <MainnetNote />
 
-## Overview
+Resolve both addresses at runtime from the [Flare Contract Registry](/network/guides/flare-contracts-registry).
+Do not hardcode them.
+They differ by network.
 
-When building on the Flare Network, it is important to **avoid hardcoding contract addresses**, especially for key components such as the FXRP Asset Manager.
-These addresses can change between Flare testnets and mainnet deployments, and relying on fixed values can lead to broken integrations.
-
-Instead, you should dynamically fetch the FXRP Asset Manager address using the [Flare Contract Registry](/network/guides/flare-contracts-registry), the trusted source for obtaining contract addresses on any Flare network.
-
-## Get the FXRP Asset Manager Address
+## Resolve the Asset Manager
 
 To get the [FAssets asset manager](/fassets/reference/IAssetManager) address, you can use the [Flare Contract Registry](/network/guides/flare-contracts-registry) library.
 It is included in the [Flare Periphery Contracts package](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts).
@@ -34,18 +30,20 @@ import {IAssetManager} from "@flarenetwork/flare-periphery-contracts/coston2/IAs
 IAssetManager assetManager = ContractRegistry.getAssetManagerFXRP();
 ```
 
-## Summary
+## Resolve the FXRP token
 
-In this guide, you learned how to get the FXRP Asset Manager address for the FAssets system by interacting with the `AssetManager` contract using the [`IAssetManager`](/fassets/reference/IAssetManager) interface.
+FXRP is the ERC-20 `fAsset()` returns on that Asset Manager.
 
-You should not hardcode the FXRP Asset Manager address in your smart contracts.
+```solidity
+address fxrp = address(assetManager.fAsset());
+```
+
+The Hardhat script, wallet steps, and per-network notes are in [Get FXRP Address](/fxrp/token-interactions/fxrp-address).
 
 :::tip[What's next]
 
-To continue your FAssets development journey, you can:
-
-- Learn how to [mint FXRP](/fassets/developer-guides/fassets-mint).
-- Understand how to [redeem FXRP](/fassets/developer-guides/fassets-redeem).
-- Explore [FAssets system settings](/fassets/operational-parameters).
+- Read settings and the XRP/USD price in [Read FAssets Settings](/fassets/developer-guides/fassets-settings).
+- [Mint FXRP](/fassets/developer-guides/fassets-mint).
+- [Redeem FXRP](/fassets/developer-guides/fassets-redeem-amount).
 
 :::

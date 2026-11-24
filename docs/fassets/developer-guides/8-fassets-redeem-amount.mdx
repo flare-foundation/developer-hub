@@ -1,36 +1,58 @@
 ---
-title: Redeem FXRP by Amount
+title: Redeem FXRP
 tags: [intermediate, fassets]
 slug: fassets-redeem-amount
-description: Redeem any amount of FXRP without rounding to whole lots.
-keywords: [fassets, fxrp, redemption, redeem-amount, flare-network, xrpl]
+description: Redeem FXRP for XRP by amount, or require an XRPL destination tag on the agent's payout.
+keywords:
+  [
+    fassets,
+    fxrp,
+    redemption,
+    redeem-amount,
+    redeem-with-tag,
+    xrpl,
+    flare-network,
+  ]
 sidebar_position: 8
 ---
 
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
 import CodeBlock from "@theme/CodeBlock";
 import FAssetsRedeemAmount from "!!raw-loader!/examples/developer-hub-javascript/fassetsRedeemAmount.ts";
+import FAssetsRedeemWithTag from "!!raw-loader!/examples/developer-hub-javascript/fassetsRedeemWithTag.ts";
 import FAssetsDemoDapp from "./_fassets_demo_dapp.mdx";
 
-## Overview
+Redeem FXRP for XRP by amount.
+Both calls burn any amount at or above [`minimumRedeemAmountUBA`](/fassets/reference/IAssetManager#minimumredeemamountuba).
 
-This guide walks you through redeeming FXRP using [`redeemAmount`](/fassets/reference/IAssetManager#redeemamount) on the `AssetManagerFXRP` contract.
-Unlike the previous [`redeem`](/fassets/reference/IAssetManager#redeem) guide, `redeemAmount` accepts an arbitrary amount instead of whole lots.
+- **Any amount.** [`redeemAmount`](/fassets/reference/IAssetManager#redeemamount) pays the XRPL address you pass.
+- **XRPL destination tag.** [`redeemWithTag`](/fassets/reference/IAssetManager#redeemwithtag) does the same and requires the agent to set a destination tag on the XRP payment.
+  That tag is payout metadata for an exchange or custodian.
+  It is not a [minting-tag NFT](/fassets/developer-guides/fassets-mint#minting-tag).
 
-The complete runnable example is available in the [flare-viem-starter](https://github.com/flare-foundation/flare-viem-starter/blob/main/src/fassets/redeem-amount.ts) repository.
+<Tabs defaultValue="amount" groupId="fxrp-redeem">
+<TabItem value="amount" label="Any amount">
 
-## Prerequisites
+## Any amount
+
+[`redeemAmount`](/fassets/reference/IAssetManager#redeemamount) on `AssetManagerFXRP` accepts an arbitrary amount of FXRP.
+
+The runnable example is [`redeem-amount.ts`](https://github.com/flare-foundation/flare-viem-starter/blob/main/src/fassets/redeem-amount.ts) in flare-viem-starter.
+
+### Prerequisites
 
 - An EVM wallet with FXRP.
-- Native tokens on the same wallet to cover the gas fees.
+- Native tokens on the same wallet to cover gas.
 - An XRPL address to receive the redeemed XRP.
 
-## Redeem Amount Script
+### Script
 
 <CodeBlock language="typescript" title="src/fassets/redeem-amount.ts">
   {FAssetsRedeemAmount}
 </CodeBlock>
 
-## Code Breakdown
+### Code breakdown
 
 1. Set `REDEEM_AMOUNT_UBA` to the amount of FXRP to redeem in UBA (underlying base unit).
 2. Set `REDEEMER_UNDERLYING_ADDRESS_STRING` to the XRPL address that will receive the redeemed XRP from the agent.
@@ -41,26 +63,82 @@ The complete runnable example is available in the [flare-viem-starter](https://g
 6. Simulate the [`redeemAmount`](/fassets/reference/IAssetManager#redeemamount) call to validate the arguments and produce a signed request payload.
 7. Submit the redemption request transaction.
 8. Wait for the transaction receipt.
-9. Decode [`RedemptionRequested`](/fassets/reference/IAssetManagerEvents#redemptionrequested) events from the receipt logs with the `parseEventLogs` function and select the one whose `redeemer` matches the caller.
+9. Decode [`RedemptionRequested`](/fassets/reference/IAssetManagerEvents#redemptionrequested) events from the receipt logs with `parseEventLogs` and select the one whose `redeemer` matches the caller.
    A single call may emit multiple `RedemptionRequested` events when multiple agents fulfill the request.
 
-## Important Notes
+### Notes
 
 - **`minimumRedeemAmountUBA` is enforced on-chain.** Requests below the threshold revert.
-- **The redemption may be partial.** If the request requires too many redemption tickets, only part is fulfilled, and the remaining tickets are returned via [`RedemptionAmountIncomplete`](/fassets/reference/IAssetManagerEvents#redemptionamountincomplete).
+- **The redemption may be partial.** If the request requires too many redemption tickets, only part is fulfilled, and the remainder is returned via [`RedemptionAmountIncomplete`](/fassets/reference/IAssetManagerEvents#redemptionamountincomplete).
   Call `redeemAmount` again for the remainder.
-- **Multiple agents may pay.** A single `redeemAmount` call can produce several [`RedemptionRequested`](/fassets/reference/IAssetManagerEvents#redemptionrequested) events — one per agent serving the request.
+- **Multiple agents may pay.** A single `redeemAmount` call can produce several [`RedemptionRequested`](/fassets/reference/IAssetManagerEvents#redemptionrequested) events, one per agent serving the request.
   Track each `requestId` for the agent's underlying-chain payment.
 - **Agents have a deadline to pay.** If an agent fails to pay within the redemption window, start the [redemption default process](/fassets/developer-guides/fassets-redemption-default).
-- **Use `redeemWithTag` for exchange deposits.** When the destination XRPL address requires a destination tag, call [`redeemWithTag`](/fassets/reference/IAssetManager#redeemwithtag) instead.
+- **Exchange deposits need a destination tag.** Use the [XRPL destination tag](#xrpl-destination-tag) tab and [`redeemWithTag`](/fassets/reference/IAssetManager#redeemwithtag).
+
+</TabItem>
+<TabItem value="destination-tag" label="XRPL destination tag">
+
+## XRPL destination tag
+
+[`redeemWithTag`](/fassets/reference/IAssetManager#redeemwithtag) redeems any amount of FXRP and requires an XRPL destination tag on the agent's payment.
+Use it when the receiving XRPL address, such as an exchange deposit address, rejects payments that omit the tag.
+
+This tag is a 32-bit integer on the XRP payment.
+You do not reserve it on `MintingTagManager`.
+Minting tags are a separate NFT used only when [minting FXRP](/fassets/developer-guides/fassets-mint#minting-tag).
+
+The runnable example is [`redeem-with-tag.ts`](https://github.com/flare-foundation/flare-viem-starter/blob/main/src/fassets/redeem-with-tag.ts) in flare-viem-starter.
+
+### Prerequisites
+
+- An EVM wallet with FXRP.
+- Native tokens on the same wallet to cover gas.
+- An XRPL address and the destination tag that address requires.
+
+### Script
+
+<CodeBlock language="typescript" title="src/fassets/redeem-with-tag.ts">
+  {FAssetsRedeemWithTag}
+</CodeBlock>
+
+### Code breakdown
+
+1. Set `REDEEM_AMOUNT_UBA` to the amount of FXRP to redeem in UBA (underlying base unit).
+2. Set `REDEEMER_UNDERLYING_ADDRESS_STRING` to the XRPL address that will receive the redeemed XRP from the agent.
+3. `EXECUTOR_ZERO_ADDRESS` is used because no executor is appointed in this example.
+   Pass a real address to delegate default-handling to an executor.
+4. Set `REDEMPTION_DESTINATION_TAG` to the XRPL destination tag the agent must include on the redemption payment.
+   It must fit in a 32-bit integer.
+5. Resolve the `AssetManagerFXRP` address through the [Flare Contract Registry](/network/guides/flare-contracts-registry) using [`getContractAddressByName`](/network/guides/flare-contracts-registry).
+6. Read [`minimumRedeemAmountUBA`](/fassets/reference/IAssetManager#minimumredeemamountuba) and check that the requested amount is at least the protocol minimum.
+7. Simulate the [`redeemWithTag`](/fassets/reference/IAssetManager#redeemwithtag) call to validate the arguments and produce a signed request payload.
+8. Submit the redemption request transaction.
+9. Wait for the transaction receipt.
+10. Decode [`RedemptionWithTagRequested`](/fassets/reference/IAssetManagerEvents#redemptionwithtagrequested) events from the receipt logs with `parseEventLogs` and select the one whose `redeemer` matches the caller.
+    A single call may emit multiple `RedemptionWithTagRequested` events when multiple agents fulfill the request.
+
+### Notes
+
+- **XRP-only.** `redeemWithTag` is available for FXRP.
+- **`minimumRedeemAmountUBA` is enforced on-chain.** Requests below the threshold revert.
+- **The redemption may be partial.** If the request requires too many redemption tickets, only part is filled and the leftover is returned via [`RedemptionAmountIncomplete`](/fassets/reference/IAssetManagerEvents#redemptionamountincomplete).
+  Call `redeemWithTag` again for the remainder.
+- **Multiple agents may pay.** A single `redeemWithTag` call can produce several [`RedemptionWithTagRequested`](/fassets/reference/IAssetManagerEvents#redemptionwithtagrequested) events, one per agent serving the request.
+  Track each `requestId` for the agent's underlying-chain payment.
+- **Default uses a dedicated proof type.** Confirming a tagged redemption uses `confirmXRPRedemptionPayment`.
+  If the agent fails to pay, call `xrpRedemptionPaymentDefault` to start the default process.
+  See [Redemption Defaults](/fassets/developer-guides/fassets-redemption-default).
+
+</TabItem>
+</Tabs>
 
 :::tip[What's next]
 
-To continue your FAssets development journey, you can:
-
-- Redeem with tag with [`redeemWithTag`](/fassets/developer-guides/fassets-redeem-with-tag).
-- Handle non-paying agents in [Monitor Redemptions & Execute Defaults](/fassets/developer-guides/fassets-redemption-default).
-- Mint without a tag using [memo-based minting](/fassets/developer-guides/fassets-mint) or [minting with tag](/fassets/developer-guides/fassets-mint-tag).
+- Handle a non-paying agent in [Redemption Defaults](/fassets/developer-guides/fassets-redemption-default).
+- Read the queue in [FXRP Redemption Queue](/fassets/developer-guides/fassets-redemption-queue).
+- Bridge FXRP and redeem it on XRPL in one step with [FAsset Auto-Redemption](/fxrp/oft/fxrp-autoredeem).
+- Mint with [Mint FXRP](/fassets/developer-guides/fassets-mint).
 
 :::
 
