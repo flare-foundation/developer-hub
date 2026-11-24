@@ -17,7 +17,6 @@ type RedemptionQueueParameters = {
   assetManagerAddress: Address;
   blockNumber: bigint;
   pageSize: bigint;
-  lotSizeUBA: bigint;
 };
 
 type AgentQueueSummary = {
@@ -27,13 +26,6 @@ type AgentQueueSummary = {
 
 function formatUba(uba: bigint): string {
   return `${uba.toString()} UBA (${dropsToXrp(uba.toString())} XRP)`;
-}
-
-function lotsFromTicketValue(
-  ticketValueUBA: bigint,
-  lotSizeUBA: bigint,
-): bigint {
-  return ticketValueUBA / lotSizeUBA;
 }
 
 async function readRedemptionQueueParameters(): Promise<RedemptionQueueParameters> {
@@ -52,14 +44,7 @@ async function readRedemptionQueueParameters(): Promise<RedemptionQueueParameter
     );
   }
 
-  // One lot in UBA is lotSizeAMG converted by the minting granularity.
-  const lotSizeUBA =
-    BigInt(settings.lotSizeAMG) * BigInt(settings.assetMintingGranularityUBA);
-  if (lotSizeUBA === 0n) {
-    throw new Error("Lot size is 0; cannot convert ticket values to lots.");
-  }
-
-  return { assetManagerAddress, blockNumber, pageSize, lotSizeUBA };
+  return { assetManagerAddress, blockNumber, pageSize };
 }
 
 async function fetchRedemptionTickets({
@@ -123,67 +108,43 @@ function printRedemptionQueueHeader({
   assetManagerAddress,
   blockNumber,
   pageSize,
-  lotSizeUBA,
 }: RedemptionQueueParameters): void {
   console.log("AssetManagerFXRP address:", assetManagerAddress);
   console.log("Block:", blockNumber.toString());
-  console.log("Max redeemed tickets:", pageSize.toString());
-  console.log("Lot size:", formatUba(lotSizeUBA), "\n");
+  console.log("Max redeemed tickets:", pageSize.toString(), "\n");
 }
 
-function printRedemptionTicket(
-  index: number,
-  ticket: RedemptionTicket,
-  lotSizeUBA: bigint,
-): void {
-  const lots = lotsFromTicketValue(ticket.ticketValueUBA, lotSizeUBA);
+function printRedemptionTicket(index: number, ticket: RedemptionTicket): void {
   console.log(
-    `#${index + 1} ticket ${ticket.redemptionTicketId.toString()} agent ${ticket.agentVault} ${formatUba(ticket.ticketValueUBA)} (${lots.toString()} lots)`,
+    `#${index + 1} ticket ${ticket.redemptionTicketId.toString()} agent ${ticket.agentVault} ${formatUba(ticket.ticketValueUBA)}`,
   );
 }
 
-function printQueueTotals(
-  tickets: RedemptionTicket[],
-  lotSizeUBA: bigint,
-): void {
+function printQueueTotals(tickets: RedemptionTicket[]): void {
   const totalValueUBA = totalTicketValueUBA(tickets);
   console.log("\nTickets:", tickets.length);
-  console.log("Total value:", formatUba(totalValueUBA));
-  console.log(
-    "Total lots:",
-    lotsFromTicketValue(totalValueUBA, lotSizeUBA).toString(),
-    "\n",
-  );
+  console.log("Total value:", formatUba(totalValueUBA), "\n");
 }
 
-function printAgentSummaries(
-  byAgent: Map<Address, AgentQueueSummary>,
-  lotSizeUBA: bigint,
-): void {
+function printAgentSummaries(byAgent: Map<Address, AgentQueueSummary>): void {
   console.log("By agent:");
   for (const [agentVault, summary] of byAgent) {
     const ticketLabel = summary.ticketCount === 1 ? "ticket" : "tickets";
-    const lots = lotsFromTicketValue(summary.valueUBA, lotSizeUBA);
     console.log(
-      `${agentVault}  ${summary.ticketCount} ${ticketLabel}  ${formatUba(summary.valueUBA)}  (${lots.toString()} lots)`,
+      `${agentVault}  ${summary.ticketCount} ${ticketLabel}  ${formatUba(summary.valueUBA)}`,
     );
   }
 }
 
-function printRedemptionQueue(
-  tickets: RedemptionTicket[],
-  lotSizeUBA: bigint,
-): void {
+function printRedemptionQueue(tickets: RedemptionTicket[]): void {
   if (tickets.length === 0) {
     console.log("Redemption queue is empty.");
     return;
   }
 
-  tickets.forEach((ticket, index) =>
-    printRedemptionTicket(index, ticket, lotSizeUBA),
-  );
-  printQueueTotals(tickets, lotSizeUBA);
-  printAgentSummaries(groupTicketsByAgent(tickets), lotSizeUBA);
+  tickets.forEach((ticket, index) => printRedemptionTicket(index, ticket));
+  printQueueTotals(tickets);
+  printAgentSummaries(groupTicketsByAgent(tickets));
 }
 
 async function main() {
@@ -191,7 +152,7 @@ async function main() {
   printRedemptionQueueHeader(parameters);
 
   const tickets = await fetchRedemptionTickets(parameters);
-  printRedemptionQueue(tickets, parameters.lotSizeUBA);
+  printRedemptionQueue(tickets);
 }
 
 void main()

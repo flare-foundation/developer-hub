@@ -1,0 +1,110 @@
+---
+title: Work with FAssets Agents
+tags: [intermediate, fassets]
+slug: fassets-agents
+description: List FAssets agents and read an agent's public details.
+keywords: [fassets, fxrp, agents, flare-network, coston2]
+sidebar_position: 14
+---
+
+import CodeBlock from "@theme/CodeBlock";
+import FAssetsListAgents from "!!raw-loader!/examples/developer-hub-javascript/fassets_list_agents.ts";
+
+Agents hold collateral and pay redemptions.
+These examples use the FXRP Asset Manager on Coston2.
+
+## List agents
+
+[`AssetManager`](/fassets/reference/IAssetManager) exposes three list functions:
+
+- [`getAllAgents`](/fassets/reference/IAssetManager#getallagents) returns every agent, available or not, with basic information.
+- [`getAvailableAgentsList`](/fassets/reference/IAssetManager#getavailableagentslist) returns agents that are accepting work, with basic information.
+- [`getAvailableAgentsDetailedList`](/fassets/reference/IAssetManager#getavailableagentsdetailedlist) returns available agents with collateral ratios, fees, and vault status.
+
+Public Core Vault minting does not ask the user to pick an agent.
+These lists are for agent UIs, monitoring, and the archived collateral-reservation flow.
+
+Each function takes `_start` and `_end` and returns `_agents` plus `_totalLength`.
+`_start` is inclusive and `_end` is exclusive.
+`getAllAgents(0, 3)` returns agents at indexes 0, 1, and 2.
+
+### Prerequisites
+
+- [FAssets overview](/fassets/overview).
+- [`@flarenetwork/flare-periphery-contracts`](https://www.npmjs.com/package/@flarenetwork/flare-periphery-contracts).
+
+### Script
+
+Fetch available agents in chunks so a long list does not time out the RPC.
+
+<CodeBlock language="typescript" title="scripts/fassets/listAgents.ts">
+  {FAssetsListAgents}
+</CodeBlock>
+
+1. Resolve the FXRP Asset Manager with `getAssetManagerFXRP()` from the periphery package.
+2. Set `chunkSize` to `3`.
+   Raise or lower it for your RPC.
+3. Call `getAvailableAgentsList(0, chunkSize)`.
+   `_totalLength` is the full count.
+4. Walk the rest of the list from `offset = chunkSize`, with `endIndex = min(offset + chunkSize, totalLength)`.
+
+The same paging works for [`getAllAgents`](/fassets/reference/IAssetManager#getallagents) and [`getAvailableAgentsDetailedList`](/fassets/reference/IAssetManager#getavailableagentsdetailedlist).
+
+```bash
+yarn hardhat run scripts/fassets/listAgents.ts --network coston2
+```
+
+## Read agent details
+
+[`AgentOwnerRegistry`](/fassets/reference/IAgentOwnerRegistry) stores the public profile for an agent's management address:
+
+- **Name** from [`getAgentName`](/fassets/reference/IAgentOwnerRegistry#getagentname).
+- **Description** from [`getAgentDescription`](/fassets/reference/IAgentOwnerRegistry#getagentdescription).
+- **Icon URL** from [`getAgentIconUrl`](/fassets/reference/IAgentOwnerRegistry#getagenticonurl).
+- **Terms of use URL** from [`getAgentTermsOfUseUrl`](/fassets/reference/IAgentOwnerRegistry#getagenttermsofuseurl).
+
+The registry address is `getSettings().agentOwnerRegistry` on the Asset Manager.
+
+```solidity
+import {IAssetManager} from "@flarenetwork/flare-periphery-contracts/coston2/IAssetManager.sol";
+import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
+import {IAgentOwnerRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/IAgentOwnerRegistry.sol";
+
+IAssetManager assetManager = ContractRegistry.getAssetManagerFXRP();
+IAgentOwnerRegistry registry = IAgentOwnerRegistry(
+    assetManager.getSettings().agentOwnerRegistry
+);
+```
+
+```solidity
+function getAgentDetails(address _managementAddress)
+    external
+    view
+    returns (
+        string memory name,
+        string memory description,
+        string memory iconUrl,
+        string memory termsOfUseUrl
+    )
+{
+    IAssetManager assetManager = ContractRegistry.getAssetManagerFXRP();
+    IAgentOwnerRegistry registry = IAgentOwnerRegistry(
+        assetManager.getSettings().agentOwnerRegistry
+    );
+
+    name = registry.getAgentName(_managementAddress);
+    description = registry.getAgentDescription(_managementAddress);
+    iconUrl = registry.getAgentIconUrl(_managementAddress);
+    termsOfUseUrl = registry.getAgentTermsOfUseUrl(_managementAddress);
+}
+```
+
+The [Flare Hardhat Starter Kit](/network/guides/hardhat-foundry-starter-kit) includes a full example.
+
+:::tip[What's next]
+
+- [Mint FXRP](/fassets/developer-guides/fassets-mint).
+- [Redeem FXRP](/fassets/developer-guides/fassets-redeem-amount).
+- [FAssets operational parameters](/fassets/operational-parameters).
+
+:::

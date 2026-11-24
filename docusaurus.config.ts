@@ -369,7 +369,7 @@ const config: Config = {
           },
           {
             from: "/fassets/developer-guides/fassets-direct-minting-tag",
-            to: "/fassets/developer-guides/fassets-mint-tag",
+            to: "/fassets/developer-guides/fassets-mint#minting-tag",
           },
           {
             from: "/fassets/developer-guides/fassets-direct-minting-limits",
@@ -377,7 +377,39 @@ const config: Config = {
           },
           {
             from: "/fassets/developer-guides/fassets-direct-minting-tag-transfer",
-            to: "/fassets/developer-guides/fassets-mint-tag-transfer",
+            to: "/fassets/developer-guides/fassets-mint#transfer-a-minting-tag",
+          },
+          {
+            from: "/fassets/developer-guides/fassets-mint-tag",
+            to: "/fassets/developer-guides/fassets-mint#minting-tag",
+          },
+          {
+            from: "/fassets/developer-guides/fassets-mint-tag-transfer",
+            to: "/fassets/developer-guides/fassets-mint#transfer-a-minting-tag",
+          },
+          {
+            from: "/fassets/developer-guides/fassets-redeem-with-tag",
+            to: "/fassets/developer-guides/fassets-redeem-amount#xrpl-destination-tag",
+          },
+          {
+            from: "/fassets/developer-guides/fassets-redeem",
+            to: "/fassets/developer-guides/fassets-redeem-amount",
+          },
+          {
+            from: "/fassets/developer-guides/fassets-settings-solidity",
+            to: "/fassets/developer-guides/fassets-settings#solidity",
+          },
+          {
+            from: "/fassets/developer-guides/fassets-settings-node",
+            to: "/fassets/developer-guides/fassets-settings#typescript",
+          },
+          {
+            from: "/fassets/developer-guides/fassets-list-agents",
+            to: "/fassets/developer-guides/fassets-agents#list-agents",
+          },
+          {
+            from: "/fassets/developer-guides/fassets-agent-details",
+            to: "/fassets/developer-guides/fassets-agents#read-agent-details",
           },
           {
             from: "/fcc/guides/sign-extension",

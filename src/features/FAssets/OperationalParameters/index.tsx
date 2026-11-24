@@ -22,12 +22,13 @@ export default function OperationalParameters({
   const allParameters = operationalParametersSection?.parameters || [];
 
   const parameters = filterParameters?.length
-    ? allParameters.filter(
-        (param) =>
-          "settingName" in param &&
-          param.settingName &&
-          filterParameters.includes(param.settingName),
-      )
+    ? allParameters.filter((param) => {
+        const keys = [
+          "settingName" in param ? param.settingName : undefined,
+          "functionName" in param ? param.functionName : undefined,
+        ].filter((key): key is string => Boolean(key));
+        return keys.some((key) => filterParameters.includes(key));
+      })
     : allParameters;
 
   type OperationalParameter =

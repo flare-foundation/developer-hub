@@ -9,22 +9,15 @@ import {IAssetManager} from "@flarenetwork/flare-periphery-contracts/coston2/IAs
 
 // 3. Contract for accessing FAssets settings from the asset manager
 contract FAssetsSettings {
-    // 4. This function gets two important numbers from the asset manager settings:
-    // * lotSizeAMG: The smallest amount you can trade (in AMG units)
-    // * assetDecimals: How many decimal places the asset uses
+    // 4. Read how many decimal places FXRP uses.
     // FAssets Operation Parameters https://dev.flare.network/fassets/operational-parameters
-    function getLotSize()
-        public
-        view
-        returns (uint64 lotSizeAMG, uint8 assetDecimals)
-    {
+    function getAssetDecimals() public view returns (uint8 assetDecimals) {
         // 5. Get the AssetManager contract from the Flare Contract Registry
         IAssetManager assetManager = ContractRegistry.getAssetManagerFXRP();
 
-        // 6. Get the lot size and asset decimals from the AssetManager contract
-        lotSizeAMG = assetManager.getSettings().lotSizeAMG;
+        // 6. Read asset decimals from the AssetManager settings
         assetDecimals = assetManager.getSettings().assetDecimals;
 
-        return (lotSizeAMG, assetDecimals);
+        return assetDecimals;
     }
 }
