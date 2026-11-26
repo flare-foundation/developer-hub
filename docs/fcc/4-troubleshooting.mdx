@@ -55,9 +55,15 @@ If it stops partway, check the following.
   A test machine needs a test version (`fce add-version -test`) and a governance (`fce governance`).
   The machine attests to the governance hash, so the onchain signers and threshold must match exactly.
   `fce run` takes them from your deployment record.
+- **The account is not an allowed extension owner.**
+  `fce deploy` calls `register`.
+  The call succeeds when the deployer is an allowed extension owner, or when allow-all is on.
+  Otherwise it reverts with [`OwnerNotAllowed`](/fcc/reference/ITeeCommonErrors#ownernotallowed).
+  See [Owner allowlists](/fcc/owner-allowlists).
 - **The account is not an allowed machine owner.**
   `fce deploy` allows the deployer.
   If you run machines from a different account, the extension owner must allow it first.
+  See [Owner allowlists](/fcc/owner-allowlists).
 - **Not enough funds.**
   Registration and the availability check charge fees, and every step pays gas.
   Top up from the [Coston2 faucet](https://faucet.flare.network/coston2).
