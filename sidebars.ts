@@ -251,6 +251,7 @@ const sidebars: SidebarsConfig = {
         "fcc/tee-keys",
         "fcc/data-providers",
         "fcc/instruction-fees",
+        "fcc/owner-allowlists",
         {
           type: "category",
           label: "Developer Guides",
