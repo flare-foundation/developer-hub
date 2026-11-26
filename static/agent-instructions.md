@@ -23,6 +23,7 @@ Do **not** treat this site as a generic Ethereum docs mirror, a custodial bridge
 | Discover docs    | `GET /llms.txt`                                                                  |
 | DA Layer OpenAPI | `GET /openapi/data-availability-api.yaml`                                        |
 | MCP tools        | Streamable HTTP `POST https://mcp.flare.network`                                 |
+| MCP source       | [flare-network-mcp](https://github.com/flare-foundation/flare-network-mcp)       |
 | MCP discovery    | `GET /.well-known/mcp` on this site, which points at `https://mcp.flare.network` |
 | Markdown page    | Append `.md` to any docs URL (for example `/ftso/overview.md`)                   |
 | Recover from 404 | Read `/404.md` or start at `/llms.txt` or `/developers`                          |
